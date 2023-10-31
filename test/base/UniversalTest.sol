@@ -226,6 +226,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
+                    balanceBefore = IERC20(rewardToken).balanceOf(address(this));
+                    IRVault(vars.vault).getReward(0);
+                    assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
                 }
 
                 uint totalWas = strategy.total();

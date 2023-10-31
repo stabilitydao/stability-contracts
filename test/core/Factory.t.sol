@@ -98,6 +98,8 @@ contract FactoryTest is Test, MockSetup {
             tokenId: type(uint).max
         }), address(this));
         (,,,,,uint strategyLogicTokenId) = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV)));
+        bytes32[] memory hashes = factory.strategyLogicIdHashes();
+        assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));
 
         vm.expectRevert(bytes("Factory: you dont have enough tokens for building"));
@@ -285,6 +287,11 @@ contract FactoryTest is Test, MockSetup {
 
         IFactory.Farm[] memory farms = factory.farms();
         assertEq(farms[0].pool, address(3));
+    }
+
+    function testSetVaultStatus() public {
+        factory.setVaultStatus(address(1), 1);
+        assertEq(factory.vaultStatus(address(1)), 1);
     }
 
 }

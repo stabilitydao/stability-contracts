@@ -125,6 +125,11 @@ contract VaultTest is Test, FullMockSetup {
         vault.withdrawAssets(assets, shares - shares / 2, new uint[](2));
 
         assertEq(vault.balanceOf(address(this)), 0);
+
+        vault.setDoHardWorkOnDeposit(false);
+        assertEq(vault.doHardWorkOnDeposit(), false);
+        vault.setDoHardWorkOnDeposit(true);
+        assertEq(vault.doHardWorkOnDeposit(), true);
     }
 
     function testFuse() public {

@@ -31,6 +31,29 @@ interface IRVault is IVault {
     ///           * (rewardPerToken - userRewardPerTokenPaidForToken)) / 10**18) + rewardsForToken
     function earned(uint rewardTokenIndex, address account) external view returns (uint);
 
+    /// @notice Update and Claim all rewards
     function getAllRewards() external;
+
+    /// @notice Update and Claim rewards for specific token
+    function getReward(uint rt) external;
+
+    /// @notice Return reward per token ratio by reward token address
+    ///                rewardPerTokenStoredForToken + (
+    ///                (lastTimeRewardApplicable - lastUpdateTimeForToken)
+    ///                 * rewardRateForToken * 10**18 / totalSupply)
+    function rewardPerToken(uint rewardTokenIndex) external view returns (uint);
+
+    /// @dev Receiver of rewards can be set by multisig when owner cant claim rewards himself
+    function rewardsRedirect(address owner) external view returns (address receiver);
+
+    /// @dev All rewards for given owner could be claimed for receiver address.
+    function setRewardsRedirect(address owner, address receiver) external;
+
+    /// @notice Update and Claim all rewards for given owner address. Send them to predefined receiver.
+    function getAllRewardsAndRedirect(address owner) external;
+
+    /// @notice Update and Claim all rewards for the given owner.
+    ///         Sender should have allowance for push rewards for the owner.
+    function getAllRewardsFor(address owner) external;
 
 }

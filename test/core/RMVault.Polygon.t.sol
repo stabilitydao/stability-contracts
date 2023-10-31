@@ -37,7 +37,7 @@ contract RMVaultTest is PolygonSetup {
                 vaultInitNums[e] = 86400 * 30;
                 vaultInitNums[e + vaultInitAddressesLength - 1] = 1000e6; // 1000 usdc
             }
-            // compoundRatuo
+            // compoundRatio
             vaultInitNums[vaultInitNums.length - 1] = 50_000;
 
             // farmId
@@ -62,12 +62,13 @@ contract RMVaultTest is PolygonSetup {
         // deposit
         vault.depositAssets(assets, depositAmounts, 0);
         (uint tvl, ) = vault.tvl();
+
         assertGt(tvl, 0, "RMVault test: tvl is zero");
 
         skip(86400);
 
         {
-            // set compound ratiio to 0%
+            // set compound ratio to 0%
             address[] memory vaultChangeAddresses = new address[](2);
             vaultChangeAddresses[0] = platform.targetExchangeAsset();
             vaultChangeAddresses[1] = assets[0];
@@ -93,6 +94,24 @@ contract RMVaultTest is PolygonSetup {
         assertGt(vault.earned(1, address(this)), 0);
         assertEq(vault.duration(0), 86400 * 10);
 
-        // todo test setRewardsRedirect, getAllRewardsFor
+        vm.prank(address(0));
+        vm.expectRevert("Controllable: not multisig");
+        vault.setRewardsRedirect(address(this), address(1));
+        vault.setRewardsRedirect(address(this), address(1));
+        assertEq ((vault.rewardsRedirect(address(this))), address(1));
+
+        vault.setRewardsRedirect(address(this), address(0));
+        vm.expectRevert("zero receiver");
+        vault.getAllRewardsAndRedirect(address(this));
+
+        vault.setRewardsRedirect(address(this), address(1));
+        vault.getAllRewardsAndRedirect(address(this));
+
+        vm.prank(address(123));
+        vm.expectRevert("RVault: Not allowed");
+        vault.getAllRewardsFor(address(this));
+        vault.getAllRewardsFor(address(this));
+
+        assertGt(vault.rewardPerToken(0), 0);
     }
 }
