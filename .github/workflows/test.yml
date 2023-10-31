@@ -41,8 +41,14 @@ jobs:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
         id: test
 
+      - name: Run Forge coverage
+        run: |
+          forge coverage
+        env:
+          POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
+        id: coverage
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
-          POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
