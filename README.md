@@ -54,6 +54,12 @@ You can learn how to develop strategies for the platform by reading the [guide](
 
 Further plans for the development of the platform core can be read in the [Roadmap](https://book.stabilitydao.org/roadmap.html).
 
+## Coverage
+
+[![codecov](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graph/badge.svg?token=HXU4SR81AV)](https://codecov.io/gh/stabilitydao/stability-platform-contracts)
+
+![cov](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graphs/tree.svg?token=HXU4SR81AV)
+
 ## Versioning
 
 * Stability Platform uses [CalVer](https://calver.org/) scheme **YY.MM.MINOR-TAG**
