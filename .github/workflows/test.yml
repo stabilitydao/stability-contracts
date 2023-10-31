@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: Test contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,11 +28,6 @@ jobs:
         with:
           version: nightly
 
-      - name: Install dependencies
-        run: |
-          forge install
-        id: deps
-
       - name: Run Forge build
         run: |
           forge --version
@@ -42,4 +37,6 @@ jobs:
       - name: Run Forge tests
         run: |
           forge test -vvv
+        env:
+          POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
         id: test
