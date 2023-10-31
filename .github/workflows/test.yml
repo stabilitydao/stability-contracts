@@ -1,6 +1,12 @@
 name: test
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
+  pull_request: { }
+  workflow_dispatch: { }
+
 
 env:
   FOUNDRY_PROFILE: ci
@@ -10,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: Forge test and coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,4 +37,18 @@ jobs:
       - name: Run Forge tests
         run: |
           forge test -vvv
+        env:
+          POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
         id: test
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage --report lcov
+        env:
+          POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
+        id: coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
