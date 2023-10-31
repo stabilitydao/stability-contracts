@@ -19,38 +19,9 @@ You can learn how to develop strategies for the platform by reading the [guide](
 
 ### Tasks
 
-#### Alpha
-
-* coverage
-* add events for all actions
-* optimize deploy script
-  * implement `platform.addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken);`
-  * refactor `swapper.setThreshold` to `swapper.setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount);`
-  * refactor `factory.addFarm` to `factory.addFarms(Farm[] memory farms_);`
-* natspecs
-* code todo tasks
-* zap
-
-#### Beta
-
-* AI audit
-* RMVault
-  * buy-back ratio
-  * manage capacity
-* dynamic strategy
-* managed strategy
-* optimise reads (dexAdapters etc)
-
-#### Bridge
-
-* describe arch of bridging TOKEN lock -> ChildATOKEN mint -> burn -> ChildBTOKEN mint -> burn -> TOKEN unlock
-* TokenFactory, ChildERC20, ChildERC721
-* IDataTransferProtocol
-  * LayerZeroAdapter
-* bridge ecosystem tokens
-* assets bridge adapters
-
-#### Future developments
+* [#5 Alpha](https://github.com/stabilitydao/stability-platform-contracts/issues/5)
+* [#6 Beta](https://github.com/stabilitydao/stability-platform-contracts/issues/6)
+* [#7 Bridge](https://github.com/stabilitydao/stability-platform-contracts/issues/7)
 
 Further plans for the development of the platform core can be read in the [Roadmap](https://book.stabilitydao.org/roadmap.html).
 
