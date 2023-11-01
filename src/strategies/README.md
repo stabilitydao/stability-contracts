@@ -1,14 +1,25 @@
-# Development of strategy logic
+# Strategy Developer's Guide
 
-## 0. Prepare
+Development of DeFi strategy logic is not simple, its hard work, and not everyone can do it. You need to understand how it all works.
 
-### Install forge, git
+## Choose strategy
 
-### Fork repo
+See [open STRATEGY issues](https://github.com/stabilitydao/stability-platform-contracts/issues?q=is%3Aopen+is%3Aissue+label%3ASTRATEGY). If the issue has not been created, then create it.
 
-```shell
-git clone https://github.com/stabilitydao/v2.git
-```
+Study the protocols used in the strategy. Conduct all interactions with protocols manually, or find links to such transactions in an explorer.
+
+## Prepare
+
+### Setup software
+
+* git
+* foundry
+* vscode
+
+### Setup repo
+
+* fork this repo
+* clone it
 
 ### Fill `.env` file
 
@@ -73,3 +84,7 @@ If your strategy size exceeds the permissible limit, then move part of the code 
 ```shell
 forge build --sizes
 ```
+
+## 7. Create PR
+
+Create Pull Request for merging from your fork repo branch to main branch of this repo.
