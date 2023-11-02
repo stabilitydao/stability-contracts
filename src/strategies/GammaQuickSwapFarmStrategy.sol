@@ -265,7 +265,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     }
 
     function getSpecificName() external view override returns (string memory) {
-        IFactory.Farm memory farm = _getFarm(platform(), farmId);
+        IFactory.Farm memory farm = _getFarm();
         return GammaLib.getPresetName(farm.nums[1]);
     }
 

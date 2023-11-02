@@ -138,6 +138,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
                 }
 
+                {
+                    uint[] memory assetsProportions = IStrategy(address(strategy)).getAssetsProportions();
+                    for(uint x; x < assetsProportions.length; x++){
+                        assertGt(assetsProportions[x], 0);
+                    }
+                }
+
                 // todo loop
 
                 // get amounts for deposit
