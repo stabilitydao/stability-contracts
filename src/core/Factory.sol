@@ -95,6 +95,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //region ----- Restricted actions -----
 
+    /// @inheritdoc IFactory
     function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
         string memory type_ = vaultConfig_.vaultType;
         bytes32 typeHash = keccak256(abi.encodePacked(type_));
@@ -105,6 +106,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit VaultConfigChanged(type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed);
     }
 
+    /// @inheritdoc IFactory
     function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external onlyOperator nonReentrant {
         bytes32 strategyIdHash = keccak256(bytes(config.id));
         StrategyLogicConfig storage oldConfig = strategyLogicConfig[strategyIdHash];
@@ -121,16 +123,19 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit StrategyLogicConfigChanged(config.id, config.implementation, config.deployAllowed, config.upgradeAllowed);
     }
 
+    /// @inheritdoc IFactory
     function setVaultStatus(address vault, uint status) external onlyGovernanceOrMultisig {
         vaultStatus[vault] = status;
         emit VaultStatus(vault, status);
     }
 
     // todo addFarms
+    /// @inheritdoc IFactory
     function addFarm(Farm memory farm_) external onlyOperator {
         _farms.push(farm_);
     }
 
+    /// @inheritdoc IFactory
     function updateFarm(uint id, Farm memory farm_) external onlyOperator {
         _farms[id] = farm_;
     }
@@ -139,7 +144,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //region ----- User actions -----
 
-    // @param addresses - initStrategyAddresses[3]: pool, initStrategyAddresses[4]: underlying, ...
+    /// @inheritdoc IFactory
     function deployVaultAndStrategy(
         string memory vaultType,
         string memory strategyId,
@@ -250,6 +255,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         );
     }
 
+    /// @inheritdoc IFactory
     function upgradeVaultProxy(address vault) external nonReentrant {
         require (vaultStatus[vault] == VaultStatusLib.ACTIVE, "Factory: not active vault");
         IVaultProxy proxy = IVaultProxy(vault);
@@ -262,6 +268,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit VaultProxyUpgraded(vault, oldImplementation, newImplementation);
     }
 
+    /// @inheritdoc IFactory
     function upgradeStrategyProxy(address strategyProxy) external nonReentrant {
         require (isStrategy[strategyProxy], "Factory: not strategy");
         IStrategyProxy proxy = IStrategyProxy(strategyProxy);
@@ -279,6 +286,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //region ----- View functions -----
 
+    /// @inheritdoc IFactory
     function vaultTypes() external view returns (
         string[] memory vaultType,
         bool[] memory deployAllowed,
@@ -303,6 +311,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
     }
 
+    /// @inheritdoc IFactory
     function strategies() external view returns (
         string[] memory id,
         bool[] memory deployAllowed,
@@ -334,6 +343,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
     }
 
+    /// @inheritdoc IFactory
     function whatToBuild() external view returns (
         string[] memory desc,
         string[] memory vaultType,
@@ -348,14 +358,17 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         return FactoryLib.whatToBuild(platform());
     }
 
+    /// @inheritdoc IFactory
     function deployedVaultsLength() external view returns (uint) {
         return _deployedVaults.length;
     }
 
+    /// @inheritdoc IFactory
     function deployedVaults() external view returns (address[] memory) {
         return _deployedVaults;
     }
 
+    /// @inheritdoc IFactory
     function deployedVault(uint id) external view returns (address) {
         return _deployedVaults[id];
     }
@@ -364,18 +377,22 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         return _farms.length;
     }
 
+    /// @inheritdoc IFactory
     function farms() external view returns (Farm[] memory) {
         return _farms;
     }
 
+    /// @inheritdoc IFactory
     function strategyLogicIdHashes() external view returns (bytes32[] memory) {
         return _strategyLogicIdHashes.values();
     }
 
+    /// @inheritdoc IFactory
     function farm(uint id) external view returns (Farm memory) {
         return _farms[id];
     }
 
+    /// @inheritdoc IFactory
     function getStrategyData(string memory vaultType, address strategyAddress, address bbAsset) public view returns (
         string memory strategyId,
         address[] memory assets,
@@ -391,6 +408,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         return FactoryLib.getExchangeAssetIndex(platform(), assets);
     }
 
+    /// @inheritdoc IFactory
     function getDeploymentKey(
         string memory vaultType,
         string memory strategyId,
