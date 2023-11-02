@@ -1,10 +1,10 @@
-[![codecov](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graph/badge.svg?token=HXU4SR81AV)](https://codecov.io/gh/stabilitydao/stability-platform-contracts)
 
 # Stability Platform contracts
 
 > Asset management, liquidity mining and yield farming platform.
 > Users invest funds to vaults that are created by other users.
 > Vaults use tokenized developed asset management strategy logics.
+>
 > -- [Stability Book](https://book.stabilitydao.org)
 
 **Contracts are currently being developed. Alpha version is not deployed yet.**
@@ -13,7 +13,7 @@
 
 Contributions can be made in the form of developing strategies, developing the core, creating issues with feature proposals and reporting bugs in contracts. You can also help solve issues with advice or words of encouragement.
 
-### Rewards
+### Reward
 
 * Developed strategy logic: 30% of Stability Platform fee from all vaults using the strategy (by StrategyLogic NFT)
 * Core development: $8+/hour salary by Stability DAO
@@ -23,6 +23,12 @@ Contributions can be made in the form of developing strategies, developing the c
 * **[Stability Contributing Guide](./CONTRIBUTING.md)**
 * **[Strategy Developer's Guide](./src/strategies/README.md)**
 * **[Core Developer's Guide](./src/core/README.md)**
+
+## Coverage
+
+[![codecov](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graph/badge.svg?token=HXU4SR81AV)](https://codecov.io/gh/stabilitydao/stability-platform-contracts)
+
+![Coverage Grid](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graphs/tree.svg?token=HXU4SR81AV)
 
 ## Versioning
 
