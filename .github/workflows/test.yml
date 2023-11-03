@@ -28,13 +28,13 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Forge build
+      - name: Run forge build
         run: |
           forge --version
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run forge test
         run: |
           forge test -vvv
         env:
@@ -43,18 +43,13 @@ jobs:
 
       - name: Run Forge coverage
         run: |
+          forge coverage
           forge coverage --report lcov
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
         id: coverage
 
-      - name: Upload coverage lcov reports to Codecov
+      - name: Upload coverage lcov report to Codecov
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
-
-      - name: Show contract sizes in job summary
-        run: echo '## Contract code sizes' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge build --sizes | grep -v '| 0.' | grep -v 'compilation' >> $GITHUB_STEP_SUMMARY && echo >> $GITHUB_STEP_SUMMARY
-
-      - name: Show coverage in job summary
-        run: forge test && echo '## Coverage' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge coverage >> $GITHUB_STEP_SUMMARY && echo >> $GITHUB_STEP_SUMMARY
