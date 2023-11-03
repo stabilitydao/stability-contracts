@@ -54,4 +54,4 @@ jobs:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
 
       - name: Show contract sizes
-        run: NO_COLOR=1 forge build --sizes | grep -v '| 0.' >> $GITHUB_STEP_SUMMARY
+        run: echo '## Contract code sizes' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge build --sizes | grep -v '| 0.' | grep -v 'compilation' >> $GITHUB_STEP_SUMMARY
