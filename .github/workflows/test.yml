@@ -52,3 +52,6 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+
+      - name: Show contract sizes
+        run: NO_COLOR=1 forge build --sizes | grep -v '| 0.' >> $GITHUB_STEP_SUMMARY
