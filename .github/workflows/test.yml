@@ -57,4 +57,4 @@ jobs:
         run: echo '## Contract code sizes' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge build --sizes | grep -v '| 0.' | grep -v 'compilation' >> $GITHUB_STEP_SUMMARY && echo >> $GITHUB_STEP_SUMMARY
 
       - name: Show coverage in job summary
-        run: echo '## Coverage' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge coverage >> $GITHUB_STEP_SUMMARY && echo >> $GITHUB_STEP_SUMMARY
+        run: forge test && echo '## Coverage' >> $GITHUB_STEP_SUMMARY && NO_COLOR=1 forge coverage >> $GITHUB_STEP_SUMMARY && echo >> $GITHUB_STEP_SUMMARY
