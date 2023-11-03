@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
+
 interface IHardWorker {
     event Call(uint hardworks, uint gasUsed, uint gasCost, bool server);
     event DedicatedServerMsgSender(address indexed sender, bool allowed);

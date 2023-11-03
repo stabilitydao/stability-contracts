@@ -5,21 +5,21 @@ import "../base/UpgradeableProxy.sol";
 import "../../interfaces/IControllable.sol";
 import "../../interfaces/IProxy.sol";
 
-/// @title EIP1967 Upgradable proxy implementation.
+/// @title Proxy for Stability Platform core contracts.
+/// @dev ERC-1967: Proxy Storage Slots used.
 contract Proxy is UpgradeableProxy, IProxy {
 
     /// @notice Version of the contract
     /// @dev Should be incremented when contract changed
+    /// todo remove?
     string public constant PROXY_VERSION = "1.0.0";
 
-    /// @dev Initialize proxy implementation. Need to call after deploy new proxy.
-    function initProxy(address _logic) external override {
-        _init(_logic);
+    /// @inheritdoc IProxy
+    function initProxy(address logic_) external override {
+        _init(logic_);
     }
 
-    /// @notice Upgrade contract logic
-    /// @dev Upgrade allowed only for Platform and should be done only after time-lock period
-    /// @param _newImplementation Implementation address
+    /// @inheritdoc IProxy
     function upgrade(address _newImplementation) external override {
         require(IControllable(address(this)).platform() == msg.sender, "Proxy: Forbidden");
         _upgradeTo(_newImplementation);
@@ -27,7 +27,7 @@ contract Proxy is UpgradeableProxy, IProxy {
         require(IControllable(address(this)).platform() == msg.sender, "Proxy: Wrong implementation");
     }
 
-    /// @notice Return current logic implementation
+    /// @inheritdoc IProxy
     function implementation() external override view returns (address) {
         return _implementation();
     }
