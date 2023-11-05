@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-/// @dev Main strategy interface
+/// @dev Core interface of strategy logic
 interface IStrategy {
     /// @dev A single universal initializer for all strategy implementations.
     /// @param addresses All addresses that strategy requires for initialization. Min array length is 2.
@@ -28,6 +28,7 @@ interface IStrategy {
     function extra() external view returns (bytes32);
 
     /// @dev Types of vault that supported by strategy implementation
+    /// @return types Vault type ID strings
     function supportedVaultTypes() external view returns(string[] memory types);
 
     /// @dev Linked vault address
@@ -36,54 +37,105 @@ interface IStrategy {
     /// @dev Final assets that strategy invests
     function assets() external view returns (address[] memory);
 
+    /// @notice Final assets and amounts that strategy invests
     function assetsAmounts() external view returns (address[] memory assets_, uint[] memory amounts_);
 
+    /// @notice Priced invested assets proportions
+    /// @return proportions Proportions of assets with 18 decimals. Min is 0, max is 1e18.
     function getAssetsProportions() external view returns (uint[] memory proportions);
 
+    /// @notice Underlying token address
     /// @dev Can be used for liquidity farming strategies where AMM has fungible liquidity token (Solidly forks, etc),
     ///      for concentrated liquidity tokenized vaults (Gamma, G-UNI etc) and for other needs.
+    /// @return Address of underlying token or zero address if no underlying in strategy
     function underlying() external view returns (address);
 
     /// @dev Balance of liquidity token or liquidity value
     function total() external view returns (uint);
 
-    /// @dev Last hard work timestamp
+    /// @dev Last HardWork time
+    /// @return Timestamp
     function lastHardWork() external view returns (uint);
 
     /// @dev Last APR of earned USD amount registered by HardWork
     ///      ONLY FOR OFF-CHAIN USE.
     ///      Not trusted asset price can be manipulated.
+    /// @return APR with 18 decimals. 1e18 - 100%.
     function lastApr() external view returns (uint);
 
     /// @dev Last APR of compounded assets registered by HardWork.
     ///      Can be used on-chain.
+    /// @return APR with 18 decimals. 1e18 - 100%.
     function lastAprCompound() external view returns (uint);
 
+    // todo remove assets_
+    /// @notice Calculation of consumed amounts and liquidity/underlying value for provided strategy assets and amounts.
+    /// @param assets_ re,pve it
+    /// @param amountsMax Amounts of avaulable strategy assets for investing
+    /// @return amountsConsumed Cosumed amounts of assets when investing
+    /// @return value Liquidity value or underlying token amount minted when investing
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint value);
 
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts);
+    /// @notice All strategy revenue (pool fees, farm rewards etc) that not claimed by strategy yet
+    /// @return assets_ Revenue assets
+    /// @return amounts Amounts. Index of asset same as in previous array.
+    function getRevenue() external view returns (address[] memory assets_, uint[] memory amounts);
 
+    /// @notice Optional specific name of investing strategy, underyling type, setup variation etc
+    /// @return Empty string or specific name
     function getSpecificName() external view returns (string memory);
 
+    /// @notice Variants pf strategy initializations with description of money making mechanic.
+    /// As example, if strategy need farm, then number of variations is number of available farms.
+    /// If CAMM strategy have set of available widths (tick ranges), then number of variations is number of available farms.
+    /// If both example conditions are met then total number or variations = total farms * total widths.
     /// @param platform_ Need this param because method called when strategy implementation is not initialized
-    function initVariants(address platform_) external view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks);
+    /// @return variants Descriptions of the strategy for making money
+    /// @return addresses Init strategy addresses. Indexes for each variants depends of copmpared arrays lengths.
+    /// @return nums Init strategy numbers. Indexes for each variants depends of copmpared arrays lengths.
+    /// @return ticks Init strategy ticks. Indexes for each variants depends of copmpared arrays lengths.
+    function initVariants(address platform_) external view returns (
+        string[] memory variants,
+        address[] memory addresses,
+        uint[] memory nums,
+        int24[] memory ticks
+    );
 
-    /// @dev Invest strategy assets. Amounts of assets must be already on strategy contract balance.
+    /// @notice Invest strategy assets. Amounts of assets must be already on strategy contract balance.
+    /// Only vault can call this.
+    /// @param amounts Anounts of strategy assets
+    /// @return value Liquidity value or underlying token amount
     function depositAssets(uint[] memory amounts) external returns(uint value);
 
+    /// @notice Invest underlying asset. Asset must be already on strategy contract balance.
+    /// Only vault can call this.
+    /// @param amount Amount of underlying asset to invest
+    /// @return amountsConsumed Cosumed amounts of invested assets
     function depositUnderlying(uint amount) external returns(uint[] memory amountsConsumed);
 
     /// @dev For specified amount of shares and assets_, withdraw strategy assets from farm/pool/staking and send to receiver if possible
-    ///      Only vault of strategy allowed to call this method
+    /// Only vault can call this.
     /// @param assets_ Here we give the user a choice of assets to withdraw if strategy support it
     /// @param value Part of strategy total value to withdraw
     function withdrawAssets(address[] memory assets_, uint value, address receiver) external returns (uint[] memory amountsOut);
 
+    /// @notice Wothdraw underlying invested and send to receiver
+    /// Only vault can call this.
+    /// @param amount Ampunt of underlying asset to withdraw
+    /// @param receiver User of vault which withdraw underlying from the vault
     function withdrawUnderlying(uint amount, address receiver) external;
 
     /// @dev For specified amount of shares, transfer strategy assets from contract balance and send to receiver if possible
-    ///      Only vault of strategy allowed to call this method
+    /// This method is called by vault w/o underlying on triggered fuse mode.
+    /// Only vault can call this.
+    /// @param amount Ampunt of liquidity value that user withdraw
+    /// @param total Total amount of strategy liquidity
+    /// @param receiver User of vault which withdraw assets
+    /// @return amountsOut Amounts of strategy assets sent to user
     function transferAssets(uint amount, uint total, address receiver) external returns (uint[] memory amountsOut);
 
+    /// @notice Execute HardWork
+    /// During HardWork strategy claiming revenue and processing it.
+    /// Only vault can call this.
     function doHardWork() external;
 }

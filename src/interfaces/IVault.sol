@@ -23,13 +23,17 @@ interface IVault {
     /// @notice Immutable vault type ID
     function VAULT_TYPE() external view returns (string memory);
 
+    /// @notice Vault type extra data
+    /// @return Vault type color, background color and other extra data
     function extra() external view returns (bytes32);
 
     /// @notice Immutable strategy proxy used by the vault
+    /// @return Linked strategy
     function strategy() external view returns (IStrategy);
 
     /// @notice Max supply of shares in the vault.
-    ///         Since the starting share price is $1, this ceiling can be considered as an approximate TVL limit.
+    /// Since the starting share price is $1, this ceiling can be considered as an approximate TVL limit.
+    /// @return Max total supply of vault
     function maxSupply() external view returns (uint);
 
     /// @dev VaultManager token ID. This tokenId earn feeVaultManager provided by Platform.
@@ -57,6 +61,11 @@ interface IVault {
     /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
+    /// @notice All available data on the latest declared APR (annual percentage rate)
+    /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
+    /// @return strategyApr Strategy investmnt APR declared on last HardWork.
+    /// @return assetsWithApr Assets with underlying APR
+    /// @return assetsAprs Underlying APR of asset
     function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
 
     //endregion -- Read functions -----
@@ -82,6 +91,7 @@ interface IVault {
     function setMaxSupply(uint maxShares) external;
 
     /// @dev If activated will call doHardWork on strategy on some deposit actions
+    /// @param value HardWork on deposit is enabled
     function setDoHardWorkOnDeposit(bool value) external;
 
     /// @dev Initialization of vault which is usually called by the Factory
@@ -104,4 +114,5 @@ interface IVault {
     function doHardWork() external;
 
     //endregion -- Write functions -----
+
 }

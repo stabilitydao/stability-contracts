@@ -49,11 +49,9 @@ contract RMVault is RVaultBase, IManagedVault {
 
     //endregion -- Init -----
 
-    //region ----- Restricted actions -----
-    //endregion -- Restricted actions ----
-
     //region ----- User actions -----
 
+    /// @inheritdoc IManagedVault
     function changeParams(address[] memory addresses, uint[] memory nums) external {
         // todo implement bbRatio changing
         require (IPlatform(platform()).vaultManager() == msg.sender, "RMVault: denied");
@@ -98,7 +96,4 @@ contract RMVault is RVaultBase, IManagedVault {
 
     //endregion -- View functions -----
 
-    //region ----- Internal logic -----
-
-    //endregion -- Internal logic -----
 }

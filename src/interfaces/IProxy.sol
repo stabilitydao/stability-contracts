@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-/// @dev Platform proxy interface for core contracts
+/// @dev Proxy of core contract implementation
 interface IProxy {
 
-  /// @dev Initialize proxy implementation. Need to call after deploy new proxy.
+  /// @dev Initialize proxy logic. Need to call after deploy new proxy.
+  /// @param logic Address of core contract implementation
   function initProxy(address logic) external;
 
   /// @notice Upgrade proxy implementation (contract logic).
@@ -15,6 +16,7 @@ interface IProxy {
   function upgrade(address newImplementation) external;
 
   /// @notice Return current logic implementation
+  /// @return Address of implementation contract
   function implementation() external view returns (address);
 
 }

@@ -25,6 +25,8 @@ contract Swapper is Controllable, ISwapper {
 
     mapping(address tokenIn => PoolData) public pools;
     mapping(address tokenIn => mapping(address tokenOut => PoolData)) public blueChipsPools;
+
+    /// @inheritdoc ISwapper
     mapping(address token => uint minAmountToSwap) public threshold;
 
     /// @dev Assets list. 2 slots used.
@@ -46,6 +48,7 @@ contract Swapper is Controllable, ISwapper {
 
     //region ----- Restricted actions -----
 
+    /// @inheritdoc ISwapper
     function addPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
@@ -57,6 +60,7 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
+    /// @inheritdoc ISwapper
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
@@ -118,6 +122,7 @@ contract Swapper is Controllable, ISwapper {
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
     }
 
+    /// @inheritdoc ISwapper
     function setThreshold(address token, uint threshold_) external onlyOperator {
         threshold[token] = threshold_;
         emit ThresholdChanged(token, threshold_);
@@ -144,6 +149,7 @@ contract Swapper is Controllable, ISwapper {
         _swap(route, amount, priceImpactTolerance);
     }
 
+    /// @inheritdoc ISwapper
     function swapWithRoute(
         PoolData[] memory route,
         uint amount,
@@ -156,14 +162,17 @@ contract Swapper is Controllable, ISwapper {
 
     //region ----- View functions -----
 
+    /// @inheritdoc ISwapper
     function assets() external view returns(address[] memory) {
         return _assets.values();
     }
 
+    /// @inheritdoc ISwapper
     function bcAssets() external view returns(address[] memory) {
         return _bcAssets.values();
     }
 
+    /// @inheritdoc ISwapper
     function allAssets() external view returns(address[] memory) {
         address[] memory __bcAssets = _bcAssets.values();
         uint bcAssetsLen = __bcAssets.length;
@@ -190,6 +199,7 @@ contract Swapper is Controllable, ISwapper {
         return _allAssets;
     }
 
+    /// @inheritdoc ISwapper
     function getPrice(address tokenIn, address tokenOut, uint amount) external view returns (uint) {
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         if (route.length == 0) {
@@ -209,6 +219,7 @@ contract Swapper is Controllable, ISwapper {
         return price;
     }
 
+    /// @inheritdoc ISwapper
     function getPriceForRoute(PoolData[] memory route, uint amount) external view returns (uint) {
         uint price;
         if (amount == 0) {
@@ -224,15 +235,13 @@ contract Swapper is Controllable, ISwapper {
         return price;
     }
 
-    /// @dev Check possibility of swap tokenIn for tokenOut
+    /// @inheritdoc ISwapper
     function isRouteExist(address tokenIn, address tokenOut) external view returns (bool) {
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         return route.length != 0;
     }
 
-    /// @dev Build route for swap. No reverts inside.
-    /// @return route Array of pools for swap tokenIn to tokenOut. Zero length indicate an error.
-    /// @return errorMessage Possible reason why the route was not found. Empty for success routes.
+    /// @inheritdoc ISwapper
     function buildRoute(
         address tokenIn,
         address tokenOut

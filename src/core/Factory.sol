@@ -42,9 +42,15 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     mapping(bytes32 typeHash => VaultConfig) public vaultConfig;
     
+    /// @inheritdoc IFactory
     mapping(bytes32 idHash => StrategyLogicConfig) public strategyLogicConfig;
+
+    /// @inheritdoc IFactory
     mapping(bytes32 deploymentKey => address vaultProxy) public deploymentKey;
+
+    /// @inheritdoc IFactory
     mapping(address vault => uint status) public vaultStatus;
+
     mapping(address address_ => bool isStrategy_) public isStrategy;
 
     /// @dev 2 slots struct
@@ -373,6 +379,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         return _deployedVaults[id];
     }
 
+    /// @inheritdoc IFactory
     function farmsLength() external view returns (uint) {
         return _farms.length;
     }
@@ -432,6 +439,4 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //endregion -- View functions -----
 
-    //region ----- Internal logic -----
-    //endregion -- Internal logic -----
 }
