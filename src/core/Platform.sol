@@ -181,6 +181,7 @@ contract Platform is Controllable, IPlatform {
     //region ----- Restricted actions -----
 
     function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
+        require (receiver != address(0), "Platform: ZERO_ADDRESS");
         ecosystemRevenueReceiver = receiver;
         emit EcosystemRevenueReceiver(receiver);
     }
