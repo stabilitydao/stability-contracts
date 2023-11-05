@@ -25,6 +25,7 @@ interface IPlatform {
     event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewDexAdapter(string id, address proxy);
+    event EcosystemRevenueReceiver(address receiver);
     //endregion -- Events -----
 
     //region ----- Data types -----

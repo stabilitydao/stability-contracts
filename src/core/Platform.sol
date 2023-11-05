@@ -180,6 +180,11 @@ contract Platform is Controllable, IPlatform {
 
     //region ----- Restricted actions -----
 
+    function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
+        ecosystemRevenueReceiver = receiver;
+        emit EcosystemRevenueReceiver(receiver);
+    }
+
     /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
         require(_operators.add(operator), "Platform: EXIST");
