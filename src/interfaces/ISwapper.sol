@@ -24,41 +24,83 @@ interface ISwapper {
     address tokenOut;
   }
 
+  /// @notice All assets in pools added to Swapper
+  /// @return Addresses of assets
   function assets() external view returns(address[] memory);
 
+  /// @notice All blue chip assets in blue chip pools added to Swapper
+  /// @return Addresses of blue chip assets
   function bcAssets() external view returns(address[] memory);
 
+  /// @notice All assets in Swapper
+  /// @return Addresses of assets and blue chip assets
   function allAssets() external view returns(address[] memory);
 
+  /// @notice Add pools with largest TVL
+  /// @param pools Largest pools with DeX adapter addresses
+  /// @param rewrite Rewrite pool for tokenIn
   function addPools(PoolData[] memory pools, bool rewrite) external;
 
+  /// @notice Add pools with largest TVL
+  /// @param pools Largest pools with DeX adapter ID string
+  /// @param rewrite Rewrite pool for tokenIn
   function addPools(AddPoolData[] memory pools, bool rewrite) external;
 
-  /// @dev Add largest pools with the most popular tokens on the current network
+  /// @notice Add largest pools with the most popular tokens on the current network
   /// @param pools_ PoolData array with pool, tokens and DeX adapter address
   /// @param rewrite Change exist pool records
   function addBlueChipsPools(PoolData[] memory pools_, bool rewrite) external;
 
-  /// @dev Add largest pools with the most popular tokens on the current network
+  /// @notice Add largest pools with the most popular tokens on the current network
   /// @param pools_ AddPoolData array with pool, tokens and DeX adapter string ID
   /// @param rewrite Change exist pool records
   function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external;
 
+  /// @notice Set swap threshold for token
+  /// @dev Prevents dust swap.
+  /// @param token Swap input token
+  /// @param threshold_ Minimum amount of token for executing swap
   function setThreshold(address token, uint threshold_) external;
 
+  /// @notice Swap threshold for token
+  /// @param token Swap input token
+  /// @return threshold Minimum amount of token for executing swap
   function threshold(address token) external view returns (uint threshold);
 
+  /// @notice Price of given tokenIn against tokenOut
+  /// @param tokenIn Swap input token
+  /// @param tokenOut Swap output token
+  /// @param amount Amount of tokenIn. If provide zero then amount is 1.0.
+  /// @return Amount of tokenOut with decimals of tokenOut
   function getPrice(address tokenIn, address tokenOut, uint amount) external view returns (uint);
 
+  /// @notice Return price the first poolData.tokenIn against the last poolData.tokenOut in decimals of tokenOut.
+  /// @param route Array of pool address, swapper address tokenIn, tokenOut
+  /// @param amount Amount of tokenIn. If provide zero then amount is 1.0.
   function getPriceForRoute(PoolData[] memory route, uint amount) external view returns (uint);
 
+  /// @notice Check possibility of swap tokenIn for tokenOut
+  /// @param tokenIn Swap input token
+  /// @param tokenOut Swap output token
+  /// @return Swap route exists
   function isRouteExist(address tokenIn, address tokenOut) external view returns (bool);
 
+  /// @notice Build route for swap. No reverts inside.
+  /// @param tokenIn Swap input token
+  /// @param tokenOut Swap output token
+  /// @return route Array of pools for swap tokenIn to tokenOut. Zero length indicate an error.
+  /// @return errorMessage Possible reason why the route was not found. Empty for success routes.
   function buildRoute(
     address tokenIn,
     address tokenOut
   ) external view returns (PoolData[] memory route, string memory errorMessage);
 
+  /// @notice Sell tokenIn for tokenOut
+  /// @dev Assume approve on this contract exist
+  /// @param tokenIn Swap input token
+  /// @param tokenOut Swap output token
+  /// @param amount Amount of tokenIn for swap.
+  /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
   function swap(
     address tokenIn,
     address tokenOut,
@@ -66,6 +108,11 @@ interface ISwapper {
     uint priceImpactTolerance
   ) external;
 
+  /// @notice Swap by predefined route
+  /// @param route Array of pool address, swapper address tokenIn, tokenOut.
+  /// TokenIn from first item will be swaped to tokenOut of last .
+  /// @param amount Amount of first item tokenIn.
+  /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
   function swapWithRoute(
     PoolData[] memory route,
     uint amount,

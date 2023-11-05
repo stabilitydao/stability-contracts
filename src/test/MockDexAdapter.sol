@@ -75,6 +75,7 @@ contract MockDexAdapter is IDexAdapter {
         return 2e18;
     }
 
+    /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
         return _DEX_ADAPTER_ID;
     }

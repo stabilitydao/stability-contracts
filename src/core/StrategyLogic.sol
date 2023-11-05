@@ -3,9 +3,9 @@ pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "./base/Controllable.sol";
+import "./libs/StrategyLogicLib.sol";
 import "../interfaces/IStrategyLogic.sol";
 import "../interfaces/IFactory.sol";
-import "./libs/StrategyLogicLib.sol";
 import "../interfaces/IStrategy.sol";
 
 /// @notice The developed strategy logic is tokenized into StrategyLogic NFT.

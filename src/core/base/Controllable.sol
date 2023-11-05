@@ -60,13 +60,12 @@ abstract contract Controllable is Initializable, IControllable {
 
     // ************* SETTERS/GETTERS *******************
 
-    /// @notice Return platform address saved in the contract slot
+    /// @inheritdoc IControllable
     function platform() public view override returns (address) {
         return _PLATFORM_SLOT.getAddress();
     }
 
-    /// @notice Return creation block number
-    /// @return Creation block number
+    /// @inheritdoc IControllable
     function createdBlock() external override view returns (uint) {
         return _CREATED_BLOCK_SLOT.getUint();
     }

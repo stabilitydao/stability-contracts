@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-/// @notice The main contract and entry point to the platform.
-///         It stores the addresses of infrastructure contracts, list of operators, settings
-///         and allows to upgrade platform core contracts.
+/// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
 interface IPlatform {
     //region ----- Events -----
@@ -78,7 +76,7 @@ interface IPlatform {
     function multisig() external view returns (address);
 
     /// @notice Platform factory assembling vaults. Stores settings, strategy logic, farms.
-    ///         Provides the opportunity to upgrade vaults and strategies.
+    /// Provides the opportunity to upgrade vaults and strategies.
     function factory() external view returns (address);
 
     /// @notice Combining oracle and DeX spot prices
@@ -128,7 +126,7 @@ interface IPlatform {
     ///      Rhe fewer routes needed to swap to the target exchange asset, the better.
     function targetExchangeAsset() external view returns (address);
 
-
+    /// @notice Pending platform upgrade data
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory);
 
     /// @notice Get platform revenue fee settings
@@ -138,29 +136,68 @@ interface IPlatform {
     /// @return feeShareEcosystem Revenue fee share % of ecosystemFeeReceiver
     function getFees() external view returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
 
+    /// @notice Platform settings
     function getPlatformSettings() external view returns (PlatformSettings memory);
 
+    /// @notice DeX adapters of the platform
     function getDexAdapters() external view returns(string[] memory id, address[] memory proxy);
 
+    /// @notice Get DeX adapter data by hash
+    /// @param dexAdapterIdHash Keccak256 hash of adapter ID string
+    /// @return ID string and proxy address of DeX adapter
     function dexAdapter(bytes32 dexAdapterIdHash) external view returns(DexAdapter memory);
 
+    /// @notice Allowed buy-back tokens for rewarding vaults
     function allowedBBTokens() external view returns(address[] memory);
 
+    /// @notice Vaults building limit for buy-back token.
+    /// This limit decrements when a vault for BB-token is built.
+    /// @param token Allowed buy-back token
+    /// @return vaultsLimit Number of vaults that can be built for BB-token
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit);
 
+    /// @notice Vaults building limits for allowed buy-back tokens.
+    /// @return bbToken Allowed buy-back tokens
+    /// @return vaultsLimit Number of vaults that can be built for BB-tokens
     function allowedBBTokenVaults() external view returns (address[] memory bbToken, uint[] memory vaultsLimit);
 
+    /// @notice Non-zero vaults building limits for allowed buy-back tokens.
+    /// @return bbToken Allowed buy-back tokens
+    /// @return vaultsLimit Number of vaults that can be built for BB-tokens
     function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit);
 
+    /// @notice Check address for existance in operators list
+    /// @param operator Address
+    /// @return True if this address is Stability Operator
     function isOperator(address operator) external view returns (bool);
 
+    /// @notice Tokens that can be used for boost rewards of rewarding vaults
+    /// @return Addresses of tokens
     function allowedBoostRewardTokens() external view returns(address[] memory);
 
+    /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
+    /// @return Addresses of tokens
     function defaultBoostRewardTokens() external view returns(address[] memory);
 
+    /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
+    /// @param addressToRemove This address will be removed from default boost reward tokens
+    /// @return Addresses of tokens
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory);
 
     /// @notice Front-end platform viewer
+    /// @return platformAddresses Platform core addresses
+    ///        platformAddresses[0] factory
+    ///        platformAddresses[1] vaultManager
+    ///        platformAddresses[2] strategyLogic
+    ///        platformAddresses[3] buildingPermitToken
+    ///        platformAddresses[4] buildingPayPerVaultToken
+    /// @return vaultType Vault type ID strings
+    /// @return vaultExtra Vault color, background color and other extra data. Index of vault same as in previous array.
+    /// @return vaultBulldingPrice Price of creating new vault in buildingPayPerVaultToken. Index of vault same as in previous array.
+    /// @return strategyId Strategy logic ID strings
+    /// @return isFarmingStrategy True if strategy is farming strategy. Index of strategy same as in previous array.
+    /// @return strategyTokenURI StrategyLogic NFT tokenId metadata and on-chain image. Index of strategy same as in previous array.
+    /// @return strategyExtra Strategy color, background color and other extra data. Index of strategy same as in previous array.
     function getData() external view returns(
         address[] memory platformAddresses,
         string[] memory vaultType,
@@ -172,7 +209,21 @@ interface IPlatform {
         bytes32[] memory strategyExtra
     );
 
-    /// @notice Front-end balances and prices viewer
+    // todo add vaultSymbol, vaultName
+    /// @notice Front-end balances, prices and vault list viewer
+    /// @param yourAccount Address of account to query balances
+    /// @return token Tokens supported by the platform
+    /// @return tokenPrice USD price of token. Index of token same as in previous array.
+    /// @return tokenUserBalance User balance of token. Index of token same as in previous array.
+    /// @return vault Deplpyed vaults
+    /// @return vaultSharePrice Price 1.0 vault share. Index of vault same as in previous array.
+    /// @return vaultUserBalance User balance of vault. Index of vault same as in previous array.
+    /// @return nft Ecosystem NFTs
+    ///         nft[0] BuildingPermitToken
+    ///         nft[1] VaultManager
+    ///         nft[2] StrategyLogic
+    /// @return nftUserBalance User balance of NFT. Index of NFT same as in previous array.
+    /// @return buildingPayPerVaultTokenBalance User balance of vault creation paying token
     function getBalance(address yourAccount) external view returns (
         address[] memory token,
         uint[] memory tokenPrice,
@@ -189,42 +240,70 @@ interface IPlatform {
 
     //region ----- Write functions -----
 
+    /// @notice Add platform operator. 
+    /// Only governance and multisig can add operator.
+    /// @param operator Address of new operator
     function addOperator(address operator) external;
 
+    /// @notice Remove platform operator. 
+    /// Only governance and multisig can remove operator.
+    /// @param operator Address of operator to remove
     function removeOperator(address operator) external;
 
-    /// @dev Announce upgrade of proxies implementations by governance
-    // function announceProxyUpgrade(
-        // address[] memory proxies,
-        // address[] memory implementations
-    // ) external;
-
-    /// @dev Announce upgrade of platform proxies implementations
+    /// @notice Announce upgrade of platform proxies implementations
+    /// Only governance and multisig can announce platform upgrades.
+    /// @param newVersion New platform version. Version must be changed when upgrading.
+    /// @param proxies Addresses of core contract proxies
+    /// @param newImplementations New implementation for proxy. Index of proxy same as in previous array.
     function announcePlatformUpgrade(
         string memory newVersion,
         address[] memory proxies,
         address[] memory newImplementations
     ) external;
 
-    /// @dev Upgrade platform
+    /// @notice Upgrade platform
+    /// Only operator (multisig is operator too) can ececute pending platform upgrade
     function upgrade() external;
 
+    /// @notice Cancel pending platform upgrade
+    /// Only operator (multisig is operator too) can ececute pending platform upgrade
     function cancelUpgrade() external;
 
-    /// @dev Register DeX adapter
+    /// @notice Register DeX adapter in platform
+    /// @param id DeX adapter ID string from DexAdapterIdLib
+    /// @param proxy Address of DeX adapter proxy
     function addDexAdapter(string memory id, address proxy) external;
 
+    // todo Only governance and multisig can set allowed bb-token vaults building limit
+    /// @notice Set new vaults building limit for buy-back token
+    /// @param bbToken Address of allowed buy-back token
+    /// @param vaultsToBuild Number of vaults that can be built for BB-token
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external;
 
-    function useAllowedBBTokenVault(address bbToken) external;
-
+    // todo Only governance and multisig can add allowed boost reward token
+    /// @notice Add new allowed boost reward token
+    /// @param token Address of token
     function addAllowedBoostRewardToken(address token) external;
 
+    // todo Only governance and multisig can remove allowed boost reward token
+    /// @notice Remove allowed boost reward token
+    /// @param token Address of allowed boost reward token
     function removeAllowedBoostRewardToken(address token) external;
 
+    // todo Only governance and multisig can add default boost reward token
+    /// @notice Add default boost reward token
+    /// @param token Address of allowed boost reward token
     function addDefaultBoostRewardToken(address token) external;
 
+    // todo Only governance and multisig can remove default boost reward token
+    /// @notice Remove default boost reward token
+    /// @param token Address of allowed boost reward token
     function removeDefaultBoostRewardToken(address token) external;
+
+    /// @notice Decrease allowed BB-token vault building limit when vault is built
+    /// Only Factory can do it.
+    /// @param bbToken Address of allowed buy-back token
+    function useAllowedBBTokenVault(address bbToken) external;
 
     //endregion -- Write functions -----
 }

@@ -13,7 +13,9 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /// @dev Version of FarmingStrategyBase implementation
     string public constant VERSION_FARMING_STRATEGY_BASE = '0.1.0';
 
+    /// @inheritdoc IFarmingStrategy
     uint public farmId;
+    
     address[] internal _rewardAssets;
     uint[] internal _rewardsOnBalance;
 

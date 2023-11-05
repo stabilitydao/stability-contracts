@@ -43,14 +43,6 @@ contract CVault is VaultBase {
 
     //endregion -- Init -----
 
-    //region ----- Restricted actions -----
-
-    //endregion -- Restricted actions ----
-
-    //region ----- User actions -----
-
-    //endregion -- User actions ----
-
     //region ----- View functions -----
 
     function extra() external pure returns (bytes32) {
@@ -59,7 +51,4 @@ contract CVault is VaultBase {
 
     //endregion -- View functions -----
 
-    //region ----- Internal logic -----
-
-    //endregion -- Internal logic -----
 }

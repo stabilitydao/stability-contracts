@@ -67,6 +67,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         return QuickswapLib.initVariants(platform_, DEX_ADAPTER_ID(), STRATEGY_LOGIC_ID());
     }
 
+    /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
         return block.timestamp < _endTime;
     }

@@ -25,7 +25,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     //region ----- Storage -----
 
-    /// @dev Changeable ratio of revenue part for re-investing. Other part goes to rewarding by bbToken.
+    /// @inheritdoc IRVault
     uint public compoundRatio;
 
     /// @dev Total of bbToken + boost reward tokens
@@ -35,7 +35,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     ///      Token with index 0 always is bbToken.
     mapping(uint tokenIndex => address rewardToken) public rewardToken;
 
-    /// @dev Vesting period for distribution reward.
+    /// @inheritdoc IRVault
     mapping(uint tokenIndex => uint durationSeconds) public duration;
 
     /// @dev Timestamp value when current period of rewards will be ended
@@ -104,7 +104,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     //region ----- User actions -----
 
-    /// @notice Update and Claim all rewards
+    /// @inheritdoc IRVault
     function getAllRewards() external {
         _getAllRewards(msg.sender, msg.sender);
     }
@@ -135,10 +135,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         _payRewardTo(rt, msg.sender, msg.sender);
     }
 
-    /// @notice Update rewardRateForToken
-    ///         If period ended: reward / duration
-    ///         else add leftover to the reward amount and refresh the period
-    ///         (reward + ((periodFinishForToken - block.timestamp) * rewardRateForToken)) / duration
+    /// @inheritdoc IRVault
     function notifyTargetRewardAmount(uint i, uint amount) external {
         _updateRewards(address(0));
 
@@ -188,7 +185,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         return rewardToken[0];
     }
 
-    /// @notice Return reward token array
+    
     function rewardTokens() external view returns (address[] memory) {
         uint len = rewardTokensTotal;
         address[] memory rts = new address[](len);
