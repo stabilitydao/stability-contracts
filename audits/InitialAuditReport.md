@@ -9,8 +9,7 @@
 - [Severity Criteria](#severity-criteria)
 - [High Risk Findings](#high-risk-findings)
   - [H-01 Sends eth to arbitrary user](#h-01-sends-eth-to-arbitrary-user)
-  - [H-02 Name Reused](#h-02-name-reused)
-  - [H-03 Uninitialized State Variables](#h-03-uninitialized-state-variables)
+  - [H-02 Uninitialized State Variables](#h-02-uninitialized-state-variables)
 - [Medium Risk Findings](#medium-risk-findings)
   - [M-01 Performs a multiplication on the result of a division](#m-01-performs-a-multiplication-on-the-result-of-a-division)
   - [M-02 Uses a dangerous strict equality](#m-02-uses-a-dangerous-strict-equality)
@@ -36,13 +35,6 @@
   - [I-08 Variable names too similar](#i-08-variable-names-too-similar)
   - [I-09 Unused state variable](#i-09-unused-state-variable)
   - [I-10 State variables that could be declared constant](#i-10-state-variables-that-could-be-declared-constant)
-- [Gas Optimizations](#gas-optimizations)
-  - [G-01 ](#g-01-)
-  - [G-02 ](#g-02-)
-  - [G-03 ](#g-03-)
-  - [G-04 ](#g-04-)
-  - [G-05 ](#g-05-)
-  - [G-06 ](#g-06-)
 - [Notes & Additional Information](#notes-&-additional-information)
 - [Conclusions](#conclusions)
 - [Disclaimers](#disclaimers)
@@ -71,7 +63,10 @@ all vulnerabilities fixed - upon a decision of the Customer.
 
 # Scope
 
-This is an audit of commit ```e0cbc0a54452c208707914ece2d51c9def1026ce``` of the [stabilitydao/stability-platform-contracts](https://github.com/stabilitydao/stability-platform-contracts) repository.
+This is an audit of commit [e0cbc0a54452c208707914ece2d51c9def1026ce](https://github.com/stabilitydao/stability-platform-contracts/commit/e0cbc0a54452c208707914ece2d51c9def1026ce) of the [stabilitydao/stability-platform-contracts](https://github.com/stabilitydao/stability-platform-contracts) repository.
+
+The audit involved a thorough examination of the code to identify vulnerabilities, security weaknesses, and compliance with best practices.
+The primary goal is to uncover and mitigate potential risks, preventing security breaches, and ensuring that the smart contracts are resilient to various attack vectors. The audit focused on a wide range of security aspects, including but not limited to, reentrancy issues, access control, input validation, and proper use of cryptographic functions.
 
 The scope included the files inside the `/src` directory, excluding those inside the `/src/integrations` and `/src/test` directories.
 
@@ -159,10 +154,29 @@ In summary, the files in scope are:
 | Number |              Details                                       | Instances |
 | :----: | :--------------------------------------------------------- | :-------: |
 | [H-01] | Sends eth to arbitrary user                                |     1     |
-| [H-02] | Name Reused                                                |     1     |
-| [H-03] | Uninitialized State Variables                              |     3     |
+| [H-02] | Uninitialized State Variables                              |     3     |
 
 ## [H-01] Sends eth to arbitrary user
+
+HardWorker._checkGelatoBalance() sends eth to arbitrary user
+Dangerous calls:
+- `_treasury.depositFunds{value: _gelatoDepositAmount}(address(this),ETH,0);`
+
+#### Recommended Mitigation Steps:
+
+Ensure that an arbitrary user cannot withdraw unauthorized funds.
+
+## [H-02] Uninitialized State Variables
+
+In `src/core/HardWorker.sol:34` the state variable `HardWorker.maxHwPerCall` is never initialized. It is used in: `HardWorker.call(address[])`
+
+In `src/core/HardWorker.sol:35` the state variable `HardWorker.excludedVaults` is never initialized. It is used in: `HardWorker._checker(uint256)`
+
+In `src/core/Platform.sol:80` the state variable `address public ecosystemRevenueReceiver;` is never initialized. It is used in: `Platform._setFees(uint256,uint256,uint256,uint256)`
+
+#### Recommended Mitigation Steps:
+
+Initialize all the variables. If a variable is meant to be initialized to zero, explicitly set it to zero to improve code readability.
 
 # Medium Risk Findings
 
@@ -176,6 +190,73 @@ In summary, the files in scope are:
 | [M-04] | Can be used in cross function reentrancies                 |     8     |
 | [M-05] | Is a local variable never initialized                      |     18    |
 | [M-06] | Ignores return value                                       |     76    |
+
+## [M-01] Performs a multiplication on the result of a division
+
+In `src/adapters/KyberAdapter.sol:114` in the function `getPrice()` at line 134 `uint part = uint(sqrtPriceX96) * precision / UniswapV3MathLib.TWO_96;`
+
+In `src/adapters/KyberAdapter.sol:114` in the function `getPrice()` at line 138 `uint part = UniswapV3MathLib.TWO_96 * precision / uint(sqrtPriceX96);`
+
+In `src/adapters/KyberAdapter.sol:114` in the function `getPrice()` at line 144 `price * amount / (10 ** tokenInDecimals)`
+
+In `src/adapters/KyberAdapter.sol:56` in the function `getProportion0()` at line 67 `uint consumed1Priced = amount1Consumed * token1Price / token1Desired;`
+
+#### Recommended Mitigation Steps:
+
+Consider ordering multiplication before division.
+
+## [M-02] Uses a dangerous strict equality 
+
+In `src/strategies/QuickswapV3StaticFarmStrategy.sol:143`
+QuickSwapV3StaticFarmStrategy._depositAssets(uint256[],bool) uses a dangerous strict equality:
+- tokenId == 0
+
+#### Recommended Mitigation Steps:
+
+Don't use strict equality to determine if an account has enough Ether or tokens.
+
+## [M-03] Contract locking ether found
+
+In `src/core/proxy/Proxy.sol:9` Contract `Proxy` has payable functions:
+- `UpgradeableProxy.constructor()`
+- `UpgradeableProxy.fallback()`
+- `UpgradeableProxy.receive()`
+But does not have a function to withdraw the ether
+
+In `src/core/proxy/StrategyProxy.sol:11` Contract `StrategyProxy` has payable functions:
+- `UpgradeableProxy.constructor()`
+- `UpgradeableProxy.fallback()`
+- `UpgradeableProxy.receive()`
+But does not have a function to withdraw the ether
+
+In `src/core/proxy/VaultProxy.sol:11` Contract `VaultProxy` has payable functions:
+- `UpgradeableProxy.constructor()`
+- `UpgradeableProxy.fallback()`
+- `UpgradeableProxy.receive()`
+But does not have a function to withdraw the ether
+
+#### Recommended Mitigation Steps:
+
+Remove the payable attribute or add a withdraw function.
+
+## [M-04] Can be used in cross function reentrancies
+
+In `src/core/base/VaultBase.sol:185` Reentrancy in VaultBase.withdrawAssets(address[],uint256,uint256[]):
+External calls:
+- strategy.withdrawUnderlying(amountsOut[0],msg.sender)
+- amountsOut = strategy.withdrawAssets(assets_,value,msg.sender)
+- strategy.withdrawUnderlying(amountsOut[0],msg.sender)
+- amountsOut = strategy.transferAssets(amountShares,_totalSupply,msg.sender)
+State variables written after the call(s):
+- _burn(msg.sender,amountShares)
+- _withdrawRequests[from] = block.number
+- _withdrawRequests[to] = block.number
+VaultBase._withdrawRequests can be used in cross function reentrancies:
+- VaultBase._update(address,address,uint256)
+
+#### Recommended Mitigation Steps:
+
+Apply the check-effects-interactions pattern.
 
 # Low Risk Findings
 
@@ -207,11 +288,3 @@ In summary, the files in scope are:
 | [I-09] | Unused state variable                                |     10    |
 | [I-10] | State variables that could be declared constant      |     5     |
 
-# Gas Optimizations
-
-### Gas Optimizations List
-
-| Number | Optimization Details                                       | Instances  |
-| :----: | :--------------------------------------------------------- | :-------:  |
-| [G-01] |                                                            |     --     |
-| [G-02] |                                                            |     --     |
