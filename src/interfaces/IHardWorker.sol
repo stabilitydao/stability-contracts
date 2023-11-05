@@ -12,6 +12,10 @@ interface IHardWorker {
     event Delays(uint delayServer, uint delayGelato);
     event GelatoTask(bytes32 id);
     event GelatoDeposit(uint amount);
+    event MaxHwPerCall(uint maxHwPerCall_);
+
+    /// @notice Maximum vault HardWork calls per HardWorker execution
+    function maxHwPerCall() external view returns(uint);
 
     /// @notice Check dedicated server address allowance for execute vault HardWorks
     function dedicatedServerMsgSender(address sender) external view returns(bool allowed);

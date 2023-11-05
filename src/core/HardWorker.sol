@@ -50,6 +50,9 @@ contract HardWorker is Controllable, IHardWorker {
         delayGelato = 12 hours;
         emit Delays(11 hours, 12 hours);
 
+        maxHwPerCall = 5;
+        emit MaxHwPerCall(5);
+
         if (gelatoAutomate != address(0)) {
             // setup gelato
             gelatoMinBalance = gelatoMinBalance_;
@@ -96,6 +99,12 @@ contract HardWorker is Controllable, IHardWorker {
         delayServer = delayServer_;
         delayGelato = delayGelato_;
         emit Delays(delayServer_, delayGelato_);
+    }
+
+    function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
+        require (maxHwPerCall_ > 0, "HardWorker: wrong");
+        maxHwPerCall = maxHwPerCall_;
+        emit MaxHwPerCall(maxHwPerCall_);
     }
 
     /// @inheritdoc IHardWorker
