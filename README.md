@@ -16,11 +16,11 @@ Contributions can be made in the form of developing strategies, developing the c
 ### Reward
 
 * Developed strategy logic: 30% of Stability Platform fee from all vaults using the strategy (by StrategyLogic NFT)
-* Core development: $8+/hour salary by Stability DAO
+* Core development: $8+/hour salary paid by Stability DAO
 
 ### Guides
 
-* **[Stability Contributing Guide](./CONTRIBUTING.md)**
+* **[Contributing](./CONTRIBUTING.md)**
 * **[Strategy Developer's Guide](./src/strategies/README.md)**
 * **[Core Developer's Guide](./src/core/README.md)**
 
