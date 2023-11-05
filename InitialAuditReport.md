@@ -73,7 +73,7 @@ all vulnerabilities fixed - upon a decision of the Customer.
 
 This is an audit of commit ```e0cbc0a54452c208707914ece2d51c9def1026ce``` of the [stabilitydao/stability-platform-contracts](https://github.com/stabilitydao/stability-platform-contracts) repository.
 
-The scope included the files inside the `/src` directory, excluding those inside the `/src/integrations` directory.
+The scope included the files inside the `/src` directory, excluding those inside the `/src/integrations` and `/src/test` directories.
 
 In summary, the files in scope are:
 
@@ -141,14 +141,6 @@ In summary, the files in scope are:
 - /src/strategies/libs/StrategyLib.sol
 - /src/strategies/libs/UniswapV3MathLib.sol    
 - /src/strategies/QuickswapV3StaticFarmStrategy.sol
-- /src/test/interfaces/IMockERC20.sol
-- /src/test/MockAggregatorV3Interface.sol
-- /src/test/MockDexAdapter.sol
-- /src/test/MockERC20.sol
-- /src/test/MockERC721.sol
-- /src/test/MockStrategy.sol
-- /src/test/MockStrategyUpgrade.sol
-- /src/test/MockVaultUpgrade.sol
 
 # Severity Criteria
 
@@ -208,7 +200,7 @@ In summary, the files in scope are:
 | [I-02] | Has costly operations inside a loop                  |     1     |
 | [I-03] | Is never used and should be removed                  |     4     |
 | [I-04] | Necessitates a version too recent to be trusted      |     64    |
-| [I-05] | Allows old versions                                  |     --    |
+| [I-05] | Allows old versions                                  |     30    |
 | [I-06] | Low level call                                       |     2     |
 | [I-07] | Is not in mixedCase                                  |     52    |
 | [I-08] | Variable names too similar                           |     69    |
@@ -219,7 +211,7 @@ In summary, the files in scope are:
 
 ### Gas Optimizations List
 
-| Number | Optimization Details                                       | Instances |
-| :----: | :--------------------------------------------------------- | :-------: |
-| [G-01] |                                                            |     1     |
-| [G-02] |                                                            |     2     |
+| Number | Optimization Details                                       | Instances  |
+| :----: | :--------------------------------------------------------- | :-------:  |
+| [G-01] |                                                            |     --     |
+| [G-02] |                                                            |     --     |
