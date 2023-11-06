@@ -10,6 +10,7 @@ import "../interfaces/ISwapper.sol";
 
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract PriceReader is Controllable, IPriceReader {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -30,10 +31,12 @@ contract PriceReader is Controllable, IPriceReader {
     /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
         require(_adapters.add(adapter_), "PR: exist");
+        emit AdapterAdded(adapter_);
     }
 
     function removeAdapter(address adapter_) external onlyOperator {
         require(_adapters.remove(adapter_), "PR: not exist");
+        emit AdapterRemoved(adapter_);
     }
 
     /// @inheritdoc IPriceReader

@@ -18,6 +18,7 @@ import "../interfaces/IVault.sol";
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings and allows the governance to upgrade contracts.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -276,6 +277,7 @@ contract Platform is Controllable, IPlatform {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
         require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
         _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
+        emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {

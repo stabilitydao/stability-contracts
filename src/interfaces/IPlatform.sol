@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IPlatform {
     //region ----- Events -----
     event PlatformVersion(string version);
@@ -31,6 +32,7 @@ interface IPlatform {
     event RemoveAllowedBoostRewardToken(address token);
     event AddDefaultBoostRewardToken(address token);
     event RemoveDefaultBoostRewardToken(address token);
+    event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     //endregion -- Events -----
 
     //region ----- Data types -----
