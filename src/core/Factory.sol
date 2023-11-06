@@ -407,11 +407,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         string memory specificName,
         string memory vaultSymbol
     ) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset);
     }
 
     /// @inheritdoc IFactory
     function getExchangeAssetIndex(address[] memory assets) external view returns (uint) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getExchangeAssetIndex(platform(), assets);
     }
 
@@ -425,6 +427,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint[] memory initStrategyNums,
         int24[] memory initStrategyTicks
     ) public pure returns (bytes32) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getDeploymentKey(
             vaultType,
             strategyId,

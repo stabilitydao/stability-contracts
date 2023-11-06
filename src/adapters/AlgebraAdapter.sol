@@ -95,6 +95,7 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
+            //slither-disable-next-line unused-return
             IAlgebraPool(pool).swap(
                 recipient,
                 tokenIn == token0,

@@ -95,6 +95,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
+            //slither-disable-next-line unused-return
             IPool(pool).swap(
                 recipient,
                 int(amount),
