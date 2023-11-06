@@ -27,6 +27,7 @@ contract PriceReader is Controllable, IPriceReader {
         __Controllable_init(platform_);
     }
 
+    /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
         require(_adapters.add(adapter_), "PR: exist");
     }
@@ -35,7 +36,7 @@ contract PriceReader is Controllable, IPriceReader {
         require(_adapters.remove(adapter_), "PR: not exist");
     }
 
-    // @dev Price in USD with 18 decimals
+    /// @inheritdoc IPriceReader
     function getPrice(address asset) public view returns (uint price, bool trusted) {
         address[] memory __adapters = _adapters.values();
         uint len = __adapters.length;
@@ -76,6 +77,7 @@ contract PriceReader is Controllable, IPriceReader {
         return (0, false);
     }
 
+    /// @inheritdoc IPriceReader
     function getAssetsPrice(address[] memory assets_, uint[] memory amounts_) external view returns (uint total, uint[] memory assetAmountPrice, bool trusted) {
         uint len = assets_.length;
         bool notTrustedPrices;

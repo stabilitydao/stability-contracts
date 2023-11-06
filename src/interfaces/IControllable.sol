@@ -9,12 +9,14 @@ interface IControllable {
 
   event ContractInitialized(address platform, uint ts, uint block);
 
+  /// @notice Stability Platform main contract address
   function platform() external view returns (address);
 
   /// @notice Version of contract implementation
   /// @dev SemVer scheme MAJOR.MINOR.PATCH
   function VERSION() external view returns (string memory);
 
+  /// @notice Block number when contract was initialized
   function createdBlock() external view returns (uint);
 
 }

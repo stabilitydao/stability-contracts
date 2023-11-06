@@ -11,6 +11,8 @@ import "../core/libs/ConstantsLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/kyber/IPool.sol";
 
+/// @notice DeX adapter for working with KyberSwap Elastic AMMs.
+/// @author Alien Deployer (https://github.com/a17)
 contract KyberAdapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
@@ -19,10 +21,12 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     string internal constant _DEX_ADAPTER_ID = "KYBER";
 
+    /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
     }
 
+    /// @inheritdoc IDexAdapter
     function poolTokens(address pool) external view returns (address[] memory) {
         IPool _pool = IPool(pool);
         address[] memory tokens = new address[](2);
@@ -31,10 +35,12 @@ contract KyberAdapter is Controllable, IDexAdapter {
         return tokens;
     }
 
+    /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
         revert('unavailable');
     }
 
+    /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         (uint160 sqrtRatioX96,,,) = IPool(pool).getPoolState();
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, ticks[0], ticks[1], amounts[0], amounts[1]);
@@ -43,6 +49,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         liquidity = uint(liquidityOut);
     }
 
+    /// @inheritdoc IDexAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
@@ -53,6 +60,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
 
+    /// @inheritdoc IDexAdapter
     function getProportion0(address pool) external view returns (uint) {
         address token1 = IPool(pool).token1();
         (uint160 sqrtRatioX96, int24 tick,,) = IPool(pool).getPoolState();
@@ -68,6 +76,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
     }
 
+    /// @inheritdoc IDexAdapter
     function swap(
         address pool,
         address tokenIn,
@@ -111,6 +120,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         );
     }
 
+    /// @inheritdoc IDexAdapter
     function getPrice(
         address pool,
         address tokenIn,
@@ -157,6 +167,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);
     }
 
+    /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
         return _DEX_ADAPTER_ID;
     }

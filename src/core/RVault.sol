@@ -75,14 +75,6 @@ contract RVault is RVaultBase {
 
     //endregion -- Init -----
 
-    //region ----- Restricted actions -----
-
-    //endregion -- Restricted actions ----
-
-    //region ----- User actions -----
-
-    //endregion -- User actions ----
-
     //region ----- View functions -----
 
     /// @inheritdoc IVault
@@ -92,7 +84,4 @@ contract RVault is RVaultBase {
 
     //endregion -- View functions -----
 
-    //region ----- Internal logic -----
-
-    //endregion -- Internal logic -----
 }

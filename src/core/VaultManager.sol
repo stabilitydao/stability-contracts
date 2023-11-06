@@ -22,6 +22,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     /// @dev Version of VaultManager implementation
     string public constant VERSION = '1.0.0';
 
+    /// @inheritdoc IVaultManager
     mapping (uint tokenId => address vault) public tokenVault;
 
     mapping (uint tokenId => address account) internal _revenueReceiver;
@@ -36,18 +37,21 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         __ERC721_init("Stability Vault", "VAULT");
     }
 
+    /// @inheritdoc IVaultManager
     function changeVaultParams(uint tokenId, address[] memory addresses, uint[] memory nums) external {
         _requireOwner(tokenId);
         address vault = tokenVault[tokenId];
         IManagedVault(vault).changeParams(addresses, nums);
     }
 
+    /// @inheritdoc IVaultManager
     function mint(address to, address vault) external onlyFactory returns (uint tokenId) {
         tokenId = totalSupply();
         tokenVault[tokenId] = vault;
         _mint(to, tokenId);
     }
 
+    /// @inheritdoc IVaultManager
     function setRevenueReceiver(uint tokenId, address receiver) external {
         _requireOwner(tokenId);
         _revenueReceiver[tokenId] = receiver;
@@ -91,6 +95,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         return VaultManagerLib.tokenURI(vaultData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
     }
 
+    /// @inheritdoc IVaultManager
     function vaults() external view returns(
         address[] memory vaultAddress,
         string[] memory symbol,
@@ -116,6 +121,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
     }
 
+    /// @inheritdoc IVaultManager
     function vaultAddresses() external view returns(address[] memory vaultAddress) {
         uint len = totalSupply();
         vaultAddress = new address[](len);
@@ -124,6 +130,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
     }
 
+    /// @inheritdoc IVaultManager
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
         receiver = _revenueReceiver[tokenId];
         if (receiver == address(0)) {

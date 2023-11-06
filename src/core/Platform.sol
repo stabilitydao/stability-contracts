@@ -180,11 +180,13 @@ contract Platform is Controllable, IPlatform {
 
     //region ----- Restricted actions -----
 
+    /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
         require(_operators.add(operator), "Platform: EXIST");
         emit OperatorAdded(operator);
     }
 
+    /// @inheritdoc IPlatform
     function removeOperator(address operator) external onlyGovernanceOrMultisig {
         require(_operators.remove(operator), "Platform: NOT_EXIST");
         emit OperatorRemoved(operator);
@@ -239,6 +241,7 @@ contract Platform is Controllable, IPlatform {
         emit PlatformVersion(platformUpgrade.newVersion);
     }
 
+    /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
         require (platformUpgradeTimelock != 0, "Platform: no upgrade");
         emit CancelUpgrade(VERSION, _pendingPlatformUpgrade.newVersion);
@@ -252,6 +255,7 @@ contract Platform is Controllable, IPlatform {
         _setFees(fee, feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem);
     }
 
+    /// @inheritdoc IPlatform
     function addDexAdapter(string memory id, address proxy) external onlyOperator {
         bytes32 hash = keccak256(bytes(id));
         require (_dexAdapter[hash].proxy == address(0), "Platform: DeX adapter already exist");
@@ -261,11 +265,13 @@ contract Platform is Controllable, IPlatform {
         emit NewDexAdapter(id, proxy);
     }
 
+    /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
         _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
         // todo event
     }
 
+    /// @inheritdoc IPlatform
     function useAllowedBBTokenVault(address bbToken) external onlyFactory {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
         require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
@@ -277,21 +283,25 @@ contract Platform is Controllable, IPlatform {
         // todo event
     }
 
+    /// @inheritdoc IPlatform
     function addAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.add(token), "Platform: EXIST");
         // todo event
     }
 
+    /// @inheritdoc IPlatform
     function removeAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.remove(token), "Platform: EXIST");
         // todo event
     }
 
+    /// @inheritdoc IPlatform
     function addDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.add(token), "Platform: EXIST");
         // todo event
     }
 
+    /// @inheritdoc IPlatform
     function removeDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.remove(token), "Platform: EXIST");
         // todo event
@@ -301,10 +311,12 @@ contract Platform is Controllable, IPlatform {
 
     //region ----- View functions -----
 
+    /// @inheritdoc IPlatform
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory) {
         return _pendingPlatformUpgrade;
     }
 
+    /// @inheritdoc IPlatform
     function isOperator(address operator) external view returns (bool) {
         return _operators.contains(operator);
     }
@@ -313,10 +325,12 @@ contract Platform is Controllable, IPlatform {
         return _operators.values();
     }
 
+    /// @inheritdoc IPlatform
     function getFees() public view returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) {
         return (_fee, _feeShareVaultManager, _feeShareStrategyLogic, _feeShareEcosystem);
     }
 
+    /// @inheritdoc IPlatform
     function getPlatformSettings() external view returns (PlatformSettings memory) {
         PlatformSettings memory platformSettings;
         (platformSettings.fee,platformSettings.feeShareVaultManager,platformSettings.feeShareStrategyLogic,platformSettings.feeShareEcosystem) = getFees();
@@ -327,6 +341,7 @@ contract Platform is Controllable, IPlatform {
         return platformSettings;
     }
 
+    /// @inheritdoc IPlatform
     function getDexAdapters() external view returns(string[] memory ids, address[] memory proxies) {
         uint len = _dexAdapterIdHash.length;
         ids = new string[](len);
@@ -339,18 +354,22 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
+    /// @inheritdoc IPlatform
     function dexAdapter(bytes32 dexAdapterIdHash) external view returns(DexAdapter memory) {
         return _dexAdapter[dexAdapterIdHash];
     }
 
+    /// @inheritdoc IPlatform
     function allowedBBTokens() external view returns(address[] memory) {
         return _allowedBBTokensVaults.keys();
     }
 
+    /// @inheritdoc IPlatform
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
         (, vaultsLimit) = _allowedBBTokensVaults.tryGet(token);
     }
 
+    /// @inheritdoc IPlatform
     function allowedBBTokenVaults() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
         bbToken = _allowedBBTokensVaults.keys();
         uint len = bbToken.length;
@@ -360,6 +379,7 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
+    /// @inheritdoc IPlatform
     function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
         address[] memory allBbTokens = _allowedBBTokensVaults.keys();
         uint len = allBbTokens.length;
@@ -383,18 +403,22 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
+    /// @inheritdoc IPlatform
     function allowedBoostRewardTokens() external view returns(address[] memory) {
         return _allowedBoostRewardTokens.values();
     }
 
+    /// @inheritdoc IPlatform
     function defaultBoostRewardTokens() external view returns(address[] memory) {
         return _defaultBoostRewardTokens.values();
     }
 
+    /// @inheritdoc IPlatform
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory) {
         return CommonLib.filterAddresses(_defaultBoostRewardTokens.values(), addressToRemove);
     }
 
+    /// @inheritdoc IPlatform
     function getData() external view returns(
         address[] memory platformAddresses,
         string[] memory vaultType,

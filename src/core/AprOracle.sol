@@ -20,6 +20,7 @@ contract AprOracle is Controllable, IAprOracle {
         __Controllable_init(platform_);
     }
 
+    /// @inheritdoc IAprOracle
     function setAprs(address[] memory assets, uint[] memory aprs) external onlyOperator {
         uint len = assets.length;
         require (len == aprs.length, "AprOracle: mismatch");
@@ -28,6 +29,7 @@ contract AprOracle is Controllable, IAprOracle {
         }
     }
 
+    /// @inheritdoc IAprOracle
     function getAprs(address[] memory assets) external view returns (uint[] memory aprs) {
         uint len = assets.length;
         aprs = new uint[](len);

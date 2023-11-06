@@ -77,14 +77,36 @@ interface IFactory {
     
     //region ----- View functions -----
 
+    /// @notice All vaults deployed by the factory
+    /// @return Vault proxy addresses
     function deployedVaults() external view returns (address[] memory);
 
+    /// @notice Total vaults deployed
+    function deployedVaultsLength() external view returns (uint);
+
+    /// @notice Get vault by VaultManager tokenId
+    /// @param id Vault array index. Same as tokenId of VaultManager NFT
+    /// @return Address of VaultProxy
     function deployedVault(uint id) external view returns (address);
 
+    /// @notice All farms known by the factory in current network
     function farms() external view returns (Farm[] memory);
 
+    /// @notice Total farms known by the factory in current network
+    function farmsLength() external view returns (uint);
+
+    /// @notice Farm data by farm index
+    /// @param id Index of farm
     function farm(uint id) external view returns (Farm memory);
 
+    /// @notice Strategy logic settings
+    /// @param idHash keccak256 hash of strategy logic string ID
+    /// @return id Developed strategy logic string ID
+    /// @return implementation Address of strategy logic implementation
+    /// @return deployAllowed It is allowed to create new vaults under the control of the strategy
+    /// @return upgradeAllowed It is allowed to upgrade strategy used by vaults
+    /// @return farming It is farming strategy (earns farming/gauge rewards)
+    /// @return tokenId Token ID of StrategyLogic NFT
     function strategyLogicConfig(bytes32 idHash) external view returns (
         string memory id,
         address implementation,
@@ -94,8 +116,12 @@ interface IFactory {
         uint tokenId
     );
 
+    /// @notice All known strategies
+    /// @return Array of keccak256 hashes of strategy logic string ID
     function strategyLogicIdHashes() external view returns (bytes32[] memory);
 
+    // todo remove, use new function without calculating vault symbol on the fly for not initialized vaults
+    // factory required that special functionally only internally, not for interface
     function getStrategyData(string memory vaultType, address strategyAddress, address bbAsset) external view returns (
         string memory strategyId,
         address[] memory assets,
@@ -107,8 +133,51 @@ interface IFactory {
     /// @dev Get best asset of assets to be strategy exchange asset
     function getExchangeAssetIndex(address[] memory assets) external view returns (uint);
 
+    /// @notice Deployment key of created vault
+    /// @param deploymentKey_ Hash of concatenated unique vault and strategy initialization parameters
+    /// @return Address of deployed vault
     function deploymentKey(bytes32 deploymentKey_) external view returns (address);
 
+    /// @notice Calculating deployment key based on unique vault and strategy initialization parameters
+    /// @param vaultType Vault type string
+    /// @param strategyId Strategy logic Id string
+    /// @param vaultInitAddresses Vault initizlization addresses for deployVaultAndStrategy method
+    /// @param vaultInitNums Vault initizlization uint numbers for deployVaultAndStrategy method
+    /// @param strategyInitAddresses Strategy initizlization addresses for deployVaultAndStrategy method
+    /// @param strategyInitNums Strategy initizlization uint numbers for deployVaultAndStrategy method
+    /// @param strategyInitTicks Strategy initizlization int24 ticks for deployVaultAndStrategy method
+    function getDeploymentKey(
+        string memory vaultType,
+        string memory strategyId,
+        address[] memory vaultInitAddresses,
+        uint[] memory vaultInitNums,
+        address[] memory strategyInitAddresses,
+        uint[] memory strategyInitNums,
+        int24[] memory strategyInitTicks
+    ) external returns (bytes32);
+
+    /// @notice Available variants of new vault for creating.
+    /// The structure of the function's output values is complex,
+    /// but after parsing them, the front end has all the data to generate a list of vaults to create.
+    /// @return desc Descriptions of the strategy for making money
+    /// @return vaultType Vault type strings. Output values are matched by index with previous array.
+    /// @return strategyId Strategy logic ID strings. Output values are matched by index with previous array.
+    /// @return initIndexes Map of start and end indexes in next 5 arrays. Output values are matched by index with previous array.
+    ///                 [0] Start index in vaultInitAddresses
+    ///                 [1] End index in vaultInitAddresses
+    ///                 [2] Start index in vaultInitNums
+    ///                 [3] End index in vaultInitNums
+    ///                 [4] Start index in strategyInitAddresses
+    ///                 [5] End index in strategyInitAddresses
+    ///                 [6] Start index in strategyInitNums
+    ///                 [7] End index in strategyInitNums
+    ///                 [8] Start index in strategyInitTicks
+    ///                 [9] End index in strategyInitTicks
+    /// @return vaultInitAddresses Vault initizlization addresses for deployVaultAndStrategy method for all building variants.
+    /// @return vaultInitNums Vault initizlization uint numbers for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitAddresses Strategy initizlization addresses for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitNums Strategy initizlization uint numbers for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitTicks Strategy initizlization int24 ticks for deployVaultAndStrategy method for all building variants.
     function whatToBuild() external view returns (
         string[] memory desc,
         string[] memory vaultType,
@@ -121,8 +190,20 @@ interface IFactory {
         int24[] memory strategyInitTicks
     );
 
+    /// @notice Governance and multisig can set a vault status other than Active - the default status.
+    /// HardWorker only works with active vaults.
+    /// @return status Constant from VaultStatusLib
     function vaultStatus(address vault) external view returns (uint status);
 
+    /// @notice Data on all factory strategies.
+    /// The output values are matched by index in the arrays.
+    /// @return id Strategy logic ID strings
+    /// @return deployAllowed New vaults can be deployed
+    /// @return upgradeAllowed Strategy can be upgraded
+    /// @return farming It is farming strategy (earns farming/gauge rewards)
+    /// @return tokenId Token ID of StrategyLogic NFT
+    /// @return tokenURI StrategyLogic NFT tokenId metadata and on-chain image
+    /// @return extra Strategy color, background color and other extra data
     function strategies() external view returns (
         string[] memory id,
         bool[] memory deployAllowed,
@@ -139,7 +220,7 @@ interface IFactory {
     /// @return implementation Vault implementation address
     /// @return deployAllowed New vaults can be deployed
     /// @return upgradeAllowed Vaults can be upgraded
-    /// @return buildingPrice  Price of building new vault
+    /// @return buildingPrice Price of building new vault
     function vaultConfig(bytes32 typeHash) external view returns (
         string memory vaultType,
         address implementation,
@@ -148,6 +229,13 @@ interface IFactory {
         uint buildingPrice
     );
     
+    /// @notice Data on all factory vault types
+    /// The output values are matched by index in the arrays.
+    /// @return vaultType Vault type string
+    /// @return deployAllowed New vaults can be deployed
+    /// @return upgradeAllowed Vaults can be upgraded
+    /// @return buildingPrice  Price of building new vault
+    /// @return extra Vault type color, background color and other extra data
     function vaultTypes() external view returns (
         string[] memory vaultType,
         bool[] memory deployAllowed,
@@ -160,6 +248,17 @@ interface IFactory {
 
     //region ----- Write functions -----
 
+    /// @notice Main method of the Factory - new vault creation by user.
+    /// @param vaultType Vault type ID string
+    /// @param strategyId Strategy logic ID string
+    /// Different types of vaults and strategies have different lengths of input arrays.
+    /// @param vaultInitAddresses Addresses for vault initialization
+    /// @param vaultInitNums Numbers for vault initialization
+    /// @param strategyInitAddresses Addresses for strategy initialization
+    /// @param strategyInitNums Numbers for strategy initialization
+    /// @param strategyInitTicks Ticks for strategy initialization
+    /// @return vault Deployed VaultProxy address
+    /// @return strategy Deployed StrategyProxy address
     function deployVaultAndStrategy(
         string memory vaultType,
         string memory strategyId,
@@ -170,15 +269,36 @@ interface IFactory {
         int24[] memory strategyInitTicks
     ) external returns (address vault, address strategy);
 
+    /// @notice Upgrade vault proxy. Can be called by any address.
+    /// @param vault Address of vault proxy for upgrade
     function upgradeVaultProxy(address vault) external;
 
+    /// @notice Upgrade strategy proxy. Can be called by any address.
+    /// @param strategy Address of strategy proxy for upgrade
     function upgradeStrategyProxy(address strategy) external;
 
+    /// @notice Add farm to factory
+    /// @param farm_ Settings and data required to work with the farm.
     function addFarm(Farm memory farm_) external;
 
+    /// @notice Update farm
+    /// @param id Farm index
+    /// @param farm_ Settings and data required to work with the farm.
+    function updateFarm(uint id, Farm memory farm_) external;
+
+    /// @notice Initial addition or change of vault type settings.
+    /// @param vaultConfig_ Vault type settings
     function setVaultConfig(VaultConfig memory vaultConfig_) external;
 
+    /// @notice Initial addition or change of strategy logic settings.
+    /// @param config Strategy logic settings
+    /// @param developer Strategy developer is receiver of minted StrategyLogic NFT on initial addition
     function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
+
+    /// @notice Governance and multisig can set a vault status other than Active - the default status.
+    /// @param vault Address of vault proxy
+    /// @param status New vault status. Constant from VaultStatusLib
+    function setVaultStatus(address vault, uint status) external;
 
     //endregion -- Write functions -----
 }

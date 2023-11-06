@@ -8,7 +8,13 @@ pragma solidity ^0.8.21;
 /// @author Alien Deployer (https://github.com/a17)
 interface IAprOracle {
 
+    /// @notice Get stored APR of assets with APR
+    /// @param assets Underlying assets. Can be liquidity managing vault (Gamma's HyperVisor etc), LST (stETH etc) or other
+    /// @return aprs APRs stored in oracle with 18 decimals precision
     function getAprs(address[] memory assets) external view returns (uint[] memory aprs);
 
+    /// @notice Set APRs for asset with APR
+    /// @param assets Underlying assets. Can be liquidity managing vault (Gamma's HyperVisor etc), LST (stETH etc) or other
+    /// @param aprs Underlying APRs with 18 decimals precision
     function setAprs(address[] memory assets, uint[] memory aprs) external;
 }

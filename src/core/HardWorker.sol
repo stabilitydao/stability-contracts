@@ -23,8 +23,12 @@ contract HardWorker is Controllable, IHardWorker {
     address internal constant GELATO_OPS_PROXY_FACTORY = 0xC815dB16D4be6ddf2685C201937905aBf338F5D7;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// @inheritdoc IHardWorker
     mapping(address caller => bool allowed) public dedicatedServerMsgSender;
+    
+    /// @inheritdoc IHardWorker
     address public dedicatedGelatoMsgSender;
+    
     ITaskTreasuryUpgradable public gelatoTaskTreasury;
     bytes32 public gelatoTaskId;
     uint public gelatoMinBalance;
@@ -79,12 +83,14 @@ contract HardWorker is Controllable, IHardWorker {
 
     receive() external payable {}
 
+    /// @inheritdoc IHardWorker
     function setDedicatedServerMsgSender(address sender, bool allowed) external onlyGovernanceOrMultisig {
         require(dedicatedServerMsgSender[sender] != allowed, "HardWorker: nothing to change");
         dedicatedServerMsgSender[sender] = allowed;
         emit DedicatedServerMsgSender(sender, allowed);
     }
 
+    /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
         require (delayServer != delayServer_ || delayGelato != delayGelato_, "HardWorker: nothing to change");
         delayServer = delayServer_;
@@ -92,6 +98,7 @@ contract HardWorker is Controllable, IHardWorker {
         emit Delays(delayServer_, delayGelato_);
     }
 
+    /// @inheritdoc IHardWorker
     function call(address[] memory vaults) external {
         uint startGas = gasleft();
 
@@ -132,14 +139,17 @@ contract HardWorker is Controllable, IHardWorker {
         emit Call(counter, gasUsed, gasCost, isServer);
     }
 
+    /// @inheritdoc IHardWorker
     function checkerServer() external view returns (bool canExec, bytes memory execPayload) {
         return _checker(delayServer);
     }
 
+    /// @inheritdoc IHardWorker
     function checkerGelato() external view returns (bool canExec, bytes memory execPayload) {
         return _checker(delayGelato);
     }
 
+    /// @inheritdoc IHardWorker
     function gelatoBalance() external view returns(uint) {
         return gelatoTaskTreasury.userTokenBalance(address(this), ETH);
     }

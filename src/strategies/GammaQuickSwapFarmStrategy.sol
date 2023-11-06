@@ -104,6 +104,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         }
     }
 
+    /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
         IMasterChef.PoolInfo memory poolInfo = masterChef.poolInfo(pid);
         return poolInfo.allocPoint > 0;

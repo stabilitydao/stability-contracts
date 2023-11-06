@@ -230,6 +230,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     //region ----- View functions -----
 
+    /// @inheritdoc IVault
     function VAULT_TYPE() external view returns (string memory) {
         return _type;
     }
@@ -259,6 +260,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, strategy.total(), amountsConsumed);
     }
 
+    /// @inheritdoc IVault
     function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs) {
         strategyApr = strategy.lastApr();
         totalApr = strategyApr;
