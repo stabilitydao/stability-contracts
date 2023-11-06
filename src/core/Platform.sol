@@ -268,7 +268,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
         _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
-        // todo event
+        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild);
     }
 
     /// @inheritdoc IPlatform
@@ -280,31 +280,31 @@ contract Platform is Controllable, IPlatform {
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
         _allowedBBTokensVaults.remove(bbToken);
-        // todo event
+        emit RemoveAllowedBBToken(bbToken);
     }
 
     /// @inheritdoc IPlatform
     function addAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.add(token), "Platform: EXIST");
-        // todo event
+        emit AddAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.remove(token), "Platform: EXIST");
-        // todo event
+        emit RemoveAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function addDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.add(token), "Platform: EXIST");
-        // todo event
+        emit AddDefaultBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.remove(token), "Platform: EXIST");
-        // todo event
+        emit RemoveDefaultBoostRewardToken(token);
     }
 
     //endregion -- Restricted actions ----

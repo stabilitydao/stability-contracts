@@ -25,6 +25,12 @@ interface IPlatform {
     event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewDexAdapter(string id, address proxy);
+    event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild);
+    event RemoveAllowedBBToken(address bbToken);
+    event AddAllowedBoostRewardToken(address token);
+    event RemoveAllowedBoostRewardToken(address token);
+    event AddDefaultBoostRewardToken(address token);
+    event RemoveDefaultBoostRewardToken(address token);
     //endregion -- Events -----
 
     //region ----- Data types -----
