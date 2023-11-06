@@ -57,9 +57,9 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        IERC20(_assets[0]).approve(farm.addresses[2], type(uint).max);
-        IERC20(_assets[1]).approve(farm.addresses[2], type(uint).max);
-        IERC20(farm.addresses[2]).approve(farm.addresses[1], type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(farm.addresses[2]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     function initVariants(address platform_) public view returns (

@@ -59,8 +59,8 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             underlying : address(0)
         }));
         __FarmingStrategyBase_init(addresses[0], nums[0]);
-        IERC20(_assets[0]).approve(farm.addresses[0], type(uint).max);
-        IERC20(_assets[1]).approve(farm.addresses[0], type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {

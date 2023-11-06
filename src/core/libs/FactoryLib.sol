@@ -568,7 +568,7 @@ library FactoryLib {
                 totalInitialBoostUsdPerDay += initialNotifyAmount * 1e18 / 10**IERC20Metadata(token).decimals() * price / 1e18 * 86400 / durationSeconds;
                 if (initialNotifyAmount > 0) {
                     IERC20(token).safeTransferFrom(msg.sender, address(this), initialNotifyAmount);
-                    IERC20(token).approve(vault, initialNotifyAmount);
+                    IERC20(token).forceApprove(vault, initialNotifyAmount);
                     IRVault(vault).notifyTargetRewardAmount(1 + i, initialNotifyAmount);
                 }
             }
