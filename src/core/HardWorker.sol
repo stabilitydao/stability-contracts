@@ -115,6 +115,8 @@ contract HardWorker is Controllable, IHardWorker {
         require (len > 0, "HardWorker: wrong input");
         IFactory factory = IFactory(IPlatform(platform()).factory());
         for (uint i; i < len; ++i) {
+            // calls-loop here is not dangerous
+            //slither-disable-next-line calls-loop
             require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
             if (excludedVaults[vaults_[i]] == status[i]) {
                 revert('HardWorker: vault already has this exclude status');
