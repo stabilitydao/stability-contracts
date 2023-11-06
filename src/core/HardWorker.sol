@@ -122,14 +122,14 @@ contract HardWorker is Controllable, IHardWorker {
             uint bal = _treasury.userTokenBalance(address(this), ETH);
             if (bal < gelatoMinBalance) {
                 uint contractBal = address(this).balance;
-                uint _gelatoDepositAmount = gelatoDepositAmount;
-                require(contractBal >= _gelatoDepositAmount, "HardWorker: not enough ETH");
-                _treasury.depositFunds{value: _gelatoDepositAmount}(
+                uint depositAmount = gelatoDepositAmount;
+                require(contractBal >= depositAmount, "HardWorker: not enough ETH");
+                _treasury.depositFunds{value: depositAmount}(
                     address(this),
                     ETH,
                     0
                 );
-                emit GelatoDeposit(_gelatoDepositAmount);
+                emit GelatoDeposit(depositAmount);
             }
         }
 
