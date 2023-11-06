@@ -112,7 +112,7 @@ contract HardWorker is Controllable, IHardWorker {
     function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
         uint len = vaults_.length;
         require (len == status.length, "HardWorker: wrong input");
-        require (len > 0, "HardWorker: wrong input");
+        require (len > 0, "HardWorker: zero length");
         IFactory factory = IFactory(IPlatform(platform()).factory());
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous

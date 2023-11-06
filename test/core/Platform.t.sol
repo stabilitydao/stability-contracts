@@ -311,4 +311,11 @@ contract PlatformTest is Test {
         assertEq(strategyTokenURI.length, 0); 
         assertEq(strategyExtra.length, 0);  
     }
+
+    function testEcosystemRevenueReceiver() public {
+        platform.initialize(address(this), '23.11.0-dev');
+        vm.expectRevert("Platform: ZERO_ADDRESS");
+        platform.setEcosystemRevenueReceiver(address(0));
+        platform.setEcosystemRevenueReceiver(address(1));
+    }
 }
