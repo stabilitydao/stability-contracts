@@ -172,6 +172,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
         IHypervisor hypervisor = IHypervisor(_underlying);
+        //slither-disable-next-line unused-return
         (,int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));

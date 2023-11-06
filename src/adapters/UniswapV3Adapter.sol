@@ -48,6 +48,7 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
     }
 
     function getLiquidityForAmounts(address pool, uint amount0Desired, uint amount1Desired, int24 lowerTick, int24 upperTick) public view returns (uint liquidity, uint amount0Consumed, uint amount1Consumed) {
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, amount0Desired, amount1Desired);
         (amount0Consumed, amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
@@ -61,6 +62,7 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
     }
 
     function getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) public view returns (uint amount0, uint amount1) {
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
         (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
@@ -68,6 +70,7 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
     /// @inheritdoc IDexAdapter
     function getProportion0(address pool) external view returns (uint) {
         address token1 = IUniswapV3Pool(pool).token1();
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,,,,) = IUniswapV3Pool(pool).slot0();
         int24 tickSpacing = IUniswapV3Pool(pool).tickSpacing();
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
@@ -137,6 +140,8 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
 
         uint256 tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        
+        //slither-disable-next-line unused-return
         (uint160 sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
 
         uint divider = tokenOutDecimals < 18 ? UniswapV3MathLib._max(10 ** tokenOutDecimals / 10 ** tokenInDecimals, 1) : 1;
