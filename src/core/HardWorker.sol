@@ -57,6 +57,7 @@ contract HardWorker is Controllable, IHardWorker {
             // setup gelato
             gelatoMinBalance = gelatoMinBalance_;
             gelatoDepositAmount = gelatoDepositAmount_;
+            //slither-disable-next-line unused-return
             (address _dedicatedGelatoMsgSender, ) = IOpsProxyFactory(GELATO_OPS_PROXY_FACTORY).getProxyOf(address(this));
             dedicatedGelatoMsgSender = _dedicatedGelatoMsgSender;
             IAutomate automate = IAutomate(gelatoAutomate);
@@ -173,6 +174,7 @@ contract HardWorker is Controllable, IHardWorker {
         uint gasCost = gasUsed * tx.gasprice;
 
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
+            //slither-disable-next-line unused-return
             (bool success, ) = msg.sender.call{value: gasCost}("");
             require(success, "HardWorker: native transfer failed");
         }

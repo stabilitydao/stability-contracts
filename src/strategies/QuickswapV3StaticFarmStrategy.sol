@@ -162,6 +162,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         // tokenId == 0 mean that there is no NFT managed by the strategy now
         //slither-disable-next-line incorrect-equality
         if (tokenId == 0) {
+            //slither-disable-next-line unused-return
             (tokenId, liquidity, , ) = __nft.mint(INonfungiblePositionManager.MintParams(
                 _assets[0],
                 _assets[1],
@@ -177,6 +178,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             _tokenId = tokenId;
             __nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
         } else {
+            //slither-disable-next-line unused-return
             (liquidity,,) = __nft.increaseLiquidity(INonfungiblePositionManager.IncreaseLiquidityParams(
                 tokenId,
                 amounts[0],

@@ -465,6 +465,7 @@ contract Platform is Controllable, IPlatform {
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
             tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
         }
@@ -474,6 +475,7 @@ contract Platform is Controllable, IPlatform {
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (vaultSharePrice[i],) = IVault(vault[i]).price();
             vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);
         }

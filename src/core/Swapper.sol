@@ -201,6 +201,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function getPrice(address tokenIn, address tokenOut, uint amount) external view returns (uint) {
+        //slither-disable-next-line unused-return
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         if (route.length == 0) {
             return 0;
@@ -237,6 +238,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function isRouteExist(address tokenIn, address tokenOut) external view returns (bool) {
+        //slither-disable-next-line unused-return
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         return route.length != 0;
     }

@@ -42,6 +42,7 @@ contract PriceReader is Controllable, IPriceReader {
         uint len = __adapters.length;
 
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
             if (_price > 0) {
                 return (_price, true);
@@ -58,6 +59,7 @@ contract PriceReader is Controllable, IPriceReader {
                 for (uint i; i < oracleAssetsLen; ++i) {
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
+                        //slither-disable-next-line unused-return
                         (uint _price,) = oracleAdapter.getPrice(oracleAssets[i]);
                         uint assetOutDecimals = IERC20Metadata(oracleAssets[i]).decimals();
                         uint priceInTermOfOracleAsset;

@@ -106,7 +106,7 @@ library FactoryLib {
 
         for (; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
-
+            //slither-disable-next-line unused-return
             (strategyConfig.id, strategyConfig.implementation, strategyConfig.deployAllowed,,,) = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
 
             if (strategyConfig.deployAllowed) {
@@ -212,6 +212,7 @@ library FactoryLib {
         vars.totalStrategyInitTicks = 0;
         for (vars.i = 0; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
+            //slither-disable-next-line unused-return
             (strategyConfig.id, strategyConfig.implementation, strategyConfig.deployAllowed,,,) = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
             if (strategyConfig.deployAllowed) {
                 (
@@ -340,6 +341,7 @@ library FactoryLib {
         GetVaultInitParamsVariantsVars memory vars;
         vars.vaultTypes = IStrategy(strategyImplementation).supportedVaultTypes();
         vars.len = vars.vaultTypes.length;
+        //slither-disable-next-line unused-return
         (address[] memory allowedBBTokens,) = IPlatform(platform).allowedBBTokenVaultsFiltered();
         uint allowedBBTokensLen = allowedBBTokens.length;
         for (uint i; i < vars.len; ++i) {
@@ -393,6 +395,7 @@ library FactoryLib {
         uint minRoutes = type(uint).max;
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (ISwapper.PoolData[] memory route,) = swapper.buildRoute(assets[i], targetExchangeAsset);
             uint routeLength = route.length;
             if (routeLength < minRoutes) {
@@ -564,6 +567,7 @@ library FactoryLib {
                 uint durationSeconds = vars.isRewardingVaultType ? BOOST_REWARD_DURATION : vaultInitNums[1 + i];
                 require (durationSeconds >= vars.minInitialBoostDuration, "FactoryLib: boost duration too low");
                 uint initialNotifyAmount = vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
+                //slither-disable-next-line unused-return
                 (uint price,) = priceReader.getPrice(token);
                 totalInitialBoostUsdPerDay += initialNotifyAmount * 1e18 / 10**IERC20Metadata(token).decimals() * price / 1e18 * 86400 / durationSeconds;
                 if (initialNotifyAmount > 0) {

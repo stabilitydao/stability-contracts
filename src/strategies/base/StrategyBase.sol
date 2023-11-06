@@ -88,6 +88,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     function doHardWork() external onlyVault {
         address _vault = vault;
+        //slither-disable-next-line unused-return
         (uint tvl,) = IVault(_vault).tvl();
         if (tvl > 0) {
             address _platform = platform();

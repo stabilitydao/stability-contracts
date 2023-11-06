@@ -155,6 +155,7 @@ library StrategyLib {
     ) external returns(uint apr, uint aprCompound) {
         uint duration = block.timestamp - lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        //slither-disable-next-line unused-return
         (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
         apr = computeApr(tvl, earned, duration);
         aprCompound = computeApr(totalBefore, totalAfter - totalBefore, duration);
