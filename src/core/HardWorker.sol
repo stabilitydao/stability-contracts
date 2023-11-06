@@ -118,7 +118,19 @@ contract HardWorker is Controllable, IHardWorker {
         );
 
         if (!isServer) {
-            _checkGelatoBalance();
+            ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
+            uint bal = _treasury.userTokenBalance(address(this), ETH);
+            if (bal < gelatoMinBalance) {
+                uint contractBal = address(this).balance;
+                uint _gelatoDepositAmount = gelatoDepositAmount;
+                require(contractBal >= _gelatoDepositAmount, "HardWorker: not enough ETH");
+                _treasury.depositFunds{value: _gelatoDepositAmount}(
+                    address(this),
+                    ETH,
+                    0
+                );
+                emit GelatoDeposit(_gelatoDepositAmount);
+            }
         }
 
         uint _maxHwPerCall = maxHwPerCall;
@@ -161,22 +173,6 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function gelatoBalance() external view returns(uint) {
         return gelatoTaskTreasury.userTokenBalance(address(this), ETH);
-    }
-
-    function _checkGelatoBalance() internal {
-        ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
-        uint bal = _treasury.userTokenBalance(address(this), ETH);
-        if (bal < gelatoMinBalance) {
-            uint contractBal = address(this).balance;
-            uint _gelatoDepositAmount = gelatoDepositAmount;
-            require(contractBal >= _gelatoDepositAmount, "HardWorker: not enough ETH");
-            _treasury.depositFunds{value: _gelatoDepositAmount}(
-                address(this),
-                ETH,
-                0
-            );
-            emit GelatoDeposit(_gelatoDepositAmount);
-        }
     }
 
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
