@@ -83,7 +83,14 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         uint __tokenId = _tokenId;
 
         // get fees
-        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params;
+        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params = UniswapV3MathLib.ComputeFeesEarnedCommonParams({
+            tick: 0,
+            lowerTick: 0,
+            upperTick: 0,
+            liquidity: 0,
+            feeGrowthGlobal: 0
+        });
+
         //slither-disable-next-line unused-return
         (,params.tick,,,,,) = _pool.globalState();
         params.feeGrowthGlobal = _pool.totalFeeGrowth0Token();
@@ -151,6 +158,9 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         uint tokenId = _tokenId;
         IncentiveKey memory key = _getIncentiveKey();
         INonfungiblePositionManager __nft = _nft;
+        
+        // tokenId == 0 mean that there is no NFT managed by the strategy now
+        //slither-disable-next-line incorrect-equality
         if (tokenId == 0) {
             (tokenId, liquidity, , ) = __nft.mint(INonfungiblePositionManager.MintParams(
                 _assets[0],
