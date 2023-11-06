@@ -13,8 +13,9 @@ interface IHardWorker {
     event GelatoTask(bytes32 id);
     event GelatoDeposit(uint amount);
     event MaxHwPerCall(uint maxHwPerCall_);
+    event VaultExcludeStatusChanged(address vault, bool status);
 
-    /// @notice Maximum vault HardWork calls per HardWorker execution
+    /// @notice Maximum vault HardWork calls per execution
     function maxHwPerCall() external view returns(uint);
 
     /// @notice Check dedicated server address allowance for execute vault HardWorks
@@ -46,6 +47,16 @@ interface IHardWorker {
     /// @param delayServer_ Delay for server script
     /// @param delayGelato_ Delay for Gelato
     function setDelays(uint delayServer_, uint delayGelato_) external;
+
+    /// @notice Set maximum vault HardWork calls per execution
+    /// Only operator cal call this
+    /// @param maxHwPerCall_ Max vault HardWorks per call(vaults) execution
+    function setMaxHwPerCall(uint maxHwPerCall_) external;
+
+    /// @notice Changing vault excluding status
+    /// @param vaults_ Addresses of vaults
+    /// @param status New status
+    function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external;
 
     /// @notice Call vault HardWorks
     /// @param vaults Addresses of vault from checkerServer/checkerGelato output

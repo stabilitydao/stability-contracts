@@ -207,6 +207,19 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.prank(platform.multisig());
         hw.setDedicatedServerMsgSender(address(this), true);
 
+        // check HardWorker.changeVaultExcludeStatus
+        {
+            (address[] memory vaultAddress,,,,,) = IVaultManager(platform.vaultManager()).vaults();
+            address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
+            vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
+            bool[] memory status = new bool[](1);
+            status[0] = true;
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+            status[0] = false;
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+        }
+        hw.setMaxHwPerCall(5);
+
         (success,) = address(hw).call(execPayload);
         assertEq(success, true);
 

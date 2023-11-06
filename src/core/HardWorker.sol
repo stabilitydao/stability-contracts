@@ -101,10 +101,28 @@ contract HardWorker is Controllable, IHardWorker {
         emit Delays(delayServer_, delayGelato_);
     }
 
+    /// @inheritdoc IHardWorker
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
         require (maxHwPerCall_ > 0, "HardWorker: wrong");
         maxHwPerCall = maxHwPerCall_;
         emit MaxHwPerCall(maxHwPerCall_);
+    }
+
+    /// @inheritdoc IHardWorker
+    function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
+        uint len = vaults_.length;
+        require (len == status.length, "HardWorker: wrong input");
+        require (len > 0, "HardWorker: wrong input");
+        IFactory factory = IFactory(IPlatform(platform()).factory());
+        for (uint i; i < len; ++i) {
+            require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
+            if (excludedVaults[vaults_[i]] == status[i]) {
+                revert('HardWorker: vault already has this exclude status');
+            } else {
+                excludedVaults[vaults_[i]] = status[i];
+                emit VaultExcludeStatusChanged(vaults_[i], status[i]);
+            }
+        }
     }
 
     /// @inheritdoc IHardWorker
