@@ -10,8 +10,7 @@ abstract contract UpgradeableProxy {
     /// @dev Emitted when the implementation is upgraded.
     event Upgraded(address indexed implementation);
 
-    /// slither-disable-next-line locked-ether
-    constructor() payable {
+    constructor() {
         assert(_IMPLEMENTATION_SLOT == bytes32(uint(keccak256("eip1967.proxy.implementation")) - 1));
     }
 
@@ -89,14 +88,14 @@ abstract contract UpgradeableProxy {
 
     /// @dev Fallback function that delegates calls to the address returned by `_implementation()`. Will run if no other
     /// function in the contract matches the call data.
-    /// slither-disable-next-line locked-ether
+    //slither-disable-next-line locked-ether
     fallback() external payable virtual {
         _fallback();
     }
 
     /// @dev Fallback function that delegates calls to the address returned by `_implementation()`. Will run if call data
     /// is empty.
-    /// slither-disable-next-line locked-ether
+    //slither-disable-next-line locked-ether
     receive() external payable virtual {
         _fallback();
     }
