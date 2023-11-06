@@ -206,6 +206,7 @@ contract HardWorker is Controllable, IHardWorker {
             if (!excludedVaults[vaults[i]]) {
                 IVault vault = IVault(vaults[i]);
                 IStrategy strategy = vault.strategy();
+                //slither-disable-next-line unused-return
                 (uint tvl,) = vault.tvl();
                 if(
                     tvl > 0

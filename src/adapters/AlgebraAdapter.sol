@@ -132,6 +132,7 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
 
         uint256 tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        //slither-disable-next-line unused-return
         (uint160 sqrtPriceX96,,,,,,) = IAlgebraPool(pool).globalState();
 
         uint divider = tokenOutDecimals < 18 ? UniswapV3MathLib._max(10 ** tokenOutDecimals / 10 ** tokenInDecimals, 1) : 1;

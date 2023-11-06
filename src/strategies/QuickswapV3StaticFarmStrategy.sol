@@ -84,14 +84,18 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
 
         // get fees
         UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params;
+        //slither-disable-next-line unused-return
         (,params.tick,,,,,) = _pool.globalState();
         params.feeGrowthGlobal = _pool.totalFeeGrowth0Token();
         uint feeGrowthInside0Last;
         uint feeGrowthInside1Last;
         uint128 tokensOwed0;
         uint128 tokensOwed1;
+        //slither-disable-next-line unused-return
         (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = _nft.positions(__tokenId);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
         amounts[0] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last) + uint(tokensOwed0);
         amounts[1] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last) + uint(tokensOwed1);

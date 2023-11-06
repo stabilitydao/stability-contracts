@@ -344,6 +344,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // calc mintAmount for USD amount of value
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            //slither-disable-next-line unused-return
             (mintAmount,,) = priceReader.getAssetsPrice(strategy.assets(), amountsConsumed);
 
             // initialShares for saving share price after full withdraw
