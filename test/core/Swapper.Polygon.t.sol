@@ -338,6 +338,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         vm.expectRevert("Swapper: Exist");
         swapper.addBlueChipsPools(pools_, false); 
 
+        vm.expectRevert("Swapper: blue chip pool not found");
+        swapper.removeBlueChipPool(address(1), address(2));
+
         swapper.removeBlueChipPool(PolygonLib.TOKEN_USDC,PolygonLib.TOKEN_USDT);
         (address pool,,,) = swapper.blueChipsPools(PolygonLib.TOKEN_USDC,PolygonLib.TOKEN_USDT);
         assertEq(pool,address(0));

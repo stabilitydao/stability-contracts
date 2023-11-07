@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.21;
 
 import {IRouterTokenHelper} from './IRouterTokenHelper.sol';
 import {IBasePositionManagerEvents} from './base_position_manager/IBasePositionManagerEvents.sol';

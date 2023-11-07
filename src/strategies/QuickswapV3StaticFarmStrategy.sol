@@ -59,11 +59,12 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             underlying : address(0)
         }));
         __FarmingStrategyBase_init(addresses[0], nums[0]);
-        IERC20(_assets[0]).approve(farm.addresses[0], type(uint).max);
-        IERC20(_assets[1]).approve(farm.addresses[0], type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
+        //slither-disable-next-line unused-return
         return QuickswapLib.initVariants(platform_, DEX_ADAPTER_ID(), STRATEGY_LOGIC_ID());
     }
 
@@ -83,15 +84,26 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         uint __tokenId = _tokenId;
 
         // get fees
-        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params;
+        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params = UniswapV3MathLib.ComputeFeesEarnedCommonParams({
+            tick: 0,
+            lowerTick: 0,
+            upperTick: 0,
+            liquidity: 0,
+            feeGrowthGlobal: 0
+        });
+
+        //slither-disable-next-line unused-return
         (,params.tick,,,,,) = _pool.globalState();
         params.feeGrowthGlobal = _pool.totalFeeGrowth0Token();
         uint feeGrowthInside0Last;
         uint feeGrowthInside1Last;
         uint128 tokensOwed0;
         uint128 tokensOwed1;
+        //slither-disable-next-line unused-return
         (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = _nft.positions(__tokenId);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
         amounts[0] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last) + uint(tokensOwed0);
         amounts[1] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last) + uint(tokensOwed1);
@@ -147,7 +159,11 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         uint tokenId = _tokenId;
         IncentiveKey memory key = _getIncentiveKey();
         INonfungiblePositionManager __nft = _nft;
+        
+        // tokenId == 0 mean that there is no NFT managed by the strategy now
+        //slither-disable-next-line incorrect-equality
         if (tokenId == 0) {
+            //slither-disable-next-line unused-return
             (tokenId, liquidity, , ) = __nft.mint(INonfungiblePositionManager.MintParams(
                 _assets[0],
                 _assets[1],
@@ -163,6 +179,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             _tokenId = tokenId;
             __nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
         } else {
+            //slither-disable-next-line unused-return
             (liquidity,,) = __nft.increaseLiquidity(INonfungiblePositionManager.IncreaseLiquidityParams(
                 tokenId,
                 amounts[0],

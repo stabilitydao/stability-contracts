@@ -33,13 +33,15 @@ interface IFactory {
         string type_,
         address implementation,
         bool deployAllowed,
-        bool upgradeAllowed
+        bool upgradeAllowed,
+        bool newVaultType
     );
     event StrategyLogicConfigChanged(
         string id,
         address implementation,
         bool deployAllowed,
-        bool upgradeAllowed
+        bool upgradeAllowed,
+        bool newStrategy
     );
     event VaultStatus(address indexed vault, uint newStatus);
     event NewFarm(Farm farm);

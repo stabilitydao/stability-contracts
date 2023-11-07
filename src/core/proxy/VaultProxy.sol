@@ -14,6 +14,7 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
 
     function initProxy(string memory type_) external {
         bytes32 typeHash = keccak256(abi.encodePacked(type_));
+        //slither-disable-next-line unused-return
         (,address vaultImplementation,,,) = IFactory(msg.sender).vaultConfig(typeHash);
         _init(vaultImplementation);
         bytes32 slot = _TYPE_SLOT;
@@ -29,6 +30,7 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
         assembly {
             typeHash := sload(slot)
         }
+        //slither-disable-next-line unused-return
         (,address vaultImplementation,,,) = IFactory(msg.sender).vaultConfig(typeHash);
         _upgradeTo(vaultImplementation);
     }

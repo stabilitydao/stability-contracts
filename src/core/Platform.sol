@@ -139,6 +139,7 @@ contract Platform is Controllable, IPlatform {
     function initialize(address multisig_, string memory version) public initializer {
         multisig = multisig_;
         __Controllable_init(address(this));
+        //slither-disable-next-line unused-return
         _operators.add(msg.sender);
         PLATFORM_VERSION = version;
         emit PlatformVersion(version);
@@ -180,6 +181,12 @@ contract Platform is Controllable, IPlatform {
     //endregion -- Init -----
 
     //region ----- Restricted actions -----
+
+    function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
+        require (receiver != address(0), "Platform: ZERO_ADDRESS");
+        ecosystemRevenueReceiver = receiver;
+        emit EcosystemRevenueReceiver(receiver);
+    }
 
     /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
@@ -268,20 +275,21 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
-        _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
-        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild);
+        bool firstSet = _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
+        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild, firstSet);
     }
 
     /// @inheritdoc IPlatform
     function useAllowedBBTokenVault(address bbToken) external onlyFactory {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
         require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
+        //slither-disable-next-line unused-return
         _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
         emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
-        _allowedBBTokensVaults.remove(bbToken);
+        require(_allowedBBTokensVaults.remove(bbToken), "Platform: BB-token not found");
         emit RemoveAllowedBBToken(bbToken);
     }
 
@@ -368,6 +376,7 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
+        //slither-disable-next-line unused-return
         (, vaultsLimit) = _allowedBBTokensVaults.tryGet(token);
     }
 
@@ -461,6 +470,7 @@ contract Platform is Controllable, IPlatform {
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
             tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
         }
@@ -470,6 +480,7 @@ contract Platform is Controllable, IPlatform {
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (vaultSharePrice[i],) = IVault(vault[i]).price();
             vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);
         }

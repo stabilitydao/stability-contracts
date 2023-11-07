@@ -6,7 +6,7 @@ pragma solidity ^0.8.21;
 /// @author Jude (https://github.com/iammrjude)
 interface ISwapper {
   event Swap(address indexed tokenIn, address indexed tokenOut, uint amount);
-  event PoolAdded(PoolData poolData);
+  event PoolAdded(PoolData poolData, bool assetAdded);
   event PoolRemoved(address token);
   event BlueChipAdded(PoolData poolData);
   event ThresholdChanged(address token, uint threshold);

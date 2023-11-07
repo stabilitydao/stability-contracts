@@ -52,7 +52,7 @@ library StrategyLib {
         exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
         address swapper = IPlatform(params.platform).swapper();
         for (uint i; i < len; ++i) {
-            IERC20(_assets[i]).approve(swapper, type(uint).max);
+            IERC20(_assets[i]).forceApprove(swapper, type(uint).max);
         }
     }
 
@@ -62,7 +62,7 @@ library StrategyLib {
         uint len = farm.rewardAssets.length;
         address swapper = IPlatform(platform).swapper();
         for (uint i; i < len; ++i) {
-            IERC20(farm.rewardAssets[i]).approve(swapper, type(uint).max);
+            IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
         rewardAssets = farm.rewardAssets;
     }
@@ -158,6 +158,7 @@ library StrategyLib {
     ) external returns(uint apr, uint aprCompound) {
         uint duration = block.timestamp - lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        //slither-disable-next-line unused-return
         (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
         apr = computeApr(tvl, earned, duration);
         aprCompound = computeApr(totalBefore, totalAfter - totalBefore, duration);
@@ -182,9 +183,8 @@ library StrategyLib {
     /// @dev Should NOT be used for third-party pools
     function approveIfNeeded(address token, uint amount, address spender) public {
         if (IERC20(token).allowance(address(this), spender) < amount) {
-            IERC20(token).approve(spender, 0);
             // infinite approve, 2*255 is more gas efficient then type(uint).max
-            IERC20(token).approve(spender, 2 ** 255);
+            IERC20(token).forceApprove(spender, 2 ** 255);
         }
     }
 
