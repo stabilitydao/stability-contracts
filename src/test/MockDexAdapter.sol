@@ -54,8 +54,16 @@ contract MockDexAdapter is IDexAdapter {
         revert('unavailable');
     }
 
-    function getProportion0(address /*pool*/) external pure returns (uint) {
+    function getProportion0(address /*pool*/) public pure returns (uint) {
         return 5e17;
+    }
+
+    /// @inheritdoc IDexAdapter
+    function getProportions(address pool) external pure returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
     }
 
     function swap(

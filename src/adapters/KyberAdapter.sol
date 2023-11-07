@@ -61,7 +61,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
     }
 
     /// @inheritdoc IDexAdapter
-    function getProportion0(address pool) external view returns (uint) {
+    function getProportion0(address pool) public view returns (uint) {
         address token1 = IPool(pool).token1();
         (uint160 sqrtRatioX96, int24 tick,,) = IPool(pool).getPoolState();
         int24 tickSpacing = IPool(pool).tickDistance();
@@ -74,6 +74,14 @@ contract KyberAdapter is Controllable, IDexAdapter {
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+    }
+
+    /// @inheritdoc IDexAdapter
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
     }
 
     /// @inheritdoc IDexAdapter
