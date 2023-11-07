@@ -2,17 +2,17 @@
 pragma solidity ^0.8.21;
 
 import {console} from "forge-std/Test.sol";
-import "../../src/core/Platform.sol";
 import "../../src/core/proxy/Proxy.sol";
+import "../../src/core/vaults/RMVault.sol";
+import "../../src/core/vaults/RVault.sol";
+import "../../src/core/Platform.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/VaultManager.sol";
 import "../../src/core/StrategyLogic.sol";
-import "../../src/core/RVault.sol";
-import "../../src/core/CVault.sol";
+import "../../src/core/vaults/CVault.sol";
 import "../../src/core/PriceReader.sol";
 import "../../src/core/AprOracle.sol";
 import "../../src/core/Swapper.sol";
-import "../../src/core/RMVault.sol";
 import "../../src/core/HardWorker.sol";
 import "../../src/interfaces/IPlatform.sol";
 
