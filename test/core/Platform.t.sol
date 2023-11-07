@@ -202,6 +202,10 @@ contract PlatformTest is Test  {
         (address[] memory bbToken, ) = platform.allowedBBTokenVaults();
         assertEq(bbToken[0], address(123));
         assertEq(bbToken[1], address(456));
+
+        vm.expectRevert("Platform: BB-token not found");
+        platform.removeAllowedBBToken(address(5));
+
         platform.removeAllowedBBToken(bbToken[0]);
         
         (bbToken, ) = platform.allowedBBTokenVaults();

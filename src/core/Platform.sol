@@ -139,6 +139,7 @@ contract Platform is Controllable, IPlatform {
     function initialize(address multisig_, string memory version) public initializer {
         multisig = multisig_;
         __Controllable_init(address(this));
+        //slither-disable-next-line unused-return
         _operators.add(msg.sender);
         PLATFORM_VERSION = version;
         emit PlatformVersion(version);
@@ -274,20 +275,21 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
-        _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
-        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild);
+        bool firstSet = _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
+        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild, firstSet);
     }
 
     /// @inheritdoc IPlatform
     function useAllowedBBTokenVault(address bbToken) external onlyFactory {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
         require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
+        //slither-disable-next-line unused-return
         _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
         emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
-        _allowedBBTokensVaults.remove(bbToken);
+        require(_allowedBBTokensVaults.remove(bbToken), "Platform: BB-token not found");
         emit RemoveAllowedBBToken(bbToken);
     }
 
@@ -374,6 +376,7 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
+        //slither-disable-next-line unused-return
         (, vaultsLimit) = _allowedBBTokensVaults.tryGet(token);
     }
 

@@ -56,8 +56,8 @@ contract Swapper is Controllable, ISwapper {
             PoolData memory pool = pools_[i];
             require(pools[pool.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
             pools[pool.tokenIn] = pool;
-            _addAsset(pool.tokenIn);
-            emit PoolAdded(pool);
+            bool assetAdded = _assets.add(pool.tokenIn);
+            emit PoolAdded(pool, assetAdded);
         }
     }
 
@@ -73,8 +73,8 @@ contract Swapper is Controllable, ISwapper {
             require(poolData.dexAdapter != address(0), "Swapper: unknown DeX adapter");
             require(pools[poolData.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
             pools[poolData.tokenIn] = poolData;
-            _addAsset(poolData.tokenIn);
-            emit PoolAdded(poolData);
+            bool assetAdded = _assets.add(poolData.tokenIn);
+            emit PoolAdded(poolData, assetAdded);
         }
     }
 
@@ -119,7 +119,7 @@ contract Swapper is Controllable, ISwapper {
 
     function removeBlueChipPool(address tokenIn, address tokenOut) external onlyOperator {
         delete blueChipsPools[tokenIn][tokenOut];
-        _bcAssets.remove(tokenIn);
+        require (_bcAssets.remove(tokenIn), "Swapper: blue chip pool not found");
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
         emit BlueChipPoolRemoved(tokenIn, tokenOut);
     }
@@ -455,13 +455,7 @@ contract Swapper is Controllable, ISwapper {
         }
         return result;
     }
-
-    function _addAsset(address asset) internal {
-        if (!_assets.contains(asset)) {
-            _assets.add(asset);
-        }
-    }
-
+    
     function _addBcAsset(address asset) internal {
         if (!_bcAssets.contains(asset)) {
             _bcAssets.add(asset);

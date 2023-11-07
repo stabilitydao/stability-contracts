@@ -27,7 +27,7 @@ interface IPlatform {
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewDexAdapter(string id, address proxy);
     event EcosystemRevenueReceiver(address receiver);
-    event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild);
+    event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild, bool firstSet);
     event RemoveAllowedBBToken(address bbToken);
     event AddAllowedBoostRewardToken(address token);
     event RemoveAllowedBoostRewardToken(address token);

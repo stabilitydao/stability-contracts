@@ -64,6 +64,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
     }
 
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
+        //slither-disable-next-line unused-return
         return QuickswapLib.initVariants(platform_, DEX_ADAPTER_ID(), STRATEGY_LOGIC_ID());
     }
 

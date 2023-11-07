@@ -107,10 +107,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         string memory type_ = vaultConfig_.vaultType;
         bytes32 typeHash = keccak256(abi.encodePacked(type_));
         vaultConfig[typeHash] = vaultConfig_;
-        if (!_vaultTypeHashes.contains(typeHash)) {
-            _vaultTypeHashes.add(typeHash);
-        }
-        emit VaultConfigChanged(type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed);
+        bool newVaultType = _vaultTypeHashes.add(typeHash);
+        emit VaultConfigChanged(type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType);
     }
 
     /// @inheritdoc IFactory
@@ -124,10 +122,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             config.tokenId = oldConfig.tokenId;
         }
         strategyLogicConfig[strategyIdHash] = config;
-        if (!_strategyLogicIdHashes.contains(strategyIdHash)) {
-            _strategyLogicIdHashes.add(strategyIdHash);
-        }
-        emit StrategyLogicConfigChanged(config.id, config.implementation, config.deployAllowed, config.upgradeAllowed);
+        bool newStrategy = _strategyLogicIdHashes.add(strategyIdHash);
+        emit StrategyLogicConfigChanged(config.id, config.implementation, config.deployAllowed, config.upgradeAllowed, newStrategy);
     }
 
     /// @inheritdoc IFactory
