@@ -108,6 +108,47 @@ contract FactoryTest is Test, MockSetup {
         builderPayPerVaultToken.mint(builderPayPerVaultPrice);
         builderPayPerVaultToken.approve(address(factory), builderPayPerVaultPrice);
 
+        factory.setVaultConfig(IFactory.VaultConfig({
+            vaultType: "TestVaultType",
+            implementation: address(vaultImplementation),
+            deployAllowed: false,
+            upgradeAllowed: true,
+            buildingPrice: 100
+        }));
+
+        vm.expectRevert(bytes("Factory: vault not allowed to deploy"));
+        factory.deployVaultAndStrategy("TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
+
+        factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
+            id: StrategyIdLib.DEV,
+            implementation: address(strategyImplementation),
+            deployAllowed: false,
+            upgradeAllowed: true,
+            farming: false,
+            tokenId: type(uint).max
+        }), address(this));
+
+
+        factory.setVaultConfig(IFactory.VaultConfig({
+            vaultType: "TestVaultType",
+            implementation: address(vaultImplementation),
+            deployAllowed: true,
+            upgradeAllowed: true,
+            buildingPrice: 100
+        }));
+
+        vm.expectRevert(bytes("Factory: strategy logic not allowed to deploy"));
+        factory.deployVaultAndStrategy("TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
+
+        factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
+            id: StrategyIdLib.DEV,
+            implementation: address(strategyImplementation),
+            deployAllowed: true,
+            upgradeAllowed: true,
+            farming: false,
+            tokenId: type(uint).max
+        }), address(this));
+
         vm.expectRevert(bytes("Strategy: underlying token cant be zero for this strategy"));
         factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
 
@@ -292,6 +333,18 @@ contract FactoryTest is Test, MockSetup {
     function testSetVaultStatus() public {
         factory.setVaultStatus(address(1), 1);
         assertEq(factory.vaultStatus(address(1)), 1);
+    }
+
+    function testDeploymentKey() public view {
+        factory.getDeploymentKey(
+            '',
+            '',
+            new address[](0),
+            new uint[](0),
+            new address[](0),
+            new uint[](0),
+            new int24[](0)
+        );
     }
 
 }

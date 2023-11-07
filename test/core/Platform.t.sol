@@ -53,6 +53,31 @@ contract PlatformTest is Test  {
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
         );
+        vm.expectRevert("Platform: already set");
+        platform.setup(
+            IPlatform.SetupAddresses({
+                factory: address(1),
+                priceReader: address(2),
+                swapper: address(3),
+                buildingPermitToken: address(4),
+                buildingPayPerVaultToken: address(5),
+                vaultManager: address(6),
+                strategyLogic: address(strategyLogic),
+                aprOracle: address(8),
+                targetExchangeAsset: address(9),
+                hardWorker: address(10)
+            }),
+            IPlatform.PlatformSettings({
+                networkName: 'Localhost Ethereum',
+                networkExtra: bytes32(0),
+                fee: 6_000,
+                feeShareVaultManager: 30_000,
+                feeShareStrategyLogic: 30_000,
+                feeShareEcosystem: 0,
+                minInitialBoostPerDay: 30e18, // $30
+                minInitialBoostDuration: 30 * 86400 // 30 days
+            })
+        );
     }
 
     function testAddRemoveOperator(address operator) public {

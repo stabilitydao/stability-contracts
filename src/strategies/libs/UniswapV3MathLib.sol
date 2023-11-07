@@ -24,7 +24,7 @@ library UniswapV3MathLib {
         uint feeGrowthOutsideLower,
         uint feeGrowthOutsideUpper,
         uint feeGrowthInsideLast
-    ) internal pure returns (uint fee) {
+    ) external pure returns (uint fee) {
         unchecked {
         // calculate fee growth below
             uint feeGrowthBelow;
@@ -295,10 +295,6 @@ library UniswapV3MathLib {
         return count;
     }
 
-    function _min(uint a, uint b) internal pure returns (uint) {
-        return a < b ? a : b;
-    }
-
     function _max(uint a, uint b) internal pure returns (uint) {
         return a > b ? a : b;
     }
@@ -370,17 +366,5 @@ library UniswapV3MathLib {
         sqrtPriceX96 = uint160(
             (ratio >> 32) + (ratio % (1 << 32) == 0 ? 0 : 1)
         );
-    }
-
-    function _getFinalTick(int256 log_2, uint160 sqrtPriceX96) internal pure returns (int24 tick) {
-        // 128.128 number
-        int256 log_sqrt10001 = log_2 * 255738958999603826347141;
-
-        int24 tickLow = int24((log_sqrt10001 - 3402992956809132418596140100660247210) >> 128);
-        int24 tickHi = int24((log_sqrt10001 + 291339464771989622907027621153398088495) >> 128);
-
-        tick = (tickLow == tickHi)
-            ? tickLow
-            : (getSqrtRatioAtTick(tickHi) <= sqrtPriceX96 ? tickHi : tickLow);
     }
 }

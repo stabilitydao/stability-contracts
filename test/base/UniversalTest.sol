@@ -126,7 +126,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     assertEq(IERC721(platform.vaultManager()).ownerOf(i), address (this));
                 }
-
+                
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
