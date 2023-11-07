@@ -34,6 +34,12 @@ contract PlatformPolygonTest is PolygonSetup {
         IERC20(PolygonLib.TOKEN_USDC).approve(address(factory), 1e12);
     }
 
+    
+    bool canReceive;
+    receive() external payable{
+        require(canReceive);
+    }
+
     function testUserBalance() public {
         (
             address[] memory token,
@@ -234,8 +240,23 @@ contract PlatformPolygonTest is PolygonSetup {
             }
         }
 
-        vm.prank(platform.multisig());
+        vm.startPrank(platform.multisig());
         hw.setDelays(1 hours, 2 hours);
+        vm.expectRevert("HardWorker: nothing to change");
+        hw.setDelays(1 hours, 2 hours);
+        vm.stopPrank();
+
+
+        address[] memory vaultsForHardWork = new address[](1);
+        address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
+        vaultsForHardWork[0] = vault_;
+
+        vm.txGasPrice(15e10);
+        deal(address(hw), type(uint).max);
+        vm.expectRevert("HardWorker: native transfer failed");
+        hw.call(vaultsForHardWork);
+        canReceive = true;
+        hw.call(vaultsForHardWork);
 
         skip(1 hours);
         skip(100);

@@ -68,8 +68,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
         TestStrategiesVars memory vars;
         vars.hardWorker = IHardWorker(platform.hardWorker());
-        vm.prank(platform.governance());
+        vm.startPrank(platform.governance());
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
+        vm.expectRevert("HardWorker: nothing to change");
+        vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
+        vm.stopPrank();
         vars.vaultsForHardWork = new address[](1);
         vars.allowedBBTokens = platform.allowedBBTokens();
         platform.setAllowedBBTokenVaults(vars.allowedBBTokens[0], 1e6);
