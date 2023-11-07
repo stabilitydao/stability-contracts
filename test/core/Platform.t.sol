@@ -7,9 +7,11 @@ import "../../src/core/proxy/Proxy.sol";
 import "../../src/core/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/core/Factory.sol";
+import "../../src/core/StrategyLogic.sol";
 
-contract PlatformTest is Test {
+contract PlatformTest is Test  {
     Platform public platform;
+    StrategyLogic public strategyLogic;
 
     function setUp() public {
         Proxy proxy = new Proxy();
@@ -35,7 +37,7 @@ contract PlatformTest is Test {
                 buildingPermitToken: address(4),
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
-                strategyLogic: address(7),
+                strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10)
@@ -43,6 +45,31 @@ contract PlatformTest is Test {
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
+                fee: 6_000,
+                feeShareVaultManager: 30_000,
+                feeShareStrategyLogic: 30_000,
+                feeShareEcosystem: 0,
+                minInitialBoostPerDay: 30e18, // $30
+                minInitialBoostDuration: 30 * 86400 // 30 days
+            })
+        );
+        vm.expectRevert("Platform: already set");
+        platform.setup(
+            IPlatform.SetupAddresses({
+                factory: address(1),
+                priceReader: address(2),
+                swapper: address(3),
+                buildingPermitToken: address(4),
+                buildingPayPerVaultToken: address(5),
+                vaultManager: address(6),
+                strategyLogic: address(strategyLogic),
+                aprOracle: address(8),
+                targetExchangeAsset: address(9),
+                hardWorker: address(10)
+            }),
+            IPlatform.PlatformSettings({
+                networkName: 'Localhost Ethereum',
+                networkExtra: bytes32(0),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
                 feeShareStrategyLogic: 30_000,
@@ -151,9 +178,6 @@ contract PlatformTest is Test {
     }
 
     function testSetFees() public {
-        //test modifire onlyGovernance
-        //result = [FAIL. Reason: Call reverted as expected, but without data]
-        //todo - get know reason
         platform.initialize(address(this), '23.11.0-dev');
         address govAddr = platform.governance();
 
@@ -250,7 +274,6 @@ contract PlatformTest is Test {
 
     function testGetData() public {
         platform.initialize(address(this), '23.11.0-dev');
-
         vm.expectRevert("Platform: need setup");
         {   
             (address[] memory _platformAddresses,,,,,,,) = platform.getData();
@@ -258,6 +281,11 @@ contract PlatformTest is Test {
         } 
 
         Proxy proxy = new Proxy();
+        proxy.initProxy(address(new StrategyLogic()));
+        strategyLogic = StrategyLogic(address(proxy));
+        strategyLogic.init(address(platform)); 
+
+        proxy = new Proxy();
         proxy.initProxy(address(new Factory()));
         Factory factory = Factory(address(proxy));
         factory.initialize(address(platform));
@@ -269,7 +297,7 @@ contract PlatformTest is Test {
                 buildingPermitToken: address(4),
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
-                strategyLogic: address(7),
+                strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10)
@@ -310,5 +338,14 @@ contract PlatformTest is Test {
         assertEq(isFarmingStrategy.length, 0); 
         assertEq(strategyTokenURI.length, 0); 
         assertEq(strategyExtra.length, 0);  
+
+
+        address _logic = platform.strategyLogic();
+        vm.expectRevert("StrategyLogic: not owner");
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        vm.prank(address(0));
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        address _receiver = IStrategyLogic(_logic).getRevenueReceiver(1);
+        assertEq(address(123), _receiver);
     }
 }

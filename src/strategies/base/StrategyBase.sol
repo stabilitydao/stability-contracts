@@ -162,7 +162,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     function _previewDepositUnderlying(uint /*amount*/) internal view virtual returns(uint[] memory /*amountsConsumed*/) {
-        revert(_underlying == address(0) ? 'no underlying' : 'not implemented');
     }
 
     //endregion -- Default implementations
