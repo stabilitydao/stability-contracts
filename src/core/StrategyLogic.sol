@@ -11,6 +11,7 @@ import "../interfaces/IStrategy.sol";
 /// @notice The developed strategy logic is tokenized into StrategyLogic NFT.
 ///         The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
     /// @dev Version of StrategyLogic implementation
@@ -40,6 +41,7 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
     function setRevenueReceiver(uint tokenId, address receiver) external {
         require(_ownerOf(tokenId) == msg.sender, "StrategyLogic: not owner");
         _revenueReceiver[tokenId] = receiver;
+        emit SetRevenueReceiver(tokenId, receiver);
     }
 
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {

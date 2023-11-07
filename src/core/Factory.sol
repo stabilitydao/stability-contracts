@@ -22,6 +22,7 @@ import "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -139,11 +140,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function addFarm(Farm memory farm_) external onlyOperator {
         _farms.push(farm_);
+        emit NewFarm(farm_);
     }
 
     /// @inheritdoc IFactory
     function updateFarm(uint id, Farm memory farm_) external onlyOperator {
         _farms[id] = farm_;
+        emit UpdateFarm(id, farm_);
     }
 
     //endregion -- Restricted actions ----

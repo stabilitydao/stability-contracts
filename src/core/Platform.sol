@@ -18,6 +18,7 @@ import "../interfaces/IVault.sol";
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings and allows the governance to upgrade contracts.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -268,7 +269,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
         _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
-        // todo event
+        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild);
     }
 
     /// @inheritdoc IPlatform
@@ -276,35 +277,36 @@ contract Platform is Controllable, IPlatform {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
         require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
         _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
+        emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
         _allowedBBTokensVaults.remove(bbToken);
-        // todo event
+        emit RemoveAllowedBBToken(bbToken);
     }
 
     /// @inheritdoc IPlatform
     function addAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.add(token), "Platform: EXIST");
-        // todo event
+        emit AddAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeAllowedBoostRewardToken(address token) external onlyOperator {
         require(_allowedBoostRewardTokens.remove(token), "Platform: EXIST");
-        // todo event
+        emit RemoveAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function addDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.add(token), "Platform: EXIST");
-        // todo event
+        emit AddDefaultBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeDefaultBoostRewardToken(address token) external onlyOperator {
         require(_defaultBoostRewardTokens.remove(token), "Platform: EXIST");
-        // todo event
+        emit RemoveDefaultBoostRewardToken(token);
     }
 
     //endregion -- Restricted actions ----
