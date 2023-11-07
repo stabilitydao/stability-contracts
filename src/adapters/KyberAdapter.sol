@@ -17,13 +17,18 @@ contract KyberAdapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
     /// @dev Version of KyberAdapter implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     string internal constant _DEX_ADAPTER_ID = "KYBER";
 
     /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     /// @inheritdoc IDexAdapter

@@ -18,7 +18,7 @@ contract RVault is RVaultBase {
     //region ----- Constants -----
 
     /// @dev Version of RVault implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 
@@ -76,6 +76,11 @@ contract RVault is RVaultBase {
     //endregion -- Init -----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
+    }
 
     /// @inheritdoc IVault
     function extra() external pure returns (bytes32) {

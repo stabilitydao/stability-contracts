@@ -26,7 +26,7 @@ contract Platform is Controllable, IPlatform {
     //region ----- Constants -----
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -136,13 +136,13 @@ contract Platform is Controllable, IPlatform {
 
     //region ----- Init -----
 
-    function initialize(address multisig_, string memory version) public initializer {
+    function initialize(address multisig_, string memory version_) public initializer {
         multisig = multisig_;
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
         _operators.add(msg.sender);
-        PLATFORM_VERSION = version;
-        emit PlatformVersion(version);
+        PLATFORM_VERSION = version_;
+        emit PlatformVersion(version_);
     }
 
     function setup(
@@ -206,13 +206,13 @@ contract Platform is Controllable, IPlatform {
         address[] memory proxies,
         address[] memory newImplementations
     ) external onlyGovernanceOrMultisig {
-        require(_pendingPlatformUpgrade.proxies.length == 0, "Platform: ANNOUNCED");
+        require(_pendingPlatformUpgrade.proxies.length == 0,"Platform: ANNOUNCED");
         uint len = proxies.length;
-        require(len == newImplementations.length, "Platform: WRONG_INPUT");
+        require(len == newImplementations.length, "Platform:versionINPUT");
         for (uint i; i < len; ++i) {
             require(proxies[i] != address(0), "Platform: zero proxy address");
-            require(newImplementations[i] != address(0), "Platform: zero implementation address");
-            require(!CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION()), "Platform: same version");
+            require(newImplementations[i] != address(0), "Plversion zero implementation address");
+            require(!CommonLib.eq(IControllable(proxies[i]).version(), IControllable(newImplementations[i]).version()), "Platform: same version");
         }
         string memory oldVersion = PLATFORM_VERSION;
         require(!CommonLib.eq(oldVersion, newVersion), "Platform: same platform version");
@@ -232,13 +232,13 @@ contract Platform is Controllable, IPlatform {
         PlatformUpgrade memory platformUpgrade = _pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
         for (uint i; i < len; ++i) {
-            string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
+            string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).version();
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
             emit ProxyUpgraded(
                 platformUpgrade.proxies[i],
                 platformUpgrade.newImplementations[i],
                 oldContractVersion,
-                IControllable(platformUpgrade.proxies[i]).VERSION()
+                IControllable(platformUpgrade.proxies[i]).version()
             );
         }
         PLATFORM_VERSION = platformUpgrade.newVersion;
@@ -252,7 +252,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
         require (platformUpgradeTimelock != 0, "Platform: no upgrade");
-        emit CancelUpgrade(VERSION, _pendingPlatformUpgrade.newVersion);
+        emit CancelUpgrade(version(), _pendingPlatformUpgrade.newVersion);
         _pendingPlatformUpgrade.newVersion = '';
         _pendingPlatformUpgrade.proxies = new address[](0);
         _pendingPlatformUpgrade.newImplementations = new address[](0);
@@ -320,6 +320,11 @@ contract Platform is Controllable, IPlatform {
     //endregion -- Restricted actions ----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IControllable
+    function version() public pure returns (string memory) {
+        return _VERSION;
+    }
 
     /// @inheritdoc IPlatform
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory) {

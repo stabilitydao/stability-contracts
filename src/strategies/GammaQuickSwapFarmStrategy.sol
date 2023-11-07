@@ -20,7 +20,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /// @dev Version of GammaQuickSwapFarmStrategy implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
     
     uint internal constant _PRECISION = 1e36;
 
@@ -122,6 +122,11 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
 
     function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
         return StrategyIdLib.GAMMA_QUICKSWAP_FARM;
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {

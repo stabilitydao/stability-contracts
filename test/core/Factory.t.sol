@@ -188,7 +188,7 @@ contract FactoryTest is Test, MockSetup {
         assertEq(factory.deployedVault(0), vault);
         address[] memory deployedVaults = factory.deployedVaults();
         assertEq(deployedVaults[0], vault);
-        factory.VERSION();
+        factory.version();
         assertEq(vaultManager.balanceOf(address(this)), 1);
         assertEq(vaultManager.ownerOf(0), (address(this)));
 

@@ -13,7 +13,7 @@ import "../interfaces/IAprOracle.sol";
 contract AprOracle is Controllable, IAprOracle {
 
     /// @dev Version of AprOracle implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     mapping (address asset => uint apr) public assetApr;
 
@@ -29,6 +29,11 @@ contract AprOracle is Controllable, IAprOracle {
             assetApr[assets[i]] = aprs[i];
         }
         emit SetAprs(assets, aprs);
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     /// @inheritdoc IAprOracle

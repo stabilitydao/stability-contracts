@@ -9,7 +9,7 @@ import "../strategies/libs/StrategyIdLib.sol";
 import "../core/libs/CommonLib.sol";
 
 contract MockStrategy is PairStrategyBase {
-    string public constant VERSION = '10.99.99';
+    string internal constant _VERSION = '10.99.99';
     
     uint private _depositedToken0;
     uint private _depositedToken1;
@@ -47,6 +47,11 @@ contract MockStrategy is PairStrategyBase {
         addresses[3] = address(4);
         nums = new uint[](0);
         ticks = new int24[](0);
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     function getSpecificName() external pure override returns (string memory) {

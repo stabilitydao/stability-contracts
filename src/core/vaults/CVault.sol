@@ -12,7 +12,7 @@ contract CVault is VaultBase {
     //region ----- Constants -----
 
     /// @dev Version of CVault implementation
-    string public constant VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     //endregion -- Constants -----
 
@@ -44,6 +44,11 @@ contract CVault is VaultBase {
     //endregion -- Init -----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
+    }
 
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00bb99), bytes3(0x00110a)));

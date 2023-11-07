@@ -18,7 +18,7 @@ import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 contract HardWorker is Controllable, IHardWorker {
     
     /// @dev Version of HardWorker implementation
-    string public constant VERSION = "1.0.0";
+    string internal constant _VERSION = "1.0.0";
 
     address internal constant GELATO_OPS_PROXY_FACTORY = 0xC815dB16D4be6ddf2685C201937905aBf338F5D7;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -180,6 +180,11 @@ contract HardWorker is Controllable, IHardWorker {
         }
 
         emit Call(counter, gasUsed, gasCost, isServer);
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     /// @inheritdoc IHardWorker

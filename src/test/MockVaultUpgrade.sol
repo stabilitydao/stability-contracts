@@ -38,6 +38,9 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function extra() external view returns (bytes32) {}
 
+    function version() external pure returns (string memory) {
+        return VERSION;
+    }
 
     function VAULT_TYPE() external view returns (string memory) {}
 
@@ -67,4 +70,5 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
     function _mintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut) internal returns (uint mintAmount) {}
 
     function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed) internal view returns (uint mintAmount, uint initialShares) {}
+
 }

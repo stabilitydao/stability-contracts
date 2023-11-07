@@ -168,7 +168,7 @@ contract PlatformTest is Test  {
             platform.upgrade();
 
             assertEq(proxy.implementation(), address(vaultImplementationUpgrade));
-            assertEq(CVault(payable(address(proxy))).VERSION(), "10.99.99");
+            assertEq(CVault(payable(address(proxy))).version(), "10.99.99");
             assertEq(platform.PLATFORM_VERSION(), '2025.01.0-beta');
         } else {
             vm.expectRevert(bytes("Zero multisig"));

@@ -18,7 +18,7 @@ contract Swapper is Controllable, ISwapper {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev Version of Swapper implementation
-    string public constant VERSION = "1.0.0";
+    string internal constant _VERSION = "1.0.0";
 
     uint public constant ROUTE_LENGTH_MAX = 5;
 
@@ -163,6 +163,11 @@ contract Swapper is Controllable, ISwapper {
     //endregion -- User actions -----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
+    }
 
     /// @inheritdoc ISwapper
     function assets() external view returns(address[] memory) {

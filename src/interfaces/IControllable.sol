@@ -14,7 +14,7 @@ interface IControllable {
 
   /// @notice Version of contract implementation
   /// @dev SemVer scheme MAJOR.MINOR.PATCH
-  function VERSION() external view returns (string memory);
+  function version() external view returns (string memory);
 
   /// @notice Block number when contract was initialized
   function createdBlock() external view returns (uint);

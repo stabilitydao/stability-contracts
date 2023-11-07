@@ -15,7 +15,7 @@ import "../interfaces/IStrategy.sol";
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
     /// @dev Version of StrategyLogic implementation
-    string public constant VERSION = '0.1.0';
+    string internal constant _VERSION = '0.1.0';
 
     /// @dev Mapping between tokens and strategy logic ID
     mapping (uint tokenId => string strategyLogicId) public tokenStrategyLogic;
@@ -42,6 +42,11 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         require(_ownerOf(tokenId) == msg.sender, "StrategyLogic: not owner");
         _revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
+    }
+
+    /// @inheritdoc IControllable
+    function version() external pure returns (string memory) {
+        return _VERSION;
     }
 
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
