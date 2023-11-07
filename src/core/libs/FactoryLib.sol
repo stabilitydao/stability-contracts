@@ -116,7 +116,7 @@ library FactoryLib {
                     vars.usedNums,
                     vars.allVaultInitAddresses,
                     vars.allVaultInitNums
-                ) = getVaultInitParamsVariants(platform, strategyConfig.implementation);
+                ) = _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 vars.vaultTypesLen = vars.vaultType.length;
 
                 vars.allVaultInitAddressesIndex = 0;
@@ -220,7 +220,7 @@ library FactoryLib {
                     vars.usedNums,
                     vars.allVaultInitAddresses,
                     vars.allVaultInitNums
-                ) = getVaultInitParamsVariants(platform, strategyConfig.implementation);
+                ) = _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 vars.vaultTypesLen = vars.vaultType.length;
 
                 vars.allVaultInitAddressesIndex = 0;
@@ -330,7 +330,7 @@ library FactoryLib {
         }
     }
 
-    function getVaultInitParamsVariants(address platform, address strategyImplementation) public view returns (
+    function _getVaultInitParamsVariants(address platform, address strategyImplementation) internal view returns (
         string[] memory vaultType,
         uint[] memory usedAddresses,
         uint[] memory usedNums,
@@ -404,13 +404,13 @@ library FactoryLib {
         require (exchangeAssetIndex < type(uint).max, "FactoryLib: no routes for assets");
     }
 
-    function getSymbol(
+    function _getSymbol(
         string memory vaultType,
         string memory strategyLogicId,
         string memory symbols,
         string memory specificName,
         string memory bbAssetSymbol
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         bytes memory vaultTypeBytes = bytes(vaultType);
         string memory prefix = 'v';
         if (vaultTypeBytes[0] == 'C') {
@@ -460,7 +460,7 @@ library FactoryLib {
         assetsSymbols = CommonLib.getSymbols(assets);
         specificName = IStrategy(strategyAddress).getSpecificName();
         string memory bbAssetSymbol = bbAsset == address(0) ? '' : IERC20Metadata(bbAsset).symbol();
-        vaultSymbol = getSymbol(vaultType, strategyId, CommonLib.implode(assetsSymbols, ""), specificName, bbAssetSymbol);
+        vaultSymbol = _getSymbol(vaultType, strategyId, CommonLib.implode(assetsSymbols, ""), specificName, bbAssetSymbol);
     }
 
     function getDeploymentKey(

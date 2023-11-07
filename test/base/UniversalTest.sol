@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ChainSetup.sol";
 import "./Utils.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
+import "../../src/strategies/libs/UniswapV3MathLib.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import "../../src/interfaces/ISwapper.sol";
 import "../../src/interfaces/IFactory.sol";
@@ -125,7 +126,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     assertEq(IERC721(platform.vaultManager()).ownerOf(i), address (this));
                 }
-
+                
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
@@ -136,6 +137,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
+                }
+
+                {
+                    uint[] memory assetsProportions = IStrategy(address(strategy)).getAssetsProportions();
+                    for(uint x; x < assetsProportions.length; x++){
+                        assertGt(assetsProportions[x], 0);
+                    }
                 }
 
                 // todo loop
@@ -226,6 +234,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
+                    balanceBefore = IERC20(rewardToken).balanceOf(address(this));
+                    IRVault(vars.vault).getReward(0);
+                    assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
                 }
 
                 uint totalWas = strategy.total();
@@ -262,6 +273,17 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1);
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
+                } else {
+                    {
+                    vm.expectRevert("StrategyBase: not vault");
+                    strategy.depositUnderlying(18);
+                    vm.startPrank(strategy.vault());
+                    vm.expectRevert("no underlying");
+                    strategy.depositUnderlying(18);
+                    vm.expectRevert("no underlying");
+                    strategy.withdrawUnderlying(18, address(123));
+                    vm.stopPrank(); 
+                    }
                 }
             }
         }

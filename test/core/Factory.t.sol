@@ -12,6 +12,7 @@ import "../../src/test/MockStrategyUpgrade.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/test/MockERC721.sol";
 import "../base/MockSetup.sol";
+import "../../src/interfaces/IStrategyLogic.sol";
 
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
@@ -98,6 +99,8 @@ contract FactoryTest is Test, MockSetup {
             tokenId: type(uint).max
         }), address(this));
         (,,,,,uint strategyLogicTokenId) = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV)));
+        bytes32[] memory hashes = factory.strategyLogicIdHashes();
+        assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));
 
         vm.expectRevert(bytes("Factory: you dont have enough tokens for building"));
@@ -105,6 +108,47 @@ contract FactoryTest is Test, MockSetup {
 
         builderPayPerVaultToken.mint(builderPayPerVaultPrice);
         builderPayPerVaultToken.approve(address(factory), builderPayPerVaultPrice);
+
+        factory.setVaultConfig(IFactory.VaultConfig({
+            vaultType: "TestVaultType",
+            implementation: address(vaultImplementation),
+            deployAllowed: false,
+            upgradeAllowed: true,
+            buildingPrice: 100
+        }));
+
+        vm.expectRevert(bytes("Factory: vault not allowed to deploy"));
+        factory.deployVaultAndStrategy("TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
+
+        factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
+            id: StrategyIdLib.DEV,
+            implementation: address(strategyImplementation),
+            deployAllowed: false,
+            upgradeAllowed: true,
+            farming: false,
+            tokenId: type(uint).max
+        }), address(this));
+
+
+        factory.setVaultConfig(IFactory.VaultConfig({
+            vaultType: "TestVaultType",
+            implementation: address(vaultImplementation),
+            deployAllowed: true,
+            upgradeAllowed: true,
+            buildingPrice: 100
+        }));
+
+        vm.expectRevert(bytes("Factory: strategy logic not allowed to deploy"));
+        factory.deployVaultAndStrategy("TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
+
+        factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
+            id: StrategyIdLib.DEV,
+            implementation: address(strategyImplementation),
+            deployAllowed: true,
+            upgradeAllowed: true,
+            farming: false,
+            tokenId: type(uint).max
+        }), address(this));
 
         vm.expectRevert(bytes("Strategy: underlying token cant be zero for this strategy"));
         factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
@@ -183,6 +227,11 @@ contract FactoryTest is Test, MockSetup {
         vm.expectRevert(bytes("Factory: already last version"));
         factory.upgradeVaultProxy(vault);
 
+        factory.setVaultStatus(vault, 0);
+        vm.expectRevert("Factory: not active vault");
+        factory.upgradeVaultProxy(vault);
+        factory.setVaultStatus(vault, 1);
+
         factory.setVaultConfig(IFactory.VaultConfig({
             vaultType: VaultTypeLib.COMPOUNDING,
             implementation: address(newVaultImplementation),
@@ -237,6 +286,46 @@ contract FactoryTest is Test, MockSetup {
         vm.expectRevert(bytes("Factory: already last version"));
         factory.upgradeStrategyProxy(strategy);
 
+        vm.expectRevert(bytes("Factory: not strategy"));
+        factory.upgradeStrategyProxy(address(123));
+
+        {
+        //vaultTypes()
+        (
+            string[] memory vaultType_,
+            bool[] memory deployAllowed_,
+            bool[] memory upgradeAllowed_,
+            uint[] memory buildingPrice_,
+            bytes32[] memory extra_
+        ) = factory.vaultTypes();
+        assertEq(vaultType_[0], VaultTypeLib.COMPOUNDING);
+        assertEq(deployAllowed_[0], true);
+        assertEq(upgradeAllowed_[0], true);
+        assertEq(buildingPrice_[0], builderPayPerVaultPrice);
+        assertFalse(extra_[0] == bytes32(0));
+
+        //strategies()
+        (
+        string[] memory id_,
+        bool[] memory deployAllowed__,
+        bool[] memory upgradeAllowed__,
+        bool[] memory farming_,
+        uint[] memory tokenId_,
+        string[] memory tokenURI_,
+        bytes32[] memory extra__
+        ) = factory.strategies();
+
+        IStrategyLogic strategyLogicNft = IStrategyLogic(platform.strategyLogic());
+        string memory tokenURI__ = strategyLogicNft.tokenURI(tokenId_[0]);
+        assertEq(id_[0], StrategyIdLib.DEV);
+        assertEq(deployAllowed__[0], true);
+        assertEq(upgradeAllowed__[0], true);
+        assertEq(farming_[0], false);
+        assertEq(tokenId_[0], 0);
+        assertEq(keccak256(abi.encodePacked(tokenURI_[0])), keccak256(abi.encodePacked(tokenURI__)));
+        assertFalse(extra__[0] == bytes32(0)); 
+        }
+
         factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
             id: StrategyIdLib.DEV,
             implementation: address(newStrategyImplementation),
@@ -285,6 +374,23 @@ contract FactoryTest is Test, MockSetup {
 
         IFactory.Farm[] memory farms = factory.farms();
         assertEq(farms[0].pool, address(3));
+    }
+
+    function testSetVaultStatus() public {
+        factory.setVaultStatus(address(1), 1);
+        assertEq(factory.vaultStatus(address(1)), 1);
+    }
+
+    function testDeploymentKey() public view {
+        factory.getDeploymentKey(
+            '',
+            '',
+            new address[](0),
+            new uint[](0),
+            new address[](0),
+            new uint[](0),
+            new int24[](0)
+        );
     }
 
 }
