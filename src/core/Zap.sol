@@ -40,7 +40,6 @@ contract Zap is Controllable {
         if (len != 2) {
             revert StrategyNotSupported();
         }
-        require (len == 2, "Zap: not supported");
 
         swapAmounts = new uint[](len);
         IDexAdapter dexAdapter = IPairStrategyBase(strategy).dexAdapter();
