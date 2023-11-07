@@ -12,6 +12,7 @@ import "../../src/test/MockStrategyUpgrade.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/test/MockERC721.sol";
 import "../base/MockSetup.sol";
+import "../../src/interfaces/IStrategyLogic.sol";
 
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
@@ -226,6 +227,11 @@ contract FactoryTest is Test, MockSetup {
         vm.expectRevert(bytes("Factory: already last version"));
         factory.upgradeVaultProxy(vault);
 
+        factory.setVaultStatus(vault, 0);
+        vm.expectRevert("Factory: not active vault");
+        factory.upgradeVaultProxy(vault);
+        factory.setVaultStatus(vault, 1);
+
         factory.setVaultConfig(IFactory.VaultConfig({
             vaultType: VaultTypeLib.COMPOUNDING,
             implementation: address(newVaultImplementation),
@@ -279,6 +285,46 @@ contract FactoryTest is Test, MockSetup {
 
         vm.expectRevert(bytes("Factory: already last version"));
         factory.upgradeStrategyProxy(strategy);
+
+        vm.expectRevert(bytes("Factory: not strategy"));
+        factory.upgradeStrategyProxy(address(123));
+
+        {
+        //vaultTypes()
+        (
+            string[] memory vaultType_,
+            bool[] memory deployAllowed_,
+            bool[] memory upgradeAllowed_,
+            uint[] memory buildingPrice_,
+            bytes32[] memory extra_
+        ) = factory.vaultTypes();
+        assertEq(vaultType_[0], VaultTypeLib.COMPOUNDING);
+        assertEq(deployAllowed_[0], true);
+        assertEq(upgradeAllowed_[0], true);
+        assertEq(buildingPrice_[0], builderPayPerVaultPrice);
+        assertFalse(extra_[0] == bytes32(0));
+
+        //strategies()
+        (
+        string[] memory id_,
+        bool[] memory deployAllowed__,
+        bool[] memory upgradeAllowed__,
+        bool[] memory farming_,
+        uint[] memory tokenId_,
+        string[] memory tokenURI_,
+        bytes32[] memory extra__
+        ) = factory.strategies();
+
+        IStrategyLogic strategyLogicNft = IStrategyLogic(platform.strategyLogic());
+        string memory tokenURI__ = strategyLogicNft.tokenURI(tokenId_[0]);
+        assertEq(id_[0], StrategyIdLib.DEV);
+        assertEq(deployAllowed__[0], true);
+        assertEq(upgradeAllowed__[0], true);
+        assertEq(farming_[0], false);
+        assertEq(tokenId_[0], 0);
+        assertEq(keccak256(abi.encodePacked(tokenURI_[0])), keccak256(abi.encodePacked(tokenURI__)));
+        assertFalse(extra__[0] == bytes32(0)); 
+        }
 
         factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
             id: StrategyIdLib.DEV,
