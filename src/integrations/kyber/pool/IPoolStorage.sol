@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.21;
 
-import {IFactory} from '../IFactory.sol';
+import {IKyberFactory} from '../IFactory.sol';
 import {IPoolOracle} from '../oracle/IPoolOracle.sol';
 
 interface IPoolStorage {
   /// @notice The contract that deployed the pool, which must adhere to the IFactory interface
   /// @return The contract address
-  function factory() external view returns (IFactory);
+  function factory() external view returns (IKyberFactory);
 
   /// @notice The oracle contract that stores necessary data for price oracle
   /// @return The contract address

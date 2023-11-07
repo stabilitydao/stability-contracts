@@ -82,11 +82,13 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function transferAssets(uint amount, uint total_, address receiver) external onlyVault returns (uint[] memory amountsOut) {
+        //slither-disable-next-line unused-return
         return StrategyLib.transferAssets(_assets, amount, total_, receiver);
     }
 
     function doHardWork() external onlyVault {
         address _vault = vault;
+        //slither-disable-next-line unused-return
         (uint tvl,) = IVault(_vault).tvl();
         if (tvl > 0) {
             address _platform = platform();

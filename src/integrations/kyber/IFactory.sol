@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.21;
 
 /// @title KyberSwap v2 factory
 /// @notice Deploys KyberSwap v2 pools and manages control over government fees
-interface IFactory {
+interface IKyberFactory {
   /// @notice Emitted when a pool is created
   /// @param token0 First pool token by address sort order
   /// @param token1 Second pool token by address sort order

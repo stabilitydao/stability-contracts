@@ -60,6 +60,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         if (!_assets.contains(asset)) {
             return (0,0);
         }
+        //slither-disable-next-line unused-return
         (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[asset]).latestRoundData();
         return (uint(answer) * 1e10, updatedAt);
     }
@@ -70,6 +71,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         prices = new uint[](len);
         timestamps = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData();
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;

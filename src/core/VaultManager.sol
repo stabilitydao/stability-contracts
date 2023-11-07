@@ -71,8 +71,11 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         vaultData.vault = tokenVault[tokenId];
         IVault vault = IVault(vaultData.vault);
         IStrategy strategy = vault.strategy();
+        //slither-disable-next-line unused-return
         (vaultData.sharePrice,) = vault.price();
+        //slither-disable-next-line unused-return
         (vaultData.tvl,) = vault.tvl();
+        //slither-disable-next-line unused-return
         (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
         vaultData.vaultType = vault.VAULT_TYPE();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
@@ -119,7 +122,9 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
             vaultType[i] = IVault(vaultAddress[i]).VAULT_TYPE();
             strategyId[i] = IVault(vaultAddress[i]).strategy().STRATEGY_LOGIC_ID();
+            //slither-disable-next-line unused-return
             (sharePrice[i],) = IVault(vaultAddress[i]).price();
+            //slither-disable-next-line unused-return
             (tvl[i],) = IVault(vaultAddress[i]).tvl();
         }
     }

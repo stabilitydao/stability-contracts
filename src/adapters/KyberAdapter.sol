@@ -42,6 +42,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96,,,) = IPool(pool).getPoolState();
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, ticks[0], ticks[1], amounts[0], amounts[1]);
         amountsConsumed = new uint[](2);
@@ -56,6 +57,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
     }
 
     function getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) public view returns (uint amount0, uint amount1) {
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96,,,) = IPool(pool).getPoolState();
         (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
@@ -63,6 +65,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
     /// @inheritdoc IDexAdapter
     function getProportion0(address pool) public view returns (uint) {
         address token1 = IPool(pool).token1();
+        //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,) = IPool(pool).getPoolState();
         int24 tickSpacing = IPool(pool).tickDistance();
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
@@ -100,6 +103,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
         {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
+            //slither-disable-next-line unused-return
             IPool(pool).swap(
                 recipient,
                 int(amount),
@@ -140,6 +144,8 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
         uint256 tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+
+        //slither-disable-next-line unused-return
         (uint160 sqrtPriceX96,,,) = IPool(pool).getPoolState();
 
         uint divider = tokenOutDecimals < 18 ? UniswapV3MathLib._max(10 ** tokenOutDecimals / 10 ** tokenInDecimals, 1) : 1;

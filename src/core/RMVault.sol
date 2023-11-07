@@ -53,7 +53,7 @@ contract RMVault is RVaultBase, IManagedVault {
 
     /// @inheritdoc IManagedVault
     function changeParams(address[] memory addresses, uint[] memory nums) external {
-        // todo implement bbRatio changing
+        // todo #22 implement bbRatio changing
         require (IPlatform(platform()).vaultManager() == msg.sender, "RMVault: denied");
         uint addressesLength = addresses.length;
         require (nums.length == addressesLength + 2, "RMVault: incorrect params");
@@ -79,7 +79,7 @@ contract RMVault is RVaultBase, IManagedVault {
         }
 
         if (nums[addressesLength + 1] != compoundRatio) {
-            // todo check side effects with tests
+            // todo #22 check side effects with tests
             compoundRatio = nums[addressesLength + 1];
             emit CompoundRatio(nums[addressesLength + 1]);
         }

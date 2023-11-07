@@ -57,9 +57,9 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        IERC20(_assets[0]).approve(farm.addresses[2], type(uint).max);
-        IERC20(_assets[1]).approve(farm.addresses[2], type(uint).max);
-        IERC20(farm.addresses[2]).approve(farm.addresses[1], type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(farm.addresses[2]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     function initVariants(address platform_) public view returns (
@@ -144,6 +144,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         // calculate shares
         IHypervisor hypervisor = IHypervisor(_underlying);
         IAlgebraPool _pool = IAlgebraPool(pool);
+        //slither-disable-next-line unused-return
         (,int24 tick,,,,,) = _pool.globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
@@ -171,6 +172,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
         IHypervisor hypervisor = IHypervisor(_underlying);
+        //slither-disable-next-line unused-return
         (,int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));

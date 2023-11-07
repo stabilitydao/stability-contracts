@@ -207,6 +207,38 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.prank(platform.multisig());
         hw.setDedicatedServerMsgSender(address(this), true);
 
+        // check HardWorker.changeVaultExcludeStatus
+        {
+            (address[] memory vaultAddress,,,,,) = IVaultManager(platform.vaultManager()).vaults();
+            address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
+            vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
+            bool[] memory status = new bool[](1);
+            
+            vm.expectRevert("HardWorker: wrong input");
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, new bool[](3));
+
+            vaultAddressesForChangeExcludeStatus[0] = address(4);
+            vm.expectRevert("HardWorker: vault not exist");
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+            vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
+
+            vm.expectRevert("HardWorker: zero length");
+            hw.changeVaultExcludeStatus(new address[](0), new bool[](0));
+
+            vm.expectRevert('HardWorker: vault already has this exclude status');
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+
+            status[0] = true;
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+
+            status[0] = false;
+            hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+        }
+
+        vm.expectRevert("HardWorker: wrong");
+        hw.setMaxHwPerCall(0);
+        hw.setMaxHwPerCall(5);
+
         (success,) = address(hw).call(execPayload);
         assertEq(success, true);
 
