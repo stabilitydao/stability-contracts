@@ -12,7 +12,7 @@ contract Zap is Controllable {
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    string internal _VERSION = '1.0.0';
+    string internal constant _VERSION = '1.0.0';
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -44,7 +44,7 @@ contract Zap is Controllable {
         swapAmounts = new uint[](len);
         IDexAdapter dexAdapter = IPairStrategyBase(strategy).dexAdapter();
         uint[] memory proportions = dexAdapter.getProportions(IPairStrategyBase(strategy).pool());
-        uint amountInUsed;
+        uint amountInUsed = 0;
         for (uint i; i < len; ++i) {
             bool isLast = i == len - 1;
             if (assets[i] != tokenIn) {
@@ -61,7 +61,7 @@ contract Zap is Controllable {
     }
 
     /// @inheritdoc IControllable
-    function VERSION() external view returns (string memory) {
+    function VERSION() external pure returns (string memory) {
         return _VERSION;
     }
 }
