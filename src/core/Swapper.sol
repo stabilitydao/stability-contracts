@@ -12,6 +12,7 @@ import "../interfaces/IDexAdapter.sol";
 /// @notice On-chain price quoter and swapper. It works by predefined routes using DeX adapters.
 /// @dev Inspired by TetuLiquidator
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -120,6 +121,7 @@ contract Swapper is Controllable, ISwapper {
         delete blueChipsPools[tokenIn][tokenOut];
         _bcAssets.remove(tokenIn);
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
+        emit BlueChipPoolRemoved(tokenIn, tokenOut);
     }
 
     /// @inheritdoc ISwapper

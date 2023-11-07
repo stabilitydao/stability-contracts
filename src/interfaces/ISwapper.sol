@@ -3,12 +3,14 @@ pragma solidity ^0.8.21;
 
 /// @notice On-chain price quoter and swapper by predefined routes
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface ISwapper {
   event Swap(address indexed tokenIn, address indexed tokenOut, uint amount);
   event PoolAdded(PoolData poolData);
   event PoolRemoved(address token);
   event BlueChipAdded(PoolData poolData);
   event ThresholdChanged(address token, uint threshold);
+  event BlueChipPoolRemoved(address tokenIn, address tokenOut);
 
   struct PoolData {
     address pool;

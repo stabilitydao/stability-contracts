@@ -9,6 +9,7 @@ import "../interfaces/IAprOracle.sol";
 ///      Such data is needed on-chain for the operation of automatic vaults,
 ///      which can themselves select assets to work with, and to show the overall APR of the strategy in VaultManager NFT.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract AprOracle is Controllable, IAprOracle {
 
     /// @dev Version of AprOracle implementation
@@ -27,6 +28,7 @@ contract AprOracle is Controllable, IAprOracle {
         for (uint i; i < len; ++i) {
             assetApr[assets[i]] = aprs[i];
         }
+        emit SetAprs(assets, aprs);
     }
 
     /// @inheritdoc IAprOracle

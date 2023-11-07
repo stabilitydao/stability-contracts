@@ -3,7 +3,13 @@ pragma solidity ^0.8.21;
 
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IPriceReader {
+    //region ----- Events -----
+    event AdapterAdded(address adapter);
+    event AdapterRemoved(address adapter);
+    //endregion -- Events -----
+
     /// @notice Price of asset
     /// @dev Price of 1.0 amount of asset in USD
     /// @param asset Address of asset

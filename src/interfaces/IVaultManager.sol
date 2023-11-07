@@ -8,7 +8,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IVaultManager is IERC721 {
+    //region ----- Events -----
+    event ChangeVaultParams(uint tokenId, address[] addresses, uint[] nums);
+    event SetRevenueReceiver(uint tokenId, address receiver);
+    //endregion -- Events -----
+
     struct VaultData {
         // vault
         uint tokenId;

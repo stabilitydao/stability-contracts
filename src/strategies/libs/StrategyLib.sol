@@ -19,7 +19,8 @@ import "../../interfaces/IRVault.sol";
 library StrategyLib {
     using SafeERC20 for IERC20;
 
-    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration);
+    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
+    event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
 
     struct PairStrategyBaseSwapForDepositProportionVars {
         ISwapper swapper;
@@ -127,6 +128,7 @@ library StrategyLib {
                 if (multisigAmount > 0) {
                     IERC20(assets_[i]).safeTransfer(_platform.multisig(), multisigAmount);
                 }
+                emit ExtractFees(feeAmounts[1], feeAmounts[2], feeAmounts[3], multisigAmount);
             }
         }
     }
@@ -151,7 +153,8 @@ library StrategyLib {
         uint[] memory amounts,
         uint tvl,
         uint totalBefore,
-        uint totalAfter
+        uint totalAfter,
+        address vault
     ) external returns(uint apr, uint aprCompound) {
         uint duration = block.timestamp - lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
@@ -159,7 +162,8 @@ library StrategyLib {
         (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
         apr = computeApr(tvl, earned, duration);
         aprCompound = computeApr(totalBefore, totalAfter - totalBefore, duration);
-        emit HardWork(apr, aprCompound, earned, tvl, duration);
+        uint sharePrice = tvl * 1e18 / IERC20(vault).totalSupply();
+        emit HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
     }
 
     function balance(address token) public view returns (uint) {

@@ -113,7 +113,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 _compound();
             }
 
-            (lastApr, lastAprCompound) = StrategyLib.emitApr(lastHardWork, _platform, __assets, __amounts, tvl, totalBefore, total);
+            (lastApr, lastAprCompound) = StrategyLib.emitApr(lastHardWork, _platform, __assets, __amounts, tvl, totalBefore, total, vault);
             lastHardWork = block.timestamp;
         }
     }

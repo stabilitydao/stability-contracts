@@ -17,6 +17,7 @@ import "../interfaces/IManagedVault.sol";
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
     /// @dev Version of VaultManager implementation
@@ -42,6 +43,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         _requireOwner(tokenId);
         address vault = tokenVault[tokenId];
         IManagedVault(vault).changeParams(addresses, nums);
+        emit ChangeVaultParams(tokenId, addresses, nums);
     }
 
     /// @inheritdoc IVaultManager
@@ -55,6 +57,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     function setRevenueReceiver(uint tokenId, address receiver) external {
         _requireOwner(tokenId);
         _revenueReceiver[tokenId] = receiver;
+        emit SetRevenueReceiver(tokenId, receiver);
     }
 
     /// @dev Returns current token URI metadata

@@ -6,7 +6,11 @@ pragma solidity ^0.8.21;
 //       Such data is needed on-chain for the operation of automatic vaults,
 ///      which can themselves select assets to work with, and to show the overall APR of the strategy in VaultManager NFT.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IAprOracle {
+    //region ----- Events -----
+    event SetAprs(address[] assets, uint[] aprs);
+    //endregion -- Events -----
 
     /// @notice Get stored APR of assets with APR
     /// @param assets Underlying assets. Can be liquidity managing vault (Gamma's HyperVisor etc), LST (stETH etc) or other
