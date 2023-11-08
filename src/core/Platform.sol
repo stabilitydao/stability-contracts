@@ -136,14 +136,14 @@ contract Platform is Controllable, IPlatform {
 
     //region ----- Init -----
 
-    function initialize(address multisig_, string memory version_) public initializer {
+    function initialize(address multisig_, string memory version) public initializer {
         //slither-disable-next-line missing-zero-check
         multisig = multisig_;
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
         _operators.add(msg.sender);
-        PLATFORM_VERSION = version_;
-        emit PlatformVersion(version_);
+        PLATFORM_VERSION = version;
+        emit PlatformVersion(version);
     }
 
     function setup(
@@ -207,12 +207,12 @@ contract Platform is Controllable, IPlatform {
         address[] memory proxies,
         address[] memory newImplementations
     ) external onlyGovernanceOrMultisig {
-        require(_pendingPlatformUpgrade.proxies.length == 0,"Platform: ANNOUNCED");
+        require(_pendingPlatformUpgrade.proxies.length == 0, "Platform: ANNOUNCED");
         uint len = proxies.length;
-        require(len == newImplementations.length, "Platform:versionINPUT");
+        require(len == newImplementations.length, "Platform: WRONG_INPUT");
         for (uint i; i < len; ++i) {
             require(proxies[i] != address(0), "Platform: zero proxy address");
-            require(newImplementations[i] != address(0), "Plversion zero implementation address");
+            require(newImplementations[i] != address(0), "Platform: zero implementation address");
             require(!CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION()), "Platform: same version");
         }
         string memory oldVersion = PLATFORM_VERSION;

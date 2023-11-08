@@ -290,7 +290,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //endregion -- User actions ----
 
     //region ----- View functions -----
-    
+
     /// @inheritdoc IFactory
     function vaultTypes() external view returns (
         string[] memory vaultType,

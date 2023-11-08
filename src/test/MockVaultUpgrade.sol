@@ -66,5 +66,4 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
     function _mintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut) internal returns (uint mintAmount) {}
 
     function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed) internal view returns (uint mintAmount, uint initialShares) {}
-
 }

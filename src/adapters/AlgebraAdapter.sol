@@ -10,6 +10,7 @@ import "../core/libs/ConstantsLib.sol";
 import "../strategies/libs/UniswapV3MathLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
+
 /// @notice DeX adapter for working with AlegbraV1 AMMs used in QuickSwapV3.
 /// @author Alien Deployer (https://github.com/a17)
 contract AlgebraAdapter is Controllable, IDexAdapter {
