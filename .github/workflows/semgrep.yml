@@ -31,6 +31,8 @@ jobs:
         with:
           repository: decurity/semgrep-smart-contracts
           path: rules
+      # Upgrade semgrep
+      - run: pip install semgrep --upgrade
       # Run security and gas optimization rules
       - run: semgrep ci --sarif --output=semgrep.sarif || true
         env:
