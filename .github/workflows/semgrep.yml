@@ -1,25 +1,36 @@
 name: Semgrep
+
 on:
-  workflow_dispatch: {}
-  pull_request: {}
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - .github/workflows/semgrep.yml
-  schedule:
-    # random HH:MM to avoid a load spike on GitHub Actions at 00:00
-    - cron: '30 8 * * *'
+    # Scan changed files in PRs (diff-aware scanning):
+    pull_request: {}
+    # On-demand 
+    workflow_dispatch: {}
+
 jobs:
   semgrep:
     name: semgrep/ci
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
     container:
       image: returntocorp/semgrep
     if: (github.actor != 'dependabot[bot]')
     steps:
+      # Fetch project source with GitHub Actions Checkout.
       - uses: actions/checkout@v3
-      - run: semgrep ci
+      # Fetch semgrep rules
+      - name: Fetch semgrep rules
+        uses: actions/checkout@v3
+        with:
+          repository: decurity/semgrep-smart-contracts
+          path: rules
+      # Run security and gas optimization rules
+      - run: semgrep ci --sarif --output=semgrep.sarif || true
+        env:
+             SEMGREP_RULES: rules/solidity/security rules/solidity/performance
+      # Upload findings to GitHub Advanced Security Dashboard
+      - name: Upload findings to GitHub Advanced Security Dashboard
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
+        if: always()
