@@ -76,7 +76,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         }));
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
-        
+
         IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
@@ -101,7 +101,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
     /// @inheritdoc IStrategy
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
         //slither-disable-next-line unused-return
-        return QuickswapLib.initVariants(platform_, DEX_ADAPTER_ID(), STRATEGY_LOGIC_ID());
+        return QuickswapLib.initVariants(platform_, dexAdapterId(), STRATEGY_LOGIC_ID());
     }
 
     /// @inheritdoc IStrategy
@@ -158,7 +158,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IPairStrategyBase
-    function DEX_ADAPTER_ID() public pure override returns(string memory) {
+    function dexAdapterId() public pure override returns(string memory) {
         return DexAdapterIdLib.ALGEBRA;
     }
 

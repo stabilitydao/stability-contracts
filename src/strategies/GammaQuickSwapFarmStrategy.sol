@@ -89,7 +89,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IPairStrategyBase
-    function DEX_ADAPTER_ID() public pure override returns(string memory) {
+    function dexAdapterId() public pure override returns(string memory) {
         return DexAdapterIdLib.ALGEBRA;
     }
 
@@ -106,7 +106,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         uint[] memory nums,
         int24[] memory ticks
     ) {
-        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(DEX_ADAPTER_ID()))).proxy);
+        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(dexAdapterId()))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
     
@@ -273,6 +273,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
             // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] < amount1Start) {
+            //slither-disable-next-line similar-names
             (uint amount0Start, uint amount0End) = uniProxy.getDepositAmount(_underlying, _assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
@@ -330,6 +331,6 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
         uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
-        return pool0PricedInToken1 * 1e18 / (pool0PricedInToken1 + pool1);
+        return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 }
