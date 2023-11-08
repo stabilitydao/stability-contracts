@@ -16,3 +16,4 @@ docs/
 .idea
 lcov.info
 report.txt
+semgrep.sarif
