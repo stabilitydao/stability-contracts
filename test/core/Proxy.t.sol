@@ -38,7 +38,7 @@ contract ProxyTest is Test, MockSetup {
         vm.prank(address(platform));
         proxy.upgrade(address(vaultImplementationUpgrade));
 
-        assertEq(vault.version(), '10.99.99');
+        assertEq(vault.VERSION(), '10.99.99');
 
         // IControllable
         assertEq(proxy.implementation(), address(vaultImplementationUpgrade));

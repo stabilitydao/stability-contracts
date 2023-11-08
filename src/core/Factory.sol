@@ -30,7 +30,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @dev Version of Factory implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -290,11 +290,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //endregion -- User actions ----
 
     //region ----- View functions -----
-
-    /// @inheritdoc IControllable
-    function version() external pure returns (string memory) {
-        return _VERSION;
-    }
     
     /// @inheritdoc IFactory
     function vaultTypes() external view returns (

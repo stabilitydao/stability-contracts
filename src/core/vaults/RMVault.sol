@@ -19,7 +19,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Constants -----
 
     /// @dev Version of RMVault implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     //endregion -- Constants -----
 
@@ -88,11 +88,6 @@ contract RMVault is RVaultBase, IManagedVault {
     //endregion -- User actions ----
 
     //region ----- View functions -----
-
-    /// @inheritdoc IControllable
-    function version() external pure returns (string memory) {
-        return _VERSION;
-    }
 
     /// @inheritdoc IVault
     function extra() external pure returns (bytes32) {

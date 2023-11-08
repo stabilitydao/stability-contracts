@@ -15,7 +15,7 @@ contract PriceReader is Controllable, IPriceReader {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev Version of PriceReader implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     EnumerableSet.AddressSet internal _adapters;
 
@@ -37,11 +37,6 @@ contract PriceReader is Controllable, IPriceReader {
     function removeAdapter(address adapter_) external onlyOperator {
         require(_adapters.remove(adapter_), "PR: not exist");
         emit AdapterRemoved(adapter_);
-    }
-
-    /// @inheritdoc IControllable
-    function version() external pure returns (string memory) {
-        return _VERSION;
     }
 
     /// @inheritdoc IPriceReader

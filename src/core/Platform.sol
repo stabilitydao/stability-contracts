@@ -26,7 +26,7 @@ contract Platform is Controllable, IPlatform {
     //region ----- Constants -----
 
     /// @dev Version of Platform contract implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -213,7 +213,7 @@ contract Platform is Controllable, IPlatform {
         for (uint i; i < len; ++i) {
             require(proxies[i] != address(0), "Platform: zero proxy address");
             require(newImplementations[i] != address(0), "Plversion zero implementation address");
-            require(!CommonLib.eq(IControllable(proxies[i]).version(), IControllable(newImplementations[i]).version()), "Platform: same version");
+            require(!CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION()), "Platform: same version");
         }
         string memory oldVersion = PLATFORM_VERSION;
         require(!CommonLib.eq(oldVersion, newVersion), "Platform: same platform version");
@@ -233,13 +233,13 @@ contract Platform is Controllable, IPlatform {
         PlatformUpgrade memory platformUpgrade = _pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
         for (uint i; i < len; ++i) {
-            string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).version();
+            string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
             emit ProxyUpgraded(
                 platformUpgrade.proxies[i],
                 platformUpgrade.newImplementations[i],
                 oldContractVersion,
-                IControllable(platformUpgrade.proxies[i]).version()
+                IControllable(platformUpgrade.proxies[i]).VERSION()
             );
         }
         PLATFORM_VERSION = platformUpgrade.newVersion;
@@ -253,7 +253,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
         require (platformUpgradeTimelock != 0, "Platform: no upgrade");
-        emit CancelUpgrade(version(), _pendingPlatformUpgrade.newVersion);
+        emit CancelUpgrade(VERSION, _pendingPlatformUpgrade.newVersion);
         _pendingPlatformUpgrade.newVersion = '';
         _pendingPlatformUpgrade.proxies = new address[](0);
         _pendingPlatformUpgrade.newImplementations = new address[](0);
@@ -321,11 +321,6 @@ contract Platform is Controllable, IPlatform {
     //endregion -- Restricted actions ----
 
     //region ----- View functions -----
-
-    /// @inheritdoc IControllable
-    function version() public pure returns (string memory) {
-        return _VERSION;
-    }
 
     /// @inheritdoc IPlatform
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory) {

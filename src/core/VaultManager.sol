@@ -21,7 +21,7 @@ import "../interfaces/IManagedVault.sol";
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
     /// @dev Version of VaultManager implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     /// @inheritdoc IVaultManager
     mapping (uint tokenId => address vault) public tokenVault;
@@ -58,11 +58,6 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         _requireOwner(tokenId);
         _revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
-    }
-
-    /// @inheritdoc IControllable
-    function version() external pure returns (string memory) {
-        return _VERSION;
     }
 
     /// @dev Returns current token URI metadata

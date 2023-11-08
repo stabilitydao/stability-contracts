@@ -19,7 +19,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
     using SafeERC20 for IERC20;
 
     /// @dev Version of QuickSwapV3StaticFarmStrategy implementation
-    string internal constant _VERSION = '1.0.0';
+    string public constant VERSION = '1.0.0';
 
     int24 public lowerTick;
     int24 public upperTick;
@@ -61,11 +61,6 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
         IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
-    }
-
-    /// @inheritdoc IControllable
-    function version() external pure returns (string memory) {
-        return _VERSION;
     }
 
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
