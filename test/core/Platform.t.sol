@@ -20,6 +20,8 @@ contract PlatformTest is Test  {
     }
 
     function testSetup() public {
+        vm.expectRevert("Zero multisig");
+        platform.initialize(address(0), '23.11.0-dev');
         platform.initialize(address(this), '23.11.0-dev');
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         platform.initialize(address(this), '23.11.0-dev');
