@@ -25,7 +25,7 @@ abstract contract PairStrategyBase is StrategyBase, IPairStrategyBase {
     function __PairStrategyBase_init(PairStrategyBaseInitParams memory params) internal onlyInitializing {
         address[] memory _assets;
         uint exchangeAssetIndex;
-        (_assets, exchangeAssetIndex, dexAdapter) = StrategyLib.PairStrategyBase_init(params.platform, params, DEX_ADAPTER_ID());
+        (_assets, exchangeAssetIndex, dexAdapter) = StrategyLib.PairStrategyBase_init(params.platform, params, dexAdapterId());
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
         pool = params.pool;
     }
@@ -39,7 +39,7 @@ abstract contract PairStrategyBase is StrategyBase, IPairStrategyBase {
     }
 
     /// @inheritdoc IPairStrategyBase
-    function DEX_ADAPTER_ID() public view virtual returns(string memory);
+    function dexAdapterId() public view virtual returns(string memory);
 
     function _previewDepositAssets(uint[] memory amountsMax) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
         (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax);

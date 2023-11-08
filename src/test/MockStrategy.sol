@@ -59,7 +59,7 @@ contract MockStrategy is PairStrategyBase {
         return CommonLib.bytesToBytes32(abi.encodePacked(color, bgColor));
     }
 
-    function DEX_ADAPTER_ID() public pure override returns(string memory) {
+    function dexAdapterId() public pure override returns(string memory) {
         return 'MOCKSWAP';
     }
 

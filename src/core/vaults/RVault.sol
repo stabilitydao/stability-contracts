@@ -2,11 +2,11 @@
 pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./base/VaultBase.sol";
-import "./libs/VaultTypeLib.sol";
-import "../interfaces/IRVault.sol";
-import "./libs/CommonLib.sol";
-import "./base/RVaultBase.sol";
+import "../base/VaultBase.sol";
+import "../libs/VaultTypeLib.sol";
+import "../../interfaces/IRVault.sol";
+import "../libs/CommonLib.sol";
+import "../base/RVaultBase.sol";
 
 /// @notice Rewarding unmanaged vault.
 ///         Vault has 0% compound ratio, buy-back reward token and additional default boost reward tokens with default vesting duration.

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import {Platform} from "../../src/core/Platform.sol";
-import "../../src/core/CVault.sol";
 import "../../src/core/PriceReader.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockERC20.sol";
