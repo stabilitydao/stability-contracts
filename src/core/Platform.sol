@@ -137,6 +137,7 @@ contract Platform is Controllable, IPlatform {
     //region ----- Init -----
 
     function initialize(address multisig_, string memory version_) public initializer {
+        //slither-disable-next-line missing-zero-check
         multisig = multisig_;
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
