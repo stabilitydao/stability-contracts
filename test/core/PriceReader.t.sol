@@ -13,6 +13,7 @@ contract PriceReaderTest is Test, MockSetup {
     ChainlinkAdapter public chainlinkAdapter;
     MockAggregatorV3Interface public aggregatorV3InterfaceTokenA;
     MockAggregatorV3Interface public aggregatorV3InterfaceTokenB;
+    MockAggregatorV3Interface public aggregatorV3InterfaceTokenD;
 
     function setUp() public {
         Proxy proxy = new Proxy();
@@ -25,17 +26,18 @@ contract PriceReaderTest is Test, MockSetup {
 
         aggregatorV3InterfaceTokenA = new MockAggregatorV3Interface();
         aggregatorV3InterfaceTokenB = new MockAggregatorV3Interface();
+        aggregatorV3InterfaceTokenD = new MockAggregatorV3Interface();
         aggregatorV3InterfaceTokenA.setAnswer(1e8);
         aggregatorV3InterfaceTokenA.setUpdatedAt(10);
         aggregatorV3InterfaceTokenB.setAnswer(2 * 1e8);
         aggregatorV3InterfaceTokenB.setUpdatedAt(10);
+        aggregatorV3InterfaceTokenD.setAnswer(3 * 1e8);
+        aggregatorV3InterfaceTokenD.setUpdatedAt(10);
     }
 
     function testOraclePrices() public {
         priceReader.initialize(address(platform));
         chainlinkAdapter.initialize(address(platform));
-
-        (uint _price,) = chainlinkAdapter.getPrice(address(this));
 
         priceReader.addAdapter(address(chainlinkAdapter));
         vm.expectRevert("PR: exist");
@@ -44,36 +46,43 @@ contract PriceReaderTest is Test, MockSetup {
         address[] memory adapters = priceReader.adapters();
         assertEq(adapters[0], address(chainlinkAdapter));
 
-        address[] memory assets = new address[](2);
+        address[] memory assets = new address[](3);
         assets[0] = address(tokenA);
         assets[1] = address(tokenB);
-        address[] memory priceFeeds = new address[](2);
+        assets[2] = address(tokenD);
+        address[] memory priceFeeds = new address[](3);
         priceFeeds[0] = address(aggregatorV3InterfaceTokenA);
         priceFeeds[1] = address(aggregatorV3InterfaceTokenB);
+        priceFeeds[2] = address(aggregatorV3InterfaceTokenD);
         chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
 
         // getPrice test
         (uint priceA, bool trustedA) = priceReader.getPrice(address(tokenA));
         (uint priceB, bool trustedB) = priceReader.getPrice(address(tokenB));
+        (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD));
         vm.expectRevert();
-        /*(uint priceUnavailable, bool trustedUnavailable) = */priceReader.getPrice(address(this));
+        /*(uint priceUnavailable, bool trustedUnavailable) =*/ priceReader.getPrice(address(this)); 
         assertEq(priceA, 1e18);
         assertEq(trustedA, true);
         assertEq(priceB, 2 * 1e18);
-        assertEq(trustedB, true);
+        assertEq(trustedB, true); 
+        assertEq(priceD, 3 * 1e18);
+        assertEq(trustedD, true); 
 //        assertEq(priceUnavailable, 0);
 //        assertEq(trustedUnavailable, false);
-
+        //todo Decimals >18
         // getAssetsPrice test
-        uint[] memory amounts = new uint[](2);
+         uint[] memory amounts = new uint[](3);
         amounts[0] = 500e18;
         amounts[1] = 300e6;
+        amounts[2] = 300e18;
         (uint total, uint[] memory assetAmountPrice, bool trusted) = priceReader.getAssetsPrice(assets, amounts);
         assertEq(assetAmountPrice[0], 500e18);
         assertEq(assetAmountPrice[1], 300 * 2 * 1e18);
-        assertEq(total, 1100 * 1e18);
-        assertEq(trusted, true);
-
+        assertEq(assetAmountPrice[2], 300 * 3 * 1e18);
+        assertEq(total, 2000 * 1e18);
+        assertEq(trusted, true); 
+        
         priceReader.removeAdapter(address(chainlinkAdapter));
         vm.expectRevert("PR: not exist");
         priceReader.removeAdapter(address(chainlinkAdapter));
@@ -86,8 +95,8 @@ contract PriceReaderTest is Test, MockSetup {
         removeAssets[0] = address(tokenA);
         chainlinkAdapter.removePriceFeeds(removeAssets);
         allAssets = chainlinkAdapter.assets();
-        assertEq(allAssets[0], address(tokenB));
+        assertEq(allAssets[0], address(tokenD));
         (uint price,) = chainlinkAdapter.getPrice(address(this));
-        assertEq(price, 0);
+        assertEq(price, 0);  
     }
 }

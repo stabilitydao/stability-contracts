@@ -409,11 +409,12 @@ contract Platform is Controllable, IPlatform {
         //slither-disable-next-line uninitialized-local
         uint y;
         for (uint i; i < len; ++i) {
-            if (limit[i] > 0) {
-                bbToken[y] = allBbTokens[i];
-                vaultsLimit[y] = limit[i];
-                ++y;
+            if (limit[i] == 0) {
+                continue;
             }
+            bbToken[y] = allBbTokens[i];
+            vaultsLimit[y] = limit[i];
+            ++y;
         }
     }
 
