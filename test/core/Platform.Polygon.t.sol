@@ -163,7 +163,10 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitAddresses,
                 strategyInitNums,
                 strategyInitTicks
-            );
+            ); 
+            (,,,,uint[] memory vaultSharePrice,uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
+            assertEq(vaultSharePrice[0], 0);
+            assertEq(vaultUserBalance[0], 0);
             vm.expectRevert('Factory: such vault already deployed');
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
@@ -293,11 +296,24 @@ contract PlatformPolygonTest is PolygonSetup {
         canReceive = true;
         hw.call(vaultsForHardWork);
 
+        //Still yellow! 
         vm.startPrank(address(hw.dedicatedGelatoMsgSender()));
-        deal(address(hw), type(uint).max); 
-        console.log(address(hw).balance);
-        console.log(hw.gelatoMinBalance());
+
+        //lower
+        deal(address(hw), 0); 
+        assertGt(hw.gelatoMinBalance(), address(hw).balance);
         hw.call(vaultsForHardWork);
+
+        //equal
+        deal(address(hw), hw.gelatoMinBalance()); 
+        assertEq(address(hw).balance, hw.gelatoMinBalance());
+        hw.call(vaultsForHardWork);
+
+        //higher
+        deal(address(hw), type(uint).max); 
+        assertGt(address(hw).balance, hw.gelatoMinBalance());
+        hw.call(vaultsForHardWork);
+
         vm.stopPrank();
         
 

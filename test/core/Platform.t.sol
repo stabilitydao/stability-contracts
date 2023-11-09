@@ -184,7 +184,7 @@ contract PlatformTest is Test  {
 
             address[] memory __implementations = new address[](1);
             __implementations[0] = address(0);
-            
+
            vm.expectRevert("Platform: zero implementation address");
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
@@ -256,83 +256,119 @@ contract PlatformTest is Test  {
         platform.initialize(address(this), '23.11.0-dev');
         address govAddr = platform.governance();
 
-        vm.prank(address(123));
+        vm.prank(address(1));
         vm.expectRevert("Controllable: not governance");
         platform.setFees(1,1,1,1); 
 
-        vm.prank(govAddr);
+        vm.startPrank(govAddr);
         platform.setFees(6_000, 30_000, 30_000, 0); 
         (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) = platform.getFees();
         assertEq(fee, 6_000);
         assertEq(feeShareVaultManager, 30_000);
         assertEq(feeShareStrategyLogic, 30_000);
         assertEq(feeShareEcosystem, 0);
+
+        vm.expectRevert("Platform: zero ecosystemFeeReceiver");
+        platform.setFees(6_000, 30_000, 30_000, 5); 
+
+        vm.expectRevert("Platform: incorrect fee");
+        platform.setFees(3_000, 30_000, 30_000, 0); 
+        vm.expectRevert("Platform: incorrect fee");
+        platform.setFees(13_000, 30_000, 30_000, 0); 
+
+        vm.expectRevert("Platform: incorrect feeShareVaultManager");
+        platform.setFees(6_000, 3_000, 30_000, 0); 
+
+        vm.expectRevert("Platform: incorrect feeShareStrategyLogic");
+        platform.setFees(6_000, 30_000, 3_000, 0); 
+
+        vm.expectRevert("Platform: incorrect fee shares");
+        platform.setFees(10_000, 60_000, 50_000, 0); 
+
+        vm.stopPrank();
     }
 
-    function testAddRemoveAllowedBBToken() public {
+    function testAddRemoveUseAllowedBBToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.setAllowedBBTokenVaults(address(123), 5);
-        platform.setAllowedBBTokenVaults(address(456), 5);
+        platform.setAllowedBBTokenVaults(address(1), 5);
+        platform.setAllowedBBTokenVaults(address(2), 5);
+        platform.setAllowedBBTokenVaults(address(3), 1);
+
+        vm.startPrank(address(platform.factory()));
+        platform.useAllowedBBTokenVault(address(3));
+        vm.expectRevert("Platform: building for bbToken is not allowed");
+        platform.useAllowedBBTokenVault(address(3));
+        vm.stopPrank();
 
         (address[] memory bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(123));
-        assertEq(bbToken[1], address(456));
-
+        assertEq(bbToken[0], address(1));
+        assertEq(bbToken[1], address(2));
+ 
         vm.expectRevert("Platform: BB-token not found");
         platform.removeAllowedBBToken(address(5));
 
         platform.removeAllowedBBToken(bbToken[0]);
         
         (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(456));
+        //EnumerableSet.remove change positions inside array
+        assertEq(bbToken[0], address(3));
+        assertEq(bbToken[1], address(2));
 
         platform.removeAllowedBBToken(bbToken[0]);
         (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 0);
+        assertEq(bbToken.length, 1); 
+        platform.removeAllowedBBToken(bbToken[0]);
+        (bbToken, ) = platform.allowedBBTokenVaults();
+        assertEq(bbToken.length, 0); 
+
+        //STILL YELLOW!
+        /* platform.setAllowedBBTokenVaults(address(1), 5);
+        platform.setAllowedBBTokenVaults(address(2), 0);
+        (, uint[] memory limits) = platform.allowedBBTokenVaultsFiltered(); */
     }
 
     function testAddRemoveAllowedBoostRewardToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addAllowedBoostRewardToken(address(123));
-        platform.addAllowedBoostRewardToken(address(456));
+        platform.addAllowedBoostRewardToken(address(1));
+        platform.addAllowedBoostRewardToken(address(2));
 
         vm.expectRevert("Platform: EXIST");
-        platform.addAllowedBoostRewardToken(address(456));
+        platform.addAllowedBoostRewardToken(address(2));
         vm.expectRevert("Platform: EXIST");
         platform.removeAllowedBoostRewardToken(address(789));
 
         address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(123));
-        assertEq(allowedTokens[1], address(456));
+        assertEq(allowedTokens[0], address(1));
+        assertEq(allowedTokens[1], address(2));
 
-        platform.removeAllowedBoostRewardToken(address(123));
+        platform.removeAllowedBoostRewardToken(address(1));
         allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(456));
+        assertEq(allowedTokens[0], address(2));
 
-        platform.removeAllowedBoostRewardToken(address(456));
+        platform.removeAllowedBoostRewardToken(address(2));
         allowedTokens = platform.allowedBoostRewardTokens();
         assertEq(allowedTokens.length, 0);
     }
 
     function testAddRemoveDefaultBoostRewardToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addDefaultBoostRewardToken(address(123));
-        platform.addDefaultBoostRewardToken(address(456));
+        platform.addDefaultBoostRewardToken(address(1));
+        platform.addDefaultBoostRewardToken(address(2));
 
         vm.expectRevert("Platform: EXIST");
-        platform.addDefaultBoostRewardToken(address(456));
+        platform.addDefaultBoostRewardToken(address(2));
         vm.expectRevert("Platform: EXIST");
         platform.removeDefaultBoostRewardToken(address(789));
 
         address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(123));
-        assertEq(defaultTokens[1], address(456));
+        assertEq(defaultTokens[0], address(1));
+        assertEq(defaultTokens[1], address(2));
 
-        platform.removeDefaultBoostRewardToken(address(123));
+        platform.removeDefaultBoostRewardToken(address(1));
         defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(456));
+        assertEq(defaultTokens[0], address(2));
 
-        platform.removeDefaultBoostRewardToken(address(456));
+        platform.removeDefaultBoostRewardToken(address(2));
         defaultTokens = platform.defaultBoostRewardTokens();
         assertEq(defaultTokens.length, 0);
 
@@ -340,14 +376,16 @@ contract PlatformTest is Test  {
 
     function testGetDexAdapters() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addDexAdapter("myId", address(123));
-        platform.addDexAdapter("myId2", address(456));
+        platform.addDexAdapter("myId", address(1));
+        platform.addDexAdapter("myId2", address(2));
+        vm.expectRevert("Platform: DeX adapter already exist");
+        platform.addDexAdapter("myId2", address(2));
 
         (string[] memory ids, address[] memory proxies) = platform.getDexAdapters();
         assertEq(ids[0], "myId");
         assertEq(ids[1], "myId2");
-        assertEq(proxies[0], address(123));
-        assertEq(proxies[1], address(456));
+        assertEq(proxies[0], address(1));
+        assertEq(proxies[1], address(2));
 
     }
 
@@ -421,11 +459,11 @@ contract PlatformTest is Test  {
 
         address _logic = platform.strategyLogic();
         vm.expectRevert("StrategyLogic: not owner");
-        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         vm.prank(address(0));
-        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         address _receiver = IStrategyLogic(_logic).getRevenueReceiver(1);
-        assertEq(address(123), _receiver);
+        assertEq(address(1), _receiver);
     }
 
     function testEcosystemRevenueReceiver() public {
