@@ -397,13 +397,16 @@ contract Platform is Controllable, IPlatform {
         address[] memory allBbTokens = _allowedBBTokensVaults.keys();
         uint len = allBbTokens.length;
         uint[] memory limit = new uint[](len);
+        //slither-disable-next-line uninitialized-local
         uint k;
         for (uint i; i < len; ++i) {
+            //nosemgrep
             limit[i] = _allowedBBTokensVaults.get(allBbTokens[i]);
             if(limit[i] > 0) ++k;
         }
         bbToken = new address[](k);
         vaultsLimit = new uint[](k);
+        //slither-disable-next-line uninitialized-local
         uint y;
         for (uint i; i < len; ++i) {
             if (limit[i] > 0) {

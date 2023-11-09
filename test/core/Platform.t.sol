@@ -320,11 +320,6 @@ contract PlatformTest is Test  {
         platform.removeAllowedBBToken(bbToken[0]);
         (bbToken, ) = platform.allowedBBTokenVaults();
         assertEq(bbToken.length, 0); 
-
-        //STILL YELLOW!
-        /* platform.setAllowedBBTokenVaults(address(1), 5);
-        platform.setAllowedBBTokenVaults(address(2), 0);
-        (, uint[] memory limits) = platform.allowedBBTokenVaultsFiltered(); */
     }
 
     function testAddRemoveAllowedBoostRewardToken() public {

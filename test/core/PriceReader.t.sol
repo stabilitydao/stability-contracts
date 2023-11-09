@@ -35,6 +35,10 @@ contract PriceReaderTest is Test, MockSetup {
         priceReader.initialize(address(platform));
         chainlinkAdapter.initialize(address(platform));
 
+        (uint _price,) = chainlinkAdapter.getPrice(address(this));
+
+        priceReader.addAdapter(address(chainlinkAdapter));
+        vm.expectRevert("PR: exist");
         priceReader.addAdapter(address(chainlinkAdapter));
         assertEq(priceReader.adaptersLength(), 1);
         address[] memory adapters = priceReader.adapters();
@@ -70,6 +74,8 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(total, 1100 * 1e18);
         assertEq(trusted, true);
 
+        priceReader.removeAdapter(address(chainlinkAdapter));
+        vm.expectRevert("PR: not exist");
         priceReader.removeAdapter(address(chainlinkAdapter));
 
         // chainlink adapter test
