@@ -2,13 +2,13 @@
 pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./base/VaultBase.sol";
-import "./base/RVaultBase.sol";
-import "./libs/VaultTypeLib.sol";
-import "./libs/CommonLib.sol";
-import "../interfaces/IPlatform.sol";
-import "../interfaces/IManagedVault.sol";
-import "../interfaces/IRVault.sol";
+import "../base/VaultBase.sol";
+import "../base/RVaultBase.sol";
+import "../libs/VaultTypeLib.sol";
+import "../libs/CommonLib.sol";
+import "../../interfaces/IPlatform.sol";
+import "../../interfaces/IManagedVault.sol";
+import "../../interfaces/IRVault.sol";
 
 /// @notice Rewarding managed vault.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.

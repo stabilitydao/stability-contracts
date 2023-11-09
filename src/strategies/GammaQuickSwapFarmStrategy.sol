@@ -19,10 +19,18 @@ import "../adapters/libs/DexAdapterIdLib.sol";
 contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of GammaQuickSwapFarmStrategy implementation
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
     
     uint internal constant _PRECISION = 1e36;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          STORAGE                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     IUniProxy public uniProxy;
     IMasterChef public masterChef;
@@ -33,16 +41,24 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     /// Total gap == 50 - storage slots used.
     uint[50 - 3] private __gap;
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INITIALIZATION                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @inheritdoc IStrategy
     function initialize(
         address[] memory addresses,
         uint[] memory nums,
         int24[] memory ticks
     ) public initializer {
-        require(addresses.length == 2 && nums.length == 1 && ticks.length == 0, "GQF: bad params");
+        if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
+            revert BadInitParams();
+        }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        require(farm.addresses.length == 3 && farm.nums.length == 2 && farm.ticks.length == 0, "GQF: bad farm");
+        if (farm.addresses.length != 3 || farm.nums.length != 2 || farm.ticks.length != 0) {
+            revert BadFarm();
+        }
         uniProxy = IUniProxy(farm.addresses[0]);
         masterChef = IMasterChef(farm.addresses[1]);
         pid = farm.nums[0];
@@ -62,13 +78,35 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         IERC20(farm.addresses[2]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IFarmingStrategy
+    function canFarm() external view override returns (bool) {
+        IMasterChef.PoolInfo memory poolInfo = masterChef.poolInfo(pid);
+        return poolInfo.allocPoint > 0;
+    }
+
+    /// @inheritdoc IPairStrategyBase
+    function dexAdapterId() public pure override returns(string memory) {
+        return DexAdapterIdLib.ALGEBRA;
+    }
+
+    /// @inheritdoc IStrategy
+    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        __assets = _rewardAssets;
+        amounts = _getRewards();
+    }
+
+    /// @inheritdoc IStrategy
     function initVariants(address platform_) public view returns (
         string[] memory variants,
         address[] memory addresses,
         uint[] memory nums,
         int24[] memory ticks
     ) {
-        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(DEX_ADAPTER_ID()))).proxy);
+        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(dexAdapterId()))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
     
@@ -104,95 +142,48 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         }
     }
 
-    /// @inheritdoc IFarmingStrategy
-    function canFarm() external view override returns (bool) {
-        IMasterChef.PoolInfo memory poolInfo = masterChef.poolInfo(pid);
-        return poolInfo.allocPoint > 0;
-    }
-
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        __assets = _rewardAssets;
-        amounts = _getRewards();
-    }
-
-    /// @inheritdoc IPairStrategyBase
-    function DEX_ADAPTER_ID() public pure override returns(string memory) {
-        return DexAdapterIdLib.ALGEBRA;
-    }
-
+    /// @inheritdoc IStrategy
     function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
         return StrategyIdLib.GAMMA_QUICKSWAP_FARM;
     }
 
-    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
-        // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
-        amountsConsumed = new uint[](2);
-        (uint amount1Start, uint amount1End) = uniProxy.getDepositAmount(_underlying, _assets[0], amountsMax[0]);
-        if (amountsMax[1] > amount1End) {
-            amountsConsumed[0] = amountsMax[0];
-            // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
-            amountsConsumed[1] = amount1End;
-        } else if (amountsMax[1] < amount1Start) {
-            (uint amount0Start, uint amount0End) = uniProxy.getDepositAmount(_underlying, _assets[1], amountsMax[1]);
-            amountsConsumed[0] = (amount0End + amount0Start) / 2;
-            amountsConsumed[1] = amountsMax[1];
-        } else {
-            amountsConsumed[0] = amountsMax[0];
-            amountsConsumed[1] = amountsMax[1];
-        }
-
-        // calculate shares
-        IHypervisor hypervisor = IHypervisor(_underlying);
-        IAlgebraPool _pool = IAlgebraPool(pool);
-        //slither-disable-next-line unused-return
-        (,int24 tick,,,,,) = _pool.globalState();
-        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
-        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
-        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        value = amountsConsumed[1] + amountsConsumed[0] * price / _PRECISION;
-        uint pool0PricedInToken1 = pool0 * price / _PRECISION;
-        value = value * hypervisor.totalSupply() / (pool0PricedInToken1 + pool1);
-    }
-
-    function _previewDepositUnderlying(uint amount) internal view override returns(uint[] memory amountsConsumed) {
-        IHypervisor hypervisor = IHypervisor(_underlying);
-        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        uint _total = hypervisor.totalSupply();
-        amountsConsumed = new uint[](2);
-        amountsConsumed[0] = amount * pool0 / _total;
-        amountsConsumed[1] = amount * pool1 / _total;
-    }
-
+    /// @inheritdoc IStrategy
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
         proportions[0] = _getProportion0(pool);
         proportions[1] = 1e18 - proportions[0];
     }
 
-    /// @dev proportion of 1e18
-    function _getProportion0(address pool_) internal view returns (uint) {
-        IHypervisor hypervisor = IHypervisor(_underlying);
-        //slither-disable-next-line unused-return
-        (,int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
-        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
-        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
-        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
-        return pool0PricedInToken1 * 1e18 / (pool0PricedInToken1 + pool1);
+    /// @inheritdoc IStrategy
+    function extra() external pure returns (bytes32) {
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xe9333f), bytes3(0x191b1d)));
     }
 
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        assets_ = _assets;
-        amounts_ = new uint[](2);
-        uint _total = total;
-        if (_total > 0) {
-            IHypervisor hypervisor = IHypervisor(_underlying);
-            (amounts_[0], amounts_[1]) = hypervisor.getTotalAmounts();
-            uint totalInHypervisor = hypervisor.totalSupply();
-            (amounts_[0], amounts_[1]) = (amounts_[0] * _total / totalInHypervisor, amounts_[1] * _total / totalInHypervisor);
+    /// @inheritdoc IStrategy
+    function getSpecificName() external view override returns (string memory) {
+        IFactory.Farm memory farm = _getFarm();
+        return GammaLib.getPresetName(farm.nums[1]);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                   FARMING STRATEGY BASE                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc FarmingStrategyBase
+    function _getRewards() internal view override returns (uint[] memory amounts) {
+        uint len = _rewardAssets.length;
+        amounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            IRewarder rewarder = IRewarder(masterChef.getRewarder(pid, i));
+            amounts[i] = rewarder.pendingToken(pid, address(this));
         }
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       STRATEGY BASE                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
         if (claimRevenue) {
             (,,,uint[] memory rewardAmounts) = _claimRevenue();
@@ -207,12 +198,14 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         masterChef.deposit(pid, value, address(this));
     }
 
+    /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns(uint[] memory amountsConsumed) {
         masterChef.deposit(pid, amount, address(this));
         amountsConsumed = _previewDepositUnderlying(amount);
         total += amount;
     }
 
+    /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         masterChef.withdraw(pid, value, address(this));
         amountsOut = new uint[](2);
@@ -221,12 +214,14 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         (amountsOut[0], amountsOut[1]) = IHypervisor(_underlying).withdraw(value, receiver, address(this), minAmounts);
     }
 
+    /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
         masterChef.withdraw(pid, amount, address(this));
         IERC20(_underlying).safeTransfer(receiver, amount);
         total -= amount;
     }
 
+    /// @inheritdoc StrategyBase
     function _claimRevenue() internal override returns(
         address[] memory __assets,
         uint[] memory __amounts,
@@ -256,6 +251,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         }
     }
 
+    /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool));
         if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
@@ -267,22 +263,74 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         }
     }
 
-    function getSpecificName() external view override returns (string memory) {
-        IFactory.Farm memory farm = _getFarm();
-        return GammaLib.getPresetName(farm.nums[1]);
-    }
-
-    function extra() external pure returns (bytes32) {
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xe9333f), bytes3(0x191b1d)));
-    }
-
-    // @dev See {FarmingStrategyBase-_getRewards}
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        uint len = _rewardAssets.length;
-        amounts = new uint[](len);
-        for (uint i; i < len; ++i) {
-            IRewarder rewarder = IRewarder(masterChef.getRewarder(pid, i));
-            amounts[i] = rewarder.pendingToken(pid, address(this));
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+        // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
+        amountsConsumed = new uint[](2);
+        (uint amount1Start, uint amount1End) = uniProxy.getDepositAmount(_underlying, _assets[0], amountsMax[0]);
+        if (amountsMax[1] > amount1End) {
+            amountsConsumed[0] = amountsMax[0];
+            // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
+            amountsConsumed[1] = amount1End;
+        } else if (amountsMax[1] < amount1Start) {
+            //slither-disable-next-line similar-names
+            (uint amount0Start, uint amount0End) = uniProxy.getDepositAmount(_underlying, _assets[1], amountsMax[1]);
+            amountsConsumed[0] = (amount0End + amount0Start) / 2;
+            amountsConsumed[1] = amountsMax[1];
+        } else {
+            amountsConsumed[0] = amountsMax[0];
+            amountsConsumed[1] = amountsMax[1];
         }
+
+        // calculate shares
+        IHypervisor hypervisor = IHypervisor(_underlying);
+        IAlgebraPool _pool = IAlgebraPool(pool);
+        //slither-disable-next-line unused-return
+        (,int24 tick,,,,,) = _pool.globalState();
+        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
+        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
+        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
+        value = amountsConsumed[1] + amountsConsumed[0] * price / _PRECISION;
+        uint pool0PricedInToken1 = pool0 * price / _PRECISION;
+        value = value * hypervisor.totalSupply() / (pool0PricedInToken1 + pool1);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _previewDepositUnderlying(uint amount) internal view override returns(uint[] memory amountsConsumed) {
+        IHypervisor hypervisor = IHypervisor(_underlying);
+        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
+        uint _total = hypervisor.totalSupply();
+        amountsConsumed = new uint[](2);
+        amountsConsumed[0] = amount * pool0 / _total;
+        amountsConsumed[1] = amount * pool1 / _total;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        assets_ = _assets;
+        amounts_ = new uint[](2);
+        uint _total = total;
+        if (_total > 0) {
+            IHypervisor hypervisor = IHypervisor(_underlying);
+            (amounts_[0], amounts_[1]) = hypervisor.getTotalAmounts();
+            uint totalInHypervisor = hypervisor.totalSupply();
+            (amounts_[0], amounts_[1]) = (amounts_[0] * _total / totalInHypervisor, amounts_[1] * _total / totalInHypervisor);
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev proportion of 1e18
+    function _getProportion0(address pool_) internal view returns (uint) {
+        IHypervisor hypervisor = IHypervisor(_underlying);
+        //slither-disable-next-line unused-return
+        (,int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
+        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
+        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
+        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
+        uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
+        return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 }

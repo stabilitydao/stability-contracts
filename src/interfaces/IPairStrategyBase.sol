@@ -16,7 +16,7 @@ interface IPairStrategyBase {
     }
 
     /// @dev DeX adapter string ID for interacting with pool
-    function DEX_ADAPTER_ID() external view returns(string memory);
+    function dexAdapterId() external view returns(string memory);
 
     /// @dev DeX adapter address for interacting with pool
     function dexAdapter() external view returns (IDexAdapter);

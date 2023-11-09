@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import "../../src/core/Factory.sol";
-import "../../src/core/CVault.sol";
+import "../../src/core/vaults/CVault.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockStrategy.sol";

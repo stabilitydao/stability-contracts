@@ -2,15 +2,15 @@
 pragma solidity ^0.8.21;
 
 import {Platform} from "../../src/core/Platform.sol";
-import "../../src/core/CVault.sol";
 import "../../src/core/PriceReader.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockERC20.sol";
 import "../../src/test/MockERC721.sol";
 import "../../src/core/VaultManager.sol";
 import "../../src/core/StrategyLogic.sol";
-import "../../src/core/RVault.sol";
-import "../../src/core/RMVault.sol";
+import "../../src/core/vaults/CVault.sol";
+import "../../src/core/vaults/RVault.sol";
+import "../../src/core/vaults/RMVault.sol";
 
 abstract contract MockSetup {
     Platform public platform;

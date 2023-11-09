@@ -13,7 +13,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     event RemovedPriceFeeds(address[] assets);
 
     /// @dev Version of ChainlinkAdapter implementation
-    string public constant VERSION = '0.1.0';
+    string public constant VERSION = '1.0.0';
 
     mapping(address asset => address priceFeed) public priceFeeds;
     EnumerableSet.AddressSet internal _assets;
