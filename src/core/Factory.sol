@@ -132,11 +132,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit VaultStatus(vault, status);
     }
 
-    // todo addFarms
     /// @inheritdoc IFactory
-    function addFarm(Farm memory farm_) external onlyOperator {
-        _farms.push(farm_);
-        emit NewFarm(farm_);
+    function addFarms(Farm[] memory farms_) external onlyOperator {
+        for (uint i = 0; i < farms_.length; i++) {
+            _farms.push(farms_[i]);
+        }
+        emit NewFarm(farms_);
     }
 
     /// @inheritdoc IFactory

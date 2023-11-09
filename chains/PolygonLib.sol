@@ -151,14 +151,14 @@ library PolygonLib {
         swapper.addBlueChipsPools(bcPools, false);
         swapper.addPools(pools, false);
         // todo auto thresholds
-        address[] memory tokenIn;
+        address[] memory tokenIn = new address[](6);
         tokenIn[0] = TOKEN_USDC;
         tokenIn[1] = TOKEN_USDT;
         tokenIn[2] = TOKEN_DAI;
         tokenIn[3] = TOKEN_WMATIC;
         tokenIn[4] = TOKEN_WETH;
         tokenIn[5] = TOKEN_dQUICK;
-        uint[] memory thresholdAmount;
+        uint[] memory thresholdAmount = new uint[](6);
         thresholdAmount[0] = 1e3;
         thresholdAmount[1] = 1e3;
         thresholdAmount[2] = 1e15;
@@ -172,9 +172,7 @@ library PolygonLib {
         //region ----- Add farms -----
         IFactory.Farm[] memory _farms = farms();
         IFactory factory = IFactory(IPlatform(platform).factory());
-        for (uint i; i < _farms.length; ++i) {
-            factory.addFarm(_farms[i]);
-        }
+        factory.addFarms(_farms);
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
