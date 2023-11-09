@@ -1,4 +1,4 @@
-name: test
+name: Forge
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - main
   pull_request: { }
   workflow_dispatch: { }
-
 
 env:
   FOUNDRY_PROFILE: ci
@@ -16,7 +15,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Forge test and coverage
+    name: Test, coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

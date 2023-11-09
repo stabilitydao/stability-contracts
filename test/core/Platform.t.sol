@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 import {Test, console} from "forge-std/Test.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import "../../src/core/proxy/Proxy.sol";
-import "../../src/core/CVault.sol";
+import "../../src/core/vaults/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/StrategyLogic.sol";
@@ -20,6 +20,8 @@ contract PlatformTest is Test  {
     }
 
     function testSetup() public {
+        vm.expectRevert("Zero multisig");
+        platform.initialize(address(0), '23.11.0-dev');
         platform.initialize(address(this), '23.11.0-dev');
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         platform.initialize(address(this), '23.11.0-dev');

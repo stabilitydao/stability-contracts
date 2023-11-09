@@ -15,7 +15,7 @@ import "../interfaces/IStrategy.sol";
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
     /// @dev Version of StrategyLogic implementation
-    string public constant VERSION = '0.1.0';
+    string public constant VERSION = '1.0.0';
 
     /// @dev Mapping between tokens and strategy logic ID
     mapping (uint tokenId => string strategyLogicId) public tokenStrategyLogic;

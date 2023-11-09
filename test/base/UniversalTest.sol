@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ChainSetup.sol";
 import "./Utils.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
+import "../../src/strategies/base/StrategyBase.sol";
+import "../../src/strategies/base/FarmingStrategyBase.sol";
 import "../../src/strategies/libs/UniswapV3MathLib.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import "../../src/interfaces/ISwapper.sol";
@@ -122,6 +124,23 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint[] memory nums = new uint[](1);
                     nums[0] = strategies[i].farmId;
                     int24[] memory ticks = new int24[](0);
+
+                    // test bad params
+                    initStrategyAddresses = new address[](1);
+                    vm.expectRevert(StrategyBase.BadInitParams.selector);
+                    factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+                    initStrategyAddresses = new address[](0);
+
+                    IFactory.Farm memory f = factory.farm(nums[0]);
+                    int24[] memory goodTicks = f.ticks;
+                    f.ticks = new int24[](1000);
+                    factory.updateFarm(nums[0], f);
+                    vm.expectRevert(FarmingStrategyBase.BadFarm.selector);
+                    factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+                    f.ticks = goodTicks;
+                    factory.updateFarm(nums[0], f);
+                    ///
+
                     factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
 
                     assertEq(IERC721(platform.vaultManager()).ownerOf(i), address (this));

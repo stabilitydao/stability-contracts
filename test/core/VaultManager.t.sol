@@ -4,8 +4,8 @@ pragma solidity ^0.8.21;
 import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@solady/utils/LibString.sol";
-import "../../src/core/RVault.sol";
-import "../../src/core/RMVault.sol";
+import "../../src/core/vaults/RVault.sol";
+import "../../src/core/vaults/RMVault.sol";
 import "../base/Utils.sol";
 import "../base/FullMockSetup.sol";
 

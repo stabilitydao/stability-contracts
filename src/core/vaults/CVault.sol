@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "./base/VaultBase.sol";
-import "./libs/VaultTypeLib.sol";
-import "./libs/CommonLib.sol";
+import "../base/VaultBase.sol";
+import "../libs/VaultTypeLib.sol";
+import "../libs/CommonLib.sol";
 
 /// @notice Tokenized 100% auto compounding vault with a single underlying liquidity mining position.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.

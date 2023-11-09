@@ -37,7 +37,7 @@ interface IStrategy {
     /// @dev Final assets that strategy invests
     function assets() external view returns (address[] memory);
 
-    /// @notice Final assets and amounts that strategy invests
+    /// @notice Final assets and amounts that strategy manages
     function assetsAmounts() external view returns (address[] memory assets_, uint[] memory amounts_);
 
     /// @notice Priced invested assets proportions
@@ -68,10 +68,9 @@ interface IStrategy {
     /// @return APR with 18 decimals. 1e18 - 100%.
     function lastAprCompound() external view returns (uint);
 
-    // todo remove assets_
     /// @notice Calculation of consumed amounts and liquidity/underlying value for provided strategy assets and amounts.
-    /// @param assets_ re,pve it
-    /// @param amountsMax Amounts of avaulable strategy assets for investing
+    /// @param assets_ Strategy assets or part of them, if necessary
+    /// @param amountsMax Amounts of specified assets available for investing
     /// @return amountsConsumed Cosumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint value);
@@ -117,6 +116,8 @@ interface IStrategy {
     /// Only vault can call this.
     /// @param assets_ Here we give the user a choice of assets to withdraw if strategy support it
     /// @param value Part of strategy total value to withdraw
+    /// @param receiver User address
+    /// @return amountsOut Amounts of assets sent to user
     function withdrawAssets(address[] memory assets_, uint value, address receiver) external returns (uint[] memory amountsOut);
 
     /// @notice Wothdraw underlying invested and send to receiver
