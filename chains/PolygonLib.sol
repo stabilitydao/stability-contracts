@@ -151,12 +151,21 @@ library PolygonLib {
         swapper.addBlueChipsPools(bcPools, false);
         swapper.addPools(pools, false);
         // todo auto thresholds
-        swapper.setThreshold(TOKEN_USDC, 1e3);
-        swapper.setThreshold(TOKEN_USDT, 1e3);
-        swapper.setThreshold(TOKEN_DAI, 1e15);
-        swapper.setThreshold(TOKEN_WMATIC, 1e15);
-        swapper.setThreshold(TOKEN_WETH, 1e12);
-        swapper.setThreshold(TOKEN_dQUICK, 1e16); // 1 dQuick ~= $0.05
+        address[] memory tokenIn;
+        tokenIn[0] = TOKEN_USDC;
+        tokenIn[1] = TOKEN_USDT;
+        tokenIn[2] = TOKEN_DAI;
+        tokenIn[3] = TOKEN_WMATIC;
+        tokenIn[4] = TOKEN_WETH;
+        tokenIn[5] = TOKEN_dQUICK;
+        uint[] memory thresholdAmount;
+        thresholdAmount[0] = 1e3;
+        thresholdAmount[1] = 1e3;
+        thresholdAmount[2] = 1e15;
+        thresholdAmount[3] = 1e15;
+        thresholdAmount[4] = 1e12;
+        thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
+        swapper.setThresholds(tokenIn, thresholdAmount);
         DeployLib.logSetupSwapper(platform, showLog);
         //endregion -- SetupSwapper -----
 

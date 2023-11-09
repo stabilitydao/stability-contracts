@@ -125,9 +125,12 @@ contract Swapper is Controllable, ISwapper {
     }
 
     /// @inheritdoc ISwapper
-    function setThreshold(address token, uint threshold_) external onlyOperator {
-        threshold[token] = threshold_;
-        emit ThresholdChanged(token, threshold_);
+    function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
+        require(tokenIn.length == thresholdAmount.length, "array length mismatch");
+        for (uint i = 0; i < tokenIn.length; i++) {
+            threshold[tokenIn[i]] = thresholdAmount[i];
+        }
+        emit ThresholdChanged(tokenIn, thresholdAmount);
     }
 
     //endregion -- Restricted actions ----

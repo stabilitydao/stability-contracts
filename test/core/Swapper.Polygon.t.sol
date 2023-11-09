@@ -220,7 +220,11 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         vm.expectRevert();
         swapper.swap(address(1), address(2), 1e6, 1_000); // 1%
         // trying to swap less then threshold
-        swapper.setThreshold(PolygonLib.TOKEN_USDC, 10);
+        address[] memory tokenIn;
+        tokenIn[0] = PolygonLib.TOKEN_USDC;
+        uint[] memory thresholdAmount;
+        thresholdAmount[0] = 10;
+        swapper.setThresholds(tokenIn, thresholdAmount);
         uint threshold = swapper.threshold(PolygonLib.TOKEN_USDC);
         vm.expectRevert("Swapper: swap amount less threshold");
         swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, threshold - 1, 1_000); // 1%
