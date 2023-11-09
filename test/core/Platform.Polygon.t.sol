@@ -8,6 +8,9 @@ import "../../src/interfaces/IVaultManager.sol";
 import "../../src/interfaces/IHardWorker.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
+
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     struct BuildingVars {
         uint len;
         uint paramsLen;
@@ -290,13 +293,20 @@ contract PlatformPolygonTest is PolygonSetup {
         canReceive = true;
         hw.call(vaultsForHardWork);
 
+        vm.startPrank(address(hw.dedicatedGelatoMsgSender()));
+        deal(address(hw), type(uint).max); 
+        console.log(address(hw).balance);
+        console.log(hw.gelatoMinBalance());
+        hw.call(vaultsForHardWork);
+        vm.stopPrank();
+        
+
         skip(1 hours);
         skip(100);
         (canExec,) = hw.checkerGelato();
         assertEq(canExec, false);
         (canExec,) = hw.checkerServer();
         assertEq(canExec, true);
-        
     }
 
     function _depositToVault(address vault, uint assetAmountUsd) internal {

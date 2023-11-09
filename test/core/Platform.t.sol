@@ -91,6 +91,8 @@ contract PlatformTest is Test  {
         }
 
         platform.addOperator(operator);
+        vm.expectRevert("Platform: EXIST");
+        platform.addOperator(operator);
         
         assertEq(platform.isOperator(operator), true);
         address[] memory operatorsList = platform.operatorsList();
@@ -103,6 +105,8 @@ contract PlatformTest is Test  {
 
         platform.removeOperator(operator);
         assertEq(platform.isOperator(operator), false);
+        vm.expectRevert("Platform: NOT_EXIST");
+        platform.removeOperator(operator);
 
         if (operator != address(0) && operator != address(this)) {
             vm.startPrank(operator);
@@ -140,18 +144,87 @@ contract PlatformTest is Test  {
                 );
             }
 
-            vm.prank(multisig);
+            vm.startPrank(multisig);
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 proxies,
                 implementations
             );
+            
+            vm.expectRevert("Platform: ANNOUNCED");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                implementations
+            );
+ 
+            vm.stopPrank();
+            platform.cancelUpgrade();
+            vm.startPrank(multisig);
+
+            address[] memory _implementations = new address[](2);
+            _implementations[0] = address(vaultImplementationUpgrade);
+            _implementations[1] = address(vaultImplementationUpgrade);
+
+            vm.expectRevert("Platform: WRONG_INPUT");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                _implementations
+            );
+ 
+            address[] memory _proxies = new address[](1);
+            _proxies[0] = address(0);
+            vm.expectRevert("Platform: zero proxy address");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                _proxies,
+                implementations
+            ); 
+
+            address[] memory __implementations = new address[](1);
+            __implementations[0] = address(0);
+            
+           vm.expectRevert("Platform: zero implementation address");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                __implementations
+            ); 
+
+            _proxies[0] = address(vaultImplementationUpgrade);
+            __implementations[0] = address(vaultImplementationUpgrade);
+            vm.expectRevert("Platform: same version");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                _proxies,
+                __implementations
+            );
+
+            string memory oldVersion = platform.PLATFORM_VERSION();
+            vm.expectRevert("Platform: same platform version");
+            platform.announcePlatformUpgrade(
+                oldVersion,
+                proxies,
+                implementations
+            );
+          
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                implementations
+            );
+            vm.stopPrank();
 
             assertEq(platform.pendingPlatformUpgrade().proxies[0], address(proxy));
             assertEq(platform.pendingPlatformUpgrade().newImplementations[0], address(vaultImplementationUpgrade));
 
             platform.cancelUpgrade();
             assertEq(platform.pendingPlatformUpgrade().proxies.length, 0);
+            vm.expectRevert("Platform: no upgrade");
+            platform.cancelUpgrade();
+            vm.expectRevert("Platform: no upgrade");
+            platform.upgrade();
 
             vm.prank(multisig);
             platform.announcePlatformUpgrade(
