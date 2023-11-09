@@ -1,4 +1,5 @@
 {
+    "detectors_to_exclude": "solc-version",
     "filter_paths": "lib",
     "solc_remaps": [
         "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",

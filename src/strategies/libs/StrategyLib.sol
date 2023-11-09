@@ -19,7 +19,8 @@ import "../../interfaces/IRVault.sol";
 library StrategyLib {
     using SafeERC20 for IERC20;
 
-    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration);
+    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
+    event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
 
     struct PairStrategyBaseSwapForDepositProportionVars {
         ISwapper swapper;
@@ -51,7 +52,7 @@ library StrategyLib {
         exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
         address swapper = IPlatform(params.platform).swapper();
         for (uint i; i < len; ++i) {
-            IERC20(_assets[i]).approve(swapper, type(uint).max);
+            IERC20(_assets[i]).forceApprove(swapper, type(uint).max);
         }
     }
 
@@ -61,7 +62,7 @@ library StrategyLib {
         uint len = farm.rewardAssets.length;
         address swapper = IPlatform(platform).swapper();
         for (uint i; i < len; ++i) {
-            IERC20(farm.rewardAssets[i]).approve(swapper, type(uint).max);
+            IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
         rewardAssets = farm.rewardAssets;
     }
@@ -127,6 +128,7 @@ library StrategyLib {
                 if (multisigAmount > 0) {
                     IERC20(assets_[i]).safeTransfer(_platform.multisig(), multisigAmount);
                 }
+                emit ExtractFees(feeAmounts[1], feeAmounts[2], feeAmounts[3], multisigAmount);
             }
         }
     }
@@ -151,14 +153,17 @@ library StrategyLib {
         uint[] memory amounts,
         uint tvl,
         uint totalBefore,
-        uint totalAfter
+        uint totalAfter,
+        address vault
     ) external returns(uint apr, uint aprCompound) {
         uint duration = block.timestamp - lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        //slither-disable-next-line unused-return
         (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
         apr = computeApr(tvl, earned, duration);
         aprCompound = computeApr(totalBefore, totalAfter - totalBefore, duration);
-        emit HardWork(apr, aprCompound, earned, tvl, duration);
+        uint sharePrice = tvl * 1e18 / IERC20(vault).totalSupply();
+        emit HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
     }
 
     function balance(address token) public view returns (uint) {
@@ -178,9 +183,8 @@ library StrategyLib {
     /// @dev Should NOT be used for third-party pools
     function approveIfNeeded(address token, uint amount, address spender) public {
         if (IERC20(token).allowance(address(this), spender) < amount) {
-            IERC20(token).approve(spender, 0);
             // infinite approve, 2*255 is more gas efficient then type(uint).max
-            IERC20(token).approve(spender, 2 ** 255);
+            IERC20(token).forceApprove(spender, 2 ** 255);
         }
     }
 

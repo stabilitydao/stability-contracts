@@ -22,6 +22,7 @@ import "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -106,10 +107,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         string memory type_ = vaultConfig_.vaultType;
         bytes32 typeHash = keccak256(abi.encodePacked(type_));
         vaultConfig[typeHash] = vaultConfig_;
-        if (!_vaultTypeHashes.contains(typeHash)) {
-            _vaultTypeHashes.add(typeHash);
-        }
-        emit VaultConfigChanged(type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed);
+        bool newVaultType = _vaultTypeHashes.add(typeHash);
+        emit VaultConfigChanged(type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType);
     }
 
     /// @inheritdoc IFactory
@@ -123,10 +122,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             config.tokenId = oldConfig.tokenId;
         }
         strategyLogicConfig[strategyIdHash] = config;
-        if (!_strategyLogicIdHashes.contains(strategyIdHash)) {
-            _strategyLogicIdHashes.add(strategyIdHash);
-        }
-        emit StrategyLogicConfigChanged(config.id, config.implementation, config.deployAllowed, config.upgradeAllowed);
+        bool newStrategy = _strategyLogicIdHashes.add(strategyIdHash);
+        emit StrategyLogicConfigChanged(config.id, config.implementation, config.deployAllowed, config.upgradeAllowed, newStrategy);
     }
 
     /// @inheritdoc IFactory
@@ -139,11 +136,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function addFarm(Farm memory farm_) external onlyOperator {
         _farms.push(farm_);
+        emit NewFarm(farm_);
     }
 
     /// @inheritdoc IFactory
     function updateFarm(uint id, Farm memory farm_) external onlyOperator {
         _farms[id] = farm_;
+        emit UpdateFarm(id, farm_);
     }
 
     //endregion -- Restricted actions ----
@@ -407,11 +406,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         string memory specificName,
         string memory vaultSymbol
     ) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset);
     }
 
     /// @inheritdoc IFactory
     function getExchangeAssetIndex(address[] memory assets) external view returns (uint) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getExchangeAssetIndex(platform(), assets);
     }
 
@@ -425,6 +426,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint[] memory initStrategyNums,
         int24[] memory initStrategyTicks
     ) public pure returns (bytes32) {
+        //slither-disable-next-line unused-return
         return FactoryLib.getDeploymentKey(
             vaultType,
             strategyId,

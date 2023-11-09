@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 import {Test, console} from "forge-std/Test.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import "../../src/core/proxy/Proxy.sol";
-import "../../src/core/CVault.sol";
+import "../../src/core/vaults/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/StrategyLogic.sol";
@@ -20,6 +20,8 @@ contract PlatformTest is Test  {
     }
 
     function testSetup() public {
+        vm.expectRevert("Zero multisig");
+        platform.initialize(address(0), '23.11.0-dev');
         platform.initialize(address(this), '23.11.0-dev');
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         platform.initialize(address(this), '23.11.0-dev');
@@ -202,6 +204,10 @@ contract PlatformTest is Test  {
         (address[] memory bbToken, ) = platform.allowedBBTokenVaults();
         assertEq(bbToken[0], address(123));
         assertEq(bbToken[1], address(456));
+
+        vm.expectRevert("Platform: BB-token not found");
+        platform.removeAllowedBBToken(address(5));
+
         platform.removeAllowedBBToken(bbToken[0]);
         
         (bbToken, ) = platform.allowedBBTokenVaults();
@@ -347,5 +353,12 @@ contract PlatformTest is Test  {
         IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
         address _receiver = IStrategyLogic(_logic).getRevenueReceiver(1);
         assertEq(address(123), _receiver);
+    }
+
+    function testEcosystemRevenueReceiver() public {
+        platform.initialize(address(this), '23.11.0-dev');
+        vm.expectRevert("Platform: ZERO_ADDRESS");
+        platform.setEcosystemRevenueReceiver(address(0));
+        platform.setEcosystemRevenueReceiver(address(1));
     }
 }

@@ -18,8 +18,16 @@ import "../adapters/libs/DexAdapterIdLib.sol";
 contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of QuickSwapV3StaticFarmStrategy implementation
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          STORAGE                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     int24 public lowerTick;
     int24 public upperTick;
@@ -34,23 +42,31 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
     /// Total gap == 50 - storage slots used.
     uint[50 - 7] private __gap;
 
-    /// @param addresses Platform, vault, dexAdapter, pool
-    /// @param nums Farm id
-    /// @param ticks Ticks settings for dynamic strategies
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INITIALIZATION                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IStrategy
     function initialize(
         address[] memory addresses,
         uint[] memory nums,
         int24[] memory ticks
     ) public initializer {
-        require(addresses.length == 2 && nums.length == 1 && ticks.length == 0, "QSF: bad params");
+        if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
+            revert BadInitParams();
+        }
+
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        require(farm.addresses.length == 2 && farm.nums.length == 2 && farm.ticks.length == 2, "QSF: bad farm");
+        if (farm.addresses.length != 2 || farm.nums.length != 2 || farm.ticks.length != 2) {
+            revert BadFarm();
+        }
         _startTime = farm.nums[0];
         _endTime = farm.nums[1];
         lowerTick = farm.ticks[0];
         upperTick = farm.ticks[1];
         _nft = INonfungiblePositionManager(farm.addresses[0]);
         _farmingCenter = IFarmingCenter(farm.addresses[1]);
+
         __PairStrategyBase_init(PairStrategyBaseInitParams({
             id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
             platform: addresses[0],
@@ -58,20 +74,37 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             pool: farm.pool,
             underlying : address(0)
         }));
+
         __FarmingStrategyBase_init(addresses[0], nums[0]);
-        IERC20(_assets[0]).approve(farm.addresses[0], type(uint).max);
-        IERC20(_assets[1]).approve(farm.addresses[0], type(uint).max);
+
+        IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
-    function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
-        return QuickswapLib.initVariants(platform_, DEX_ADAPTER_ID(), STRATEGY_LOGIC_ID());
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CALLBACKS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function onERC721Received(address, address, uint256, bytes memory) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
         return block.timestamp < _endTime;
     }
 
+    /// @inheritdoc IStrategy
+    function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
+        //slither-disable-next-line unused-return
+        return QuickswapLib.initVariants(platform_, dexAdapterId(), STRATEGY_LOGIC_ID());
+    }
+
+    /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
         __assets = new address[](4);
         __assets[0] = _assets[0];
@@ -83,15 +116,26 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         uint __tokenId = _tokenId;
 
         // get fees
-        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params;
+        UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params = UniswapV3MathLib.ComputeFeesEarnedCommonParams({
+            tick: 0,
+            lowerTick: 0,
+            upperTick: 0,
+            liquidity: 0,
+            feeGrowthGlobal: 0
+        });
+
+        //slither-disable-next-line unused-return
         (,params.tick,,,,,) = _pool.globalState();
         params.feeGrowthGlobal = _pool.totalFeeGrowth0Token();
         uint feeGrowthInside0Last;
         uint feeGrowthInside1Last;
         uint128 tokensOwed0;
         uint128 tokensOwed1;
+        //slither-disable-next-line unused-return
         (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = _nft.positions(__tokenId);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
+        //slither-disable-next-line unused-return
         (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
         amounts[0] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last) + uint(tokensOwed0);
         amounts[1] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last) + uint(tokensOwed1);
@@ -101,53 +145,56 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         (amounts[2], amounts[3]) = (rewards[0], rewards[1]);
     }
 
-    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
-        int24[] memory ticks = new int24[](2);
-        ticks[0] = lowerTick;
-        ticks[1] = upperTick;
-        (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax, ticks);
-    }
-
-    function onERC721Received(address, address, uint256, bytes memory) external pure returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-
+    /// @inheritdoc IStrategy
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
         proportions[0] = _getProportion0(pool);
         proportions[1] = 1e18 - proportions[0];
     }
 
+    /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x558ac5), bytes3(0x121319)));
     }
 
     /// @inheritdoc IPairStrategyBase
-    function DEX_ADAPTER_ID() public pure override returns(string memory) {
+    function dexAdapterId() public pure override returns(string memory) {
         return DexAdapterIdLib.ALGEBRA;
     }
 
+    /// @inheritdoc IStrategy
     function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
         return StrategyIdLib.QUICKSWAPV3_STATIC_FARM;
     }
 
-    function _getProportion0(address pool_) public view returns (uint) {
-        return dexAdapter.getProportion0(pool_);
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                   FARMING STRATEGY BASE                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc FarmingStrategyBase
+    function _getRewards() internal view override returns (uint[] memory amounts) {
+        amounts = new uint[](2);
+        uint __tokenId = _tokenId;
+        IncentiveKey memory key = _getIncentiveKey();
+        (amounts[0], amounts[1]) = _farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
     }
 
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        amounts_ = new uint[](2);
-        (amounts_[0], amounts_[1]) = dexAdapter.getAmountsForLiquidity(pool, lowerTick, upperTick, uint128(total));
-        assets_ = _assets;
-    }
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       STRATEGY BASE                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
         IFarmingCenter __farmingCenter = _farmingCenter;
         uint128 liquidity;
         uint tokenId = _tokenId;
         IncentiveKey memory key = _getIncentiveKey();
         INonfungiblePositionManager __nft = _nft;
+        
+        // tokenId == 0 mean that there is no NFT managed by the strategy now
+        //slither-disable-next-line incorrect-equality
         if (tokenId == 0) {
+            //slither-disable-next-line unused-return
             (tokenId, liquidity, , ) = __nft.mint(INonfungiblePositionManager.MintParams(
                 _assets[0],
                 _assets[1],
@@ -163,6 +210,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
             _tokenId = tokenId;
             __nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
         } else {
+            //slither-disable-next-line unused-return
             (liquidity,,) = __nft.increaseLiquidity(INonfungiblePositionManager.IncreaseLiquidityParams(
                 tokenId,
                 amounts[0],
@@ -187,6 +235,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         total += value;
     }
 
+    /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         IFarmingCenter __farmingCenter = _farmingCenter;
         amountsOut = new uint[](2);
@@ -218,6 +267,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         __farmingCenter.enterFarming(key, tokenId, 0, false);
     }
 
+    /// @inheritdoc StrategyBase
     function _claimRevenue() internal override returns(
         address[] memory __assets,
         uint[] memory __amounts,
@@ -266,6 +316,7 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         }
     }
 
+    /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool));
         if (amountsToDeposit[0] > 1 || amountsToDeposit[1] > 1) {
@@ -273,12 +324,27 @@ contract QuickSwapV3StaticFarmStrategy is PairStrategyBase, FarmingStrategyBase 
         }
     }
 
-    // @dev See {FarmingStrategyBase-_getRewards}
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        amounts = new uint[](2);
-        uint __tokenId = _tokenId;
-        IncentiveKey memory key = _getIncentiveKey();
-        (amounts[0], amounts[1]) = _farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+        int24[] memory ticks = new int24[](2);
+        ticks[0] = lowerTick;
+        ticks[1] = upperTick;
+        (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax, ticks);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        amounts_ = new uint[](2);
+        (amounts_[0], amounts_[1]) = dexAdapter.getAmountsForLiquidity(pool, lowerTick, upperTick, uint128(total));
+        assets_ = _assets;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _getProportion0(address pool_) public view returns (uint) {
+        return dexAdapter.getProportion0(pool_);
     }
 
     function _getIncentiveKey() private view returns (IncentiveKey memory) {

@@ -13,7 +13,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     event RemovedPriceFeeds(address[] assets);
 
     /// @dev Version of ChainlinkAdapter implementation
-    string public constant VERSION = '0.1.0';
+    string public constant VERSION = '1.0.0';
 
     mapping(address asset => address priceFeed) public priceFeeds;
     EnumerableSet.AddressSet internal _assets;
@@ -60,6 +60,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         if (!_assets.contains(asset)) {
             return (0,0);
         }
+        //slither-disable-next-line unused-return
         (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[asset]).latestRoundData();
         return (uint(answer) * 1e10, updatedAt);
     }
@@ -70,6 +71,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         prices = new uint[](len);
         timestamps = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData();
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;

@@ -14,6 +14,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
 
     function initStrategyProxy(string memory id) external {
         bytes32 strategyIdHash = keccak256(abi.encodePacked(id));
+        //slither-disable-next-line unused-return
         (,address strategyImplementation,,,,) = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
         _init(strategyImplementation);
         bytes32 slot = _ID_SLOT;
@@ -29,6 +30,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         assembly {
             strategyIdHash := sload(slot)
         }
+        //slither-disable-next-line unused-return
         (,address strategyImplementation,,,,) = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
         _upgradeTo(strategyImplementation);
     }

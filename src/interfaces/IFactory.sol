@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 /// @notice Creating vaults, upgrading vaults and strategies, vault list, farms and strategy logics management
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IFactory {
     //region ----- Events -----
 
@@ -32,15 +33,19 @@ interface IFactory {
         string type_,
         address implementation,
         bool deployAllowed,
-        bool upgradeAllowed
+        bool upgradeAllowed,
+        bool newVaultType
     );
     event StrategyLogicConfigChanged(
         string id,
         address implementation,
         bool deployAllowed,
-        bool upgradeAllowed
+        bool upgradeAllowed,
+        bool newStrategy
     );
     event VaultStatus(address indexed vault, uint newStatus);
+    event NewFarm(Farm farm);
+    event UpdateFarm(uint id, Farm farm);
 
     //endregion -- Events -----
 

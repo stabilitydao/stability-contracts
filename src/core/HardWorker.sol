@@ -50,10 +50,14 @@ contract HardWorker is Controllable, IHardWorker {
         delayGelato = 12 hours;
         emit Delays(11 hours, 12 hours);
 
+        maxHwPerCall = 5;
+        emit MaxHwPerCall(5);
+
         if (gelatoAutomate != address(0)) {
             // setup gelato
             gelatoMinBalance = gelatoMinBalance_;
             gelatoDepositAmount = gelatoDepositAmount_;
+            //slither-disable-next-line unused-return
             (address _dedicatedGelatoMsgSender, ) = IOpsProxyFactory(GELATO_OPS_PROXY_FACTORY).getProxyOf(address(this));
             dedicatedGelatoMsgSender = _dedicatedGelatoMsgSender;
             IAutomate automate = IAutomate(gelatoAutomate);
@@ -99,6 +103,32 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
+    function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
+        require (maxHwPerCall_ > 0, "HardWorker: wrong");
+        maxHwPerCall = maxHwPerCall_;
+        emit MaxHwPerCall(maxHwPerCall_);
+    }
+
+    /// @inheritdoc IHardWorker
+    function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
+        uint len = vaults_.length;
+        require (len == status.length, "HardWorker: wrong input");
+        require (len > 0, "HardWorker: zero length");
+        IFactory factory = IFactory(IPlatform(platform()).factory());
+        for (uint i; i < len; ++i) {
+            // calls-loop here is not dangerous
+            //slither-disable-next-line calls-loop
+            require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
+            if (excludedVaults[vaults_[i]] == status[i]) {
+                revert('HardWorker: vault already has this exclude status');
+            } else {
+                excludedVaults[vaults_[i]] = status[i];
+                emit VaultExcludeStatusChanged(vaults_[i], status[i]);
+            }
+        }
+    }
+
+    /// @inheritdoc IHardWorker
     function call(address[] memory vaults) external {
         uint startGas = gasleft();
 
@@ -109,7 +139,19 @@ contract HardWorker is Controllable, IHardWorker {
         );
 
         if (!isServer) {
-            _checkGelatoBalance();
+            ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
+            uint bal = _treasury.userTokenBalance(address(this), ETH);
+            if (bal < gelatoMinBalance) {
+                uint contractBal = address(this).balance;
+                uint depositAmount = gelatoDepositAmount;
+                require(contractBal >= depositAmount, "HardWorker: not enough ETH");
+                _treasury.depositFunds{value: depositAmount}(
+                    address(this),
+                    ETH,
+                    0
+                );
+                emit GelatoDeposit(depositAmount);
+            }
         }
 
         uint _maxHwPerCall = maxHwPerCall;
@@ -132,6 +174,7 @@ contract HardWorker is Controllable, IHardWorker {
         uint gasCost = gasUsed * tx.gasprice;
 
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
+            //slither-disable-next-line unused-return
             (bool success, ) = msg.sender.call{value: gasCost}("");
             require(success, "HardWorker: native transfer failed");
         }
@@ -154,22 +197,6 @@ contract HardWorker is Controllable, IHardWorker {
         return gelatoTaskTreasury.userTokenBalance(address(this), ETH);
     }
 
-    function _checkGelatoBalance() internal {
-        ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
-        uint bal = _treasury.userTokenBalance(address(this), ETH);
-        if (bal < gelatoMinBalance) {
-            uint contractBal = address(this).balance;
-            uint _gelatoDepositAmount = gelatoDepositAmount;
-            require(contractBal >= _gelatoDepositAmount, "HardWorker: not enough ETH");
-            _treasury.depositFunds{value: _gelatoDepositAmount}(
-                address(this),
-                ETH,
-                0
-            );
-            emit GelatoDeposit(_gelatoDepositAmount);
-        }
-    }
-
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
@@ -181,6 +208,7 @@ contract HardWorker is Controllable, IHardWorker {
             if (!excludedVaults[vaults[i]]) {
                 IVault vault = IVault(vaults[i]);
                 IStrategy strategy = vault.strategy();
+                //slither-disable-next-line unused-return
                 (uint tvl,) = vault.tvl();
                 if(
                     tvl > 0

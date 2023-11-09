@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 interface IPlatform {
     //region ----- Events -----
     event PlatformVersion(string version);
@@ -25,6 +26,14 @@ interface IPlatform {
     event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewDexAdapter(string id, address proxy);
+    event EcosystemRevenueReceiver(address receiver);
+    event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild, bool firstSet);
+    event RemoveAllowedBBToken(address bbToken);
+    event AddAllowedBoostRewardToken(address token);
+    event RemoveAllowedBoostRewardToken(address token);
+    event AddDefaultBoostRewardToken(address token);
+    event RemoveDefaultBoostRewardToken(address token);
+    event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     //endregion -- Events -----
 
     //region ----- Data types -----

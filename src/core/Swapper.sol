@@ -12,6 +12,7 @@ import "../interfaces/IDexAdapter.sol";
 /// @notice On-chain price quoter and swapper. It works by predefined routes using DeX adapters.
 /// @dev Inspired by TetuLiquidator
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -55,8 +56,8 @@ contract Swapper is Controllable, ISwapper {
             PoolData memory pool = pools_[i];
             require(pools[pool.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
             pools[pool.tokenIn] = pool;
-            _addAsset(pool.tokenIn);
-            emit PoolAdded(pool);
+            bool assetAdded = _assets.add(pool.tokenIn);
+            emit PoolAdded(pool, assetAdded);
         }
     }
 
@@ -72,8 +73,8 @@ contract Swapper is Controllable, ISwapper {
             require(poolData.dexAdapter != address(0), "Swapper: unknown DeX adapter");
             require(pools[poolData.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
             pools[poolData.tokenIn] = poolData;
-            _addAsset(poolData.tokenIn);
-            emit PoolAdded(poolData);
+            bool assetAdded = _assets.add(poolData.tokenIn);
+            emit PoolAdded(poolData, assetAdded);
         }
     }
 
@@ -118,8 +119,9 @@ contract Swapper is Controllable, ISwapper {
 
     function removeBlueChipPool(address tokenIn, address tokenOut) external onlyOperator {
         delete blueChipsPools[tokenIn][tokenOut];
-        _bcAssets.remove(tokenIn);
+        require (_bcAssets.remove(tokenIn), "Swapper: blue chip pool not found");
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
+        emit BlueChipPoolRemoved(tokenIn, tokenOut);
     }
 
     /// @inheritdoc ISwapper
@@ -201,6 +203,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function getPrice(address tokenIn, address tokenOut, uint amount) external view returns (uint) {
+        //slither-disable-next-line unused-return
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         if (route.length == 0) {
             return 0;
@@ -237,6 +240,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function isRouteExist(address tokenIn, address tokenOut) external view returns (bool) {
+        //slither-disable-next-line unused-return
         (PoolData[] memory route,) = buildRoute(tokenIn, tokenOut);
         return route.length != 0;
     }
@@ -451,13 +455,7 @@ contract Swapper is Controllable, ISwapper {
         }
         return result;
     }
-
-    function _addAsset(address asset) internal {
-        if (!_assets.contains(asset)) {
-            _assets.add(asset);
-        }
-    }
-
+    
     function _addBcAsset(address asset) internal {
         if (!_bcAssets.contains(asset)) {
             _bcAssets.add(asset);

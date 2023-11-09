@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../../src/core/CVault.sol";
+import "../../src/core/vaults/CVault.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../base/MockSetup.sol";

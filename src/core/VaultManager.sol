@@ -17,6 +17,7 @@ import "../interfaces/IManagedVault.sol";
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
     /// @dev Version of VaultManager implementation
@@ -42,6 +43,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         _requireOwner(tokenId);
         address vault = tokenVault[tokenId];
         IManagedVault(vault).changeParams(addresses, nums);
+        emit ChangeVaultParams(tokenId, addresses, nums);
     }
 
     /// @inheritdoc IVaultManager
@@ -55,6 +57,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     function setRevenueReceiver(uint tokenId, address receiver) external {
         _requireOwner(tokenId);
         _revenueReceiver[tokenId] = receiver;
+        emit SetRevenueReceiver(tokenId, receiver);
     }
 
     /// @dev Returns current token URI metadata
@@ -68,8 +71,11 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         vaultData.vault = tokenVault[tokenId];
         IVault vault = IVault(vaultData.vault);
         IStrategy strategy = vault.strategy();
+        //slither-disable-next-line unused-return
         (vaultData.sharePrice,) = vault.price();
+        //slither-disable-next-line unused-return
         (vaultData.tvl,) = vault.tvl();
+        //slither-disable-next-line unused-return
         (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
         vaultData.vaultType = vault.VAULT_TYPE();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
@@ -116,7 +122,9 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
             vaultType[i] = IVault(vaultAddress[i]).VAULT_TYPE();
             strategyId[i] = IVault(vaultAddress[i]).strategy().STRATEGY_LOGIC_ID();
+            //slither-disable-next-line unused-return
             (sharePrice[i],) = IVault(vaultAddress[i]).price();
+            //slither-disable-next-line unused-return
             (tvl[i],) = IVault(vaultAddress[i]).tvl();
         }
     }

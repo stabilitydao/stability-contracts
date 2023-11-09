@@ -121,10 +121,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (gasCost > 0) {
             bool canCompensate = payable(address(this)).balance >= gasCost;
             if (canCompensate) {
+                //slither-disable-next-line unused-return
                 (bool success, ) = msg.sender.call{value: gasCost}("");
                 require(success, "Vault: native transfer failed");
                 compensated = true;
             } else {
+                //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
                 // todo IPlatform variable
                 if (_tvl < 100e18) {
@@ -257,6 +259,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
         (amountsConsumed, valueOut) = strategy.previewDepositAssets(assets_, amountsMax);
+        //slither-disable-next-line unused-return
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, strategy.total(), amountsConsumed);
     }
 
@@ -344,6 +347,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // calc mintAmount for USD amount of value
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            //slither-disable-next-line unused-return
             (mintAmount,,) = priceReader.getAssetsPrice(strategy.assets(), amountsConsumed);
 
             // initialShares for saving share price after full withdraw
