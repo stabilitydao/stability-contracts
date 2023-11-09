@@ -12,7 +12,8 @@ contract Zap is Controllable {
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    string internal constant _VERSION = '1.0.0';
+    /// @inheritdoc IControllable
+    string public constant VERSION = '1.0.0';
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -58,10 +59,5 @@ contract Zap is Controllable {
                 amountInUsed = amountIn * proportions[i] / ConstantsLib.DENOMINATOR;
             }
         }
-    }
-
-    /// @inheritdoc IControllable
-    function VERSION() external pure returns (string memory) {
-        return _VERSION;
     }
 }
