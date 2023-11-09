@@ -34,7 +34,7 @@ jobs:
       # Upgrade semgrep
       - run: pip install semgrep --upgrade
       # Run security and gas optimization rules
-      - run: semgrep ci --sarif --output=semgrep.sarif || true
+      - run: semgrep ci --sarif --output=semgrep.sarif --exclude-rule rules.solidity.performance.unnecessary-checked-arithmetic-in-loop || true
         env:
              SEMGREP_RULES: rules/solidity/security rules/solidity/performance
       # Upload findings to GitHub Advanced Security Dashboard
