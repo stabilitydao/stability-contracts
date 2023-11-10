@@ -20,6 +20,7 @@ abstract contract MockSetup {
     MockERC20 public tokenA;
     MockERC20 public tokenB;
     MockERC20 public tokenC;
+    MockERC20 public tokenD;
     MockERC20 public lp;
     MockERC721 public builderPermitToken;
     MockERC20 public builderPayPerVaultToken;
@@ -52,6 +53,8 @@ abstract contract MockSetup {
         tokenB.init("Mock token B", "MOCKB", 6);
         tokenC = new MockERC20();
         tokenC.init("Mock token C", "MOCKC", 6);
+        tokenD = new MockERC20();
+        tokenD.init("Mock token D", "MOCKD", 18); //todo Decimals >18
         lp = new MockERC20();
         lp.init("Mock LP", "MOCK_LP", 18);
         builderPermitToken = new MockERC721();
