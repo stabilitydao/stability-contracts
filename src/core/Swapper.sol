@@ -126,11 +126,11 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
-        //semgrep-ignore-next-line rules.solidity.performance.use-custom-error-not-require
-        require(tokenIn.length == thresholdAmount.length, "array length mismatch");
-        uint len = tokenIn.length;
-        // nosemgrep: rules.solidity.performance.state-variable-read-in-a-loop
-        for (uint i = 0; i < len; ++i) {
+        uint tokenInLen = tokenIn.length;
+        uint thresholdAmountLen = thresholdAmount.length;
+        if (tokenInLen != thresholdAmountLen) revert ArrayLengthMismatch(tokenInLen, thresholdAmountLen);
+        for (uint i = 0; i < tokenInLen; ++i) {
+            // nosemgrep: rules.solidity.performance.state-variable-read-in-a-loop
             threshold[tokenIn[i]] = thresholdAmount[i];
         }
         emit ThresholdChanged(tokenIn, thresholdAmount);

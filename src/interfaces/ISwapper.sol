@@ -12,6 +12,10 @@ interface ISwapper {
   event ThresholdChanged(address[] tokenIn, uint[] thresholdAmount);
   event BlueChipPoolRemoved(address tokenIn, address tokenOut);
 
+  //region ----- Custom Errors -----
+  error ArrayLengthMismatch(uint expectedLength, uint actualLength);
+  //endregion -- Custom Errors -----
+
   struct PoolData {
     address pool;
     address dexAdapter;
