@@ -39,6 +39,18 @@ library StrategyLib {
         uint bbAmountBefore;
     }
 
+    struct ExtractFeesVars {
+        IPlatform platform;
+        uint feePlatform;
+        uint amountPlatform;
+        uint feeShareVaultManager;
+        uint amountVaultManager;
+        uint feeShareStrategyLogic;
+        uint amountStrategyLogic;
+        uint feeShareEcosystem;
+        uint amountEcosystem;
+    }
+
     function PairStrategyBase_init(
         address platform,
         IPairStrategyBase.PairStrategyBaseInitParams memory params,
@@ -89,46 +101,57 @@ library StrategyLib {
         address[] memory assets_,
         uint[] memory amounts_
     ) external returns(uint[] memory amountsRemaining) {
-        // todo refactor for humans by using struct for local vars
-        IPlatform _platform = IPlatform(platform);
-        uint[] memory fees = new uint[](4);
-        uint[] memory feeAmounts = new uint[](4);
-        (fees[0], fees[1], fees[2], fees[3]) = _platform.getFees();
-        address vaultManagerReceiver = IVaultManager(_platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
-        (,,,,,uint strategyLogicTokenId) = IFactory(_platform.factory()).strategyLogicConfig(keccak256(bytes(_id)));
-        address strategyLogicReceiver = IStrategyLogic(_platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
+        ExtractFeesVars memory vars = ExtractFeesVars({
+            platform: IPlatform(platform),
+            feePlatform: 0,
+            amountPlatform: 0,
+            feeShareVaultManager: 0,
+            amountVaultManager: 0,
+            feeShareStrategyLogic: 0,
+            amountStrategyLogic: 0,
+            feeShareEcosystem: 0,
+            amountEcosystem: 0
+        });
+        // IPlatform _platform = IPlatform(platform);
+        // uint[] memory fees = new uint[](4);
+        // uint[] memory feeAmounts = new uint[](4);
+        (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) = vars.platform.getFees();
+        address vaultManagerReceiver = IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
+        //slither-disable-next-line unused-return
+        (,,,,,uint strategyLogicTokenId) = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id)));
+        address strategyLogicReceiver = IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
         uint len = assets_.length;
         amountsRemaining = new uint[](len);
         for (uint i; i < len; ++i) {
             if (amounts_[i] > 0) {
                 // revenue fee amount of assets_[i]
-                feeAmounts[0] = amounts_[i] * fees[0] / ConstantsLib.DENOMINATOR;
+                vars.amountPlatform = amounts_[i] * vars.feePlatform / ConstantsLib.DENOMINATOR;
 
-                amountsRemaining[i] = amounts_[i] - feeAmounts[0];
+                amountsRemaining[i] = amounts_[i] - vars.amountPlatform;
 
                 // VaultManager amount
-                feeAmounts[1] = feeAmounts[0] * fees[1] / ConstantsLib.DENOMINATOR;
+                vars.amountVaultManager = vars.amountPlatform * vars.feeShareVaultManager / ConstantsLib.DENOMINATOR;
 
                 // StrategyLogic amount
-                feeAmounts[2] = feeAmounts[0] * fees[2] / ConstantsLib.DENOMINATOR;
+                vars.amountStrategyLogic = vars.amountPlatform * vars.feeShareStrategyLogic / ConstantsLib.DENOMINATOR;
 
                 // Ecosystem amount
-                feeAmounts[3] = feeAmounts[0] * fees[3] / ConstantsLib.DENOMINATOR;
+                vars.amountEcosystem = vars.amountPlatform  * vars.feeShareEcosystem / ConstantsLib.DENOMINATOR;
 
                 // Multisig share and amount
-                uint multisigShare = ConstantsLib.DENOMINATOR - fees[1] - fees[2] - fees[1];
-                uint multisigAmount = multisigShare > 0 ? feeAmounts[0] - feeAmounts[1] - feeAmounts[2] - feeAmounts[3] : 0;
+                uint multisigShare = ConstantsLib.DENOMINATOR - vars.feeShareVaultManager - vars.feeShareStrategyLogic - vars.feeShareEcosystem;
+                uint multisigAmount = multisigShare > 0 ? vars.amountPlatform  - vars.amountVaultManager - vars.amountStrategyLogic - vars.amountEcosystem : 0;
 
                 // send amounts
-                IERC20(assets_[i]).safeTransfer(vaultManagerReceiver, feeAmounts[1]);
-                IERC20(assets_[i]).safeTransfer(strategyLogicReceiver, feeAmounts[2]);
-                if (feeAmounts[3] > 0) {
-                    IERC20(assets_[i]).safeTransfer(_platform.ecosystemRevenueReceiver(), feeAmounts[3]);
+                IERC20(assets_[i]).safeTransfer(vaultManagerReceiver, vars.amountVaultManager);
+                IERC20(assets_[i]).safeTransfer(strategyLogicReceiver, vars.amountStrategyLogic);
+                if (vars.amountEcosystem > 0) {
+                    IERC20(assets_[i]).safeTransfer(vars.platform.ecosystemRevenueReceiver(), vars.amountEcosystem);
                 }
                 if (multisigAmount > 0) {
-                    IERC20(assets_[i]).safeTransfer(_platform.multisig(), multisigAmount);
+                    IERC20(assets_[i]).safeTransfer(vars.platform.multisig(), multisigAmount);
                 }
-                emit ExtractFees(feeAmounts[1], feeAmounts[2], feeAmounts[3], multisigAmount);
+                emit ExtractFees(vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount);
             }
         }
     }
