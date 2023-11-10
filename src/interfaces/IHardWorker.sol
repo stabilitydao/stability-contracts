@@ -40,6 +40,10 @@ interface IHardWorker {
     /// @return ETH amount with 18 decimals
     function gelatoBalance() external view returns(uint);
 
+    /// @notice Return minimum required ETH balance of HardWork contract on Gelato
+    /// @return ETH amount with 18 decimals
+    function gelatoMinBalance() external view returns(uint);
+
     /// @notice Setup allowance status for dedicated server address
     function setDedicatedServerMsgSender(address sender, bool allowed) external;
 

@@ -19,6 +19,7 @@ import "../interfaces/IVault.sol";
 ///         It stores core and infrastructure addresses, list of operators, fee settings and allows the governance to upgrade contracts.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -395,23 +396,25 @@ contract Platform is Controllable, IPlatform {
     function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
         address[] memory allBbTokens = _allowedBBTokensVaults.keys();
         uint len = allBbTokens.length;
-        uint outLen;
-        for (uint i; i < len; ++i) {
-            (,uint limit) = _allowedBBTokensVaults.tryGet(allBbTokens[i]);
-            if (limit > 0) {
-                ++outLen;
-            }
-        }
-        bbToken = new address[](outLen);
-        vaultsLimit = new uint[](outLen);
+        uint[] memory limit = new uint[](len);
+        //slither-disable-next-line uninitialized-local
         uint k;
         for (uint i; i < len; ++i) {
-            (,uint limit) = _allowedBBTokensVaults.tryGet(allBbTokens[i]);
-            if (limit > 0) {
-                bbToken[k] = allBbTokens[i];
-                (, vaultsLimit[k]) = _allowedBBTokensVaults.tryGet(allBbTokens[i]);
-                ++k;
+            //nosemgrep
+            limit[i] = _allowedBBTokensVaults.get(allBbTokens[i]);
+            if(limit[i] > 0) ++k;
+        }
+        bbToken = new address[](k);
+        vaultsLimit = new uint[](k);
+        //slither-disable-next-line uninitialized-local
+        uint y;
+        for (uint i; i < len; ++i) {
+            if (limit[i] == 0) {
+                continue;
             }
+            bbToken[y] = allBbTokens[i];
+            vaultsLimit[y] = limit[i];
+            ++y;
         }
     }
 

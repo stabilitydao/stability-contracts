@@ -224,7 +224,7 @@ interface IPlatform {
     /// @return token Tokens supported by the platform
     /// @return tokenPrice USD price of token. Index of token same as in previous array.
     /// @return tokenUserBalance User balance of token. Index of token same as in previous array.
-    /// @return vault Deplpyed vaults
+    /// @return vault Deployed vaults
     /// @return vaultSharePrice Price 1.0 vault share. Index of vault same as in previous array.
     /// @return vaultUserBalance User balance of vault. Index of vault same as in previous array.
     /// @return nft Ecosystem NFTs
