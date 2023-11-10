@@ -178,10 +178,13 @@ library PolygonLib {
 
         //region ----- Reward tokens -----
         IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_USDC);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_USDC);
+        address[] memory allowedBoostRewardToken = new address[](2);
+        address[] memory defaultBoostRewardToken = new address[](2);
+        allowedBoostRewardToken[0] = TOKEN_PROFIT;
+        allowedBoostRewardToken[1] = TOKEN_USDC;
+        defaultBoostRewardToken[0] = TOKEN_PROFIT;
+        defaultBoostRewardToken[1] = TOKEN_USDC;
+        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
         DeployLib.logSetupRewardTokens(platform, showLog);
         //endregion -- Reward tokens -----
 

@@ -318,6 +318,13 @@ contract Platform is Controllable, IPlatform {
         emit RemoveDefaultBoostRewardToken(token);
     }
 
+    /// @inheritdoc IPlatform
+    function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external onlyOperator {
+        _addTokens(_allowedBoostRewardTokens, allowedBoostRewardToken);
+        _addTokens(_defaultBoostRewardTokens, defaultBoostRewardToken);
+        emit AddBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
+    }
+
     //endregion -- Restricted actions ----
 
     //region ----- View functions -----
@@ -520,6 +527,20 @@ contract Platform is Controllable, IPlatform {
         minInitialBoostPerDay = minInitialBoostPerDay_;
         minInitialBoostDuration = minInitialBoostDuration_;
         emit MinInitialBoostChanged(minInitialBoostPerDay_, minInitialBoostDuration_);
+    }
+
+    /**
+     * @dev Adds tokens to a specified token set.
+     * @param tokenSet The target token set.
+     * @param tokens Array of tokens to be added.
+     */
+    function _addTokens(EnumerableSet.AddressSet storage tokenSet, address[] memory tokens) internal {
+        uint len = tokens.length;
+        for (uint i = 0; i < len; ++i) {
+            if (!tokenSet.add(tokens[i])) {
+                revert PlatformExists({token: tokens[i]});
+            }
+        }
     }
 
     //endregion -- Internal logic -----
