@@ -129,7 +129,7 @@ contract Swapper is Controllable, ISwapper {
         //semgrep-ignore-next-line rules.solidity.performance.use-custom-error-not-require
         require(tokenIn.length == thresholdAmount.length, "array length mismatch");
         uint len = tokenIn.length;
-        //semgrep-ignore-next-line rules.solidity.performance.state-variable-read-in-a-loop
+        // nosemgrep
         for (uint i = 0; i < len; ++i) {
             threshold[tokenIn[i]] = thresholdAmount[i];
         }
