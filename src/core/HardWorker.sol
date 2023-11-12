@@ -16,27 +16,40 @@ import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 /// @notice HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
 /// @author Alien Deployer (https://github.com/a17)
 contract HardWorker is Controllable, IHardWorker {
-    
-    /// @dev Version of HardWorker implementation
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
     address internal constant GELATO_OPS_PROXY_FACTORY = 0xC815dB16D4be6ddf2685C201937905aBf338F5D7;
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.HardWorker")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant HARDWORKER_STORAGE_LOCATION = 0xb27d1d090fdefd817c9451b2e705942c4078dc680872cd693dd4ae2b2aaa9000;
 
-    /// @inheritdoc IHardWorker
-    mapping(address caller => bool allowed) public dedicatedServerMsgSender;
-    
-    /// @inheritdoc IHardWorker
-    address public dedicatedGelatoMsgSender;
-    
-    ITaskTreasuryUpgradable public gelatoTaskTreasury;
-    bytes32 public gelatoTaskId;
-    uint public gelatoMinBalance;
-    uint public gelatoDepositAmount;
-    uint public delayServer;
-    uint public delayGelato;
-    uint public maxHwPerCall;
-    mapping(address => bool) public excludedVaults;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          STORAGE                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.HardWorker
+    struct HardWorkerStorage {
+        mapping(address => bool) excludedVaults;
+        mapping(address caller => bool allowed) dedicatedServerMsgSender;
+        address dedicatedGelatoMsgSender;
+        ITaskTreasuryUpgradable gelatoTaskTreasury;
+        bytes32 gelatoTaskId;
+        uint gelatoMinBalance;
+        uint gelatoDepositAmount;
+        uint delayServer;
+        uint delayGelato;
+        uint maxHwPerCall;    
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INITIALIZATION                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function initialize(
         address platform_,
@@ -46,25 +59,26 @@ contract HardWorker is Controllable, IHardWorker {
     ) public initializer payable {
         __Controllable_init(platform_);
 
-        delayServer = 11 hours;
-        delayGelato = 12 hours;
+        HardWorkerStorage storage $ = _getStorage();
+        $.delayServer = 11 hours;
+        $.delayGelato = 12 hours;
+
         emit Delays(11 hours, 12 hours);
 
-        maxHwPerCall = 5;
+        $.maxHwPerCall = 5;
         emit MaxHwPerCall(5);
 
         if (gelatoAutomate != address(0)) {
             // setup gelato
-            gelatoMinBalance = gelatoMinBalance_;
-            gelatoDepositAmount = gelatoDepositAmount_;
+            $.gelatoMinBalance = gelatoMinBalance_;
+            $.gelatoDepositAmount = gelatoDepositAmount_;
             //slither-disable-next-line unused-return
             (address _dedicatedGelatoMsgSender, ) = IOpsProxyFactory(GELATO_OPS_PROXY_FACTORY).getProxyOf(address(this));
-            dedicatedGelatoMsgSender = _dedicatedGelatoMsgSender;
+            $.dedicatedGelatoMsgSender = _dedicatedGelatoMsgSender;
             IAutomate automate = IAutomate(gelatoAutomate);
             ITaskTreasuryUpgradable _gelatoTaskTreasury = automate.taskTreasury();
-            gelatoTaskTreasury = _gelatoTaskTreasury;
+            $.gelatoTaskTreasury = _gelatoTaskTreasury;
             emit DedicatedGelatoMsgSender(address(0), _dedicatedGelatoMsgSender);
-
             // create Gelato Automate task
             ModuleData memory moduleData = ModuleData({
                 modules: new Module[](2),
@@ -80,37 +94,52 @@ contract HardWorker is Controllable, IHardWorker {
                 moduleData,
                 address(0)    
             );
-            gelatoTaskId = id;
+            $.gelatoTaskId = id;
             emit GelatoTask(id);
         }
+
+        // storage location check
+        // require(HARDWORKER_STORAGE_LOCATION == keccak256(abi.encode(uint256(keccak256("erc7201:stability.HardWorker")) - 1)) & ~bytes32(uint256(0xff)));
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CALLBACKS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     receive() external payable {}
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @inheritdoc IHardWorker
     function setDedicatedServerMsgSender(address sender, bool allowed) external onlyGovernanceOrMultisig {
-        require(dedicatedServerMsgSender[sender] != allowed, "HardWorker: nothing to change");
-        dedicatedServerMsgSender[sender] = allowed;
+        HardWorkerStorage storage $ = _getStorage();
+        require($.dedicatedServerMsgSender[sender] != allowed, "HardWorker: nothing to change");
+        $.dedicatedServerMsgSender[sender] = allowed;
         emit DedicatedServerMsgSender(sender, allowed);
     }
 
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
-        require (delayServer != delayServer_ || delayGelato != delayGelato_, "HardWorker: nothing to change");
-        delayServer = delayServer_;
-        delayGelato = delayGelato_;
+        HardWorkerStorage storage $ = _getStorage();
+        require ($.delayServer != delayServer_ || $.delayGelato != delayGelato_, "HardWorker: nothing to change");
+        $.delayServer = delayServer_;
+        $.delayGelato = delayGelato_;
         emit Delays(delayServer_, delayGelato_);
     }
 
     /// @inheritdoc IHardWorker
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
+        HardWorkerStorage storage $ = _getStorage();
         require (maxHwPerCall_ > 0, "HardWorker: wrong");
-        maxHwPerCall = maxHwPerCall_;
+        $.maxHwPerCall = maxHwPerCall_;
         emit MaxHwPerCall(maxHwPerCall_);
     }
 
     /// @inheritdoc IHardWorker
     function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
+        HardWorkerStorage storage $ = _getStorage();
         uint len = vaults_.length;
         require (len == status.length, "HardWorker: wrong input");
         require (len > 0, "HardWorker: zero length");
@@ -119,10 +148,10 @@ contract HardWorker is Controllable, IHardWorker {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
             require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
-            if (excludedVaults[vaults_[i]] == status[i]) {
+            if ($.excludedVaults[vaults_[i]] == status[i]) {
                 revert('HardWorker: vault already has this exclude status');
             } else {
-                excludedVaults[vaults_[i]] = status[i];
+                $.excludedVaults[vaults_[i]] = status[i];
                 emit VaultExcludeStatusChanged(vaults_[i], status[i]);
             }
         }
@@ -130,20 +159,22 @@ contract HardWorker is Controllable, IHardWorker {
 
     /// @inheritdoc IHardWorker
     function call(address[] memory vaults) external {
+        HardWorkerStorage storage $ = _getStorage();
+
         uint startGas = gasleft();
 
-        bool isServer = dedicatedServerMsgSender[msg.sender];
+        bool isServer = $.dedicatedServerMsgSender[msg.sender];
         require(
-            isServer || msg.sender == dedicatedGelatoMsgSender,
+            isServer || msg.sender == $.dedicatedGelatoMsgSender,
             "HardWorker: only dedicated senders"
         );
 
         if (!isServer) {
-            ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
+            ITaskTreasuryUpgradable _treasury = $.gelatoTaskTreasury;
             uint bal = _treasury.userTokenBalance(address(this), ETH);
-            if (bal < gelatoMinBalance) {
+            if (bal < $.gelatoMinBalance) {
                 uint contractBal = address(this).balance;
-                uint depositAmount = gelatoDepositAmount;
+                uint depositAmount = $.gelatoDepositAmount;
                 require(contractBal >= depositAmount, "HardWorker: not enough ETH");
                 _treasury.depositFunds{value: depositAmount}(
                     address(this),
@@ -154,7 +185,7 @@ contract HardWorker is Controllable, IHardWorker {
             }
         }
 
-        uint _maxHwPerCall = maxHwPerCall;
+        uint _maxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
         for (uint i; i < vaultsLength; ++i) {
@@ -182,22 +213,73 @@ contract HardWorker is Controllable, IHardWorker {
         emit Call(counter, gasUsed, gasCost, isServer);
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function getDelays() external view returns (uint delayServer, uint delayGelato) {
+        HardWorkerStorage storage $ = _getStorage();
+        delayServer = $.delayServer;
+        delayGelato = $.delayGelato;
+    }
+
+    /// @inheritdoc IHardWorker
+    function dedicatedServerMsgSender(address sender) external view returns(bool allowed) {
+        return _getStorage().dedicatedServerMsgSender[sender];
+    }
+
+    /// @inheritdoc IHardWorker
+    function dedicatedGelatoMsgSender() external view returns(address) {
+        return _getStorage().dedicatedGelatoMsgSender;
+    }
+
+    /// @inheritdoc IHardWorker
+    function gelatoMinBalance() external view returns(uint) {
+        return _getStorage().gelatoMinBalance;
+    }
+
+    /// @inheritdoc IHardWorker
+    function maxHwPerCall() external view returns(uint) {
+        return _getStorage().maxHwPerCall;
+    }
+
     /// @inheritdoc IHardWorker
     function checkerServer() external view returns (bool canExec, bytes memory execPayload) {
-        return _checker(delayServer);
+        return _checker(_getStorage().delayServer);
     }
 
     /// @inheritdoc IHardWorker
     function checkerGelato() external view returns (bool canExec, bytes memory execPayload) {
-        return _checker(delayGelato);
+        return _checker(_getStorage().delayGelato);
     }
 
     /// @inheritdoc IHardWorker
     function gelatoBalance() external view returns(uint) {
-        return gelatoTaskTreasury.userTokenBalance(address(this), ETH);
+        return _getStorage().gelatoTaskTreasury.userTokenBalance(address(this), ETH);
+    }
+
+    /// @inheritdoc IHardWorker
+    function excludedVaults(address vault) external view returns (bool) {
+        return _getStorage().excludedVaults[vault];
+    }
+
+    /// @inheritdoc IHardWorker
+    function gelatoTaskId() external view returns(bytes32) {
+        return _getStorage().gelatoTaskId;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _getStorage() private pure returns (HardWorkerStorage storage $) {
+        assembly {
+            $.slot := HARDWORKER_STORAGE_LOCATION
+        }
     }
 
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
+        HardWorkerStorage storage $ = _getStorage();
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
         address[] memory vaults = IVaultManager(_platform.vaultManager()).vaultAddresses();
@@ -205,7 +287,7 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaultsForHardWork = new address[](len);
         uint counter;
         for (uint i; i < len; ++i) {
-            if (!excludedVaults[vaults[i]]) {
+            if (!$.excludedVaults[vaults[i]]) {
                 IVault vault = IVault(vaults[i]);
                 IStrategy strategy = vault.strategy();
                 //slither-disable-next-line unused-return
@@ -236,5 +318,4 @@ contract HardWorker is Controllable, IHardWorker {
             return (true, abi.encodeWithSelector(HardWorker.call.selector, vaultsResult));
         }
     }
-
 }

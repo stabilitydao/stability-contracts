@@ -83,6 +83,8 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     function testAll() public {
+        // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.HardWorker")) - 1)) & ~bytes32(uint256(0xff)));
+
         platform.setAllowedBBTokenVaults(platform.allowedBBTokens()[0], 1e4);
         BuildingVars memory vars;
         {
@@ -216,8 +218,12 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(success, false);
         vm.expectRevert("Controllable: not governance and not multisig");
         hw.setDedicatedServerMsgSender(address(this), true);
+        assertEq(hw.maxHwPerCall(), 5);
+        assertNotEq(hw.gelatoTaskId(), bytes32(0x00));
+        assertEq(hw.excludedVaults(address(this)), false);
         vm.prank(platform.multisig());
         hw.setDedicatedServerMsgSender(address(this), true);
+        assertEq(hw.dedicatedServerMsgSender(address(this)), true);
 
         // check HardWorker.changeVaultExcludeStatus
         {
@@ -283,6 +289,10 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.expectRevert("HardWorker: nothing to change");
         hw.setDelays(1 hours, 2 hours);
         vm.stopPrank();
+
+        (uint delayServer, uint delayGelato) = hw.getDelays();
+        assertEq(delayServer, 1 hours);
+        assertEq(delayGelato, 2 hours);
 
 
         address[] memory vaultsForHardWork = new address[](1);

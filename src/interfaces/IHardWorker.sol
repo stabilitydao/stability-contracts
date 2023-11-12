@@ -15,6 +15,11 @@ interface IHardWorker {
     event MaxHwPerCall(uint maxHwPerCall_);
     event VaultExcludeStatusChanged(address vault, bool status);
 
+    function getDelays() external view returns (uint delayServer, uint delayGelato);
+
+    /// @notice Vaults that excluded from HardWork execution
+    function excludedVaults(address vault) external view returns (bool);
+
     /// @notice Maximum vault HardWork calls per execution
     function maxHwPerCall() external view returns(uint);
 
@@ -35,6 +40,9 @@ interface IHardWorker {
     /// @return canExec Hard Work can be executed
     /// @return execPayload Vault addresses for HardWork
     function checkerGelato() external view returns(bool canExec, bytes memory execPayload);
+
+    /// @notice Gelato Automate task ID created by this contract
+    function gelatoTaskId() external view returns(bytes32);
 
     /// @notice ETH balance of HardWork contract on Gelato
     /// @return ETH amount with 18 decimals
