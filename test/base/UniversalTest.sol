@@ -221,9 +221,21 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
                     deal(assets[0], address(this), depositAmounts[0]);
                     swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
+
+                    poolData[0].tokenIn = assets[1];
+                    poolData[0].tokenOut = assets[0];
+                    IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
+                    deal(assets[1], address(this), depositAmounts[1]);
+                    swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
                 }
 
-                skip(6 hours);
+                skip(3 hours);
+                vm.roll(block.number + 6);
+
+                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2));
+
+                skip(3 hours);
+                vm.roll(block.number + 6);
 
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();

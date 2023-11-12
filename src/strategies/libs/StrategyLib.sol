@@ -168,15 +168,6 @@ library StrategyLib {
         return earned * 1e18 * ConstantsLib.DENOMINATOR * uint(365) / tvl / (duration * 1e18 / 1 days);
     }
 
-    /// @notice Make infinite approve of {token} to {spender} if the approved amount is less than {amount}
-    /// @dev Should NOT be used for third-party pools
-    function approveIfNeeded(address token, uint amount, address spender) public {
-        if (IERC20(token).allowance(address(this), spender) < amount) {
-            // infinite approve, 2*255 is more gas efficient then type(uint).max
-            IERC20(token).forceApprove(spender, 2 ** 255);
-        }
-    }
-
     function revertUnderlying(address underlying) external pure {
         revert(underlying == address(0) ? 'StrategyBase: no underlying' : 'StrategyBase: not implemented');
     }
@@ -190,25 +181,25 @@ library StrategyLib {
         }
     }
 
-    function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
-        uint total;
-        IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
-        uint len = allFarms.length;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = allFarms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
-                total++;
-            }
-        }
-        farms = new IFactory.Farm[](total);
-        uint k;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = allFarms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
-                farms[k] = farm;
-                k++;
-            }
-        }
-    }
+    // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
+    //     uint total;
+    //     IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
+    //     uint len = allFarms.length;
+    //     for (uint i; i < len; ++i) {
+    //         IFactory.Farm memory farm = allFarms[i];
+    //         if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
+    //             total++;
+    //         }
+    //     }
+    //     farms = new IFactory.Farm[](total);
+    //     uint k;
+    //     for (uint i; i < len; ++i) {
+    //         IFactory.Farm memory farm = allFarms[i];
+    //         if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
+    //             farms[k] = farm;
+    //             k++;
+    //         }
+    //     }
+    // }
 
 }
