@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "./base/PairStrategyBase.sol";
+import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/UniswapV3MathLib.sol";
@@ -12,11 +12,11 @@ import "../integrations/quickswap/IMasterChef.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 import "../integrations/quickswap/IRewarder.sol";
 import "../core/libs/CommonLib.sol";
-import "../adapters/libs/DexAdapterIdLib.sol";
+import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Gamma QuickSwap farm rewards by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
-contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
+contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -63,7 +63,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         masterChef = IMasterChef(farm.addresses[1]);
         pid = farm.nums[0];
 
-        __PairStrategyBase_init(PairStrategyBaseInitParams({
+        __LPStrategyBase_init(LPStrategyBaseInitParams({
             id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
             platform: addresses[0],
             vault: addresses[1],
@@ -88,9 +88,9 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         return poolInfo.allocPoint > 0;
     }
 
-    /// @inheritdoc IPairStrategyBase
-    function dexAdapterId() public pure override returns(string memory) {
-        return DexAdapterIdLib.ALGEBRA;
+    /// @inheritdoc ILPStrategy
+    function ammAdapterId() public pure override returns(string memory) {
+        return AmmAdapterIdLib.ALGEBRA;
     }
 
     /// @inheritdoc IStrategy
@@ -106,7 +106,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         uint[] memory nums,
         int24[] memory ticks
     ) {
-        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(dexAdapterId()))).proxy);
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
     
@@ -132,7 +132,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
                     "Earn ",
                     CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
                     " on QuickSwap by ",
-                    CommonLib.implode(CommonLib.getSymbols(_dexAdapter.poolTokens(farm.pool)), "-"),
+                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
                     " Gamma ",
                     GammaLib.getPresetName(farm.nums[1]),
                     " LP"
@@ -264,7 +264,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         amountsConsumed = new uint[](2);
         (uint amount1Start, uint amount1End) = uniProxy.getDepositAmount(_underlying, _assets[0], amountsMax[0]);

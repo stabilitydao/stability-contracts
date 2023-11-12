@@ -7,7 +7,7 @@ import "../../src/core/vaults/CVault.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockDexAdapter.sol";
+import "../../src/test/MockAmmAdapter.sol";
 import "../../src/test/MockStrategyUpgrade.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/test/MockERC721.sol";
@@ -17,7 +17,7 @@ import "../../src/interfaces/IStrategyLogic.sol";
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
     MockStrategy public strategyImplementation;
-    MockDexAdapter public dexAdapter;
+    MockAmmAdapter public ammAdapter;
 
     function setUp() public {
         Factory implementation = new Factory();
@@ -27,7 +27,7 @@ contract FactoryTest is Test, MockSetup {
         factory.initialize(address(platform));
         strategyImplementation = new MockStrategy();
 
-        dexAdapter = new MockDexAdapter(address(tokenA), address(tokenB));
+        ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
 
         platform.setup(
             IPlatform.SetupAddresses({
@@ -40,7 +40,8 @@ contract FactoryTest is Test, MockSetup {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
-                hardWorker: address(0)
+                hardWorker: address(0),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -54,7 +55,7 @@ contract FactoryTest is Test, MockSetup {
             })
         );
 
-        platform.addDexAdapter('MOCKSWAP', address(dexAdapter));
+        platform.addAmmAdapter('MOCKSWAP', address(ammAdapter));
     }
 
     function testInitialize() public {
@@ -179,7 +180,7 @@ contract FactoryTest is Test, MockSetup {
 
         assertEq(IERC20Metadata(vault).symbol(), "C-MOCKAMOCKB-DADFGP");
 
-        assertEq(address(IPairStrategyBase(strategy).dexAdapter()), address(dexAdapter));
+        assertEq(address(ILPStrategy(strategy).ammAdapter()), address(ammAdapter));
         assertEq(address(IStrategy(strategy).vault()), vault);
         assertEq(address(IStrategy(strategy).underlying()), address(1));
         assertEq(IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH(), keccak256(abi.encodePacked(StrategyIdLib.DEV)));

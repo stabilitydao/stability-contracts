@@ -4,11 +4,11 @@ pragma solidity ^0.8.21;
 import {console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IMockERC20.sol";
-import "../strategies/base/PairStrategyBase.sol";
+import "../strategies/base/LPStrategyBase.sol";
 import "../strategies/libs/StrategyIdLib.sol";
 import "../core/libs/CommonLib.sol";
 
-contract MockStrategy is PairStrategyBase {
+contract MockStrategy is LPStrategyBase {
     string public constant VERSION = '10.99.99';
     
     uint private _depositedToken0;
@@ -27,7 +27,7 @@ contract MockStrategy is PairStrategyBase {
     ) initializer public {
         require(addresses[3] != address(0), "Strategy: underlying token cant be zero for this strategy");
 
-        __PairStrategyBase_init(PairStrategyBaseInitParams({
+        __LPStrategyBase_init(LPStrategyBaseInitParams({
             id: StrategyIdLib.DEV,
             platform: addresses[0],
             vault: addresses[1],
@@ -59,7 +59,7 @@ contract MockStrategy is PairStrategyBase {
         return CommonLib.bytesToBytes32(abi.encodePacked(color, bgColor));
     }
 
-    function dexAdapterId() public pure override returns(string memory) {
+    function ammAdapterId() public pure override returns(string memory) {
         return 'MOCKSWAP';
     }
 

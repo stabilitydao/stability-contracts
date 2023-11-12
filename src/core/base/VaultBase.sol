@@ -128,7 +128,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
-                // todo IPlatform variable
+                // todo #29 IPlatform variable
                 if (_tvl < 100e18) {
                     revert("Vault: not enough balance to pay gas");
                 }
@@ -144,6 +144,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external virtual nonReentrant {
+        // todo #29 check vault
+
         if (doHardWorkOnDeposit && block.timestamp > strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
             strategy.doHardWork();
         }

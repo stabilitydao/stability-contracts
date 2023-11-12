@@ -8,6 +8,9 @@ import "../../src/interfaces/IVaultManager.sol";
 import "../../src/interfaces/IHardWorker.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
+
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     struct BuildingVars {
         uint len;
         uint paramsLen;
@@ -32,6 +35,12 @@ contract PlatformPolygonTest is PolygonSetup {
 
         deal(PolygonLib.TOKEN_USDC, address(this), 1e12);
         IERC20(PolygonLib.TOKEN_USDC).approve(address(factory), 1e12);
+    }
+
+    
+    bool canReceive;
+    receive() external payable{
+        require(canReceive);
     }
 
     function testUserBalance() public {
@@ -154,7 +163,10 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitAddresses,
                 strategyInitNums,
                 strategyInitTicks
-            );
+            ); 
+            (,,,,uint[] memory vaultSharePrice,uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
+            assertEq(vaultSharePrice[0], 0);
+            assertEq(vaultUserBalance[0], 0);
             vm.expectRevert('Factory: such vault already deployed');
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
@@ -266,8 +278,44 @@ contract PlatformPolygonTest is PolygonSetup {
             }
         }
 
-        vm.prank(platform.multisig());
+        vm.startPrank(platform.multisig());
         hw.setDelays(1 hours, 2 hours);
+        vm.expectRevert("HardWorker: nothing to change");
+        hw.setDelays(1 hours, 2 hours);
+        vm.stopPrank();
+
+
+        address[] memory vaultsForHardWork = new address[](1);
+        address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
+        vaultsForHardWork[0] = vault_;
+
+        vm.txGasPrice(15e10);
+        deal(address(hw), type(uint).max);
+        vm.expectRevert("HardWorker: native transfer failed");
+        hw.call(vaultsForHardWork);
+        canReceive = true;
+        hw.call(vaultsForHardWork);
+
+        //Still yellow! 
+        vm.startPrank(address(hw.dedicatedGelatoMsgSender()));
+
+        //lower
+        deal(address(hw), 0); 
+        assertGt(hw.gelatoMinBalance(), address(hw).balance);
+        hw.call(vaultsForHardWork);
+
+        //equal
+        deal(address(hw), hw.gelatoMinBalance()); 
+        assertEq(address(hw).balance, hw.gelatoMinBalance());
+        hw.call(vaultsForHardWork);
+
+        //higher
+        deal(address(hw), type(uint).max); 
+        assertGt(address(hw).balance, hw.gelatoMinBalance());
+        hw.call(vaultsForHardWork);
+
+        vm.stopPrank();
+        
 
         skip(1 hours);
         skip(100);
@@ -275,7 +323,6 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(canExec, false);
         (canExec,) = hw.checkerServer();
         assertEq(canExec, true);
-        
     }
 
     function _depositToVault(address vault, uint assetAmountUsd) internal {

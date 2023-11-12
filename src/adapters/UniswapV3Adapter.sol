@@ -7,27 +7,26 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../strategies/libs/UniswapV3MathLib.sol";
-import "../interfaces/IDexAdapter.sol";
+import "../interfaces/IAmmAdapter.sol";
 import "../integrations/uniswapv3/IUniswapV3Pool.sol";
 
-/// @notice DeX adapter for working with Uniswap V3 AMMs.
+/// @notice AMM adapter for working with Uniswap V3 AMMs.
 /// @author Uni3Swapper (https://github.com/tetu-io/tetu-liquidator/blob/master/contracts/swappers/Uni3Swapper.sol)
 /// @author Alien Deployer (https://github.com/a17)
-contract UniswapV3Adapter is Controllable, IDexAdapter {
+contract UniswapV3Adapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of UniswapV3Adapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
-    string internal constant _DEX_ADAPTER_ID = "UNISWAPV3";
-
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function poolTokens(address pool) external view returns (address[] memory) {
         IUniswapV3Pool _pool = IUniswapV3Pool(pool);
         address[] memory tokens = new address[](2);
@@ -36,12 +35,12 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         return tokens;
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
-        revert('unavailable');
+        revert IAmmAdapter.NotSupportedByCAMM();
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         amountsConsumed = new uint[](2);
         (liquidity, amountsConsumed[0], amountsConsumed[1]) = getLiquidityForAmounts(pool, amounts[0], amounts[1], ticks[0], ticks[1]);
@@ -55,20 +54,14 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         liquidity = uint(liquidityOut);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
-        (amounts[0], amounts[1]) = getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
+        (amounts[0], amounts[1]) = _getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
     }
 
-    function getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) public view returns (uint amount0, uint amount1) {
-        //slither-disable-next-line unused-return
-        (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
-        (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
-    }
-
-    /// @inheritdoc IDexAdapter
-    function getProportion0(address pool) external view returns (uint) {
+    /// @inheritdoc IAmmAdapter
+    function getProportion0(address pool) public view returns (uint) {
         address token1 = IUniswapV3Pool(pool).token1();
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,,,,) = IUniswapV3Pool(pool).slot0();
@@ -84,7 +77,15 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
+    }
+
+    /// @inheritdoc IAmmAdapter
     function swap(
         address pool,
         address tokenIn,
@@ -129,7 +130,7 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         );
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getPrice(
         address pool,
         address tokenIn,
@@ -178,17 +179,23 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);
     }
 
-    function _getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
-        if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
-            lowerTick = (tick / tickSpacing - 1) * tickSpacing;
-        } else {
-            lowerTick = tick / tickSpacing * tickSpacing;
-        }
-        upperTick = lowerTick + tickSpacing;
+    // function _getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
+    //     if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
+    //         lowerTick = (tick / tickSpacing - 1) * tickSpacing;
+    //     } else {
+    //         lowerTick = tick / tickSpacing * tickSpacing;
+    //     }
+    //     upperTick = lowerTick + tickSpacing;
+    // }
+
+    /// @inheritdoc IAmmAdapter
+    function DEX_ADAPTER_ID() external pure returns(string memory) {
+        return AmmAdapterIdLib.UNISWAPV3;
     }
 
-    /// @inheritdoc IDexAdapter
-    function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+    function _getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) internal view returns (uint amount0, uint amount1) {
+        //slither-disable-next-line unused-return
+        (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
+        (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
 }

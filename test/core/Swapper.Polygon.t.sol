@@ -10,7 +10,7 @@ import "../../src/adapters/AlgebraAdapter.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/adapters/KyberAdapter.sol";
 import "../base/chains/PolygonSetup.sol";
-import "../../src/adapters/libs/DexAdapterIdLib.sol";
+import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 
 contract SwapperPolygonTest is Test, PolygonSetup {
     Swapper public swapper;
@@ -31,9 +31,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
 
         swapper.initialize(address(platform));
 
-        //add DexAdapterIdLib's id adapter
+        //add AmmAdapterIdLib's id adapter
         uniswapV3Adapter = new UniswapV3Adapter();
-        platform.addDexAdapter(DexAdapterIdLib.UNISWAPV3, address(uniswapV3Adapter));
+        platform.addAmmAdapter(AmmAdapterIdLib.UNISWAPV3, address(uniswapV3Adapter));
 
         // deploy and init adapters
         proxy = new Proxy();
@@ -53,13 +53,13 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](6);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapter: address(uniswapV3Adapter),
+            ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
         pools[1] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_DAI_100,
-            dexAdapter: address(uniswapV3Adapter),
+            ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_DAI,
             tokenOut: PolygonLib.TOKEN_USDC
         });
@@ -67,26 +67,26 @@ contract SwapperPolygonTest is Test, PolygonSetup {
 
         pools[2] = ISwapper.PoolData({
             pool: PolygonLib.POOL_QUICKSWAPV3_USDT_DAI,
-            dexAdapter: address(algebraAdapter),
+            ammAdapter: address(algebraAdapter),
             tokenIn: PolygonLib.TOKEN_USDT,
             tokenOut: PolygonLib.TOKEN_DAI
         });
         pools[3] = ISwapper.PoolData({
             pool: PolygonLib.POOL_QUICKSWAPV3_USDC_QUICK,
-            dexAdapter: address(algebraAdapter),
+            ammAdapter: address(algebraAdapter),
             tokenIn: PolygonLib.TOKEN_QUICK,
             tokenOut: PolygonLib.TOKEN_USDC
         });
         pools[4] = ISwapper.PoolData({
             pool: PolygonLib.POOL_QUICKSWAPV3_dQUICK_QUICK,
-            dexAdapter: address(algebraAdapter),
+            ammAdapter: address(algebraAdapter),
             tokenIn: PolygonLib.TOKEN_dQUICK,
             tokenOut: PolygonLib.TOKEN_QUICK
         });
 
         pools[5] = ISwapper.PoolData({
             pool: PolygonLib.POOL_KYBER_KNC_USDC,
-            dexAdapter: address(kyberAdapter),
+            ammAdapter: address(kyberAdapter),
             tokenIn: PolygonLib.TOKEN_KNC,
             tokenOut: PolygonLib.TOKEN_USDC
         });
@@ -266,7 +266,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapter: address(uniswapV3Adapter),
+            ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
@@ -278,7 +278,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapter: address(uniswapV3Adapter),
+            ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
@@ -289,17 +289,17 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: "123",
+            ammAdapterId: "123",
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: unknown DeX adapter");
+        vm.expectRevert("Swapper: unknown AMM adapter");
         swapper.addPools(pools_, false); 
 
          pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
@@ -312,7 +312,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapter: address(uniswapV3Adapter),
+            ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
@@ -324,17 +324,17 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: "123",
+            ammAdapterId: "123",
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: unknown DeX adapter");
+        vm.expectRevert("Swapper: unknown AMM adapter");
         swapper.addBlueChipsPools(pools_, false); 
 
          pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: PolygonLib.TOKEN_USDC,
             tokenOut: PolygonLib.TOKEN_USDT
         });

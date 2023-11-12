@@ -2,30 +2,30 @@
 pragma solidity ^0.8.21;
 
 import "./StrategyBase.sol";
-import "../../interfaces/IPairStrategyBase.sol";
-import "../../interfaces/IRVault.sol";
+import "../libs/LPStrategyLib.sol";
+import "../../interfaces/ILPStrategy.sol";
 
-/// @dev Base strategy for a liquidity position made up of two ERC-20 tokens
+/// @dev Base liquidity providing strategy
 /// @author Alien Deployer (https://github.com/a17)
-abstract contract PairStrategyBase is StrategyBase, IPairStrategyBase {
+abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
 
-    /// @dev Version of PairStrategyBase implementation
-    string public constant VERSION_PAIR_STRATEGY_BASE = '1.0.0';
+    /// @dev Version of LPStrategyBase implementation
+    string public constant VERSION_LP_STRATEGY_BASE = '1.0.0';
 
     address public pool;
-    IDexAdapter public dexAdapter;
-    uint internal _fee0OnBalance;
-    uint internal _fee1OnBalance;
+    IAmmAdapter public ammAdapter;
+    uint[] internal _feesOnBalance;
 
     /// @dev This empty reserved space is put in place to allow future versions to add new.
     /// variables without shifting down storage in the inheritance chain.
     /// Total gap == 50 - storage slots used.
-    uint[50 - 4] private __gap;
+    uint[50 - 3] private __gap;
 
-    function __PairStrategyBase_init(PairStrategyBaseInitParams memory params) internal onlyInitializing {
+    function __LPStrategyBase_init(LPStrategyBaseInitParams memory params) internal onlyInitializing {
         address[] memory _assets;
         uint exchangeAssetIndex;
-        (_assets, exchangeAssetIndex, dexAdapter) = StrategyLib.PairStrategyBase_init(params.platform, params, dexAdapterId());
+        (_assets, exchangeAssetIndex, ammAdapter) = LPStrategyLib.LPStrategyBase_init(params.platform, params, ammAdapterId());
+        _feesOnBalance = new uint[](_assets.length);
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
         pool = params.pool;
     }
@@ -38,28 +38,28 @@ abstract contract PairStrategyBase is StrategyBase, IPairStrategyBase {
         types[2] = VaultTypeLib.REWARDING_MANAGED;
     }
 
-    /// @inheritdoc IPairStrategyBase
-    function dexAdapterId() public view virtual returns(string memory);
+    /// @inheritdoc ILPStrategy
+    function ammAdapterId() public view virtual returns(string memory);
 
     function _previewDepositAssets(uint[] memory amountsMax) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
-        (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax);
+        (value, amountsConsumed) = ammAdapter.getLiquidityForAmounts(pool, amountsMax);
     }
 
     function _previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) internal view override returns (uint[] memory amountsConsumed, uint value) {
-        StrategyLib.checkPairStrategyBasePreviewDepositAssets(assets_, _assets, amountsMax);
+        LPStrategyLib.checkPreviewDepositAssets(assets_, _assets, amountsMax);
         return _previewDepositAssets(amountsMax);
     }
 
     function _withdrawAssets(address[] memory assets_, uint value, address receiver) internal virtual override returns (uint[] memory amountsOut) {
-        StrategyLib.checkPairStrategyBaseWithdrawAssets(assets_, _assets);
+        LPStrategyLib.checkAssets(assets_, _assets);
         return _withdrawAssets(value, receiver);
     }
 
     function _processRevenue(address[] memory assets_, uint[] memory amountsRemaining) internal override returns (bool needCompound) {
-        return StrategyLib.processRevenue(platform(), vault, dexAdapter, _exchangeAssetIndex, pool, assets_, amountsRemaining);
+        return LPStrategyLib.processRevenue(platform(), vault, ammAdapter, _exchangeAssetIndex, pool, assets_, amountsRemaining);
     }
 
     function _swapForDepositProportion(uint prop0Pool) internal returns(uint[] memory amountsToDeposit) {
-        return StrategyLib.pairStrategyBaseSwapForDepositProportion(platform(), dexAdapter, pool, _assets, prop0Pool);
+        return LPStrategyLib.swapForDepositProportion(platform(), ammAdapter, pool, _assets, prop0Pool);
     }
 }

@@ -42,7 +42,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -67,7 +68,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -91,6 +93,8 @@ contract PlatformTest is Test  {
         }
 
         platform.addOperator(operator);
+        vm.expectRevert("Platform: EXIST");
+        platform.addOperator(operator);
         
         assertEq(platform.isOperator(operator), true);
         address[] memory operatorsList = platform.operatorsList();
@@ -103,6 +107,8 @@ contract PlatformTest is Test  {
 
         platform.removeOperator(operator);
         assertEq(platform.isOperator(operator), false);
+        vm.expectRevert("Platform: NOT_EXIST");
+        platform.removeOperator(operator);
 
         if (operator != address(0) && operator != address(this)) {
             vm.startPrank(operator);
@@ -140,18 +146,87 @@ contract PlatformTest is Test  {
                 );
             }
 
-            vm.prank(multisig);
+            vm.startPrank(multisig);
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 proxies,
                 implementations
             );
+            
+            vm.expectRevert("Platform: ANNOUNCED");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                implementations
+            );
+ 
+            vm.stopPrank();
+            platform.cancelUpgrade();
+            vm.startPrank(multisig);
+
+            address[] memory _implementations = new address[](2);
+            _implementations[0] = address(vaultImplementationUpgrade);
+            _implementations[1] = address(vaultImplementationUpgrade);
+
+            vm.expectRevert("Platform: WRONG_INPUT");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                _implementations
+            );
+ 
+            address[] memory _proxies = new address[](1);
+            _proxies[0] = address(0);
+            vm.expectRevert("Platform: zero proxy address");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                _proxies,
+                implementations
+            ); 
+
+            address[] memory __implementations = new address[](1);
+            __implementations[0] = address(0);
+
+           vm.expectRevert("Platform: zero implementation address");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                __implementations
+            ); 
+
+            _proxies[0] = address(vaultImplementationUpgrade);
+            __implementations[0] = address(vaultImplementationUpgrade);
+            vm.expectRevert("Platform: same version");
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                _proxies,
+                __implementations
+            );
+
+            string memory oldVersion = platform.PLATFORM_VERSION();
+            vm.expectRevert("Platform: same platform version");
+            platform.announcePlatformUpgrade(
+                oldVersion,
+                proxies,
+                implementations
+            );
+          
+            platform.announcePlatformUpgrade(
+                '2025.01.0-beta',
+                proxies,
+                implementations
+            );
+            vm.stopPrank();
 
             assertEq(platform.pendingPlatformUpgrade().proxies[0], address(proxy));
             assertEq(platform.pendingPlatformUpgrade().newImplementations[0], address(vaultImplementationUpgrade));
 
             platform.cancelUpgrade();
             assertEq(platform.pendingPlatformUpgrade().proxies.length, 0);
+            vm.expectRevert("Platform: no upgrade");
+            platform.cancelUpgrade();
+            vm.expectRevert("Platform: no upgrade");
+            platform.upgrade();
 
             vm.prank(multisig);
             platform.announcePlatformUpgrade(
@@ -183,83 +258,114 @@ contract PlatformTest is Test  {
         platform.initialize(address(this), '23.11.0-dev');
         address govAddr = platform.governance();
 
-        vm.prank(address(123));
+        vm.prank(address(1));
         vm.expectRevert("Controllable: not governance");
         platform.setFees(1,1,1,1); 
 
-        vm.prank(govAddr);
+        vm.startPrank(govAddr);
         platform.setFees(6_000, 30_000, 30_000, 0); 
         (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) = platform.getFees();
         assertEq(fee, 6_000);
         assertEq(feeShareVaultManager, 30_000);
         assertEq(feeShareStrategyLogic, 30_000);
         assertEq(feeShareEcosystem, 0);
+
+        vm.expectRevert("Platform: zero ecosystemFeeReceiver");
+        platform.setFees(6_000, 30_000, 30_000, 5); 
+
+        vm.expectRevert("Platform: incorrect fee");
+        platform.setFees(3_000, 30_000, 30_000, 0); 
+        vm.expectRevert("Platform: incorrect fee");
+        platform.setFees(13_000, 30_000, 30_000, 0); 
+
+        vm.expectRevert("Platform: incorrect feeShareVaultManager");
+        platform.setFees(6_000, 3_000, 30_000, 0); 
+
+        vm.expectRevert("Platform: incorrect feeShareStrategyLogic");
+        platform.setFees(6_000, 30_000, 3_000, 0); 
+
+        vm.expectRevert("Platform: incorrect fee shares");
+        platform.setFees(10_000, 60_000, 50_000, 0); 
+
+        vm.stopPrank();
     }
 
-    function testAddRemoveAllowedBBToken() public {
+    function testAddRemoveUseAllowedBBToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.setAllowedBBTokenVaults(address(123), 5);
-        platform.setAllowedBBTokenVaults(address(456), 5);
+        platform.setAllowedBBTokenVaults(address(1), 5);
+        platform.setAllowedBBTokenVaults(address(2), 5);
+        platform.setAllowedBBTokenVaults(address(3), 1);
+
+        vm.startPrank(address(platform.factory()));
+        platform.useAllowedBBTokenVault(address(3));
+        vm.expectRevert("Platform: building for bbToken is not allowed");
+        platform.useAllowedBBTokenVault(address(3));
+        vm.stopPrank();
 
         (address[] memory bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(123));
-        assertEq(bbToken[1], address(456));
-
+        assertEq(bbToken[0], address(1));
+        assertEq(bbToken[1], address(2));
+ 
         vm.expectRevert("Platform: BB-token not found");
         platform.removeAllowedBBToken(address(5));
 
         platform.removeAllowedBBToken(bbToken[0]);
         
         (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(456));
+        //EnumerableSet.remove change positions inside array
+        assertEq(bbToken[0], address(3));
+        assertEq(bbToken[1], address(2));
 
         platform.removeAllowedBBToken(bbToken[0]);
         (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 0);
+        assertEq(bbToken.length, 1); 
+        platform.removeAllowedBBToken(bbToken[0]);
+        (bbToken, ) = platform.allowedBBTokenVaults();
+        assertEq(bbToken.length, 0); 
     }
 
     function testAddRemoveAllowedBoostRewardToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addAllowedBoostRewardToken(address(123));
-        platform.addAllowedBoostRewardToken(address(456));
+        platform.addAllowedBoostRewardToken(address(1));
+        platform.addAllowedBoostRewardToken(address(2));
 
         vm.expectRevert("Platform: EXIST");
-        platform.addAllowedBoostRewardToken(address(456));
+        platform.addAllowedBoostRewardToken(address(2));
         vm.expectRevert("Platform: EXIST");
         platform.removeAllowedBoostRewardToken(address(789));
 
         address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(123));
-        assertEq(allowedTokens[1], address(456));
+        assertEq(allowedTokens[0], address(1));
+        assertEq(allowedTokens[1], address(2));
 
-        platform.removeAllowedBoostRewardToken(address(123));
+        platform.removeAllowedBoostRewardToken(address(1));
         allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(456));
+        assertEq(allowedTokens[0], address(2));
 
-        platform.removeAllowedBoostRewardToken(address(456));
+        platform.removeAllowedBoostRewardToken(address(2));
         allowedTokens = platform.allowedBoostRewardTokens();
         assertEq(allowedTokens.length, 0);
     }
 
     function testAddRemoveDefaultBoostRewardToken() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addDefaultBoostRewardToken(address(123));
-        platform.addDefaultBoostRewardToken(address(456));
+        platform.addDefaultBoostRewardToken(address(1));
+        platform.addDefaultBoostRewardToken(address(2));
 
         vm.expectRevert("Platform: EXIST");
-        platform.addDefaultBoostRewardToken(address(456));
+        platform.addDefaultBoostRewardToken(address(2));
         vm.expectRevert("Platform: EXIST");
         platform.removeDefaultBoostRewardToken(address(789));
 
         address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(123));
-        assertEq(defaultTokens[1], address(456));
+        assertEq(defaultTokens[0], address(1));
+        assertEq(defaultTokens[1], address(2));
 
-        platform.removeDefaultBoostRewardToken(address(123));
+        platform.removeDefaultBoostRewardToken(address(1));
         defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(456));
+        assertEq(defaultTokens[0], address(2));
 
-        platform.removeDefaultBoostRewardToken(address(456));
+        platform.removeDefaultBoostRewardToken(address(2));
         defaultTokens = platform.defaultBoostRewardTokens();
         assertEq(defaultTokens.length, 0);
 
@@ -294,15 +400,18 @@ contract PlatformTest is Test  {
     }
 
     function testGetDexAdapters() public {
+    function testGetAmmAdapters() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addDexAdapter("myId", address(123));
-        platform.addDexAdapter("myId2", address(456));
+        platform.addAmmAdapter("myId", address(1));
+        platform.addAmmAdapter("myId2", address(2));
+        vm.expectRevert("Platform: AMM adapter already exist");
+        platform.addAmmAdapter("myId2", address(2));
 
-        (string[] memory ids, address[] memory proxies) = platform.getDexAdapters();
+        (string[] memory ids, address[] memory proxies) = platform.getAmmAdapters();
         assertEq(ids[0], "myId");
         assertEq(ids[1], "myId2");
-        assertEq(proxies[0], address(123));
-        assertEq(proxies[1], address(456));
+        assertEq(proxies[0], address(1));
+        assertEq(proxies[1], address(2));
 
     }
 
@@ -334,7 +443,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -376,11 +486,11 @@ contract PlatformTest is Test  {
 
         address _logic = platform.strategyLogic();
         vm.expectRevert("StrategyLogic: not owner");
-        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         vm.prank(address(0));
-        IStrategyLogic(_logic).setRevenueReceiver(1, address(123));
+        IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         address _receiver = IStrategyLogic(_logic).getRevenueReceiver(1);
-        assertEq(address(123), _receiver);
+        assertEq(address(1), _receiver);
     }
 
     function testEcosystemRevenueReceiver() public {
@@ -388,5 +498,45 @@ contract PlatformTest is Test  {
         vm.expectRevert("Platform: ZERO_ADDRESS");
         platform.setEcosystemRevenueReceiver(address(0));
         platform.setEcosystemRevenueReceiver(address(1));
+    }
+
+    function testDexAggregators() public {
+        platform.initialize(address(this), '23.11.0-dev');
+
+        address[] memory dexAggRouter = new address[](2);
+        dexAggRouter[0] = address(1);
+        dexAggRouter[1] = address(2);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(8);
+        dexAggRouter[1] = address(9);
+        platform.addDexAggregators(dexAggRouter);
+        
+        address[] memory dexAggs = platform.dexAggregators();
+        assertEq(dexAggs.length, 4);
+        assertEq(dexAggs[3], address(9));
+
+        assertEq(platform.isAllowedDexAggregatorRouter(address(10)), false);
+        assertEq(platform.isAllowedDexAggregatorRouter(address(9)), true);
+
+        dexAggRouter = new address[](1);
+        dexAggRouter[0] = address(3);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(0);
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.ZeroAddress.selector)
+        );
+        platform.addDexAggregators(dexAggRouter);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.AggregatorNotExists.selector, address(5))
+        );
+        platform.removeDexAggregator(address(5));
+
+        platform.removeDexAggregator(address(1));
+        dexAggRouter[0] = address(1);
+        platform.addDexAggregators(dexAggRouter);
+
     }
 }

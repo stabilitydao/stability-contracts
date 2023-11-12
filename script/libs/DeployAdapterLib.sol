@@ -2,36 +2,36 @@
 pragma solidity ^0.8.21;
 
 import "../../src/core/proxy/Proxy.sol";
-import "../../src/adapters/libs/DexAdapterIdLib.sol";
+import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../../src/adapters/ChainlinkAdapter.sol";
 import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/adapters/AlgebraAdapter.sol";
 import "../../src/adapters/KyberAdapter.sol";
 
 library DeployAdapterLib {
-    function deployDexAdapter(address platform, string memory id) internal returns (address) {
-        address existAdapter = address(IPlatform(platform).dexAdapter(keccak256(bytes (id))).proxy);
+    function deployAmmAdapter(address platform, string memory id) internal returns (address) {
+        address existAdapter = address(IPlatform(platform).ammAdapter(keccak256(bytes (id))).proxy);
         if (existAdapter != address(0)) {
             return existAdapter;
         }
 
         Proxy proxy = new Proxy();
 
-        if (eq(id, DexAdapterIdLib.UNISWAPV3)) {
+        if (eq(id, AmmAdapterIdLib.UNISWAPV3)) {
             proxy.initProxy(address(new UniswapV3Adapter()));
         }
 
-        if (eq(id, DexAdapterIdLib.ALGEBRA)) {
+        if (eq(id, AmmAdapterIdLib.ALGEBRA)) {
             proxy.initProxy(address(new AlgebraAdapter()));
         }
 
-        if (eq(id, DexAdapterIdLib.KYBER)) {
+        if (eq(id, AmmAdapterIdLib.KYBER)) {
             proxy.initProxy(address(new KyberAdapter()));
         }
 
-        require(proxy.implementation() != address(0), "Unknown DexAdapter");
-        IDexAdapter(address(proxy)).init(platform);
-        IPlatform(platform).addDexAdapter(id, address(proxy));
+        require(proxy.implementation() != address(0), "Unknown AmmAdapter");
+        IAmmAdapter(address(proxy)).init(platform);
+        IPlatform(platform).addAmmAdapter(id, address(proxy));
 
         return address(proxy);
     }

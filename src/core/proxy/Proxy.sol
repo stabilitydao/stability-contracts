@@ -8,12 +8,6 @@ import "../../interfaces/IProxy.sol";
 /// @title Proxy for Stability Platform core contracts.
 /// @dev ERC-1967: Proxy Storage Slots used.
 contract Proxy is UpgradeableProxy, IProxy {
-
-    /// @notice Version of the contract
-    /// @dev Should be incremented when contract changed
-    /// todo remove?
-    string public constant PROXY_VERSION = "1.0.0";
-
     /// @inheritdoc IProxy
     function initProxy(address logic_) external override {
         _init(logic_);
