@@ -7,6 +7,7 @@ import "../../src/core/proxy/Proxy.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/core/Factory.sol";
+import "../../src/core/Swapper.sol";
 import "../../src/core/StrategyLogic.sol";
 
 contract PlatformTest is Test  {
@@ -390,7 +391,7 @@ contract PlatformTest is Test  {
         platform.initialize(address(this), '23.11.0-dev');
         vm.expectRevert("Platform: need setup");
         {   
-            (address[] memory _platformAddresses,,,,,,,) = platform.getData();
+            (address[] memory _platformAddresses,,,,,,,,,) = platform.getData();
             delete _platformAddresses;
         } 
 
@@ -403,11 +404,17 @@ contract PlatformTest is Test  {
         proxy.initProxy(address(new Factory()));
         Factory factory = Factory(address(proxy));
         factory.initialize(address(platform));
+
+        proxy = new Proxy();
+        proxy.initProxy(address(new Swapper()));
+        Swapper _swapper = Swapper(address(proxy));
+        _swapper.initialize(address(platform));
+
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(factory),
                 priceReader: address(2),
-                swapper: address(3),
+                swapper: address(_swapper),
                 buildingPermitToken: address(4),
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
@@ -431,6 +438,8 @@ contract PlatformTest is Test  {
 
         (
             address[] memory platformAddresses,
+            address[] memory bcAssets,
+            address[] memory dexAggregators_,
             string[] memory vaultType,
             bytes32[] memory vaultExtra,
             uint[] memory vaultBuildingPrice,
@@ -447,6 +456,8 @@ contract PlatformTest is Test  {
         assertEq(platformAddresses[3], platform.buildingPermitToken());
         assertEq(platformAddresses[4], platform.buildingPayPerVaultToken()); 
         assertEq(vaultType.length, 0); 
+        assertEq(bcAssets.length, 0); 
+        assertEq(dexAggregators_.length, 0); 
         assertEq(vaultExtra.length, 0); 
         assertEq(vaultBuildingPrice.length, 0); 
         assertEq(strategyId.length, 0); 

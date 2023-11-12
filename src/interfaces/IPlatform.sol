@@ -221,6 +221,8 @@ interface IPlatform {
     ///        platformAddresses[2] strategyLogic
     ///        platformAddresses[3] buildingPermitToken
     ///        platformAddresses[4] buildingPayPerVaultToken
+    /// @return bcAssets Blue chip token addresses
+    /// @return dexAggregators_ DeX aggregators allowed to be used entire the platform
     /// @return vaultType Vault type ID strings
     /// @return vaultExtra Vault color, background color and other extra data. Index of vault same as in previous array.
     /// @return vaultBulldingPrice Price of creating new vault in buildingPayPerVaultToken. Index of vault same as in previous array.
@@ -230,6 +232,8 @@ interface IPlatform {
     /// @return strategyExtra Strategy color, background color and other extra data. Index of strategy same as in previous array.
     function getData() external view returns(
         address[] memory platformAddresses,
+        address[] memory bcAssets,
+        address[] memory dexAggregators_,
         string[] memory vaultType,
         bytes32[] memory vaultExtra,
         uint[] memory vaultBulldingPrice,
