@@ -130,7 +130,7 @@ contract Swapper is Controllable, ISwapper {
         uint thresholdAmountLen = thresholdAmount.length;
         if (tokenInLen != thresholdAmountLen) revert ArrayLengthMismatch(tokenInLen, thresholdAmountLen);
         for (uint i = 0; i < tokenInLen; ++i) {
-            // nosemgrep: rules.solidity.performance.state-variable-read-in-a-loop
+            //nosemgrep
             threshold[tokenIn[i]] = thresholdAmount[i];
         }
         emit ThresholdChanged(tokenIn, thresholdAmount);

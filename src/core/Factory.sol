@@ -136,7 +136,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function addFarms(Farm[] memory farms_) external onlyOperator {
         uint len = farms_.length;
         for (uint i = 0; i < len; ++i) {
-            // nosemgrep: rules.solidity.performance.state-variable-read-in-a-loop
+            //nosemgrep
             _farms.push(farms_[i]);
         }
         emit NewFarm(farms_);
