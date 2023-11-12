@@ -13,7 +13,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     string public constant VERSION_LP_STRATEGY_BASE = '1.0.0';
 
     address public pool;
-    IDexAdapter public dexAdapter;
+    IAmmAdapter public ammAdapter;
     uint[] internal _feesOnBalance;
 
     /// @dev This empty reserved space is put in place to allow future versions to add new.
@@ -24,7 +24,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     function __LPStrategyBase_init(LPStrategyBaseInitParams memory params) internal onlyInitializing {
         address[] memory _assets;
         uint exchangeAssetIndex;
-        (_assets, exchangeAssetIndex, dexAdapter) = LPStrategyLib.LPStrategyBase_init(params.platform, params, dexAdapterId());
+        (_assets, exchangeAssetIndex, ammAdapter) = LPStrategyLib.LPStrategyBase_init(params.platform, params, ammAdapterId());
         _feesOnBalance = new uint[](_assets.length);
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
         pool = params.pool;
@@ -39,10 +39,10 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     }
 
     /// @inheritdoc ILPStrategy
-    function dexAdapterId() public view virtual returns(string memory);
+    function ammAdapterId() public view virtual returns(string memory);
 
     function _previewDepositAssets(uint[] memory amountsMax) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
-        (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax);
+        (value, amountsConsumed) = ammAdapter.getLiquidityForAmounts(pool, amountsMax);
     }
 
     function _previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) internal view override returns (uint[] memory amountsConsumed, uint value) {
@@ -56,10 +56,10 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     }
 
     function _processRevenue(address[] memory assets_, uint[] memory amountsRemaining) internal override returns (bool needCompound) {
-        return LPStrategyLib.processRevenue(platform(), vault, dexAdapter, _exchangeAssetIndex, pool, assets_, amountsRemaining);
+        return LPStrategyLib.processRevenue(platform(), vault, ammAdapter, _exchangeAssetIndex, pool, assets_, amountsRemaining);
     }
 
     function _swapForDepositProportion(uint prop0Pool) internal returns(uint[] memory amountsToDeposit) {
-        return LPStrategyLib.swapForDepositProportion(platform(), dexAdapter, pool, _assets, prop0Pool);
+        return LPStrategyLib.swapForDepositProportion(platform(), ammAdapter, pool, _assets, prop0Pool);
     }
 }

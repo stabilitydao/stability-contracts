@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "../interfaces/IDexAdapter.sol";
+import "../interfaces/IAmmAdapter.sol";
 
 /// @dev Liquidity providing strategy
 
 interface ILPStrategy {
     event FeesClaimed(uint[] fees);
 
-    error ZeroDexAdapter();
+    error ZeroAmmAdapter();
     error IncorrectAssetsLength();
     error IncorrectAssets();
     error IncorrectAmountsLength();
@@ -21,11 +21,11 @@ interface ILPStrategy {
         address underlying;
     }
 
-    /// @dev DeX adapter string ID for interacting with pool
-    function dexAdapterId() external view returns(string memory);
+    /// @dev AMM adapter string ID for interacting with pool
+    function ammAdapterId() external view returns(string memory);
 
-    /// @dev DeX adapter address for interacting with pool
-    function dexAdapter() external view returns (IDexAdapter);
+    /// @dev AMM adapter address for interacting with pool
+    function ammAdapter() external view returns (IAmmAdapter);
 
     /// @dev AMM
     function pool() external view returns (address);

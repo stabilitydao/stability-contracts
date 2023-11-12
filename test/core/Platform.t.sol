@@ -371,14 +371,14 @@ contract PlatformTest is Test  {
 
     }
 
-    function testGetDexAdapters() public {
+    function testGetAmmAdapters() public {
         platform.initialize(address(this), '23.11.0-dev');
-        platform.addDexAdapter("myId", address(1));
-        platform.addDexAdapter("myId2", address(2));
-        vm.expectRevert("Platform: DeX adapter already exist");
-        platform.addDexAdapter("myId2", address(2));
+        platform.addAmmAdapter("myId", address(1));
+        platform.addAmmAdapter("myId2", address(2));
+        vm.expectRevert("Platform: AMM adapter already exist");
+        platform.addAmmAdapter("myId2", address(2));
 
-        (string[] memory ids, address[] memory proxies) = platform.getDexAdapters();
+        (string[] memory ids, address[] memory proxies) = platform.getAmmAdapters();
         assertEq(ids[0], "myId");
         assertEq(ids[1], "myId2");
         assertEq(proxies[0], address(1));

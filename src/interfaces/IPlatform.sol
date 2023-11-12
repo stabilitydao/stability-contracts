@@ -26,7 +26,7 @@ interface IPlatform {
     event OperatorRemoved(address operator);
     event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
-    event NewDexAdapter(string id, address proxy);
+    event NewAmmAdapter(string id, address proxy);
     event EcosystemRevenueReceiver(address receiver);
     event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild, bool firstSet);
     event RemoveAllowedBBToken(address bbToken);
@@ -60,7 +60,7 @@ interface IPlatform {
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
     }
-    struct DexAdapter {
+    struct AmmAdapter {
         string id;
         address proxy;
     }
@@ -160,13 +160,13 @@ interface IPlatform {
     /// @notice Platform settings
     function getPlatformSettings() external view returns (PlatformSettings memory);
 
-    /// @notice DeX adapters of the platform
-    function getDexAdapters() external view returns(string[] memory id, address[] memory proxy);
+    /// @notice AMM adapters of the platform
+    function getAmmAdapters() external view returns(string[] memory id, address[] memory proxy);
 
-    /// @notice Get DeX adapter data by hash
-    /// @param dexAdapterIdHash Keccak256 hash of adapter ID string
-    /// @return ID string and proxy address of DeX adapter
-    function dexAdapter(bytes32 dexAdapterIdHash) external view returns(DexAdapter memory);
+    /// @notice Get AMM adapter data by hash
+    /// @param ammAdapterIdHash Keccak256 hash of adapter ID string
+    /// @return ID string and proxy address of AMM adapter
+    function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory);
 
     /// @notice Allowed buy-back tokens for rewarding vaults
     function allowedBBTokens() external view returns(address[] memory);
@@ -299,10 +299,10 @@ interface IPlatform {
     /// Only operator (multisig is operator too) can ececute pending platform upgrade
     function cancelUpgrade() external;
 
-    /// @notice Register DeX adapter in platform
-    /// @param id DeX adapter ID string from DexAdapterIdLib
-    /// @param proxy Address of DeX adapter proxy
-    function addDexAdapter(string memory id, address proxy) external;
+    /// @notice Register AMM adapter in platform
+    /// @param id AMM adapter ID string from AmmAdapterIdLib
+    /// @param proxy Address of AMM adapter proxy
+    function addAmmAdapter(string memory id, address proxy) external;
 
     // todo Only governance and multisig can set allowed bb-token vaults building limit
     /// @notice Set new vaults building limit for buy-back token

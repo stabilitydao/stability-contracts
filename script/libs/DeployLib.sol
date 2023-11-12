@@ -152,10 +152,10 @@ library DeployLib {
         return address(vars.platform);
     }
 
-    function logDeployDexAdapters(address platform, bool showLog) external view {
+    function logDeployAmmAdapters(address platform, bool showLog) external view {
         if (showLog) {
-            (string[] memory dexAdaptersNames,) = IPlatform(platform).getDexAdapters();
-            console.log('Deployed DeX adapters:', CommonLib.implode(dexAdaptersNames, ', '));
+            (string[] memory ammAdaptersNames,) = IPlatform(platform).getAmmAdapters();
+            console.log('Deployed AMM adapters:', CommonLib.implode(ammAdaptersNames, ', '));
         }
     }
 

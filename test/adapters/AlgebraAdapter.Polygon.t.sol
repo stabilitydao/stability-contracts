@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "../../src/interfaces/IDexAdapter.sol";
-import "../../src/adapters/libs/DexAdapterIdLib.sol";
+import "../../src/interfaces/IAmmAdapter.sol";
+import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../base/chains/PolygonSetup.sol";
 
 contract AlgebraAdapterTest is PolygonSetup {
     bytes32 public _hash;
-    IDexAdapter adapter;
+    IAmmAdapter adapter;
 
     constructor() {
         _init();
-        _hash = keccak256(bytes(DexAdapterIdLib.ALGEBRA));
-        adapter = IDexAdapter(platform.dexAdapter(_hash).proxy);
+        _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA));
+        adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
     }
 
     function testViewMethods() public {
         assertEq(keccak256(bytes(adapter.DEX_ADAPTER_ID())), _hash);
 
-        vm.expectRevert(IDexAdapter.NotSupportedByCAMM.selector);
+        vm.expectRevert(IAmmAdapter.NotSupportedByCAMM.selector);
         adapter.getLiquidityForAmounts(address(0), new uint[](2));
 
         address pool = PolygonLib.POOL_QUICKSWAPV3_USDC_USDT;

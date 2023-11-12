@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 /// @dev Get price, swap, liquidity calculations. Used by strategies and swapper
 /// @author Alien Deployer (https://github.com/a17)
-interface IDexAdapter {
+interface IAmmAdapter {
     event SwapInPool (
         address pool,
         address tokenIn,

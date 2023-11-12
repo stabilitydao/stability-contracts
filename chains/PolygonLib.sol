@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "../src/core/proxy/Proxy.sol";
-import "../src/adapters/libs/DexAdapterIdLib.sol";
+import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 import "../src/strategies/libs/GammaLib.sol";
@@ -142,12 +142,12 @@ library PolygonLib {
         }
         //endregion -- DeployAndSetupOracleAdapters -----
 
-        //region ----- DeployDexAdapters -----
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.UNISWAPV3);
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.ALGEBRA);
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.KYBER);
-        DeployLib.logDeployDexAdapters(platform, showLog);
-        //endregion -- DeployDexAdapters ----
+        //region ----- Deploy AMM adapters -----
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.KYBER);
+        DeployLib.logDeployAmmAdapters(platform, showLog);
+        //endregion -- Deploy AMM adapters ----
 
         //region ----- SetupSwapper -----
         (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
@@ -203,31 +203,31 @@ library PolygonLib {
         bcPools = new ISwapper.AddPoolData[](5);
         bcPools[0] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDT
         });
         bcPools[1] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_DAI_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_DAI,
             tokenOut: TOKEN_USDC
         });
         bcPools[2] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WMATIC_USDC_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WMATIC,
             tokenOut: TOKEN_USDC
         });
         bcPools[3] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WETH,
             tokenOut: TOKEN_USDC
         });
         bcPools[4] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WBTC,
             tokenOut: TOKEN_WETH
         });
@@ -239,37 +239,37 @@ library PolygonLib {
         // UniswapV3
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDT
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_DAI_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_DAI,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WMATIC_USDC_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WMATIC,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WETH,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WBTC,
             tokenOut: TOKEN_WETH
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_PROFIT_WETH_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_PROFIT,
             tokenOut: TOKEN_WETH
         });
@@ -277,19 +277,19 @@ library PolygonLib {
         // QuickSwapV3
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDT_DAI,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_USDT,
             tokenOut: TOKEN_DAI
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDC_QUICK,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_QUICK,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_dQUICK_QUICK,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_dQUICK,
             tokenOut: TOKEN_QUICK
         });
@@ -297,7 +297,7 @@ library PolygonLib {
         // KyberSwap
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_KYBER_KNC_USDC,
-            dexAdapterId: DexAdapterIdLib.KYBER,
+            ammAdapterId: AmmAdapterIdLib.KYBER,
             tokenIn: TOKEN_KNC,
             tokenOut: TOKEN_USDC
         });

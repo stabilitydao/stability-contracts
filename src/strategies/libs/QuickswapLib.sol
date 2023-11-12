@@ -3,12 +3,12 @@ pragma solidity ^0.8.21;
 
 import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IFactory.sol";
-import "../../interfaces/IDexAdapter.sol";
+import "../../interfaces/IAmmAdapter.sol";
 import "../../core/libs/CommonLib.sol";
 
 library QuickswapLib {
-    function initVariants(address platform_, string memory dexAdapterId, string memory strategyId) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
-        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(dexAdapterId))).proxy);
+    function initVariants(address platform_, string memory ammAdapterId, string memory strategyId) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
@@ -36,7 +36,7 @@ library QuickswapLib {
                     "-",
                     CommonLib.i2s(farm.ticks[1]),
                     " in ",
-                    CommonLib.implodeSymbols(_dexAdapter.poolTokens(farm.pool), "-"),
+                    CommonLib.implodeSymbols(_ammAdapter.poolTokens(farm.pool), "-"),
                     " pool on QuickSwapV3"
                 );
                 ++total;
