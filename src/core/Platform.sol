@@ -290,6 +290,7 @@ contract Platform is Controllable, IPlatform {
                 revert ZeroAddress();
             }
 
+            //nosemgrep
             if (!_dexAggregators.add(dexAggRouter[i])) {
                 continue;
             }

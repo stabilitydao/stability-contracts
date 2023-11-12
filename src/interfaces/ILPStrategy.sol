@@ -8,6 +8,11 @@ import "../interfaces/IDexAdapter.sol";
 interface ILPStrategy {
     event FeesClaimed(uint[] fees);
 
+    error ZeroDexAdapter();
+    error IncorrectAssetsLength();
+    error IncorrectAssets();
+    error IncorrectAmountsLength();
+    
     struct LPStrategyBaseInitParams {
         string id;
         address platform;

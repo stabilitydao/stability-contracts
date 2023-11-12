@@ -39,7 +39,10 @@ library LPStrategyLib {
         string memory dexAdapterId
     ) external returns(address[] memory _assets, uint exchangeAssetIndex, IDexAdapter dexAdapter) {
         IPlatform.DexAdapter memory dexAdapterData = IPlatform(platform).dexAdapter(keccak256(bytes(dexAdapterId)));
-        require(dexAdapterData.proxy != address(0), "StrategyLib: zero DeX adapter");
+        if (dexAdapterData.proxy == address(0)) {
+            revert ILPStrategy.ZeroDexAdapter();
+        }
+
         dexAdapter = IDexAdapter(dexAdapterData.proxy);
         _assets = dexAdapter.poolTokens(params.pool);
         uint len = _assets.length;
@@ -51,15 +54,21 @@ library LPStrategyLib {
     }
 
     function checkPreviewDepositAssets(address[] memory assets_, address[] memory _assets, uint[] memory amountsMax) external pure {
-        require(assets_.length == amountsMax.length, "LPStrategyBase: incorrect length");
+        if (assets_.length != amountsMax.length) {
+            revert ILPStrategy.IncorrectAmountsLength();
+        }
         checkAssets(assets_, _assets);
     }
 
     function checkAssets(address[] memory assets_, address[] memory _assets) public pure {
         uint len = assets_.length;
-        require(len == _assets.length, "LPStrategyBase: incorrect length");
+        if (len != _assets.length) {
+            revert ILPStrategy.IncorrectAssetsLength();
+        }
         for (uint i; i < len; ++i) {
-            require(assets_[i] == _assets[i], "LPStrategyBase: incorrect assets");
+            if (assets_[i] != _assets[i]) {
+                revert ILPStrategy.IncorrectAssets();
+            }
         }
     }
 
@@ -92,12 +101,14 @@ library LPStrategyLib {
                 uint otherAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio) * amountsRemaining[otherAssetIndex] / ConstantsLib.DENOMINATOR;
 
                 // try to make less swaps
-                if (otherAssetBBAmount > 0 && exchangeAssetBBAmount > 0) {
-                    uint otherAssetBBAmountPrice = dexAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
-                    uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
-                    if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
-                        otherAssetBBAmount = 0;
-                        exchangeAssetBBAmount += otherAssetBBAmountPrice;
+                if (otherAssetBBAmount > 0) {
+                    if (exchangeAssetBBAmount > 0) {
+                        uint otherAssetBBAmountPrice = dexAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
+                        uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
+                        if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
+                            otherAssetBBAmount = 0;
+                            exchangeAssetBBAmount += otherAssetBBAmountPrice;
+                        }
                     }
                 }
 
@@ -157,6 +168,7 @@ library LPStrategyLib {
         if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {
             uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
 
+            //nosemgrep
             if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
                 uint prop0Balances = vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
                 if (prop0Balances > prop0Pool) {

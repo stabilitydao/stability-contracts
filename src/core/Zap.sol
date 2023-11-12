@@ -68,12 +68,14 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint[] memory depositAmounts = new uint[](len);
         for (uint i; i < len; ++i) {
             if (tokenIn != assets[i]) {
+                // slither-disable-next-line low-level-calls calls-loop
                 (bool success,bytes memory result) = agg.call(swapData[i]);
                 //nosemgrep
                 require(success, string(result));
             }
         }
         for (uint i; i < len; ++i) {
+            // slither-disable-next-line calls-loop
             depositAmounts[i] = IERC20(assets[i]).balanceOf(address(this));
             _approveIfNeeds(assets[i], depositAmounts[i], vault);
         }
@@ -147,6 +149,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _approveIfNeeds(address token, uint amount, address spender) internal {
+        // slither-disable-next-line calls-loop
         if (IERC20(token).allowance(address(this), spender) < amount) {
             IERC20(token).forceApprove(spender, type(uint).max);
         }
