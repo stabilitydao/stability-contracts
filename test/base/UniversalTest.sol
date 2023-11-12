@@ -16,6 +16,7 @@ import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import "../../src/interfaces/ISwapper.sol";
 import "../../src/interfaces/IFactory.sol";
 import "../../src/interfaces/IStrategy.sol";
+import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IStrategyLogic.sol";
 import "../../src/interfaces/IVault.sol";
 import "../../src/interfaces/IRVault.sol";
@@ -187,6 +188,20 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
                     assertEq(swapAmounts.length, 2);
                 }
+
+                // check LPStrategyBase reverts
+                {
+                    address[] memory wrongAssets = new address[](10);
+                    vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    wrongAssets = new address[](assets.length);
+                    wrongAssets[0] = address(1);
+                    vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
+                    strategy.previewDepositAssets(assets, new uint[](5));
+                }
+                ///
 
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0);

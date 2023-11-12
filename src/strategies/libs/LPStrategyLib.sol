@@ -54,7 +54,7 @@ library LPStrategyLib {
     }
 
     function checkPreviewDepositAssets(address[] memory assets_, address[] memory _assets, uint[] memory amountsMax) external pure {
-        if (assets_.length != amountsMax.length) {
+        if (_assets.length != amountsMax.length) {
             revert ILPStrategy.IncorrectAmountsLength();
         }
         checkAssets(assets_, _assets);
