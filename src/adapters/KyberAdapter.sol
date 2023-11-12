@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
-import "../strategies/libs/UniswapV3MathLib.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/DexAdapterIdLib.sol";
+import "../strategies/libs/UniswapV3MathLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/kyber/IPool.sol";
 
@@ -16,10 +17,8 @@ import "../integrations/kyber/IPool.sol";
 contract KyberAdapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of KyberAdapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
-
-    string internal constant _DEX_ADAPTER_ID = "KYBER";
 
     /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
@@ -183,6 +182,6 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+        return DexAdapterIdLib.KYBER;
     }
 }

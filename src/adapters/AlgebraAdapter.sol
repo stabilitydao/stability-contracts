@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/DexAdapterIdLib.sol";
 import "../strategies/libs/UniswapV3MathLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
@@ -16,10 +17,8 @@ import "../integrations/algebra/IAlgebraPool.sol";
 contract AlgebraAdapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of AlgebraAdapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
-
-    string internal constant _DEX_ADAPTER_ID = "ALGEBRA";
 
     /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
@@ -182,6 +181,6 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+        return DexAdapterIdLib.ALGEBRA;
     }
 }
