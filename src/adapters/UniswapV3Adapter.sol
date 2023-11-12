@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/DexAdapterIdLib.sol";
 import "../strategies/libs/UniswapV3MathLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/uniswapv3/IUniswapV3Pool.sol";
@@ -17,10 +18,8 @@ import "../integrations/uniswapv3/IUniswapV3Pool.sol";
 contract UniswapV3Adapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of UniswapV3Adapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
-
-    string internal constant _DEX_ADAPTER_ID = "UNISWAPV3";
 
     /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
@@ -38,7 +37,7 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
-        revert('unavailable');
+        revert IDexAdapter.NotSupportedByCAMM();
     }
 
     /// @inheritdoc IDexAdapter
@@ -58,17 +57,11 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
     /// @inheritdoc IDexAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
-        (amounts[0], amounts[1]) = getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
-    }
-
-    function getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) public view returns (uint amount0, uint amount1) {
-        //slither-disable-next-line unused-return
-        (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
-        (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
+        (amounts[0], amounts[1]) = _getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
     }
 
     /// @inheritdoc IDexAdapter
-    function getProportion0(address pool) external view returns (uint) {
+    function getProportion0(address pool) public view returns (uint) {
         address token1 = IUniswapV3Pool(pool).token1();
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,,,,) = IUniswapV3Pool(pool).slot0();
@@ -82,6 +75,14 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+    }
+
+    /// @inheritdoc IDexAdapter
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
     }
 
     /// @inheritdoc IDexAdapter
@@ -178,17 +179,23 @@ contract UniswapV3Adapter is Controllable, IDexAdapter {
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);
     }
 
-    function _getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
-        if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
-            lowerTick = (tick / tickSpacing - 1) * tickSpacing;
-        } else {
-            lowerTick = tick / tickSpacing * tickSpacing;
-        }
-        upperTick = lowerTick + tickSpacing;
-    }
+    // function _getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
+    //     if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
+    //         lowerTick = (tick / tickSpacing - 1) * tickSpacing;
+    //     } else {
+    //         lowerTick = tick / tickSpacing * tickSpacing;
+    //     }
+    //     upperTick = lowerTick + tickSpacing;
+    // }
 
     /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+        return DexAdapterIdLib.UNISWAPV3;
+    }
+
+    function _getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) internal view returns (uint amount0, uint amount1) {
+        //slither-disable-next-line unused-return
+        (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
+        (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
 }

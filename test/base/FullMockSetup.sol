@@ -84,7 +84,8 @@ abstract contract FullMockSetup is MockSetup {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
-                hardWorker: address(hardworker)
+                hardWorker: address(hardworker),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',

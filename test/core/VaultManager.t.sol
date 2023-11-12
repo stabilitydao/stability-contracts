@@ -121,7 +121,7 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         vm.expectRevert("VaultManager: not owner");
         vaultManager.setRevenueReceiver(1, address(1));   
         //owner of tokenId 1
-        vm.prank(address(0x62c20Aa1e0272312BC100b4e23B4DC1Ed96dD7D1));
+        vm.prank(address(this));
         vaultManager.setRevenueReceiver(1, address(1));
         assertEq(vaultManager.getRevenueReceiver(1), address(1));
     }

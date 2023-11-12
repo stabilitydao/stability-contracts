@@ -14,6 +14,8 @@ interface IDexAdapter {
         uint amountOut
     );
 
+    error NotSupportedByCAMM();
+
     struct SwapCallbackData {
         address tokenIn;
         uint amount;
@@ -52,16 +54,15 @@ interface IDexAdapter {
     /// @return amounts Amounts out of provided liquidity
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts);
 
-    /// todo: remove, use only ^^^
-    function getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) external view returns (uint amount0, uint amount1);
-
     /// @notice Priced proportion of first pool asset
     /// @param pool Address of a pool supported by the adapter
     /// @return Proportion with 5 decimals precision. Max is 100_000, min is 0.
     function getProportion0(address pool) external view returns (uint);
 
-    // todo implement getProportions
-    // function getProportions(address pool) external view returns (uint[] memory);
+    /// @notice Priced proportions of pool assets
+    /// @param pool Address of a pool supported by the adapter
+    /// @return Proportions with 5 decimals precision. Max is 100_000, min is 0.
+    function getProportions(address pool) external view returns (uint[] memory);
 
     /// @notice Swap given tokenIn for tokenOut. Assume that tokenIn already sent to this contract.
     /// @param pool Address of a pool supported by the adapter

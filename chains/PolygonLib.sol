@@ -92,6 +92,10 @@ library PolygonLib {
     address public constant GAMMA_POS_WMATIC_USDC_NARROW =  0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
     address public constant GAMMA_POS_WMATIC_USDC_WIDE =  0x4A83253e88e77E8d518638974530d0cBbbF3b675;
 
+    // DeX aggregators
+    address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
+
     function runDeploy(bool showLog) internal returns(address platform) {
         //region ----- DeployPlatform -----
         uint[] memory buildingPrice = new uint[](3);
@@ -183,6 +187,12 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
+
+        //region ----- Add DeX aggregators -----
+        address[] memory dexAggRouter = new address[](1);
+        dexAggRouter[0] = ONE_INCH;
+        IPlatform(platform).addDexAggregators(dexAggRouter);
+        //endregion -- Add DeX aggregators -----
     }
 
     function routes() public pure returns (

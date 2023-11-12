@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
-import "../strategies/libs/UniswapV3MathLib.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/DexAdapterIdLib.sol";
+import "../strategies/libs/UniswapV3MathLib.sol";
 import "../interfaces/IDexAdapter.sol";
 import "../integrations/kyber/IPool.sol";
 
@@ -16,10 +17,8 @@ import "../integrations/kyber/IPool.sol";
 contract KyberAdapter is Controllable, IDexAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of KyberAdapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
-
-    string internal constant _DEX_ADAPTER_ID = "KYBER";
 
     /// @inheritdoc IDexAdapter
     function init(address platform_) external initializer {
@@ -37,7 +36,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
-        revert('unavailable');
+        revert IDexAdapter.NotSupportedByCAMM();
     }
 
     /// @inheritdoc IDexAdapter
@@ -63,7 +62,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
     }
 
     /// @inheritdoc IDexAdapter
-    function getProportion0(address pool) external view returns (uint) {
+    function getProportion0(address pool) public view returns (uint) {
         address token1 = IPool(pool).token1();
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,) = IPool(pool).getPoolState();
@@ -77,6 +76,14 @@ contract KyberAdapter is Controllable, IDexAdapter {
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+    }
+
+    /// @inheritdoc IDexAdapter
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
     }
 
     /// @inheritdoc IDexAdapter
@@ -175,6 +182,6 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+        return DexAdapterIdLib.KYBER;
     }
 }
