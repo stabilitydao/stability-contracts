@@ -155,30 +155,40 @@ library PolygonLib {
         swapper.addBlueChipsPools(bcPools, false);
         swapper.addPools(pools, false);
         // todo auto thresholds
-        swapper.setThreshold(TOKEN_USDC, 1e3);
-        swapper.setThreshold(TOKEN_USDT, 1e3);
-        swapper.setThreshold(TOKEN_DAI, 1e15);
-        swapper.setThreshold(TOKEN_WMATIC, 1e15);
-        swapper.setThreshold(TOKEN_WETH, 1e12);
-        swapper.setThreshold(TOKEN_dQUICK, 1e16); // 1 dQuick ~= $0.05
+        address[] memory tokenIn = new address[](6);
+        tokenIn[0] = TOKEN_USDC;
+        tokenIn[1] = TOKEN_USDT;
+        tokenIn[2] = TOKEN_DAI;
+        tokenIn[3] = TOKEN_WMATIC;
+        tokenIn[4] = TOKEN_WETH;
+        tokenIn[5] = TOKEN_dQUICK;
+        uint[] memory thresholdAmount = new uint[](6);
+        thresholdAmount[0] = 1e3;
+        thresholdAmount[1] = 1e3;
+        thresholdAmount[2] = 1e15;
+        thresholdAmount[3] = 1e15;
+        thresholdAmount[4] = 1e12;
+        thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
+        swapper.setThresholds(tokenIn, thresholdAmount);
         DeployLib.logSetupSwapper(platform, showLog);
         //endregion -- SetupSwapper -----
 
         //region ----- Add farms -----
         IFactory.Farm[] memory _farms = farms();
         IFactory factory = IFactory(IPlatform(platform).factory());
-        for (uint i; i < _farms.length; ++i) {
-            factory.addFarm(_farms[i]);
-        }
+        factory.addFarms(_farms);
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
         //region ----- Reward tokens -----
         IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_USDC);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_USDC);
+        address[] memory allowedBoostRewardToken = new address[](2);
+        address[] memory defaultBoostRewardToken = new address[](2);
+        allowedBoostRewardToken[0] = TOKEN_PROFIT;
+        allowedBoostRewardToken[1] = TOKEN_USDC;
+        defaultBoostRewardToken[0] = TOKEN_PROFIT;
+        defaultBoostRewardToken[1] = TOKEN_USDC;
+        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
         DeployLib.logSetupRewardTokens(platform, showLog);
         //endregion -- Reward tokens -----
 

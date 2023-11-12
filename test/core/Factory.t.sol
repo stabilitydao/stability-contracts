@@ -353,7 +353,9 @@ contract FactoryTest is Test, MockSetup {
 
     function testFarms() public {
         assertEq(factory.farmsLength(), 0);
-        IFactory.Farm memory farm = IFactory.Farm({
+        IFactory.Farm memory farm;
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = IFactory.Farm({
             status: 0,
             pool: address(1),
             strategyLogicId: StrategyIdLib.DEV,
@@ -363,7 +365,7 @@ contract FactoryTest is Test, MockSetup {
             ticks: new int24[](0)
         });
 
-        factory.addFarm(farm);
+        factory.addFarms(farms);
         assertEq(factory.farmsLength(), 1);
         farm = factory.farm(0);
         assertEq(farm.pool, address(1));
@@ -373,8 +375,8 @@ contract FactoryTest is Test, MockSetup {
         farm = factory.farm(0);
         assertEq(farm.pool, address(3));
 
-        IFactory.Farm[] memory farms = factory.farms();
-        assertEq(farms[0].pool, address(3));
+        IFactory.Farm[] memory farms_ = factory.farms();
+        assertEq(farms_[0].pool, address(3));
     }
 
     function testSetVaultStatus() public {

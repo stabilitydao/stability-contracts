@@ -44,7 +44,7 @@ interface IFactory {
         bool newStrategy
     );
     event VaultStatus(address indexed vault, uint newStatus);
-    event NewFarm(Farm farm);
+    event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
 
     //endregion -- Events -----
@@ -283,8 +283,8 @@ interface IFactory {
     function upgradeStrategyProxy(address strategy) external;
 
     /// @notice Add farm to factory
-    /// @param farm_ Settings and data required to work with the farm.
-    function addFarm(Farm memory farm_) external;
+    /// @param farms_ Settings and data required to work with the farm.
+    function addFarms(Farm[] memory farms_) external;
 
     /// @notice Update farm
     /// @param id Farm index

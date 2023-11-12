@@ -9,8 +9,12 @@ interface ISwapper {
   event PoolAdded(PoolData poolData, bool assetAdded);
   event PoolRemoved(address token);
   event BlueChipAdded(PoolData poolData);
-  event ThresholdChanged(address token, uint threshold);
+  event ThresholdChanged(address[] tokenIn, uint[] thresholdAmount);
   event BlueChipPoolRemoved(address tokenIn, address tokenOut);
+
+  //region ----- Custom Errors -----
+  error ArrayLengthMismatch(uint expectedLength, uint actualLength);
+  //endregion -- Custom Errors -----
 
   struct PoolData {
     address pool;
@@ -60,9 +64,9 @@ interface ISwapper {
 
   /// @notice Set swap threshold for token
   /// @dev Prevents dust swap.
-  /// @param token Swap input token
-  /// @param threshold_ Minimum amount of token for executing swap
-  function setThreshold(address token, uint threshold_) external;
+  /// @param tokenIn Swap input token
+  /// @param thresholdAmount Minimum amount of token for executing swap
+  function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external;
 
   /// @notice Swap threshold for token
   /// @param token Swap input token
