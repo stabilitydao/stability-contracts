@@ -335,8 +335,10 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        amounts_ = new uint[](2);
-        (amounts_[0], amounts_[1]) = dexAdapter.getAmountsForLiquidity(pool, lowerTick, upperTick, uint128(total));
+        int24[] memory ticks = new int24[](2);
+        ticks[0] = lowerTick;
+        ticks[1] = upperTick;
+        amounts_ = dexAdapter.getAmountsForLiquidity(pool, ticks, uint128(total));
         assets_ = _assets;
     }
 

@@ -37,7 +37,7 @@ contract KyberAdapter is Controllable, IDexAdapter {
 
     /// @inheritdoc IDexAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
-        revert('unavailable');
+        revert IDexAdapter.NotSupportedByCAMM();
     }
 
     /// @inheritdoc IDexAdapter

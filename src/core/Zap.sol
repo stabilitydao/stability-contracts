@@ -7,7 +7,6 @@ import "./base/Controllable.sol";
 import "./libs/ConstantsLib.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IStrategy.sol";
-import "../interfaces/ILPStrategy.sol";
 import "../interfaces/IZap.sol";
 
 /// @title Implementation of ZAP feature in the Stability platform.
@@ -108,8 +107,8 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint len = tokensOut.length;
 
         swapAmounts = new uint[](len);
-        IDexAdapter dexAdapter = ILPStrategy(strategy).dexAdapter();
-        uint[] memory proportions = dexAdapter.getProportions(ILPStrategy(strategy).pool());
+
+        uint[] memory proportions = IStrategy(strategy).getAssetsProportions();
         uint amountInUsed = 0;
         for (uint i; i < len; ++i) {
             if (tokensOut[i] == tokenIn) {
