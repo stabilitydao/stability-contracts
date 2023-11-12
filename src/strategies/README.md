@@ -61,7 +61,7 @@ For farming strategy you need to add farming data to `chains/<ChainName>Lib.sol`
 
 Depending on the purpose of the logic, the strategy is inherited from a set of base classes:
 
-* PairStrategyBase if strategy uses AMM based on two ERC20 tokens
+* LPStrategyBase if strategy uses AMM
 * FarmingStrategyBase if it is farming strategy
 
 Put your strategy to `src/strategies/<YourStrategyContractName>.sol` and implement all functions that need for compiling.

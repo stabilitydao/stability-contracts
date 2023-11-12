@@ -474,7 +474,7 @@ library FactoryLib {
         address[] memory initStrategyAddresses,
         uint[] memory initStrategyNums,
         int24[] memory initStrategyTicks,
-        uint8[5] memory usedValuesForKey // todo support managed strategies
+        uint8[5] memory usedValuesForKey
     ) public pure returns (bytes32) {
         uint key = uint(keccak256(abi.encodePacked(vaultType)));
         unchecked {

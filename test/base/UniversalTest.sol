@@ -21,8 +21,9 @@ import "../../src/interfaces/IVault.sol";
 import "../../src/interfaces/IRVault.sol";
 import "../../src/interfaces/IPriceReader.sol";
 import "../../src/interfaces/IFarmingStrategy.sol";
-import "../../src/interfaces/IPairStrategyBase.sol";
+import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IHardWorker.sol";
+import "../../src/interfaces/IZap.sol";
 
 abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
@@ -153,8 +154,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
                 address[] memory assets = strategy.assets();
-                vars.dexAdapter = address(IPairStrategyBase(address(strategy)).dexAdapter());
-                vars.pool = IPairStrategyBase(address (strategy)).pool();
+                vars.dexAdapter = address(ILPStrategy(address(strategy)).dexAdapter());
+                vars.pool = ILPStrategy(address (strategy)).pool();
                 console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
 
                 if (vars.farming) {
@@ -179,6 +180,12 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
                     deal(assets[j], address(this), depositAmounts[j]);
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
+                }
+
+                {
+                    IZap zap = IZap(platform.zap());
+                    (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
+                    assertEq(swapAmounts.length, 2);
                 }
 
                 // deposit

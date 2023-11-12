@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "./base/PairStrategyBase.sol";
+import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/UniswapV3MathLib.sol";
@@ -16,7 +16,7 @@ import "../adapters/libs/DexAdapterIdLib.sol";
 
 /// @title Earning Gamma QuickSwap farm rewards by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
-contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
+contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -63,7 +63,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         masterChef = IMasterChef(farm.addresses[1]);
         pid = farm.nums[0];
 
-        __PairStrategyBase_init(PairStrategyBaseInitParams({
+        __LPStrategyBase_init(LPStrategyBaseInitParams({
             id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
             platform: addresses[0],
             vault: addresses[1],
@@ -88,7 +88,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
         return poolInfo.allocPoint > 0;
     }
 
-    /// @inheritdoc IPairStrategyBase
+    /// @inheritdoc ILPStrategy
     function dexAdapterId() public pure override returns(string memory) {
         return DexAdapterIdLib.ALGEBRA;
     }
@@ -264,7 +264,7 @@ contract GammaQuickSwapFarmStrategy is PairStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, PairStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+    function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         amountsConsumed = new uint[](2);
         (uint amount1Start, uint amount1End) = uniProxy.getDepositAmount(_underlying, _assets[0], amountsMax[0]);

@@ -85,6 +85,9 @@ contract Platform is Controllable, IPlatform {
     address public hardWorker;
 
     /// @inheritdoc IPlatform
+    address public zap;
+
+    /// @inheritdoc IPlatform
     address public targetExchangeAsset;
 
     /// @inheritdoc IPlatform
@@ -122,6 +125,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @dev 2 slots struct
     EnumerableSet.AddressSet internal _defaultBoostRewardTokens;
+    
+    EnumerableSet.AddressSet internal _dexAggregators;
 
     uint internal _fee;
     uint internal _feeShareVaultManager;
@@ -131,7 +136,7 @@ contract Platform is Controllable, IPlatform {
     /// @dev This empty reserved space is put in place to allow future versions to add new.
     /// variables without shifting down storage in the inheritance chain.
     /// Total Platform gap == 100 - storage slots used.
-    uint[100 - 26] private __gap;
+    uint[100 - 28] private __gap;
 
     //endregion -- Storage -----
 
@@ -162,6 +167,7 @@ contract Platform is Controllable, IPlatform {
         aprOracle = addresses.aprOracle;
         targetExchangeAsset = addresses.targetExchangeAsset;
         hardWorker = addresses.hardWorker;
+        zap = addresses.zap;
         emit Addresses(
             multisig,
             addresses.factory,
@@ -171,7 +177,8 @@ contract Platform is Controllable, IPlatform {
             addresses.vaultManager,
             addresses.strategyLogic,
             addresses.aprOracle,
-            addresses.hardWorker
+            addresses.hardWorker,
+            addresses.zap
         );
         networkName = settings.networkName;
         networkExtra = settings.networkExtra;
@@ -273,6 +280,30 @@ contract Platform is Controllable, IPlatform {
         _dexAdapter[hash].proxy = proxy;
         _dexAdapterIdHash.push(hash);
         emit NewDexAdapter(id, proxy);
+    }
+
+    /// @inheritdoc IPlatform
+    function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
+        uint len = dexAggRouter.length;
+        for (uint i; i < len; ++i) {
+            if (dexAggRouter[i] == address(0)) {
+                revert ZeroAddress();
+            }
+
+            if (!_dexAggregators.add(dexAggRouter[i])) {
+                continue;
+            }
+
+            emit AddDexAggregator(dexAggRouter[i]);
+        }
+    }
+
+    /// @inheritdoc IPlatform
+    function removeDexAggregator(address dexAggRouter) external onlyOperator {
+        if (!_dexAggregators.remove(dexAggRouter)) {
+            revert AggregatorNotExists(dexAggRouter);
+        }
+        emit RemoveDexAggregator(dexAggRouter);
     }
 
     /// @inheritdoc IPlatform
@@ -431,6 +462,16 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory) {
         return CommonLib.filterAddresses(_defaultBoostRewardTokens.values(), addressToRemove);
+    }
+
+    /// @inheritdoc IPlatform
+    function dexAggregators() external view returns(address[] memory) {
+        return _dexAggregators.values();
+    }
+
+    /// @inheritdoc IPlatform
+    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool) {
+        return _dexAggregators.contains(dexAggRouter);
     }
 
     /// @inheritdoc IPlatform

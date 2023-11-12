@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./base/Controllable.sol";
 import "./libs/ConstantsLib.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IStrategy.sol";
-import "../interfaces/IPairStrategyBase.sol";
+import "../interfaces/ILPStrategy.sol";
+import "../interfaces/IZap.sol";
 
-contract Zap is Controllable {
+/// @title Implementation of ZAP feature in the Stability platform.
+/// ZAP feature simplifies the DeFi investment process.
+/// With ZAP users can provide liquidity to DeXs and liquidity mining/management vaults by single asset.
+/// In this case, an asset is swapped for the pool assets in the required proportion.
+/// The swap is carried out through one of the DeX aggregators allowed in the platform.
+/// The platform architecture makes it possible to use ZAP for all created vaults.
+/// @author Alien Deployer (https://github.com/a17)
+contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
+    using SafeERC20 for IERC20;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -16,48 +28,147 @@ contract Zap is Controllable {
     string public constant VERSION = '1.0.0';
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       CUSTOM ERRORS                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    error StrategyNotSupported();
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function init(address platform_) external {
+    function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
+        __ReentrancyGuard_init();
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       USER ACTIONS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function deposit(
+        address vault,
+        address tokenIn,
+        uint amountIn,
+        address agg,
+        bytes[] memory swapData,
+        uint minSharesOut
+    ) external nonReentrant {
+        // todo check vault
+
+        if (amountIn == 0) {
+            revert ZeroAmount();
+        }
+
+        if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {
+            revert NotAllowedDexAggregator(agg);
+        }
+
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        _approveIfNeeds(tokenIn, amountIn, agg);
+
+        address strategy = address(IVault(vault).strategy());
+        address[] memory assets = IStrategy(strategy).assets();
+        uint len = assets.length;
+        uint[] memory depositAmounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            if (tokenIn != assets[i]) {
+                (bool success,bytes memory result) = agg.call(swapData[i]);
+                //nosemgrep
+                require(success, string(result));
+            }
+        }
+        for (uint i; i < len; ++i) {
+            depositAmounts[i] = IERC20(assets[i]).balanceOf(address(this));
+            _approveIfNeeds(assets[i], depositAmounts[i], vault);
+        }
+
+        IVault(vault).depositAssets(assets, depositAmounts, minSharesOut);
+
+        // todo #29 use deposit receiver
+        IERC20(vault).safeTransfer(msg.sender, IERC20(vault).balanceOf(address(this)));
+
+        _sendAllRemaining(tokenIn, assets,  IStrategy(strategy).underlying());
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function quoteDeposit(address vault, address tokenIn, uint amountIn) external view returns(uint[] memory swapAmounts) {
-        address strategy = address(IVault(vault).strategy());
-        address[] memory assets = IStrategy(strategy).assets();
-        uint len = assets.length;
+    /// @inheritdoc IZap
+    function getDepositSwapAmounts(
+        address vault,
+        address tokenIn,
+        uint amountIn
+    ) external view returns(
+        address[] memory tokensOut,
+        uint[] memory swapAmounts
+    ) {
+        // todo check vault
 
-        if (len != 2) {
-            revert StrategyNotSupported();
-        }
+        address strategy = address(IVault(vault).strategy());
+        tokensOut = IStrategy(strategy).assets();
+        uint len = tokensOut.length;
 
         swapAmounts = new uint[](len);
-        IDexAdapter dexAdapter = IPairStrategyBase(strategy).dexAdapter();
-        uint[] memory proportions = dexAdapter.getProportions(IPairStrategyBase(strategy).pool());
+        IDexAdapter dexAdapter = ILPStrategy(strategy).dexAdapter();
+        uint[] memory proportions = dexAdapter.getProportions(ILPStrategy(strategy).pool());
         uint amountInUsed = 0;
         for (uint i; i < len; ++i) {
-            bool isLast = i == len - 1;
-            if (assets[i] != tokenIn) {
-                if (!isLast) {
-                    swapAmounts[i] = amountIn * proportions[i] / ConstantsLib.DENOMINATOR;
-                    amountInUsed += swapAmounts[i];
-                } else {
-                    swapAmounts[i] = amountIn - amountInUsed;
-                }
-            } else if (!isLast) {
-                amountInUsed = amountIn * proportions[i] / ConstantsLib.DENOMINATOR;
+            if (tokensOut[i] == tokenIn) {
+                amountInUsed += amountIn * proportions[i] / 1e18;
+                continue;
             }
+
+            if (i < len - 1) {
+                swapAmounts[i] = amountIn * proportions[i] / 1e18;
+                amountInUsed += swapAmounts[i];
+            } else {
+                swapAmounts[i] = amountIn - amountInUsed;
+            }
+        }
+    }
+
+    // function getWithdrawSwapAmounts(
+    //     address vault,
+    //     address tokenOut,
+    //     uint amountShares
+    // ) external view returns(
+    //     address[] memory tokensIn,
+    //     uint[] memory swapAmounts
+    // ) {
+    //     address strategy = address(IVault(vault).strategy());
+    //     tokensIn = IStrategy(strategy).assets();
+    //     uint len = tokensIn.length;
+
+    //     swapAmounts = new uint[](len);
+
+    //     // IVault(vault). todo need previewWithdraw
+
+    // }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _approveIfNeeds(address token, uint amount, address spender) internal {
+        if (IERC20(token).allowance(address(this), spender) < amount) {
+            IERC20(token).forceApprove(spender, type(uint).max);
+        }
+    }
+
+    function _sendAllRemaining(address tokenIn, address[] memory strategyAssets, address underlying) internal {
+        _sendRemaining(tokenIn);
+
+        uint len = strategyAssets.length;
+        for (uint i; i < len; ++i) {
+            _sendRemaining(strategyAssets[i]);
+        }
+
+        if (underlying != address(0)) {
+            _sendRemaining(underlying);
+        }
+    }
+
+    function _sendRemaining(address token) internal {
+        uint bal = IERC20(token).balanceOf(address(this));
+        if (bal > 0) {
+            IERC20(token).safeTransfer(msg.sender, bal);
         }
     }
 }

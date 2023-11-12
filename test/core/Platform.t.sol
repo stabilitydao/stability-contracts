@@ -42,7 +42,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -67,7 +68,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -412,7 +414,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -466,5 +469,45 @@ contract PlatformTest is Test  {
         vm.expectRevert("Platform: ZERO_ADDRESS");
         platform.setEcosystemRevenueReceiver(address(0));
         platform.setEcosystemRevenueReceiver(address(1));
+    }
+
+    function testDexAggregators() public {
+        platform.initialize(address(this), '23.11.0-dev');
+
+        address[] memory dexAggRouter = new address[](2);
+        dexAggRouter[0] = address(1);
+        dexAggRouter[1] = address(2);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(8);
+        dexAggRouter[1] = address(9);
+        platform.addDexAggregators(dexAggRouter);
+        
+        address[] memory dexAggs = platform.dexAggregators();
+        assertEq(dexAggs.length, 4);
+        assertEq(dexAggs[3], address(9));
+
+        assertEq(platform.isAllowedDexAggregatorRouter(address(10)), false);
+        assertEq(platform.isAllowedDexAggregatorRouter(address(9)), true);
+
+        dexAggRouter = new address[](1);
+        dexAggRouter[0] = address(3);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(0);
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.ZeroAddress.selector)
+        );
+        platform.addDexAggregators(dexAggRouter);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.AggregatorNotExists.selector, address(5))
+        );
+        platform.removeDexAggregator(address(5));
+
+        platform.removeDexAggregator(address(1));
+        dexAggRouter[0] = address(1);
+        platform.addDexAggregators(dexAggRouter);
+
     }
 }

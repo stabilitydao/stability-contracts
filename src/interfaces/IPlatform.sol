@@ -19,7 +19,8 @@ interface IPlatform {
         address vaultManager_,
         address strategyLogic_,
         address aprOracle_,
-        address hardWorker
+        address hardWorker,
+        address zap
     );
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
@@ -34,7 +35,14 @@ interface IPlatform {
     event AddDefaultBoostRewardToken(address token);
     event RemoveDefaultBoostRewardToken(address token);
     event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
+    event AddDexAggregator(address router);
+    event RemoveDexAggregator(address router);
     //endregion -- Events -----
+
+    //region ----- Custom Errors -----
+    error ZeroAddress();
+    error AggregatorNotExists(address dexAggRouter);
+    //endregion -- Custom Errors -----
 
     //region ----- Data types -----
     struct PlatformUpgrade {
@@ -67,6 +75,7 @@ interface IPlatform {
         address aprOracle;
         address targetExchangeAsset;
         address hardWorker;
+        address zap;
     }
     //endregion -- Data types -----
 
@@ -105,6 +114,9 @@ interface IPlatform {
 
     /// @notice HardWork resolver and caller
     function hardWorker() external view returns (address);
+
+    /// @notice ZAP feature
+    function zap() external view returns (address);
 
     /// @notice This NFT allow user to build limited number of vaults per week
     function buildingPermitToken() external view returns (address);
@@ -192,6 +204,15 @@ interface IPlatform {
     /// @param addressToRemove This address will be removed from default boost reward tokens
     /// @return Addresses of tokens
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory);
+
+    /// @notice Allowed DeX aggregators
+    /// @return Addresses of DeX aggregator rounters
+    function dexAggregators() external view returns(address[] memory);
+
+    /// @notice DeX aggregator router address is allowed to be used in the platform
+    /// @param dexAggRouter Address of DeX aggreagator router
+    /// @return Can be used
+    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool);
 
     /// @notice Front-end platform viewer
     /// @return platformAddresses Platform core addresses
@@ -313,6 +334,14 @@ interface IPlatform {
     /// Only Factory can do it.
     /// @param bbToken Address of allowed buy-back token
     function useAllowedBBTokenVault(address bbToken) external;
+
+    /// @notice Allow DeX aggregator routers to be used in the platform
+    /// @param dexAggRouter Addresses of DeX aggreagator routers
+    function addDexAggregators(address[] memory dexAggRouter) external;
+
+    /// @notice Remove allowed DeX aggregator router from the platform
+    /// @param dexAggRouter Address of DeX aggreagator router
+    function removeDexAggregator(address dexAggRouter) external;
 
     //endregion -- Write functions -----
 }

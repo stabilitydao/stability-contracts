@@ -40,7 +40,8 @@ contract FactoryTest is Test, MockSetup {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
-                hardWorker: address(0)
+                hardWorker: address(0),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -179,7 +180,7 @@ contract FactoryTest is Test, MockSetup {
 
         assertEq(IERC20Metadata(vault).symbol(), "C-MOCKAMOCKB-DADFGP");
 
-        assertEq(address(IPairStrategyBase(strategy).dexAdapter()), address(dexAdapter));
+        assertEq(address(ILPStrategy(strategy).dexAdapter()), address(dexAdapter));
         assertEq(address(IStrategy(strategy).vault()), vault);
         assertEq(address(IStrategy(strategy).underlying()), address(1));
         assertEq(IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH(), keccak256(abi.encodePacked(StrategyIdLib.DEV)));

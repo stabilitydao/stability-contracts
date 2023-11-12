@@ -13,7 +13,7 @@ import "../../interfaces/IStrategyLogic.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IPriceReader.sol";
 import "../../interfaces/ISwapper.sol";
-import "../../interfaces/IPairStrategyBase.sol";
+import "../../interfaces/ILPStrategy.sol";
 import "../../interfaces/IRVault.sol";
 
 library StrategyLib {
@@ -21,23 +21,6 @@ library StrategyLib {
 
     event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
     event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
-
-    struct PairStrategyBaseSwapForDepositProportionVars {
-        ISwapper swapper;
-        uint price;
-        uint balance0;
-        uint balance1;
-        uint asset1decimals;
-        uint threshold0;
-        uint threshold1;
-    }
-
-    struct ProcessRevenueVars {
-        string vaultYpe;
-        uint compoundRatio;
-        address bbToken;
-        uint bbAmountBefore;
-    }
 
     struct ExtractFeesVars {
         IPlatform platform;
@@ -49,23 +32,6 @@ library StrategyLib {
         uint amountStrategyLogic;
         uint feeShareEcosystem;
         uint amountEcosystem;
-    }
-
-    function PairStrategyBase_init(
-        address platform,
-        IPairStrategyBase.PairStrategyBaseInitParams memory params,
-        string memory dexAdapterId
-    ) external returns(address[] memory _assets, uint exchangeAssetIndex, IDexAdapter dexAdapter) {
-        IPlatform.DexAdapter memory dexAdapterData = IPlatform(platform).dexAdapter(keccak256(bytes(dexAdapterId)));
-        require(dexAdapterData.proxy != address(0), "StrategyLib: zero DeX adapter");
-        dexAdapter = IDexAdapter(dexAdapterData.proxy);
-        _assets = dexAdapter.poolTokens(params.pool);
-        uint len = _assets.length;
-        exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
-        address swapper = IPlatform(params.platform).swapper();
-        for (uint i; i < len; ++i) {
-            IERC20(_assets[i]).forceApprove(swapper, type(uint).max);
-        }
     }
 
     function FarmingStrategyBase_init(string memory id, address platform, uint farmId) external returns (address[] memory rewardAssets) {
@@ -211,138 +177,8 @@ library StrategyLib {
         }
     }
 
-    function processRevenue(
-        address platform,
-        address vault,
-        IDexAdapter dexAdapter,
-        uint exchangeAssetIndex,
-        address pool,
-        address[] memory assets_,
-        uint[] memory amountsRemaining
-    ) external returns (bool needCompound) {
-        needCompound = true;
-        ProcessRevenueVars memory vars;
-        vars.vaultYpe = IVault(vault).VAULT_TYPE();
-        if (
-            CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
-            || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
-        ) {
-            IRVault rVault = IRVault(vault);
-            vars.compoundRatio = rVault.compoundRatio();
-            vars.bbToken = rVault.bbToken();
-            vars.bbAmountBefore = balance(vars.bbToken);
-
-            {
-                uint otherAssetIndex = exchangeAssetIndex == 0 ? 1 : 0;
-
-                uint exchangeAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio) * amountsRemaining[exchangeAssetIndex] / ConstantsLib.DENOMINATOR;
-                uint otherAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio) * amountsRemaining[otherAssetIndex] / ConstantsLib.DENOMINATOR;
-
-                // try to make less swaps
-                if (otherAssetBBAmount > 0 && exchangeAssetBBAmount > 0) {
-                    uint otherAssetBBAmountPrice = dexAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
-                    uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
-                    if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
-                        otherAssetBBAmount = 0;
-                        exchangeAssetBBAmount += otherAssetBBAmountPrice;
-                    }
-                }
-
-                ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-
-                if (exchangeAssetBBAmount > 0) {
-                    if (assets_[exchangeAssetIndex] != vars.bbToken) {
-                        if (exchangeAssetBBAmount > swapper.threshold(assets_[exchangeAssetIndex])) {
-                            swapper.swap(assets_[exchangeAssetIndex], vars.bbToken, exchangeAssetBBAmount, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
-                        }
-                    } else {
-                        vars.bbAmountBefore -= exchangeAssetBBAmount;
-                    }
-                }
-                if (otherAssetBBAmount > 0) {
-                    if (assets_[otherAssetIndex] != vars.bbToken) {
-                        if (otherAssetBBAmount > swapper.threshold(assets_[otherAssetIndex])) {
-                            swapper.swap(assets_[otherAssetIndex], vars.bbToken, otherAssetBBAmount, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
-                        }
-                    } else {
-                        vars.bbAmountBefore -= otherAssetBBAmount;
-                    }
-                }
-            }
-
-            uint bbAmount = balance(vars.bbToken) - vars.bbAmountBefore;
-
-            if (bbAmount > 0) {
-                approveIfNeeded(vars.bbToken, bbAmount, vault);
-                rVault.notifyTargetRewardAmount(0, bbAmount);
-            }
-
-            if (vars.compoundRatio == 0) {
-                needCompound = false;
-            }
-        }
-    }
-
-    function checkPairStrategyBasePreviewDepositAssets(address[] memory assets_, address[] memory _assets, uint[] memory amountsMax) external pure {
-        require(amountsMax.length == 2, "PairStrategyBase: incorrect length");
-        require(assets_.length == 2, "PairStrategyBase: incorrect length");
-        require(assets_[0] == _assets[0] && assets_[1] == _assets[1], "PairStrategyBase: incorrect assets");
-    }
-
-    function checkPairStrategyBaseWithdrawAssets(address[] memory assets_, address[] memory _assets) external pure {
-        require(assets_.length == 2, "PairStrategyBase: incorrect length");
-        require(assets_[0] == _assets[0] && assets_[1] == _assets[1], "PairStrategyBase: incorrect assets");
-    }
-
     function revertUnderlying(address underlying) external pure {
         revert(underlying == address(0) ? 'StrategyBase: no underlying' : 'StrategyBase: not implemented');
-    }
-
-    function pairStrategyBaseSwapForDepositProportion(
-        address platform,
-        IDexAdapter dexAdapter,
-        address _pool,
-        address[] memory assets,
-        uint prop0Pool
-    ) external returns(uint[] memory amountsToDeposit) {
-        amountsToDeposit = new uint[](2);
-        PairStrategyBaseSwapForDepositProportionVars memory vars;
-        vars.swapper = ISwapper(IPlatform(platform).swapper());
-        vars.price = dexAdapter.getPrice(_pool, assets[1], address(0), 0);
-        vars.balance0 = balance(assets[0]);
-        vars.balance1 = balance(assets[1]);
-        vars.asset1decimals = IERC20Metadata(assets[1]).decimals();
-        vars.threshold0 = vars.swapper.threshold(assets[0]);
-        vars.threshold1 = vars.swapper.threshold(assets[1]);
-        if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {
-            uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
-
-            if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
-                uint prop0Balances = vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
-                if (prop0Balances > prop0Pool) {
-                    // extra assets[0]
-                    uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18 * vars.price / 10 ** vars.asset1decimals;
-                    uint extraBalance = vars.balance0 - correctAsset0Balance;
-                    uint toSwapAsset0 = extraBalance - extraBalance * prop0Pool / 1e18;
-                    // swap assets[0] to assets[1]
-                    if (toSwapAsset0 > vars.threshold0) {
-                        vars.swapper.swap(assets[0], assets[1], toSwapAsset0, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
-                    }
-                } else {
-                    // extra assets[1]
-                    uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18 * 10 ** vars.asset1decimals / vars.price;
-                    uint extraBalance = vars.balance1 - correctAsset1Balance;
-                    uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
-                    // swap assets[1] to assets[0]
-                    if (toSwapAsset1 > vars.threshold1) {
-                        vars.swapper.swap(assets[1], assets[0], toSwapAsset1, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
-                    }
-                }
-
-                amountsToDeposit[0] = balance(assets[0]);
-                amountsToDeposit[1] = balance(assets[1]);
-            }
-        }
     }
 
     function assetsAmountsWithBalances(address[] memory assets_, uint[] memory amounts_) external view returns (address[] memory assets, uint[] memory amounts) {

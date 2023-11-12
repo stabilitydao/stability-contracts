@@ -3,11 +3,12 @@ pragma solidity ^0.8.21;
 
 import "../interfaces/IDexAdapter.sol";
 
-/// @dev This interface mostly used for initializing PairStrategyBase
-interface IPairStrategyBase {
-    event FeesClaimed(uint fee0, uint fee1);
+/// @dev Liquidity providing strategy
 
-    struct PairStrategyBaseInitParams {
+interface ILPStrategy {
+    event FeesClaimed(uint[] fees);
+
+    struct LPStrategyBaseInitParams {
         string id;
         address platform;
         address vault;
