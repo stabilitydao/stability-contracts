@@ -583,7 +583,7 @@ contract Platform is Controllable, IPlatform {
         uint len = tokens.length;
         for (uint i = 0; i < len; ++i) {
             if (!tokenSet.add(tokens[i])) {
-                revert PlatformExists({token: tokens[i]});
+                revert TokenAlreadyExistsInSet({token: tokens[i]});
             }
         }
     }

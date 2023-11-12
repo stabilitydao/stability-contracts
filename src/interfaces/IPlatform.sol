@@ -41,7 +41,7 @@ interface IPlatform {
     //endregion -- Events -----
 
     //region ----- Custom Errors -----
-    error PlatformExists(address token);
+    error TokenAlreadyExistsInSet(address token);
     error ZeroAddress();
     error AggregatorNotExists(address dexAggRouter);
     //endregion -- Custom Errors -----

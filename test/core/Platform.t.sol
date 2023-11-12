@@ -385,7 +385,9 @@ contract PlatformTest is Test  {
         alreadyAddedAllowedBoostRewardToken[0] = address(101);
         address[] memory newDefaultBoostRewardTokens = new address[](1);
         newDefaultBoostRewardTokens[0] = address(386);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101))
+        );
         platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
 
         address[] memory defaultTokens = platform.defaultBoostRewardTokens();
@@ -399,7 +401,6 @@ contract PlatformTest is Test  {
 
     }
 
-    function testGetDexAdapters() public {
     function testGetAmmAdapters() public {
         platform.initialize(address(this), '23.11.0-dev');
         platform.addAmmAdapter("myId", address(1));
