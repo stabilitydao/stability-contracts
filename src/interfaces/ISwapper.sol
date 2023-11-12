@@ -14,14 +14,14 @@ interface ISwapper {
 
   struct PoolData {
     address pool;
-    address dexAdapter;
+    address ammAdapter;
     address tokenIn;
     address tokenOut;
   }
 
   struct AddPoolData {
     address pool;
-    string dexAdapterId;
+    string ammAdapterId;
     address tokenIn;
     address tokenOut;
   }
@@ -39,22 +39,22 @@ interface ISwapper {
   function allAssets() external view returns(address[] memory);
 
   /// @notice Add pools with largest TVL
-  /// @param pools Largest pools with DeX adapter addresses
+  /// @param pools Largest pools with AMM adapter addresses
   /// @param rewrite Rewrite pool for tokenIn
   function addPools(PoolData[] memory pools, bool rewrite) external;
 
   /// @notice Add pools with largest TVL
-  /// @param pools Largest pools with DeX adapter ID string
+  /// @param pools Largest pools with AMM adapter ID string
   /// @param rewrite Rewrite pool for tokenIn
   function addPools(AddPoolData[] memory pools, bool rewrite) external;
 
   /// @notice Add largest pools with the most popular tokens on the current network
-  /// @param pools_ PoolData array with pool, tokens and DeX adapter address
+  /// @param pools_ PoolData array with pool, tokens and AMM adapter address
   /// @param rewrite Change exist pool records
   function addBlueChipsPools(PoolData[] memory pools_, bool rewrite) external;
 
   /// @notice Add largest pools with the most popular tokens on the current network
-  /// @param pools_ AddPoolData array with pool, tokens and DeX adapter string ID
+  /// @param pools_ AddPoolData array with pool, tokens and AMM adapter string ID
   /// @param rewrite Change exist pool records
   function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external;
 

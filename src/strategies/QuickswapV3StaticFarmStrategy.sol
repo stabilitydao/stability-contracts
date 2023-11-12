@@ -11,7 +11,7 @@ import "../integrations/algebra/INonfungiblePositionManager.sol";
 import "../integrations/algebra/IFarmingCenter.sol";
 import "../integrations/algebra/IncentiveKey.sol";
 import "../core/libs/CommonLib.sol";
-import "../adapters/libs/DexAdapterIdLib.sol";
+import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning QuickSwapV3 farm rewards and swap fees by static liquidity position
 /// @author Alien Deployer (https://github.com/a17)
@@ -101,7 +101,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
         //slither-disable-next-line unused-return
-        return QuickswapLib.initVariants(platform_, dexAdapterId(), STRATEGY_LOGIC_ID());
+        return QuickswapLib.initVariants(platform_, ammAdapterId(), STRATEGY_LOGIC_ID());
     }
 
     /// @inheritdoc IStrategy
@@ -158,8 +158,8 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc ILPStrategy
-    function dexAdapterId() public pure override returns(string memory) {
-        return DexAdapterIdLib.ALGEBRA;
+    function ammAdapterId() public pure override returns(string memory) {
+        return AmmAdapterIdLib.ALGEBRA;
     }
 
     /// @inheritdoc IStrategy
@@ -330,7 +330,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks = new int24[](2);
         ticks[0] = lowerTick;
         ticks[1] = upperTick;
-        (value, amountsConsumed) = dexAdapter.getLiquidityForAmounts(pool, amountsMax, ticks);
+        (value, amountsConsumed) = ammAdapter.getLiquidityForAmounts(pool, amountsMax, ticks);
     }
 
     /// @inheritdoc StrategyBase
@@ -338,7 +338,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks = new int24[](2);
         ticks[0] = lowerTick;
         ticks[1] = upperTick;
-        amounts_ = dexAdapter.getAmountsForLiquidity(pool, ticks, uint128(total));
+        amounts_ = ammAdapter.getAmountsForLiquidity(pool, ticks, uint128(total));
         assets_ = _assets;
     }
 
@@ -347,7 +347,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getProportion0(address pool_) public view returns (uint) {
-        return dexAdapter.getProportion0(pool_);
+        return ammAdapter.getProportion0(pool_);
     }
 
     function _getIncentiveKey() private view returns (IncentiveKey memory) {

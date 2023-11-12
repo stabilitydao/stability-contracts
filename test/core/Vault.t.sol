@@ -6,14 +6,14 @@ import "../../src/core/vaults/CVault.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockDexAdapter.sol";
+import "../../src/test/MockAmmAdapter.sol";
 import "../base/FullMockSetup.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
-    MockDexAdapter public mockDexAdapter;
+    MockAmmAdapter public mockAmmAdapter;
 
     receive() external payable {}
 
@@ -29,7 +29,7 @@ contract VaultTest is Test, FullMockSetup {
         vault = CVault(payable(address(vaultProxy)));
         strategy = MockStrategy(address(strategyProxy));
 
-        mockDexAdapter = new MockDexAdapter(address(tokenA), address(tokenB));
+        mockAmmAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
     }
 
     function testSetup() public {
@@ -199,7 +199,7 @@ contract VaultTest is Test, FullMockSetup {
         address[] memory addresses = new address[](5);
         addresses[0] = address(platform);
         addresses[1] = address(vault);
-        addresses[2] = address(mockDexAdapter);
+        addresses[2] = address(mockAmmAdapter);
         addresses[3] = address(lp);
         addresses[4] = address(tokenA);
 

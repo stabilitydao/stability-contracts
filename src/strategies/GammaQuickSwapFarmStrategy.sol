@@ -12,7 +12,7 @@ import "../integrations/quickswap/IMasterChef.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 import "../integrations/quickswap/IRewarder.sol";
 import "../core/libs/CommonLib.sol";
-import "../adapters/libs/DexAdapterIdLib.sol";
+import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Gamma QuickSwap farm rewards by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
@@ -89,8 +89,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc ILPStrategy
-    function dexAdapterId() public pure override returns(string memory) {
-        return DexAdapterIdLib.ALGEBRA;
+    function ammAdapterId() public pure override returns(string memory) {
+        return AmmAdapterIdLib.ALGEBRA;
     }
 
     /// @inheritdoc IStrategy
@@ -106,7 +106,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint[] memory nums,
         int24[] memory ticks
     ) {
-        IDexAdapter _dexAdapter = IDexAdapter(IPlatform(platform_).dexAdapter(keccak256(bytes(dexAdapterId()))).proxy);
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
     
@@ -132,7 +132,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                     "Earn ",
                     CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
                     " on QuickSwap by ",
-                    CommonLib.implode(CommonLib.getSymbols(_dexAdapter.poolTokens(farm.pool)), "-"),
+                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
                     " Gamma ",
                     GammaLib.getPresetName(farm.nums[1]),
                     " LP"

@@ -36,15 +36,15 @@ library LPStrategyLib {
     function LPStrategyBase_init(
         address platform,
         ILPStrategy.LPStrategyBaseInitParams memory params,
-        string memory dexAdapterId
-    ) external returns(address[] memory _assets, uint exchangeAssetIndex, IDexAdapter dexAdapter) {
-        IPlatform.DexAdapter memory dexAdapterData = IPlatform(platform).dexAdapter(keccak256(bytes(dexAdapterId)));
-        if (dexAdapterData.proxy == address(0)) {
-            revert ILPStrategy.ZeroDexAdapter();
+        string memory ammAdapterId
+    ) external returns(address[] memory _assets, uint exchangeAssetIndex, IAmmAdapter ammAdapter) {
+        IPlatform.AmmAdapter memory ammAdapterData = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId)));
+        if (ammAdapterData.proxy == address(0)) {
+            revert ILPStrategy.ZeroAmmAdapter();
         }
 
-        dexAdapter = IDexAdapter(dexAdapterData.proxy);
-        _assets = dexAdapter.poolTokens(params.pool);
+        ammAdapter = IAmmAdapter(ammAdapterData.proxy);
+        _assets = ammAdapter.poolTokens(params.pool);
         uint len = _assets.length;
         exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
         address swapper = IPlatform(params.platform).swapper();
@@ -76,7 +76,7 @@ library LPStrategyLib {
     function processRevenue(
         address platform,
         address vault,
-        IDexAdapter dexAdapter,
+        IAmmAdapter ammAdapter,
         uint exchangeAssetIndex,
         address pool,
         address[] memory assets_,
@@ -103,7 +103,7 @@ library LPStrategyLib {
                 // try to make less swaps
                 if (otherAssetBBAmount > 0) {
                     if (exchangeAssetBBAmount > 0) {
-                        uint otherAssetBBAmountPrice = dexAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
+                        uint otherAssetBBAmountPrice = ammAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
                         uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
                         if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
                             otherAssetBBAmount = 0;
@@ -151,7 +151,7 @@ library LPStrategyLib {
     /// @dev For now this support only pools of 2 tokens
     function swapForDepositProportion(
         address platform,
-        IDexAdapter dexAdapter,
+        IAmmAdapter ammAdapter,
         address _pool,
         address[] memory assets,
         uint prop0Pool
@@ -159,7 +159,7 @@ library LPStrategyLib {
         amountsToDeposit = new uint[](2);
         SwapForDepositProportionVars memory vars;
         vars.swapper = ISwapper(IPlatform(platform).swapper());
-        vars.price = dexAdapter.getPrice(_pool, assets[1], address(0), 0);
+        vars.price = ammAdapter.getPrice(_pool, assets[1], address(0), 0);
         vars.balance0 = balance(assets[0]);
         vars.balance1 = balance(assets[1]);
         vars.asset1decimals = IERC20Metadata(assets[1]).decimals();

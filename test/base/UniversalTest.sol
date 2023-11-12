@@ -53,7 +53,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         uint earned;
         uint duration;
         Vm.Log[] entries;
-        address dexAdapter;
+        address ammAdapter;
         address pool;
     }
 
@@ -155,7 +155,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
                 address[] memory assets = strategy.assets();
-                vars.dexAdapter = address(ILPStrategy(address(strategy)).dexAdapter());
+                vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
                 vars.pool = ILPStrategy(address (strategy)).pool();
                 console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
 
@@ -215,7 +215,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     ISwapper swapper = ISwapper(platform.swapper());
                     ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
                     poolData[0].pool = vars.pool;
-                    poolData[0].dexAdapter = vars.dexAdapter;
+                    poolData[0].ammAdapter = vars.ammAdapter;
                     poolData[0].tokenIn = assets[0];
                     poolData[0].tokenOut = assets[1];
                     IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);

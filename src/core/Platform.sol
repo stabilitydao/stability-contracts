@@ -109,10 +109,10 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     string public PLATFORM_VERSION;
 
-    mapping(bytes32 dexAdapterIdHash => DexAdapter dexAdpater) internal _dexAdapter;
+    mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) internal _ammAdapter;
 
-    /// @dev Hashes of DeX adapter ID string
-    bytes32[] internal _dexAdapterIdHash;
+    /// @dev Hashes of AMM adapter ID string
+    bytes32[] internal _ammAdapterIdHash;
 
     /// @dev 2 slots struct
     EnumerableSet.AddressSet internal _operators;
@@ -273,13 +273,13 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function addDexAdapter(string memory id, address proxy) external onlyOperator {
+    function addAmmAdapter(string memory id, address proxy) external onlyOperator {
         bytes32 hash = keccak256(bytes(id));
-        require (_dexAdapter[hash].proxy == address(0), "Platform: DeX adapter already exist");
-        _dexAdapter[hash].id = id;
-        _dexAdapter[hash].proxy = proxy;
-        _dexAdapterIdHash.push(hash);
-        emit NewDexAdapter(id, proxy);
+        require (_ammAdapter[hash].proxy == address(0), "Platform: AMM adapter already exist");
+        _ammAdapter[hash].id = id;
+        _ammAdapter[hash].proxy = proxy;
+        _ammAdapterIdHash.push(hash);
+        emit NewAmmAdapter(id, proxy);
     }
 
     /// @inheritdoc IPlatform
@@ -386,21 +386,21 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function getDexAdapters() external view returns(string[] memory ids, address[] memory proxies) {
-        uint len = _dexAdapterIdHash.length;
+    function getAmmAdapters() external view returns(string[] memory ids, address[] memory proxies) {
+        uint len = _ammAdapterIdHash.length;
         ids = new string[](len);
         proxies = new address[](len);
         for (uint i; i < len; ++i) {
-            bytes32 hash = _dexAdapterIdHash[i];
-            DexAdapter memory __dexAdapter = _dexAdapter[hash];
-            ids[i] = __dexAdapter.id;
-            proxies[i] = __dexAdapter.proxy;
+            bytes32 hash = _ammAdapterIdHash[i];
+            AmmAdapter memory __ammAdapter = _ammAdapter[hash];
+            ids[i] = __ammAdapter.id;
+            proxies[i] = __ammAdapter.proxy;
         }
     }
 
     /// @inheritdoc IPlatform
-    function dexAdapter(bytes32 dexAdapterIdHash) external view returns(DexAdapter memory) {
-        return _dexAdapter[dexAdapterIdHash];
+    function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory) {
+        return _ammAdapter[ammAdapterIdHash];
     }
 
     /// @inheritdoc IPlatform
