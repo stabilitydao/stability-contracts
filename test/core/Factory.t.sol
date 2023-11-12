@@ -287,7 +287,7 @@ contract FactoryTest is Test, MockSetup {
         factory.upgradeStrategyProxy(strategy);
 
         vm.expectRevert(bytes("Factory: not strategy"));
-        factory.upgradeStrategyProxy(address(123));
+        factory.upgradeStrategyProxy(address(1));
 
         {
         //vaultTypes()

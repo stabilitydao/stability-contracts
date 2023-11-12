@@ -7,10 +7,17 @@ import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockAggregatorV3Interface.sol";
 import "../../src/adapters/ChainlinkAdapter.sol";
 import "../base/MockSetup.sol";
+import "../../src/test/MockDexAdapter.sol";
+import "../../src/adapters/libs/DexAdapterIdLib.sol";
+import "../../src/adapters/UniswapV3Adapter.sol";
+import "../../src/core/Swapper.sol";
+import "../../chains/PolygonLib.sol";
 
 contract PriceReaderTest is Test, MockSetup {
+    Swapper public swapper;
     PriceReader public priceReader;
     ChainlinkAdapter public chainlinkAdapter;
+    UniswapV3Adapter public uniswapV3Adapter;
     MockAggregatorV3Interface public aggregatorV3InterfaceTokenA;
     MockAggregatorV3Interface public aggregatorV3InterfaceTokenB;
     MockAggregatorV3Interface public aggregatorV3InterfaceTokenD;
@@ -24,6 +31,26 @@ contract PriceReaderTest is Test, MockSetup {
         proxy.initProxy(address(new ChainlinkAdapter()));
         chainlinkAdapter = ChainlinkAdapter(address(proxy));
 
+        proxy = new Proxy();
+        proxy.initProxy(address(new Platform()));
+        platform = Platform(address(proxy));
+        platform.initialize(address(this), '23.11.0-dev');
+
+        proxy = new Proxy();
+        proxy.initProxy(address(new Swapper()));
+        swapper = Swapper(address(proxy));
+        swapper.initialize(address(platform));
+
+        //add DexAdapterIdLib's id adapter
+        uniswapV3Adapter = new UniswapV3Adapter();
+        platform.addDexAdapter(DexAdapterIdLib.UNISWAPV3, address(uniswapV3Adapter));
+
+        // deploy and init adapters
+        proxy = new Proxy();
+        proxy.initProxy(address(new UniswapV3Adapter()));
+        uniswapV3Adapter = UniswapV3Adapter(address(proxy));
+        uniswapV3Adapter.init(address(platform));
+
         aggregatorV3InterfaceTokenA = new MockAggregatorV3Interface();
         aggregatorV3InterfaceTokenB = new MockAggregatorV3Interface();
         aggregatorV3InterfaceTokenD = new MockAggregatorV3Interface();
@@ -36,6 +63,48 @@ contract PriceReaderTest is Test, MockSetup {
     }
 
     function testOraclePrices() public {
+
+        platform.setup(
+            IPlatform.SetupAddresses({
+                factory: address(1),
+                priceReader: address(priceReader),
+                swapper: address(swapper),
+                buildingPermitToken: address(4),
+                buildingPayPerVaultToken: address(5),
+                vaultManager: address(6),
+                strategyLogic: address(7),
+                aprOracle: address(8),
+                targetExchangeAsset: address(9),
+                hardWorker: address(10)
+            }),
+            IPlatform.PlatformSettings({
+                networkName: 'Localhost Ethereum',
+                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
+                fee: 6_000,
+                feeShareVaultManager: 30_000,
+                feeShareStrategyLogic: 30_000,
+                feeShareEcosystem: 0,
+                minInitialBoostPerDay: 30e18, // $30
+                minInitialBoostDuration: 30 * 86400 // 30 days
+            })
+        ); 
+        
+        MockDexAdapter dexAdapter = new MockDexAdapter(address(tokenE), address(tokenA));
+
+        ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+        pools[0] = ISwapper.PoolData({
+            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            dexAdapter: address(dexAdapter),
+            tokenIn: address(tokenE),
+            tokenOut: address(tokenA)
+        });
+
+        swapper.addPools(pools, false); 
+
+        uint res = swapper.getPrice(address(tokenE),address(tokenA), 1e24);
+        console.log("RES IS", res);
+
+
         priceReader.initialize(address(platform));
         chainlinkAdapter.initialize(address(platform));
 
@@ -56,31 +125,33 @@ contract PriceReaderTest is Test, MockSetup {
         priceFeeds[2] = address(aggregatorV3InterfaceTokenD);
         chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
 
+        {
         // getPrice test
         (uint priceA, bool trustedA) = priceReader.getPrice(address(tokenA));
         (uint priceB, bool trustedB) = priceReader.getPrice(address(tokenB));
         (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD));
-        vm.expectRevert();
-        /*(uint priceUnavailable, bool trustedUnavailable) =*/ priceReader.getPrice(address(this)); 
+        (uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
+        (uint _zero, bool _false) = priceReader.getPrice(address(this)); 
         assertEq(priceA, 1e18);
         assertEq(trustedA, true);
         assertEq(priceB, 2 * 1e18);
         assertEq(trustedB, true); 
         assertEq(priceD, 3 * 1e18);
         assertEq(trustedD, true); 
-//        assertEq(priceUnavailable, 0);
-//        assertEq(trustedUnavailable, false);
-        //todo Decimals >18
+        assertEq(_zero, 0);
+        assertEq(_false, false);
+        }
+
         // getAssetsPrice test
-         uint[] memory amounts = new uint[](3);
+        uint[] memory amounts = new uint[](3);
         amounts[0] = 500e18;
         amounts[1] = 300e6;
-        amounts[2] = 300e18;
+        amounts[2] = 1e24;
         (uint total, uint[] memory assetAmountPrice, bool trusted) = priceReader.getAssetsPrice(assets, amounts);
         assertEq(assetAmountPrice[0], 500e18);
         assertEq(assetAmountPrice[1], 300 * 2 * 1e18);
-        assertEq(assetAmountPrice[2], 300 * 3 * 1e18);
-        assertEq(total, 2000 * 1e18);
+        assertEq(assetAmountPrice[2], 3 * 1e18);
+        assertEq(total, 1103 * 1e18);
         assertEq(trusted, true); 
         
         priceReader.removeAdapter(address(chainlinkAdapter));
@@ -97,6 +168,6 @@ contract PriceReaderTest is Test, MockSetup {
         allAssets = chainlinkAdapter.assets();
         assertEq(allAssets[0], address(tokenD));
         (uint price,) = chainlinkAdapter.getPrice(address(this));
-        assertEq(price, 0);  
+        assertEq(price, 0); 
     }
 }
