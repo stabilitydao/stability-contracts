@@ -89,21 +89,17 @@ contract PriceReaderTest is Test, MockSetup {
             })
         ); 
         
-        MockDexAdapter dexAdapter = new MockDexAdapter(address(tokenE), address(tokenA));
+        MockDexAdapter dexAdapter = new MockDexAdapter(address(tokenE), address(tokenD));
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
             dexAdapter: address(dexAdapter),
             tokenIn: address(tokenE),
-            tokenOut: address(tokenA)
+            tokenOut: address(tokenD)
         });
 
         swapper.addPools(pools, false); 
-
-        uint res = swapper.getPrice(address(tokenE),address(tokenA), 1e24);
-        console.log("RES IS", res);
-
 
         priceReader.initialize(address(platform));
         chainlinkAdapter.initialize(address(platform));
@@ -129,8 +125,8 @@ contract PriceReaderTest is Test, MockSetup {
         // getPrice test
         (uint priceA, bool trustedA) = priceReader.getPrice(address(tokenA));
         (uint priceB, bool trustedB) = priceReader.getPrice(address(tokenB));
-        (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD));
-        //(uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
+        (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD)); 
+        (uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
         (uint _zero, bool _false) = priceReader.getPrice(address(this)); 
         assertEq(priceA, 1e18);
         assertEq(trustedA, true);
@@ -138,6 +134,8 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(trustedB, true); 
         assertEq(priceD, 3 * 1e18);
         assertEq(trustedD, true); 
+        assertEq(priceE, 3 * 2e12);
+        assertEq(trustedE, false);
         assertEq(_zero, 0);
         assertEq(_false, false);
         }
