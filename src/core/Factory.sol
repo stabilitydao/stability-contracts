@@ -164,16 +164,24 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     ) external nonReentrant returns (address vault, address strategy) {
         DeployVaultAndStrategyVars memory vars;
         vars.vaultConfig = vaultConfig[keccak256(abi.encodePacked(vaultType))];
-        require(vars.vaultConfig.implementation != address(0), "Factory: vault implementation is not available");
-        require(vars.vaultConfig.deployAllowed, "Factory: vault not allowed to deploy");
+        if(vars.vaultConfig.implementation == address(0)){
+            revert VaultImplementationIsNotAvailable();
+        }
+        if(!vars.vaultConfig.deployAllowed){
+            revert VaultNotAllowedToDeploy();
+        }
         vars.strategyIdHash = keccak256(bytes(strategyId));
         vars.platform = platform();
         vars.buildingPermitToken = IPlatform(vars.platform).buildingPermitToken();
         vars.buildingPayPerVaultToken = IPlatform(vars.platform).buildingPayPerVaultToken();
 
         StrategyLogicConfig storage config = strategyLogicConfig[vars.strategyIdHash];
-        require(config.implementation != address(0), "Factory: strategy implementation is not available");
-        require(config.deployAllowed, "Factory: strategy logic not allowed to deploy");
+        if(config.implementation == address(0)){
+            revert StrategyImplementationIsNotAvailable();
+        }
+        if(!config.deployAllowed){
+            revert StrategyLogicNotAllowedToDeploy();
+        }
 
         if (vars.buildingPermitToken != address(0)) {
             uint balance = IERC721Enumerable(vars.buildingPermitToken).balanceOf(msg.sender);
@@ -190,7 +198,14 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
         if (!vars.permit) {
             uint userBalance = IERC20(vars.buildingPayPerVaultToken).balanceOf(msg.sender);
-            require (userBalance >= vars.vaultConfig.buildingPrice, "Factory: you dont have enough tokens for building");
+            if(userBalance < vars.vaultConfig.buildingPrice){
+                revert YouDontHaveEnoughTokensForBuilding
+                    (
+                    userBalance, 
+                    vars.vaultConfig.buildingPrice, 
+                    IPlatform(vars.platform).buildingPayPerVaultToken()
+                    );
+            }
             IERC20(vars.buildingPayPerVaultToken).safeTransferFrom(msg.sender, IPlatform(vars.platform).multisig(), vars.vaultConfig.buildingPrice);
         }
 
@@ -224,7 +239,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
                 strategyInitNums,
                 strategyInitTicks
             );
-            require(deploymentKey[vars.deploymentKey] == address(0), "Factory: such vault already deployed");
+            if(deploymentKey[vars.deploymentKey] != address(0)){
+                revert SuchVaultAlreadyDeployed();
+            }
         }
 
         (,vars.assets, vars.assetsSymbols, vars.specificName, vars.symbol) = getStrategyData(vaultType, strategy, vaultInitAddresses.length > 0 ? vaultInitAddresses[0] : address(0));
@@ -265,27 +282,39 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     /// @inheritdoc IFactory
     function upgradeVaultProxy(address vault) external nonReentrant {
-        require (vaultStatus[vault] == VaultStatusLib.ACTIVE, "Factory: not active vault");
+        if(vaultStatus[vault] != VaultStatusLib.ACTIVE){
+            revert NotActiveVault();
+        }
         IVaultProxy proxy = IVaultProxy(vault);
         bytes32 vaultTypeHash = proxy.VAULT_TYPE_HASH();
         address oldImplementation = proxy.implementation();
         address newImplementation = vaultConfig[vaultTypeHash].implementation;
-        require (vaultConfig[vaultTypeHash].upgradeAllowed, "Factory: upgrade denied");
-        require (oldImplementation != newImplementation, "Factory: already last version");
+        if(!vaultConfig[vaultTypeHash].upgradeAllowed){
+            revert UpgradeDenied();
+        }
+        if(oldImplementation == newImplementation){
+            revert AlreadyLastVersion();
+        }
         proxy.upgrade();
         emit VaultProxyUpgraded(vault, oldImplementation, newImplementation);
     }
 
     /// @inheritdoc IFactory
     function upgradeStrategyProxy(address strategyProxy) external nonReentrant {
-        require (isStrategy[strategyProxy], "Factory: not strategy");
+        if(!isStrategy[strategyProxy]){
+            revert NotStrategy();
+        }
         IStrategyProxy proxy = IStrategyProxy(strategyProxy);
         bytes32 idHash = proxy.STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH();
         StrategyLogicConfig storage config = strategyLogicConfig[idHash];
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;
-        require (config.upgradeAllowed, "Factory: upgrade denied");
-        require (oldImplementation != newImplementation, "Factory: already last version");
+        if(!config.upgradeAllowed){
+            revert UpgradeDenied();
+        }
+        if(oldImplementation == newImplementation){
+            revert AlreadyLastVersion();
+        }
         proxy.upgrade();
         emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }

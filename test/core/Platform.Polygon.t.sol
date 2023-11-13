@@ -167,7 +167,7 @@ contract PlatformPolygonTest is PolygonSetup {
             (,,,,uint[] memory vaultSharePrice,uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
             assertEq(vaultSharePrice[0], 0);
             assertEq(vaultUserBalance[0], 0);
-            vm.expectRevert('Factory: such vault already deployed');
+            vm.expectRevert(abi.encodeWithSelector(IFactory.SuchVaultAlreadyDeployed.selector));
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
                 vars.strategyId[i],

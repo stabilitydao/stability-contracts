@@ -5,6 +5,23 @@ pragma solidity ^0.8.21;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 interface IFactory {
+
+    //region ----- Custom Errors -----
+
+    error VaultImplementationIsNotAvailable();
+    error VaultNotAllowedToDeploy();
+    error StrategyImplementationIsNotAvailable();
+    error StrategyLogicNotAllowedToDeploy();
+    error YouDontHaveEnoughTokensForBuilding(uint userBalance, uint buildingPrice, address payToken);
+    error SuchVaultAlreadyDeployed();
+    error NotActiveVault();
+    error UpgradeDenied();
+    error AlreadyLastVersion();
+    error NotStrategy();
+
+    //endregion ----- Custom Errors -----
+
+
     //region ----- Events -----
 
     event VaultAndStrategy(
