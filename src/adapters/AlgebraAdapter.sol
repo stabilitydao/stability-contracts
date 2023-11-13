@@ -7,26 +7,25 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../core/base/Controllable.sol";
 import "../core/libs/ConstantsLib.sol";
+import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../strategies/libs/UniswapV3MathLib.sol";
-import "../interfaces/IDexAdapter.sol";
+import "../interfaces/IAmmAdapter.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 
-/// @notice DeX adapter for working with AlegbraV1 AMMs used in QuickSwapV3.
+/// @notice AMM adapter for working with AlegbraV1 AMMs used in QuickSwapV3.
 /// @author Alien Deployer (https://github.com/a17)
-contract AlgebraAdapter is Controllable, IDexAdapter {
+contract AlgebraAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
-    /// @dev Version of AlgebraAdapter implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
-    string internal constant _DEX_ADAPTER_ID = "ALGEBRA";
-
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function poolTokens(address pool) external view returns (address[] memory) {
         IAlgebraPool _pool = IAlgebraPool(pool);
         address[] memory tokens = new address[](2);
@@ -35,12 +34,12 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         return tokens;
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
-        revert('unavailable');
+        revert IAmmAdapter.NotSupportedByCAMM();
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, , , , , ,) = IAlgebraPool(pool).globalState();
@@ -50,7 +49,7 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         liquidity = uint(liquidityOut);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
@@ -62,8 +61,8 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
 
-    /// @inheritdoc IDexAdapter
-    function getProportion0(address pool) external view returns (uint) {
+    /// @inheritdoc IAmmAdapter
+    function getProportion0(address pool) public view returns (uint) {
         address token1 = IAlgebraPool(pool).token1();
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, int24 tick,,,,,) = IAlgebraPool(pool).globalState();
@@ -79,7 +78,15 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
+    }
+
+    /// @inheritdoc IAmmAdapter
     function swap(
         address pool,
         address tokenIn,
@@ -124,7 +131,7 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         );
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function getPrice(
         address pool,
         address tokenIn,
@@ -172,8 +179,8 @@ contract AlgebraAdapter is Controllable, IDexAdapter {
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
-        return _DEX_ADAPTER_ID;
+        return AmmAdapterIdLib.ALGEBRA;
     }
 }

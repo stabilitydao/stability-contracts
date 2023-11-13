@@ -85,6 +85,9 @@ contract Platform is Controllable, IPlatform {
     address public hardWorker;
 
     /// @inheritdoc IPlatform
+    address public zap;
+
+    /// @inheritdoc IPlatform
     address public targetExchangeAsset;
 
     /// @inheritdoc IPlatform
@@ -106,10 +109,10 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     string public PLATFORM_VERSION;
 
-    mapping(bytes32 dexAdapterIdHash => DexAdapter dexAdpater) internal _dexAdapter;
+    mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) internal _ammAdapter;
 
-    /// @dev Hashes of DeX adapter ID string
-    bytes32[] internal _dexAdapterIdHash;
+    /// @dev Hashes of AMM adapter ID string
+    bytes32[] internal _ammAdapterIdHash;
 
     /// @dev 2 slots struct
     EnumerableSet.AddressSet internal _operators;
@@ -122,6 +125,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @dev 2 slots struct
     EnumerableSet.AddressSet internal _defaultBoostRewardTokens;
+    
+    EnumerableSet.AddressSet internal _dexAggregators;
 
     uint internal _fee;
     uint internal _feeShareVaultManager;
@@ -131,7 +136,7 @@ contract Platform is Controllable, IPlatform {
     /// @dev This empty reserved space is put in place to allow future versions to add new.
     /// variables without shifting down storage in the inheritance chain.
     /// Total Platform gap == 100 - storage slots used.
-    uint[100 - 26] private __gap;
+    uint[100 - 28] private __gap;
 
     //endregion -- Storage -----
 
@@ -162,6 +167,7 @@ contract Platform is Controllable, IPlatform {
         aprOracle = addresses.aprOracle;
         targetExchangeAsset = addresses.targetExchangeAsset;
         hardWorker = addresses.hardWorker;
+        zap = addresses.zap;
         emit Addresses(
             multisig,
             addresses.factory,
@@ -171,7 +177,8 @@ contract Platform is Controllable, IPlatform {
             addresses.vaultManager,
             addresses.strategyLogic,
             addresses.aprOracle,
-            addresses.hardWorker
+            addresses.hardWorker,
+            addresses.zap
         );
         networkName = settings.networkName;
         networkExtra = settings.networkExtra;
@@ -266,13 +273,38 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function addDexAdapter(string memory id, address proxy) external onlyOperator {
+    function addAmmAdapter(string memory id, address proxy) external onlyOperator {
         bytes32 hash = keccak256(bytes(id));
-        require (_dexAdapter[hash].proxy == address(0), "Platform: DeX adapter already exist");
-        _dexAdapter[hash].id = id;
-        _dexAdapter[hash].proxy = proxy;
-        _dexAdapterIdHash.push(hash);
-        emit NewDexAdapter(id, proxy);
+        require (_ammAdapter[hash].proxy == address(0), "Platform: AMM adapter already exist");
+        _ammAdapter[hash].id = id;
+        _ammAdapter[hash].proxy = proxy;
+        _ammAdapterIdHash.push(hash);
+        emit NewAmmAdapter(id, proxy);
+    }
+
+    /// @inheritdoc IPlatform
+    function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
+        uint len = dexAggRouter.length;
+        for (uint i; i < len; ++i) {
+            if (dexAggRouter[i] == address(0)) {
+                revert ZeroAddress();
+            }
+
+            //nosemgrep
+            if (!_dexAggregators.add(dexAggRouter[i])) {
+                continue;
+            }
+
+            emit AddDexAggregator(dexAggRouter[i]);
+        }
+    }
+
+    /// @inheritdoc IPlatform
+    function removeDexAggregator(address dexAggRouter) external onlyOperator {
+        if (!_dexAggregators.remove(dexAggRouter)) {
+            revert AggregatorNotExists(dexAggRouter);
+        }
+        emit RemoveDexAggregator(dexAggRouter);
     }
 
     /// @inheritdoc IPlatform
@@ -319,6 +351,13 @@ contract Platform is Controllable, IPlatform {
         emit RemoveDefaultBoostRewardToken(token);
     }
 
+    /// @inheritdoc IPlatform
+    function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external onlyOperator {
+        _addTokens(_allowedBoostRewardTokens, allowedBoostRewardToken);
+        _addTokens(_defaultBoostRewardTokens, defaultBoostRewardToken);
+        emit AddBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
+    }
+
     //endregion -- Restricted actions ----
 
     //region ----- View functions -----
@@ -354,21 +393,21 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function getDexAdapters() external view returns(string[] memory ids, address[] memory proxies) {
-        uint len = _dexAdapterIdHash.length;
+    function getAmmAdapters() external view returns(string[] memory ids, address[] memory proxies) {
+        uint len = _ammAdapterIdHash.length;
         ids = new string[](len);
         proxies = new address[](len);
         for (uint i; i < len; ++i) {
-            bytes32 hash = _dexAdapterIdHash[i];
-            DexAdapter memory __dexAdapter = _dexAdapter[hash];
-            ids[i] = __dexAdapter.id;
-            proxies[i] = __dexAdapter.proxy;
+            bytes32 hash = _ammAdapterIdHash[i];
+            AmmAdapter memory __ammAdapter = _ammAdapter[hash];
+            ids[i] = __ammAdapter.id;
+            proxies[i] = __ammAdapter.proxy;
         }
     }
 
     /// @inheritdoc IPlatform
-    function dexAdapter(bytes32 dexAdapterIdHash) external view returns(DexAdapter memory) {
-        return _dexAdapter[dexAdapterIdHash];
+    function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory) {
+        return _ammAdapter[ammAdapterIdHash];
     }
 
     /// @inheritdoc IPlatform
@@ -431,6 +470,16 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory) {
         return CommonLib.filterAddresses(_defaultBoostRewardTokens.values(), addressToRemove);
+    }
+
+    /// @inheritdoc IPlatform
+    function dexAggregators() external view returns(address[] memory) {
+        return _dexAggregators.values();
+    }
+
+    /// @inheritdoc IPlatform
+    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool) {
+        return _dexAggregators.contains(dexAggRouter);
     }
 
     /// @inheritdoc IPlatform
@@ -523,6 +572,20 @@ contract Platform is Controllable, IPlatform {
         minInitialBoostPerDay = minInitialBoostPerDay_;
         minInitialBoostDuration = minInitialBoostDuration_;
         emit MinInitialBoostChanged(minInitialBoostPerDay_, minInitialBoostDuration_);
+    }
+
+    /**
+     * @dev Adds tokens to a specified token set.
+     * @param tokenSet The target token set.
+     * @param tokens Array of tokens to be added.
+     */
+    function _addTokens(EnumerableSet.AddressSet storage tokenSet, address[] memory tokens) internal {
+        uint len = tokens.length;
+        for (uint i = 0; i < len; ++i) {
+            if (!tokenSet.add(tokens[i])) {
+                revert TokenAlreadyExistsInSet({token: tokens[i]});
+            }
+        }
     }
 
     //endregion -- Internal logic -----

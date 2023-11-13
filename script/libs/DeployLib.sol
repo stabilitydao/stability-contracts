@@ -14,6 +14,7 @@ import "../../src/core/PriceReader.sol";
 import "../../src/core/AprOracle.sol";
 import "../../src/core/Swapper.sol";
 import "../../src/core/HardWorker.sol";
+import "../../src/core/Zap.sol";
 import "../../src/interfaces/IPlatform.sol";
 
 library DeployLib {
@@ -27,6 +28,7 @@ library DeployLib {
         Swapper swapper;
         AprOracle aprOracle;
         HardWorker hardWorker;
+        Zap zap;
     }
 
     function deployPlatform(
@@ -90,6 +92,12 @@ library DeployLib {
         vars.hardWorker = HardWorker(payable(address(vars.proxy)));
         vars.hardWorker.initialize(address(vars.platform), gelatoAutomate, gelatoMinBalance, gelatoDepositAmount);
 
+        // Zap
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new Zap()));
+        vars.zap = Zap(payable(address(vars.proxy)));
+        vars.zap.initialize(address(vars.platform));
+
         // setup platform
         vars.platform.setup(
             IPlatform.SetupAddresses({
@@ -102,7 +110,8 @@ library DeployLib {
                 strategyLogic: address(vars.strategyLogic),
                 aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: targetExchangeAsset,
-                hardWorker: address(vars.hardWorker)
+                hardWorker: address(vars.hardWorker),
+                zap: address(vars.zap)
             }),
             IPlatform.PlatformSettings({
                 networkName: networkName,
@@ -143,10 +152,10 @@ library DeployLib {
         return address(vars.platform);
     }
 
-    function logDeployDexAdapters(address platform, bool showLog) external view {
+    function logDeployAmmAdapters(address platform, bool showLog) external view {
         if (showLog) {
-            (string[] memory dexAdaptersNames,) = IPlatform(platform).getDexAdapters();
-            console.log('Deployed DeX adapters:', CommonLib.implode(dexAdaptersNames, ', '));
+            (string[] memory ammAdaptersNames,) = IPlatform(platform).getAmmAdapters();
+            console.log('Deployed AMM adapters:', CommonLib.implode(ammAdaptersNames, ', '));
         }
     }
 

@@ -7,7 +7,7 @@ import "../../src/core/vaults/CVault.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockDexAdapter.sol";
+import "../../src/test/MockAmmAdapter.sol";
 import "../../src/test/MockStrategyUpgrade.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/test/MockERC721.sol";
@@ -17,7 +17,7 @@ import "../../src/interfaces/IStrategyLogic.sol";
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
     MockStrategy public strategyImplementation;
-    MockDexAdapter public dexAdapter;
+    MockAmmAdapter public ammAdapter;
 
     function setUp() public {
         Factory implementation = new Factory();
@@ -27,7 +27,7 @@ contract FactoryTest is Test, MockSetup {
         factory.initialize(address(platform));
         strategyImplementation = new MockStrategy();
 
-        dexAdapter = new MockDexAdapter(address(tokenA), address(tokenB));
+        ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
 
         platform.setup(
             IPlatform.SetupAddresses({
@@ -40,7 +40,8 @@ contract FactoryTest is Test, MockSetup {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
-                hardWorker: address(0)
+                hardWorker: address(0),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -54,7 +55,7 @@ contract FactoryTest is Test, MockSetup {
             })
         );
 
-        platform.addDexAdapter('MOCKSWAP', address(dexAdapter));
+        platform.addAmmAdapter('MOCKSWAP', address(ammAdapter));
     }
 
     function testInitialize() public {
@@ -179,7 +180,7 @@ contract FactoryTest is Test, MockSetup {
 
         assertEq(IERC20Metadata(vault).symbol(), "C-MOCKAMOCKB-DADFGP");
 
-        assertEq(address(IPairStrategyBase(strategy).dexAdapter()), address(dexAdapter));
+        assertEq(address(ILPStrategy(strategy).ammAdapter()), address(ammAdapter));
         assertEq(address(IStrategy(strategy).vault()), vault);
         assertEq(address(IStrategy(strategy).underlying()), address(1));
         assertEq(IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH(), keccak256(abi.encodePacked(StrategyIdLib.DEV)));
@@ -354,7 +355,9 @@ contract FactoryTest is Test, MockSetup {
 
     function testFarms() public {
         assertEq(factory.farmsLength(), 0);
-        IFactory.Farm memory farm = IFactory.Farm({
+        IFactory.Farm memory farm;
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = IFactory.Farm({
             status: 0,
             pool: address(1),
             strategyLogicId: StrategyIdLib.DEV,
@@ -364,7 +367,7 @@ contract FactoryTest is Test, MockSetup {
             ticks: new int24[](0)
         });
 
-        factory.addFarm(farm);
+        factory.addFarms(farms);
         assertEq(factory.farmsLength(), 1);
         farm = factory.farm(0);
         assertEq(farm.pool, address(1));
@@ -374,8 +377,8 @@ contract FactoryTest is Test, MockSetup {
         farm = factory.farm(0);
         assertEq(farm.pool, address(3));
 
-        IFactory.Farm[] memory farms = factory.farms();
-        assertEq(farms[0].pool, address(3));
+        IFactory.Farm[] memory farms_ = factory.farms();
+        assertEq(farms_[0].pool, address(3));
     }
 
     function testSetVaultStatus() public {

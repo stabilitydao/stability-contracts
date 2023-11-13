@@ -42,7 +42,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -67,7 +68,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -369,14 +371,44 @@ contract PlatformTest is Test  {
 
     }
 
-    function testGetDexAdapters() public {
-        platform.initialize(address(this), '23.11.0-dev');
-        platform.addDexAdapter("myId", address(1));
-        platform.addDexAdapter("myId2", address(2));
-        vm.expectRevert("Platform: DeX adapter already exist");
-        platform.addDexAdapter("myId2", address(2));
+    function testAddBoostTokens() public {
+        address[] memory allowedBoostRewardTokens = new address[](2);
+        allowedBoostRewardTokens[0] = address(101);
+        allowedBoostRewardTokens[1] = address(105);
+        address[] memory defaultBoostRewardTokens = new address[](1);
+        defaultBoostRewardTokens[0] = address(208);
 
-        (string[] memory ids, address[] memory proxies) = platform.getDexAdapters();
+        platform.initialize(address(this), '23.11.0-dev');
+        platform.addBoostTokens(allowedBoostRewardTokens, defaultBoostRewardTokens);
+
+        address[] memory alreadyAddedAllowedBoostRewardToken = new address[](1);
+        alreadyAddedAllowedBoostRewardToken[0] = address(101);
+        address[] memory newDefaultBoostRewardTokens = new address[](1);
+        newDefaultBoostRewardTokens[0] = address(386);
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101))
+        );
+        platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
+
+        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
+        assertEq(defaultTokens.length, 1);
+        assertEq(defaultTokens[0], address(208));
+
+        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
+        assertEq(allowedTokens.length, 2);
+        assertEq(allowedTokens[0], address(101));
+        assertEq(allowedTokens[1], address(105));
+
+    }
+
+    function testGetAmmAdapters() public {
+        platform.initialize(address(this), '23.11.0-dev');
+        platform.addAmmAdapter("myId", address(1));
+        platform.addAmmAdapter("myId2", address(2));
+        vm.expectRevert("Platform: AMM adapter already exist");
+        platform.addAmmAdapter("myId2", address(2));
+
+        (string[] memory ids, address[] memory proxies) = platform.getAmmAdapters();
         assertEq(ids[0], "myId");
         assertEq(ids[1], "myId2");
         assertEq(proxies[0], address(1));
@@ -412,7 +444,8 @@ contract PlatformTest is Test  {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -466,5 +499,45 @@ contract PlatformTest is Test  {
         vm.expectRevert("Platform: ZERO_ADDRESS");
         platform.setEcosystemRevenueReceiver(address(0));
         platform.setEcosystemRevenueReceiver(address(1));
+    }
+
+    function testDexAggregators() public {
+        platform.initialize(address(this), '23.11.0-dev');
+
+        address[] memory dexAggRouter = new address[](2);
+        dexAggRouter[0] = address(1);
+        dexAggRouter[1] = address(2);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(8);
+        dexAggRouter[1] = address(9);
+        platform.addDexAggregators(dexAggRouter);
+        
+        address[] memory dexAggs = platform.dexAggregators();
+        assertEq(dexAggs.length, 4);
+        assertEq(dexAggs[3], address(9));
+
+        assertEq(platform.isAllowedDexAggregatorRouter(address(10)), false);
+        assertEq(platform.isAllowedDexAggregatorRouter(address(9)), true);
+
+        dexAggRouter = new address[](1);
+        dexAggRouter[0] = address(3);
+        platform.addDexAggregators(dexAggRouter);
+
+        dexAggRouter[0] = address(0);
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.ZeroAddress.selector)
+        );
+        platform.addDexAggregators(dexAggRouter);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.AggregatorNotExists.selector, address(5))
+        );
+        platform.removeDexAggregator(address(5));
+
+        platform.removeDexAggregator(address(1));
+        dexAggRouter[0] = address(1);
+        platform.addDexAggregators(dexAggRouter);
+
     }
 }

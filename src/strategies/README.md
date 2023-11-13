@@ -43,10 +43,10 @@ forge coverage
 * Add your strategy logic deployment to runDeploy method in `chains/<ChainName>Lib.sol`
 * Put your developer address to `src/strategies/libs/StrategyDeveloperLib.sol`
 
-## 2. (Optional) Implement DeX adapter
+## 2. (Optional) Implement AMM adapter
 
-If the strategy uses DeX for which the platform does not have an adapter, then this adapter will have to be developed.
-Functions inheriting from IDexAdapter should be implemented.
+If the strategy uses AMM for which the platform does not have an adapter, then this adapter will have to be developed.
+Functions inheriting from IAmmAdapter should be implemented.
 
 ## 3. (Optional) Add swapper routes
 
@@ -61,7 +61,7 @@ For farming strategy you need to add farming data to `chains/<ChainName>Lib.sol`
 
 Depending on the purpose of the logic, the strategy is inherited from a set of base classes:
 
-* PairStrategyBase if strategy uses AMM based on two ERC20 tokens
+* LPStrategyBase if strategy uses AMM
 * FarmingStrategyBase if it is farming strategy
 
 Put your strategy to `src/strategies/<YourStrategyContractName>.sol` and implement all functions that need for compiling.

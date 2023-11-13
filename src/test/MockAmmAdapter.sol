@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "../interfaces/IDexAdapter.sol";
+import "../interfaces/IAmmAdapter.sol";
 
-contract MockDexAdapter is IDexAdapter {
+contract MockAmmAdapter is IAmmAdapter {
     string internal constant _DEX_ADAPTER_ID = "MOCKSWAP";
     string internal constant _DEX_ADAPTER_VERSION = "1.0.0";
 
@@ -54,8 +54,16 @@ contract MockDexAdapter is IDexAdapter {
         revert('unavailable');
     }
 
-    function getProportion0(address /*pool*/) external pure returns (uint) {
+    function getProportion0(address /*pool*/) public pure returns (uint) {
         return 5e17;
+    }
+
+    /// @inheritdoc IAmmAdapter
+    function getProportions(address pool) external pure returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = getProportion0(pool);
+        p[1] = 1e18 - p[0];
+        return p;
     }
 
     function swap(
@@ -75,7 +83,7 @@ contract MockDexAdapter is IDexAdapter {
         return 2e18;
     }
 
-    /// @inheritdoc IDexAdapter
+    /// @inheritdoc IAmmAdapter
     function DEX_ADAPTER_ID() external pure returns(string memory) {
         return _DEX_ADAPTER_ID;
     }

@@ -16,13 +16,15 @@ import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import "../../src/interfaces/ISwapper.sol";
 import "../../src/interfaces/IFactory.sol";
 import "../../src/interfaces/IStrategy.sol";
+import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IStrategyLogic.sol";
 import "../../src/interfaces/IVault.sol";
 import "../../src/interfaces/IRVault.sol";
 import "../../src/interfaces/IPriceReader.sol";
 import "../../src/interfaces/IFarmingStrategy.sol";
-import "../../src/interfaces/IPairStrategyBase.sol";
+import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IHardWorker.sol";
+import "../../src/interfaces/IZap.sol";
 
 abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
@@ -51,7 +53,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         uint earned;
         uint duration;
         Vm.Log[] entries;
-        address dexAdapter;
+        address ammAdapter;
         address pool;
     }
 
@@ -153,8 +155,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
                 address[] memory assets = strategy.assets();
-                vars.dexAdapter = address(IPairStrategyBase(address(strategy)).dexAdapter());
-                vars.pool = IPairStrategyBase(address (strategy)).pool();
+                vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
+                vars.pool = ILPStrategy(address (strategy)).pool();
                 console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
 
                 if (vars.farming) {
@@ -181,6 +183,26 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
                 }
 
+                {
+                    IZap zap = IZap(platform.zap());
+                    (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
+                    assertEq(swapAmounts.length, 2);
+                }
+
+                // check LPStrategyBase reverts
+                {
+                    address[] memory wrongAssets = new address[](10);
+                    vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    wrongAssets = new address[](assets.length);
+                    wrongAssets[0] = address(1);
+                    vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
+                    strategy.previewDepositAssets(assets, new uint[](5));
+                }
+                ///
+
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0);
                 (uint tvl, ) = IVault(vars.vault).tvl();
@@ -193,15 +215,27 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     ISwapper swapper = ISwapper(platform.swapper());
                     ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
                     poolData[0].pool = vars.pool;
-                    poolData[0].dexAdapter = vars.dexAdapter;
+                    poolData[0].ammAdapter = vars.ammAdapter;
                     poolData[0].tokenIn = assets[0];
                     poolData[0].tokenOut = assets[1];
                     IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
                     deal(assets[0], address(this), depositAmounts[0]);
                     swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
+
+                    poolData[0].tokenIn = assets[1];
+                    poolData[0].tokenOut = assets[0];
+                    IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
+                    deal(assets[1], address(this), depositAmounts[1]);
+                    swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
                 }
 
-                skip(6 hours);
+                skip(3 hours);
+                vm.roll(block.number + 6);
+
+                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2));
+
+                skip(3 hours);
+                vm.roll(block.number + 6);
 
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();

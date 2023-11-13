@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./base/Controllable.sol";
 import "../interfaces/ISwapper.sol";
-import "../interfaces/IDexAdapter.sol";
+import "../interfaces/IAmmAdapter.sol";
 
-/// @notice On-chain price quoter and swapper. It works by predefined routes using DeX adapters.
+/// @notice On-chain price quoter and swapper. It works by predefined routes using AMM adapters.
 /// @dev Inspired by TetuLiquidator
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
@@ -69,8 +69,8 @@ contract Swapper is Controllable, ISwapper {
             poolData.pool = pools_[i].pool;
             poolData.tokenIn = pools_[i].tokenIn;
             poolData.tokenOut = pools_[i].tokenOut;
-            poolData.dexAdapter = IPlatform(platform()).dexAdapter(keccak256(bytes(pools_[i].dexAdapterId))).proxy;
-            require(poolData.dexAdapter != address(0), "Swapper: unknown DeX adapter");
+            poolData.ammAdapter = IPlatform(platform()).ammAdapter(keccak256(bytes(pools_[i].ammAdapterId))).proxy;
+            require(poolData.ammAdapter != address(0), "Swapper: unknown AMM adapter");
             require(pools[poolData.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
             pools[poolData.tokenIn] = poolData;
             bool assetAdded = _assets.add(poolData.tokenIn);
@@ -106,8 +106,8 @@ contract Swapper is Controllable, ISwapper {
             poolData.pool = pools_[i].pool;
             poolData.tokenIn = pools_[i].tokenIn;
             poolData.tokenOut = pools_[i].tokenOut;
-            poolData.dexAdapter = IPlatform(platform()).dexAdapter(keccak256(bytes(pools_[i].dexAdapterId))).proxy;
-            require(poolData.dexAdapter != address(0), "Swapper: unknown DeX adapter");
+            poolData.ammAdapter = IPlatform(platform()).ammAdapter(keccak256(bytes(pools_[i].ammAdapterId))).proxy;
+            require(poolData.ammAdapter != address(0), "Swapper: unknown AMM adapter");
             require(blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool == address(0) || rewrite, "Swapper: Exist");
             blueChipsPools[poolData.tokenIn][poolData.tokenOut] = poolData;
             blueChipsPools[poolData.tokenOut][poolData.tokenIn] = poolData;
@@ -125,9 +125,15 @@ contract Swapper is Controllable, ISwapper {
     }
 
     /// @inheritdoc ISwapper
-    function setThreshold(address token, uint threshold_) external onlyOperator {
-        threshold[token] = threshold_;
-        emit ThresholdChanged(token, threshold_);
+    function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
+        uint tokenInLen = tokenIn.length;
+        uint thresholdAmountLen = thresholdAmount.length;
+        if (tokenInLen != thresholdAmountLen) revert ArrayLengthMismatch(tokenInLen, thresholdAmountLen);
+        //nosemgrep
+        for (uint i = 0; i < tokenInLen; ++i) {
+            threshold[tokenIn[i]] = thresholdAmount[i];
+        }
+        emit ThresholdChanged(tokenIn, thresholdAmount);
     }
 
     //endregion -- Restricted actions ----
@@ -217,7 +223,7 @@ contract Swapper is Controllable, ISwapper {
         uint len = route.length;
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
-            price = IDexAdapter(data.dexAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
+            price = IAmmAdapter(data.ammAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
         }
         return price;
     }
@@ -233,7 +239,7 @@ contract Swapper is Controllable, ISwapper {
         uint len = route.length;
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
-            price = IDexAdapter(data.dexAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
+            price = IAmmAdapter(data.ammAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
         }
         return price;
     }
@@ -431,18 +437,18 @@ contract Swapper is Controllable, ISwapper {
 
             // if it is the first step send tokens to the swapper from the current contract
             if (i == 0) {
-                IERC20(data.tokenIn).safeTransferFrom(msg.sender, data.dexAdapter, amount);
+                IERC20(data.tokenIn).safeTransferFrom(msg.sender, data.ammAdapter, amount);
             }
             address recipient;
             // if it is not the last step of the route send to the next swapper
             if (i != route.length - 1) {
-                recipient = route[i + 1].dexAdapter;
+                recipient = route[i + 1].ammAdapter;
             } else {
                 // if it is the last step need to send to the sender
                 recipient = msg.sender;
             }
 
-            IDexAdapter(data.dexAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
+            IAmmAdapter(data.ammAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
         }
 
         emit Swap(route[0].tokenIn, route[route.length - 1].tokenOut, amount);

@@ -9,7 +9,7 @@ import "../../src/core/Factory.sol";
 import "../../src/test/MockAggregatorV3Interface.sol";
 import "../../src/adapters/ChainlinkAdapter.sol";
 import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockDexAdapter.sol";
+import "../../src/test/MockAmmAdapter.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/core/Swapper.sol";
 import "../../src/test/MockERC721.sol";
@@ -84,7 +84,8 @@ abstract contract FullMockSetup is MockSetup {
                 strategyLogic: address(strategyLogic),
                 aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
-                hardWorker: address(hardworker)
+                hardWorker: address(hardworker),
+                zap: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -98,9 +99,9 @@ abstract contract FullMockSetup is MockSetup {
             })
         );
 
-        MockDexAdapter dexAdapter = new MockDexAdapter(address(tokenA), address(tokenB));
+        MockAmmAdapter ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
 
-        platform.addDexAdapter('MOCKSWAP', address(dexAdapter));
+        platform.addAmmAdapter('MOCKSWAP', address(ammAdapter));
 
         // setup factory
         uint buildingPayPerVaultPrice = 1e16;

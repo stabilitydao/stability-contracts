@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "../src/core/proxy/Proxy.sol";
-import "../src/adapters/libs/DexAdapterIdLib.sol";
+import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 import "../src/strategies/libs/GammaLib.sol";
@@ -92,6 +92,10 @@ library PolygonLib {
     address public constant GAMMA_POS_WMATIC_USDC_NARROW =  0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
     address public constant GAMMA_POS_WMATIC_USDC_WIDE =  0x4A83253e88e77E8d518638974530d0cBbbF3b675;
 
+    // DeX aggregators
+    address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
+
     function runDeploy(bool showLog) internal returns(address platform) {
         //region ----- DeployPlatform -----
         uint[] memory buildingPrice = new uint[](3);
@@ -138,12 +142,12 @@ library PolygonLib {
         }
         //endregion -- DeployAndSetupOracleAdapters -----
 
-        //region ----- DeployDexAdapters -----
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.UNISWAPV3);
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.ALGEBRA);
-        DeployAdapterLib.deployDexAdapter(platform, DexAdapterIdLib.KYBER);
-        DeployLib.logDeployDexAdapters(platform, showLog);
-        //endregion -- DeployDexAdapters ----
+        //region ----- Deploy AMM adapters -----
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.KYBER);
+        DeployLib.logDeployAmmAdapters(platform, showLog);
+        //endregion -- Deploy AMM adapters ----
 
         //region ----- SetupSwapper -----
         (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
@@ -151,30 +155,40 @@ library PolygonLib {
         swapper.addBlueChipsPools(bcPools, false);
         swapper.addPools(pools, false);
         // todo auto thresholds
-        swapper.setThreshold(TOKEN_USDC, 1e3);
-        swapper.setThreshold(TOKEN_USDT, 1e3);
-        swapper.setThreshold(TOKEN_DAI, 1e15);
-        swapper.setThreshold(TOKEN_WMATIC, 1e15);
-        swapper.setThreshold(TOKEN_WETH, 1e12);
-        swapper.setThreshold(TOKEN_dQUICK, 1e16); // 1 dQuick ~= $0.05
+        address[] memory tokenIn = new address[](6);
+        tokenIn[0] = TOKEN_USDC;
+        tokenIn[1] = TOKEN_USDT;
+        tokenIn[2] = TOKEN_DAI;
+        tokenIn[3] = TOKEN_WMATIC;
+        tokenIn[4] = TOKEN_WETH;
+        tokenIn[5] = TOKEN_dQUICK;
+        uint[] memory thresholdAmount = new uint[](6);
+        thresholdAmount[0] = 1e3;
+        thresholdAmount[1] = 1e3;
+        thresholdAmount[2] = 1e15;
+        thresholdAmount[3] = 1e15;
+        thresholdAmount[4] = 1e12;
+        thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
+        swapper.setThresholds(tokenIn, thresholdAmount);
         DeployLib.logSetupSwapper(platform, showLog);
         //endregion -- SetupSwapper -----
 
         //region ----- Add farms -----
         IFactory.Farm[] memory _farms = farms();
         IFactory factory = IFactory(IPlatform(platform).factory());
-        for (uint i; i < _farms.length; ++i) {
-            factory.addFarm(_farms[i]);
-        }
+        factory.addFarms(_farms);
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
         //region ----- Reward tokens -----
         IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addAllowedBoostRewardToken(TOKEN_USDC);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_PROFIT);
-        IPlatform(platform).addDefaultBoostRewardToken(TOKEN_USDC);
+        address[] memory allowedBoostRewardToken = new address[](2);
+        address[] memory defaultBoostRewardToken = new address[](2);
+        allowedBoostRewardToken[0] = TOKEN_PROFIT;
+        allowedBoostRewardToken[1] = TOKEN_USDC;
+        defaultBoostRewardToken[0] = TOKEN_PROFIT;
+        defaultBoostRewardToken[1] = TOKEN_USDC;
+        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
         DeployLib.logSetupRewardTokens(platform, showLog);
         //endregion -- Reward tokens -----
 
@@ -183,6 +197,12 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
+
+        //region ----- Add DeX aggregators -----
+        address[] memory dexAggRouter = new address[](1);
+        dexAggRouter[0] = ONE_INCH;
+        IPlatform(platform).addDexAggregators(dexAggRouter);
+        //endregion -- Add DeX aggregators -----
     }
 
     function routes() public pure returns (
@@ -193,31 +213,31 @@ library PolygonLib {
         bcPools = new ISwapper.AddPoolData[](5);
         bcPools[0] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDT
         });
         bcPools[1] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_DAI_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_DAI,
             tokenOut: TOKEN_USDC
         });
         bcPools[2] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WMATIC_USDC_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WMATIC,
             tokenOut: TOKEN_USDC
         });
         bcPools[3] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WETH,
             tokenOut: TOKEN_USDC
         });
         bcPools[4] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WBTC,
             tokenOut: TOKEN_WETH
         });
@@ -229,37 +249,37 @@ library PolygonLib {
         // UniswapV3
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDT
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_DAI_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_DAI,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WMATIC_USDC_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WMATIC,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_USDC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WETH,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_WBTC,
             tokenOut: TOKEN_WETH
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_PROFIT_WETH_100,
-            dexAdapterId: DexAdapterIdLib.UNISWAPV3,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_PROFIT,
             tokenOut: TOKEN_WETH
         });
@@ -267,19 +287,19 @@ library PolygonLib {
         // QuickSwapV3
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDT_DAI,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_USDT,
             tokenOut: TOKEN_DAI
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDC_QUICK,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_QUICK,
             tokenOut: TOKEN_USDC
         });
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_dQUICK_QUICK,
-            dexAdapterId: DexAdapterIdLib.ALGEBRA,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_dQUICK,
             tokenOut: TOKEN_QUICK
         });
@@ -287,7 +307,7 @@ library PolygonLib {
         // KyberSwap
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_KYBER_KNC_USDC,
-            dexAdapterId: DexAdapterIdLib.KYBER,
+            ammAdapterId: AmmAdapterIdLib.KYBER,
             tokenIn: TOKEN_KNC,
             tokenOut: TOKEN_USDC
         });
