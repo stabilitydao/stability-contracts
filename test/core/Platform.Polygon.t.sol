@@ -325,6 +325,28 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(canExec, true);
     }
 
+    function testErc165() public {
+        IFactory factory = IFactory(platform.factory());
+        (
+            string[] memory vaultType_,
+            address[] memory implementation,
+            ,
+            ,
+            ,
+        ) = factory.vaultTypes();
+        for (uint i; i < vaultType_.length; ++i) {
+            assertEq(IVault(implementation[i]).supportsInterface(type(IERC165).interfaceId), true);
+            assertEq(IVault(implementation[i]).supportsInterface(type(IControllable).interfaceId), true);
+            assertEq(IVault(implementation[i]).supportsInterface(type(IVault).interfaceId), true);
+            if (CommonLib.eq(vaultType_[i], VaultTypeLib.COMPOUNDING)) {
+                assertEq(IVault(implementation[i]).supportsInterface(type(IRVault).interfaceId), false);
+            }
+            if (CommonLib.eq(vaultType_[i], VaultTypeLib.REWARDING)) {
+                assertEq(IVault(implementation[i]).supportsInterface(type(IRVault).interfaceId), true);
+            }
+        }
+    }
+
     function _depositToVault(address vault, uint assetAmountUsd) internal {
         IStrategy strategy = IVault(vault).strategy();
         address[] memory assets = strategy.assets();

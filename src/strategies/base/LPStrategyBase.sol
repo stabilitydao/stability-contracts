@@ -32,9 +32,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return 
-            interfaceId == type(ILPStrategy).interfaceId
-            || super.supportsInterface(interfaceId);
+        return interfaceId == type(ILPStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IStrategy

@@ -550,7 +550,6 @@ contract PlatformTest is Test  {
         proxy.initProxy(address(new StrategyLogic()));
         strategyLogic = StrategyLogic(address(proxy));
         strategyLogic.init(address(platform)); 
-
         assertEq(strategyLogic.supportsInterface(type(IERC165).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IControllable).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IERC721).interfaceId), true);

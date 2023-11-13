@@ -501,7 +501,7 @@ contract Platform is Controllable, IPlatform {
         platformAddresses[3] = buildingPermitToken;
         platformAddresses[4] = buildingPayPerVaultToken;
         IFactory _factory = IFactory(factory);
-        (vaultType,,,vaultBuildingPrice,vaultExtra) = _factory.vaultTypes();
+        (vaultType,,,,vaultBuildingPrice,vaultExtra) = _factory.vaultTypes();
         (strategyId,,,isFarmingStrategy,,strategyTokenURI,strategyExtra) = _factory.strategies();
     }
 

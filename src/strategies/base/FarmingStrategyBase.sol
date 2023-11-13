@@ -55,9 +55,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (StrategyBase) returns (bool) {
-        return 
-            interfaceId == type(IFarmingStrategy).interfaceId
-            || super.supportsInterface(interfaceId);
+        return interfaceId == type(IFarmingStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
