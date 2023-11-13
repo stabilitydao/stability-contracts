@@ -220,8 +220,10 @@ contract PlatformPolygonTest is PolygonSetup {
 
         (canExec, execPayload) = hw.checkerServer();
         assertEq(canExec, true);
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotAllowedMsgSender.selector));
+        vm.prank(address(666));
         (bool success,) = address(hw).call(execPayload);
-        // HardWorker: only dedicated senders
+        (success,) = address(hw).call(execPayload);
         assertEq(success, false);
         vm.expectRevert("Controllable: not governance and not multisig");
         hw.setDedicatedServerMsgSender(address(this), true);
@@ -235,18 +237,18 @@ contract PlatformPolygonTest is PolygonSetup {
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
             bool[] memory status = new bool[](1);
             
-            vm.expectRevert("HardWorker: wrong input");
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, new bool[](3));
 
             vaultAddressesForChangeExcludeStatus[0] = address(4);
-            vm.expectRevert("HardWorker: vault not exist");
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotExist.selector, address(4)));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
 
-            vm.expectRevert("HardWorker: zero length");
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(new address[](0), new bool[](0));
 
-            vm.expectRevert('HardWorker: vault already has this exclude status');
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.AlreadyExclude.selector, vaultAddressesForChangeExcludeStatus[0]));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
 
             status[0] = true;
@@ -256,7 +258,7 @@ contract PlatformPolygonTest is PolygonSetup {
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
         }
 
-        vm.expectRevert("HardWorker: wrong");
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.IncorrectZeroArgument.selector));
         hw.setMaxHwPerCall(0);
         hw.setMaxHwPerCall(5);
 
@@ -267,15 +269,17 @@ contract PlatformPolygonTest is PolygonSetup {
 
         (canExec, execPayload) = hw.checkerGelato();
         assertEq(canExec, true);
-        vm.prank(hw.dedicatedGelatoMsgSender());
+        vm.startPrank(hw.dedicatedGelatoMsgSender());
+
+        vm.deal(address(hw), 0);
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         (success,) = address(hw).call(execPayload);
-        // HardWorker: not enough ETH"
-        assertEq(success, false);
+ 
         vm.deal(address(hw), 2e18);
-        vm.prank(hw.dedicatedGelatoMsgSender());
         (success,) = address(hw).call(execPayload);
         assertEq(success, true);
         assertGt(hw.gelatoBalance(), 0);
+        vm.stopPrank();
 
         for (uint i; i < len; ++i) {
             (canExec, execPayload) = hw.checkerServer();
@@ -289,7 +293,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         vm.startPrank(platform.multisig());
         hw.setDelays(1 hours, 2 hours);
-        vm.expectRevert("HardWorker: nothing to change");
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.AlreadyExist.selector));
         hw.setDelays(1 hours, 2 hours);
         vm.stopPrank();
 
@@ -300,7 +304,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         vm.txGasPrice(15e10);
         deal(address(hw), type(uint).max);
-        vm.expectRevert("HardWorker: native transfer failed");
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.ETHTransferFailed.selector));
         hw.call(vaultsForHardWork);
         canReceive = true;
         hw.call(vaultsForHardWork);

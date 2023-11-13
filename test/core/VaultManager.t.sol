@@ -98,7 +98,7 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         assetToSetApr[0] = address(lp);
         assetToSetApr[1] = address(tokenB);
         _aprsToSet[0] = 4_013;
-        vm.expectRevert("AprOracle: mismatch");
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectArrayLength.selector));
         IAprOracle(_aprOracle).setAprs(assetToSetApr, _aprsToSet);
 
 

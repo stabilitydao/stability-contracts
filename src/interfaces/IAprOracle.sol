@@ -8,6 +8,11 @@ pragma solidity ^0.8.21;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 interface IAprOracle {
+
+    //region ----- Custom Errors -----
+    error IncorrectArrayLength();
+    //endregion ----- Custom Errors -----
+
     //region ----- Events -----
     event SetAprs(address[] assets, uint[] aprs);
     //endregion -- Events -----

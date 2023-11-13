@@ -6,6 +6,18 @@ pragma solidity ^0.8.21;
 /// compounding, declaring income and losses, related things.
 /// @author Alien Deployer (https://github.com/a17)
 interface IHardWorker {
+
+    //region ----- Custom Errors -----
+    error AlreadyExist();
+    error NotExist(address notExistObject);
+    error AlreadyExclude(address alreadyExcludedObject);
+    error IncorrectArrayLength();
+    error IncorrectZeroArgument();
+    error NotAllowedMsgSender();
+    error NotEnoughETH();
+    error ETHTransferFailed();
+    //endregion ----- Custom Errors -----
+
     event Call(uint hardworks, uint gasUsed, uint gasCost, bool server);
     event DedicatedServerMsgSender(address indexed sender, bool allowed);
     event DedicatedGelatoMsgSender(address oldSender, address newSender);

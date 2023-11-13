@@ -89,14 +89,18 @@ contract HardWorker is Controllable, IHardWorker {
 
     /// @inheritdoc IHardWorker
     function setDedicatedServerMsgSender(address sender, bool allowed) external onlyGovernanceOrMultisig {
-        require(dedicatedServerMsgSender[sender] != allowed, "HardWorker: nothing to change");
+        if(dedicatedServerMsgSender[sender] == allowed){
+            revert AlreadyExist();
+        }
         dedicatedServerMsgSender[sender] = allowed;
         emit DedicatedServerMsgSender(sender, allowed);
     }
 
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
-        require (delayServer != delayServer_ || delayGelato != delayGelato_, "HardWorker: nothing to change");
+        if(delayServer == delayServer_ && delayGelato == delayGelato_){
+            revert AlreadyExist();
+        }
         delayServer = delayServer_;
         delayGelato = delayGelato_;
         emit Delays(delayServer_, delayGelato_);
@@ -104,7 +108,9 @@ contract HardWorker is Controllable, IHardWorker {
 
     /// @inheritdoc IHardWorker
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
-        require (maxHwPerCall_ > 0, "HardWorker: wrong");
+        if(maxHwPerCall_ <= 0){
+            revert IncorrectZeroArgument();
+        }
         maxHwPerCall = maxHwPerCall_;
         emit MaxHwPerCall(maxHwPerCall_);
     }
@@ -112,15 +118,18 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
         uint len = vaults_.length;
-        require (len == status.length, "HardWorker: wrong input");
-        require (len > 0, "HardWorker: zero length");
+        if(len != status.length || len == 0){
+            revert IncorrectArrayLength();
+        }
         IFactory factory = IFactory(IPlatform(platform()).factory());
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
-            require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
+            if(factory.vaultStatus(vaults_[i]) == VaultStatusLib.NOT_EXIST){
+                revert NotExist(vaults_[i]);
+            }
             if (excludedVaults[vaults_[i]] == status[i]) {
-                revert('HardWorker: vault already has this exclude status');
+                revert AlreadyExclude(vaults_[i]);
             } else {
                 excludedVaults[vaults_[i]] = status[i];
                 emit VaultExcludeStatusChanged(vaults_[i], status[i]);
@@ -133,10 +142,9 @@ contract HardWorker is Controllable, IHardWorker {
         uint startGas = gasleft();
 
         bool isServer = dedicatedServerMsgSender[msg.sender];
-        require(
-            isServer || msg.sender == dedicatedGelatoMsgSender,
-            "HardWorker: only dedicated senders"
-        );
+        if(!isServer && msg.sender != dedicatedGelatoMsgSender){
+            revert NotAllowedMsgSender();
+        }
 
         if (!isServer) {
             ITaskTreasuryUpgradable _treasury = gelatoTaskTreasury;
@@ -144,7 +152,9 @@ contract HardWorker is Controllable, IHardWorker {
             if (bal < gelatoMinBalance) {
                 uint contractBal = address(this).balance;
                 uint depositAmount = gelatoDepositAmount;
-                require(contractBal >= depositAmount, "HardWorker: not enough ETH");
+                if(contractBal < depositAmount){
+                    revert NotEnoughETH();
+                }
                 _treasury.depositFunds{value: depositAmount}(
                     address(this),
                     ETH,
@@ -176,7 +186,9 @@ contract HardWorker is Controllable, IHardWorker {
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
             //slither-disable-next-line unused-return
             (bool success, ) = msg.sender.call{value: gasCost}("");
-            require(success, "HardWorker: native transfer failed");
+            if(!success){
+                revert ETHTransferFailed();
+            }
         }
 
         emit Call(counter, gasUsed, gasCost, isServer);
