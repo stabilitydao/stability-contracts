@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @title Minimal library for setting / getting slot variables (used in upgradable proxy contracts)
 library SlotsLib {

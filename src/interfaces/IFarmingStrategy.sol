@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @dev Mostly this interface need for front-end and tests for interacting with farming strategies
 interface IFarmingStrategy {
