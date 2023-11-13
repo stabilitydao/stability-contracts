@@ -540,4 +540,21 @@ contract PlatformTest is Test  {
         platform.addDexAggregators(dexAggRouter);
 
     }
+
+    function testErc165() public {
+        assertEq(platform.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(platform.supportsInterface(type(IControllable).interfaceId), true);
+        
+        platform.initialize(address(this), '23.11.0-dev');
+        Proxy proxy = new Proxy();
+        proxy.initProxy(address(new StrategyLogic()));
+        strategyLogic = StrategyLogic(address(proxy));
+        strategyLogic.init(address(platform)); 
+
+        assertEq(strategyLogic.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IERC721).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IERC721Enumerable).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IStrategyLogic).interfaceId), true);
+    }
 }
