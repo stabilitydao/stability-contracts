@@ -106,7 +106,7 @@ contract PriceReaderTest is Test, MockSetup {
         chainlinkAdapter.initialize(address(platform));
 
         priceReader.addAdapter(address(chainlinkAdapter));
-        vm.expectRevert("PR: exist");
+        vm.expectRevert(abi.encodeWithSelector(IPriceReader.AlreadyExist.selector));
         priceReader.addAdapter(address(chainlinkAdapter));
         assertEq(priceReader.adaptersLength(), 1);
         address[] memory adapters = priceReader.adapters();
@@ -154,7 +154,7 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(trusted, true); 
         
         priceReader.removeAdapter(address(chainlinkAdapter));
-        vm.expectRevert("PR: not exist");
+        vm.expectRevert(abi.encodeWithSelector(IPriceReader.NotExist.selector));
         priceReader.removeAdapter(address(chainlinkAdapter));
 
         // chainlink adapter test

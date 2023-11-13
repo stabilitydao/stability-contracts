@@ -31,12 +31,16 @@ contract PriceReader is Controllable, IPriceReader {
 
     /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
-        require(_adapters.add(adapter_), "PR: exist");
+        if(!_adapters.add(adapter_)){
+            revert AlreadyExist();
+        }
         emit AdapterAdded(adapter_);
     }
 
     function removeAdapter(address adapter_) external onlyOperator {
-        require(_adapters.remove(adapter_), "PR: not exist");
+        if(!_adapters.remove(adapter_)){
+            revert NotExist();
+        }
         emit AdapterRemoved(adapter_);
     }
 
