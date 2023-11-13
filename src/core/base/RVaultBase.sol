@@ -180,6 +180,11 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     //region ----- View functions -----
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (IERC165, VaultBase) returns (bool) {
+        return interfaceId == type(IRVault).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     /// @inheritdoc IRVault
     function bbToken() public view returns(address) {
         return rewardToken[0];

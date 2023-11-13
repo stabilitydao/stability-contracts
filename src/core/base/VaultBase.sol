@@ -234,6 +234,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     //region ----- View functions -----
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
+        return interfaceId == type(IVault).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     /// @inheritdoc IVault
     function VAULT_TYPE() external view returns (string memory) {
         return _type;

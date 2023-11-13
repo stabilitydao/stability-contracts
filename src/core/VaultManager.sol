@@ -20,7 +20,7 @@ import "../interfaces/IManagedVault.sol";
 /// @author Jude (https://github.com/iammrjude)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
-    /// @dev Version of VaultManager implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
     /// @inheritdoc IVaultManager
@@ -62,7 +62,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @dev Returns current token URI metadata
     /// @param tokenId Token ID to fetch URI for.
-    function tokenURI(uint tokenId) public view override returns (string memory) {
+    function tokenURI(uint tokenId) public view override (ERC721Upgradeable, IERC721Metadata) returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "VaultManager: TOKEN_NOT_EXIST");
 
         VaultData memory vaultData;
@@ -144,6 +144,14 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         if (receiver == address(0)) {
             receiver = _ownerOf(tokenId);
         }
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (ERC721EnumerableUpgradeable, IERC165, Controllable) returns (bool) {
+        return 
+            interfaceId == type(IVaultManager).interfaceId
+            || interfaceId == type(IControllable).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     function _requireOwner(uint tokenId) internal view {

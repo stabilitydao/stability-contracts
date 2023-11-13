@@ -7,7 +7,7 @@ import "./IStrategy.sol";
 /// Derived implementations can be effective for building tokenized vaults with single or multiple underlying liquidity mining position.
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
-interface IVault {
+interface IVault is IERC165 {
     //region ----- Events -----
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);

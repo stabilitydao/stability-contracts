@@ -125,4 +125,13 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         vaultManager.setRevenueReceiver(1, address(1));
         assertEq(vaultManager.getRevenueReceiver(1), address(1));
     }
+
+    function testErc165() public {
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
+        assertEq(vaultManager.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721Enumerable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IVaultManager).interfaceId), true);
+    }
 }

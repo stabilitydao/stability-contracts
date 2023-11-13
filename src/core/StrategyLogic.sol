@@ -14,7 +14,7 @@ import "../interfaces/IStrategy.sol";
 /// @author Jude (https://github.com/iammrjude)
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
-    /// @dev Version of StrategyLogic implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
     /// @dev Mapping between tokens and strategy logic ID
@@ -32,18 +32,21 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         __ERC721_init("Strategy Logic", "STRATEGY");
     }
 
+    /// @inheritdoc IStrategyLogic
     function mint(address to, string memory strategyLogicId) external onlyFactory returns (uint tokenId) {
         tokenId = totalSupply();
         tokenStrategyLogic[tokenId] = strategyLogicId;
         _mint(to, tokenId);
     }
 
+    /// @inheritdoc IStrategyLogic
     function setRevenueReceiver(uint tokenId, address receiver) external {
         require(_ownerOf(tokenId) == msg.sender, "StrategyLogic: not owner");
         _revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
     }
 
+    /// @inheritdoc IStrategyLogic
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
         receiver = _revenueReceiver[tokenId];
         if (receiver == address(0)) {
@@ -63,5 +66,13 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         (,implementation,,,,strategyData.strategyTokenId) = factory.strategyLogicConfig(keccak256(bytes(strategyData.strategyId)));
         strategyData.strategyExtra = IStrategy(implementation).extra();
         return StrategyLogicLib.tokenURI(strategyData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (ERC721EnumerableUpgradeable, IERC165, Controllable) returns (bool) {
+        return 
+            interfaceId == type(IStrategyLogic).interfaceId
+            || interfaceId == type(IControllable).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 }
