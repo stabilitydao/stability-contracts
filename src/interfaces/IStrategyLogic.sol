@@ -7,6 +7,13 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 interface IStrategyLogic is IERC721Metadata {
+
+
+    //region ----- Custom Errors -----
+    error NotTheOwner();
+    error NotExist();
+    //endregion ----- Custom Errors -----
+
     //region ----- Events -----
     event SetRevenueReceiver(uint tokenId, address receiver);
     //endregion -- Events -----

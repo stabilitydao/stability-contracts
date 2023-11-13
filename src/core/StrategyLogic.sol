@@ -39,7 +39,9 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
     }
 
     function setRevenueReceiver(uint tokenId, address receiver) external {
-        require(_ownerOf(tokenId) == msg.sender, "StrategyLogic: not owner");
+        if(_ownerOf(tokenId) != msg.sender){
+            revert NotTheOwner();
+        }
         _revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
     }
@@ -54,7 +56,9 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
     /// @dev Returns current token URI metadata
     /// @param tokenId Token ID to fetch URI for.
     function tokenURI(uint tokenId) public view override (ERC721Upgradeable, IERC721Metadata) returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "StrategyLogic: TOKEN_NOT_EXIST");
+        if(_ownerOf(tokenId) == address(0)){
+            revert NotExist();
+        }
         StrategyData memory strategyData;
         strategyData.strategyId = tokenStrategyLogic[tokenId];
         IPlatform _platform = IPlatform(platform());

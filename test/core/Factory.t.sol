@@ -323,7 +323,7 @@ contract FactoryTest is Test, MockSetup {
         ) = factory.strategies();
 
         IStrategyLogic strategyLogicNft = IStrategyLogic(platform.strategyLogic());
-        vm.expectRevert("StrategyLogic: TOKEN_NOT_EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.NotExist.selector));
         strategyLogicNft.tokenURI(666);
         string memory tokenURI__ = strategyLogicNft.tokenURI(tokenId_[0]);
         assertEq(id_[0], StrategyIdLib.DEV);

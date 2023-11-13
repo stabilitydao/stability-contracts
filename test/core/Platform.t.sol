@@ -494,7 +494,7 @@ contract PlatformTest is Test  {
 
 
         address _logic = platform.strategyLogic();
-        vm.expectRevert("StrategyLogic: not owner");
+        vm.expectRevert(abi.encodeWithSelector(IStrategyLogic.NotTheOwner.selector));
         IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         vm.prank(address(0));
         IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
