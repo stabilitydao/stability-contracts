@@ -12,7 +12,7 @@ interface IFactory {
     error VaultNotAllowedToDeploy();
     error StrategyImplementationIsNotAvailable();
     error StrategyLogicNotAllowedToDeploy();
-    error YouDontHaveEnoughTokensForBuilding(uint userBalance, uint buildingPrice, address payToken);
+    error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
     error SuchVaultAlreadyDeployed();
     error NotActiveVault();
     error UpgradeDenied();

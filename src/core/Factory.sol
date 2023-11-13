@@ -199,7 +199,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         if (!vars.permit) {
             uint userBalance = IERC20(vars.buildingPayPerVaultToken).balanceOf(msg.sender);
             if(userBalance < vars.vaultConfig.buildingPrice){
-                revert YouDontHaveEnoughTokensForBuilding
+                revert YouDontHaveEnoughTokens
                     (
                     userBalance, 
                     vars.vaultConfig.buildingPrice, 

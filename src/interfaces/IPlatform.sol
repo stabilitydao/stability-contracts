@@ -5,6 +5,12 @@ pragma solidity ^0.8.21;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 interface IPlatform {
+
+    //region ----- Custom Errors -----
+
+
+    //endregion ----- Custom Errors -----
+
     //region ----- Events -----
     event PlatformVersion(string version);
     event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);

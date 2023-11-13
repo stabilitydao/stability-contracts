@@ -107,7 +107,7 @@ contract FactoryTest is Test, MockSetup {
 
         uint userBalance = builderPayPerVaultToken.balanceOf(address(this));
         address payToken = platform.buildingPayPerVaultToken();
-        vm.expectRevert(abi.encodeWithSelector(IFactory.YouDontHaveEnoughTokensForBuilding.selector, userBalance, builderPayPerVaultPrice, payToken));
+        vm.expectRevert(abi.encodeWithSelector(IFactory.YouDontHaveEnoughTokens.selector, userBalance, builderPayPerVaultPrice, payToken));
         factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
 
         builderPayPerVaultToken.mint(builderPayPerVaultPrice);
