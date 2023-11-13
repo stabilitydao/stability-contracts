@@ -300,6 +300,7 @@ contract FactoryTest is Test, MockSetup {
         //vaultTypes()
         (
             string[] memory vaultType_,
+            ,
             bool[] memory deployAllowed_,
             bool[] memory upgradeAllowed_,
             uint[] memory buildingPrice_,

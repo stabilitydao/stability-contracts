@@ -255,12 +255,14 @@ interface IFactory {
     /// @notice Data on all factory vault types
     /// The output values are matched by index in the arrays.
     /// @return vaultType Vault type string
+    /// @return implementation Address of vault implemented logic
     /// @return deployAllowed New vaults can be deployed
     /// @return upgradeAllowed Vaults can be upgraded
     /// @return buildingPrice  Price of building new vault
     /// @return extra Vault type color, background color and other extra data
     function vaultTypes() external view returns (
         string[] memory vaultType,
+        address[] memory implementation,
         bool[] memory deployAllowed,
         bool[] memory upgradeAllowed,
         uint[] memory buildingPrice,

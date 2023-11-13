@@ -82,6 +82,11 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (LPStrategyBase, FarmingStrategyBase) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
         IMasterChef.PoolInfo memory poolInfo = masterChef.poolInfo(pid);

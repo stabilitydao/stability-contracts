@@ -142,12 +142,20 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
+        return 
+            interfaceId == type(IStrategy).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+
     function STRATEGY_LOGIC_ID() public view virtual returns(string memory);
 
     function assets() external virtual view returns (address[] memory) {
         return _assets;
     }
 
+    /// @inheritdoc IStrategy
     function underlying() external view override returns (address) {
         return _underlying;
     }

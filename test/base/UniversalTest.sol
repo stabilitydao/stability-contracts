@@ -203,6 +203,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
                 ///
 
+                // check ERC165
+                assertEq(strategy.supportsInterface(type(IERC165).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IControllable).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
+                    
+                assertEq(strategy.supportsInterface(type(IERC721).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
+
+                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
+                    assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
+                }
+                ///
+
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0);
                 (uint tvl, ) = IVault(vars.vault).tvl();

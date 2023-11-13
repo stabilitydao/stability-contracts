@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "../libs/SlotsLib.sol";
 import "../../interfaces/IControllable.sol";
 import "../../interfaces/IPlatform.sol";
@@ -9,7 +10,7 @@ import "../../interfaces/IPlatform.sol";
 /// @dev Base core contract.
 ///      It store an immutable platform proxy address in the storage and provides access control to inherited contracts.
 /// @author Alien Deployer (https://github.com/a17)
-abstract contract Controllable is Initializable, IControllable {
+abstract contract Controllable is Initializable, IControllable, ERC165 {
     using SlotsLib for bytes32;
     
     string public constant CONTROLLABLE_VERSION = "1.0.0";
@@ -68,6 +69,11 @@ abstract contract Controllable is Initializable, IControllable {
     /// @inheritdoc IControllable
     function createdBlock() external override view returns (uint) {
         return _CREATED_BLOCK_SLOT.getUint();
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IControllable).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _requireGovernance() internal view {

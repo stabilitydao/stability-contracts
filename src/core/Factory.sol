@@ -327,6 +327,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function vaultTypes() external view returns (
         string[] memory vaultType,
+        address[] memory implementation,
         bool[] memory deployAllowed,
         bool[] memory upgradeAllowed,
         uint[] memory buildingPrice,
@@ -335,6 +336,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         bytes32[] memory hashes = _vaultTypeHashes.values();
         uint len = hashes.length;
         vaultType = new string[](len);
+        implementation = new address[](len);
         deployAllowed = new bool[](len);
         upgradeAllowed = new bool[](len);
         buildingPrice = new uint[](len);
@@ -342,6 +344,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         for (uint i; i < len; ++i) {
             VaultConfig memory config = vaultConfig[hashes[i]];
             vaultType[i] = config.vaultType;
+            implementation[i] = config.implementation;
             deployAllowed[i] = config.deployAllowed;
             upgradeAllowed[i] = config.upgradeAllowed;
             buildingPrice[i] = config.buildingPrice;
