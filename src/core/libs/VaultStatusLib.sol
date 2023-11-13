@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 library VaultStatusLib {
     uint constant internal NOT_EXIST = 0;
