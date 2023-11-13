@@ -209,10 +209,10 @@ contract Swapper is Controllable, ISwapper {
             return 0;
         }
         uint price;
-        if (amount == 0) {
-            price = 10 ** IERC20Metadata(tokenIn).decimals();
-        } else {
+        if (amount != 0) {
             price = amount;
+        } else {
+            price = 10 ** IERC20Metadata(tokenIn).decimals();
         }
         uint len = route.length;
         for (uint i; i < len; ++i) {
@@ -225,10 +225,10 @@ contract Swapper is Controllable, ISwapper {
     /// @inheritdoc ISwapper
     function getPriceForRoute(PoolData[] memory route, uint amount) external view returns (uint) {
         uint price;
-        if (amount == 0) {
-            price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
-        } else {
+        if (amount != 0) {
             price = amount;
+        } else {
+            price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
         }
         uint len = route.length;
         for (uint i; i < len; ++i) {

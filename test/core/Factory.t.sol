@@ -316,6 +316,8 @@ contract FactoryTest is Test, MockSetup {
         ) = factory.strategies();
 
         IStrategyLogic strategyLogicNft = IStrategyLogic(platform.strategyLogic());
+        vm.expectRevert("StrategyLogic: TOKEN_NOT_EXIST");
+        strategyLogicNft.tokenURI(666);
         string memory tokenURI__ = strategyLogicNft.tokenURI(tokenId_[0]);
         assertEq(id_[0], StrategyIdLib.DEV);
         assertEq(deployAllowed__[0], true);
@@ -393,4 +395,8 @@ contract FactoryTest is Test, MockSetup {
         );
     }
 
+    function testGetExchangeAssetIndexRequire() public {
+        vm.expectRevert("FactoryLib: no routes for assets");
+        factory.getExchangeAssetIndex(new address[](0));
+    }
 }
