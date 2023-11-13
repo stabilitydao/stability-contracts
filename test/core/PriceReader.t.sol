@@ -13,9 +13,6 @@ import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/core/Swapper.sol";
 import "../../chains/PolygonLib.sol";
 
-/* import "../../src/test/MockDexAdapter.sol";
-import "../../src/adapters/libs/DexAdapterIdLib.sol"; */
-
 contract PriceReaderTest is Test, MockSetup {
     Swapper public swapper;
     PriceReader public priceReader;
