@@ -13,10 +13,10 @@ interface IFactory {
     error StrategyImplementationIsNotAvailable();
     error StrategyLogicNotAllowedToDeploy();
     error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
-    error SuchVaultAlreadyDeployed();
+    error SuchVaultAlreadyDeployed(bytes32 key);
     error NotActiveVault();
-    error UpgradeDenied();
-    error AlreadyLastVersion();
+    error UpgradeDenied(bytes32 _hash);
+    error AlreadyLastVersion(bytes32 _hash);
     error NotStrategy();
 
     //endregion ----- Custom Errors -----

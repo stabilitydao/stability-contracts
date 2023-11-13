@@ -240,7 +240,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
                 strategyInitTicks
             );
             if(deploymentKey[vars.deploymentKey] != address(0)){
-                revert SuchVaultAlreadyDeployed();
+                revert SuchVaultAlreadyDeployed(vars.deploymentKey);
             }
         }
 
@@ -290,10 +290,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         address oldImplementation = proxy.implementation();
         address newImplementation = vaultConfig[vaultTypeHash].implementation;
         if(!vaultConfig[vaultTypeHash].upgradeAllowed){
-            revert UpgradeDenied();
+            revert UpgradeDenied(vaultTypeHash);
         }
         if(oldImplementation == newImplementation){
-            revert AlreadyLastVersion();
+            revert AlreadyLastVersion(vaultTypeHash);
         }
         proxy.upgrade();
         emit VaultProxyUpgraded(vault, oldImplementation, newImplementation);
@@ -310,10 +310,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;
         if(!config.upgradeAllowed){
-            revert UpgradeDenied();
+            revert UpgradeDenied(idHash);
         }
         if(oldImplementation == newImplementation){
-            revert AlreadyLastVersion();
+            revert AlreadyLastVersion(idHash);
         }
         proxy.upgrade();
         emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);

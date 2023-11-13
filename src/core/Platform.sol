@@ -156,7 +156,9 @@ contract Platform is Controllable, IPlatform {
         IPlatform.SetupAddresses memory addresses,
         IPlatform.PlatformSettings memory settings
     ) external onlyOperator {
-        require(factory == address(0), "Platform: already set");
+        if(factory != address(0)){
+            revert AlreadySet();
+        }
         factory = addresses.factory;
         priceReader = addresses.priceReader;
         swapper = addresses.swapper;

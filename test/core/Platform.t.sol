@@ -56,7 +56,7 @@ contract PlatformTest is Test  {
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
         );
-        vm.expectRevert("Platform: already set");
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.AlreadySet.selector));
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(1),

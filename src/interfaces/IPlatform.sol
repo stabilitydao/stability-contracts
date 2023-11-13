@@ -8,6 +8,8 @@ interface IPlatform {
 
     //region ----- Custom Errors -----
 
+    error AlreadySet();
+    
 
     //endregion ----- Custom Errors -----
 
