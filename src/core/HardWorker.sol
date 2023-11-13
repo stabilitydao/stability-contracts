@@ -15,6 +15,7 @@ import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 
 /// @notice HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract HardWorker is Controllable, IHardWorker {
     
     /// @dev Version of HardWorker implementation

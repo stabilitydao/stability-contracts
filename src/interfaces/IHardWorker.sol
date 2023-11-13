@@ -5,6 +5,7 @@ pragma solidity ^0.8.21;
 /// Hardwork is important task of any vault - claiming revenue and processing it by strategy, updating rewarding,
 /// compounding, declaring income and losses, related things.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IHardWorker {
 
     //region ----- Custom Errors -----

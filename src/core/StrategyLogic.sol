@@ -12,6 +12,7 @@ import "../interfaces/IStrategy.sol";
 ///         The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
     /// @dev Version of StrategyLogic implementation

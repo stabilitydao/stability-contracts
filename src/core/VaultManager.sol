@@ -18,6 +18,7 @@ import "../interfaces/IManagedVault.sol";
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
     /// @dev Version of VaultManager implementation

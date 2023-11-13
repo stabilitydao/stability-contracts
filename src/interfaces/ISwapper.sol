@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 /// @notice On-chain price quoter and swapper by predefined routes
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface ISwapper {
   event Swap(address indexed tokenIn, address indexed tokenOut, uint amount);
   event PoolAdded(PoolData poolData, bool assetAdded);
@@ -13,7 +14,10 @@ interface ISwapper {
   event BlueChipPoolRemoved(address tokenIn, address tokenOut);
 
   //region ----- Custom Errors -----
-  error ArrayLengthMismatch(uint expectedLength, uint actualLength);
+  error IncorrectArrayLength();
+  error AlreadyExist();
+  error NotExist();
+  error UnknownAMMAdapter();
   //endregion -- Custom Errors -----
 
   struct PoolData {

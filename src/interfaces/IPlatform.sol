@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IPlatform {
 
     //region ----- Custom Errors -----

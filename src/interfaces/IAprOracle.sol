@@ -7,6 +7,7 @@ pragma solidity ^0.8.21;
 ///      which can themselves select assets to work with, and to show the overall APR of the strategy in VaultManager NFT.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IAprOracle {
 
     //region ----- Custom Errors -----
