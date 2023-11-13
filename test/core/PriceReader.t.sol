@@ -7,11 +7,14 @@ import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockAggregatorV3Interface.sol";
 import "../../src/adapters/ChainlinkAdapter.sol";
 import "../base/MockSetup.sol";
-import "../../src/test/MockDexAdapter.sol";
-import "../../src/adapters/libs/DexAdapterIdLib.sol";
+import "../../src/test/MockAmmAdapter.sol";
+import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/core/Swapper.sol";
 import "../../chains/PolygonLib.sol";
+
+/* import "../../src/test/MockDexAdapter.sol";
+import "../../src/adapters/libs/DexAdapterIdLib.sol"; */
 
 contract PriceReaderTest is Test, MockSetup {
     Swapper public swapper;
@@ -41,9 +44,9 @@ contract PriceReaderTest is Test, MockSetup {
         swapper = Swapper(address(proxy));
         swapper.initialize(address(platform));
 
-        //add DexAdapterIdLib's id adapter
+        //add AmmAdapterIdLib's id adapter
         uniswapV3Adapter = new UniswapV3Adapter();
-        platform.addDexAdapter(DexAdapterIdLib.UNISWAPV3, address(uniswapV3Adapter));
+        platform.addAmmAdapter(AmmAdapterIdLib.UNISWAPV3, address(uniswapV3Adapter));
 
         // deploy and init adapters
         proxy = new Proxy();
@@ -75,7 +78,8 @@ contract PriceReaderTest is Test, MockSetup {
                 strategyLogic: address(7),
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
-                hardWorker: address(10)
+                hardWorker: address(10),
+                zap: address(11)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -89,12 +93,12 @@ contract PriceReaderTest is Test, MockSetup {
             })
         ); 
         
-        MockDexAdapter dexAdapter = new MockDexAdapter(address(tokenE), address(tokenD));
+        MockAmmAdapter dexAdapter = new MockAmmAdapter(address(tokenE), address(tokenD));
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
-            dexAdapter: address(dexAdapter),
+            ammAdapter: address(dexAdapter),
             tokenIn: address(tokenE),
             tokenOut: address(tokenD)
         });
