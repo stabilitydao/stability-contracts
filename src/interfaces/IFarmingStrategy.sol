@@ -8,6 +8,7 @@ interface IFarmingStrategy {
 
     //region ----- Custom Errors -----
     error BadFarm();
+    error IncorrectStrategyId();
     //endregion -- Custom Errors -----
 
     /// @notice Index of the farm used by initialized strategy
