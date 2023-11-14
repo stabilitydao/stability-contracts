@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
