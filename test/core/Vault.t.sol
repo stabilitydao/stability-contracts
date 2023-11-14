@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/core/vaults/CVault.sol";
@@ -8,6 +8,7 @@ import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/test/MockStrategy.sol";
 import "../../src/test/MockAmmAdapter.sol";
 import "../base/FullMockSetup.sol";
+import "../../src/interfaces/IVault.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
@@ -87,7 +88,7 @@ contract VaultTest is Test, FullMockSetup {
         assertGt(shares, 0);
         assertEq(shares, sharesOut);
 
-        vm.expectRevert("Vault: wait few blocks");
+        vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
 
         // underlying token deposit
@@ -104,7 +105,11 @@ contract VaultTest is Test, FullMockSetup {
         assertLt(shares, vault.totalSupply());
 
         vm.txGasPrice(15e10); // 150gwei
-        vm.expectRevert("Vault: not enough balance to pay gas");
+        vm.expectRevert(abi.encodeWithSelector(IVault.NotEnoughBalanceToPay.selector));
+        vault.doHardWork();
+
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectMsgSender.selector));
+        vm.prank(address(666));
         vault.doHardWork();
 
         (bool success, ) = payable(address(vault)).call{value: 5e17}("");

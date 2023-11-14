@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -14,6 +14,7 @@ import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @notice AMM adapter for working with AlegbraV1 AMMs used in QuickSwapV3.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract AlgebraAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -113,10 +114,14 @@ contract AlgebraAdapter is Controllable, IAmmAdapter {
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);
             // unreal but better to check
-            require(priceAfter <= priceBefore, "Price increased");
+            if(priceAfter > priceBefore){
+                revert IAmmAdapter.PriceIncreased();
+            }
 
             uint priceImpact = (priceBefore - priceAfter) * ConstantsLib.DENOMINATOR / priceBefore;
-            require(priceImpact < priceImpactTolerance, string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+            if(priceImpact >= priceImpactTolerance){
+                revert (string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+            }
         }
 
         uint balanceAfter = IERC20(tokenOut).balanceOf(recipient);
@@ -174,7 +179,9 @@ contract AlgebraAdapter is Controllable, IAmmAdapter {
         int256 amount1Delta,
         bytes calldata _data
     ) external {
-        require(amount0Delta > 0 || amount1Delta > 0, "Wrong callback amount");
+        if(amount0Delta <= 0 && amount1Delta <= 0){
+            revert IAmmAdapter.WrongCallbackAmount();
+        }
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);
     }

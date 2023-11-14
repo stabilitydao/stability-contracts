@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @dev This oracle is needed to obtain APR of underlying assets in an on-chain environment.
 ///      These APRs are usually accessible from the protocol APIs.
@@ -7,7 +7,9 @@ pragma solidity ^0.8.21;
 ///      which can themselves select assets to work with, and to show the overall APR of the strategy in VaultManager NFT.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IAprOracle {
+
     //region ----- Events -----
     event SetAprs(address[] assets, uint[] aprs);
     //endregion -- Events -----

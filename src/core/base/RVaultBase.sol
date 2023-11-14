@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./VaultBase.sol";
@@ -13,6 +13,7 @@ import "../../interfaces/IPlatform.sol";
 ///         It has a buy-back reward token and boost reward tokens.
 ///         Rewards are distributed smoothly by vesting with variable periods.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract RVaultBase is VaultBase, IRVault {
     using SafeERC20 for IERC20;
 
@@ -112,7 +113,9 @@ abstract contract RVaultBase is VaultBase, IRVault {
     /// @notice Update and Claim all rewards for given owner address. Send them to predefined receiver.
     function getAllRewardsAndRedirect(address owner) external {
         address receiver = rewardsRedirect[owner];
-        require(receiver != address(0), "zero receiver");
+        if(receiver == address(0)){
+            revert IControllable.IncorrectZeroArgument();
+        }
         _getAllRewards(owner, receiver);
     }
 
@@ -124,7 +127,9 @@ abstract contract RVaultBase is VaultBase, IRVault {
             // we check approval of shares for msg.sender. Msg sender should have approval for max amount
             // As approved amount is deducted every transfer, we checks it with max / 10
             uint allowance = allowance(owner, msg.sender);
-            require(allowance > (type(uint).max / 10), "RVault: Not allowed");
+            if(allowance <= (type(uint).max / 10)){
+                revert NotAllowed();
+            }
         }
         _getAllRewards(owner, owner);
     }
@@ -140,19 +145,27 @@ abstract contract RVaultBase is VaultBase, IRVault {
         _updateRewards(address(0));
 
         // overflow fix according to https://sips.synthetix.io/sips/sip-77
-        require(amount < type(uint).max / 1e18, "RVault: Amount overflow");
+        if(amount >= type(uint).max / 1e18){
+            revert IRVault.Overflow(type(uint).max / 1e18 - 1);
+        }
 
         address _rewardToken = rewardToken[i];
-        require (_rewardToken != address(0), "RVault: RT not found");
+        if(_rewardToken == address(0)){
+            revert IRVault.RTNotFound();
+        }
 
         uint _duration = duration[i];
 
         uint _oldRewardRateForToken = rewardRateForToken[i];
 
         if (i == 0) {
-            require(address(strategy) == msg.sender, "RVault: forbidden");
+            if(address(strategy) != msg.sender){
+                revert IControllable.IncorrectMsgSender();
+            }
         } else {
-            require(amount > _oldRewardRateForToken * _duration / 100, "RVault: too small reward amount");
+            if(amount <= _oldRewardRateForToken * _duration / 100){
+                revert IControllable.RewardIsTooSmall();
+            }
         }
 
         IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), amount);
@@ -172,13 +185,20 @@ abstract contract RVaultBase is VaultBase, IRVault {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = IERC20(_rewardToken).balanceOf(address(this));
-        require(rewardRateForToken[i] <= balance / _duration, "RVault: Provided reward too high");
+        if(rewardRateForToken[i] > balance / _duration){
+            revert IControllable.RewardIsTooBig();
+        } 
         emit RewardAdded(_rewardToken, amount);
     }
 
     //endregion -- User actions ----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (IERC165, VaultBase) returns (bool) {
+        return interfaceId == type(IRVault).interfaceId || super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IRVault
     function bbToken() public view returns(address) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -11,6 +11,7 @@ import "../interfaces/ISwapper.sol";
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract PriceReader is Controllable, IPriceReader {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -30,12 +31,16 @@ contract PriceReader is Controllable, IPriceReader {
 
     /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
-        require(_adapters.add(adapter_), "PR: exist");
+        if(!_adapters.add(adapter_)){
+            revert AlreadyExist();
+        }
         emit AdapterAdded(adapter_);
     }
 
     function removeAdapter(address adapter_) external onlyOperator {
-        require(_adapters.remove(adapter_), "PR: not exist");
+        if(!_adapters.remove(adapter_)){
+            revert NotExist();
+        }
         emit AdapterRemoved(adapter_);
     }
 
@@ -66,13 +71,11 @@ contract PriceReader is Controllable, IPriceReader {
                         (uint _price,) = oracleAdapter.getPrice(oracleAssets[i]);
                         uint assetOutDecimals = IERC20Metadata(oracleAssets[i]).decimals();
                         uint priceInTermOfOracleAsset;
-                        if (assetOutDecimals < 18) {
+                        if (assetOutDecimals <= 18) {
                             priceInTermOfOracleAsset = swapperPrice * 10 ** (18 - assetOutDecimals);
-                        } else if (assetOutDecimals > 18) {
-                            priceInTermOfOracleAsset = swapperPrice / 10 ** (assetOutDecimals - 18);
                         } else {
-                            priceInTermOfOracleAsset = swapperPrice;
-                        }
+                            priceInTermOfOracleAsset = swapperPrice / 10 ** (assetOutDecimals - 18);
+                        } 
                         return (priceInTermOfOracleAsset * _price / 1e18, false);
                     }
                 }
@@ -93,10 +96,14 @@ contract PriceReader is Controllable, IPriceReader {
                 notTrustedPrices = true;
             }
             uint decimals = IERC20Metadata(assets_[i]).decimals();
-            assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * price / 1e18;
-            total += assetAmountPrice[i];
+            if(decimals <= 18){
+                assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * price / 1e18;
+                total += assetAmountPrice[i];
+            } else {
+                assetAmountPrice[i] = amounts_[i] * price / 10**decimals;
+                total += assetAmountPrice[i];
+            }
         }
-
         trusted = !notTrustedPrices;
     }
 

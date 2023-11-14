@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @dev HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
 /// Hardwork is important task of any vault - claiming revenue and processing it by strategy, updating rewarding,
 /// compounding, declaring income and losses, related things.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IHardWorker {
+
+    //region ----- Custom Errors -----
+    error NotExistWithObject(address notExistObject);
+    error AlreadyExclude(address alreadyExcludedObject);
+    error NotServerOrGelato();
+    error NotEnoughETH();
+    //endregion ----- Custom Errors -----
+
     event Call(uint hardworks, uint gasUsed, uint gasCost, bool server);
     event DedicatedServerMsgSender(address indexed sender, bool allowed);
     event DedicatedGelatoMsgSender(address oldSender, address newSender);
@@ -14,6 +23,11 @@ interface IHardWorker {
     event GelatoDeposit(uint amount);
     event MaxHwPerCall(uint maxHwPerCall_);
     event VaultExcludeStatusChanged(address vault, bool status);
+
+    function getDelays() external view returns (uint delayServer, uint delayGelato);
+
+    /// @notice Vaults that excluded from HardWork execution
+    function excludedVaults(address vault) external view returns (bool);
 
     /// @notice Maximum vault HardWork calls per execution
     function maxHwPerCall() external view returns(uint);
@@ -35,6 +49,9 @@ interface IHardWorker {
     /// @return canExec Hard Work can be executed
     /// @return execPayload Vault addresses for HardWork
     function checkerGelato() external view returns(bool canExec, bytes memory execPayload);
+
+    /// @notice Gelato Automate task ID created by this contract
+    function gelatoTaskId() external view returns(bytes32);
 
     /// @notice ETH balance of HardWork contract on Gelato
     /// @return ETH amount with 18 decimals

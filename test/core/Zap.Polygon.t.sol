@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
@@ -97,7 +97,7 @@ contract ZapTest is PolygonSetup {
         IERC20(PolygonLib.TOKEN_WETH).approve(address(zap), 1e18);
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, PolygonLib.ONE_INCH, swapData, 1);
 
-        vm.expectRevert(IZap.ZeroAmount.selector);
+        vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 0, PolygonLib.ONE_INCH, swapData, 1);
 
         vm.expectRevert(

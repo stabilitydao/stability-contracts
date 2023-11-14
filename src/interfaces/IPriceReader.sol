@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IPriceReader {
+
     //region ----- Events -----
     event AdapterAdded(address adapter);
     event AdapterRemoved(address adapter);

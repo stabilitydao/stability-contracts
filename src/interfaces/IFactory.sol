@@ -1,10 +1,28 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @notice Creating vaults, upgrading vaults and strategies, vault list, farms and strategy logics management
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IFactory {
+
+    //region ----- Custom Errors -----
+
+    error VaultImplementationIsNotAvailable();
+    error VaultNotAllowedToDeploy();
+    error StrategyImplementationIsNotAvailable();
+    error StrategyLogicNotAllowedToDeploy();
+    error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
+    error SuchVaultAlreadyDeployed(bytes32 key);
+    error NotActiveVault();
+    error UpgradeDenied(bytes32 _hash);
+    error AlreadyLastVersion(bytes32 _hash);
+    error NotStrategy();
+
+    //endregion ----- Custom Errors -----
+
+
     //region ----- Events -----
 
     event VaultAndStrategy(
@@ -44,7 +62,7 @@ interface IFactory {
         bool newStrategy
     );
     event VaultStatus(address indexed vault, uint newStatus);
-    event NewFarm(Farm farm);
+    event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
 
     //endregion -- Events -----
@@ -237,12 +255,14 @@ interface IFactory {
     /// @notice Data on all factory vault types
     /// The output values are matched by index in the arrays.
     /// @return vaultType Vault type string
+    /// @return implementation Address of vault implemented logic
     /// @return deployAllowed New vaults can be deployed
     /// @return upgradeAllowed Vaults can be upgraded
     /// @return buildingPrice  Price of building new vault
     /// @return extra Vault type color, background color and other extra data
     function vaultTypes() external view returns (
         string[] memory vaultType,
+        address[] memory implementation,
         bool[] memory deployAllowed,
         bool[] memory upgradeAllowed,
         uint[] memory buildingPrice,
@@ -283,8 +303,8 @@ interface IFactory {
     function upgradeStrategyProxy(address strategy) external;
 
     /// @notice Add farm to factory
-    /// @param farm_ Settings and data required to work with the farm.
-    function addFarm(Farm memory farm_) external;
+    /// @param farms_ Settings and data required to work with the farm.
+    function addFarms(Farm[] memory farms_) external;
 
     /// @notice Update farm
     /// @param id Farm index

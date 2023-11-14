@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./StrategyBase.sol";
 import "../libs/LPStrategyLib.sol";
@@ -28,6 +28,11 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         _feesOnBalance = new uint[](_assets.length);
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
         pool = params.pool;
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(ILPStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IStrategy

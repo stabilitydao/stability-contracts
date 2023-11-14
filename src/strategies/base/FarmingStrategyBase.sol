@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./StrategyBase.sol";
 import "../libs/StrategyLib.sol";
@@ -18,11 +18,6 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /// @dev Version of FarmingStrategyBase implementation
     string public constant VERSION_FARMING_STRATEGY_BASE = '0.1.0';
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       CUSTOM ERRORS                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    error BadFarm();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -47,6 +42,15 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
         farmId = farmId_;
         _rewardAssets = StrategyLib.FarmingStrategyBase_init(_id, platform_,farmId_);
         _rewardsOnBalance = new uint[](_rewardAssets.length);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (StrategyBase) returns (bool) {
+        return interfaceId == type(IFarmingStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

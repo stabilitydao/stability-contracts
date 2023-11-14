@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test} from "forge-std/Test.sol";
 import "../../chains/PolygonLib.sol";
@@ -220,18 +220,31 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         vm.expectRevert();
         swapper.swap(address(1), address(2), 1e6, 1_000); // 1%
         // trying to swap less then threshold
-        swapper.setThreshold(PolygonLib.TOKEN_USDC, 10);
+        address[] memory tokenIn = new address[](1);
+        tokenIn[0] = PolygonLib.TOKEN_USDC;
+        uint[] memory thresholdAmount = new uint[](1);
+        thresholdAmount[0] = 10;
+        swapper.setThresholds(tokenIn, thresholdAmount);
+        uint[] memory newThresholdAmount = new uint[](2);
+        newThresholdAmount[0] = 10;
+        newThresholdAmount[1] = 5;
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
+        swapper.setThresholds(tokenIn, newThresholdAmount);
         uint threshold = swapper.threshold(PolygonLib.TOKEN_USDC);
-        vm.expectRevert("Swapper: swap amount less threshold");
+        vm.expectRevert(abi.encodeWithSelector(ISwapper.LessThenThreshold.selector, threshold));
         swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, threshold - 1, 1_000); // 1%
     }
 
     function testSwapByRoute4Pools() public {
-        // quickswap -> uniswapv3 -> quickswap -> quuickswap
+        // quickswap -> uniswapv3 -> quickswap -> quickswap
         (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDT, PolygonLib.TOKEN_dQUICK);
         assertEq(route.length, 4);
         swapper.swapWithRoute(route, 1e6, 1_000); // 1%
+        ISwapper.PoolData[] memory _route = new ISwapper.PoolData[](0);
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
+        swapper.swapWithRoute(_route, 1e6, 1_000); 
     }
+
 
     function testSetup() public {
         Proxy proxy = new Proxy();
@@ -279,7 +292,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: Exist");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         swapper.addPools(pools, false); 
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
@@ -290,7 +303,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: unknown AMM adapter");
+        vm.expectRevert(abi.encodeWithSelector(ISwapper.UnknownAMMAdapter.selector));
         swapper.addPools(pools_, false); 
 
          pools_[0] = ISwapper.AddPoolData({
@@ -300,7 +313,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: Exist");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         swapper.addPools(pools_, false); 
     }
 
@@ -314,7 +327,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         swapper.addBlueChipsPools(pools, false); 
-        vm.expectRevert("Swapper: Exist");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         swapper.addBlueChipsPools(pools, false); 
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
@@ -325,7 +338,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: unknown AMM adapter");
+        vm.expectRevert(abi.encodeWithSelector(ISwapper.UnknownAMMAdapter.selector));
         swapper.addBlueChipsPools(pools_, false); 
 
          pools_[0] = ISwapper.AddPoolData({
@@ -335,10 +348,10 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        vm.expectRevert("Swapper: Exist");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         swapper.addBlueChipsPools(pools_, false); 
 
-        vm.expectRevert("Swapper: blue chip pool not found");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         swapper.removeBlueChipPool(address(1), address(2));
 
         swapper.removeBlueChipPool(PolygonLib.TOKEN_USDC,PolygonLib.TOKEN_USDT);

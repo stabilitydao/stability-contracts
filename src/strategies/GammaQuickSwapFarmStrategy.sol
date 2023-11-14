@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
@@ -16,6 +16,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Gamma QuickSwap farm rewards by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -52,12 +53,12 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks
     ) public initializer {
         if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
-            revert BadInitParams();
+            revert IControllable.IncorrectInitParams();
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
         if (farm.addresses.length != 3 || farm.nums.length != 2 || farm.ticks.length != 0) {
-            revert BadFarm();
+            revert IFarmingStrategy.BadFarm();
         }
         uniProxy = IUniProxy(farm.addresses[0]);
         masterChef = IMasterChef(farm.addresses[1]);
@@ -81,6 +82,11 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (LPStrategyBase, FarmingStrategyBase) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {

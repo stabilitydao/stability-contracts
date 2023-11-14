@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./IStrategy.sol";
 
@@ -7,7 +7,19 @@ import "./IStrategy.sol";
 /// Derived implementations can be effective for building tokenized vaults with single or multiple underlying liquidity mining position.
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
-interface IVault {
+interface IVault is IERC165 {
+
+
+    //region ----- Custom Errors -----
+    error NotEnoughBalanceToPay();
+    error FuseTrigger();
+    error ExceedSlippage(uint mintToUser, uint minToMint);
+    error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
+    error ExceedMaxSupply(uint maxSupply);
+    error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
+    error WaitAFewBlocks();
+    //endregion -- Custom Errors -----
+    
     //region ----- Events -----
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);

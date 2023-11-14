@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -18,9 +18,10 @@ import "../interfaces/IManagedVault.sol";
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
-    /// @dev Version of VaultManager implementation
+    /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
     /// @inheritdoc IVaultManager
@@ -62,8 +63,10 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @dev Returns current token URI metadata
     /// @param tokenId Token ID to fetch URI for.
-    function tokenURI(uint tokenId) public view override returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "VaultManager: TOKEN_NOT_EXIST");
+    function tokenURI(uint tokenId) public view override (ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        if(_ownerOf(tokenId) == address(0)){
+            revert NotExist();
+        }
 
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());
@@ -146,7 +149,17 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
     }
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (ERC721EnumerableUpgradeable, IERC165, Controllable) returns (bool) {
+        return 
+            interfaceId == type(IVaultManager).interfaceId
+            || interfaceId == type(IControllable).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+
     function _requireOwner(uint tokenId) internal view {
-        require(_ownerOf(tokenId) == msg.sender, "VaultManager: not owner");
+        if(_ownerOf(tokenId) != msg.sender){
+            revert NotTheOwner();
+        }
     }
 }

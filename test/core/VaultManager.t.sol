@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -98,7 +98,7 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         assetToSetApr[0] = address(lp);
         assetToSetApr[1] = address(tokenB);
         _aprsToSet[0] = 4_013;
-        vm.expectRevert("AprOracle: mismatch");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
         IAprOracle(_aprOracle).setAprs(assetToSetApr, _aprsToSet);
 
 
@@ -118,11 +118,26 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
     function testSetRevenueReceiver() public {
         IVaultManager vaultManager = IVaultManager(platform.vaultManager());
         vm.prank(address(1));
-        vm.expectRevert("VaultManager: not owner");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotTheOwner.selector));
         vaultManager.setRevenueReceiver(1, address(1));   
         //owner of tokenId 1
         vm.prank(address(this));
         vaultManager.setRevenueReceiver(1, address(1));
         assertEq(vaultManager.getRevenueReceiver(1), address(1));
+    }
+
+    function testErc165() public {
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
+        assertEq(vaultManager.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721Enumerable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IVaultManager).interfaceId), true);
+    }
+
+    function testTokenURI() public {
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
+        vaultManager.tokenURI(666);
     }
 }

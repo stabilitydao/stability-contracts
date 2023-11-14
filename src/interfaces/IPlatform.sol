@@ -1,10 +1,25 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IPlatform {
+
+    //region ----- Custom Errors -----
+
+    error AlreadyAnnounced();
+    error SameVersion();
+    error NoNewVersion();
+    error UpgradeTimerIsNotOver(uint TimerTimestamp);
+    error IncorrectFee(uint minFee, uint maxFee);
+    error NotEnoughAllowedBBToken();
+    error TokenAlreadyExistsInSet(address token);
+    error AggregatorNotExists(address dexAggRouter);
+    
+    //endregion ----- Custom Errors -----
+
     //region ----- Events -----
     event PlatformVersion(string version);
     event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);
@@ -34,15 +49,11 @@ interface IPlatform {
     event RemoveAllowedBoostRewardToken(address token);
     event AddDefaultBoostRewardToken(address token);
     event RemoveDefaultBoostRewardToken(address token);
+    event AddBoostTokens(address[] allowedBoostRewardToken, address[] defaultBoostRewardToken);
     event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
     //endregion -- Events -----
-
-    //region ----- Custom Errors -----
-    error ZeroAddress();
-    error AggregatorNotExists(address dexAggRouter);
-    //endregion -- Custom Errors -----
 
     //region ----- Data types -----
     struct PlatformUpgrade {
@@ -326,13 +337,21 @@ interface IPlatform {
 
     // todo Only governance and multisig can add default boost reward token
     /// @notice Add default boost reward token
-    /// @param token Address of allowed boost reward token
+    /// @param token Address of default boost reward token
     function addDefaultBoostRewardToken(address token) external;
 
     // todo Only governance and multisig can remove default boost reward token
     /// @notice Remove default boost reward token
     /// @param token Address of allowed boost reward token
     function removeDefaultBoostRewardToken(address token) external;
+
+    // todo Only governance and multisig can add allowed boost reward token
+    // todo Only governance and multisig can add default boost reward token
+    /// @notice Add new allowed boost reward token
+    /// @notice Add default boost reward token
+    /// @param allowedBoostRewardToken Address of allowed boost reward token
+    /// @param defaultBoostRewardToken Address of default boost reward token
+    function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external;
 
     /// @notice Decrease allowed BB-token vault building limit when vault is built
     /// Only Factory can do it.

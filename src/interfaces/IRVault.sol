@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./IVault.sol";
 
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IRVault is IVault {
+
+    //region ----- Custom Errors -----
+    error NotAllowed();
+    error Overflow(uint maxAmount);
+    error RTNotFound();
+    //endregion -- Custom Errors -----
+
     event RewardAdded(address rewardToken, uint reward);
     event RewardPaid(address indexed user, address rewardToken, uint reward);
     event SetRewardsRedirect(address owner, address receiver);

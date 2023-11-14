@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../base/VaultBase.sol";
@@ -12,6 +12,7 @@ import "../base/RVaultBase.sol";
 ///         Vault has 0% compound ratio, buy-back reward token and additional default boost reward tokens with default vesting duration.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract RVault is RVaultBase {
     using SafeERC20 for IERC20;
 
@@ -56,7 +57,9 @@ contract RVault is RVaultBase {
         address[] memory vaultInitAddresses,
         uint[] memory vaultInitNums
     ) initializer public {
-        require(vaultInitAddresses.length == 1 && vaultInitNums.length >= 1, "RVault: incorrect init params");
+        if(vaultInitAddresses.length != 1 || vaultInitNums.length < 1){
+            revert IControllable.IncorrectInitParams();
+        }
         InitVars memory vars;
         vars.defaultBoostRewardTokens = CommonLib.filterAddresses(IPlatform(platform_).defaultBoostRewardTokens(), vaultInitAddresses[0]);
         uint len = 2 + vars.defaultBoostRewardTokens.length;
