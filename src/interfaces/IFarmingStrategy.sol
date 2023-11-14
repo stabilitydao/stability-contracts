@@ -2,8 +2,13 @@
 pragma solidity ^0.8.22;
 
 /// @dev Mostly this interface need for front-end and tests for interacting with farming strategies
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IFarmingStrategy {
     event RewardsClaimed(uint[] amounts);
+
+    //region ----- Custom Errors -----
+    error BadFarm();
+    //endregion -- Custom Errors -----
 
     /// @notice Index of the farm used by initialized strategy
     function farmId() external view returns (uint);

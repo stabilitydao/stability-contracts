@@ -132,7 +132,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     // test bad params
                     initStrategyAddresses = new address[](1);
-                    vm.expectRevert(StrategyBase.BadInitParams.selector);
+                    vm.expectRevert(IControllable.IncorrectInitParams.selector);
                     factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
                     initStrategyAddresses = new address[](0);
 
@@ -140,7 +140,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     int24[] memory goodTicks = f.ticks;
                     f.ticks = new int24[](1000);
                     factory.updateFarm(nums[0], f);
-                    vm.expectRevert(FarmingStrategyBase.BadFarm.selector);
+                    vm.expectRevert(IFarmingStrategy.BadFarm.selector);
                     factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
                     f.ticks = goodTicks;
                     factory.updateFarm(nums[0], f);
@@ -347,7 +347,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
                 } else {
                     {
-                    vm.expectRevert("StrategyBase: not vault");
+                    vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
                     strategy.depositUnderlying(18);
                     vm.startPrank(strategy.vault());
                     vm.expectRevert("no underlying");
