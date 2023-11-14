@@ -98,7 +98,7 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         assetToSetApr[0] = address(lp);
         assetToSetApr[1] = address(tokenB);
         _aprsToSet[0] = 4_013;
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectArrayLength.selector));
+        vm.expectRevert(abi.encodeWithSelector(IAprOracle.IncorrectArrayLength.selector));
         IAprOracle(_aprOracle).setAprs(assetToSetApr, _aprsToSet);
 
 
@@ -118,7 +118,7 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
     function testSetRevenueReceiver() public {
         IVaultManager vaultManager = IVaultManager(platform.vaultManager());
         vm.prank(address(1));
-        vm.expectRevert("VaultManager: not owner");
+        vm.expectRevert(abi.encodeWithSelector(IVaultManager.NotTheOwner.selector));
         vaultManager.setRevenueReceiver(1, address(1));   
         //owner of tokenId 1
         vm.prank(address(this));

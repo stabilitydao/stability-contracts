@@ -11,6 +11,12 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IVaultManager is IERC721Metadata {
+
+    //region ----- Custom Errors -----
+    error NotExist();
+    error NotTheOwner();
+    //endregion -- Custom Errors -----
+
     //region ----- Events -----
     event ChangeVaultParams(uint tokenId, address[] addresses, uint[] nums);
     event SetRevenueReceiver(uint tokenId, address receiver);
