@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -125,9 +125,15 @@ contract Swapper is Controllable, ISwapper {
     }
 
     /// @inheritdoc ISwapper
-    function setThreshold(address token, uint threshold_) external onlyOperator {
-        threshold[token] = threshold_;
-        emit ThresholdChanged(token, threshold_);
+    function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
+        uint tokenInLen = tokenIn.length;
+        uint thresholdAmountLen = thresholdAmount.length;
+        if (tokenInLen != thresholdAmountLen) revert ArrayLengthMismatch(tokenInLen, thresholdAmountLen);
+        //nosemgrep
+        for (uint i = 0; i < tokenInLen; ++i) {
+            threshold[tokenIn[i]] = thresholdAmount[i];
+        }
+        emit ThresholdChanged(tokenIn, thresholdAmount);
     }
 
     //endregion -- Restricted actions ----
@@ -209,10 +215,10 @@ contract Swapper is Controllable, ISwapper {
             return 0;
         }
         uint price;
-        if (amount == 0) {
-            price = 10 ** IERC20Metadata(tokenIn).decimals();
-        } else {
+        if (amount != 0) {
             price = amount;
+        } else {
+            price = 10 ** IERC20Metadata(tokenIn).decimals();
         }
         uint len = route.length;
         for (uint i; i < len; ++i) {
@@ -225,10 +231,10 @@ contract Swapper is Controllable, ISwapper {
     /// @inheritdoc ISwapper
     function getPriceForRoute(PoolData[] memory route, uint amount) external view returns (uint) {
         uint price;
-        if (amount == 0) {
-            price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
-        } else {
+        if (amount != 0) {
             price = amount;
+        } else {
+            price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
         }
         uint len = route.length;
         for (uint i; i < len; ++i) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -233,6 +233,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     //endregion -- User actions ----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
+        return interfaceId == type(IVault).interfaceId || super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IVault
     function VAULT_TYPE() external view returns (string memory) {

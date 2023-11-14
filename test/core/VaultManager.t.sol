@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -124,5 +124,14 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         vm.prank(address(this));
         vaultManager.setRevenueReceiver(1, address(1));
         assertEq(vaultManager.getRevenueReceiver(1), address(1));
+    }
+
+    function testErc165() public {
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
+        assertEq(vaultManager.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IERC721Enumerable).interfaceId), true);
+        assertEq(vaultManager.supportsInterface(type(IVaultManager).interfaceId), true);
     }
 }

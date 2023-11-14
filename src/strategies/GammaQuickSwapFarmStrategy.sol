@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
@@ -81,6 +81,11 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (LPStrategyBase, FarmingStrategyBase) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
+
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @dev Core interface of strategy logic
-interface IStrategy {
+interface IStrategy is IERC165 {
     /// @dev A single universal initializer for all strategy implementations.
     /// @param addresses All addresses that strategy requires for initialization. Min array length is 2.
     ///        addresses[0]: platform (required)

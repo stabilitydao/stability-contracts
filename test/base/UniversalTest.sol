@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -200,6 +200,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     strategy.previewDepositAssets(wrongAssets, depositAmounts);
                     vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
                     strategy.previewDepositAssets(assets, new uint[](5));
+                }
+                ///
+
+                // check ERC165
+                assertEq(strategy.supportsInterface(type(IERC165).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IControllable).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
+                    
+                assertEq(strategy.supportsInterface(type(IERC721).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
+
+                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
+                    assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
                 }
                 ///
 

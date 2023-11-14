@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import "../../src/core/Factory.sol";
@@ -288,12 +288,13 @@ contract FactoryTest is Test, MockSetup {
         factory.upgradeStrategyProxy(strategy);
 
         vm.expectRevert(bytes("Factory: not strategy"));
-        factory.upgradeStrategyProxy(address(123));
+        factory.upgradeStrategyProxy(address(1));
 
         {
         //vaultTypes()
         (
             string[] memory vaultType_,
+            ,
             bool[] memory deployAllowed_,
             bool[] memory upgradeAllowed_,
             uint[] memory buildingPrice_,
@@ -317,6 +318,8 @@ contract FactoryTest is Test, MockSetup {
         ) = factory.strategies();
 
         IStrategyLogic strategyLogicNft = IStrategyLogic(platform.strategyLogic());
+        vm.expectRevert("StrategyLogic: TOKEN_NOT_EXIST");
+        strategyLogicNft.tokenURI(666);
         string memory tokenURI__ = strategyLogicNft.tokenURI(tokenId_[0]);
         assertEq(id_[0], StrategyIdLib.DEV);
         assertEq(deployAllowed__[0], true);
@@ -353,7 +356,9 @@ contract FactoryTest is Test, MockSetup {
 
     function testFarms() public {
         assertEq(factory.farmsLength(), 0);
-        IFactory.Farm memory farm = IFactory.Farm({
+        IFactory.Farm memory farm;
+        IFactory.Farm[] memory farms = new IFactory.Farm[](1);
+        farms[0] = IFactory.Farm({
             status: 0,
             pool: address(1),
             strategyLogicId: StrategyIdLib.DEV,
@@ -363,7 +368,7 @@ contract FactoryTest is Test, MockSetup {
             ticks: new int24[](0)
         });
 
-        factory.addFarm(farm);
+        factory.addFarms(farms);
         assertEq(factory.farmsLength(), 1);
         farm = factory.farm(0);
         assertEq(farm.pool, address(1));
@@ -373,8 +378,8 @@ contract FactoryTest is Test, MockSetup {
         farm = factory.farm(0);
         assertEq(farm.pool, address(3));
 
-        IFactory.Farm[] memory farms = factory.farms();
-        assertEq(farms[0].pool, address(3));
+        IFactory.Farm[] memory farms_ = factory.farms();
+        assertEq(farms_[0].pool, address(3));
     }
 
     function testSetVaultStatus() public {
@@ -394,4 +399,8 @@ contract FactoryTest is Test, MockSetup {
         );
     }
 
+    function testGetExchangeAssetIndexRequire() public {
+        vm.expectRevert("FactoryLib: no routes for assets");
+        factory.getExchangeAssetIndex(new address[](0));
+    }
 }

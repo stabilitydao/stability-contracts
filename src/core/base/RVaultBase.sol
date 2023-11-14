@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./VaultBase.sol";
@@ -179,6 +179,11 @@ abstract contract RVaultBase is VaultBase, IRVault {
     //endregion -- User actions ----
 
     //region ----- View functions -----
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override (IERC165, VaultBase) returns (bool) {
+        return interfaceId == type(IRVault).interfaceId || super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IRVault
     function bbToken() public view returns(address) {

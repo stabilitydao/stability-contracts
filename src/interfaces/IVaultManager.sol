@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 /// @notice The vaults are assembled at the factory by users through UI.
 ///         Deployment rights of a vault are tokenized in VaultManager NFT.
@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
-interface IVaultManager is IERC721 {
+interface IVaultManager is IERC721Metadata {
     //region ----- Events -----
     event ChangeVaultParams(uint tokenId, address[] addresses, uint[] nums);
     event SetRevenueReceiver(uint tokenId, address receiver);

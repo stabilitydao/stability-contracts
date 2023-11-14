@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Platform} from "../../src/core/Platform.sol";
@@ -371,6 +371,36 @@ contract PlatformTest is Test  {
 
     }
 
+    function testAddBoostTokens() public {
+        address[] memory allowedBoostRewardTokens = new address[](2);
+        allowedBoostRewardTokens[0] = address(101);
+        allowedBoostRewardTokens[1] = address(105);
+        address[] memory defaultBoostRewardTokens = new address[](1);
+        defaultBoostRewardTokens[0] = address(208);
+
+        platform.initialize(address(this), '23.11.0-dev');
+        platform.addBoostTokens(allowedBoostRewardTokens, defaultBoostRewardTokens);
+
+        address[] memory alreadyAddedAllowedBoostRewardToken = new address[](1);
+        alreadyAddedAllowedBoostRewardToken[0] = address(101);
+        address[] memory newDefaultBoostRewardTokens = new address[](1);
+        newDefaultBoostRewardTokens[0] = address(386);
+        vm.expectRevert(
+            abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101))
+        );
+        platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
+
+        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
+        assertEq(defaultTokens.length, 1);
+        assertEq(defaultTokens[0], address(208));
+
+        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
+        assertEq(allowedTokens.length, 2);
+        assertEq(allowedTokens[0], address(101));
+        assertEq(allowedTokens[1], address(105));
+
+    }
+
     function testGetAmmAdapters() public {
         platform.initialize(address(this), '23.11.0-dev');
         platform.addAmmAdapter("myId", address(1));
@@ -509,5 +539,21 @@ contract PlatformTest is Test  {
         dexAggRouter[0] = address(1);
         platform.addDexAggregators(dexAggRouter);
 
+    }
+
+    function testErc165() public {
+        assertEq(platform.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(platform.supportsInterface(type(IControllable).interfaceId), true);
+        
+        platform.initialize(address(this), '23.11.0-dev');
+        Proxy proxy = new Proxy();
+        proxy.initProxy(address(new StrategyLogic()));
+        strategyLogic = StrategyLogic(address(proxy));
+        strategyLogic.init(address(platform)); 
+        assertEq(strategyLogic.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IERC721).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IERC721Enumerable).interfaceId), true);
+        assertEq(strategyLogic.supportsInterface(type(IStrategyLogic).interfaceId), true);
     }
 }

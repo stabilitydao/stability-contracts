@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
@@ -132,11 +132,14 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit VaultStatus(vault, status);
     }
 
-    // todo addFarms
     /// @inheritdoc IFactory
-    function addFarm(Farm memory farm_) external onlyOperator {
-        _farms.push(farm_);
-        emit NewFarm(farm_);
+    function addFarms(Farm[] memory farms_) external onlyOperator {
+        uint len = farms_.length;
+        //nosemgrep
+        for (uint i = 0; i < len; ++i) {
+            _farms.push(farms_[i]);
+        }
+        emit NewFarm(farms_);
     }
 
     /// @inheritdoc IFactory
@@ -294,6 +297,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function vaultTypes() external view returns (
         string[] memory vaultType,
+        address[] memory implementation,
         bool[] memory deployAllowed,
         bool[] memory upgradeAllowed,
         uint[] memory buildingPrice,
@@ -302,6 +306,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         bytes32[] memory hashes = _vaultTypeHashes.values();
         uint len = hashes.length;
         vaultType = new string[](len);
+        implementation = new address[](len);
         deployAllowed = new bool[](len);
         upgradeAllowed = new bool[](len);
         buildingPrice = new uint[](len);
@@ -309,6 +314,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         for (uint i; i < len; ++i) {
             VaultConfig memory config = vaultConfig[hashes[i]];
             vaultType[i] = config.vaultType;
+            implementation[i] = config.implementation;
             deployAllowed[i] = config.deployAllowed;
             upgradeAllowed[i] = config.upgradeAllowed;
             buildingPrice[i] = config.buildingPrice;
