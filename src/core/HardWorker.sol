@@ -16,6 +16,7 @@ import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 /// @notice HardWork resolver and caller.
 /// Primary executor is server script, reserve executor is Gelato Automate.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract HardWorker is Controllable, IHardWorker {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -116,7 +117,9 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setDedicatedServerMsgSender(address sender, bool allowed) external onlyGovernanceOrMultisig {
         HardWorkerStorage storage $ = _getStorage();
-        require($.dedicatedServerMsgSender[sender] != allowed, "HardWorker: nothing to change");
+        if($.dedicatedServerMsgSender[sender] == allowed){
+            revert AlreadyExist();
+        }
         $.dedicatedServerMsgSender[sender] = allowed;
         emit DedicatedServerMsgSender(sender, allowed);
     }
@@ -124,7 +127,9 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
         HardWorkerStorage storage $ = _getStorage();
-        require ($.delayServer != delayServer_ || $.delayGelato != delayGelato_, "HardWorker: nothing to change");
+        if($.delayServer == delayServer_ && $.delayGelato == delayGelato_){
+            revert AlreadyExist();
+        }
         $.delayServer = delayServer_;
         $.delayGelato = delayGelato_;
         emit Delays(delayServer_, delayGelato_);
@@ -133,7 +138,9 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
         HardWorkerStorage storage $ = _getStorage();
-        require (maxHwPerCall_ > 0, "HardWorker: wrong");
+        if(maxHwPerCall_ <= 0){
+            revert IControllable.IncorrectZeroArgument();
+        }
         $.maxHwPerCall = maxHwPerCall_;
         emit MaxHwPerCall(maxHwPerCall_);
     }
@@ -142,15 +149,18 @@ contract HardWorker is Controllable, IHardWorker {
     function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
         HardWorkerStorage storage $ = _getStorage();
         uint len = vaults_.length;
-        require (len == status.length, "HardWorker: wrong input");
-        require (len > 0, "HardWorker: zero length");
+        if(len != status.length || len == 0){
+            revert IControllable.IncorrectArrayLength();
+        }
         IFactory factory = IFactory(IPlatform(platform()).factory());
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
-            require(factory.vaultStatus(vaults_[i]) != VaultStatusLib.NOT_EXIST, "HardWorker: vault not exist");
+            if(factory.vaultStatus(vaults_[i]) == VaultStatusLib.NOT_EXIST){
+                revert NotExistWithObject(vaults_[i]);
+            }
             if ($.excludedVaults[vaults_[i]] == status[i]) {
-                revert('HardWorker: vault already has this exclude status');
+                revert AlreadyExclude(vaults_[i]);
             } else {
                 $.excludedVaults[vaults_[i]] = status[i];
                 emit VaultExcludeStatusChanged(vaults_[i], status[i]);
@@ -166,10 +176,9 @@ contract HardWorker is Controllable, IHardWorker {
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
         bool isGelato = msg.sender == $.dedicatedGelatoMsgSender;
-        require(
-            isServer || isGelato,
-            "HardWorker: only dedicated senders"
-        );
+        if(!isServer && !isGelato){
+            revert NotServerOrGelato();
+        }
 
         if (isGelato) {
             ITaskTreasuryUpgradable _treasury = $.gelatoTaskTreasury;
@@ -177,7 +186,9 @@ contract HardWorker is Controllable, IHardWorker {
             if (bal < $.gelatoMinBalance) {
                 uint contractBal = address(this).balance;
                 uint depositAmount = $.gelatoDepositAmount;
-                require(contractBal >= depositAmount, "HardWorker: not enough ETH");
+                if(contractBal < depositAmount){
+                    revert NotEnoughETH();
+                }
                 _treasury.depositFunds{value: depositAmount}(
                     address(this),
                     ETH,
@@ -209,7 +220,9 @@ contract HardWorker is Controllable, IHardWorker {
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
             //slither-disable-next-line unused-return
             (bool success, ) = msg.sender.call{value: gasCost}("");
-            require(success, "HardWorker: native transfer failed");
+            if(!success){
+                revert IControllable.ETHTransferFailed();
+            }
         }
 
         emit Call(counter, gasUsed, gasCost, isServer);

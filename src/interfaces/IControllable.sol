@@ -5,7 +5,29 @@ pragma solidity ^0.8.22;
 ///      Inherited contracts store an immutable Platform proxy address in the storage,
 ///      which provides authorization capabilities and infrastructure contract addresses.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IControllable {
+
+  
+    //region ----- Custom Errors -----
+    error IncorrectZeroArgument();
+    error IncorrectMsgSender();
+    error NotGovernance();
+    error NotMultisig();
+    error NotGovernanceAndNotMultisig();
+    error NotOperator();
+    error NotFactory();
+    error NotPlatform();
+    error NotVault();
+    error IncorrectArrayLength();
+    error AlreadyExist();
+    error NotExist();
+    error NotTheOwner();
+    error ETHTransferFailed();
+    error IncorrectInitParams();
+    error RewardIsTooSmall();
+    error RewardIsTooBig();
+    //endregion -- Custom Errors -----
 
   event ContractInitialized(address platform, uint ts, uint block);
 

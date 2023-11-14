@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract StrategyBase is Controllable, IStrategy {
     using SafeERC20 for IERC20;
 
@@ -19,11 +20,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev Version of StrategyBase implementation
     string public constant VERSION_STRATEGY_BASE = '1.0.0';
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       CUSTOM ERRORS                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    error BadInitParams();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -169,7 +165,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view virtual returns (uint[] memory amountsConsumed, uint value) {
         if (assets_.length == 1 && assets_[0] == _underlying && assets_[0] != address(0)) {
-            require(amountsMax.length == 1, "StrategyBase: incorrect length");
+            if(amountsMax.length != 1){
+                revert IControllable.IncorrectArrayLength();
+            }
             value = amountsMax[0];
             amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
         } else {
@@ -269,7 +267,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _requireVault() internal view {
-        require(msg.sender == vault, "StrategyBase: not vault");
+        if(msg.sender != vault) {
+            revert IControllable.NotVault();
+        }
     }
 
     function _balance(address token) internal view returns (uint) {

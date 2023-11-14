@@ -97,7 +97,7 @@ contract ZapTest is PolygonSetup {
         IERC20(PolygonLib.TOKEN_WETH).approve(address(zap), 1e18);
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, PolygonLib.ONE_INCH, swapData, 1);
 
-        vm.expectRevert(IZap.ZeroAmount.selector);
+        vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 0, PolygonLib.ONE_INCH, swapData, 1);
 
         vm.expectRevert(

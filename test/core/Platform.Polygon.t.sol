@@ -169,7 +169,16 @@ contract PlatformPolygonTest is PolygonSetup {
             (,,,,uint[] memory vaultSharePrice,uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
             assertEq(vaultSharePrice[0], 0);
             assertEq(vaultUserBalance[0], 0);
-            vm.expectRevert('Factory: such vault already deployed');
+            bytes32 deploymentKey = factory.getDeploymentKey(                
+                vars.vaultType[i],
+                vars.strategyId[i],
+                vaultInitAddresses,
+                vaultInitNums,
+                strategyInitAddresses,
+                strategyInitNums,
+                strategyInitTicks
+                );
+            vm.expectRevert(abi.encodeWithSelector(IFactory.SuchVaultAlreadyDeployed.selector, deploymentKey));
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
                 vars.strategyId[i],
@@ -213,10 +222,12 @@ contract PlatformPolygonTest is PolygonSetup {
 
         (canExec, execPayload) = hw.checkerServer();
         assertEq(canExec, true);
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotServerOrGelato.selector));
+        vm.prank(address(666));
         (bool success,) = address(hw).call(execPayload);
-        // HardWorker: only dedicated senders
+        (success,) = address(hw).call(execPayload);
         assertEq(success, false);
-        vm.expectRevert("Controllable: not governance and not multisig");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         hw.setDedicatedServerMsgSender(address(this), true);
         assertEq(hw.maxHwPerCall(), 5);
         assertNotEq(hw.gelatoTaskId(), bytes32(0x00));
@@ -232,18 +243,18 @@ contract PlatformPolygonTest is PolygonSetup {
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
             bool[] memory status = new bool[](1);
             
-            vm.expectRevert("HardWorker: wrong input");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, new bool[](3));
 
             vaultAddressesForChangeExcludeStatus[0] = address(4);
-            vm.expectRevert("HardWorker: vault not exist");
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotExistWithObject.selector, address(4)));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
 
-            vm.expectRevert("HardWorker: zero length");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(new address[](0), new bool[](0));
 
-            vm.expectRevert('HardWorker: vault already has this exclude status');
+            vm.expectRevert(abi.encodeWithSelector(IHardWorker.AlreadyExclude.selector, vaultAddressesForChangeExcludeStatus[0]));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
 
             status[0] = true;
@@ -252,8 +263,8 @@ contract PlatformPolygonTest is PolygonSetup {
             status[0] = false;
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
         }
-
-        vm.expectRevert("HardWorker: wrong");
+ 
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         hw.setMaxHwPerCall(0);
         hw.setMaxHwPerCall(5);
 
@@ -264,15 +275,17 @@ contract PlatformPolygonTest is PolygonSetup {
 
         (canExec, execPayload) = hw.checkerGelato();
         assertEq(canExec, true);
-        vm.prank(hw.dedicatedGelatoMsgSender());
+        vm.startPrank(hw.dedicatedGelatoMsgSender());
+
+        vm.deal(address(hw), 0);
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         (success,) = address(hw).call(execPayload);
-        // HardWorker: not enough ETH"
-        assertEq(success, false);
+ 
         vm.deal(address(hw), 2e18);
-        vm.prank(hw.dedicatedGelatoMsgSender());
         (success,) = address(hw).call(execPayload);
         assertEq(success, true);
         assertGt(hw.gelatoBalance(), 0);
+        vm.stopPrank();
 
         for (uint i; i < len; ++i) {
             (canExec, execPayload) = hw.checkerServer();
@@ -286,7 +299,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         vm.startPrank(platform.multisig());
         hw.setDelays(1 hours, 2 hours);
-        vm.expectRevert("HardWorker: nothing to change");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         hw.setDelays(1 hours, 2 hours);
         vm.stopPrank();
 
@@ -301,7 +314,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         vm.txGasPrice(15e10);
         deal(address(hw), type(uint).max);
-        vm.expectRevert("HardWorker: native transfer failed");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
         hw.call(vaultsForHardWork);
         canReceive = true;
         hw.call(vaultsForHardWork);
@@ -332,7 +345,7 @@ contract PlatformPolygonTest is PolygonSetup {
         (canExec,) = hw.checkerGelato();
         assertEq(canExec, false);
         (canExec,) = hw.checkerServer();
-        assertEq(canExec, true);
+        assertEq(canExec, true); 
     }
 
     function testErc165() public {

@@ -5,7 +5,16 @@ pragma solidity ^0.8.22;
 /// Hardwork is important task of any vault - claiming revenue and processing it by strategy, updating rewarding,
 /// compounding, declaring income and losses, related things.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IHardWorker {
+
+    //region ----- Custom Errors -----
+    error NotExistWithObject(address notExistObject);
+    error AlreadyExclude(address alreadyExcludedObject);
+    error NotServerOrGelato();
+    error NotEnoughETH();
+    //endregion ----- Custom Errors -----
+
     event Call(uint hardworks, uint gasUsed, uint gasCost, bool server);
     event DedicatedServerMsgSender(address indexed sender, bool allowed);
     event DedicatedGelatoMsgSender(address oldSender, address newSender);

@@ -18,6 +18,7 @@ import "../interfaces/IManagedVault.sol";
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
     /// @inheritdoc IControllable
@@ -63,7 +64,9 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     /// @dev Returns current token URI metadata
     /// @param tokenId Token ID to fetch URI for.
     function tokenURI(uint tokenId) public view override (ERC721Upgradeable, IERC721Metadata) returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "VaultManager: TOKEN_NOT_EXIST");
+        if(_ownerOf(tokenId) == address(0)){
+            revert NotExist();
+        }
 
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());
@@ -155,6 +158,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     function _requireOwner(uint tokenId) internal view {
-        require(_ownerOf(tokenId) == msg.sender, "VaultManager: not owner");
+        if(_ownerOf(tokenId) != msg.sender){
+            revert NotTheOwner();
+        }
     }
 }

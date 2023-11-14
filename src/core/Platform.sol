@@ -33,16 +33,16 @@ contract Platform is Controllable, IPlatform {
     uint public constant TIME_LOCK = 16 hours;
 
     /// @dev Minimal revenue fee
-    uint internal constant _MIN_FEE = 5_000; // 5%
+    uint public constant MIN_FEE = 5_000; // 5%
 
     /// @dev Maximal revenue fee
-    uint internal constant _MAX_FEE = 10_000; // 10%
+    uint public constant MAX_FEE = 10_000; // 10%
 
     /// @dev Minimal VaultManager tokenId owner fee share
-    uint internal constant _MIN_FEE_SHARE_VAULT_MANAGER = 10_000; // 10%
+    uint public constant MIN_FEE_SHARE_VAULT_MANAGER = 10_000; // 10%
 
     /// @dev Minimal StrategyLogic tokenId owner fee share
-    uint internal constant _MIN_FEE_SHARE_STRATEGY_LOGIC = 10_000; // 10%
+    uint public constant MIN_FEE_SHARE_STRATEGY_LOGIC = 10_000; // 10%
 
     //endregion -- Constants -----
 
@@ -156,7 +156,9 @@ contract Platform is Controllable, IPlatform {
         IPlatform.SetupAddresses memory addresses,
         IPlatform.PlatformSettings memory settings
     ) external onlyOperator {
-        require(factory == address(0), "Platform: already set");
+        if(factory != address(0)){
+            revert AlreadyExist();
+        }
         factory = addresses.factory;
         priceReader = addresses.priceReader;
         swapper = addresses.swapper;
@@ -192,20 +194,26 @@ contract Platform is Controllable, IPlatform {
     //region ----- Restricted actions -----
 
     function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
-        require (receiver != address(0), "Platform: ZERO_ADDRESS");
+        if(receiver == address(0)){
+            revert IControllable.IncorrectZeroArgument();
+        }
         ecosystemRevenueReceiver = receiver;
         emit EcosystemRevenueReceiver(receiver);
     }
 
     /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
-        require(_operators.add(operator), "Platform: EXIST");
+        if(!_operators.add(operator)){
+            revert AlreadyExist();
+        }
         emit OperatorAdded(operator);
     }
 
     /// @inheritdoc IPlatform
     function removeOperator(address operator) external onlyGovernanceOrMultisig {
-        require(_operators.remove(operator), "Platform: NOT_EXIST");
+        if(!_operators.remove(operator)){
+            revert NotExist();
+        }
         emit OperatorRemoved(operator);
     }
 
@@ -215,16 +223,28 @@ contract Platform is Controllable, IPlatform {
         address[] memory proxies,
         address[] memory newImplementations
     ) external onlyGovernanceOrMultisig {
-        require(_pendingPlatformUpgrade.proxies.length == 0, "Platform: ANNOUNCED");
+        if(_pendingPlatformUpgrade.proxies.length != 0){
+            revert AlreadyAnnounced();
+        }
         uint len = proxies.length;
-        require(len == newImplementations.length, "Platform: WRONG_INPUT");
+        if(len != newImplementations.length){
+            revert IncorrectArrayLength();
+        }
         for (uint i; i < len; ++i) {
-            require(proxies[i] != address(0), "Platform: zero proxy address");
-            require(newImplementations[i] != address(0), "Platform: zero implementation address");
-            require(!CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION()), "Platform: same version");
+            if(proxies[i] == address(0)){
+                revert IControllable.IncorrectZeroArgument();
+            }
+            if(newImplementations[i] == address(0)){
+                revert IControllable.IncorrectZeroArgument();
+            }
+            if(CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION())){
+                revert SameVersion();
+            }
         }
         string memory oldVersion = PLATFORM_VERSION;
-        require(!CommonLib.eq(oldVersion, newVersion), "Platform: same platform version");
+        if(CommonLib.eq(oldVersion, newVersion)){
+            revert SameVersion();
+        }
         _pendingPlatformUpgrade.newVersion = newVersion;
         _pendingPlatformUpgrade.proxies = proxies;
         _pendingPlatformUpgrade.newImplementations = newImplementations;
@@ -236,8 +256,12 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function upgrade() external onlyOperator {
         uint ts = platformUpgradeTimelock;
-        require (ts != 0, "Platform: no upgrade");
-        require (ts < block.timestamp, "Platform: wait till platformUpgradeTimelock");
+        if(ts == 0){
+            revert NoNewVersion();
+        }
+        if(ts > block.timestamp){
+            revert UpgradeTimerIsNotOver(ts);
+        }
         PlatformUpgrade memory platformUpgrade = _pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
         for (uint i; i < len; ++i) {
@@ -260,7 +284,9 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
-        require (platformUpgradeTimelock != 0, "Platform: no upgrade");
+        if(platformUpgradeTimelock == 0){
+            revert NoNewVersion();
+        }
         emit CancelUpgrade(VERSION, _pendingPlatformUpgrade.newVersion);
         _pendingPlatformUpgrade.newVersion = '';
         _pendingPlatformUpgrade.proxies = new address[](0);
@@ -275,7 +301,9 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function addAmmAdapter(string memory id, address proxy) external onlyOperator {
         bytes32 hash = keccak256(bytes(id));
-        require (_ammAdapter[hash].proxy == address(0), "Platform: AMM adapter already exist");
+        if(_ammAdapter[hash].proxy != address(0)){
+            revert AlreadyExist();
+        }
         _ammAdapter[hash].id = id;
         _ammAdapter[hash].proxy = proxy;
         _ammAdapterIdHash.push(hash);
@@ -287,14 +315,12 @@ contract Platform is Controllable, IPlatform {
         uint len = dexAggRouter.length;
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
-                revert ZeroAddress();
+                revert IControllable.IncorrectZeroArgument();
             }
-
             //nosemgrep
             if (!_dexAggregators.add(dexAggRouter[i])) {
                 continue;
             }
-
             emit AddDexAggregator(dexAggRouter[i]);
         }
     }
@@ -316,38 +342,50 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function useAllowedBBTokenVault(address bbToken) external onlyFactory {
         uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
-        require(allowedVaults > 0, "Platform: building for bbToken is not allowed");
+        if(allowedVaults <= 0){
+            revert NotEnoughAllowedBBToken();
+        }
         //slither-disable-next-line unused-return
         _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
         emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
-        require(_allowedBBTokensVaults.remove(bbToken), "Platform: BB-token not found");
+        if(!_allowedBBTokensVaults.remove(bbToken)){
+            revert NotExist();
+        }
         emit RemoveAllowedBBToken(bbToken);
     }
 
     /// @inheritdoc IPlatform
     function addAllowedBoostRewardToken(address token) external onlyOperator {
-        require(_allowedBoostRewardTokens.add(token), "Platform: EXIST");
+        if(!_allowedBoostRewardTokens.add(token)){
+            revert AlreadyExist();
+        }
         emit AddAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeAllowedBoostRewardToken(address token) external onlyOperator {
-        require(_allowedBoostRewardTokens.remove(token), "Platform: EXIST");
+        if(!_allowedBoostRewardTokens.remove(token)){
+            revert NotExist();
+        }
         emit RemoveAllowedBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function addDefaultBoostRewardToken(address token) external onlyOperator {
-        require(_defaultBoostRewardTokens.add(token), "Platform: EXIST");
+        if(!_defaultBoostRewardTokens.add(token)){
+            revert AlreadyExist();
+        }
         emit AddDefaultBoostRewardToken(token);
     }
 
     /// @inheritdoc IPlatform
     function removeDefaultBoostRewardToken(address token) external onlyOperator {
-        require(_defaultBoostRewardTokens.remove(token), "Platform: EXIST");
+        if(!_defaultBoostRewardTokens.remove(token)){
+            revert NotExist();
+        }
         emit RemoveDefaultBoostRewardToken(token);
     }
 
@@ -492,8 +530,10 @@ contract Platform is Controllable, IPlatform {
         bool[] memory isFarmingStrategy,
         string[] memory strategyTokenURI,
         bytes32[] memory strategyExtra
-    ) {
-        require (factory != address(0), "Platform: need setup");
+    ) { 
+        if(factory == address(0)){
+            revert NotExist();
+        }
         platformAddresses = new address[](5);
         platformAddresses[0] = factory;
         platformAddresses[1] = vaultManager;
@@ -556,11 +596,25 @@ contract Platform is Controllable, IPlatform {
     //region ----- Internal logic -----
 
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
-        require(feeShareEcosystem == 0 || ecosystemRevenueReceiver != address(0), "Platform: zero ecosystemFeeReceiver");
-        require(fee >= _MIN_FEE && fee <= _MAX_FEE, "Platform: incorrect fee");
-        require(feeShareVaultManager >= _MIN_FEE_SHARE_VAULT_MANAGER, "Platform: incorrect feeShareVaultManager");
-        require(feeShareStrategyLogic >= _MIN_FEE_SHARE_STRATEGY_LOGIC, "Platform: incorrect feeShareStrategyLogic");
-        require(feeShareVaultManager + feeShareStrategyLogic + feeShareEcosystem <= ConstantsLib.DENOMINATOR, "Platform: incorrect fee shares");
+        if(feeShareEcosystem != 0 && ecosystemRevenueReceiver == address(0)){
+            if(ecosystemRevenueReceiver == address(0)){
+                revert IControllable.IncorrectZeroArgument();
+            } else {
+                revert IncorrectFee(0,0);
+            }
+        } 
+        if(fee < MIN_FEE || fee > MAX_FEE){
+             revert IncorrectFee(MIN_FEE, MAX_FEE);
+        } 
+        if(feeShareVaultManager < MIN_FEE_SHARE_VAULT_MANAGER){
+             revert IncorrectFee(MIN_FEE_SHARE_VAULT_MANAGER, 0);
+        } 
+        if(feeShareStrategyLogic < MIN_FEE_SHARE_STRATEGY_LOGIC){
+             revert IncorrectFee(MIN_FEE_SHARE_STRATEGY_LOGIC, 0);
+        } 
+        if(feeShareVaultManager + feeShareStrategyLogic + feeShareEcosystem > ConstantsLib.DENOMINATOR){
+             revert IncorrectFee(0, ConstantsLib.DENOMINATOR);
+        } 
         _fee = fee;
         _feeShareVaultManager = feeShareVaultManager;
         _feeShareStrategyLogic = feeShareStrategyLogic;

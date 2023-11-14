@@ -13,6 +13,7 @@ import "../../interfaces/IRVault.sol";
 /// @notice Rewarding managed vault.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract RMVault is RVaultBase, IManagedVault {
     using SafeERC20 for IERC20;
 
@@ -54,24 +55,36 @@ contract RMVault is RVaultBase, IManagedVault {
     /// @inheritdoc IManagedVault
     function changeParams(address[] memory addresses, uint[] memory nums) external {
         // todo #22 implement bbRatio changing
-        require (IPlatform(platform()).vaultManager() == msg.sender, "RMVault: denied");
+        if(IPlatform(platform()).vaultManager() != msg.sender){
+            revert IManagedVault.NotVaultManager();
+        }
         uint addressesLength = addresses.length;
-        require (nums.length == addressesLength + 2, "RMVault: incorrect params");
+        if(nums.length != addressesLength + 2){
+            revert IControllable.IncorrectInitParams();
+        }
         uint _rewardTokensTotal = rewardTokensTotal;
-        require (addressesLength >= _rewardTokensTotal - 1, "RMVault: cant remove reward token");
+        if(addressesLength < _rewardTokensTotal - 1){
+            revert IManagedVault.CantRemoveRewardToken();
+        }
         for (uint i = 1; i < _rewardTokensTotal; ++i) {
-            require (rewardToken[i] == addresses[i - 1], "RMVault: incorrect reward tokens");
-            require (duration[i] == nums[i], "RMVault: cant change duration");
+            if(rewardToken[i] != addresses[i - 1]){
+                revert IManagedVault.IncorrectRewardToken(addresses[i - 1]);
+            }
+            if(duration[i] != nums[i]){
+                revert IManagedVault.CantChangeDuration(nums[i]);
+            }
         }
         
         if (addressesLength > _rewardTokensTotal - 1) {
             for (uint i = _rewardTokensTotal; i < addressesLength + 1; ++i) {
                 uint i_1 = i - 1;
-                require(addresses[i_1] != address(0), "RMVault: zero token");
-                require(nums[i_1] > 0, "RMVault: zero vesting duration");
-                
+                if(addresses[i_1] == address(0)){
+                    revert IControllable.IncorrectZeroArgument();
+                }
+                if(nums[i_1] == 0){
+                    revert IControllable.IncorrectZeroArgument();
+                }
                 rewardTokensTotal = i + 1;
-
                 rewardToken[i] = addresses[i_1];
                 duration[i] = nums[i_1];
                 emit AddedRewardToken(addresses[i_1], i);

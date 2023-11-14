@@ -13,6 +13,7 @@ import "../interfaces/IAmmAdapter.sol";
 /// @dev Inspired by TetuLiquidator
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -54,7 +55,9 @@ contract Swapper is Controllable, ISwapper {
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            require(pools[pool.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
+            if(pools[pool.tokenIn].pool != address(0) && !rewrite){
+                revert AlreadyExist();
+            }
             pools[pool.tokenIn] = pool;
             bool assetAdded = _assets.add(pool.tokenIn);
             emit PoolAdded(pool, assetAdded);
@@ -70,8 +73,12 @@ contract Swapper is Controllable, ISwapper {
             poolData.tokenIn = pools_[i].tokenIn;
             poolData.tokenOut = pools_[i].tokenOut;
             poolData.ammAdapter = IPlatform(platform()).ammAdapter(keccak256(bytes(pools_[i].ammAdapterId))).proxy;
-            require(poolData.ammAdapter != address(0), "Swapper: unknown AMM adapter");
-            require(pools[poolData.tokenIn].pool == address(0) || rewrite, "Swapper: Exist");
+            if(poolData.ammAdapter == address(0)){
+                revert UnknownAMMAdapter();
+            }
+            if(pools[poolData.tokenIn].pool != address(0) && !rewrite){
+                revert AlreadyExist();
+            }
             pools[poolData.tokenIn] = poolData;
             bool assetAdded = _assets.add(poolData.tokenIn);
             emit PoolAdded(poolData, assetAdded);
@@ -89,7 +96,9 @@ contract Swapper is Controllable, ISwapper {
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            require(blueChipsPools[pool.tokenIn][pool.tokenOut].pool == address(0) || rewrite, "Swapper: Exist");
+            if(blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0) && !rewrite){
+                revert AlreadyExist();
+            }
             blueChipsPools[pool.tokenIn][pool.tokenOut] = pool;
             blueChipsPools[pool.tokenOut][pool.tokenIn] = pool;
             _addBcAsset(pool.tokenIn);
@@ -107,8 +116,12 @@ contract Swapper is Controllable, ISwapper {
             poolData.tokenIn = pools_[i].tokenIn;
             poolData.tokenOut = pools_[i].tokenOut;
             poolData.ammAdapter = IPlatform(platform()).ammAdapter(keccak256(bytes(pools_[i].ammAdapterId))).proxy;
-            require(poolData.ammAdapter != address(0), "Swapper: unknown AMM adapter");
-            require(blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool == address(0) || rewrite, "Swapper: Exist");
+            if(poolData.ammAdapter == address(0)){
+                revert UnknownAMMAdapter();
+            }
+            if(blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0) && !rewrite){
+                revert AlreadyExist();
+            }
             blueChipsPools[poolData.tokenIn][poolData.tokenOut] = poolData;
             blueChipsPools[poolData.tokenOut][poolData.tokenIn] = poolData;
             _addBcAsset(poolData.tokenIn);
@@ -119,7 +132,9 @@ contract Swapper is Controllable, ISwapper {
 
     function removeBlueChipPool(address tokenIn, address tokenOut) external onlyOperator {
         delete blueChipsPools[tokenIn][tokenOut];
-        require (_bcAssets.remove(tokenIn), "Swapper: blue chip pool not found");
+        if(!_bcAssets.remove(tokenIn)){
+            revert NotExist();
+        }
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
         emit BlueChipPoolRemoved(tokenIn, tokenOut);
     }
@@ -128,7 +143,9 @@ contract Swapper is Controllable, ISwapper {
     function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
         uint tokenInLen = tokenIn.length;
         uint thresholdAmountLen = thresholdAmount.length;
-        if (tokenInLen != thresholdAmountLen) revert ArrayLengthMismatch(tokenInLen, thresholdAmountLen);
+        if (tokenInLen != thresholdAmountLen){
+            revert IControllable.IncorrectArrayLength();
+        }
         //nosemgrep
         for (uint i = 0; i < tokenInLen; ++i) {
             threshold[tokenIn[i]] = thresholdAmount[i];
@@ -151,9 +168,9 @@ contract Swapper is Controllable, ISwapper {
         if (route.length == 0) {
             revert(errorMessage);
         }
-
-        require(amount >= threshold[tokenIn], "Swapper: swap amount less threshold");
-
+        if(amount < threshold[tokenIn]){
+            revert LessThenThreshold(threshold[tokenIn]);
+        }
         _swap(route, amount, priceImpactTolerance);
     }
 
@@ -430,7 +447,9 @@ contract Swapper is Controllable, ISwapper {
         uint amount,
         uint priceImpactTolerance
     ) internal {
-        require(route.length > 0, "ZERO_LENGTH");
+        if(route.length == 0){
+            revert IControllable.IncorrectArrayLength();
+        } 
 
         for (uint i; i < route.length; i++) {
             PoolData memory data = route[i];

@@ -7,6 +7,7 @@ import "../../interfaces/IProxy.sol";
 
 /// @title Proxy for Stability Platform core contracts.
 /// @dev ERC-1967: Proxy Storage Slots used.
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract Proxy is UpgradeableProxy, IProxy {
     /// @inheritdoc IProxy
     function initProxy(address logic_) external override {
@@ -15,10 +16,14 @@ contract Proxy is UpgradeableProxy, IProxy {
 
     /// @inheritdoc IProxy
     function upgrade(address _newImplementation) external override {
-        require(IControllable(address(this)).platform() == msg.sender, "Proxy: Forbidden");
+        if(IControllable(address(this)).platform() != msg.sender){
+            revert IControllable.NotPlatform();
+        }
         _upgradeTo(_newImplementation);
         // the new contract must have the same ABI and you must have the power to change it again
-        require(IControllable(address(this)).platform() == msg.sender, "Proxy: Wrong implementation");
+        if(IControllable(address(this)).platform() != msg.sender){
+            revert IControllable.NotPlatform();
+        }
     }
 
     /// @inheritdoc IProxy

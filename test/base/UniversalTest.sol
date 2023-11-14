@@ -74,7 +74,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         vars.hardWorker = IHardWorker(platform.hardWorker());
         vm.startPrank(platform.governance());
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
-        vm.expectRevert("HardWorker: nothing to change");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
         vm.stopPrank();
         vars.vaultsForHardWork = new address[](1);
@@ -132,7 +132,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     // test bad params
                     initStrategyAddresses = new address[](1);
-                    vm.expectRevert(StrategyBase.BadInitParams.selector);
+                    vm.expectRevert(IControllable.IncorrectInitParams.selector);
                     factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
                     initStrategyAddresses = new address[](0);
 
@@ -140,7 +140,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     int24[] memory goodTicks = f.ticks;
                     f.ticks = new int24[](1000);
                     factory.updateFarm(nums[0], f);
-                    vm.expectRevert(FarmingStrategyBase.BadFarm.selector);
+                    vm.expectRevert(IFarmingStrategy.BadFarm.selector);
                     factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
                     f.ticks = goodTicks;
                     factory.updateFarm(nums[0], f);
@@ -339,7 +339,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(vaultBalance, sharesOut);
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
-                    vm.expectRevert(bytes("Vault: wait few blocks"));
+                    vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
                     IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     vm.roll(block.number + 6);
                     IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
@@ -347,7 +347,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
                 } else {
                     {
-                    vm.expectRevert("StrategyBase: not vault");
+                    vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
                     strategy.depositUnderlying(18);
                     vm.startPrank(strategy.vault());
                     vm.expectRevert("no underlying");

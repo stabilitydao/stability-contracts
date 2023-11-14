@@ -4,7 +4,25 @@ pragma solidity ^0.8.22;
 /// @notice Creating vaults, upgrading vaults and strategies, vault list, farms and strategy logics management
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IFactory {
+
+    //region ----- Custom Errors -----
+
+    error VaultImplementationIsNotAvailable();
+    error VaultNotAllowedToDeploy();
+    error StrategyImplementationIsNotAvailable();
+    error StrategyLogicNotAllowedToDeploy();
+    error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
+    error SuchVaultAlreadyDeployed(bytes32 key);
+    error NotActiveVault();
+    error UpgradeDenied(bytes32 _hash);
+    error AlreadyLastVersion(bytes32 _hash);
+    error NotStrategy();
+
+    //endregion ----- Custom Errors -----
+
+
     //region ----- Events -----
 
     event VaultAndStrategy(

@@ -15,6 +15,7 @@ import "../../interfaces/IPriceReader.sol";
 import "../../interfaces/ISwapper.sol";
 import "../../interfaces/ILPStrategy.sol";
 import "../../interfaces/IRVault.sol";
+import "../../interfaces/IFarmingStrategy.sol";
 
 library StrategyLib {
     using SafeERC20 for IERC20;
@@ -36,7 +37,9 @@ library StrategyLib {
 
     function FarmingStrategyBase_init(string memory id, address platform, uint farmId) external returns (address[] memory rewardAssets) {
         IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(farmId);
-        require (keccak256(bytes(farm.strategyLogicId)) == keccak256(bytes(id)), "FarmingStrategyBase: incorrect strategy id");
+        if(keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))){
+            revert IFarmingStrategy.IncorrectStrategyId();
+        }
         uint len = farm.rewardAssets.length;
         address swapper = IPlatform(platform).swapper();
         for (uint i; i < len; ++i) {

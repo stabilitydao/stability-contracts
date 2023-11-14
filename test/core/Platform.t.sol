@@ -8,6 +8,8 @@ import "../../src/core/vaults/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/StrategyLogic.sol";
+import "../../src/core/libs/ConstantsLib.sol";
+import "../../src/interfaces/IControllable.sol";
 
 contract PlatformTest is Test  {
     Platform public platform;
@@ -20,10 +22,10 @@ contract PlatformTest is Test  {
     }
 
     function testSetup() public {
-        vm.expectRevert("Zero multisig");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.initialize(address(0), '23.11.0-dev');
         platform.initialize(address(this), '23.11.0-dev');
-        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
         platform.initialize(address(this), '23.11.0-dev');
         assertEq(platform.governance(), address(0));
         assertEq(platform.multisig(), address(this));
@@ -56,7 +58,7 @@ contract PlatformTest is Test  {
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
         );
-        vm.expectRevert("Platform: already set");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(1),
@@ -87,13 +89,13 @@ contract PlatformTest is Test  {
     function testAddRemoveOperator(address operator) public {
         platform.initialize(address(this), '23.11.0-dev');
         if (operator == address(this)) {
-            vm.expectRevert("Platform: EXIST");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         } else {
             assertEq(platform.isOperator(operator), false);
         }
 
         platform.addOperator(operator);
-        vm.expectRevert("Platform: EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.addOperator(operator);
         
         assertEq(platform.isOperator(operator), true);
@@ -107,12 +109,12 @@ contract PlatformTest is Test  {
 
         platform.removeOperator(operator);
         assertEq(platform.isOperator(operator), false);
-        vm.expectRevert("Platform: NOT_EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         platform.removeOperator(operator);
 
         if (operator != address(0) && operator != address(this)) {
             vm.startPrank(operator);
-            vm.expectRevert(bytes("Controllable: not governance and not multisig"));
+            vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
             platform.addOperator(operator);
             vm.stopPrank();
         }
@@ -138,7 +140,7 @@ contract PlatformTest is Test  {
             implementations[0] = address(vaultImplementationUpgrade);
 
             if (multisig != address(this)) {
-                vm.expectRevert(bytes("Controllable: not governance and not multisig"));
+                vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
                 platform.announcePlatformUpgrade(
                     '2025.01.0-beta',
                     proxies,
@@ -153,7 +155,7 @@ contract PlatformTest is Test  {
                 implementations
             );
             
-            vm.expectRevert("Platform: ANNOUNCED");
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.AlreadyAnnounced.selector));
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 proxies,
@@ -168,7 +170,7 @@ contract PlatformTest is Test  {
             _implementations[0] = address(vaultImplementationUpgrade);
             _implementations[1] = address(vaultImplementationUpgrade);
 
-            vm.expectRevert("Platform: WRONG_INPUT");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 proxies,
@@ -177,7 +179,7 @@ contract PlatformTest is Test  {
  
             address[] memory _proxies = new address[](1);
             _proxies[0] = address(0);
-            vm.expectRevert("Platform: zero proxy address");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 _proxies,
@@ -187,7 +189,7 @@ contract PlatformTest is Test  {
             address[] memory __implementations = new address[](1);
             __implementations[0] = address(0);
 
-           vm.expectRevert("Platform: zero implementation address");
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 proxies,
@@ -196,7 +198,7 @@ contract PlatformTest is Test  {
 
             _proxies[0] = address(vaultImplementationUpgrade);
             __implementations[0] = address(vaultImplementationUpgrade);
-            vm.expectRevert("Platform: same version");
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.SameVersion.selector));
             platform.announcePlatformUpgrade(
                 '2025.01.0-beta',
                 _proxies,
@@ -204,7 +206,7 @@ contract PlatformTest is Test  {
             );
 
             string memory oldVersion = platform.PLATFORM_VERSION();
-            vm.expectRevert("Platform: same platform version");
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.SameVersion.selector));
             platform.announcePlatformUpgrade(
                 oldVersion,
                 proxies,
@@ -223,9 +225,9 @@ contract PlatformTest is Test  {
 
             platform.cancelUpgrade();
             assertEq(platform.pendingPlatformUpgrade().proxies.length, 0);
-            vm.expectRevert("Platform: no upgrade");
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.NoNewVersion.selector));
             platform.cancelUpgrade();
-            vm.expectRevert("Platform: no upgrade");
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.NoNewVersion.selector));
             platform.upgrade();
 
             vm.prank(multisig);
@@ -237,7 +239,8 @@ contract PlatformTest is Test  {
 
             skip(30 minutes);
 
-            vm.expectRevert(bytes("Platform: wait till platformUpgradeTimelock"));
+            uint TimerTimestamp = platform.platformUpgradeTimelock();
+            vm.expectRevert(abi.encodeWithSelector(IPlatform.UpgradeTimerIsNotOver.selector, TimerTimestamp));
             platform.upgrade();
 
             skip(30 days);
@@ -248,7 +251,7 @@ contract PlatformTest is Test  {
             assertEq(CVault(payable(address(proxy))).VERSION(), "10.99.99");
             assertEq(platform.PLATFORM_VERSION(), '2025.01.0-beta');
         } else {
-            vm.expectRevert(bytes("Zero multisig"));
+            vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
             platform.initialize(multisig, '23.11.0-dev');
         }
 
@@ -259,7 +262,7 @@ contract PlatformTest is Test  {
         address govAddr = platform.governance();
 
         vm.prank(address(1));
-        vm.expectRevert("Controllable: not governance");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernance.selector));
         platform.setFees(1,1,1,1); 
 
         vm.startPrank(govAddr);
@@ -270,21 +273,27 @@ contract PlatformTest is Test  {
         assertEq(feeShareStrategyLogic, 30_000);
         assertEq(feeShareEcosystem, 0);
 
-        vm.expectRevert("Platform: zero ecosystemFeeReceiver");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.setFees(6_000, 30_000, 30_000, 5); 
 
-        vm.expectRevert("Platform: incorrect fee");
+        uint _minFee = platform.MIN_FEE();
+        uint _maxFee = platform.MAX_FEE();
+        
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
         platform.setFees(3_000, 30_000, 30_000, 0); 
-        vm.expectRevert("Platform: incorrect fee");
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
         platform.setFees(13_000, 30_000, 30_000, 0); 
 
-        vm.expectRevert("Platform: incorrect feeShareVaultManager");
+        _minFee = platform.MIN_FEE_SHARE_VAULT_MANAGER();
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
         platform.setFees(6_000, 3_000, 30_000, 0); 
 
-        vm.expectRevert("Platform: incorrect feeShareStrategyLogic");
+        _minFee = platform.MIN_FEE_SHARE_STRATEGY_LOGIC();
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
         platform.setFees(6_000, 30_000, 3_000, 0); 
 
-        vm.expectRevert("Platform: incorrect fee shares");
+        _maxFee = ConstantsLib.DENOMINATOR;
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, 0, _maxFee));
         platform.setFees(10_000, 60_000, 50_000, 0); 
 
         vm.stopPrank();
@@ -298,7 +307,7 @@ contract PlatformTest is Test  {
 
         vm.startPrank(address(platform.factory()));
         platform.useAllowedBBTokenVault(address(3));
-        vm.expectRevert("Platform: building for bbToken is not allowed");
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.NotEnoughAllowedBBToken.selector));
         platform.useAllowedBBTokenVault(address(3));
         vm.stopPrank();
 
@@ -306,7 +315,7 @@ contract PlatformTest is Test  {
         assertEq(bbToken[0], address(1));
         assertEq(bbToken[1], address(2));
  
-        vm.expectRevert("Platform: BB-token not found");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         platform.removeAllowedBBToken(address(5));
 
         platform.removeAllowedBBToken(bbToken[0]);
@@ -329,9 +338,9 @@ contract PlatformTest is Test  {
         platform.addAllowedBoostRewardToken(address(1));
         platform.addAllowedBoostRewardToken(address(2));
 
-        vm.expectRevert("Platform: EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.addAllowedBoostRewardToken(address(2));
-        vm.expectRevert("Platform: EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         platform.removeAllowedBoostRewardToken(address(789));
 
         address[] memory allowedTokens = platform.allowedBoostRewardTokens();
@@ -352,9 +361,9 @@ contract PlatformTest is Test  {
         platform.addDefaultBoostRewardToken(address(1));
         platform.addDefaultBoostRewardToken(address(2));
 
-        vm.expectRevert("Platform: EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.addDefaultBoostRewardToken(address(2));
-        vm.expectRevert("Platform: EXIST");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         platform.removeDefaultBoostRewardToken(address(789));
 
         address[] memory defaultTokens = platform.defaultBoostRewardTokens();
@@ -385,9 +394,7 @@ contract PlatformTest is Test  {
         alreadyAddedAllowedBoostRewardToken[0] = address(101);
         address[] memory newDefaultBoostRewardTokens = new address[](1);
         newDefaultBoostRewardTokens[0] = address(386);
-        vm.expectRevert(
-            abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101))
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101)));
         platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
 
         address[] memory defaultTokens = platform.defaultBoostRewardTokens();
@@ -405,7 +412,7 @@ contract PlatformTest is Test  {
         platform.initialize(address(this), '23.11.0-dev');
         platform.addAmmAdapter("myId", address(1));
         platform.addAmmAdapter("myId2", address(2));
-        vm.expectRevert("Platform: AMM adapter already exist");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.addAmmAdapter("myId2", address(2));
 
         (string[] memory ids, address[] memory proxies) = platform.getAmmAdapters();
@@ -418,7 +425,7 @@ contract PlatformTest is Test  {
 
     function testGetData() public {
         platform.initialize(address(this), '23.11.0-dev');
-        vm.expectRevert("Platform: need setup");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         {   
             (address[] memory _platformAddresses,,,,,,,) = platform.getData();
             delete _platformAddresses;
@@ -486,7 +493,7 @@ contract PlatformTest is Test  {
 
 
         address _logic = platform.strategyLogic();
-        vm.expectRevert("StrategyLogic: not owner");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotTheOwner.selector));
         IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
         vm.prank(address(0));
         IStrategyLogic(_logic).setRevenueReceiver(1, address(1));
@@ -496,7 +503,7 @@ contract PlatformTest is Test  {
 
     function testEcosystemRevenueReceiver() public {
         platform.initialize(address(this), '23.11.0-dev');
-        vm.expectRevert("Platform: ZERO_ADDRESS");
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.setEcosystemRevenueReceiver(address(0));
         platform.setEcosystemRevenueReceiver(address(1));
     }
@@ -525,14 +532,10 @@ contract PlatformTest is Test  {
         platform.addDexAggregators(dexAggRouter);
 
         dexAggRouter[0] = address(0);
-        vm.expectRevert(
-            abi.encodeWithSelector(IPlatform.ZeroAddress.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.addDexAggregators(dexAggRouter);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IPlatform.AggregatorNotExists.selector, address(5))
-        );
+        vm.expectRevert(abi.encodeWithSelector(IPlatform.AggregatorNotExists.selector, address(5)));
         platform.removeDexAggregator(address(5));
 
         platform.removeDexAggregator(address(1));

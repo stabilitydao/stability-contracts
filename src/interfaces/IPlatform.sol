@@ -4,7 +4,22 @@ pragma solidity ^0.8.22;
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IPlatform {
+
+    //region ----- Custom Errors -----
+
+    error AlreadyAnnounced();
+    error SameVersion();
+    error NoNewVersion();
+    error UpgradeTimerIsNotOver(uint TimerTimestamp);
+    error IncorrectFee(uint minFee, uint maxFee);
+    error NotEnoughAllowedBBToken();
+    error TokenAlreadyExistsInSet(address token);
+    error AggregatorNotExists(address dexAggRouter);
+    
+    //endregion ----- Custom Errors -----
+
     //region ----- Events -----
     event PlatformVersion(string version);
     event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);
@@ -39,12 +54,6 @@ interface IPlatform {
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
     //endregion -- Events -----
-
-    //region ----- Custom Errors -----
-    error TokenAlreadyExistsInSet(address token);
-    error ZeroAddress();
-    error AggregatorNotExists(address dexAggRouter);
-    //endregion -- Custom Errors -----
 
     //region ----- Data types -----
     struct PlatformUpgrade {

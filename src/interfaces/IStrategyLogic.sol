@@ -6,7 +6,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 /// @dev Interface of developed strategy logic NFT
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IStrategyLogic is IERC721Metadata {
+
     //region ----- Events -----
     event SetRevenueReceiver(uint tokenId, address receiver);
     //endregion -- Events -----

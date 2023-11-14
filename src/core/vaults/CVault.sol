@@ -38,7 +38,9 @@ contract CVault is VaultBase {
         uint[] memory vaultInitNums
     ) initializer public {
         __VaultBase_init(platform_, VaultTypeLib.COMPOUNDING, strategy_, name_, symbol_, tokenId_);
-        require(vaultInitAddresses.length == 0 && vaultInitNums.length == 0, "CVault: init error");
+        if(vaultInitAddresses.length != 0 || vaultInitNums.length != 0) {
+            revert IControllable.IncorrectInitParams();
+        }
     }
 
     //endregion -- Init -----

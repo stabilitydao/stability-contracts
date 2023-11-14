@@ -8,6 +8,7 @@ import "../../interfaces/IFactory.sol";
 import "../../interfaces/IStrategyProxy.sol";
 
 /// @title EIP1967 Upgradeable proxy implementation for built by Factory strategies.
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     /// @dev Strategy logic id
     bytes32 private constant _ID_SLOT = bytes32(uint256(keccak256("eip1967.strategyProxy.id")) - 1);
@@ -24,7 +25,9 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     }
 
     function upgrade() external {
-        require(msg.sender == IPlatform(IControllable(address(this)).platform()).factory(), "Proxy: Forbidden");
+        if(IPlatform(IControllable(address(this)).platform()).factory() != msg.sender){
+            revert IControllable.NotFactory();
+        }
         bytes32 strategyIdHash;
         bytes32 slot = _ID_SLOT;
         assembly {

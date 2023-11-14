@@ -24,7 +24,9 @@ contract AprOracle is Controllable, IAprOracle {
     /// @inheritdoc IAprOracle
     function setAprs(address[] memory assets, uint[] memory aprs) external onlyOperator {
         uint len = assets.length;
-        require (len == aprs.length, "AprOracle: mismatch");
+        if(len != aprs.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
         for (uint i; i < len; ++i) {
             assetApr[assets[i]] = aprs[i];
         }

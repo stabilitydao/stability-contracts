@@ -15,6 +15,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning QuickSwapV3 farm rewards and swap fees by static liquidity position
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -53,12 +54,12 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks
     ) public initializer {
         if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
-            revert BadInitParams();
+            revert IControllable.IncorrectInitParams();
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
         if (farm.addresses.length != 2 || farm.nums.length != 2 || farm.ticks.length != 2) {
-            revert BadFarm();
+            revert IFarmingStrategy.BadFarm();
         }
         _startTime = farm.nums[0];
         _endTime = farm.nums[1];
