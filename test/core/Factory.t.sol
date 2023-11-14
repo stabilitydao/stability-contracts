@@ -407,7 +407,7 @@ contract FactoryTest is Test, MockSetup {
     }
 
     function testGetExchangeAssetIndexRequire() public {
-        vm.expectRevert("FactoryLib: no routes for assets");
+        vm.expectRevert(ISwapper.NoRouteFound.selector);
         factory.getExchangeAssetIndex(new address[](0));
     }
 }

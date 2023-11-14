@@ -17,6 +17,7 @@ interface IControllable {
     error NotGovernanceAndNotMultisig();
     error NotOperator();
     error NotFactory();
+    error NotPlatform();
     error NotVault();
     error IncorrectArrayLength();
     error AlreadyExist();

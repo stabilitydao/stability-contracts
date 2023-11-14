@@ -403,7 +403,9 @@ library FactoryLib {
                 exchangeAssetIndex = i;
             }
         }
-
+        if(exchangeAssetIndex == type(uint).max){
+            revert ISwapper.NoRouteFound();
+        }  
         require (exchangeAssetIndex < type(uint).max, "FactoryLib: no routes for assets");
     }
 

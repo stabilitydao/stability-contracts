@@ -6,6 +6,7 @@ import "../interfaces/IOracleAdapter.sol";
 import "../core/base/Controllable.sol";
 import "../integrations/chainlink/IAggregatorV3Interface.sol";
 
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract ChainlinkAdapter is Controllable, IOracleAdapter {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -31,10 +32,14 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
 
     function addPriceFeeds(address[] memory assets_, address[] memory priceFeeds_) external onlyOperator {
         uint len = assets_.length;
-        require(len == priceFeeds_.length, "CA: wrong input");
+        if(len != priceFeeds_.length){
+            revert IControllable.IncorrectArrayLength();
+        }
 
         for (uint i; i < len; ++i) {
-            require(_assets.add(assets_[i]), "CA: exist");
+            if(!_assets.add(assets_[i])){
+                revert IControllable.AlreadyExist();
+            }
             priceFeeds[assets_[i]] = priceFeeds_[i];
         }
 
@@ -44,7 +49,9 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     function removePriceFeeds(address[] memory assets_) external onlyOperator {
         uint len = assets_.length;
         for (uint i; i < len; ++i) {
-            require(_assets.remove(assets_[i]), "CA: not exist");
+            if(!_assets.remove(assets_[i])){
+                revert IControllable.NotExist();
+            }
             priceFeeds[assets_[i]] = address(0);
         }
         emit RemovedPriceFeeds(assets_);

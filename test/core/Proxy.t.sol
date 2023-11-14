@@ -32,7 +32,7 @@ contract ProxyTest is Test, MockSetup {
         assertGt(vault.createdBlock(), 0);
         assertEq(IControllable(address(vault)).platform(), address(platform));
 
-        vm.expectRevert("Proxy: Forbidden");
+        vm.expectRevert(IControllable.NotPlatform.selector);
         proxy.upgrade(address(vaultImplementationUpgrade));
 
         vm.prank(address(platform));
