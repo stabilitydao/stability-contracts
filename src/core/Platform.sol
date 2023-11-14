@@ -195,7 +195,7 @@ contract Platform is Controllable, IPlatform {
 
     function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
         if(receiver == address(0)){
-            revert ZeroAddress();
+            revert IControllable.IncorrectZeroArgument();
         }
         ecosystemRevenueReceiver = receiver;
         emit EcosystemRevenueReceiver(receiver);
@@ -232,10 +232,10 @@ contract Platform is Controllable, IPlatform {
         }
         for (uint i; i < len; ++i) {
             if(proxies[i] == address(0)){
-                revert ZeroAddress();
+                revert IControllable.IncorrectZeroArgument();
             }
             if(newImplementations[i] == address(0)){
-                revert ZeroAddress();
+                revert IControllable.IncorrectZeroArgument();
             }
             if(CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION())){
                 revert SameVersion();
@@ -315,7 +315,7 @@ contract Platform is Controllable, IPlatform {
         uint len = dexAggRouter.length;
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
-                revert ZeroAddress();
+                revert IControllable.IncorrectZeroArgument();
             }
             //nosemgrep
             if (!_dexAggregators.add(dexAggRouter[i])) {
@@ -597,7 +597,11 @@ contract Platform is Controllable, IPlatform {
 
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
         if(feeShareEcosystem != 0 && ecosystemRevenueReceiver == address(0)){
-             revert ZeroAddressOrIncorrectFee();
+            if(ecosystemRevenueReceiver == address(0)){
+                revert IControllable.IncorrectZeroArgument();
+            } else {
+                revert IncorrectFee(0,0);
+            }
         } 
         if(fee < MIN_FEE || fee > MAX_FEE){
              revert IncorrectFee(MIN_FEE, MAX_FEE);

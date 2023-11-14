@@ -50,7 +50,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         // todo check vault
 
         if (amountIn == 0) {
-            revert ZeroAmount();
+            revert IControllable.IncorrectZeroArgument();
         }
 
         if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {

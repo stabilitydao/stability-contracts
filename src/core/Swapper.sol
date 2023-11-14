@@ -144,7 +144,7 @@ contract Swapper is Controllable, ISwapper {
         uint tokenInLen = tokenIn.length;
         uint thresholdAmountLen = thresholdAmount.length;
         if (tokenInLen != thresholdAmountLen){
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         }
         //nosemgrep
         for (uint i = 0; i < tokenInLen; ++i) {
@@ -448,7 +448,7 @@ contract Swapper is Controllable, ISwapper {
         uint priceImpactTolerance
     ) internal {
         if(route.length == 0){
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         } 
 
         for (uint i; i < route.length; i++) {

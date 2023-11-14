@@ -74,7 +74,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         vars.hardWorker = IHardWorker(platform.hardWorker());
         vm.startPrank(platform.governance());
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
-        vm.expectRevert(abi.encodeWithSelector(IHardWorker.AlreadyExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
         vm.stopPrank();
         vars.vaultsForHardWork = new address[](1);

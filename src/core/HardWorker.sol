@@ -110,7 +110,7 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
         if(maxHwPerCall_ <= 0){
-            revert IncorrectZeroArgument();
+            revert IControllable.IncorrectZeroArgument();
         }
         maxHwPerCall = maxHwPerCall_;
         emit MaxHwPerCall(maxHwPerCall_);
@@ -120,14 +120,14 @@ contract HardWorker is Controllable, IHardWorker {
     function changeVaultExcludeStatus(address[] memory vaults_, bool[] memory status) external onlyOperator {
         uint len = vaults_.length;
         if(len != status.length || len == 0){
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         }
         IFactory factory = IFactory(IPlatform(platform()).factory());
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
             if(factory.vaultStatus(vaults_[i]) == VaultStatusLib.NOT_EXIST){
-                revert NotExist(vaults_[i]);
+                revert NotExistWithObject(vaults_[i]);
             }
             if (excludedVaults[vaults_[i]] == status[i]) {
                 revert AlreadyExclude(vaults_[i]);
@@ -144,7 +144,7 @@ contract HardWorker is Controllable, IHardWorker {
 
         bool isServer = dedicatedServerMsgSender[msg.sender];
         if(!isServer && msg.sender != dedicatedGelatoMsgSender){
-            revert NotAllowedMsgSender();
+            revert NotServerOrGelato();
         }
 
         if (!isServer) {

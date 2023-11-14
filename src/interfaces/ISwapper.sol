@@ -14,9 +14,6 @@ interface ISwapper {
   event BlueChipPoolRemoved(address tokenIn, address tokenOut);
 
   //region ----- Custom Errors -----
-  error IncorrectArrayLength();
-  error AlreadyExist();
-  error NotExist();
   error UnknownAMMAdapter();
   error LessThenThreshold(uint minimumAmount);
   //endregion -- Custom Errors -----

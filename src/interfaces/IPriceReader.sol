@@ -7,11 +7,6 @@ pragma solidity ^0.8.22;
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IPriceReader {
 
-    //region ----- Custom Errors -----
-    error AlreadyExist();
-    error NotExist();
-    //endregion ----- Custom Errors -----
-
     //region ----- Events -----
     event AdapterAdded(address adapter);
     event AdapterRemoved(address adapter);

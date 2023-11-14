@@ -27,8 +27,9 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
     /// @dev Use it only once after first logic setup
     /// @param platform_ Platform address
     function __Controllable_init(address platform_) internal onlyInitializing {
-        require(platform_ != address(0), "Zero platform");
-        require(IPlatform(platform_).multisig() != address(0), "Zero multisig");
+        if(platform_ == address(0) || IPlatform(platform_).multisig() == address(0)) {
+            revert IncorrectZeroArgument();
+        } 
         SlotsLib.set(_PLATFORM_SLOT, platform_); // syntax for forge coverage
         _CREATED_BLOCK_SLOT.set(block.number);
         emit ContractInitialized(platform_, block.timestamp, block.number);
@@ -77,23 +78,33 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
     }
 
     function _requireGovernance() internal view {
-        require(IPlatform(platform()).governance() == msg.sender, "Controllable: not governance");
+        if(IPlatform(platform()).governance() != msg.sender){
+            revert NotGovernance();
+        }
     }
 
     function _requireMultisig() internal view {
-        require(IPlatform(platform()).isOperator(msg.sender), "Controllable: not multisig");
+        if(!IPlatform(platform()).isOperator(msg.sender)){
+            revert NotMultisig();
+        }
     }
 
     function _requireGovernanceOrMultisig() internal view {
         IPlatform _platform = IPlatform(platform());
-        require(_platform.governance() == msg.sender || _platform.multisig() == msg.sender, "Controllable: not governance and not multisig");
+        if(_platform.governance() != msg.sender && _platform.multisig() != msg.sender){
+            revert NotGovernanceAndNotMultisig();
+        }
     }
 
     function _requireOperator() internal view {
-        require(IPlatform(platform()).isOperator(msg.sender), "Controllable: not operator");
+        if(!IPlatform(platform()).isOperator(msg.sender)){
+            revert NotOperator();
+        }
     }
 
     function _requireFactory() internal view {
-        require(IPlatform(platform()).factory() == msg.sender, "Controllable: not factory");
+        if(IPlatform(platform()).factory() != msg.sender){
+            revert NotFactory();
+        }
     }
 }

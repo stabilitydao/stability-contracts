@@ -9,15 +9,10 @@ interface IPlatform {
 
     //region ----- Custom Errors -----
 
-    error IncorrectArrayLength();
     error AlreadyAnnounced();
     error SameVersion();
     error NoNewVersion();
     error UpgradeTimerIsNotOver(uint TimerTimestamp);
-    error AlreadyExist(); 
-    error NotExist();
-    error ZeroAddress();
-    error ZeroAddressOrIncorrectFee();
     error IncorrectFee(uint minFee, uint maxFee);
     error NotEnoughAllowedBBToken();
     error TokenAlreadyExistsInSet(address token);

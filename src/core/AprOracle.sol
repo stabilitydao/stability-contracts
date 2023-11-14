@@ -25,7 +25,7 @@ contract AprOracle is Controllable, IAprOracle {
     function setAprs(address[] memory assets, uint[] memory aprs) external onlyOperator {
         uint len = assets.length;
         if(len != aprs.length) {
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         }
         for (uint i; i < len; ++i) {
             assetApr[assets[i]] = aprs[i];

@@ -163,7 +163,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         uint len = amountsMax.length;
         if(len != assets_.length){
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         }
 
         uint[] memory amountsConsumed;
@@ -182,7 +182,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
 
         if(value == 0){
-            revert IncorrectZeroArgument();
+            revert IControllable.IncorrectZeroArgument();
         }
 
         uint mintAmount = _mintShares(_totalSupply, value, totalValue, amountsConsumed, minSharesOut);
@@ -195,13 +195,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external virtual nonReentrant {
         if(amountShares == 0){
-            revert IncorrectZeroArgument();
+            revert IControllable.IncorrectZeroArgument();
         }
         if(amountShares > balanceOf(msg.sender)){
             revert NotEnoughBalanceToPay();
         }
         if(assets_.length != minAssetAmountsOut.length){
-            revert IncorrectArrayLength();
+            revert IControllable.IncorrectArrayLength();
         }
 
         _beforeWithdraw();

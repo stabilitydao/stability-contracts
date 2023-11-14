@@ -15,8 +15,6 @@ interface IVault is IERC165 {
     error ETHTransferFailed();
     error NotEnoughBalanceToPay();
     error FuseTrigger();
-    error IncorrectArrayLength();
-    error IncorrectZeroArgument();
     error ExceedSlippage(uint mintToUser, uint minToMint);
     error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
     error ExceedMaxSupply(uint maxSupply);

@@ -9,12 +9,9 @@ pragma solidity ^0.8.22;
 interface IHardWorker {
 
     //region ----- Custom Errors -----
-    error AlreadyExist();
-    error NotExist(address notExistObject);
+    error NotExistWithObject(address notExistObject);
     error AlreadyExclude(address alreadyExcludedObject);
-    error IncorrectArrayLength();
-    error IncorrectZeroArgument();
-    error NotAllowedMsgSender();
+    error NotServerOrGelato();
     error NotEnoughETH();
     error ETHTransferFailed();
     //endregion ----- Custom Errors -----

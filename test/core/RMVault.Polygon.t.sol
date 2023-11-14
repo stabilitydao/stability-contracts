@@ -95,7 +95,7 @@ contract RMVaultTest is PolygonSetup {
         assertEq(vault.duration(0), 86400 * 10);
 
         vm.prank(address(0));
-        vm.expectRevert("Controllable: not multisig");
+        vm.expectRevert(IControllable.NotMultisig.selector);
         vault.setRewardsRedirect(address(this), address(1));
         vault.setRewardsRedirect(address(this), address(1));
         assertEq ((vault.rewardsRedirect(address(this))), address(1));

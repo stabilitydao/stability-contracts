@@ -7,6 +7,20 @@ pragma solidity ^0.8.22;
 /// @author Alien Deployer (https://github.com/a17)
 interface IControllable {
 
+  
+    //region ----- Custom Errors -----
+    error IncorrectZeroArgument();
+    error NotGovernance();
+    error NotMultisig();
+    error NotGovernanceAndNotMultisig();
+    error NotOperator();
+    error NotFactory();
+    error IncorrectArrayLength();
+    error AlreadyExist();
+    error NotExist();
+    error NotTheOwner();
+    //endregion -- Custom Errors -----
+
   event ContractInitialized(address platform, uint ts, uint block);
 
   /// @notice Stability Platform main contract address

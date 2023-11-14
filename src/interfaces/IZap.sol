@@ -9,7 +9,6 @@ interface IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error StrategyNotSupported();
-    error ZeroAmount();
     error NotAllowedDexAggregator(address dexAggRouter);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
