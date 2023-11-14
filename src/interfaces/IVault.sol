@@ -8,6 +8,22 @@ import "./IStrategy.sol";
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
 interface IVault is IERC165 {
+
+
+    //region ----- Custom Errors -----
+    error IncorrectMsgSender();
+    error ETHTransferFailed();
+    error NotEnoughBalanceToPay();
+    error FuseTrigger();
+    error IncorrectArrayLength();
+    error IncorrectZeroArgument();
+    error ExceedSlippage(uint mintToUser, uint minToMint);
+    error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
+    error ExceedMaxSupply(uint maxSupply);
+    error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
+    error WaitAFewBlocks();
+    //endregion -- Custom Errors -----
+    
     //region ----- Events -----
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);

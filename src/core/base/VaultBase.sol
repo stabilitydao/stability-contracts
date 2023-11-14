@@ -109,10 +109,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
-        require(
-            msg.sender == _platform.hardWorker() || _platform.isOperator(msg.sender),
-            "VaultBase: you are not HardWorker or operator"
-        );
+        if(msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)){
+            revert IncorrectMsgSender();
+        }
         uint startGas = gasleft();
         strategy.doHardWork();
         uint gasUsed = startGas - gasleft();
@@ -123,14 +122,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             if (canCompensate) {
                 //slither-disable-next-line unused-return
                 (bool success, ) = msg.sender.call{value: gasCost}("");
-                require(success, "Vault: native transfer failed");
+                if(!success) {
+                    revert ETHTransferFailed();
+                }
                 compensated = true;
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
                 // todo #29 IPlatform variable
                 if (_tvl < 100e18) {
-                    revert("Vault: not enough balance to pay gas");
+                    revert NotEnoughBalanceToPay();
                 }
             }
         }
@@ -153,13 +154,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint _totalSupply = totalSupply();
         uint totalValue = strategy.total();
 
-        require(_totalSupply == 0 || totalValue > 0, "Vault: fuse trigger");
+        if(_totalSupply != 0 && totalValue == 0){
+            revert FuseTrigger();
+        }
 
         address[] memory assets = strategy.assets();
         address underlying = strategy.underlying();
 
         uint len = amountsMax.length;
-        require(len == assets_.length, "Vault: incorrect amounts length");
+        if(len != assets_.length){
+            revert IncorrectArrayLength();
+        }
 
         uint[] memory amountsConsumed;
         uint value;
@@ -176,7 +181,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             value = strategy.depositAssets(amountsConsumed);
         }
 
-        require(value > 0, "Vault: zero invest amount");
+        if(value == 0){
+            revert IncorrectZeroArgument();
+        }
 
         uint mintAmount = _mintShares(_totalSupply, value, totalValue, amountsConsumed, minSharesOut);
 
@@ -187,9 +194,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external virtual nonReentrant {
-        require(amountShares > 0, "Vault: zero amount");
-        require(amountShares <= balanceOf(msg.sender), "Vault: not enough balance");
-        require(assets_.length == minAssetAmountsOut.length, "Vault: incorrect length");
+        if(amountShares == 0){
+            revert IncorrectZeroArgument();
+        }
+        if(amountShares > balanceOf(msg.sender)){
+            revert NotEnoughBalanceToPay();
+        }
+        if(assets_.length != minAssetAmountsOut.length){
+            revert IncorrectArrayLength();
+        }
 
         _beforeWithdraw();
 
@@ -222,7 +235,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         uint len = amountsOut.length;
         for (uint i; i < len; ++i) {
-            require(amountsOut[i] >= minAssetAmountsOut[i], "Vault: slippage");
+            if(amountsOut[i] < minAssetAmountsOut[i]){
+                revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
+            }
         }
 
         _burn(msg.sender, amountShares);
@@ -334,10 +349,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function _mintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut) internal returns (uint mintAmount) {
         uint initialShares;
         (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed);
-        require(maxSupply == 0 || mintAmount + totalSupply_ <= maxSupply, "Vault: max supply");
-
-        require(mintAmount >= minSharesOut, "Vault: slippage");
-
+        if(maxSupply != 0 && mintAmount + totalSupply_ > maxSupply){
+            revert ExceedMaxSupply(maxSupply);
+        }
+        if(mintAmount < minSharesOut){
+            revert ExceedSlippage(mintAmount, minSharesOut);
+        }
         if (initialShares > 0) {
             _mint(ConstantsLib.DEAD_ADDRESS, initialShares);
         }
@@ -359,13 +376,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;
-            require(mintAmount >= initialShares * 1000, "Vault: not enough amount to init supply");
+            if(mintAmount < initialShares * 1000){
+                revert NotEnoughAmountToInitSupply(mintAmount, initialShares * 1000);
+            }
             mintAmount -= initialShares;
         }
     }
 
     function _beforeWithdraw() internal {
-        require(_withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS < block.number, "Vault: wait few blocks");
+        if(_withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
+            revert WaitAFewBlocks();
+        }
         _withdrawRequests[msg.sender] = block.number;
     }
 

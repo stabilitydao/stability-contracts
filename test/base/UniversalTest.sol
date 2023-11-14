@@ -339,7 +339,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(vaultBalance, sharesOut);
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
-                    vm.expectRevert(bytes("Vault: wait few blocks"));
+                    vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
                     IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     vm.roll(block.number + 6);
                     IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
