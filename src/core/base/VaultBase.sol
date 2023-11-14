@@ -123,7 +123,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 //slither-disable-next-line unused-return
                 (bool success, ) = msg.sender.call{value: gasCost}("");
                 if(!success) {
-                    revert ETHTransferFailed();
+                    revert IControllable.ETHTransferFailed();
                 }
                 compensated = true;
             } else {

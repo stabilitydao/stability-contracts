@@ -13,7 +13,6 @@ interface IHardWorker {
     error AlreadyExclude(address alreadyExcludedObject);
     error NotServerOrGelato();
     error NotEnoughETH();
-    error ETHTransferFailed();
     //endregion ----- Custom Errors -----
 
     event Call(uint hardworks, uint gasUsed, uint gasCost, bool server);

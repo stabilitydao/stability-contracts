@@ -314,7 +314,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         vm.txGasPrice(15e10);
         deal(address(hw), type(uint).max);
-        vm.expectRevert(abi.encodeWithSelector(IHardWorker.ETHTransferFailed.selector));
+        vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
         hw.call(vaultsForHardWork);
         canReceive = true;
         hw.call(vaultsForHardWork);

@@ -221,7 +221,7 @@ contract HardWorker is Controllable, IHardWorker {
             //slither-disable-next-line unused-return
             (bool success, ) = msg.sender.call{value: gasCost}("");
             if(!success){
-                revert ETHTransferFailed();
+                revert IControllable.ETHTransferFailed();
             }
         }
 

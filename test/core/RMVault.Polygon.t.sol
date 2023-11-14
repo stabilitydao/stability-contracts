@@ -85,8 +85,8 @@ contract RMVaultTest is PolygonSetup {
         
         (uint sharePriceBefore,) = vault.price();
         vault.doHardWork();
-        (uint sharePricieAfter,) = vault.price();
-        assertEq(sharePriceBefore, sharePricieAfter);
+        (uint sharePriceAfter,) = vault.price();
+        assertEq(sharePriceBefore, sharePriceAfter);
 
         assertEq(vault.earned(0, address(this)), 0);
         skip(86400);
@@ -101,17 +101,17 @@ contract RMVaultTest is PolygonSetup {
         assertEq ((vault.rewardsRedirect(address(this))), address(1));
 
         vault.setRewardsRedirect(address(this), address(0));
-        vm.expectRevert("zero receiver");
+        vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         vault.getAllRewardsAndRedirect(address(this));
 
         vault.setRewardsRedirect(address(this), address(1));
         vault.getAllRewardsAndRedirect(address(this));
 
         vm.prank(address(123));
-        vm.expectRevert("RVault: Not allowed");
+        vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(this));
         vault.getAllRewardsFor(address(this));
 
-        assertGt(vault.rewardPerToken(0), 0);
+        assertGt(vault.rewardPerToken(0), 0); 
     }
 }

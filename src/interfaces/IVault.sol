@@ -11,8 +11,6 @@ interface IVault is IERC165 {
 
 
     //region ----- Custom Errors -----
-    error IncorrectMsgSender();
-    error ETHTransferFailed();
     error NotEnoughBalanceToPay();
     error FuseTrigger();
     error ExceedSlippage(uint mintToUser, uint minToMint);

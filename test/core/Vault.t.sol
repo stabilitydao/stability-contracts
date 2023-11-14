@@ -108,7 +108,7 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert(abi.encodeWithSelector(IVault.NotEnoughBalanceToPay.selector));
         vault.doHardWork();
 
-        vm.expectRevert(abi.encodeWithSelector(IVault.IncorrectMsgSender.selector));
+        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectMsgSender.selector));
         vm.prank(address(666));
         vault.doHardWork();
 
