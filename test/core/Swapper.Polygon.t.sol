@@ -231,16 +231,20 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         vm.expectRevert(abi.encodeWithSelector(ISwapper.IncorrectArrayLength.selector));
         swapper.setThresholds(tokenIn, newThresholdAmount);
         uint threshold = swapper.threshold(PolygonLib.TOKEN_USDC);
-        vm.expectRevert("Swapper: swap amount less threshold");
+        vm.expectRevert(abi.encodeWithSelector(ISwapper.LessThenThreshold.selector, threshold));
         swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, threshold - 1, 1_000); // 1%
     }
 
     function testSwapByRoute4Pools() public {
-        // quickswap -> uniswapv3 -> quickswap -> quuickswap
+        // quickswap -> uniswapv3 -> quickswap -> quickswap
         (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDT, PolygonLib.TOKEN_dQUICK);
         assertEq(route.length, 4);
         swapper.swapWithRoute(route, 1e6, 1_000); // 1%
+        ISwapper.PoolData[] memory _route = new ISwapper.PoolData[](0);
+        vm.expectRevert(abi.encodeWithSelector(ISwapper.IncorrectArrayLength.selector));
+        swapper.swapWithRoute(_route, 1e6, 1_000); 
     }
+
 
     function testSetup() public {
         Proxy proxy = new Proxy();

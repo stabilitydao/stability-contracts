@@ -168,9 +168,9 @@ contract Swapper is Controllable, ISwapper {
         if (route.length == 0) {
             revert(errorMessage);
         }
-
-        require(amount >= threshold[tokenIn], "Swapper: swap amount less threshold");
-
+        if(amount < threshold[tokenIn]){
+            revert LessThenThreshold(threshold[tokenIn]);
+        }
         _swap(route, amount, priceImpactTolerance);
     }
 
@@ -447,7 +447,9 @@ contract Swapper is Controllable, ISwapper {
         uint amount,
         uint priceImpactTolerance
     ) internal {
-        require(route.length > 0, "ZERO_LENGTH");
+        if(route.length == 0){
+            revert IncorrectArrayLength();
+        } 
 
         for (uint i; i < route.length; i++) {
             PoolData memory data = route[i];

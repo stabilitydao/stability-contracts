@@ -18,6 +18,7 @@ interface ISwapper {
   error AlreadyExist();
   error NotExist();
   error UnknownAMMAdapter();
+  error LessThenThreshold(uint minimumAmount);
   //endregion -- Custom Errors -----
 
   struct PoolData {
