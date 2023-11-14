@@ -13,7 +13,8 @@ import "../integrations/gelato/IAutomate.sol";
 import "../integrations/gelato/IOpsProxyFactory.sol";
 import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 
-/// @notice HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
+/// @notice HardWork resolver and caller.
+/// Primary executor is server script, reserve executor is Gelato Automate.
 /// @author Alien Deployer (https://github.com/a17)
 contract HardWorker is Controllable, IHardWorker {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -164,12 +165,13 @@ contract HardWorker is Controllable, IHardWorker {
         uint startGas = gasleft();
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
+        bool isGelato = msg.sender == $.dedicatedGelatoMsgSender;
         require(
-            isServer || msg.sender == $.dedicatedGelatoMsgSender,
+            isServer || isGelato,
             "HardWorker: only dedicated senders"
         );
 
-        if (!isServer) {
+        if (isGelato) {
             ITaskTreasuryUpgradable _treasury = $.gelatoTaskTreasury;
             uint bal = _treasury.userTokenBalance(address(this), ETH);
             if (bal < $.gelatoMinBalance) {
@@ -287,19 +289,21 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaultsForHardWork = new address[](len);
         uint counter;
         for (uint i; i < len; ++i) {
-            if (!$.excludedVaults[vaults[i]]) {
-                IVault vault = IVault(vaults[i]);
-                IStrategy strategy = vault.strategy();
-                //slither-disable-next-line unused-return
-                (uint tvl,) = vault.tvl();
-                if(
-                    tvl > 0
-                    && block.timestamp - strategy.lastHardWork() > delay_
-                    && factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE
-                ) {
-                    ++counter;
-                    vaultsForHardWork[i] = vaults[i];
-                }
+            if ($.excludedVaults[vaults[i]]) {
+                continue;
+            }
+
+            IVault vault = IVault(vaults[i]);
+            IStrategy strategy = vault.strategy();
+            //slither-disable-next-line unused-return
+            (uint tvl,) = vault.tvl();
+            if(
+                tvl > 0
+                && block.timestamp - strategy.lastHardWork() > delay_
+                && factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE
+            ) {
+                ++counter;
+                vaultsForHardWork[i] = vaults[i];
             }
         }
 
@@ -309,10 +313,12 @@ contract HardWorker is Controllable, IHardWorker {
             address[] memory vaultsResult = new address[](counter);
             uint j;
             for (uint i; i < len; ++i) {
-                if (vaultsForHardWork[i] != address(0)) {
-                    vaultsResult[j] = vaultsForHardWork[i];
-                    ++j;
+                if (vaultsForHardWork[i] == address(0)) {
+                    continue;
                 }
+
+                vaultsResult[j] = vaultsForHardWork[i];
+                ++j;
             }
 
             return (true, abi.encodeWithSelector(HardWorker.call.selector, vaultsResult));
