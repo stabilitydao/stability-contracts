@@ -67,7 +67,6 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         if(_ownerOf(tokenId) == address(0)){
             revert NotExist();
         }
-        //toDo test _ownerOf
 
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());

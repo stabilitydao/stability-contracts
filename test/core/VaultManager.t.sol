@@ -134,4 +134,10 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         assertEq(vaultManager.supportsInterface(type(IERC721Enumerable).interfaceId), true);
         assertEq(vaultManager.supportsInterface(type(IVaultManager).interfaceId), true);
     }
+
+    function testTokenURI() public {
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
+        vm.expectRevert(abi.encodeWithSelector(IVaultManager.NotExist.selector));
+        vaultManager.tokenURI(666);
+    }
 }
