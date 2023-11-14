@@ -197,13 +197,15 @@ contract PlatformPolygonTest is PolygonSetup {
         {
             (
                 address[] memory vaultAddress,
+                string[] memory name,
                 string[] memory symbol,
                 string[] memory _vaultType,
-                string[] memory _strategyId,,
+                string[] memory _strategyId,,,,
             ) = IVaultManager(platform.vaultManager()).vaults();
             console.log('Built:');
             for (uint i; i < vaultAddress.length; ++i) {
                 assertGt(bytes(symbol[i]).length, 0);
+                assertGt(bytes(name[i]).length, 0);
                 assertGt(bytes(_vaultType[i]).length, 0);
                 assertGt(bytes(_strategyId[i]).length, 0);
                 console.log(string.concat(' ', symbol[i]));
@@ -238,7 +240,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         // check HardWorker.changeVaultExcludeStatus
         {
-            (address[] memory vaultAddress,,,,,) = IVaultManager(platform.vaultManager()).vaults();
+            (address[] memory vaultAddress,,,,,,,,) = IVaultManager(platform.vaultManager()).vaults();
             address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
             bool[] memory status = new bool[](1);

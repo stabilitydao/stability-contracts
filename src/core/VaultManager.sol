@@ -107,28 +107,38 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     /// @inheritdoc IVaultManager
     function vaults() external view returns(
         address[] memory vaultAddress,
+        string[] memory name,
         string[] memory symbol,
         string[] memory vaultType,
         string[] memory strategyId,
         uint[] memory sharePrice,
-        uint[] memory tvl
+        uint[] memory tvl,
+        uint[] memory totalApr,
+        uint[] memory strategyApr
     ) {
         uint len = totalSupply();
         vaultAddress = new address[](len);
+        name = new string[](len);
         symbol = new string[](len);
         vaultType = new string[](len);
         strategyId = new string[](len);
         sharePrice = new uint[](len);
+        totalApr = new uint[](len);
+        strategyApr = new uint[](len);
         tvl = new uint[](len);
         for (uint i; i < len; ++i) {
             vaultAddress[i] = tokenVault[i];
+            IVault vault = IVault(vaultAddress[i]);
+            name[i] = IERC20Metadata(vaultAddress[i]).name();
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
-            vaultType[i] = IVault(vaultAddress[i]).VAULT_TYPE();
-            strategyId[i] = IVault(vaultAddress[i]).strategy().STRATEGY_LOGIC_ID();
+            vaultType[i] = vault.VAULT_TYPE();
+            strategyId[i] = vault.strategy().STRATEGY_LOGIC_ID();
             //slither-disable-next-line unused-return
-            (sharePrice[i],) = IVault(vaultAddress[i]).price();
+            (totalApr[i],strategyApr[i],,) = vault.getApr();
             //slither-disable-next-line unused-return
-            (tvl[i],) = IVault(vaultAddress[i]).tvl();
+            (sharePrice[i],) = vault.price();
+            //slither-disable-next-line unused-return
+            (tvl[i],) = vault.tvl();
         }
     }
 
