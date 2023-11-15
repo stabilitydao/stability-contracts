@@ -51,25 +51,49 @@ interface IVaultManager is IERC721Metadata {
     /// @return receiver Address of vault manager fees receiver
     function getRevenueReceiver(uint tokenId) external view returns (address receiver);
 
-    /// @notice All vaults data
+    /// @notice All vaults data.
+    /// The output values are matched by index in the arrays.
     /// @param vaultAddress Vault addresses
-    /// @param symbol Vault symbol. Indexed as in previous output array
-    /// @param vaultType Vault type ID string. Indexed as in previous output array
-    /// @param strategyId Strategy logic ID string. Indexed as in previous output array
-    /// @param sharePrice Current vault share price in USD. 18 decimals. Indexed as in previous output array
-    /// @param tvl Current vault TVL in USD. 18 decimals. Indexed as in previous output array
+    /// @param name Vault name
+    /// @param symbol Vault symbol
+    /// @param vaultType Vault type ID string
+    /// @param strategyId Strategy logic ID string
+    /// @param sharePrice Current vault share price in USD. 18 decimals
+    /// @param tvl Current vault TVL in USD. 18 decimals
+    /// @param totalApr Last total vault APR. Denominator is 100_00.
+    /// @param strategyApr Last strategy APR. Denominator is 100_00.
     function vaults() external view returns(
         address[] memory vaultAddress,
+        string[] memory name,
         string[] memory symbol,
         string[] memory vaultType,
         string[] memory strategyId,
         uint[] memory sharePrice,
-        uint[] memory tvl
+        uint[] memory tvl,
+        uint[] memory totalApr,
+        uint[] memory strategyApr
     );
 
     /// @notice All deployed vault addresses
     /// @return vaultAddress Addresses of vault proxy
     function vaultAddresses() external view returns(address[] memory vaultAddress);
+
+    /// @notice Vault extended info getter
+    /// @param vault Address of vault proxy
+    /// @return strategy
+    /// @return strategyAssets
+    /// @return underlying
+    /// @return assetsWithApr Assets with underlying APRs that can be provided by AprOracle
+    /// @return assetsAprs APRs of assets with APR. Matched by index wuth previous param.
+    /// @return lastHardWork Last HardWork time
+    function vaultInfo(address vault) external view returns(
+        address strategy,
+        address[] memory strategyAssets,
+        address underlying,
+        address[] memory assetsWithApr,
+        uint[] memory assetsAprs,
+        uint lastHardWork
+    );
 
     //endregion -- View functions -----
 

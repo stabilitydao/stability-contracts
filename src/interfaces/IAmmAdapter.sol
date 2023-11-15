@@ -9,6 +9,7 @@ interface IAmmAdapter {
     //region ----- Custom Errors -----
     error PriceIncreased();
     error WrongCallbackAmount();
+    error NotSupportedByCAMM();
     //endregion -- Custom Errors -----
 
     event SwapInPool (
@@ -20,8 +21,6 @@ interface IAmmAdapter {
         uint amountIn,
         uint amountOut
     );
-
-    error NotSupportedByCAMM();
 
     struct SwapCallbackData {
         address tokenIn;
@@ -61,7 +60,8 @@ interface IAmmAdapter {
     /// @return amounts Amounts out of provided liquidity
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts);
 
-    /// @notice Priced proportion of first pool asset
+    /// @notice Priced proportion of first pool asset.
+    /// Helper method for pools with two tokens.
     /// @param pool Address of a pool supported by the adapter
     /// @return Proportion with 5 decimals precision. Max is 100_000, min is 0.
     function getProportion0(address pool) external view returns (uint);
