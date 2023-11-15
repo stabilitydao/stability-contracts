@@ -165,6 +165,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         strategy = address(s);
         strategyAssets = s.assets();
         underlying = s.underlying();
+        //slither-disable-next-line unused-return
         (,,assetsWithApr, assetsAprs) = v.getApr();
         lastHardWork = s.lastHardWork();
     }
