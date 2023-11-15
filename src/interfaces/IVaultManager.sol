@@ -78,6 +78,23 @@ interface IVaultManager is IERC721Metadata {
     /// @return vaultAddress Addresses of vault proxy
     function vaultAddresses() external view returns(address[] memory vaultAddress);
 
+    /// @notice Vault extended info getter
+    /// @param vault Address of vault proxy
+    /// @return strategy
+    /// @return strategyAssets
+    /// @return underlying
+    /// @return assetsWithApr Assets with underlying APRs that can be provided by AprOracle
+    /// @return assetsAprs APRs of assets with APR. Matched by index wuth previous param.
+    /// @return lastHardWork Last HardWork time
+    function vaultInfo(address vault) external view returns(
+        address strategy,
+        address[] memory strategyAssets,
+        address underlying,
+        address[] memory assetsWithApr,
+        uint[] memory assetsAprs,
+        uint lastHardWork
+    );
+
     //endregion -- View functions -----
 
     //region ----- Write functions -----

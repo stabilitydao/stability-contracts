@@ -152,6 +152,24 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
+    function vaultInfo(address vault) external view returns(
+        address strategy,
+        address[] memory strategyAssets,
+        address underlying,
+        address[] memory assetsWithApr,
+        uint[] memory assetsAprs,
+        uint lastHardWork
+    ) {
+        IVault v = IVault(vault);
+        IStrategy s = v.strategy();
+        strategy = address(s);
+        strategyAssets = s.assets();
+        underlying = s.underlying();
+        (,,assetsWithApr, assetsAprs) = v.getApr();
+        lastHardWork = s.lastHardWork();
+    }
+
+    /// @inheritdoc IVaultManager
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
         receiver = _revenueReceiver[tokenId];
         if (receiver == address(0)) {

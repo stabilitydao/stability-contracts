@@ -193,6 +193,7 @@ contract PlatformPolygonTest is PolygonSetup {
         (string[] memory descEmpty,,,,,,,,) = factory.whatToBuild();
         assertEq(descEmpty.length, 0);
 
+        IVaultManager vaultManager = IVaultManager(platform.vaultManager());
         // deposit to all vaults
         {
             (
@@ -201,7 +202,7 @@ contract PlatformPolygonTest is PolygonSetup {
                 string[] memory symbol,
                 string[] memory _vaultType,
                 string[] memory _strategyId,,,,
-            ) = IVaultManager(platform.vaultManager()).vaults();
+            ) = vaultManager.vaults();
             console.log('Built:');
             for (uint i; i < vaultAddress.length; ++i) {
                 assertGt(bytes(symbol[i]).length, 0);
@@ -240,7 +241,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         // check HardWorker.changeVaultExcludeStatus
         {
-            (address[] memory vaultAddress,,,,,,,,) = IVaultManager(platform.vaultManager()).vaults();
+            (address[] memory vaultAddress,,,,,,,,) = vaultManager.vaults();
             address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
             bool[] memory status = new bool[](1);
@@ -264,6 +265,20 @@ contract PlatformPolygonTest is PolygonSetup {
 
             status[0] = false;
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
+        }
+
+        // check vault manager method
+        {
+            (address[] memory vaultAddress,,,,,,,,) = vaultManager.vaults();
+            (
+                address strategy,
+                address[] memory strategyAssets,
+                ,
+                ,
+                ,
+            ) = vaultManager.vaultInfo(vaultAddress[0]);
+            assertNotEq(strategy, address(0));
+            assertGt(strategyAssets.length, 0);
         }
  
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
