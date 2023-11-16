@@ -523,6 +523,8 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function getData() external view returns(
         address[] memory platformAddresses,
+        address[] memory bcAssets,
+        address[] memory dexAggregators_,
         string[] memory vaultType,
         bytes32[] memory vaultExtra,
         uint[] memory vaultBuildingPrice,
@@ -540,6 +542,9 @@ contract Platform is Controllable, IPlatform {
         platformAddresses[2] = strategyLogic;
         platformAddresses[3] = buildingPermitToken;
         platformAddresses[4] = buildingPayPerVaultToken;
+        ISwapper _swapper = ISwapper(swapper);
+        bcAssets = _swapper.bcAssets();
+        dexAggregators_ = _dexAggregators.values();
         IFactory _factory = IFactory(factory);
         (vaultType,,,,vaultBuildingPrice,vaultExtra) = _factory.vaultTypes();
         (strategyId,,,isFarmingStrategy,,strategyTokenURI,strategyExtra) = _factory.strategies();
