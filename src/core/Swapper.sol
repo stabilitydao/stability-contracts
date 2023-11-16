@@ -18,6 +18,8 @@ contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    //region ----- Constants -----
+    
     /// @dev Version of Swapper implementation
     string public constant VERSION = "1.0.0";
 
@@ -25,6 +27,8 @@ contract Swapper is Controllable, ISwapper {
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Swapper")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant SWAPPER_STORAGE_LOCATION = 0xa3f85328863358c70a5d8558b355ddce3bfd90131b6ba971b451f8def7c6e700;
+    
+    //endregion ----- Constants -----
 
     //region ----- Storage -----
 
@@ -510,6 +514,10 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
+    //endregion ----- Internal logic -----
+
+    //region ----- Private functions -----
+
     function _getStorage() private pure returns (SwapperStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
@@ -517,5 +525,5 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
-    //endregion -- Internal logic -----
+    //endregion -- Private functions -----
 }

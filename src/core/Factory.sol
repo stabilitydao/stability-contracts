@@ -66,14 +66,16 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //endregion -- Storage -----
 
-    //region ----- Internal functions -----
+    //region ----- Private functions -----
+
     function _getStorage() private pure returns (FactoryStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := FACTORY_STORAGE_LOCATION
         }
     }
-    //endregion -- Internal functions -----
+    
+    //endregion -- Private functions -----
 
     //region ----- Data types -----
 

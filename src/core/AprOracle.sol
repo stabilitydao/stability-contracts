@@ -11,16 +11,26 @@ import "../interfaces/IAprOracle.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 contract AprOracle is Controllable, IAprOracle {
+    //region ----- Storage -----
+
     /// @custom:storage-location erc7201:stability.AprOracle
     struct AprOracleStorage {
         mapping (address asset => uint apr) assetApr;
     }
+    
+    //region ----- Storage -----
+
+    //region ----- Constants -----
 
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AprOracle")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant APRORACLE_STORAGE_LOCATION = 0x0dc0ce6c496f1b862d4b48237a101bb40130a02088e33738cbe0a34f7cf84300;
+    
+    //region ----- Constants -----
+
+    //region ----- Private functions -----
 
     function _getStorage() private pure returns (AprOracleStorage storage $) {
         //slither-disable-next-line assembly
@@ -28,6 +38,8 @@ contract AprOracle is Controllable, IAprOracle {
             $.slot := APRORACLE_STORAGE_LOCATION
         }
     }
+
+    //endregion ----- Private functions -----
 
     function initialize(address platform_) external initializer {
         __Controllable_init(platform_);

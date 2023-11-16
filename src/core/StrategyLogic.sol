@@ -15,11 +15,17 @@ import "../interfaces/IStrategy.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLogic {
 
+    //region ----- Constants -----
+    
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyLogic")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYLOGIC_STORAGE_LOCATION = 0x6e9c56d392637a53a86185fd13e3616947723bd87b0aa4ceb3748b95873c8c00;
+    
+    //endregion ----- Constants -----
+
+    //region ----- Storage -----
 
     /// @custom:storage-location erc7201:stability.StrategyLogic
     struct StrategyLogicStorage {
@@ -28,12 +34,18 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         mapping (uint tokenId => address account) _revenueReceiver;
     }
 
+    //endregion ----- Storage -----
+
+    //region ----- Private functions -----
+
     function _getStorage() private pure returns (StrategyLogicStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := STRATEGYLOGIC_STORAGE_LOCATION
         }
     }
+    
+    //endregion ----- Private functions -----
 
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
