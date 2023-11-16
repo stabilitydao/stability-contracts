@@ -99,7 +99,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             vaultData.symbol
         ) = factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
 
-        (,,,,,vaultData.strategyTokenId) = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId)));
+        vaultData.strategyTokenId = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId))).tokenId;
 
         return VaultManagerLib.tokenURI(vaultData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
     }

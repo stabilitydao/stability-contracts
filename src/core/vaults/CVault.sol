@@ -8,6 +8,7 @@ import "../libs/CommonLib.sol";
 /// @notice Tokenized 100% auto compounding vault with a single underlying liquidity mining position.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract CVault is VaultBase {
     //region ----- Constants -----
 
@@ -29,16 +30,17 @@ contract CVault is VaultBase {
 
     /// @inheritdoc IVault
     function initialize(
-        address platform_,
-        address strategy_,
-        string memory name_,
-        string memory symbol_,
-        uint tokenId_,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
+        VaultInitializationData memory vaultInitializationData
     ) initializer public {
-        __VaultBase_init(platform_, VaultTypeLib.COMPOUNDING, strategy_, name_, symbol_, tokenId_);
-        if(vaultInitAddresses.length != 0 || vaultInitNums.length != 0) {
+        __VaultBase_init(
+            vaultInitializationData.platform,
+            VaultTypeLib.COMPOUNDING,
+            vaultInitializationData.strategy,
+            vaultInitializationData.name,
+            vaultInitializationData.symbol,
+            vaultInitializationData.tokenId
+        );
+        if(vaultInitializationData.vaultInitAddresses.length != 0 || vaultInitializationData.vaultInitNums.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
     }

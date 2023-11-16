@@ -83,7 +83,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         vars.strategyLogic = platform.strategyLogic();
         for (uint i; i < strategies.length; ++i) {
             assertNotEq(StrategyDeveloperLib.getDeveloper(strategies[i].id), address(0), "Universal test: put your address to StrategyDeveloperLib");
-            (,vars.strategyImplementation,,,vars.farming, vars.tokenId) = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
+            IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
+            (vars.strategyImplementation, vars.farming, vars.tokenId) = (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
             writeNftSvgToFile(vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg"));
             vars.types = IStrategy(vars.strategyImplementation).supportedVaultTypes();
 
@@ -278,21 +279,28 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.entries = vm.getRecordedLogs();
                     for (uint j = 0; j < vars.entries.length; ++j) {
                         if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256)")) {
-                            (vars.apr, vars.aprCompound, vars.earned, tvl, vars.duration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
+                            // (vars.apr, vars.aprCompound, vars.earned, tvl, vars.duration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
+                            (uint tempApr, uint tempAprCompound, uint tempEarned, uint tempTvl, uint tempDuration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
+
+                            vars.apr = tempApr;
+                            vars.aprCompound = tempAprCompound;
+                            vars.earned = tempEarned;
+                            tvl = tempTvl;
+                            vars.duration = tempDuration;
 
                             console.log(string.concat(
-                                '    APR: ', CommonLib.formatApr(vars.apr),
-                                '. APR compound: ', CommonLib.formatApr(vars.aprCompound),
-                                '. Earned: ', CommonLib.formatUsdAmount(vars.earned),
-                                '. TVL: ', CommonLib.formatUsdAmount(tvl),
-                                '. Duration: ', Strings.toString(vars.duration),
+                                '    APR: ', CommonLib.formatApr(tempApr),
+                                '. APR compound: ', CommonLib.formatApr(tempAprCompound),
+                                '. Earned: ', CommonLib.formatUsdAmount(tempEarned),
+                                '. TVL: ', CommonLib.formatUsdAmount(tempTvl),
+                                '. Duration: ', Strings.toString(tempDuration),
                                 '.'
                             ));
 
-                            assertGt(vars.apr, 0);
-                            assertGt(vars.earned, 0);
-                            assertGt(tvl, 0);
-                            assertGt(vars.duration, 0);
+                            assertGt(tempApr, 0);
+                            assertGt(tempEarned, 0);
+                            assertGt(tempTvl, 0);
+                            assertGt(tempDuration, 0);
                         }
                     }
                 }
@@ -321,28 +329,29 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 address underlying = strategy.underlying();
                 if (underlying != address(0)) {
                     skip(7200);
+                    address tempVault = vars.vault;
                     deal(underlying, address(this), totalWas);
                     assertEq(IERC20(underlying).balanceOf(address(this)), totalWas);
-                    IERC20(underlying).approve(vars.vault, totalWas);
+                    IERC20(underlying).approve(tempVault, totalWas);
                     address[] memory underlyingAssets = new address[](1);
                     underlyingAssets[0] = underlying;
                     uint[] memory underlyingAmounts = new uint[](1);
                     underlyingAmounts[0] = totalWas;
-                    (, uint sharesOut, uint valueOut) = IVault(vars.vault).previewDepositAssets(underlyingAssets, underlyingAmounts);
+                    (, uint sharesOut, uint valueOut) = IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
                     assertEq(valueOut, totalWas);
                     uint lastHw = strategy.lastHardWork();
-                    IVault(vars.vault).depositAssets(underlyingAssets, underlyingAmounts, 0);
+                    IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0);
                     assertGt(strategy.lastHardWork(), lastHw);
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
                     assertGt(strategy.total(), totalWas);
-                    uint vaultBalance = IERC20(vars.vault).balanceOf(address(this));
+                    uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
                     assertEq(vaultBalance, sharesOut);
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
                     vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
-                    IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
+                    IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     vm.roll(block.number + 6);
-                    IVault(vars.vault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
+                    IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1);
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
                 } else {

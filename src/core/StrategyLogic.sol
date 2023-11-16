@@ -67,8 +67,9 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         strategyData.strategyId = tokenStrategyLogic[tokenId];
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
-        address implementation;
-        (,implementation,,,,strategyData.strategyTokenId) = factory.strategyLogicConfig(keccak256(bytes(strategyData.strategyId)));
+        IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(keccak256(bytes(strategyData.strategyId)));
+        address implementation = strategyConfig.implementation;
+        strategyData.strategyTokenId = strategyConfig.tokenId;
         strategyData.strategyExtra = IStrategy(implementation).extra();
         return StrategyLogicLib.tokenURI(strategyData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
     }
