@@ -18,15 +18,22 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
-    /// @dev Mapping between tokens and strategy logic ID
-    mapping (uint tokenId => string strategyLogicId) public tokenStrategyLogic;
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyLogic")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant STRATEGYLOGIC_STORAGE_LOCATION = 0x6e9c56d392637a53a86185fd13e3616947723bd87b0aa4ceb3748b95873c8c00;
 
-    mapping (uint tokenId => address account) internal _revenueReceiver;
+    /// @custom:storage-location erc7201:stability.StrategyLogic
+    struct StrategyLogicStorage {
+        /// @dev Mapping between tokens and strategy logic ID
+        mapping (uint tokenId => string strategyLogicId) tokenStrategyLogic;
+        mapping (uint tokenId => address account) _revenueReceiver;
+    }
 
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 2] private __gap;
+    function _getStorage() private pure returns (StrategyLogicStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := STRATEGYLOGIC_STORAGE_LOCATION
+        }
+    }
 
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
@@ -35,8 +42,9 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
 
     /// @inheritdoc IStrategyLogic
     function mint(address to, string memory strategyLogicId) external onlyFactory returns (uint tokenId) {
+        StrategyLogicStorage storage $ = _getStorage();
         tokenId = totalSupply();
-        tokenStrategyLogic[tokenId] = strategyLogicId;
+        $.tokenStrategyLogic[tokenId] = strategyLogicId;
         _mint(to, tokenId);
     }
 
@@ -45,13 +53,15 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         if(_ownerOf(tokenId) != msg.sender){
             revert NotTheOwner();
         }
-        _revenueReceiver[tokenId] = receiver;
+        StrategyLogicStorage storage $ = _getStorage();
+        $._revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
     }
 
     /// @inheritdoc IStrategyLogic
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
-        receiver = _revenueReceiver[tokenId];
+        StrategyLogicStorage storage $ = _getStorage();
+        receiver = $._revenueReceiver[tokenId];
         if (receiver == address(0)) {
             receiver = _ownerOf(tokenId);
         }
@@ -63,8 +73,9 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         if(_ownerOf(tokenId) == address(0)){
             revert NotExist();
         }
+        StrategyLogicStorage storage $ = _getStorage();
         StrategyData memory strategyData;
-        strategyData.strategyId = tokenStrategyLogic[tokenId];
+        strategyData.strategyId = $.tokenStrategyLogic[tokenId];
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
         IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(keccak256(bytes(strategyData.strategyId)));
@@ -80,5 +91,11 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
             interfaceId == type(IStrategyLogic).interfaceId
             || interfaceId == type(IControllable).interfaceId
             || super.supportsInterface(interfaceId);
+    }
+
+    /// @inheritdoc IStrategyLogic
+    function tokenStrategyLogic(uint tokenId) external view returns (string memory strategyLogicId) {
+        StrategyLogicStorage storage $ = _getStorage();
+        strategyLogicId = $.tokenStrategyLogic[tokenId];
     }
 }
