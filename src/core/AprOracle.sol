@@ -23,6 +23,7 @@ contract AprOracle is Controllable, IAprOracle {
     bytes32 private constant APRORACLE_STORAGE_LOCATION = 0x0dc0ce6c496f1b862d4b48237a101bb40130a02088e33738cbe0a34f7cf84300;
 
     function _getStorage() private pure returns (AprOracleStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := APRORACLE_STORAGE_LOCATION
         }
