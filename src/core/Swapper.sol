@@ -23,24 +23,22 @@ contract Swapper is Controllable, ISwapper {
 
     uint public constant ROUTE_LENGTH_MAX = 5;
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Swapper")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant SWAPPER_STORAGE_LOCATION = 0xa3f85328863358c70a5d8558b355ddce3bfd90131b6ba971b451f8def7c6e700;
+
     //region ----- Storage -----
 
-    mapping(address tokenIn => PoolData) public pools;
-    mapping(address tokenIn => mapping(address tokenOut => PoolData)) public blueChipsPools;
-
-    /// @inheritdoc ISwapper
-    mapping(address token => uint minAmountToSwap) public threshold;
-
-    /// @dev Assets list. 2 slots used.
-    EnumerableSet.AddressSet internal _assets;
-
-    /// @dev Blue Chip Assets list. 2 slots used.
-    EnumerableSet.AddressSet internal _bcAssets;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 7] private __gap;
+    /// @custom:storage-location erc7201:stability.Swapper
+    struct SwapperStorage {
+        mapping(address tokenIn => PoolData) pools;
+        mapping(address tokenIn => mapping(address tokenOut => PoolData)) blueChipsPools;    
+        /// @inheritdoc ISwapper
+        mapping(address token => uint minAmountToSwap) threshold;
+        /// @dev Assets list. 2 slots used.
+        EnumerableSet.AddressSet _assets;
+        /// @dev Blue Chip Assets list. 2 slots used.
+        EnumerableSet.AddressSet _bcAssets;
+    }
 
     //endregion -- Storage -----
 
@@ -52,20 +50,22 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function addPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
+        SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            if(pools[pool.tokenIn].pool != address(0) && !rewrite){
+            if($.pools[pool.tokenIn].pool != address(0) && !rewrite){
                 revert AlreadyExist();
             }
-            pools[pool.tokenIn] = pool;
-            bool assetAdded = _assets.add(pool.tokenIn);
+            $.pools[pool.tokenIn] = pool;
+            bool assetAdded = $._assets.add(pool.tokenIn);
             emit PoolAdded(pool, assetAdded);
         }
     }
 
     /// @inheritdoc ISwapper
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
+        SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory poolData;
@@ -76,31 +76,33 @@ contract Swapper is Controllable, ISwapper {
             if(poolData.ammAdapter == address(0)){
                 revert UnknownAMMAdapter();
             }
-            if(pools[poolData.tokenIn].pool != address(0) && !rewrite){
+            if($.pools[poolData.tokenIn].pool != address(0) && !rewrite){
                 revert AlreadyExist();
             }
-            pools[poolData.tokenIn] = poolData;
-            bool assetAdded = _assets.add(poolData.tokenIn);
+            $.pools[poolData.tokenIn] = poolData;
+            bool assetAdded = $._assets.add(poolData.tokenIn);
             emit PoolAdded(poolData, assetAdded);
         }
     }
 
     function removePool(address token) external onlyOperator {
-        delete pools[token];
-        _assets.remove(token);
+        SwapperStorage storage $ = _getStorage();
+        delete $.pools[token];
+        $._assets.remove(token);
         emit PoolRemoved(token);
     }
 
     /// @inheritdoc ISwapper
     function addBlueChipsPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
+        SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            if(blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0) && !rewrite){
+            if($.blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0) && !rewrite){
                 revert AlreadyExist();
             }
-            blueChipsPools[pool.tokenIn][pool.tokenOut] = pool;
-            blueChipsPools[pool.tokenOut][pool.tokenIn] = pool;
+            $.blueChipsPools[pool.tokenIn][pool.tokenOut] = pool;
+            $.blueChipsPools[pool.tokenOut][pool.tokenIn] = pool;
             _addBcAsset(pool.tokenIn);
             _addBcAsset(pool.tokenOut);
             emit BlueChipAdded(pool);
@@ -109,6 +111,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
+        SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
             PoolData memory poolData;
@@ -119,11 +122,11 @@ contract Swapper is Controllable, ISwapper {
             if(poolData.ammAdapter == address(0)){
                 revert UnknownAMMAdapter();
             }
-            if(blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0) && !rewrite){
+            if($.blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0) && !rewrite){
                 revert AlreadyExist();
             }
-            blueChipsPools[poolData.tokenIn][poolData.tokenOut] = poolData;
-            blueChipsPools[poolData.tokenOut][poolData.tokenIn] = poolData;
+            $.blueChipsPools[poolData.tokenIn][poolData.tokenOut] = poolData;
+            $.blueChipsPools[poolData.tokenOut][poolData.tokenIn] = poolData;
             _addBcAsset(poolData.tokenIn);
             _addBcAsset(poolData.tokenOut);
             emit BlueChipAdded(poolData);
@@ -131,8 +134,9 @@ contract Swapper is Controllable, ISwapper {
     }
 
     function removeBlueChipPool(address tokenIn, address tokenOut) external onlyOperator {
-        delete blueChipsPools[tokenIn][tokenOut];
-        if(!_bcAssets.remove(tokenIn)){
+        SwapperStorage storage $ = _getStorage();
+        delete $.blueChipsPools[tokenIn][tokenOut];
+        if(!$._bcAssets.remove(tokenIn)){
             revert NotExist();
         }
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
@@ -141,6 +145,7 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function setThresholds(address[] memory tokenIn, uint[] memory thresholdAmount) external onlyOperator {
+        SwapperStorage storage $ = _getStorage();
         uint tokenInLen = tokenIn.length;
         uint thresholdAmountLen = thresholdAmount.length;
         if (tokenInLen != thresholdAmountLen){
@@ -148,7 +153,7 @@ contract Swapper is Controllable, ISwapper {
         }
         //nosemgrep
         for (uint i = 0; i < tokenInLen; ++i) {
-            threshold[tokenIn[i]] = thresholdAmount[i];
+            $.threshold[tokenIn[i]] = thresholdAmount[i];
         }
         emit ThresholdChanged(tokenIn, thresholdAmount);
     }
@@ -164,12 +169,13 @@ contract Swapper is Controllable, ISwapper {
         uint amount,
         uint priceImpactTolerance
     ) external {
+        SwapperStorage storage $ = _getStorage();
         (PoolData[] memory route, string memory errorMessage) = buildRoute(tokenIn, tokenOut);
         if (route.length == 0) {
             revert(errorMessage);
         }
-        if(amount < threshold[tokenIn]){
-            revert LessThenThreshold(threshold[tokenIn]);
+        if(amount < $.threshold[tokenIn]){
+            revert LessThenThreshold($.threshold[tokenIn]);
         }
         _swap(route, amount, priceImpactTolerance);
     }
@@ -189,24 +195,27 @@ contract Swapper is Controllable, ISwapper {
 
     /// @inheritdoc ISwapper
     function assets() external view returns(address[] memory) {
-        return _assets.values();
+        SwapperStorage storage $ = _getStorage();
+        return $._assets.values();
     }
 
     /// @inheritdoc ISwapper
     function bcAssets() external view returns(address[] memory) {
-        return _bcAssets.values();
+        SwapperStorage storage $ = _getStorage();
+        return $._bcAssets.values();
     }
 
     /// @inheritdoc ISwapper
     function allAssets() external view returns(address[] memory) {
-        address[] memory __bcAssets = _bcAssets.values();
+        SwapperStorage storage $ = _getStorage();
+        address[] memory __bcAssets = $._bcAssets.values();
         uint bcAssetsLen = __bcAssets.length;
-        address[] memory __assets = _assets.values();
+        address[] memory __assets = $._assets.values();
         uint assetsLen = __assets.length;
         uint total = bcAssetsLen;
         uint i;
         for (; i < assetsLen; ++i) {
-            if (!_bcAssets.contains(__assets[i])) {
+            if (!$._bcAssets.contains(__assets[i])) {
                 ++total;
             }
         }
@@ -215,7 +224,7 @@ contract Swapper is Controllable, ISwapper {
             _allAssets[i] = __bcAssets[i];
         }
         for (uint k; k < assetsLen; ++k) {
-            if (!_bcAssets.contains(__assets[k])) {
+            if (!$._bcAssets.contains(__assets[k])) {
                 _allAssets[i] = __assets[k];
                 ++i;
             }
@@ -276,11 +285,12 @@ contract Swapper is Controllable, ISwapper {
         PoolData[] memory route,
         string memory errorMessage
     )  {
+        SwapperStorage storage $ = _getStorage();
         route = new PoolData[](ROUTE_LENGTH_MAX);
 
         // --- BLUE CHIPS for in/out
         // in case that we try to liquidate blue chips use bc lps directly
-        PoolData memory poolDataBC = blueChipsPools[tokenIn][tokenOut];
+        PoolData memory poolDataBC = $.blueChipsPools[tokenIn][tokenOut];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = tokenIn;
             poolDataBC.tokenOut = tokenOut;
@@ -290,7 +300,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL for in
         // find the best Pool for token IN
-        PoolData memory poolDataIn = pools[tokenIn];
+        PoolData memory poolDataIn = $.pools[tokenIn];
         if (poolDataIn.pool == address(0)) {
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenIn");
         }
@@ -303,7 +313,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- BC for POOL_in
         // if we able to swap opposite token to a blue chip it is the cheaper way to liquidate
-        poolDataBC = blueChipsPools[poolDataIn.tokenOut][tokenOut];
+        poolDataBC = $.blueChipsPools[poolDataIn.tokenOut][tokenOut];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = poolDataIn.tokenOut;
             poolDataBC.tokenOut = tokenOut;
@@ -313,7 +323,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL for out
         // find the largest pool for token out
-        PoolData memory poolDataOut = pools[tokenOut];
+        PoolData memory poolDataOut = $.pools[tokenOut];
         if (poolDataOut.pool == address(0)) {
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenOut");
         }
@@ -335,7 +345,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- BC for POOL_out
         // if we able to swap opposite token to a blue chip it is the cheaper way to liquidate
-        poolDataBC = blueChipsPools[poolDataIn.tokenOut][poolDataOut.tokenIn];
+        poolDataBC = $.blueChipsPools[poolDataIn.tokenOut][poolDataOut.tokenIn];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = poolDataIn.tokenOut;
             poolDataBC.tokenOut = poolDataOut.tokenIn;
@@ -351,7 +361,7 @@ contract Swapper is Controllable, ISwapper {
         // ------------------------------------------------------------------------
 
         // --- POOL2 for in
-        PoolData memory poolDataIn2 = pools[poolDataIn.tokenOut];
+        PoolData memory poolDataIn2 = $.pools[poolDataIn.tokenOut];
         if (poolDataIn2.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenIn2");
         }
@@ -367,7 +377,7 @@ contract Swapper is Controllable, ISwapper {
         }
 
         // --- BC for POOL2_in
-        poolDataBC = blueChipsPools[poolDataIn2.tokenOut][tokenOut];
+        poolDataBC = $.blueChipsPools[poolDataIn2.tokenOut][tokenOut];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = poolDataIn2.tokenOut;
             poolDataBC.tokenOut = tokenOut;
@@ -377,7 +387,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL2 for out
         // find the largest pool for token out
-        PoolData memory poolDataOut2 = pools[poolDataOut.tokenIn];
+        PoolData memory poolDataOut2 = $.pools[poolDataOut.tokenIn];
         if (poolDataOut2.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenOut2");
         }
@@ -401,7 +411,7 @@ contract Swapper is Controllable, ISwapper {
         // --- BC for POOL2_out
 
         // token OUT pool can be paired with BC pool with token IN
-        poolDataBC = blueChipsPools[tokenIn][poolDataOut2.tokenIn];
+        poolDataBC = $.blueChipsPools[tokenIn][poolDataOut2.tokenIn];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = tokenIn;
             poolDataBC.tokenOut = poolDataOut2.tokenIn;
@@ -411,7 +421,7 @@ contract Swapper is Controllable, ISwapper {
             return (_cutRoute(route, 3), "");
         }
 
-        poolDataBC = blueChipsPools[poolDataIn.tokenOut][poolDataOut2.tokenIn];
+        poolDataBC = $.blueChipsPools[poolDataIn.tokenOut][poolDataOut2.tokenIn];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = poolDataIn.tokenOut;
             poolDataBC.tokenOut = poolDataOut2.tokenIn;
@@ -421,7 +431,7 @@ contract Swapper is Controllable, ISwapper {
             return (_cutRoute(route, 4), "");
         }
 
-        poolDataBC = blueChipsPools[poolDataIn2.tokenOut][poolDataOut2.tokenIn];
+        poolDataBC = $.blueChipsPools[poolDataIn2.tokenOut][poolDataOut2.tokenIn];
         if (poolDataBC.pool != address(0)) {
             poolDataBC.tokenIn = poolDataIn2.tokenOut;
             poolDataBC.tokenOut = poolDataOut2.tokenIn;
@@ -436,6 +446,18 @@ contract Swapper is Controllable, ISwapper {
         //   and this token also has liquidity only with specific token.
         //   This case never exist but could be implemented if requires.
         return (_cutRoute(route, 0), "Swapper: swap path not found");
+    }
+
+    /// @inheritdoc ISwapper
+    function threshold(address token) external view returns (uint threshold_) {
+        SwapperStorage storage $ = _getStorage();
+        threshold_ = $.threshold[token];
+    }
+
+    /// @inheritdoc ISwapper
+    function blueChipsPools(address tokenIn, address tokenOut) external view returns (PoolData memory poolData) {
+        SwapperStorage storage $ = _getStorage();
+        poolData = $.blueChipsPools[tokenIn][tokenOut];
     }
 
     //endregion -- View functions -----
@@ -482,8 +504,16 @@ contract Swapper is Controllable, ISwapper {
     }
     
     function _addBcAsset(address asset) internal {
-        if (!_bcAssets.contains(asset)) {
-            _bcAssets.add(asset);
+        SwapperStorage storage $ = _getStorage();
+        if (!$._bcAssets.contains(asset)) {
+            $._bcAssets.add(asset);
+        }
+    }
+
+    function _getStorage() private pure returns (SwapperStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := SWAPPER_STORAGE_LOCATION
         }
     }
 

@@ -65,6 +65,14 @@ interface ISwapper {
   /// @param rewrite Change exist pool records
   function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external;
 
+  /// @notice Retrieves pool data for a specified token swap in Blue Chip Pools.
+  /// @dev This function provides information about the pool associated with the specified input and output tokens.
+  /// @param tokenIn The input token address.
+  /// @param tokenOut The output token address.
+  /// @return poolData The data structure containing information about the Blue Chip Pool.
+  /// @custom:opcodes view
+  function blueChipsPools(address tokenIn, address tokenOut) external view returns (PoolData memory poolData);
+
   /// @notice Set swap threshold for token
   /// @dev Prevents dust swap.
   /// @param tokenIn Swap input token
