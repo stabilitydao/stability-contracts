@@ -44,111 +44,85 @@ contract Platform is Controllable, IPlatform {
     /// @dev Minimal StrategyLogic tokenId owner fee share
     uint public constant MIN_FEE_SHARE_STRATEGY_LOGIC = 10_000; // 10%
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Platform")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant PLATFORM_STORAGE_LOCATION = 0x263d5089de5bb3f97c8effd51f1a153b36e97065a51e67a94885830ed03a7a00;
+
     //endregion -- Constants -----
 
     //region ----- Storage -----
 
-    /// @inheritdoc IPlatform
-    address public governance;
-
-    /// @inheritdoc IPlatform
-    address public multisig;
-
-    /// @inheritdoc IPlatform
-    address public vaultManager;
-
-    /// @inheritdoc IPlatform
-    address public strategyLogic;
-
-    /// @inheritdoc IPlatform
-    address public factory;
-
-    /// @inheritdoc IPlatform
-    address public priceReader;
-
-    /// @inheritdoc IPlatform
-    address public aprOracle;
-
-    /// @inheritdoc IPlatform
-    address public swapper;
-
-    /// @inheritdoc IPlatform
-    address public buildingPermitToken;
-
-    /// @inheritdoc IPlatform
-    address public buildingPayPerVaultToken;
-
-    /// @inheritdoc IPlatform
-    address public ecosystemRevenueReceiver;
-
-    /// @inheritdoc IPlatform
-    address public hardWorker;
-
-    /// @inheritdoc IPlatform
-    address public zap;
-
-    /// @inheritdoc IPlatform
-    address public targetExchangeAsset;
-
-    /// @inheritdoc IPlatform
-    string public networkName;
-
-    /// @inheritdoc IPlatform
-    bytes32 public networkExtra;
-
-    /// @inheritdoc IPlatform
-    uint public minInitialBoostPerDay;
-
-    /// @inheritdoc IPlatform
-    uint public minInitialBoostDuration;
-
-    PlatformUpgrade internal _pendingPlatformUpgrade;
-
-    uint public platformUpgradeTimelock;
-
-    /// @inheritdoc IPlatform
-    string public PLATFORM_VERSION;
-
-    mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) internal _ammAdapter;
-
-    /// @dev Hashes of AMM adapter ID string
-    bytes32[] internal _ammAdapterIdHash;
-
-    /// @dev 2 slots struct
-    EnumerableSet.AddressSet internal _operators;
-
-    /// @dev 3 slots structs
-    EnumerableMap.AddressToUintMap internal _allowedBBTokensVaults;
-
-    /// @dev 2 slots struct
-    EnumerableSet.AddressSet internal _allowedBoostRewardTokens;
-
-    /// @dev 2 slots struct
-    EnumerableSet.AddressSet internal _defaultBoostRewardTokens;
-    
-    EnumerableSet.AddressSet internal _dexAggregators;
-
-    uint internal _fee;
-    uint internal _feeShareVaultManager;
-    uint internal _feeShareStrategyLogic;
-    uint internal _feeShareEcosystem;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total Platform gap == 100 - storage slots used.
-    uint[100 - 28] private __gap;
+    /// @custom:storage-location erc7201:stability.Platform
+    struct PlatformStorage {
+        /// @inheritdoc IPlatform
+        address governance;    
+        /// @inheritdoc IPlatform
+        address multisig;
+        /// @inheritdoc IPlatform
+        address vaultManager;
+        /// @inheritdoc IPlatform
+        address strategyLogic;
+        /// @inheritdoc IPlatform
+        address factory;
+        /// @inheritdoc IPlatform
+        address priceReader;
+        /// @inheritdoc IPlatform
+        address aprOracle;
+        /// @inheritdoc IPlatform
+        address swapper;
+        /// @inheritdoc IPlatform
+        address buildingPermitToken;
+        /// @inheritdoc IPlatform
+        address buildingPayPerVaultToken;
+        /// @inheritdoc IPlatform
+        address ecosystemRevenueReceiver;
+        /// @inheritdoc IPlatform
+        address hardWorker;
+        /// @inheritdoc IPlatform
+        address zap;
+        /// @inheritdoc IPlatform
+        address targetExchangeAsset;
+        /// @inheritdoc IPlatform
+        string networkName;
+        /// @inheritdoc IPlatform
+        bytes32 networkExtra;
+        /// @inheritdoc IPlatform
+        uint minInitialBoostPerDay;
+        /// @inheritdoc IPlatform
+        uint minInitialBoostDuration;
+        PlatformUpgrade _pendingPlatformUpgrade;
+        uint platformUpgradeTimelock;
+        /// @inheritdoc IPlatform
+        string PLATFORM_VERSION;
+        mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
+        /// @dev Hashes of AMM adapter ID string
+        bytes32[] _ammAdapterIdHash;
+        /// @dev 2 slots struct
+        EnumerableSet.AddressSet _operators;
+        /// @dev 3 slots structs
+        EnumerableMap.AddressToUintMap _allowedBBTokensVaults;
+        /// @dev 2 slots struct
+        EnumerableSet.AddressSet _allowedBoostRewardTokens;
+        /// @dev 2 slots struct
+        EnumerableSet.AddressSet _defaultBoostRewardTokens;
+        EnumerableSet.AddressSet _dexAggregators;
+        uint _fee;
+        uint _feeShareVaultManager;
+        uint _feeShareStrategyLogic;
+        uint _feeShareEcosystem;
+    }
 
     //endregion -- Storage -----
 
     //region ----- Init -----
 
     function initialize(address multisig_, string memory version) public initializer {
+        PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line missing-zero-check
-        multisig = multisig_;
+        $.multisig = multisig_;
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
-        _operators.add(msg.sender);
-        PLATFORM_VERSION = version;
+        $._operators.add(msg.sender);
+        $.PLATFORM_VERSION = version;
         emit PlatformVersion(version);
     }
 
@@ -156,22 +130,24 @@ contract Platform is Controllable, IPlatform {
         IPlatform.SetupAddresses memory addresses,
         IPlatform.PlatformSettings memory settings
     ) external onlyOperator {
-        if(factory != address(0)){
+        PlatformStorage storage $ = _getStorage();
+        if($.factory != address(0)){
             revert AlreadyExist();
         }
-        factory = addresses.factory;
-        priceReader = addresses.priceReader;
-        swapper = addresses.swapper;
-        buildingPermitToken = addresses.buildingPermitToken;
-        buildingPayPerVaultToken = addresses.buildingPayPerVaultToken;
-        vaultManager = addresses.vaultManager;
-        strategyLogic = addresses.strategyLogic;
-        aprOracle = addresses.aprOracle;
-        targetExchangeAsset = addresses.targetExchangeAsset;
-        hardWorker = addresses.hardWorker;
-        zap = addresses.zap;
+        
+        $.factory = addresses.factory;
+        $.priceReader = addresses.priceReader;
+        $.swapper = addresses.swapper;
+        $.buildingPermitToken = addresses.buildingPermitToken;
+        $.buildingPayPerVaultToken = addresses.buildingPayPerVaultToken;
+        $.vaultManager = addresses.vaultManager;
+        $.strategyLogic = addresses.strategyLogic;
+        $.aprOracle = addresses.aprOracle;
+        $.targetExchangeAsset = addresses.targetExchangeAsset;
+        $.hardWorker = addresses.hardWorker;
+        $.zap = addresses.zap;
         emit Addresses(
-            multisig,
+            $.multisig,
             addresses.factory,
             addresses.priceReader,
             addresses.swapper,
@@ -182,8 +158,8 @@ contract Platform is Controllable, IPlatform {
             addresses.hardWorker,
             addresses.zap
         );
-        networkName = settings.networkName;
-        networkExtra = settings.networkExtra;
+        $.networkName = settings.networkName;
+        $.networkExtra = settings.networkExtra;
         // _setFees(6_000, 30_000, 30_000, 0);
         _setFees(settings.fee, settings.feeShareVaultManager, settings.feeShareStrategyLogic, settings.feeShareEcosystem);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
@@ -197,13 +173,15 @@ contract Platform is Controllable, IPlatform {
         if(receiver == address(0)){
             revert IControllable.IncorrectZeroArgument();
         }
-        ecosystemRevenueReceiver = receiver;
+        PlatformStorage storage $ = _getStorage();
+        $.ecosystemRevenueReceiver = receiver;
         emit EcosystemRevenueReceiver(receiver);
     }
 
     /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
-        if(!_operators.add(operator)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._operators.add(operator)){
             revert AlreadyExist();
         }
         emit OperatorAdded(operator);
@@ -211,7 +189,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function removeOperator(address operator) external onlyGovernanceOrMultisig {
-        if(!_operators.remove(operator)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._operators.remove(operator)){
             revert NotExist();
         }
         emit OperatorRemoved(operator);
@@ -223,7 +202,8 @@ contract Platform is Controllable, IPlatform {
         address[] memory proxies,
         address[] memory newImplementations
     ) external onlyGovernanceOrMultisig {
-        if(_pendingPlatformUpgrade.proxies.length != 0){
+        PlatformStorage storage $ = _getStorage();
+        if($._pendingPlatformUpgrade.proxies.length != 0){
             revert AlreadyAnnounced();
         }
         uint len = proxies.length;
@@ -241,28 +221,29 @@ contract Platform is Controllable, IPlatform {
                 revert SameVersion();
             }
         }
-        string memory oldVersion = PLATFORM_VERSION;
+        string memory oldVersion = $.PLATFORM_VERSION;
         if(CommonLib.eq(oldVersion, newVersion)){
             revert SameVersion();
         }
-        _pendingPlatformUpgrade.newVersion = newVersion;
-        _pendingPlatformUpgrade.proxies = proxies;
-        _pendingPlatformUpgrade.newImplementations = newImplementations;
+        $._pendingPlatformUpgrade.newVersion = newVersion;
+        $._pendingPlatformUpgrade.proxies = proxies;
+        $._pendingPlatformUpgrade.newImplementations = newImplementations;
         uint tl = block.timestamp + TIME_LOCK;
-        platformUpgradeTimelock = tl;
+        $.platformUpgradeTimelock = tl;
         emit UpgradeAnnounce(oldVersion, newVersion, proxies, newImplementations, tl);
     }
 
     /// @inheritdoc IPlatform
     function upgrade() external onlyOperator {
-        uint ts = platformUpgradeTimelock;
+        PlatformStorage storage $ = _getStorage();
+        uint ts = $.platformUpgradeTimelock;
         if(ts == 0){
             revert NoNewVersion();
         }
         if(ts > block.timestamp){
             revert UpgradeTimerIsNotOver(ts);
         }
-        PlatformUpgrade memory platformUpgrade = _pendingPlatformUpgrade;
+        PlatformUpgrade memory platformUpgrade = $._pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
         for (uint i; i < len; ++i) {
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
@@ -274,24 +255,25 @@ contract Platform is Controllable, IPlatform {
                 IControllable(platformUpgrade.proxies[i]).VERSION()
             );
         }
-        PLATFORM_VERSION = platformUpgrade.newVersion;
-        _pendingPlatformUpgrade.newVersion = '';
-        _pendingPlatformUpgrade.proxies = new address[](0);
-        _pendingPlatformUpgrade.newImplementations = new address[](0);
-        platformUpgradeTimelock = 0;
+        $.PLATFORM_VERSION = platformUpgrade.newVersion;
+        $._pendingPlatformUpgrade.newVersion = '';
+        $._pendingPlatformUpgrade.proxies = new address[](0);
+        $._pendingPlatformUpgrade.newImplementations = new address[](0);
+        $.platformUpgradeTimelock = 0;
         emit PlatformVersion(platformUpgrade.newVersion);
     }
 
     /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
-        if(platformUpgradeTimelock == 0){
+        PlatformStorage storage $ = _getStorage();
+        if($.platformUpgradeTimelock == 0){
             revert NoNewVersion();
         }
-        emit CancelUpgrade(VERSION, _pendingPlatformUpgrade.newVersion);
-        _pendingPlatformUpgrade.newVersion = '';
-        _pendingPlatformUpgrade.proxies = new address[](0);
-        _pendingPlatformUpgrade.newImplementations = new address[](0);
-        platformUpgradeTimelock = 0;
+        emit CancelUpgrade(VERSION, $._pendingPlatformUpgrade.newVersion);
+        $._pendingPlatformUpgrade.newVersion = '';
+        $._pendingPlatformUpgrade.proxies = new address[](0);
+        $._pendingPlatformUpgrade.newImplementations = new address[](0);
+        $.platformUpgradeTimelock = 0;
     }
 
     function setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) external onlyGovernance {
@@ -300,25 +282,27 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function addAmmAdapter(string memory id, address proxy) external onlyOperator {
+        PlatformStorage storage $ = _getStorage();
         bytes32 hash = keccak256(bytes(id));
-        if(_ammAdapter[hash].proxy != address(0)){
+        if($._ammAdapter[hash].proxy != address(0)){
             revert AlreadyExist();
         }
-        _ammAdapter[hash].id = id;
-        _ammAdapter[hash].proxy = proxy;
-        _ammAdapterIdHash.push(hash);
+        $._ammAdapter[hash].id = id;
+        $._ammAdapter[hash].proxy = proxy;
+        $._ammAdapterIdHash.push(hash);
         emit NewAmmAdapter(id, proxy);
     }
 
     /// @inheritdoc IPlatform
     function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
+        PlatformStorage storage $ = _getStorage();
         uint len = dexAggRouter.length;
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
                 revert IControllable.IncorrectZeroArgument();
             }
             //nosemgrep
-            if (!_dexAggregators.add(dexAggRouter[i])) {
+            if (!$._dexAggregators.add(dexAggRouter[i])) {
                 continue;
             }
             emit AddDexAggregator(dexAggRouter[i]);
@@ -327,7 +311,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function removeDexAggregator(address dexAggRouter) external onlyOperator {
-        if (!_dexAggregators.remove(dexAggRouter)) {
+        PlatformStorage storage $ = _getStorage();
+        if (!$._dexAggregators.remove(dexAggRouter)) {
             revert AggregatorNotExists(dexAggRouter);
         }
         emit RemoveDexAggregator(dexAggRouter);
@@ -335,23 +320,26 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
-        bool firstSet = _allowedBBTokensVaults.set(bbToken, vaultsToBuild);
+        PlatformStorage storage $ = _getStorage();
+        bool firstSet = $._allowedBBTokensVaults.set(bbToken, vaultsToBuild);
         emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild, firstSet);
     }
 
     /// @inheritdoc IPlatform
     function useAllowedBBTokenVault(address bbToken) external onlyFactory {
-        uint allowedVaults = _allowedBBTokensVaults.get(bbToken);
+        PlatformStorage storage $ = _getStorage();
+        uint allowedVaults = $._allowedBBTokensVaults.get(bbToken);
         if(allowedVaults <= 0){
             revert NotEnoughAllowedBBToken();
         }
         //slither-disable-next-line unused-return
-        _allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
+        $._allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
         emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
     }
 
     function removeAllowedBBToken(address bbToken) external onlyOperator {
-        if(!_allowedBBTokensVaults.remove(bbToken)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._allowedBBTokensVaults.remove(bbToken)){
             revert NotExist();
         }
         emit RemoveAllowedBBToken(bbToken);
@@ -359,7 +347,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function addAllowedBoostRewardToken(address token) external onlyOperator {
-        if(!_allowedBoostRewardTokens.add(token)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._allowedBoostRewardTokens.add(token)){
             revert AlreadyExist();
         }
         emit AddAllowedBoostRewardToken(token);
@@ -367,7 +356,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function removeAllowedBoostRewardToken(address token) external onlyOperator {
-        if(!_allowedBoostRewardTokens.remove(token)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._allowedBoostRewardTokens.remove(token)){
             revert NotExist();
         }
         emit RemoveAllowedBoostRewardToken(token);
@@ -375,7 +365,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function addDefaultBoostRewardToken(address token) external onlyOperator {
-        if(!_defaultBoostRewardTokens.add(token)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._defaultBoostRewardTokens.add(token)){
             revert AlreadyExist();
         }
         emit AddDefaultBoostRewardToken(token);
@@ -383,7 +374,8 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function removeDefaultBoostRewardToken(address token) external onlyOperator {
-        if(!_defaultBoostRewardTokens.remove(token)){
+        PlatformStorage storage $ = _getStorage();
+        if(!$._defaultBoostRewardTokens.remove(token)){
             revert NotExist();
         }
         emit RemoveDefaultBoostRewardToken(token);
@@ -391,8 +383,9 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external onlyOperator {
-        _addTokens(_allowedBoostRewardTokens, allowedBoostRewardToken);
-        _addTokens(_defaultBoostRewardTokens, defaultBoostRewardToken);
+        PlatformStorage storage $ = _getStorage();
+        _addTokens($._allowedBoostRewardTokens, allowedBoostRewardToken);
+        _addTokens($._defaultBoostRewardTokens, defaultBoostRewardToken);
         emit AddBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
     }
 
@@ -402,42 +395,48 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory) {
-        return _pendingPlatformUpgrade;
+        PlatformStorage storage $ = _getStorage();
+        return $._pendingPlatformUpgrade;
     }
 
     /// @inheritdoc IPlatform
     function isOperator(address operator) external view returns (bool) {
-        return _operators.contains(operator);
+        PlatformStorage storage $ = _getStorage();
+        return $._operators.contains(operator);
     }
 
     function operatorsList() external view returns (address[] memory) {
-        return _operators.values();
+        PlatformStorage storage $ = _getStorage();
+        return $._operators.values();
     }
 
     /// @inheritdoc IPlatform
     function getFees() public view returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) {
-        return (_fee, _feeShareVaultManager, _feeShareStrategyLogic, _feeShareEcosystem);
+        PlatformStorage storage $ = _getStorage();
+        return ($._fee, $._feeShareVaultManager, $._feeShareStrategyLogic, $._feeShareEcosystem);
     }
 
     /// @inheritdoc IPlatform
     function getPlatformSettings() external view returns (PlatformSettings memory) {
+        PlatformStorage storage $ = _getStorage();
         PlatformSettings memory platformSettings;
         (platformSettings.fee,platformSettings.feeShareVaultManager,platformSettings.feeShareStrategyLogic,platformSettings.feeShareEcosystem) = getFees();
-        platformSettings.networkName = networkName;
-        platformSettings.networkExtra = networkExtra;
-        platformSettings.minInitialBoostPerDay = minInitialBoostPerDay;
-        platformSettings.minInitialBoostDuration = minInitialBoostDuration;
+        platformSettings.networkName = $.networkName;
+        platformSettings.networkExtra = $.networkExtra;
+        platformSettings.minInitialBoostPerDay = $.minInitialBoostPerDay;
+        platformSettings.minInitialBoostDuration = $.minInitialBoostDuration;
         return platformSettings;
     }
 
     /// @inheritdoc IPlatform
     function getAmmAdapters() external view returns(string[] memory ids, address[] memory proxies) {
-        uint len = _ammAdapterIdHash.length;
+        PlatformStorage storage $ = _getStorage();
+        uint len = $._ammAdapterIdHash.length;
         ids = new string[](len);
         proxies = new address[](len);
         for (uint i; i < len; ++i) {
-            bytes32 hash = _ammAdapterIdHash[i];
-            AmmAdapter memory __ammAdapter = _ammAdapter[hash];
+            bytes32 hash = $._ammAdapterIdHash[i];
+            AmmAdapter memory __ammAdapter = $._ammAdapter[hash];
             ids[i] = __ammAdapter.id;
             proxies[i] = __ammAdapter.proxy;
         }
@@ -445,40 +444,45 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory) {
-        return _ammAdapter[ammAdapterIdHash];
+        PlatformStorage storage $ = _getStorage();
+        return $._ammAdapter[ammAdapterIdHash];
     }
 
     /// @inheritdoc IPlatform
     function allowedBBTokens() external view returns(address[] memory) {
-        return _allowedBBTokensVaults.keys();
+        PlatformStorage storage $ = _getStorage();
+        return $._allowedBBTokensVaults.keys();
     }
 
     /// @inheritdoc IPlatform
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
+        PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line unused-return
-        (, vaultsLimit) = _allowedBBTokensVaults.tryGet(token);
+        (, vaultsLimit) = $._allowedBBTokensVaults.tryGet(token);
     }
 
     /// @inheritdoc IPlatform
     function allowedBBTokenVaults() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
-        bbToken = _allowedBBTokensVaults.keys();
+        PlatformStorage storage $ = _getStorage();
+        bbToken = $._allowedBBTokensVaults.keys();
         uint len = bbToken.length;
         vaultsLimit = new uint[](len);
         for (uint i; i < len; ++i) {
-            (, vaultsLimit[i]) = _allowedBBTokensVaults.tryGet(bbToken[i]);
+            (, vaultsLimit[i]) = $._allowedBBTokensVaults.tryGet(bbToken[i]);
         }
     }
 
     /// @inheritdoc IPlatform
     function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
-        address[] memory allBbTokens = _allowedBBTokensVaults.keys();
+        PlatformStorage storage $ = _getStorage();
+        address[] memory allBbTokens = $._allowedBBTokensVaults.keys();
         uint len = allBbTokens.length;
         uint[] memory limit = new uint[](len);
         //slither-disable-next-line uninitialized-local
         uint k;
         for (uint i; i < len; ++i) {
             //nosemgrep
-            limit[i] = _allowedBBTokensVaults.get(allBbTokens[i]);
+            limit[i] = $._allowedBBTokensVaults.get(allBbTokens[i]);
             if(limit[i] > 0) ++k;
         }
         bbToken = new address[](k);
@@ -497,27 +501,32 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function allowedBoostRewardTokens() external view returns(address[] memory) {
-        return _allowedBoostRewardTokens.values();
+        PlatformStorage storage $ = _getStorage();
+        return $._allowedBoostRewardTokens.values();
     }
 
     /// @inheritdoc IPlatform
     function defaultBoostRewardTokens() external view returns(address[] memory) {
-        return _defaultBoostRewardTokens.values();
+        PlatformStorage storage $ = _getStorage();
+        return $._defaultBoostRewardTokens.values();
     }
 
     /// @inheritdoc IPlatform
     function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory) {
-        return CommonLib.filterAddresses(_defaultBoostRewardTokens.values(), addressToRemove);
+        PlatformStorage storage $ = _getStorage();
+        return CommonLib.filterAddresses($._defaultBoostRewardTokens.values(), addressToRemove);
     }
 
     /// @inheritdoc IPlatform
     function dexAggregators() external view returns(address[] memory) {
-        return _dexAggregators.values();
+        PlatformStorage storage $ = _getStorage();
+        return $._dexAggregators.values();
     }
 
     /// @inheritdoc IPlatform
     function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool) {
-        return _dexAggregators.contains(dexAggRouter);
+        PlatformStorage storage $ = _getStorage();
+        return $._dexAggregators.contains(dexAggRouter);
     }
 
     /// @inheritdoc IPlatform
@@ -533,19 +542,21 @@ contract Platform is Controllable, IPlatform {
         string[] memory strategyTokenURI,
         bytes32[] memory strategyExtra
     ) { 
-        if(factory == address(0)){
+        PlatformStorage storage $ = _getStorage();
+        if($.factory == address(0)){
             revert NotExist();
         }
+        
         platformAddresses = new address[](5);
-        platformAddresses[0] = factory;
-        platformAddresses[1] = vaultManager;
-        platformAddresses[2] = strategyLogic;
-        platformAddresses[3] = buildingPermitToken;
-        platformAddresses[4] = buildingPayPerVaultToken;
-        ISwapper _swapper = ISwapper(swapper);
+        platformAddresses[0] = $.factory;
+        platformAddresses[1] = $.vaultManager;
+        platformAddresses[2] = $.strategyLogic;
+        platformAddresses[3] = $.buildingPermitToken;
+        platformAddresses[4] = $.buildingPayPerVaultToken;
+        ISwapper _swapper = ISwapper($.swapper);
         bcAssets = _swapper.bcAssets();
-        dexAggregators_ = _dexAggregators.values();
-        IFactory _factory = IFactory(factory);
+        dexAggregators_ = $._dexAggregators.values();
+        IFactory _factory = IFactory($.factory);
         (vaultType,,,,vaultBuildingPrice,vaultExtra) = _factory.vaultTypes();
         (strategyId,,,isFarmingStrategy,,strategyTokenURI,strategyExtra) = _factory.strategies();
     }
@@ -562,8 +573,9 @@ contract Platform is Controllable, IPlatform {
         uint[] memory nftUserBalance,
         uint buildingPayPerVaultTokenBalance
     ) {
-        token = ISwapper(swapper).allAssets();
-        IPriceReader _priceReader = IPriceReader(priceReader);
+        PlatformStorage storage $ = _getStorage();
+        token = ISwapper($.swapper).allAssets();
+        IPriceReader _priceReader = IPriceReader($.priceReader);
         uint len = token.length;
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
@@ -573,7 +585,7 @@ contract Platform is Controllable, IPlatform {
             tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
         }
 
-        vault = IVaultManager(vaultManager).vaultAddresses();
+        vault = IVaultManager($.vaultManager).vaultAddresses();
         len = vault.length;
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
@@ -585,15 +597,135 @@ contract Platform is Controllable, IPlatform {
 
         len = 3;
         nft = new address[](len);
-        nft[0] = buildingPermitToken;
-        nft[1] = vaultManager;
-        nft[2] = strategyLogic;
+        nft[0] = $.buildingPermitToken;
+        nft[1] = $.vaultManager;
+        nft[2] = $.strategyLogic;
         nftUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
             nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
         }
 
-        buildingPayPerVaultTokenBalance = IERC20(buildingPayPerVaultToken).balanceOf(yourAccount);
+        buildingPayPerVaultTokenBalance = IERC20($.buildingPayPerVaultToken).balanceOf(yourAccount);
+    }
+
+    /// @inheritdoc IPlatform
+    function PLATFORM_VERSION() external view returns (string memory) {
+        PlatformStorage storage $ = _getStorage();
+        return $.PLATFORM_VERSION;
+    }
+
+    /// @inheritdoc IPlatform
+    function aprOracle() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.aprOracle;
+    }
+
+    /// @inheritdoc IPlatform
+    function buildingPayPerVaultToken() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.buildingPayPerVaultToken;
+    }
+
+    /// @inheritdoc IPlatform
+    function buildingPermitToken() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.buildingPermitToken;
+    }
+
+    /// @inheritdoc IPlatform
+    function ecosystemRevenueReceiver() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.ecosystemRevenueReceiver;
+    }
+
+    /// @inheritdoc IPlatform
+    function factory() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.factory;
+    }
+
+    /// @inheritdoc IPlatform
+    function governance() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.governance;
+    }
+
+    /// @inheritdoc IPlatform
+    function hardWorker() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.hardWorker;
+    }
+
+    /// @inheritdoc IPlatform
+    function minInitialBoostDuration() external view returns (uint) {
+        PlatformStorage storage $ = _getStorage();
+        return $.minInitialBoostDuration;
+    }
+
+    /// @inheritdoc IPlatform
+    function minInitialBoostPerDay() external view returns (uint) {
+        PlatformStorage storage $ = _getStorage();
+        return $.minInitialBoostPerDay;
+    }
+
+    /// @inheritdoc IPlatform
+    function multisig() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.multisig;
+    }
+
+    /// @inheritdoc IPlatform
+    function priceReader() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.priceReader;
+    }
+
+    /// @inheritdoc IPlatform
+    function strategyLogic() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.strategyLogic;
+    }
+
+    /// @inheritdoc IPlatform
+    function swapper() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.swapper;
+    }
+
+    /// @inheritdoc IPlatform
+    function targetExchangeAsset() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.targetExchangeAsset;
+    }
+
+    /// @inheritdoc IPlatform
+    function vaultManager() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.vaultManager;
+    }
+
+    /// @inheritdoc IPlatform
+    function zap() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.zap;
+    }
+
+    /// @inheritdoc IPlatform
+    function networkExtra() external view returns (bytes32) {
+        PlatformStorage storage $ = _getStorage();
+        return $.networkExtra;
+    }
+
+    /// @inheritdoc IPlatform
+    function networkName() external view returns (string memory) {
+        PlatformStorage storage $ = _getStorage();
+        return $.networkName;
+    }
+
+    /// @inheritdoc IPlatform
+    function platformUpgradeTimelock() external view returns (uint) {
+        PlatformStorage storage $ = _getStorage();
+        return $.platformUpgradeTimelock;
     }
 
     //endregion -- View functions -----
@@ -601,8 +733,9 @@ contract Platform is Controllable, IPlatform {
     //region ----- Internal logic -----
 
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
-        if(feeShareEcosystem != 0 && ecosystemRevenueReceiver == address(0)){
-            if(ecosystemRevenueReceiver == address(0)){
+        PlatformStorage storage $ = _getStorage();
+        if(feeShareEcosystem != 0 && $.ecosystemRevenueReceiver == address(0)){
+            if($.ecosystemRevenueReceiver == address(0)){
                 revert IControllable.IncorrectZeroArgument();
             } else {
                 revert IncorrectFee(0,0);
@@ -620,16 +753,17 @@ contract Platform is Controllable, IPlatform {
         if(feeShareVaultManager + feeShareStrategyLogic + feeShareEcosystem > ConstantsLib.DENOMINATOR){
              revert IncorrectFee(0, ConstantsLib.DENOMINATOR);
         } 
-        _fee = fee;
-        _feeShareVaultManager = feeShareVaultManager;
-        _feeShareStrategyLogic = feeShareStrategyLogic;
-        _feeShareEcosystem = feeShareEcosystem;
+        $._fee = fee;
+        $._feeShareVaultManager = feeShareVaultManager;
+        $._feeShareStrategyLogic = feeShareStrategyLogic;
+        $._feeShareEcosystem = feeShareEcosystem;
         emit FeesChanged(fee, feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem);
     }
 
     function _setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) internal {
-        minInitialBoostPerDay = minInitialBoostPerDay_;
-        minInitialBoostDuration = minInitialBoostDuration_;
+        PlatformStorage storage $ = _getStorage();
+        $.minInitialBoostPerDay = minInitialBoostPerDay_;
+        $.minInitialBoostDuration = minInitialBoostDuration_;
         emit MinInitialBoostChanged(minInitialBoostPerDay_, minInitialBoostDuration_);
     }
 
@@ -648,4 +782,15 @@ contract Platform is Controllable, IPlatform {
     }
 
     //endregion -- Internal logic -----
+
+    //region ----- Private functions -----
+
+    function _getStorage() private pure returns (PlatformStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := PLATFORM_STORAGE_LOCATION
+        }
+    }
+
+    //endregion -- Private functions -----
 }
