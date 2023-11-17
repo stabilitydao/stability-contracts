@@ -609,6 +609,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line naming-convention
     function PLATFORM_VERSION() external view returns (string memory) {
         PlatformStorage storage $ = _getStorage();
         return $.PLATFORM_VERSION;
