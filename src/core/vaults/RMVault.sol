@@ -24,15 +24,6 @@ contract RMVault is RVaultBase, IManagedVault {
 
     //endregion -- Constants -----
 
-    //region ----- Storage -----
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 0] private __gap;
-
-    //endregion -- Storage -----
-
     //region ----- Init -----
 
     /// @inheritdoc IVault
@@ -62,19 +53,19 @@ contract RMVault is RVaultBase, IManagedVault {
         if(nums.length != addressesLength + 2){
             revert IControllable.IncorrectInitParams();
         }
-        uint _rewardTokensTotal = rewardTokensTotal;
+        uint _rewardTokensTotal = rewardTokensTotal();
         if(addressesLength < _rewardTokensTotal - 1){
             revert IManagedVault.CantRemoveRewardToken();
         }
         for (uint i = 1; i < _rewardTokensTotal; ++i) {
-            if(rewardToken[i] != addresses[i - 1]){
+            if(rewardToken(i) != addresses[i - 1]){
                 revert IManagedVault.IncorrectRewardToken(addresses[i - 1]);
             }
-            if(duration[i] != nums[i]){
+            if(duration(i) != nums[i]){
                 revert IManagedVault.CantChangeDuration(nums[i]);
             }
         }
-        
+        RVaultBaseStorage storage _$ = super._getStorage();
         if (addressesLength > _rewardTokensTotal - 1) {
             for (uint i = _rewardTokensTotal; i < addressesLength + 1; ++i) {
                 uint i_1 = i - 1;
@@ -84,16 +75,16 @@ contract RMVault is RVaultBase, IManagedVault {
                 if(nums[i_1] == 0){
                     revert IControllable.IncorrectZeroArgument();
                 }
-                rewardTokensTotal = i + 1;
-                rewardToken[i] = addresses[i_1];
-                duration[i] = nums[i_1];
+                _$.rewardTokensTotal = i + 1;
+                _$.rewardToken[i] = addresses[i_1];
+                _$.duration[i] = nums[i_1];
                 emit AddedRewardToken(addresses[i_1], i);
             }
         }
 
-        if (nums[addressesLength + 1] != compoundRatio) {
+        if (nums[addressesLength + 1] != _$.compoundRatio) {
             // todo #22 check side effects with tests
-            compoundRatio = nums[addressesLength + 1];
+            _$.compoundRatio = nums[addressesLength + 1];
             emit CompoundRatio(nums[addressesLength + 1]);
         }
     }
