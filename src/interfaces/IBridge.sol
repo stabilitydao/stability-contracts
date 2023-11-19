@@ -61,8 +61,8 @@ interface IBridge {
 
     /// @notice Add new link to the bridge
     /// Only operator can call this.
-    /// @param link Link data
-    function addLink(Link memory link) external;
+    /// @param link_ Link data
+    function addLink(Link memory link_) external;
 
     /// @notice Update link adapters
     /// Only operator can call this.
