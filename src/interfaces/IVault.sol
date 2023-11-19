@@ -9,8 +9,6 @@ import "./IStrategy.sol";
 /// Vaults can be used for active concentrated liquidity management and market making.
 /// @author Jude (https://github.com/iammrjude)
 interface IVault is IERC165 {
-
-
     //region ----- Custom Errors -----
     error NotEnoughBalanceToPay();
     error FuseTrigger();
