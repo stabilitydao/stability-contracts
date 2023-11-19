@@ -55,6 +55,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         Vm.Log[] entries;
         address ammAdapter;
         address pool;
+        bool hwEventFound;
     }
 
     modifier universalTest() {
@@ -88,6 +89,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             vars.types = IStrategy(vars.strategyImplementation).supportedVaultTypes();
 
             for (uint k; k < vars.types.length; ++k) {
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       CREATE VAULT                         */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
                 vars.isRVault = CommonLib.eq(vars.types[k], VaultTypeLib.REWARDING);
                 vars.isRMVault = CommonLib.eq(vars.types[k], VaultTypeLib.REWARDING_MANAGED);
                 {
@@ -150,12 +156,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     assertEq(IERC721(platform.vaultManager()).ownerOf(i), address (this));
                 }
-                
+
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
                 address[] memory assets = strategy.assets();
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
+                assertEq(IAmmAdapter(vars.ammAdapter).DEX_ADAPTER_ID(), ILPStrategy(address(strategy)).ammAdapterId());
                 vars.pool = ILPStrategy(address (strategy)).pool();
                 console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
 
@@ -170,7 +177,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                 }
 
-                // todo loop
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                          DEPOSIT                           */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
                 // get amounts for deposit
                 uint[] memory depositAmounts = new uint[](assets.length);
@@ -183,42 +192,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
                 }
 
-                {
-                    IZap zap = IZap(platform.zap());
-                    (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
-                    assertEq(swapAmounts.length, 2);
-                }
-
-                // check LPStrategyBase reverts
-                {
-                    address[] memory wrongAssets = new address[](10);
-                    vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
-                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
-                    wrongAssets = new address[](assets.length);
-                    wrongAssets[0] = address(1);
-                    vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
-                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
-                    vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
-                    strategy.previewDepositAssets(assets, new uint[](5));
-                }
-                ///
-
-                // check ERC165
-                assertEq(strategy.supportsInterface(type(IERC165).interfaceId), true);
-                assertEq(strategy.supportsInterface(type(IControllable).interfaceId), true);
-                assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
-                    
-                assertEq(strategy.supportsInterface(type(IERC721).interfaceId), false);
-                assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
-                assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
-
-                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
-                    assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
-                    assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
-                    assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
-                }
-                ///
-
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0);
                 (uint tvl, ) = IVault(vars.vault).tvl();
@@ -226,7 +199,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 skip(6 hours);
 
-                // pool swap volume
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       MAKE POOL VOLUME                     */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
                     ISwapper swapper = ISwapper(platform.swapper());
                     ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
@@ -244,6 +219,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     deal(assets[1], address(this), depositAmounts[1]);
                     swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       SMALL WITHDRAW                       */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
                 skip(3 hours);
                 vm.roll(block.number + 6);
@@ -265,8 +244,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                 }
 
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                         HARDWORK 0                         */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 vm.txGasPrice(15e10); // 150gwei
-
                 {
                     vars.apr = 0;
                     vars.aprCompound = 0;
@@ -274,10 +255,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.duration = 0;
                     vm.recordLogs();
                     vars.hardWorker.call(vars.vaultsForHardWork);
-                    // IVault(vault).doHardWork();
                     vars.entries = vm.getRecordedLogs();
+                    vars.hwEventFound = false;
                     for (uint j = 0; j < vars.entries.length; ++j) {
-                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256)")) {
+                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256)")) {
+                            vars.hwEventFound = true;
                             (vars.apr, vars.aprCompound, vars.earned, tvl, vars.duration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
 
                             console.log(string.concat(
@@ -295,8 +277,12 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             assertGt(vars.duration, 0);
                         }
                     }
+                    require(vars.hwEventFound, "UniversalTest: HardWork event not emited");
                 }
 
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*           CLAIM REWARDS FROM REWARDING VAULTS              */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 if (vars.isRVault || vars.isRMVault) {
                     address rewardToken = vars.isRVault ? vars.allowedBBTokens[0] : platform.targetExchangeAsset();
                     uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
@@ -311,13 +297,16 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
                 }
 
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                        WITHDRAW ALL                        */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 uint totalWas = strategy.total();
-
                 vm.roll(block.number + 6);
-
                 IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](2));
 
-                // test underlying and hardwork on deposit
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 address underlying = strategy.underlying();
                 if (underlying != address(0)) {
                     skip(7200);
@@ -356,6 +345,46 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     strategy.withdrawUnderlying(18, address(123));
                     vm.stopPrank(); 
                     }
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                          TEST ZAP                          */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                {
+                    IZap zap = IZap(platform.zap());
+                    (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
+                    assertEq(swapAmounts.length, 2);
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                      TEST BASE CONTRACTS                   */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                // check LPStrategyBase reverts
+                {
+                    address[] memory wrongAssets = new address[](10);
+                    vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    wrongAssets = new address[](assets.length);
+                    wrongAssets[0] = address(1);
+                    vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
+                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                    vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
+                    strategy.previewDepositAssets(assets, new uint[](5));
+                }
+
+                // check ERC165
+                assertEq(strategy.supportsInterface(type(IERC165).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IControllable).interfaceId), true);
+                assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
+                    
+                assertEq(strategy.supportsInterface(type(IERC721).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
+                assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
+
+                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
+                    assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
+                    assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
                 }
             }
         }

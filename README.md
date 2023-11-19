@@ -26,9 +26,9 @@ Contributions can be made in the form of developing strategies, developing the c
 
 ## Coverage
 
-[![codecov](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graph/badge.svg?token=HXU4SR81AV)](https://codecov.io/gh/stabilitydao/stability-platform-contracts)
+[![codecov](https://codecov.io/gh/stabilitydao/stability-contracts/graph/badge.svg?token=HXU4SR81AV)](https://codecov.io/gh/stabilitydao/stability-contracts)
 
-![Coverage Grid](https://codecov.io/gh/stabilitydao/stability-platform-contracts/graphs/tree.svg?token=HXU4SR81AV)
+![Coverage Grid](https://codecov.io/gh/stabilitydao/stability-contracts/graphs/tree.svg?token=HXU4SR81AV)
 
 ## Versioning
 
