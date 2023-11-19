@@ -36,17 +36,6 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
 
     //endregion ----- Storage -----
 
-    //region ----- Private functions -----
-
-    function _getStorage() private pure returns (StrategyLogicStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := STRATEGYLOGIC_STORAGE_LOCATION
-        }
-    }
-    
-    //endregion ----- Private functions -----
-
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
         __ERC721_init("Strategy Logic", "STRATEGY");
@@ -110,4 +99,15 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         StrategyLogicStorage storage $ = _getStorage();
         strategyLogicId = $.tokenStrategyLogic[tokenId];
     }
+
+    //region ----- Internal logic -----
+
+    function _getStorage() private pure returns (StrategyLogicStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := STRATEGYLOGIC_STORAGE_LOCATION
+        }
+    }
+    
+    //endregion ----- Internal logic -----
 }

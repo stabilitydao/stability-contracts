@@ -66,17 +66,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //endregion -- Storage -----
 
-    //region ----- Private functions -----
-
-    function _getStorage() private pure returns (FactoryStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := FACTORY_STORAGE_LOCATION
-        }
-    }
-    
-    //endregion -- Private functions -----
-
     //region ----- Data types -----
 
     struct DeployVaultAndStrategyVars {
@@ -531,5 +520,16 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     //endregion -- View functions -----
+
+    //region ----- Internal logic -----
+
+    function _getStorage() private pure returns (FactoryStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := FACTORY_STORAGE_LOCATION
+        }
+    }
+    
+    //endregion -- Internal logic -----
 
 }

@@ -30,17 +30,6 @@ contract AprOracle is Controllable, IAprOracle {
     
     //region ----- Constants -----
 
-    //region ----- Private functions -----
-
-    function _getStorage() private pure returns (AprOracleStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := APRORACLE_STORAGE_LOCATION
-        }
-    }
-
-    //endregion ----- Private functions -----
-
     function initialize(address platform_) external initializer {
         __Controllable_init(platform_);
     }
@@ -67,4 +56,15 @@ contract AprOracle is Controllable, IAprOracle {
             aprs[i] = $.assetApr[assets[i]];
         }
     }
+
+    //region ----- Internal logic -----
+
+    function _getStorage() private pure returns (AprOracleStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := APRORACLE_STORAGE_LOCATION
+        }
+    }
+
+    //endregion ----- Internal logic -----
 }

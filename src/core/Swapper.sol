@@ -514,10 +514,6 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
-    //endregion ----- Internal logic -----
-
-    //region ----- Private functions -----
-
     function _getStorage() private pure returns (SwapperStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
@@ -525,5 +521,5 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
-    //endregion -- Private functions -----
+    //endregion ----- Internal logic -----
 }

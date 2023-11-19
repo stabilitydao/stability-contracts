@@ -34,17 +34,6 @@ contract PriceReader is Controllable, IPriceReader {
 
     //endregion ----- Storage -----
 
-    //region ----- Private functions -----
-    
-    function _getStorage() private pure returns (PriceReaderStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := PRICEREADER_STORAGE_LOCATION
-        }
-    }
-    
-    //endregion ----- Private functions -----
-
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }
@@ -139,4 +128,15 @@ contract PriceReader is Controllable, IPriceReader {
         PriceReaderStorage storage $ = _getStorage();
         return $._adapters.length();
     }
+
+    //region ----- Internal logic -----
+    
+    function _getStorage() private pure returns (PriceReaderStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := PRICEREADER_STORAGE_LOCATION
+        }
+    }
+    
+    //endregion ----- Internal logic -----
 }

@@ -782,10 +782,6 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
-    //endregion -- Internal logic -----
-
-    //region ----- Private functions -----
-
     function _getStorage() private pure returns (PlatformStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
@@ -793,5 +789,5 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
-    //endregion -- Private functions -----
+    //endregion -- Internal logic -----
 }

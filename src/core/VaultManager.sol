@@ -213,7 +213,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
     }
 
-    //region ----- Private functions -----
+    //region ----- Internal logic -----
 
     function _getStorage() private pure returns (VaultManagerStorage storage $) {
         //slither-disable-next-line assembly
@@ -222,5 +222,5 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
     }
     
-    //endregion ----- Private functions -----
+    //endregion ----- Internal logic -----
 }
