@@ -38,9 +38,9 @@ contract Swapper is Controllable, ISwapper {
         mapping(address tokenIn => mapping(address tokenOut => PoolData)) blueChipsPools;    
         /// @inheritdoc ISwapper
         mapping(address token => uint minAmountToSwap) threshold;
-        /// @dev Assets list. 2 slots used.
+        /// @dev Assets list.
         EnumerableSet.AddressSet _assets;
-        /// @dev Blue Chip Assets list. 2 slots used.
+        /// @dev Blue Chip Assets list.
         EnumerableSet.AddressSet _bcAssets;
     }
 

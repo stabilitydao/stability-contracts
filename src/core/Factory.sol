@@ -55,9 +55,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         /// @inheritdoc IFactory
         mapping(address vault => uint status) vaultStatus;
         mapping(address address_ => bool isStrategy_) isStrategy;
-        /// @dev 2 slots struct
         EnumerableSet.Bytes32Set vaultTypeHashes;
-        /// @dev 2 slots struct
         EnumerableSet.Bytes32Set strategyLogicIdHashes;
         mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
         address[] deployedVaults;

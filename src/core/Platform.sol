@@ -96,13 +96,9 @@ contract Platform is Controllable, IPlatform {
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
-        /// @dev 2 slots struct
         EnumerableSet.AddressSet _operators;
-        /// @dev 3 slots structs
         EnumerableMap.AddressToUintMap _allowedBBTokensVaults;
-        /// @dev 2 slots struct
         EnumerableSet.AddressSet _allowedBoostRewardTokens;
-        /// @dev 2 slots struct
         EnumerableSet.AddressSet _defaultBoostRewardTokens;
         EnumerableSet.AddressSet _dexAggregators;
         uint _fee;
