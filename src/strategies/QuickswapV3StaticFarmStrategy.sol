@@ -27,7 +27,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     string public constant VERSION = '1.0.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickswapV3StaticFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant QuickSwapV3StaticFarmStrategyStorage_STORAGE_LOCATION = 0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
+    bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION = 0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -145,8 +145,10 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         //slither-disable-next-line unused-return
         (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = $._nft.positions(__tokenId);
         //slither-disable-next-line unused-return
+        //slither-disable-next-line similar-names
         (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
         //slither-disable-next-line unused-return
+        //slither-disable-next-line similar-names
         (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);     
         amounts[0] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last) + uint(tokensOwed0);
         amounts[1] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last) + uint(tokensOwed1);
@@ -373,7 +375,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _getQuickStaticFarmStorage() internal pure returns (QuickSwapV3StaticFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := QuickSwapV3StaticFarmStrategyStorage_STORAGE_LOCATION
+            $.slot := QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION
         }
     }
 

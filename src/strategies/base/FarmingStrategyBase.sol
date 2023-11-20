@@ -20,7 +20,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     string public constant VERSION_FARMING_STRATEGY_BASE = '0.1.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant FarmingStrategyBase_STORAGE_LOCATION = 0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
+    bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION = 0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
 
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -89,8 +89,8 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
 
     function _getFarmingStrategyBaseStorage() internal pure returns (FarmingStrategyBaseStorage storage $) {
         //slither-disable-next-line assembly
-        assembly {
-            $.slot := FarmingStrategyBase_STORAGE_LOCATION
+        assembly { 
+            $.slot := FARMINGSTRATEGYBASE_STORAGE_LOCATION
         }
     }
 }
