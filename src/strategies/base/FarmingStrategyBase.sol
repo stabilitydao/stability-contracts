@@ -88,6 +88,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     }
 
     function _getFarmingStrategyBaseStorage() internal pure returns (FarmingStrategyBaseStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := FarmingStrategyBase_STORAGE_LOCATION
         }

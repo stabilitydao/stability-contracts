@@ -291,14 +291,15 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         amountsConsumed = new uint[](2);
         address[] memory _assets = assets(); 
-        (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(_$._underlying, _assets[0], amountsMax[0]);
+        address underlying_ = _$._underlying;
+        (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(underlying_, _assets[0], amountsMax[0]);
         if (amountsMax[1] > amount1End) {
             amountsConsumed[0] = amountsMax[0];
             // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] < amount1Start) {
             //slither-disable-next-line similar-names
-            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(_$._underlying, _assets[1], amountsMax[1]);
+            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
         } else {
@@ -307,10 +308,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         // calculate shares
-        IHypervisor hypervisor = IHypervisor(_$._underlying);
-        IAlgebraPool _pool = IAlgebraPool(pool());
-        //slither-disable-next-line unused-return
-        (,int24 tick,,,,,) = _pool.globalState();
+        IHypervisor hypervisor = IHypervisor(underlying_);
+        (,int24 tick,,,,,) = IAlgebraPool(pool()).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
@@ -360,6 +359,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     function _getGammaQuickStorage() internal pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := GammaQuickSwapFarmStrategyStorage_STORAGE_LOCATION
         }

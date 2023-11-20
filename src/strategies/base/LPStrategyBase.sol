@@ -106,6 +106,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     }
 
     function _getLPStrategyBaseStorage() internal pure returns (LPStrategyBaseStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := LPSTRATEGYBASE_STORAGE_LOCATION
         }

@@ -365,6 +365,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     //region ----- Internal logic -----
 
     function _getVaultBaseStorage() internal pure returns (VaultBaseStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := VAULTBASE_STORAGE_LOCATION
         }

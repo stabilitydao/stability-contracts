@@ -371,6 +371,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getQuickStaticFarmStorage() internal pure returns (QuickSwapV3StaticFarmStrategyStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := QuickSwapV3StaticFarmStrategyStorage_STORAGE_LOCATION
         }

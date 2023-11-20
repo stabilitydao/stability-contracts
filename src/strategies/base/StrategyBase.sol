@@ -295,6 +295,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getStrategyBaseStorage() internal pure returns (StrategyBaseStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := STRATEGYBASE_STORAGE_LOCATION
         }

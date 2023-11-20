@@ -260,6 +260,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
 
     function _getRVaultBaseStorage() internal pure returns (RVaultBaseStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := RVAULTBASE_STORAGE_LOCATION
         }
