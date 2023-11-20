@@ -162,8 +162,6 @@ contract VaultTest is Test, FullMockSetup {
         lp.approve(address(vault), 1e18);
 
         vault.depositAssets(assets, amounts, 0);
-        console.log("ADDRESS", underlyingAssets[0]);
-        console.log("AMOUNTS", otherAmounts[0]);
         vault.depositAssets(underlyingAssets, otherAmounts, 0);
         uint shares = vault.balanceOf(address(this));
         assertGt(shares, 0);

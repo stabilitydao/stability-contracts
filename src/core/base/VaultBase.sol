@@ -45,7 +45,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     struct VaultBaseStorage {
         /// @dev Prevents manipulations with deposit and withdraw in short time.
         ///      For simplification we are setup new withdraw request on each deposit/transfer.
-        mapping(address msgSender => uint blockNumber) _withdrawRequests;
+        mapping(address msgSender => uint blockNumber) withdrawRequests;
         /// @inheritdoc IVault
         IStrategy strategy;
         /// @inheritdoc IVault
@@ -187,7 +187,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         uint mintAmount = _mintShares($, _totalSupply, value, totalValue, amountsConsumed, minSharesOut, assets);
 
-        $._withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[msg.sender] = block.number;
 
         emit DepositAssets(msg.sender, assets_, amountsConsumed, mintAmount);
     }
@@ -422,10 +422,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     function _beforeWithdraw(VaultBaseStorage storage $) internal {
-        if($._withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
+        if($.withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
             revert WaitAFewBlocks();
         }
-        $._withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[msg.sender] = block.number;
     }
 
     function _update(
@@ -435,8 +435,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ) internal virtual override {
         super._update(from, to, value);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        $._withdrawRequests[from] = block.number;
-        $._withdrawRequests[to] = block.number;
+        $.withdrawRequests[from] = block.number;
+        $.withdrawRequests[to] = block.number;
     }
 
     // function _afterTokenTransfer(
