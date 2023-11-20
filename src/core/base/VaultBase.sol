@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
-import {console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -155,8 +154,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         uint _totalSupply = totalSupply();
         uint totalValue = $.strategy.total();
-        console.log("Value", totalValue);
-        console.log("Supply", _totalSupply);
         if(_totalSupply != 0 && totalValue == 0){
             revert FuseTrigger();
         }

@@ -173,7 +173,7 @@ contract VaultTest is Test, FullMockSetup {
         // initial shares
         assertLt(shares, vault.totalSupply());
 
-         strategy.triggerFuse();
+        strategy.triggerFuse();
 
         otherAmounts[0] = 0;
         vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
