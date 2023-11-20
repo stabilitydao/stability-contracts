@@ -430,8 +430,9 @@ contract Platform is Controllable, IPlatform {
         uint len = $._ammAdapterIdHash.length;
         ids = new string[](len);
         proxies = new address[](len);
+        bytes32[] memory _ammAdapterIdHash = $._ammAdapterIdHash;
         for (uint i; i < len; ++i) {
-            bytes32 hash = $._ammAdapterIdHash[i];
+            bytes32 hash = _ammAdapterIdHash[i];
             AmmAdapter memory __ammAdapter = $._ammAdapter[hash];
             ids[i] = __ammAdapter.id;
             proxies[i] = __ammAdapter.proxy;
@@ -539,12 +540,13 @@ contract Platform is Controllable, IPlatform {
         bytes32[] memory strategyExtra
     ) { 
         PlatformStorage storage $ = _getStorage();
-        if($.factory == address(0)){
+        address factory_ = $.factory;
+        if(factory_ == address(0)){
             revert NotExist();
         }
         
         platformAddresses = new address[](5);
-        platformAddresses[0] = $.factory;
+        platformAddresses[0] = factory_;
         platformAddresses[1] = $.vaultManager;
         platformAddresses[2] = $.strategyLogic;
         platformAddresses[3] = $.buildingPermitToken;
@@ -552,7 +554,7 @@ contract Platform is Controllable, IPlatform {
         ISwapper _swapper = ISwapper($.swapper);
         bcAssets = _swapper.bcAssets();
         dexAggregators_ = $._dexAggregators.values();
-        IFactory _factory = IFactory($.factory);
+        IFactory _factory = IFactory(factory_);
         (vaultType,,,,vaultBuildingPrice,vaultExtra) = _factory.vaultTypes();
         (strategyId,,,isFarmingStrategy,,strategyTokenURI,strategyExtra) = _factory.strategies();
     }
@@ -731,9 +733,9 @@ contract Platform is Controllable, IPlatform {
 
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
         PlatformStorage storage $ = _getStorage();
-        address tempEcosystemRevenueReceiver = $.ecosystemRevenueReceiver;
-        if(feeShareEcosystem != 0 && tempEcosystemRevenueReceiver == address(0)){
-            if(tempEcosystemRevenueReceiver == address(0)){
+        address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
+        if(feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)){
+            if(ecosystemRevenueReceiver_ == address(0)){
                 revert IControllable.IncorrectZeroArgument();
             } else {
                 revert IncorrectFee(0,0);
