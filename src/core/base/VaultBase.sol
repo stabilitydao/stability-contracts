@@ -157,7 +157,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if(_totalSupply != 0 && totalValue == 0){
             revert FuseTrigger();
         }
-
+        
         address[] memory assets = $.strategy.assets();
         address underlying = $.strategy.underlying();
 
@@ -185,7 +185,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert IControllable.IncorrectZeroArgument();
         }
 
-        uint mintAmount = _mintShares($, _totalSupply, value, totalValue, amountsConsumed, minSharesOut);
+        uint mintAmount = _mintShares($, _totalSupply, value, totalValue, amountsConsumed, minSharesOut, assets);
 
         $._withdrawRequests[msg.sender] = block.number;
 
@@ -207,11 +207,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         _beforeWithdraw($);
 
+        IStrategy _strategy = $.strategy;
         uint _totalSupply = totalSupply();
-        uint totalValue = $.strategy.total();
+        uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
-        address underlying = $.strategy.underlying();
+        address underlying = _strategy.underlying();
         bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
         // fuse is not triggered
@@ -227,7 +228,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         } else {
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address($.strategy)) / _totalSupply;
+                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / _totalSupply;
                 $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
             } else {
                 amountsOut = $.strategy.transferAssets(amountShares, _totalSupply, msg.sender);
@@ -286,7 +287,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (amountsConsumed, valueOut) = $.strategy.previewDepositAssets(assets_, amountsMax);
         //slither-disable-next-line unused-return
-        (sharesOut,) = _calcMintShares($, totalSupply(), valueOut, $.strategy.total(), amountsConsumed);
+        (sharesOut,) = _calcMintShares(totalSupply(), valueOut, $.strategy.total(), amountsConsumed, $.strategy.assets());
     }
 
     /// @inheritdoc IVault
@@ -335,25 +336,25 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function strategy() public view returns (IStrategy) {
+    function strategy() external view returns (IStrategy) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.strategy;
     }
 
     /// @inheritdoc IVault
-    function maxSupply() public view returns (uint) {
+    function maxSupply() external view returns (uint) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.maxSupply;
     }
 
     /// @inheritdoc IVault
-    function tokenId() public view returns (uint) {
+    function tokenId() external view returns (uint) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.tokenId;
     }
 
     /// @inheritdoc IVault
-    function doHardWorkOnDeposit() public view returns (bool) {
+    function doHardWorkOnDeposit() external view returns (bool) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
     }
@@ -381,11 +382,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ///        Consumed amounts used by calculation of minted amount during the first deposit for setting the first share price to 1 USD.
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user after deposit
     /// @return mintAmount Amount of minted shares for the user
-    function _mintShares(VaultBaseStorage storage $, uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut) internal returns (uint mintAmount) {
+    function _mintShares(VaultBaseStorage storage $, uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut, address[] memory assets) internal returns (uint mintAmount) {
         uint initialShares;
-        (mintAmount, initialShares) = _calcMintShares($, totalSupply_, value_,  totalValue_, amountsConsumed);
-        if($.maxSupply != 0 && mintAmount + totalSupply_ > $.maxSupply){
-            revert ExceedMaxSupply($.maxSupply);
+        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed, assets);
+        uint _maxSupply = $.maxSupply;
+        if(_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply){
+            revert ExceedMaxSupply(_maxSupply);
         }
         if(mintAmount < minSharesOut){
             revert ExceedSlippage(mintAmount, minSharesOut);
@@ -398,7 +400,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @dev Calculating amount of new shares for given deposited value and totals
-    function _calcMintShares(VaultBaseStorage storage $, uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed) internal view returns (uint mintAmount, uint initialShares) {
+    function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, address[] memory assets) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
             initialShares = 0; // hide warning
@@ -407,7 +409,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,) = priceReader.getAssetsPrice($.strategy.assets(), amountsConsumed);
+            (mintAmount,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;

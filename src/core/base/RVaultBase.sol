@@ -70,7 +70,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     ) internal onlyInitializing {
         __VaultBase_init(platform_, type_, strategy_, name_, symbol_, tokenId_);
         RVaultLib.baseInitCheck(platform_, vaultInitAddresses, vaultInitNums);
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint addressesLength = vaultInitAddresses.length;
         $.rewardTokensTotal = addressesLength;
         for (uint i; i < addressesLength; ++i) {
@@ -87,7 +87,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @dev All rewards for given owner could be claimed for receiver address.
     function setRewardsRedirect(address owner, address receiver) external onlyMultisig {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         $.rewardsRedirect[owner] = receiver;
         emit SetRewardsRedirect(owner, receiver);
     }
@@ -103,7 +103,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @notice Update and Claim all rewards for given owner address. Send them to predefined receiver.
     function getAllRewardsAndRedirect(address owner) external {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         address receiver = $.rewardsRedirect[owner];
         if(receiver == address(0)){
             revert IControllable.IncorrectZeroArgument();
@@ -135,7 +135,8 @@ abstract contract RVaultBase is VaultBase, IRVault {
     /// @inheritdoc IRVault
     function notifyTargetRewardAmount(uint i, uint amount) external {
         _updateRewards(address(0));
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        VaultBaseStorage storage _$ = _getVaultBaseStorage();
 
         // overflow fix according to https://sips.synthetix.io/sips/sip-77
         if(amount >= type(uint).max / 1e18){
@@ -152,7 +153,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         uint _oldRewardRateForToken = $.rewardRateForToken[i];
 
         if (i == 0) {
-            if(address(super.strategy()) != msg.sender){
+            if(address(_$.strategy) != msg.sender){
                 revert IControllable.IncorrectMsgSender();
             }
         } else {
@@ -195,12 +196,12 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @inheritdoc IRVault
     function bbToken() public view returns(address) {
-        return _getStorage().rewardToken[0];
+        return _getRVaultBaseStorage().rewardToken[0];
     }
 
     
     function rewardTokens() external view returns (address[] memory) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint len = $.rewardTokensTotal;
         address[] memory rts = new address[](len);
         for (uint i; i < len; ++i) {
@@ -224,31 +225,31 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @inheritdoc IRVault
     function rewardToken(uint tokenIndex) public view returns(address) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.rewardToken[tokenIndex];
     }
 
     /// @inheritdoc IRVault
     function duration(uint tokenIndex) public view returns(uint) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.duration[tokenIndex];
     }
     
     /// @inheritdoc IRVault
     function rewardsRedirect(address owner) public view returns (address) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.rewardsRedirect[owner];
     }
 
     /// @inheritdoc IRVault
     function compoundRatio() public view returns (uint) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.compoundRatio;
     }
 
     /// @inheritdoc IRVault
     function rewardTokensTotal() public view returns (uint) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.rewardTokensTotal;
     }
 
@@ -258,7 +259,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     //region ----- Internal logic -----
 
 
-    function _getStorage() internal pure returns (RVaultBaseStorage storage $) {
+    function _getRVaultBaseStorage() internal pure returns (RVaultBaseStorage storage $) {
         assembly {
             $.slot := RVAULTBASE_STORAGE_LOCATION
         }
@@ -267,7 +268,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     function _getAllRewards(address owner, address receiver) internal {
         _updateRewards(owner);
-        uint len = _getStorage().rewardTokensTotal;
+        uint len = _getRVaultBaseStorage().rewardTokensTotal;
         for (uint i; i < len; ++i) {
             _payRewardTo(i, owner, receiver);
         }
@@ -275,7 +276,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @dev Refresh reward numbers
     function _updateReward(address account, uint tokenIndex) internal {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint _rewardPerTokenStoredForToken = _rewardPerToken(tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
         $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable(tokenIndex);
@@ -287,20 +288,20 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @dev Use it for any underlying movements
     function _updateRewards(address account) internal {
-        uint len = _getStorage().rewardTokensTotal;
+        uint len = _getRVaultBaseStorage().rewardTokensTotal;
         for (uint i; i < len; ++i) {
             _updateReward(account, i);
         }
     }
 
     function _earned(uint rt, address account) internal view returns (uint) {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return balanceOf(account) * (_rewardPerToken(rt) - $.userRewardPerTokenPaidForToken[rt][account]) / 1e18 + $.rewardsForToken[rt][account];
     }
 
     function _rewardPerToken(uint rewardTokenIndex) internal view returns (uint) {
         uint totalSupplyWithoutItself = totalSupply() - balanceOf(address(this));
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         if (totalSupplyWithoutItself == 0) {
             return $.rewardPerTokenStoredForToken[rewardTokenIndex];
         }
@@ -314,12 +315,12 @@ abstract contract RVaultBase is VaultBase, IRVault {
     }
 
     function _lastTimeRewardApplicable(uint rt) internal view returns (uint) {
-        return Math.min(block.timestamp, _getStorage().periodFinishForToken[rt]);
+        return Math.min(block.timestamp, _getRVaultBaseStorage().periodFinishForToken[rt]);
     }
 
     /// @notice Transfer earned rewards to rewardsReceiver
     function _payRewardTo(uint rewardTokenIndex, address owner, address receiver) internal {
-        RVaultBaseStorage storage $ = _getStorage();
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         address _rewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = _earned(rewardTokenIndex, owner);
         if (reward > 0 && IERC20(_rewardToken).balanceOf(address(this)) >= reward) {

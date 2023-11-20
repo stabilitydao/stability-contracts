@@ -69,7 +69,7 @@ contract RMVault is RVaultBase, IManagedVault {
                 revert IManagedVault.CantChangeDuration(nums[i]);
             }
         }
-        RVaultBaseStorage storage _$ = super._getStorage();
+        RVaultBaseStorage storage _$ = _getRVaultBaseStorage();
         if (addressesLength > _rewardTokensTotal - 1) {
             for (uint i = _rewardTokensTotal; i < addressesLength + 1; ++i) {
                 uint i_1 = i - 1;
