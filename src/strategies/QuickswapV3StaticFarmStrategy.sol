@@ -352,7 +352,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getProportion0(address pool_) public view returns (uint) {
+    function _getProportion0(address pool_) internal view returns (uint) {
         return ammAdapter.getProportion0(pool_);
     }
 
