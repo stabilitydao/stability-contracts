@@ -15,11 +15,10 @@ contract MockStrategy is LPStrategyBase {
     uint private _depositedToken1;
     uint private _fee0;
     uint private _fee1;
-    StrategyBaseStorage private $;
-
 
 
     function setLastApr(uint apr) external {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.lastApr = apr;
     }
 
@@ -37,7 +36,6 @@ contract MockStrategy is LPStrategyBase {
             pool: addresses[2],
             underlying : addresses[3]
         }));
-        $ = _getStrategyBaseStorage();
     }
 
     function initVariants(address) public pure returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
@@ -72,6 +70,7 @@ contract MockStrategy is LPStrategyBase {
     }
 
     function triggerFuse() external {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.total = 0;
     }
 
@@ -91,6 +90,7 @@ contract MockStrategy is LPStrategyBase {
     }
 
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         assets_ = $._assets;
         amounts_ = new uint[](2);
 
@@ -105,7 +105,7 @@ contract MockStrategy is LPStrategyBase {
 
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/) internal override returns(uint value) {
         // no msg.sender checks
-
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         uint[] memory amountsConsumed;
         (amountsConsumed, value) = _previewDepositAssets(amounts);
         _depositedToken0 += amountsConsumed[0];
@@ -117,7 +117,7 @@ contract MockStrategy is LPStrategyBase {
     function depositUnderlying(uint amount) external override returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
         require(_depositedToken0 > 0, "Mock: deposit assets first");
-
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         uint addedToken0 = _depositedToken0 * amount / $.total;
         uint addedToken1 = _depositedToken1 * amount / $.total;
         _depositedToken0 += addedToken0;
@@ -134,7 +134,7 @@ contract MockStrategy is LPStrategyBase {
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         // no msg.sender checks
-
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         amountsOut = new uint[](2);
         amountsOut[0] = _depositedToken0 * value / $.total;
         amountsOut[1] = _depositedToken1 * value / $.total;
@@ -147,7 +147,7 @@ contract MockStrategy is LPStrategyBase {
 
     function withdrawUnderlying(uint amount, address receiver) external override {
         // no msg.sender checks
-
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         bool fuseTriggered = $.total == 0;
 
         if (!fuseTriggered) {
@@ -169,6 +169,7 @@ contract MockStrategy is LPStrategyBase {
         address[] memory __rewardAssets,
         uint[] memory __rewardAmounts
     ) {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         IMockERC20($._assets[0]).mint(_fee0);
         IMockERC20($._assets[1]).mint(_fee1);
         __amounts = new uint[](2);
