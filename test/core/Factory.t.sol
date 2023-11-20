@@ -100,7 +100,7 @@ contract FactoryTest is Test, MockSetup {
             farming: false,
             tokenId: type(uint).max
         }), address(this));
-        (,,,,,uint strategyLogicTokenId) = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV)));
+        uint strategyLogicTokenId = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV))).tokenId;
         bytes32[] memory hashes = factory.strategyLogicIdHashes();
         assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));

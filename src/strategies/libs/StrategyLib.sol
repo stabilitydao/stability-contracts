@@ -87,7 +87,7 @@ library StrategyLib {
         (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) = vars.platform.getFees();
         address vaultManagerReceiver = IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
         //slither-disable-next-line unused-return
-        (,,,,,uint strategyLogicTokenId) = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id)));
+        uint strategyLogicTokenId = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id))).tokenId;
         address strategyLogicReceiver = IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
         uint len = assets_.length;
         amountsRemaining = new uint[](len);

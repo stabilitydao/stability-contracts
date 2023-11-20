@@ -7,9 +7,8 @@ import "./IStrategy.sol";
 /// Derived implementations can be effective for building tokenized vaults with single or multiple underlying liquidity mining position.
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
+/// @author Jude (https://github.com/iammrjude)
 interface IVault is IERC165 {
-
-
     //region ----- Custom Errors -----
     error NotEnoughBalanceToPay();
     error FuseTrigger();
@@ -29,6 +28,30 @@ interface IVault is IERC165 {
     event MaxSupply(uint maxShares);
 
     //endregion -- Events -----
+
+    //region ----- Data types -----
+
+    /// @title Vault Initialization Data
+    /// @notice Data structure containing parameters for initializing a new vault.
+    /// @dev This struct is commonly used as a parameter for the `initialize` function in vault contracts.
+    /// @param platform Platform address providing access control, infrastructure addresses, fee settings, and upgrade capability.
+    /// @param strategy Immutable strategy proxy used by the vault.
+    /// @param name ERC20 name for the vault token.
+    /// @param symbol ERC20 symbol for the vault token.
+    /// @param tokenId NFT ID associated with the VaultManager.
+    /// @param vaultInitAddresses Array of addresses used during vault initialization.
+    /// @param vaultInitNums Array of uint values corresponding to initialization parameters.
+    struct VaultInitializationData {
+        address platform;
+        address strategy;
+        string name;
+        string symbol;
+        uint tokenId;
+        address[] vaultInitAddresses;
+        uint[] vaultInitNums;
+    }
+
+    //endregion -- Data types -----
 
     //region ----- Read functions -----
 
@@ -106,20 +129,11 @@ interface IVault is IERC165 {
     /// @param value HardWork on deposit is enabled
     function setDoHardWorkOnDeposit(bool value) external;
 
-    /// @dev Initialization of vault which is usually called by the Factory
-    /// @param platform_ Platform provide access control, infrastructure addresses, fee settings, ability to upgrade etc
-    /// @param strategy_ Immutable strategy proxy used by the vault
-    /// @param name_ Vault ERC20 name
-    /// @param symbol_ Vault ERC20 symbol
-    /// @param tokenId_ VaultManager NFT ID
+    /// @notice Initialization function for the vault.
+    /// @dev This function is usually called by the Factory during the creation of a new vault.
+    /// @param vaultInitializationData Data structure containing parameters for vault initialization.
     function initialize(
-        address platform_,
-        address strategy_,
-        string memory name_,
-        string memory symbol_,
-        uint tokenId_,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
+        VaultInitializationData memory vaultInitializationData
     ) external;
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance

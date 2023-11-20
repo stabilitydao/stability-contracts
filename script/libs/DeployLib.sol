@@ -223,8 +223,8 @@ library DeployLib {
             IFactory factory = IFactory(_platform.factory());
             bytes32[] memory hashes = factory.strategyLogicIdHashes();
             for (uint i; i < hashes.length; ++i) {
-                (string memory id,,,,,uint tokenId) = factory.strategyLogicConfig(hashes[i]);
-                console.log(string.concat('Deployed strategy ', id, ' [', CommonLib.u2s(tokenId) , ']'));
+                IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(hashes[i]);
+                console.log(string.concat('Deployed strategy ', strategyConfig.id, ' [', CommonLib.u2s(strategyConfig.tokenId) , ']'));
             }
         }
     }
