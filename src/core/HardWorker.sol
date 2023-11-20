@@ -300,6 +300,7 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaults = IVaultManager(_platform.vaultManager()).vaultAddresses();
         uint len = vaults.length;
         address[] memory vaultsForHardWork = new address[](len);
+        // slither-disable-next-line uninitialized-local
         uint counter;
         for (uint i; i < len; ++i) {
             if ($.excludedVaults[vaults[i]]) {
