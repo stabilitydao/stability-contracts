@@ -12,7 +12,7 @@ import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 library DeployStrategyLib {
     function deployStrategy(address platform, string memory id, bool farming) internal returns (address implementation) {
         IFactory factory = IFactory(IPlatform(platform).factory());
-        (,implementation,,,,) = factory.strategyLogicConfig(keccak256(bytes(id)));
+        implementation = factory.strategyLogicConfig(keccak256(bytes(id))).implementation;
         if (implementation != address(0)) {
             return implementation;
         }

@@ -193,14 +193,16 @@ contract VaultTest is Test, FullMockSetup {
     }
 
     function _initAll() internal {
-        vault.initialize(
-            address(platform),
-            address(strategy),
-            'Test vault',
-            'xVAULT',
-            0,
-            new address[](0),
-            new uint[](0)
+        vault.initialize(                                                
+            IVault.VaultInitializationData({
+                platform:           address(platform),
+                strategy:           address(strategy),
+                name:               'Test vault',
+                symbol:             'xVAULT',
+                tokenId:            0,
+                vaultInitAddresses: new address[](0),
+                vaultInitNums:      new uint[](0)
+            })
         );
 
         address[] memory addresses = new address[](5);

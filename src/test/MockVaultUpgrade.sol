@@ -27,13 +27,7 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
     }
 
     function initialize(
-        address platform_,
-        address strategy_,
-        string memory name_,
-        string memory symbol_,
-        uint tokenId_,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
+        VaultInitializationData memory vaultInitializationData
     ) initializer public {}
 
     function extra() external view returns (bytes32) {}

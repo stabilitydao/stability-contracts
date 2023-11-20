@@ -133,7 +133,17 @@ contract PlatformTest is Test  {
             Proxy proxy = new Proxy();
             proxy.initProxy(address(vaultImplementation));
             CVault vault = CVault(payable(address(proxy)));
-            vault.initialize(address(platform), address(0), 'V', 'V', 0, new address[](0), new uint[](0));
+            vault.initialize(
+                IVault.VaultInitializationData({
+                    platform: address(platform),
+                    strategy: address(0),
+                    name: 'V',
+                    symbol: 'V',
+                    tokenId: 0,
+                    vaultInitAddresses: new address[](0),
+                    vaultInitNums: new uint[](0)
+                })
+            );
 
             address[] memory proxies = new address[](1);
             proxies[0] = address(proxy);

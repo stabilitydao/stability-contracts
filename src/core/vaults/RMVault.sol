@@ -14,6 +14,7 @@ import "../../interfaces/IRVault.sol";
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author Jude (https://github.com/iammrjude)
 contract RMVault is RVaultBase, IManagedVault {
     using SafeERC20 for IERC20;
 
@@ -28,15 +29,18 @@ contract RMVault is RVaultBase, IManagedVault {
 
     /// @inheritdoc IVault
     function initialize(
-        address platform_,
-        address strategy_,
-        string memory name_,
-        string memory symbol_,
-        uint tokenId_,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
+        VaultInitializationData memory vaultInitializationData
     ) initializer public {
-        __RVaultBase_init(platform_, VaultTypeLib.REWARDING_MANAGED, strategy_, name_, symbol_, tokenId_, vaultInitAddresses, vaultInitNums);
+        __RVaultBase_init(
+            vaultInitializationData.platform,
+            VaultTypeLib.REWARDING_MANAGED,
+            vaultInitializationData.strategy,
+            vaultInitializationData.name,
+            vaultInitializationData.symbol,
+            vaultInitializationData.tokenId,
+            vaultInitializationData.vaultInitAddresses,
+            vaultInitializationData.vaultInitNums
+        );
     }
 
     //endregion -- Init -----

@@ -9,6 +9,7 @@ import "../../interfaces/IStrategyProxy.sol";
 
 /// @title EIP1967 Upgradeable proxy implementation for built by Factory strategies.
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author Jude (https://github.com/iammrjude)
 contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     /// @dev Strategy logic id
     bytes32 private constant _ID_SLOT = bytes32(uint256(keccak256("eip1967.strategyProxy.id")) - 1);
@@ -16,7 +17,8 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     function initStrategyProxy(string memory id) external {
         bytes32 strategyIdHash = keccak256(abi.encodePacked(id));
         //slither-disable-next-line unused-return
-        (,address strategyImplementation,,,,) = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
+        IFactory.StrategyLogicConfig memory strategyConfig = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
+        address strategyImplementation = strategyConfig.implementation;
         _init(strategyImplementation);
         bytes32 slot = _ID_SLOT;
         assembly {
@@ -34,7 +36,8 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
             strategyIdHash := sload(slot)
         }
         //slither-disable-next-line unused-return
-        (,address strategyImplementation,,,,) = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
+        IFactory.StrategyLogicConfig memory strategyConfig = IFactory(msg.sender).strategyLogicConfig(strategyIdHash);
+        address strategyImplementation = strategyConfig.implementation;
         _upgradeTo(strategyImplementation);
     }
 
