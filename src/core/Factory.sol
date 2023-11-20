@@ -290,8 +290,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         IVaultProxy proxy = IVaultProxy(vault);
         bytes32 vaultTypeHash = proxy.VAULT_TYPE_HASH();
         address oldImplementation = proxy.implementation();
-        address newImplementation = $.vaultConfig[vaultTypeHash].implementation;
-        if(!$.vaultConfig[vaultTypeHash].upgradeAllowed){
+        VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
+        address newImplementation = tempVaultConfig.implementation;
+        if(!tempVaultConfig.upgradeAllowed){
             revert UpgradeDenied(vaultTypeHash);
         }
         if(oldImplementation == newImplementation){

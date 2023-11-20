@@ -178,8 +178,9 @@ contract Swapper is Controllable, ISwapper {
         if (route.length == 0) {
             revert(errorMessage);
         }
-        if(amount < $.threshold[tokenIn]){
-            revert LessThenThreshold($.threshold[tokenIn]);
+        uint thresholdTokenIn = $.threshold[tokenIn];
+        if(amount < thresholdTokenIn){
+            revert LessThenThreshold(thresholdTokenIn);
         }
         _swap(route, amount, priceImpactTolerance);
     }
