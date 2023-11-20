@@ -135,7 +135,7 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.doHardWorkOnDeposit(), false);
         vault.setDoHardWorkOnDeposit(true);
         assertEq(vault.doHardWorkOnDeposit(), true);
-    }
+    } 
 
     function testFuse() public {
         _initAll();

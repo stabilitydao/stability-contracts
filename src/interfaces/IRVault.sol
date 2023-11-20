@@ -22,6 +22,9 @@ interface IRVault is IVault {
     /// @return Reward token addresses
     function rewardTokens() external view returns (address[] memory);
 
+    /// @return Total of bbToken + boost reward tokens
+    function rewardTokensTotal() external view returns (uint);
+
     /// @notice Immutable reward buy-back token with tokenIndex 0
     function bbToken() external view returns(address);
 

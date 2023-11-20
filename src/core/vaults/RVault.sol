@@ -28,15 +28,6 @@ contract RVault is RVaultBase {
 
     //endregion -- Constants -----
 
-    //region ----- Storage -----
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 0] private __gap;
-
-    //endregion -- Storage -----
-
     //region ----- Data types -----
 
     struct InitVars {

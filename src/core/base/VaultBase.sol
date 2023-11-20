@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
-
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -17,6 +16,7 @@ import "../../interfaces/IAprOracle.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc)
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
 
@@ -34,33 +34,30 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @dev Delay for calling strategy.doHardWork() on user deposits
     uint internal constant _MIN_HARDWORK_DELAY = 3600;
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultBase")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant VAULTBASE_STORAGE_LOCATION = 0xd602ae9af1fed726d4890dcf3c81a074ed87a6343646550e5de293c5a9330a00;
+
     //endregion -- Constants -----
 
     //region ----- Storage -----
 
-    /// @inheritdoc IVault
-    IStrategy public strategy;
+    /// @custom:storage-location erc7201:stability.VaultBase
+    struct VaultBaseStorage {
+        /// @dev Prevents manipulations with deposit and withdraw in short time.
+        ///      For simplification we are setup new withdraw request on each deposit/transfer.
+        mapping(address msgSender => uint blockNumber) withdrawRequests;
+        /// @inheritdoc IVault
+        IStrategy strategy;
+        /// @inheritdoc IVault
+        uint maxSupply;
+        /// @inheritdoc IVault
+        uint tokenId;
+        /// @inheritdoc IVault
+        bool doHardWorkOnDeposit;
+        /// @dev Immutable vault type ID
+        string _type;
+    }
 
-    /// @inheritdoc IVault
-    uint public maxSupply;
-
-    /// @inheritdoc IVault
-    uint public tokenId;
-
-    /// @dev Trigger doHardwork on invest action. Enabled by default.
-    bool public doHardWorkOnDeposit;
-
-    /// @dev Prevents manipulations with deposit and withdraw in short time.
-    ///      For simplification we are setup new withdraw request on each deposit/transfer.
-    mapping(address msgSender => uint blockNumber) internal _withdrawRequests;
-
-    /// @dev Immutable vault type ID
-    string internal _type;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 6] private __gap;
 
     //endregion -- Storage -----
 
@@ -76,11 +73,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ) internal onlyInitializing {
         __Controllable_init(platform_);
         __ERC20_init(name_, symbol_);
-        _type = type_;
-        strategy = IStrategy(strategy_);
-        tokenId = tokenId_;
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $._type = type_;
+        $.strategy = IStrategy(strategy_);
+        $.tokenId = tokenId_;
         __ReentrancyGuard_init();
-        doHardWorkOnDeposit = true;
+        $.doHardWorkOnDeposit = true;
     }
 
     //endregion -- Init -----
@@ -96,14 +94,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function setMaxSupply(uint maxShares) public virtual onlyGovernanceOrMultisig {
-        maxSupply = maxShares;
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.maxSupply = maxShares;
         emit MaxSupply(maxShares);
     }
 
     /// @inheritdoc IVault
     function setDoHardWorkOnDeposit(bool value) external onlyGovernanceOrMultisig {
-        doHardWorkOnDeposit = value;
-        emit DoHardWorkOnDepositChanged(doHardWorkOnDeposit, value);
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.doHardWorkOnDeposit = value;
+        emit DoHardWorkOnDepositChanged($.doHardWorkOnDeposit, value);
     }
 
     /// @inheritdoc IVault
@@ -113,7 +113,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert IncorrectMsgSender();
         }
         uint startGas = gasleft();
-        strategy.doHardWork();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.strategy.doHardWork();
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
         bool compensated;
@@ -146,20 +147,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external virtual nonReentrant {
         // todo #29 check vault
-
-        if (doHardWorkOnDeposit && block.timestamp > strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
-            strategy.doHardWork();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
+            $.strategy.doHardWork();
         }
 
         uint _totalSupply = totalSupply();
-        uint totalValue = strategy.total();
-
+        uint totalValue = $.strategy.total();
         if(_totalSupply != 0 && totalValue == 0){
             revert FuseTrigger();
         }
-
-        address[] memory assets = strategy.assets();
-        address underlying = strategy.underlying();
+        
+        address[] memory assets = $.strategy.assets();
+        address underlying = $.strategy.underlying();
 
         uint len = amountsMax.length;
         if(len != assets_.length){
@@ -171,23 +171,23 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         if (len == 1 && underlying != address(0) && underlying == assets_[0]) {
             value = amountsMax[0];
-            IERC20(underlying).safeTransferFrom(msg.sender, address(strategy), value);
-            (amountsConsumed) = strategy.depositUnderlying(value);
+            IERC20(underlying).safeTransferFrom(msg.sender, address($.strategy), value);
+            (amountsConsumed) = $.strategy.depositUnderlying(value);
         } else {
-            (amountsConsumed, value) = strategy.previewDepositAssets(assets_, amountsMax);
+            (amountsConsumed, value) = $.strategy.previewDepositAssets(assets_, amountsMax);
             for (uint i; i < len; ++i) {
-                IERC20(assets[i]).safeTransferFrom(msg.sender, address(strategy), amountsConsumed[i]);
+                IERC20(assets[i]).safeTransferFrom(msg.sender, address($.strategy), amountsConsumed[i]);
             }
-            value = strategy.depositAssets(amountsConsumed);
+            value = $.strategy.depositAssets(amountsConsumed);
         }
 
         if(value == 0){
             revert IControllable.IncorrectZeroArgument();
         }
 
-        uint mintAmount = _mintShares(_totalSupply, value, totalValue, amountsConsumed, minSharesOut);
+        uint mintAmount = _mintShares($, _totalSupply, value, totalValue, amountsConsumed, minSharesOut, assets);
 
-        _withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[msg.sender] = block.number;
 
         emit DepositAssets(msg.sender, assets_, amountsConsumed, mintAmount);
     }
@@ -204,13 +204,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert IControllable.IncorrectArrayLength();
         }
 
-        _beforeWithdraw();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        _beforeWithdraw($);
 
+        IStrategy _strategy = $.strategy;
         uint _totalSupply = totalSupply();
-        uint totalValue = strategy.total();
+        uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
-        address underlying = strategy.underlying();
+        address underlying = _strategy.underlying();
         bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
         // fuse is not triggered
@@ -219,17 +221,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
                 amountsOut[0] = value;
-                strategy.withdrawUnderlying(amountsOut[0], msg.sender);
+                $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
             } else {
-                amountsOut = strategy.withdrawAssets(assets_, value, msg.sender);
+                amountsOut = $.strategy.withdrawAssets(assets_, value, msg.sender);
             }
         } else {
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(strategy)) / _totalSupply;
-                strategy.withdrawUnderlying(amountsOut[0], msg.sender);
+                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / _totalSupply;
+                $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
             } else {
-                amountsOut = strategy.transferAssets(amountShares, _totalSupply, msg.sender);
+                amountsOut = $.strategy.transferAssets(amountShares, _totalSupply, msg.sender);
             }
         }
 
@@ -256,12 +258,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function VAULT_TYPE() external view returns (string memory) {
-        return _type;
+        return _getVaultBaseStorage()._type;
     }
 
     /// @inheritdoc IVault
     function price() external view returns (uint price_, bool trusted_) {
-        (address[] memory _assets, uint[] memory _amounts) = strategy.assetsAmounts();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         uint _tvl;
         (_tvl,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
@@ -273,25 +276,28 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function tvl() public view returns (uint tvl_, bool trusted_) {
-        (address[] memory _assets, uint[] memory _amounts) = strategy.assetsAmounts();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         (tvl_,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
 
     /// @inheritdoc IVault
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
-        (amountsConsumed, valueOut) = strategy.previewDepositAssets(assets_, amountsMax);
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        (amountsConsumed, valueOut) = $.strategy.previewDepositAssets(assets_, amountsMax);
         //slither-disable-next-line unused-return
-        (sharesOut,) = _calcMintShares(totalSupply(), valueOut, strategy.total(), amountsConsumed);
+        (sharesOut,) = _calcMintShares(totalSupply(), valueOut, $.strategy.total(), amountsConsumed, $.strategy.assets());
     }
 
     /// @inheritdoc IVault
     function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs) {
-        strategyApr = strategy.lastApr();
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        strategyApr = $.strategy.lastApr();
         totalApr = strategyApr;
-        address[] memory strategyAssets = strategy.assets();
-        uint[] memory proportions = strategy.getAssetsProportions();
-        address underlying = strategy.underlying();
+        address[] memory strategyAssets = $.strategy.assets();
+        uint[] memory proportions = $.strategy.getAssetsProportions();
+        address underlying = $.strategy.underlying();
         uint assetsLengthTmp = strategyAssets.length;
         if (underlying != address(0)) {
             ++assetsLengthTmp;
@@ -329,9 +335,41 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     }
 
+    /// @inheritdoc IVault
+    function strategy() external view returns (IStrategy) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return $.strategy;
+    }
+
+    /// @inheritdoc IVault
+    function maxSupply() external view returns (uint) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return $.maxSupply;
+    }
+
+    /// @inheritdoc IVault
+    function tokenId() external view returns (uint) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return $.tokenId;
+    }
+
+    /// @inheritdoc IVault
+    function doHardWorkOnDeposit() external view returns (bool) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return $.doHardWorkOnDeposit;
+    }
+
+
     //endregion -- View functions -----
 
     //region ----- Internal logic -----
+
+    function _getVaultBaseStorage() internal pure returns (VaultBaseStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := VAULTBASE_STORAGE_LOCATION
+        }
+    }
 
     /// @dev Minting shares of the vault to the user's address when he deposits funds into the vault.
     ///
@@ -341,16 +379,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// Also their presence allows the strategy to work without user funds, providing APR for the logic and the farm, if available.
     /// @param totalSupply_ Total supply of shares before deposit
     /// @param value_ Liquidity value or underlying token amount received after deposit
-    /// @param totalValue_ Total liquidity value or underlying token amount before deposit
     /// @param amountsConsumed Amounts of strategy assets consumed during the execution of the deposit.
     ///        Consumed amounts used by calculation of minted amount during the first deposit for setting the first share price to 1 USD.
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user after deposit
     /// @return mintAmount Amount of minted shares for the user
-    function _mintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut) internal returns (uint mintAmount) {
+    function _mintShares(VaultBaseStorage storage $, uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut, address[] memory assets) internal returns (uint mintAmount) {
         uint initialShares;
-        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed);
-        if(maxSupply != 0 && mintAmount + totalSupply_ > maxSupply){
-            revert ExceedMaxSupply(maxSupply);
+        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed, assets);
+        uint _maxSupply = $.maxSupply;
+        if(_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply){
+            revert ExceedMaxSupply(_maxSupply);
         }
         if(mintAmount < minSharesOut){
             revert ExceedSlippage(mintAmount, minSharesOut);
@@ -363,7 +401,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @dev Calculating amount of new shares for given deposited value and totals
-    function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed) internal view returns (uint mintAmount, uint initialShares) {
+    function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, address[] memory assets) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
             initialShares = 0; // hide warning
@@ -372,7 +410,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,) = priceReader.getAssetsPrice(strategy.assets(), amountsConsumed);
+            (mintAmount,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;
@@ -383,11 +421,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
     }
 
-    function _beforeWithdraw() internal {
-        if(_withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
+    function _beforeWithdraw(VaultBaseStorage storage $) internal {
+        if($.withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
             revert WaitAFewBlocks();
         }
-        _withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[msg.sender] = block.number;
     }
 
     function _update(
@@ -396,8 +434,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint value
     ) internal virtual override {
         super._update(from, to, value);
-        _withdrawRequests[from] = block.number;
-        _withdrawRequests[to] = block.number;
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.withdrawRequests[from] = block.number;
+        $.withdrawRequests[to] = block.number;
     }
 
     // function _afterTokenTransfer(

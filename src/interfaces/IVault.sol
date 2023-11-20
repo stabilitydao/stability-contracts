@@ -74,6 +74,9 @@ interface IVault is IERC165 {
     /// @dev VaultManager token ID. This tokenId earn feeVaultManager provided by Platform.
     function tokenId() external view returns (uint);
 
+    /// @dev Trigger doHardwork on invest action. Enabled by default.
+    function doHardWorkOnDeposit() external view returns(bool);
+
     /// @dev USD price of share with 18 decimals.
     ///      ONLY FOR OFF-CHAIN USE.
     ///      Not trusted vault share price can be manipulated.
