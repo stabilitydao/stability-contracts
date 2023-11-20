@@ -15,9 +15,12 @@ contract MockStrategy is LPStrategyBase {
     uint private _depositedToken1;
     uint private _fee0;
     uint private _fee1;
+    StrategyBaseStorage private $;
+
+
 
     function setLastApr(uint apr) external {
-        lastApr = apr;
+        $.lastApr = apr;
     }
 
     function initialize(
@@ -34,6 +37,7 @@ contract MockStrategy is LPStrategyBase {
             pool: addresses[2],
             underlying : addresses[3]
         }));
+        $ = _getStrategyBaseStorage();
     }
 
     function initVariants(address) public pure returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
@@ -68,7 +72,7 @@ contract MockStrategy is LPStrategyBase {
     }
 
     function triggerFuse() external {
-        total = 0;
+        $.total = 0;
     }
 
 /*    function untriggerFuse(uint total_) external {
@@ -82,12 +86,12 @@ contract MockStrategy is LPStrategyBase {
 
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
-        proportions[0] = _getProportion0(pool);
+        proportions[0] = _getProportion0(pool());
         proportions[1] = 1e18 - proportions[0];
     }
 
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        assets_ = _assets;
+        assets_ = $._assets;
         amounts_ = new uint[](2);
 
         // because assets on strategy balance
@@ -106,37 +110,37 @@ contract MockStrategy is LPStrategyBase {
         (amountsConsumed, value) = _previewDepositAssets(amounts);
         _depositedToken0 += amountsConsumed[0];
         _depositedToken1 += amountsConsumed[1];
-        total += value;
-        IMockERC20(_underlying).mint(value);
+        $.total += value;
+        IMockERC20($._underlying).mint(value);
     }
 
     function depositUnderlying(uint amount) external override returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
         require(_depositedToken0 > 0, "Mock: deposit assets first");
 
-        uint addedToken0 = _depositedToken0 * amount / total;
-        uint addedToken1 = _depositedToken1 * amount / total;
+        uint addedToken0 = _depositedToken0 * amount / $.total;
+        uint addedToken1 = _depositedToken1 * amount / $.total;
         _depositedToken0 += addedToken0;
         _depositedToken1 += addedToken1;
         amountsConsumed = new uint[](2);
         amountsConsumed[0] = addedToken0;
         amountsConsumed[1] = addedToken1;
 
-        IMockERC20(_assets[0]).mint(addedToken0);
-        IMockERC20(_assets[1]).mint(addedToken1);
+        IMockERC20($._assets[0]).mint(addedToken0);
+        IMockERC20($._assets[1]).mint(addedToken1);
 
-        total += amount;
+        $.total += amount;
     }
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         // no msg.sender checks
 
         amountsOut = new uint[](2);
-        amountsOut[0] = _depositedToken0 * value / total;
-        amountsOut[1] = _depositedToken1 * value / total;
-        total -= value;
-        IERC20(_assets[0]).transfer(receiver, amountsOut[0]);
-        IERC20(_assets[1]).transfer(receiver, amountsOut[1]);
+        amountsOut[0] = _depositedToken0 * value / $.total;
+        amountsOut[1] = _depositedToken1 * value / $.total;
+        $.total -= value;
+        IERC20($._assets[0]).transfer(receiver, amountsOut[0]);
+        IERC20($._assets[1]).transfer(receiver, amountsOut[1]);
         _depositedToken0 -= amountsOut[0];
         _depositedToken1 -= amountsOut[1];
     }
@@ -144,19 +148,19 @@ contract MockStrategy is LPStrategyBase {
     function withdrawUnderlying(uint amount, address receiver) external override {
         // no msg.sender checks
 
-        bool fuseTriggered = total == 0;
+        bool fuseTriggered = $.total == 0;
 
         if (!fuseTriggered) {
-            _depositedToken0 -= _depositedToken0 * amount / total;
-            _depositedToken1 -= _depositedToken1 * amount / total;
-            total -= amount;
+            _depositedToken0 -= _depositedToken0 * amount / $.total;
+            _depositedToken1 -= _depositedToken1 * amount / $.total;
+            $.total -= amount;
         } else {
-            uint balance = IERC20(_underlying).balanceOf(address(this));
+            uint balance = IERC20($._underlying).balanceOf(address(this));
             _depositedToken0 -= _depositedToken0 * amount / balance;
             _depositedToken1 -= _depositedToken1 * amount / balance;
         }
 
-        IERC20(_underlying).transfer(receiver, amount);
+        IERC20($._underlying).transfer(receiver, amount);
     }
 
     function _claimRevenue() internal virtual override returns(
@@ -165,14 +169,14 @@ contract MockStrategy is LPStrategyBase {
         address[] memory __rewardAssets,
         uint[] memory __rewardAmounts
     ) {
-        IMockERC20(_assets[0]).mint(_fee0);
-        IMockERC20(_assets[1]).mint(_fee1);
+        IMockERC20($._assets[0]).mint(_fee0);
+        IMockERC20($._assets[1]).mint(_fee1);
         __amounts = new uint[](2);
         __amounts[0] = _fee0;
         __amounts[1] = _fee1;
         _fee0 = 0;
         _fee1 = 0;
-        __assets = _assets;
+        __assets = $._assets;
 
         __rewardAssets = new address[](0);
         __rewardAmounts = new uint[](0);

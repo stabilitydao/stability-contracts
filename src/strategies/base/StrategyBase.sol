@@ -20,35 +20,34 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev Version of StrategyBase implementation
     string public constant VERSION_STRATEGY_BASE = '1.0.0';
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant STRATEGYBASE_STORAGE_LOCATION = 0xb14b643f49bed6a2c6693bbd50f68dc950245db265c66acadbfa51ccc8c3ba00;
+
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStrategy
-    address public vault;
+    struct StrategyBaseStorage {
+        /// @inheritdoc IStrategy
+        address vault;
+        /// @inheritdoc IStrategy
+        uint total;
+        /// @inheritdoc IStrategy
+        uint lastHardWork;
+        /// @inheritdoc IStrategy
+        uint lastApr;
+        /// @inheritdoc IStrategy
+        uint lastAprCompound;
+        /// @inheritdoc IStrategy
+        address[] _assets;
+        /// @inheritdoc IStrategy
+        address _underlying;
+        string _id;
+        uint _exchangeAssetIndex;
+    }
 
-    /// @inheritdoc IStrategy
-    uint public total;
-
-    /// @inheritdoc IStrategy
-    uint public lastHardWork;
-
-    /// @inheritdoc IStrategy
-    uint public lastApr;
-
-    /// @inheritdoc IStrategy
-    uint public lastAprCompound;
-
-    string internal _id;
-    address[] internal _assets;
-    address internal _underlying;
-    uint internal _exchangeAssetIndex;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 9] private __gap;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -63,7 +62,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
         uint exchangeAssetIndex_
     ) internal onlyInitializing {
         __Controllable_init(platform_);
-        (_id, vault, _assets, _underlying, _exchangeAssetIndex) = (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        ($._id, $.vault, $._assets, $._underlying, $._exchangeAssetIndex) = (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -77,8 +77,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function depositAssets(uint[] memory amounts) external override onlyVault returns (uint value) {
-        if (lastHardWork == 0) {
-            lastHardWork = block.timestamp;
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        if ($.lastHardWork == 0) {
+            $.lastHardWork = block.timestamp;
         }
         return _depositAssets(amounts, true);
     }
@@ -99,16 +100,17 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function transferAssets(uint amount, uint total_, address receiver) external onlyVault returns (uint[] memory amountsOut) {
         //slither-disable-next-line unused-return
-        return StrategyLib.transferAssets(_assets, amount, total_, receiver);
+        return StrategyLib.transferAssets(_getStrategyBaseStorage()._assets, amount, total_, receiver);
     }
 
     function doHardWork() external onlyVault {
-        address _vault = vault;
+        //StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        address _vault = _getStrategyBaseStorage().vault;
         //slither-disable-next-line unused-return
         (uint tvl,) = IVault(_vault).tvl();
         if (tvl > 0) {
             address _platform = platform();
-            uint exchangeAssetIndex = _exchangeAssetIndex;
+            uint exchangeAssetIndex = _getStrategyBaseStorage()._exchangeAssetIndex;
 
             (
                 address[] memory __assets,
@@ -119,18 +121,18 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
             __amounts[exchangeAssetIndex] += _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
-            uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, _id, __assets, __amounts);
-
+            uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, _getStrategyBaseStorage()._id, __assets, __amounts);
+            
             bool needCompound = _processRevenue(__assets, amountsRemaining);
-
-            uint totalBefore = total;
+            
+            uint totalBefore = _getStrategyBaseStorage().total;
 
             if (needCompound) {
                 _compound();
             }
-
-            (lastApr, lastAprCompound) = StrategyLib.emitApr(lastHardWork, _platform, __assets, __amounts, tvl, totalBefore, total, vault);
-            lastHardWork = block.timestamp;
+            
+            (_getStrategyBaseStorage().lastApr, _getStrategyBaseStorage().lastAprCompound) = StrategyLib.emitApr(_getStrategyBaseStorage().lastHardWork, _platform, __assets, __amounts, tvl, totalBefore, _getStrategyBaseStorage().total, _getStrategyBaseStorage().vault);
+            _getStrategyBaseStorage().lastHardWork = block.timestamp;
         }
     }
 
@@ -147,13 +149,39 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     function STRATEGY_LOGIC_ID() public view virtual returns(string memory);
 
-    function assets() external virtual view returns (address[] memory) {
-        return _assets;
+    /// @inheritdoc IStrategy
+    function assets() public virtual view returns (address[] memory) {
+        return _getStrategyBaseStorage()._assets;
     }
 
     /// @inheritdoc IStrategy
-    function underlying() external view override returns (address) {
-        return _underlying;
+    function underlying() public view override returns (address) {
+        return _getStrategyBaseStorage()._underlying;
+    }
+
+    /// @inheritdoc IStrategy
+    function vault() public view override returns (address) {
+        return _getStrategyBaseStorage().vault;
+    }
+
+    /// @inheritdoc IStrategy
+    function total() public view override returns (uint) {
+        return _getStrategyBaseStorage().total;
+    }
+
+    /// @inheritdoc IStrategy
+    function lastHardWork() public view override returns (uint) {
+        return _getStrategyBaseStorage().lastHardWork;
+    }
+
+    /// @inheritdoc IStrategy
+    function lastApr() public view override returns (uint) {
+        return _getStrategyBaseStorage().lastApr;
+    }
+
+    /// @inheritdoc IStrategy
+    function lastAprCompound() public view override returns (uint) {
+        return _getStrategyBaseStorage().lastAprCompound;
     }
 
     /// @inheritdoc IStrategy
@@ -164,7 +192,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view virtual returns (uint[] memory amountsConsumed, uint value) {
-        if (assets_.length == 1 && assets_[0] == _underlying && assets_[0] != address(0)) {
+        if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
             if(amountsMax.length != 1){
                 revert IControllable.IncorrectArrayLength();
             }
@@ -187,12 +215,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Cosumed amounts of invested assets
     function _depositUnderlying(uint /*amount*/) internal virtual returns(uint[] memory /*amountsConsumed*/) {
-        revert(_underlying == address(0) ? 'no underlying' : 'not implemented');
+        revert(_getStrategyBaseStorage()._underlying == address(0) ? 'no underlying' : 'not implemented');
     }
 
     /// @dev Wothdraw underlying invested and send to receiver
     function _withdrawUnderlying(uint /*amount*/, address /*receiver*/) internal virtual {
-        revert(_underlying == address(0) ? 'no underlying' : 'not implemented');
+        revert(_getStrategyBaseStorage()._underlying == address(0) ? 'no underlying' : 'not implemented');
     }
 
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
@@ -266,8 +294,14 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function _getStrategyBaseStorage() internal pure returns (StrategyBaseStorage storage $) {
+        assembly {
+            $.slot := STRATEGYBASE_STORAGE_LOCATION
+        }
+    }
+
     function _requireVault() internal view {
-        if(msg.sender != vault) {
+        if(msg.sender != _getStrategyBaseStorage().vault) {
             revert IControllable.NotVault();
         }
     }

@@ -29,18 +29,18 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     
     uint internal constant _PRECISION = 1e36;
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.GammaQuickSwapFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant GammaQuickSwapFarmStrategyStorage_STORAGE_LOCATION = 0xe35214fe1ab6125beac0a34cc3d91ce9e661ec11ea224b45538c0becda3e4f00;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    IUniProxy public uniProxy;
-    IMasterChef public masterChef;
-    uint public pid;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 3] private __gap;
+    struct GammaQuickSwapFarmStrategyStorage {
+        IUniProxy uniProxy;
+        IMasterChef masterChef;
+        uint pid;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -60,9 +60,10 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (farm.addresses.length != 3 || farm.nums.length != 2 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
-        uniProxy = IUniProxy(farm.addresses[0]);
-        masterChef = IMasterChef(farm.addresses[1]);
-        pid = farm.nums[0];
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        $.uniProxy = IUniProxy(farm.addresses[0]);
+        $.masterChef = IMasterChef(farm.addresses[1]);
+        $.pid = farm.nums[0];
 
         __LPStrategyBase_init(LPStrategyBaseInitParams({
             id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
@@ -74,6 +75,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
+        address[] memory _assets = assets(); 
         IERC20(_assets[0]).forceApprove(farm.addresses[2], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[2], type(uint).max);
         IERC20(farm.addresses[2]).forceApprove(farm.addresses[1], type(uint).max);
@@ -90,7 +92,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
-        IMasterChef.PoolInfo memory poolInfo = masterChef.poolInfo(pid);
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        IMasterChef.PoolInfo memory poolInfo = $.masterChef.poolInfo($.pid);
         return poolInfo.allocPoint > 0;
     }
 
@@ -101,7 +104,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        __assets = _rewardAssets;
+        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
         amounts = _getRewards();
     }
 
@@ -156,7 +159,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
-        proportions[0] = _getProportion0(pool);
+        proportions[0] = _getProportion0(pool());
         proportions[1] = 1e18 - proportions[0];
     }
 
@@ -177,11 +180,12 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
-        uint len = _rewardAssets.length;
+        uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         amounts = new uint[](len);
         for (uint i; i < len; ++i) {
-            IRewarder rewarder = IRewarder(masterChef.getRewarder(pid, i));
-            amounts[i] = rewarder.pendingToken(pid, address(this));
+            IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
+            amounts[i] = rewarder.pendingToken($.pid, address(this));
         }
     }
 
@@ -191,40 +195,49 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
+        StrategyBaseStorage storage __$ = _getStrategyBaseStorage();
         if (claimRevenue) {
             (,,,uint[] memory rewardAmounts) = _claimRevenue();
             uint len = rewardAmounts.length;
             for (uint i; i < len; ++i) {
-                _rewardsOnBalance[i] += rewardAmounts[i];
+                _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
         }
         uint[4] memory minIn;
-        value = uniProxy.deposit(amounts[0], amounts[1], address(this), _underlying, minIn);
-        total += value;
-        masterChef.deposit(pid, value, address(this));
+        value = $.uniProxy.deposit(amounts[0], amounts[1], address(this), __$._underlying, minIn);
+        __$.total += value;
+        $.masterChef.deposit($.pid, value, address(this));
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns(uint[] memory amountsConsumed) {
-        masterChef.deposit(pid, amount, address(this));
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
+        $.masterChef.deposit($.pid, amount, address(this));
         amountsConsumed = _previewDepositUnderlying(amount);
-        total += amount;
+        _$.total += amount;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        masterChef.withdraw(pid, value, address(this));
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
+        $.masterChef.withdraw($.pid, value, address(this));
         amountsOut = new uint[](2);
-        total -= value;
+        _$.total -= value;
         uint[4] memory minAmounts;
-        (amountsOut[0], amountsOut[1]) = IHypervisor(_underlying).withdraw(value, receiver, address(this), minAmounts);
+        (amountsOut[0], amountsOut[1]) = IHypervisor(_$._underlying).withdraw(value, receiver, address(this), minAmounts);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        masterChef.withdraw(pid, amount, address(this));
-        IERC20(_underlying).safeTransfer(receiver, amount);
-        total -= amount;
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
+        $.masterChef.withdraw($.pid, amount, address(this));
+        IERC20(_$._underlying).safeTransfer(receiver, amount);
+        _$.total -= amount;
     }
 
     /// @inheritdoc StrategyBase
@@ -234,19 +247,21 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory __rewardAssets,
         uint[] memory __rewardAmounts
     ) {
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         __assets = new address[](2);
-        __assets[0] = _assets[0];
-        __assets[1] = _assets[1];
+        __assets[0] = _$._assets[0];
+        __assets[1] = _$._assets[1];
         __amounts = new uint[](2);
 
-        __rewardAssets = _rewardAssets;
+        __rewardAssets = _getFarmingStrategyBaseStorage()._rewardAssets;
         uint len = __rewardAssets.length;
         __rewardAmounts = new uint[](len);
         uint[] memory rewardBalanceBefore = new uint[](len);
         for (uint i; i < len; ++i) {
             rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
-        masterChef.harvest(pid, address(this));
+        $.masterChef.harvest($.pid, address(this));
         for (uint i; i < len; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
         }
@@ -259,7 +274,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool));
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
         if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
             uint valueToReceive;
             (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
@@ -272,15 +287,18 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
+        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         amountsConsumed = new uint[](2);
-        (uint amount1Start, uint amount1End) = uniProxy.getDepositAmount(_underlying, _assets[0], amountsMax[0]);
+        address[] memory _assets = assets(); 
+        (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(_$._underlying, _assets[0], amountsMax[0]);
         if (amountsMax[1] > amount1End) {
             amountsConsumed[0] = amountsMax[0];
             // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] < amount1Start) {
             //slither-disable-next-line similar-names
-            (uint amount0Start, uint amount0End) = uniProxy.getDepositAmount(_underlying, _assets[1], amountsMax[1]);
+            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(_$._underlying, _assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
         } else {
@@ -289,8 +307,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         // calculate shares
-        IHypervisor hypervisor = IHypervisor(_underlying);
-        IAlgebraPool _pool = IAlgebraPool(pool);
+        IHypervisor hypervisor = IHypervisor(_$._underlying);
+        IAlgebraPool _pool = IAlgebraPool(pool());
         //slither-disable-next-line unused-return
         (,int24 tick,,,,,) = _pool.globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
@@ -303,7 +321,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal view override returns(uint[] memory amountsConsumed) {
-        IHypervisor hypervisor = IHypervisor(_underlying);
+        IHypervisor hypervisor = IHypervisor(_getStrategyBaseStorage()._underlying);
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
         uint _total = hypervisor.totalSupply();
         amountsConsumed = new uint[](2);
@@ -313,11 +331,12 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        assets_ = _assets;
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        assets_ = $._assets;
         amounts_ = new uint[](2);
-        uint _total = total;
+        uint _total = $.total;
         if (_total > 0) {
-            IHypervisor hypervisor = IHypervisor(_underlying);
+            IHypervisor hypervisor = IHypervisor($._underlying);
             (amounts_[0], amounts_[1]) = hypervisor.getTotalAmounts();
             uint totalInHypervisor = hypervisor.totalSupply();
             (amounts_[0], amounts_[1]) = (amounts_[0] * _total / totalInHypervisor, amounts_[1] * _total / totalInHypervisor);
@@ -330,7 +349,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
-        IHypervisor hypervisor = IHypervisor(_underlying);
+        IHypervisor hypervisor = IHypervisor(_getStrategyBaseStorage()._underlying);
         //slither-disable-next-line unused-return
         (,int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
@@ -338,5 +357,11 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
         uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
+    }
+
+    function _getGammaQuickStorage() internal pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
+        assembly {
+            $.slot := GammaQuickSwapFarmStrategyStorage_STORAGE_LOCATION
+        }
     }
 }
