@@ -34,16 +34,17 @@ library LPStrategyLib {
     }
 
     function LPStrategyBase_init(
+        ILPStrategy.LPStrategyBaseStorage storage $,
         address platform,
         ILPStrategy.LPStrategyBaseInitParams memory params,
         string memory ammAdapterId
-    ) external returns(address[] memory _assets, uint exchangeAssetIndex, IAmmAdapter ammAdapter) {
+    ) external returns(address[] memory _assets, uint exchangeAssetIndex) {
         IPlatform.AmmAdapter memory ammAdapterData = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId)));
         if (ammAdapterData.proxy == address(0)) {
             revert ILPStrategy.ZeroAmmAdapter();
         }
 
-        ammAdapter = IAmmAdapter(ammAdapterData.proxy);
+        IAmmAdapter ammAdapter = IAmmAdapter(ammAdapterData.proxy);
         _assets = ammAdapter.poolTokens(params.pool);
         uint len = _assets.length;
         exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
@@ -51,6 +52,10 @@ library LPStrategyLib {
         for (uint i; i < len; ++i) {
             IERC20(_assets[i]).forceApprove(swapper, type(uint).max);
         }
+
+        $._feesOnBalance = new uint[](_assets.length);
+        $.pool = params.pool;
+        $.ammAdapter = ammAdapter;
     }
 
     function checkPreviewDepositAssets(address[] memory assets_, address[] memory _assets, uint[] memory amountsMax) external pure {

@@ -21,18 +21,6 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     bytes32 private constant LPSTRATEGYBASE_STORAGE_LOCATION = 0xa6fdc931ca23c69f54119a0a2d6478619b5aa365084590a1fbc287668fbabe00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    struct LPStrategyBaseStorage {
-        /// @inheritdoc ILPStrategy
-        address pool;
-        /// @inheritdoc ILPStrategy
-        IAmmAdapter ammAdapter;
-        uint[] _feesOnBalance;
-    }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -40,10 +28,8 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         address[] memory _assets;
         uint exchangeAssetIndex;
-        (_assets, exchangeAssetIndex, $.ammAdapter) = LPStrategyLib.LPStrategyBase_init(params.platform, params, ammAdapterId());
-        $._feesOnBalance = new uint[](_assets.length);
+        (_assets, exchangeAssetIndex) = LPStrategyLib.LPStrategyBase_init($, params.platform, params, ammAdapterId());
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
-        $.pool = params.pool;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
