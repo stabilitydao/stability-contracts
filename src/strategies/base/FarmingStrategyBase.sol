@@ -10,6 +10,7 @@ import "../../interfaces/ISwapper.sol";
 
 /// @title Base farming strategy
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -18,30 +19,30 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /// @dev Version of FarmingStrategyBase implementation
     string public constant VERSION_FARMING_STRATEGY_BASE = '0.1.0';
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION = 0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IFarmingStrategy
-    uint public farmId;
-    
-    address[] internal _rewardAssets;
-    uint[] internal _rewardsOnBalance;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 3] private __gap;
+    struct FarmingStrategyBaseStorage {
+        /// @inheritdoc IFarmingStrategy
+        uint farmId;
+        address[] _rewardAssets;
+        uint[] _rewardsOnBalance;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function __FarmingStrategyBase_init(address platform_, uint farmId_) internal onlyInitializing {
-        farmId = farmId_;
-        _rewardAssets = StrategyLib.FarmingStrategyBase_init(_id, platform_,farmId_);
-        _rewardsOnBalance = new uint[](_rewardAssets.length);
+        FarmingStrategyBaseStorage storage $ = _getFarmingStrategyBaseStorage();
+        $.farmId = farmId_;
+        $._rewardAssets = StrategyLib.FarmingStrategyBase_init(_getStrategyBaseStorage()._id, platform_,farmId_);
+        $._rewardsOnBalance = new uint[]($._rewardAssets.length);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -51,6 +52,11 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (StrategyBase) returns (bool) {
         return interfaceId == type(IFarmingStrategy).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmId() public view returns (uint) {
+        return _getFarmingStrategyBaseStorage().farmId;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -65,7 +71,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getFarm() internal view returns (IFactory.Farm memory) {
-        return _getFarm(platform(), farmId);
+        return _getFarm(platform(), farmId());
     }
 
     function _getFarm(address platform_, uint farmId_) internal view returns (IFactory.Farm memory) {
@@ -79,5 +85,12 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /// @inheritdoc StrategyBase
     function _liquidateRewards(address exchangeAsset, address[] memory rewardAssets_, uint[] memory rewardAmounts_) internal override returns (uint earnedExchangeAsset) {
         return StrategyLib.liquidateRewards(platform(), exchangeAsset, rewardAssets_, rewardAmounts_);
+    }
+
+    function _getFarmingStrategyBaseStorage() internal pure returns (FarmingStrategyBaseStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly { 
+            $.slot := FARMINGSTRATEGYBASE_STORAGE_LOCATION
+        }
     }
 }

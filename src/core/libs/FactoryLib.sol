@@ -107,7 +107,7 @@ library FactoryLib {
         for (; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
             //slither-disable-next-line unused-return
-            (strategyConfig.id, strategyConfig.implementation, strategyConfig.deployAllowed,,,) = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
+            strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
 
             if (strategyConfig.deployAllowed) {
                 (
@@ -213,7 +213,7 @@ library FactoryLib {
         for (vars.i = 0; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
             //slither-disable-next-line unused-return
-            (strategyConfig.id, strategyConfig.implementation, strategyConfig.deployAllowed,,,) = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
+            strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
             if (strategyConfig.deployAllowed) {
                 (
                     vars.vaultType,

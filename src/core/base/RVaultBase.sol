@@ -22,48 +22,37 @@ abstract contract RVaultBase is VaultBase, IRVault {
     /// @dev Version of RVaultBase implementation
     string public constant VERSION_RVAULT_BASE = '1.0.0';
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RVaultBase")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant RVAULTBASE_STORAGE_LOCATION = 0xb5732c585a6784b4587829603e9853db681fd231004dc454c3ae683d1ebdca00;
     //endregion -- Constants -----
 
     //region ----- Storage -----
 
-    /// @inheritdoc IRVault
-    uint public compoundRatio;
-
-    /// @dev Total of bbToken + boost reward tokens
-    uint public rewardTokensTotal;
-
-    /// @dev A mapping of reward tokens that able to be distributed to this contract.
-    ///      Token with index 0 always is bbToken.
-    mapping(uint tokenIndex => address rewardToken) public rewardToken;
-
-    /// @inheritdoc IRVault
-    mapping(uint tokenIndex => uint durationSeconds) public duration;
-
-    /// @dev Timestamp value when current period of rewards will be ended
-    mapping(uint tokenIndex => uint finishTimestamp) public periodFinishForToken;
-
-    /// @dev Reward rate in normal circumstances is distributed rewards divided on duration
-    mapping(uint tokenIndex => uint rewardRate) public rewardRateForToken;
-
-    /// @dev Last rewards snapshot time. Updated on each share movements
-    mapping(uint tokenIndex => uint lastUpdateTimestamp) public lastUpdateTimeForToken;
-
-    /// @dev Rewards snapshot calculated from rewardPerToken(rt). Updated on each share movements
-    mapping(uint tokenIndex => uint rewardPerTokenStored) public rewardPerTokenStoredForToken;
-
-    /// @dev User personal reward rate snapshot. Updated on each share movements
-    mapping(uint tokenIndex => mapping(address user => uint rewardPerTokenPaid)) public userRewardPerTokenPaidForToken;
-
-    /// @dev User personal earned reward snapshot. Updated on each share movements
-    mapping(uint tokenIndex => mapping(address user => uint earned)) public rewardsForToken;
-
-    /// @dev Receiver of rewards can be set by multisig when owner cant claim rewards himself
-    mapping(address owner => address receiver) public rewardsRedirect;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 11] private __gap;
+    /// @custom:storage-location erc7201:stability.RVaultBase
+    struct RVaultBaseStorage {
+        /// @inheritdoc IRVault
+        mapping(uint tokenIndex => address rewardToken) rewardToken;
+        /// @inheritdoc IRVault
+        mapping(uint tokenIndex => uint durationSeconds) duration;
+        /// @inheritdoc IRVault
+        mapping(address owner => address receiver) rewardsRedirect;
+        /// @dev Timestamp value when current period of rewards will be ended
+        mapping(uint tokenIndex => uint finishTimestamp) periodFinishForToken;
+        /// @dev Reward rate in normal circumstances is distributed rewards divided on duration
+        mapping(uint tokenIndex => uint rewardRate) rewardRateForToken;
+        /// @dev Last rewards snapshot time. Updated on each share movements
+        mapping(uint tokenIndex => uint lastUpdateTimestamp) lastUpdateTimeForToken;
+        /// @dev Rewards snapshot calculated from rewardPerToken(rt). Updated on each share movements
+        mapping(uint tokenIndex => uint rewardPerTokenStored) rewardPerTokenStoredForToken;
+        /// @dev User personal reward rate snapshot. Updated on each share movements
+        mapping(uint tokenIndex => mapping(address user => uint rewardPerTokenPaid)) userRewardPerTokenPaidForToken;
+        /// @dev User personal earned reward snapshot. Updated on each share movements
+        mapping(uint tokenIndex => mapping(address user => uint earned))  rewardsForToken;
+        /// @inheritdoc IRVault
+        uint rewardTokensTotal;
+        /// @inheritdoc IRVault
+        uint compoundRatio;
+    }
 
     //endregion -- Storage -----
 
@@ -81,13 +70,14 @@ abstract contract RVaultBase is VaultBase, IRVault {
     ) internal onlyInitializing {
         __VaultBase_init(platform_, type_, strategy_, name_, symbol_, tokenId_);
         RVaultLib.baseInitCheck(platform_, vaultInitAddresses, vaultInitNums);
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint addressesLength = vaultInitAddresses.length;
-        rewardTokensTotal = addressesLength;
+        $.rewardTokensTotal = addressesLength;
         for (uint i; i < addressesLength; ++i) {
-            rewardToken[i] = vaultInitAddresses[i];
-            duration[i] = vaultInitNums[i];
+            $.rewardToken[i] = vaultInitAddresses[i];
+            $.duration[i] = vaultInitNums[i];
         }
-        compoundRatio = vaultInitNums[vaultInitNums.length - 1];
+        $.compoundRatio = vaultInitNums[vaultInitNums.length - 1];
         emit CompoundRatio(vaultInitNums[vaultInitNums.length - 1]);
     }
 
@@ -97,7 +87,8 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @dev All rewards for given owner could be claimed for receiver address.
     function setRewardsRedirect(address owner, address receiver) external onlyMultisig {
-        rewardsRedirect[owner] = receiver;
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        $.rewardsRedirect[owner] = receiver;
         emit SetRewardsRedirect(owner, receiver);
     }
 
@@ -112,7 +103,8 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @notice Update and Claim all rewards for given owner address. Send them to predefined receiver.
     function getAllRewardsAndRedirect(address owner) external {
-        address receiver = rewardsRedirect[owner];
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        address receiver = $.rewardsRedirect[owner];
         if(receiver == address(0)){
             revert IControllable.IncorrectZeroArgument();
         }
@@ -144,23 +136,25 @@ abstract contract RVaultBase is VaultBase, IRVault {
     // slither-disable-next-line reentrancy-no-eth
     function notifyTargetRewardAmount(uint i, uint amount) external {
         _updateRewards(address(0));
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        VaultBaseStorage storage _$ = _getVaultBaseStorage();
 
         // overflow fix according to https://sips.synthetix.io/sips/sip-77
         if(amount >= type(uint).max / 1e18){
             revert IRVault.Overflow(type(uint).max / 1e18 - 1);
         }
 
-        address _rewardToken = rewardToken[i];
+        address _rewardToken = $.rewardToken[i];
         if(_rewardToken == address(0)){
             revert IRVault.RTNotFound();
         }
 
-        uint _duration = duration[i];
+        uint _duration = $.duration[i];
 
-        uint _oldRewardRateForToken = rewardRateForToken[i];
+        uint _oldRewardRateForToken = $.rewardRateForToken[i];
 
         if (i == 0) {
-            if(address(strategy) != msg.sender){
+            if(address(_$.strategy) != msg.sender){
                 revert IControllable.IncorrectMsgSender();
             }
         } else {
@@ -171,22 +165,22 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
         IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), amount);
 
-        if (block.timestamp >= periodFinishForToken[i]) {
-            rewardRateForToken[i] = amount / _duration;
+        if (block.timestamp >= $.periodFinishForToken[i]) {
+            $.rewardRateForToken[i] = amount / _duration;
         } else {
-            uint remaining = periodFinishForToken[i] - block.timestamp;
+            uint remaining = $.periodFinishForToken[i] - block.timestamp;
             uint leftover = remaining * _oldRewardRateForToken;
-            rewardRateForToken[i] = (amount + leftover) / _duration;
+            $.rewardRateForToken[i] = (amount + leftover) / _duration;
         }
-        lastUpdateTimeForToken[i] = block.timestamp;
-        periodFinishForToken[i] = block.timestamp + _duration;
+        $.lastUpdateTimeForToken[i] = block.timestamp;
+        $.periodFinishForToken[i] = block.timestamp + _duration;
 
         // Ensure the provided reward amount is not more than the balance in the contract.
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = IERC20(_rewardToken).balanceOf(address(this));
-        if(rewardRateForToken[i] > balance / _duration){
+        if($.rewardRateForToken[i] > balance / _duration){
             revert IControllable.RewardIsTooBig();
         } 
         emit RewardAdded(_rewardToken, amount);
@@ -203,15 +197,16 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @inheritdoc IRVault
     function bbToken() public view returns(address) {
-        return rewardToken[0];
+        return _getRVaultBaseStorage().rewardToken[0];
     }
 
     
     function rewardTokens() external view returns (address[] memory) {
-        uint len = rewardTokensTotal;
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        uint len = $.rewardTokensTotal;
         address[] memory rts = new address[](len);
         for (uint i; i < len; ++i) {
-            rts[i] = rewardToken[i];
+            rts[i] = $.rewardToken[i];
         }
         return rts;
     }
@@ -229,13 +224,53 @@ abstract contract RVaultBase is VaultBase, IRVault {
         return _earned(rewardTokenIndex, account);
     }
 
+    /// @inheritdoc IRVault
+    function rewardToken(uint tokenIndex) public view returns(address) {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return $.rewardToken[tokenIndex];
+    }
+
+    /// @inheritdoc IRVault
+    function duration(uint tokenIndex) public view returns(uint) {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return $.duration[tokenIndex];
+    }
+    
+    /// @inheritdoc IRVault
+    function rewardsRedirect(address owner) public view returns (address) {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return $.rewardsRedirect[owner];
+    }
+
+    /// @inheritdoc IRVault
+    function compoundRatio() public view returns (uint) {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return $.compoundRatio;
+    }
+
+    /// @inheritdoc IRVault
+    function rewardTokensTotal() public view returns (uint) {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return $.rewardTokensTotal;
+    }
+
+
     //endregion -- View functions -----
 
     //region ----- Internal logic -----
 
+
+    function _getRVaultBaseStorage() internal pure returns (RVaultBaseStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := RVAULTBASE_STORAGE_LOCATION
+        }
+    }
+
+
     function _getAllRewards(address owner, address receiver) internal {
         _updateRewards(owner);
-        uint len = rewardTokensTotal;
+        uint len = _getRVaultBaseStorage().rewardTokensTotal;
         for (uint i; i < len; ++i) {
             _payRewardTo(i, owner, receiver);
         }
@@ -243,51 +278,55 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @dev Refresh reward numbers
     function _updateReward(address account, uint tokenIndex) internal {
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint _rewardPerTokenStoredForToken = _rewardPerToken(tokenIndex);
-        rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
-        lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable(tokenIndex);
+        $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
+        $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable(tokenIndex);
         if (account != address(0) && account != address(this)) {
-            rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
-            userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
+            $.rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
+            $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
         }
     }
 
     /// @dev Use it for any underlying movements
     function _updateRewards(address account) internal {
-        uint len = rewardTokensTotal;
+        uint len = _getRVaultBaseStorage().rewardTokensTotal;
         for (uint i; i < len; ++i) {
             _updateReward(account, i);
         }
     }
 
     function _earned(uint rt, address account) internal view returns (uint) {
-        return balanceOf(account) * (_rewardPerToken(rt) - userRewardPerTokenPaidForToken[rt][account]) / 1e18 + rewardsForToken[rt][account];
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        return balanceOf(account) * (_rewardPerToken(rt) - $.userRewardPerTokenPaidForToken[rt][account]) / 1e18 + $.rewardsForToken[rt][account];
     }
 
     function _rewardPerToken(uint rewardTokenIndex) internal view returns (uint) {
         uint totalSupplyWithoutItself = totalSupply() - balanceOf(address(this));
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         if (totalSupplyWithoutItself == 0) {
-            return rewardPerTokenStoredForToken[rewardTokenIndex];
+            return $.rewardPerTokenStoredForToken[rewardTokenIndex];
         }
         return
-            rewardPerTokenStoredForToken[rewardTokenIndex] + (
-            (_lastTimeRewardApplicable(rewardTokenIndex) - lastUpdateTimeForToken[rewardTokenIndex])
-            * rewardRateForToken[rewardTokenIndex]
+            $.rewardPerTokenStoredForToken[rewardTokenIndex] + (
+            (_lastTimeRewardApplicable(rewardTokenIndex) - $.lastUpdateTimeForToken[rewardTokenIndex])
+            * $.rewardRateForToken[rewardTokenIndex]
             * 1e18
             / totalSupplyWithoutItself
         );
     }
 
     function _lastTimeRewardApplicable(uint rt) internal view returns (uint) {
-        return Math.min(block.timestamp, periodFinishForToken[rt]);
+        return Math.min(block.timestamp, _getRVaultBaseStorage().periodFinishForToken[rt]);
     }
 
     /// @notice Transfer earned rewards to rewardsReceiver
     function _payRewardTo(uint rewardTokenIndex, address owner, address receiver) internal {
-        address _rewardToken = rewardToken[rewardTokenIndex];
+        RVaultBaseStorage storage $ = _getRVaultBaseStorage();
+        address _rewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = _earned(rewardTokenIndex, owner);
         if (reward > 0 && IERC20(_rewardToken).balanceOf(address(this)) >= reward) {
-            rewardsForToken[rewardTokenIndex][owner] = 0;
+            $.rewardsForToken[rewardTokenIndex][owner] = 0;
             IERC20(_rewardToken).safeTransfer(receiver, reward);
             emit RewardPaid(owner, _rewardToken, reward);
         }

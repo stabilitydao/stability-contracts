@@ -26,22 +26,22 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickswapV3StaticFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION = 0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    int24 public lowerTick;
-    int24 public upperTick;
-    uint internal _tokenId;
-    uint internal _startTime;
-    uint internal _endTime;
-    INonfungiblePositionManager internal _nft;
-    IFarmingCenter internal _farmingCenter;
-
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 7] private __gap;
+    struct QuickSwapV3StaticFarmStrategyStorage {
+        int24 lowerTick;
+        int24 upperTick;
+        uint _tokenId;
+        uint _startTime;
+        uint _endTime;
+        INonfungiblePositionManager _nft;
+        IFarmingCenter _farmingCenter;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -61,12 +61,13 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (farm.addresses.length != 2 || farm.nums.length != 2 || farm.ticks.length != 2) {
             revert IFarmingStrategy.BadFarm();
         }
-        _startTime = farm.nums[0];
-        _endTime = farm.nums[1];
-        lowerTick = farm.ticks[0];
-        upperTick = farm.ticks[1];
-        _nft = INonfungiblePositionManager(farm.addresses[0]);
-        _farmingCenter = IFarmingCenter(farm.addresses[1]);
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        $._startTime = farm.nums[0];
+        $._endTime = farm.nums[1];
+        $.lowerTick = farm.ticks[0];
+        $.upperTick = farm.ticks[1];
+        $._nft = INonfungiblePositionManager(farm.addresses[0]);
+        $._farmingCenter = IFarmingCenter(farm.addresses[1]);
 
         __LPStrategyBase_init(LPStrategyBaseInitParams({
             id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
@@ -78,6 +79,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
+        address[] memory _assets = assets(); 
         IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
@@ -101,7 +103,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
-        return block.timestamp < _endTime;
+        return block.timestamp < _getQuickStaticFarmStorage()._endTime;
     }
 
     /// @inheritdoc IStrategy
@@ -112,15 +114,18 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
+        FarmingStrategyBaseStorage storage __$ = _getFarmingStrategyBaseStorage();
         __assets = new address[](4);
-        __assets[0] = _assets[0];
-        __assets[1] = _assets[1];
-        __assets[2] = _rewardAssets[0];
-        __assets[3] = _rewardAssets[1];
+        __assets[0] = _$._assets[0];
+        __assets[1] = _$._assets[1];
+        __assets[2] = __$._rewardAssets[0]; 
+        __assets[3] = __$._rewardAssets[1];
         amounts = new uint[](4);
-        IAlgebraPool _pool = IAlgebraPool(pool);
-        uint __tokenId = _tokenId;
-
+        {
+        IAlgebraPool _pool = IAlgebraPool(pool()); 
+        uint __tokenId = $._tokenId;
         // get fees
         UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params = UniswapV3MathLib.ComputeFeesEarnedCommonParams({
             tick: 0,
@@ -129,7 +134,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             liquidity: 0,
             feeGrowthGlobal: 0
         });
-
+        
         //slither-disable-next-line unused-return
         (,params.tick,,,,,) = _pool.globalState();
         params.feeGrowthGlobal = _pool.totalFeeGrowth0Token();
@@ -138,14 +143,16 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint128 tokensOwed0;
         uint128 tokensOwed1;
         //slither-disable-next-line unused-return
-        (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = _nft.positions(__tokenId);
+        (,,,, params.lowerTick, params.upperTick, params.liquidity, feeGrowthInside0Last, feeGrowthInside1Last, tokensOwed0, tokensOwed1) = $._nft.positions(__tokenId);
         //slither-disable-next-line unused-return
+        //slither-disable-next-line similar-names
         (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
         //slither-disable-next-line unused-return
-        (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
+        //slither-disable-next-line similar-names
+        (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);     
         amounts[0] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last) + uint(tokensOwed0);
         amounts[1] = UniswapV3MathLib.computeFeesEarned(params, feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last) + uint(tokensOwed1);
-
+        }
         // get rewards
         uint[] memory rewards = _getRewards();
         (amounts[2], amounts[3]) = (rewards[0], rewards[1]);
@@ -154,7 +161,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
-        proportions[0] = _getProportion0(pool);
+        proportions[0] = _getProportion0(pool());
         proportions[1] = 1e18 - proportions[0];
     }
 
@@ -179,10 +186,11 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         amounts = new uint[](2);
-        uint __tokenId = _tokenId;
+        uint __tokenId = $._tokenId;
         IncentiveKey memory key = _getIncentiveKey();
-        (amounts[0], amounts[1]) = _farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
+        (amounts[0], amounts[1]) = $._farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -192,21 +200,24 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-no-eth
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
-        IFarmingCenter __farmingCenter = _farmingCenter;
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
+        IFarmingCenter __farmingCenter = $._farmingCenter;
         uint128 liquidity;
-        uint tokenId = _tokenId;
+        uint tokenId = $._tokenId;
         IncentiveKey memory key = _getIncentiveKey();
-        INonfungiblePositionManager __nft = _nft;
+        INonfungiblePositionManager __nft = $._nft;
         
         // tokenId == 0 mean that there is no NFT managed by the strategy now
         //slither-disable-next-line incorrect-equality
         if (tokenId == 0) {
+            address[] memory _assets = assets(); 
             //slither-disable-next-line unused-return
             (tokenId, liquidity, , ) = __nft.mint(INonfungiblePositionManager.MintParams(
                 _assets[0],
                 _assets[1],
-                lowerTick,
-                upperTick,
+                $.lowerTick,
+                $.upperTick,
                 amounts[0],
                 amounts[1],
                 0,
@@ -214,7 +225,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 address(this),
                 block.timestamp
             ));
-            _tokenId = tokenId;
+            $._tokenId = tokenId;
             __nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
         } else {
             //slither-disable-next-line unused-return
@@ -226,7 +237,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 0,
                 block.timestamp
             ));
-            if (total > 0) {
+            if (_$.total > 0) {
                 if (claimRevenue) {
                     // get reward amounts
                     _collectRewardsToState(tokenId, key);
@@ -234,28 +245,30 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 // exit farming (undeposit)
                 __farmingCenter.exitFarming(key, tokenId, false);
             } else {
-                __nft.safeTransferFrom(address(this), address(_farmingCenter), tokenId);
+                __nft.safeTransferFrom(address(this), address($._farmingCenter), tokenId);
             }
         }
-        _farmingCenter.enterFarming(key, tokenId, 0, false);
+        $._farmingCenter.enterFarming(key, tokenId, 0, false);
         value = uint(liquidity);
-        total += value;
+        _$.total += value;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        IFarmingCenter __farmingCenter = _farmingCenter;
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        IFarmingCenter __farmingCenter = $._farmingCenter;
         amountsOut = new uint[](2);
         IncentiveKey memory key = _getIncentiveKey();
-        uint tokenId = _tokenId;
+        uint tokenId = $._tokenId;
         _collectRewardsToState(tokenId, key);
         __farmingCenter.exitFarming(key, tokenId, false);
         __farmingCenter.withdrawToken(tokenId, address(this), '');
         // burn liquidity
-        (amountsOut[0], amountsOut[1]) = _nft.decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams(tokenId, uint128(value), 0, 0, block.timestamp));
+        (amountsOut[0], amountsOut[1]) = $._nft.decreaseLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams(tokenId, uint128(value), 0, 0, block.timestamp));
         {
             // collect tokens and fee
-            (uint collected0, uint collected1) = _nft.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
+            address[] memory _assets = assets(); 
+            (uint collected0, uint collected1) = $._nft.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
             IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
             IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
             uint[] memory fees = new uint[](2);
@@ -263,15 +276,15 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             fees[1] = collected1 > amountsOut[1] ? (collected1 - amountsOut[1]) : 0;
             emit FeesClaimed(fees);
             if (fees[0] > 0) {
-                _feesOnBalance[0] += fees[0];
+                _getLPStrategyBaseStorage()._feesOnBalance[0] += fees[0];
             }
             if (fees[1] > 0) {
-                _feesOnBalance[1] += fees[1];
+                _getLPStrategyBaseStorage()._feesOnBalance[1] += fees[1];
             }
         }
-        total -= value;
+        _getStrategyBaseStorage().total -= value;
         // think total is always gt zero because we have initial shares
-        _nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
+        $._nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
         __farmingCenter.enterFarming(key, tokenId, 0, false);
     }
 
@@ -282,15 +295,19 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory __rewardAssets,
         uint[] memory __rewardAmounts
     ) {
-        IFarmingCenter __farmingCenter = _farmingCenter;
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
+        LPStrategyBaseStorage storage __$ = _getLPStrategyBaseStorage();
+        IFarmingCenter __farmingCenter = $._farmingCenter;
+        address[] memory _assets = assets(); 
         __assets = new address[](2);
         __assets[0] = _assets[0];
         __assets[1] = _assets[1];
-        __rewardAssets = _rewardAssets;
+        __rewardAssets = _$._rewardAssets;
         __amounts = new uint[](2);
         __rewardAmounts = new uint[](2);
-        uint tokenId = _tokenId;
-        if (tokenId > 0 && total > 0) {
+        uint tokenId = $._tokenId;
+        if (tokenId > 0 && total() > 0) {
             (__amounts[0], __amounts[1]) = __farmingCenter.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
             emit FeesClaimed(__amounts);
             (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
@@ -302,31 +319,32 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             }
             emit RewardsClaimed(__rewardAmounts);
         }
-        uint fee = _feesOnBalance[0];
+        
+        uint fee = __$._feesOnBalance[0];
         if (fee > 0) {
             __amounts[0] += fee;
-            _feesOnBalance[0] = 0;
+            __$._feesOnBalance[0] = 0;
         }
-        fee = _feesOnBalance[1];
+        fee = __$._feesOnBalance[1];
         if (fee > 0) {
             __amounts[1] += fee;
-            _feesOnBalance[1] = 0;
+            __$._feesOnBalance[1] = 0;
         }
-        fee = _rewardsOnBalance[0];
+        fee = _$._rewardsOnBalance[0];
         if (fee > 0) {
             __rewardAmounts[0] += fee;
-            _rewardsOnBalance[0] = 0;
+            _$._rewardsOnBalance[0] = 0;
         }
-        fee = _rewardsOnBalance[1];
+        fee = _$._rewardsOnBalance[1];
         if (fee > 0) {
             __rewardAmounts[1] += fee;
-            _rewardsOnBalance[1] = 0;
+            _$._rewardsOnBalance[1] = 0;
         }
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool));
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
         if (amountsToDeposit[0] > 1 || amountsToDeposit[1] > 1) {
             _depositAssets(amountsToDeposit, false);
         }
@@ -334,45 +352,59 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
-        ticks[0] = lowerTick;
-        ticks[1] = upperTick;
-        (value, amountsConsumed) = ammAdapter.getLiquidityForAmounts(pool, amountsMax, ticks);
+        ticks[0] = $.lowerTick;
+        ticks[1] = $.upperTick;
+        (value, amountsConsumed) = ammAdapter().getLiquidityForAmounts(pool(), amountsMax, ticks);
     }
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
-        ticks[0] = lowerTick;
-        ticks[1] = upperTick;
-        amounts_ = ammAdapter.getAmountsForLiquidity(pool, ticks, uint128(total));
-        assets_ = _assets;
+        ticks[0] = $.lowerTick;
+        ticks[1] = $.upperTick;
+        amounts_ = ammAdapter().getAmountsForLiquidity(pool(), ticks, uint128( _getStrategyBaseStorage().total));
+        assets_ = assets();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getProportion0(address pool_) internal view returns (uint) {
-        return ammAdapter.getProportion0(pool_);
+    function _getQuickStaticFarmStorage() internal pure returns (QuickSwapV3StaticFarmStrategyStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION
+        }
+    }
+
+    function _getProportion0(address pool_) public view returns (uint) {
+        return ammAdapter().getProportion0(pool_);
     }
 
     function _getIncentiveKey() private view returns (IncentiveKey memory) {
-        return IncentiveKey(_rewardAssets[0], _rewardAssets[1], pool, _startTime, _endTime);
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
+        return IncentiveKey(_$._rewardAssets[0], _$._rewardAssets[1], pool(), $._startTime, $._endTime);
     }
 
     //slither-disable-next-line reentrancy-no-eth
     function _collectRewardsToState(uint tokenId, IncentiveKey memory key) internal {
-        (uint reward, uint bonusReward) = _farmingCenter.collectRewards(key, tokenId);
+        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
+        (uint reward, uint bonusReward) = $._farmingCenter.collectRewards(key, tokenId);
+        
         if (reward > 0) {
-            address token = _rewardAssets[0];
-            reward = _farmingCenter.claimReward(token, address(this), 0, reward);
-            _rewardsOnBalance[0] += reward;
+            address token = _$._rewardAssets[0];
+            reward = $._farmingCenter.claimReward(token, address(this), 0, reward);
+            _$._rewardsOnBalance[0] += reward;
         }
         if (bonusReward > 0) {
-            address token = _rewardAssets[1];
-            bonusReward = _farmingCenter.claimReward(token, address(this), 0, bonusReward);
-            _rewardsOnBalance[1] += bonusReward;
+            address token = _$._rewardAssets[1];
+            bonusReward = $._farmingCenter.claimReward(token, address(this), 0, bonusReward);
+            _$._rewardsOnBalance[1] += bonusReward;
         }
 
         if (reward > 0 || bonusReward > 0) {

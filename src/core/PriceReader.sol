@@ -15,15 +15,24 @@ import "../interfaces/ISwapper.sol";
 contract PriceReader is Controllable, IPriceReader {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    //region ----- Constants -----
+
     /// @dev Version of PriceReader implementation
     string public constant VERSION = '1.0.0';
 
-    EnumerableSet.AddressSet internal _adapters;
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.PriceReader")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant PRICEREADER_STORAGE_LOCATION = 0x5fb640640fb9e5b309b8dbb32d70e4c1afbc916914ea7278d067186632e15f00;
+    
+    //endregion ----- Constants -----
 
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 2] private __gap;
+    //region ----- Storage -----
+
+    /// @custom:storage-location erc7201:stability.PriceReader
+    struct PriceReaderStorage {
+        EnumerableSet.AddressSet _adapters;
+    }
+
+    //endregion ----- Storage -----
 
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
@@ -31,14 +40,16 @@ contract PriceReader is Controllable, IPriceReader {
 
     /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
-        if(!_adapters.add(adapter_)){
+        PriceReaderStorage storage $ = _getStorage();
+        if(!$._adapters.add(adapter_)){
             revert AlreadyExist();
         }
         emit AdapterAdded(adapter_);
     }
 
     function removeAdapter(address adapter_) external onlyOperator {
-        if(!_adapters.remove(adapter_)){
+        PriceReaderStorage storage $ = _getStorage();
+        if(!$._adapters.remove(adapter_)){
             revert NotExist();
         }
         emit AdapterRemoved(adapter_);
@@ -46,7 +57,8 @@ contract PriceReader is Controllable, IPriceReader {
 
     /// @inheritdoc IPriceReader
     function getPrice(address asset) public view returns (uint price, bool trusted) {
-        address[] memory __adapters = _adapters.values();
+        PriceReaderStorage storage $ = _getStorage();
+        address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
 
         for (uint i; i < len; ++i) {
@@ -61,7 +73,7 @@ contract PriceReader is Controllable, IPriceReader {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
 
             for (uint j; j < len; ++j) {
-                IOracleAdapter oracleAdapter = IOracleAdapter(_adapters.at(j));
+                IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
                 address[] memory oracleAssets = oracleAdapter.assets();
                 uint oracleAssetsLen = oracleAssets.length;
                 for (uint i; i < oracleAssetsLen; ++i) {
@@ -108,10 +120,23 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     function adapters() external view returns(address[] memory) {
-        return _adapters.values();
+        PriceReaderStorage storage $ = _getStorage();
+        return $._adapters.values();
     }
 
     function adaptersLength() external view returns(uint) {
-        return _adapters.length();
+        PriceReaderStorage storage $ = _getStorage();
+        return $._adapters.length();
     }
+
+    //region ----- Internal logic -----
+    
+    function _getStorage() private pure returns (PriceReaderStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := PRICEREADER_STORAGE_LOCATION
+        }
+    }
+    
+    //endregion ----- Internal logic -----
 }

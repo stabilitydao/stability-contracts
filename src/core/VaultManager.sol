@@ -21,18 +21,26 @@ import "../interfaces/IManagedVault.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
 
+    //region ----- Constants -----
+
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
-    /// @inheritdoc IVaultManager
-    mapping (uint tokenId => address vault) public tokenVault;
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultManager")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant VAULTMANAGER_STORAGE_LOCATION = 0xdc91b926f64ceb646f47da4c796e445221faf197fcaee29e875daf63dcf64e00;
+    
+    //endregion ----- Constants -----
 
-    mapping (uint tokenId => address account) internal _revenueReceiver;
+    //region ----- Storage -----
 
-    /// @dev This empty reserved space is put in place to allow future versions to add new.
-    /// variables without shifting down storage in the inheritance chain.
-    /// Total gap == 50 - storage slots used.
-    uint[50 - 2] private __gap;
+    /// @custom:storage-location erc7201:stability.VaultManager
+    struct VaultManagerStorage {
+        /// @inheritdoc IVaultManager
+        mapping (uint tokenId => address vault) tokenVault;
+        mapping (uint tokenId => address account) _revenueReceiver;
+    }
+
+    //endregion -- Storage -----
 
     function init(address platform_) external initializer {
         __Controllable_init(platform_);
@@ -41,23 +49,26 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @inheritdoc IVaultManager
     function changeVaultParams(uint tokenId, address[] memory addresses, uint[] memory nums) external {
+        VaultManagerStorage storage $ = _getStorage();
         _requireOwner(tokenId);
-        address vault = tokenVault[tokenId];
+        address vault = $.tokenVault[tokenId];
         IManagedVault(vault).changeParams(addresses, nums);
         emit ChangeVaultParams(tokenId, addresses, nums);
     }
 
     /// @inheritdoc IVaultManager
     function mint(address to, address vault) external onlyFactory returns (uint tokenId) {
+        VaultManagerStorage storage $ = _getStorage();
         tokenId = totalSupply();
-        tokenVault[tokenId] = vault;
+        $.tokenVault[tokenId] = vault;
         _mint(to, tokenId);
     }
 
     /// @inheritdoc IVaultManager
     function setRevenueReceiver(uint tokenId, address receiver) external {
+        VaultManagerStorage storage $ = _getStorage();
         _requireOwner(tokenId);
-        _revenueReceiver[tokenId] = receiver;
+        $._revenueReceiver[tokenId] = receiver;
         emit SetRevenueReceiver(tokenId, receiver);
     }
 
@@ -68,10 +79,11 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             revert NotExist();
         }
 
+        VaultManagerStorage storage $ = _getStorage();
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
-        vaultData.vault = tokenVault[tokenId];
+        vaultData.vault = $.tokenVault[tokenId];
         IVault vault = IVault(vaultData.vault);
         IStrategy strategy = vault.strategy();
         // slither-disable-next-line unused-return
@@ -100,8 +112,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             vaultData.symbol
         ) = factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
 
-        // slither-disable-next-line unused-return
-        (,,,,,vaultData.strategyTokenId) = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId)));
+        vaultData.strategyTokenId = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId))).tokenId;
 
         return VaultManagerLib.tokenURI(vaultData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
     }
@@ -118,6 +129,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         uint[] memory totalApr,
         uint[] memory strategyApr
     ) {
+        VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
         name = new string[](len);
@@ -129,7 +141,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         strategyApr = new uint[](len);
         tvl = new uint[](len);
         for (uint i; i < len; ++i) {
-            vaultAddress[i] = tokenVault[i];
+            vaultAddress[i] = $.tokenVault[i];
             IVault vault = IVault(vaultAddress[i]);
             name[i] = IERC20Metadata(vaultAddress[i]).name();
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
@@ -146,10 +158,11 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @inheritdoc IVaultManager
     function vaultAddresses() external view returns(address[] memory vaultAddress) {
+        VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
         for (uint i; i < len; ++i) {
-            vaultAddress[i] = tokenVault[i];
+            vaultAddress[i] = $.tokenVault[i];
         }
     }
 
@@ -174,10 +187,17 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @inheritdoc IVaultManager
     function getRevenueReceiver(uint tokenId) external view returns (address receiver) {
-        receiver = _revenueReceiver[tokenId];
+        VaultManagerStorage storage $ = _getStorage();
+        receiver = $._revenueReceiver[tokenId];
         if (receiver == address(0)) {
             receiver = _ownerOf(tokenId);
         }
+    }
+
+    /// @inheritdoc IVaultManager
+    function tokenVault(uint tokenId) external view returns (address vault) {
+        VaultManagerStorage storage $ = _getStorage();
+        vault = $.tokenVault[tokenId];
     }
 
     /// @inheritdoc IERC165
@@ -193,4 +213,15 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             revert NotTheOwner();
         }
     }
+
+    //region ----- Internal logic -----
+
+    function _getStorage() private pure returns (VaultManagerStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := VAULTMANAGER_STORAGE_LOCATION
+        }
+    }
+    
+    //endregion ----- Internal logic -----
 }

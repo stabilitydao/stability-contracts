@@ -124,20 +124,8 @@ interface IFactory {
 
     /// @notice Strategy logic settings
     /// @param idHash keccak256 hash of strategy logic string ID
-    /// @return id Developed strategy logic string ID
-    /// @return implementation Address of strategy logic implementation
-    /// @return deployAllowed It is allowed to create new vaults under the control of the strategy
-    /// @return upgradeAllowed It is allowed to upgrade strategy used by vaults
-    /// @return farming It is farming strategy (earns farming/gauge rewards)
-    /// @return tokenId Token ID of StrategyLogic NFT
-    function strategyLogicConfig(bytes32 idHash) external view returns (
-        string memory id,
-        address implementation,
-        bool deployAllowed,
-        bool upgradeAllowed,
-        bool farming,
-        uint tokenId
-    );
+    /// @return config Strategy logic settings
+    function strategyLogicConfig(bytes32 idHash) external view returns (StrategyLogicConfig memory config);
 
     /// @notice All known strategies
     /// @return Array of keccak256 hashes of strategy logic string ID

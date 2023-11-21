@@ -147,6 +147,11 @@ interface IPlatform {
     /// @notice Minimal boost rewards vesting duration for initial boost
     function minInitialBoostDuration() external view returns (uint);
 
+    /// @notice This function provides the timestamp of the platform upgrade timelock.
+    /// @dev This function is an external view function, meaning it doesn't modify the state.
+    /// @return uint representing the timestamp of the platform upgrade timelock.
+    function platformUpgradeTimelock() external view returns (uint);
+
     /// @dev Extra network data
     /// @return 0-2 bytes - color
     ///         3-5 bytes - background color
