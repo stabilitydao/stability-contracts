@@ -355,6 +355,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
         uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
+        //slither-disable-next-line divide-before-multiply
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 

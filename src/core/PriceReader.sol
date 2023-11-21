@@ -86,6 +86,7 @@ contract PriceReader is Controllable, IPriceReader {
                         if (assetOutDecimals <= 18) {
                             priceInTermOfOracleAsset = swapperPrice * 10 ** (18 - assetOutDecimals);
                         } else {
+                            //slither-disable-next-line divide-before-multiply
                             priceInTermOfOracleAsset = swapperPrice / 10 ** (assetOutDecimals - 18);
                         } 
                         return (priceInTermOfOracleAsset * _price / 1e18, false);

@@ -62,6 +62,7 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
+    //slither-disable-next-line divide-before-multiply
     function getProportion0(address pool) public view returns (uint) {
         address token1 = IUniswapV3Pool(pool).token1();
         //slither-disable-next-line unused-return
@@ -136,6 +137,7 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
+    //slither-disable-next-line divide-before-multiply
     function getPrice(
         address pool,
         address tokenIn,
