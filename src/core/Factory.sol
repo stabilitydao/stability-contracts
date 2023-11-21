@@ -113,6 +113,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
+    //slither-disable-next-line reentrancy-no-eth
     function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external onlyOperator nonReentrant {
         bytes32 strategyIdHash = keccak256(bytes(config.id));
         StrategyLogicConfig storage oldConfig = strategyLogicConfig[strategyIdHash];
@@ -154,6 +155,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- User actions -----
 
     /// @inheritdoc IFactory
+    
+    //slither-disable-next-line reentrancy-benign
     function deployVaultAndStrategy(
         string memory vaultType,
         string memory strategyId,

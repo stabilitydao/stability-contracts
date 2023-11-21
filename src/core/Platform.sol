@@ -254,6 +254,9 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line reentrancy-benign
+    //slither-disable-next-line reentrancy-events
+    //slither-disable-next-line reentrancy-no-eth
     function upgrade() external onlyOperator {
         uint ts = platformUpgradeTimelock;
         if(ts == 0){

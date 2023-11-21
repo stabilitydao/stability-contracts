@@ -193,6 +193,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
+    // slither-disable-next-line reentrancy-no-eth
     function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external virtual nonReentrant {
         if(amountShares == 0){
             revert IControllable.IncorrectZeroArgument();

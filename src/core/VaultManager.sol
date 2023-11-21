@@ -11,7 +11,7 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IRVault.sol";
 import "../interfaces/IManagedVault.sol";
-import "forge-std/console.sol";
+
 /// @notice The vaults are assembled at the factory by users through UI.
 ///         Deployment rights of a vault are tokenized in VaultManager NFT.
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
@@ -74,8 +74,11 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         vaultData.vault = tokenVault[tokenId];
         IVault vault = IVault(vaultData.vault);
         IStrategy strategy = vault.strategy();
+        // slither-disable-next-line unused-return
         (vaultData.sharePrice,) = vault.price();
+        // slither-disable-next-line unused-return
         (vaultData.tvl,) = vault.tvl();
+        // slither-disable-next-line unused-return
         (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
         vaultData.vaultType = vault.VAULT_TYPE();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
@@ -89,6 +92,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             bbAsset = rts[0];
         }
 
+        // slither-disable-next-line unused-return
         (
             vaultData.strategyId,,
             vaultData.assetsSymbols,
@@ -96,6 +100,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             vaultData.symbol
         ) = factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
 
+        // slither-disable-next-line unused-return
         (,,,,,vaultData.strategyTokenId) = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId)));
 
         return VaultManagerLib.tokenURI(vaultData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());

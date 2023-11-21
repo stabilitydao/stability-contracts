@@ -190,6 +190,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
+    //slither-disable-next-line reentrancy-no-eth
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
         IFarmingCenter __farmingCenter = _farmingCenter;
         uint128 liquidity;
@@ -360,6 +361,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return IncentiveKey(_rewardAssets[0], _rewardAssets[1], pool, _startTime, _endTime);
     }
 
+    //slither-disable-next-line reentrancy-no-eth
     function _collectRewardsToState(uint tokenId, IncentiveKey memory key) internal {
         (uint reward, uint bonusReward) = _farmingCenter.collectRewards(key, tokenId);
         if (reward > 0) {

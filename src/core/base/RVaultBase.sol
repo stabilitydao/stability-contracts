@@ -141,6 +141,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     }
 
     /// @inheritdoc IRVault
+    // slither-disable-next-line reentrancy-no-eth
     function notifyTargetRewardAmount(uint i, uint amount) external {
         _updateRewards(address(0));
 

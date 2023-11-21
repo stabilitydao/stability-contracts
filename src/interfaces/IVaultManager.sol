@@ -16,7 +16,6 @@ interface IVaultManager is IERC721Metadata {
     event ChangeVaultParams(uint tokenId, address[] addresses, uint[] nums);
     event SetRevenueReceiver(uint tokenId, address receiver);
     //endregion -- Events -----
-    // slither-disable-next-line unused-return
     struct VaultData {
         // vault
         uint tokenId;
