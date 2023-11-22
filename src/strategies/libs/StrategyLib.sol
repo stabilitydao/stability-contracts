@@ -20,9 +20,6 @@ import "../../interfaces/IFarmingStrategy.sol";
 library StrategyLib {
     using SafeERC20 for IERC20;
 
-    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
-    event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
-
     struct ExtractFeesVars {
         IPlatform platform;
         uint feePlatform;
@@ -35,7 +32,9 @@ library StrategyLib {
         uint amountEcosystem;
     }
 
-    function FarmingStrategyBase_init(string memory id, address platform, uint farmId) external returns (address[] memory rewardAssets) {
+    function FarmingStrategyBase_init(IFarmingStrategy.FarmingStrategyBaseStorage storage $, string memory id, address platform, uint farmId) external {
+        $.farmId = farmId;
+
         IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(farmId);
         if(keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))){
             revert IFarmingStrategy.IncorrectStrategyId();
@@ -45,7 +44,8 @@ library StrategyLib {
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
-        rewardAssets = farm.rewardAssets;
+        $._rewardAssets = farm.rewardAssets;
+        $._rewardsOnBalance = new uint[](farm.rewardAssets.length);
     }
 
     function transferAssets(
@@ -120,7 +120,7 @@ library StrategyLib {
                 if (multisigAmount > 0) {
                     IERC20(assets_[i]).safeTransfer(vars.platform.multisig(), multisigAmount);
                 }
-                emit ExtractFees(vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount);
+                emit IStrategy.ExtractFees(vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount);
             }
         }
     }
@@ -139,23 +139,23 @@ library StrategyLib {
     }
 
     function emitApr(
-        uint lastHardWork,
+        IStrategy.StrategyBaseStorage storage $,
         address platform,
         address[] memory assets,
         uint[] memory amounts,
         uint tvl,
-        uint totalBefore,
-        uint totalAfter,
-        address vault
-    ) external returns(uint apr, uint aprCompound) {
-        uint duration = block.timestamp - lastHardWork;
+        uint totalBefore
+    ) external {
+        uint duration = block.timestamp - $.lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         //slither-disable-next-line unused-return
         (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
-        apr = computeApr(tvl, earned, duration);
-        aprCompound = computeApr(totalBefore, totalAfter - totalBefore, duration);
-        uint sharePrice = tvl * 1e18 / IERC20(vault).totalSupply();
-        emit HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
+        uint apr = computeApr(tvl, earned, duration);
+        uint aprCompound = computeApr(totalBefore, $.total - totalBefore, duration);
+        uint sharePrice = tvl * 1e18 / IERC20($.vault).totalSupply();
+        emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
+        $.lastApr = apr;
+        $.lastAprCompound = aprCompound;
     }
 
     function balance(address token) public view returns (uint) {

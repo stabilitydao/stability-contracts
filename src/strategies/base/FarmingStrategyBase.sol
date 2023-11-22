@@ -12,37 +12,23 @@ import "../../interfaces/ISwapper.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = '0.1.0';
+    string public constant VERSION_FARMING_STRATEGY_BASE = '1.0.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION = 0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
-
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    struct FarmingStrategyBaseStorage {
-        /// @inheritdoc IFarmingStrategy
-        uint farmId;
-        address[] _rewardAssets;
-        uint[] _rewardsOnBalance;
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function __FarmingStrategyBase_init(address platform_, uint farmId_) internal onlyInitializing {
-        FarmingStrategyBaseStorage storage $ = _getFarmingStrategyBaseStorage();
-        $.farmId = farmId_;
-        $._rewardAssets = StrategyLib.FarmingStrategyBase_init(_getStrategyBaseStorage()._id, platform_,farmId_);
-        $._rewardsOnBalance = new uint[]($._rewardAssets.length);
+        StrategyLib.FarmingStrategyBase_init(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage()._id, platform_, farmId_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
