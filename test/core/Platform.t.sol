@@ -59,6 +59,10 @@ contract PlatformTest is Test  {
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
         );
+        assertEq(platform.minInitialBoostPerDay(), 30e18);
+        platform.setInitialBoost(31e18, 31 * 86400);
+        assertEq(platform.minInitialBoostPerDay(), 31e18);
+        assertEq(platform.minInitialBoostDuration(), 31 * 86400);
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.setup(
             IPlatform.SetupAddresses({

@@ -206,6 +206,17 @@ interface IFactory {
     /// @return status Constant from VaultStatusLib
     function vaultStatus(address vault) external view returns (uint status);
 
+    /// @notice Check that strategy proxy deployed by the Factory
+    /// @param address_ Address of contract
+    /// @return This address is our strategy proxy
+    function isStrategy(address address_) external view returns (bool);
+
+    /// @notice How much vaults was built by builderPermitToken NFT tokenId in week
+    /// @param week Week index (timestamp / (86400 * 7))
+    /// @param builderPermitTokenId Token ID of buildingPermitToken NFT
+    /// @return vaultsBuilt Vaults built
+    function vaultsBuiltByPermitTokenId(uint week, uint builderPermitTokenId) external view returns (uint vaultsBuilt);
+
     /// @notice Data on all factory strategies.
     /// The output values are matched by index in the arrays.
     /// @return id Strategy logic ID strings

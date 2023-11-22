@@ -196,6 +196,7 @@ contract FactoryTest is Test, MockSetup {
         assertEq(vaultManager.balanceOf(address(this)), 1);
         assertEq(vaultManager.ownerOf(0), (address(this)));
 
+        assertEq(factory.isStrategy(strategy), true);
         
     }
 
@@ -226,7 +227,10 @@ contract FactoryTest is Test, MockSetup {
         }), address(this));
 
         builderPermitToken.mint();
+        uint wasBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
         (address vault,) = factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
+        uint nowBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
+        assertEq(wasBuilt, nowBuilt - 1);
 
         bytes32 vaultTypeHash = IVaultProxy(vault).VAULT_TYPE_HASH();
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, vaultTypeHash));
