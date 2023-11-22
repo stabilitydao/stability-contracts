@@ -103,7 +103,7 @@ library PolygonLib {
         buildingPrice[1] = 50_000e18;
         buildingPrice[2] = 100_000e18;
         platform = DeployLib.deployPlatform(
-            '23.11.0-alpha',
+            '23.12.0-alpha',
             MULTISIG,
             TOKEN_PM,
             TOKEN_SDIV,
@@ -117,6 +117,7 @@ library PolygonLib {
         );
         if (showLog) {
             console.log('Deployed Stability platform', IPlatform(platform).PLATFORM_VERSION());
+            console.log('Platform address: ', platform);
         }
         //endregion -- DeployPlatform ----
 

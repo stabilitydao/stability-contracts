@@ -9,8 +9,10 @@ import "../chains/PolygonLib.sol";
 
 contract DeployPolygonForking is Script {
     function run() external {
-        uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // address deployer = vm.addr(deployerPrivateKey);
+        // default account 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+        uint deployerPrivateKey = vm.parseUint("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
+        address deployer = vm.addr(deployerPrivateKey);
+        console.log('Deployer', deployer);
         vm.startBroadcast(deployerPrivateKey);
         IPlatform platform = IPlatform(PolygonLib.runDeploy(true));
         IFactory factory = IFactory(platform.factory());
