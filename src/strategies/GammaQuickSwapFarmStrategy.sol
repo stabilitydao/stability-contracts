@@ -30,12 +30,13 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     uint internal constant _PRECISION = 1e36;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.GammaQuickSwapFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant GAMMAQUICKSWAPFARMSTRATEGYSTORAGE_STORAGE_LOCATION = 0xe35214fe1ab6125beac0a34cc3d91ce9e661ec11ea224b45538c0becda3e4f00;
+    bytes32 private constant GAMMAQUICKSWAPFARMSTRATEGY_STORAGE_LOCATION = 0xe35214fe1ab6125beac0a34cc3d91ce9e661ec11ea224b45538c0becda3e4f00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @custom:storage-location erc7201:stability.GammaQuickSwapFarmStrategy
     struct GammaQuickSwapFarmStrategyStorage {
         IUniProxy uniProxy;
         IMasterChef masterChef;
@@ -362,7 +363,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _getGammaQuickStorage() internal pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := GAMMAQUICKSWAPFARMSTRATEGYSTORAGE_STORAGE_LOCATION
+            $.slot := GAMMAQUICKSWAPFARMSTRATEGY_STORAGE_LOCATION
         }
     }
 }

@@ -3,16 +3,37 @@ pragma solidity ^0.8.22;
 
 import "../interfaces/IAmmAdapter.sol";
 
-/// @dev Liquidity providing strategy
-
+/// @title Liquidity providing strategy
+/// @author Alien Deployer (https://github.com/a17)
 interface ILPStrategy {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     event FeesClaimed(uint[] fees);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERRORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error ZeroAmmAdapter();
     error IncorrectAssetsLength();
     error IncorrectAssets();
     error IncorrectAmountsLength();
     
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.LPStrategyBase
+    struct LPStrategyBaseStorage {
+        /// @inheritdoc ILPStrategy
+        address pool;
+        /// @inheritdoc ILPStrategy
+        IAmmAdapter ammAdapter;
+        uint[] _feesOnBalance;
+    }
+
     struct LPStrategyBaseInitParams {
         string id;
         address platform;
@@ -20,6 +41,10 @@ interface ILPStrategy {
         address pool;
         address underlying;
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev AMM adapter string ID for interacting with pool
     function ammAdapterId() external view returns(string memory);
