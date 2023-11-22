@@ -164,6 +164,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         int24[] memory strategyInitTicks
     ) external nonReentrant returns (address vault, address strategy) {
         FactoryStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         DeployVaultAndStrategyVars memory vars;
         vars.vaultConfig = $.vaultConfig[keccak256(abi.encodePacked(vaultType))];
         if(vars.vaultConfig.implementation == address(0)){
@@ -331,6 +332,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- View functions -----
 
     /// @inheritdoc IFactory
+    //slither-disable-next-line calls-loop
     function vaultTypes() external view returns (
         string[] memory vaultType,
         address[] memory implementation,
@@ -393,6 +395,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
+    //slither-disable-next-line unused-return
     function whatToBuild() external view returns (
         string[] memory desc,
         string[] memory vaultType,

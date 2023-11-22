@@ -68,10 +68,12 @@ contract Swapper is Controllable, ISwapper {
     }
 
     /// @inheritdoc ISwapper
+    //slither-disable-next-line calls-loop
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
             poolData.pool = pools_[i].pool;
             poolData.tokenIn = pools_[i].tokenIn;
@@ -89,6 +91,7 @@ contract Swapper is Controllable, ISwapper {
         }
     }
 
+    //slither-disable-next-line unused-return
     function removePool(address token) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         delete $.pools[token];
@@ -114,10 +117,12 @@ contract Swapper is Controllable, ISwapper {
     }
 
     /// @inheritdoc ISwapper
+    //slither-disable-next-line calls-loop
     function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
             poolData.pool = pools_[i].pool;
             poolData.tokenIn = pools_[i].tokenIn;

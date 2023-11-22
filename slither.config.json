@@ -1,6 +1,6 @@
 {
     "detectors_to_exclude": "solc-version",
-    "filter_paths": "lib",
+    "filter_paths": "lib|integrations",
     "solc_remaps": [
         "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
         "@solady/=lib/solady/src/",

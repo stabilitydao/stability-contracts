@@ -57,7 +57,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     //endregion -- Storage -----
 
     //region ----- Init -----
-
+    //slither-disable-next-line naming-convention
     function __RVaultBase_init(
         address platform_,
         string memory type_,
@@ -164,7 +164,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         }
 
         IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), amount);
-
+        //slither-disable-next-line timestamp
         if (block.timestamp >= $.periodFinishForToken[i]) {
             $.rewardRateForToken[i] = amount / _duration;
         } else {
@@ -321,6 +321,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     }
 
     /// @notice Transfer earned rewards to rewardsReceiver
+    //slither-disable-next-line timestamp
     function _payRewardTo(uint rewardTokenIndex, address owner, address receiver) internal {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         address _rewardToken = $.rewardToken[rewardTokenIndex];

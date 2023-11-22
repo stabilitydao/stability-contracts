@@ -198,9 +198,10 @@ contract HardWorker is Controllable, IHardWorker {
             }
         }
 
-        uint _maxHwPerCall = $.maxHwPerCall;
+        uint localMaxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
+        //slither-disable-next-line calls-loop
         for (uint i; i < vaultsLength; ++i) {
             IVault vault = IVault(vaults[i]);
             try vault.doHardWork() {} catch Error(string memory _err) {
@@ -209,7 +210,7 @@ contract HardWorker is Controllable, IHardWorker {
                 revert(string(abi.encodePacked("Vault low-level error: 0x", Strings.toHexString(address(vault)), " ", string(_err))));
             }
             ++counter;
-            if (counter >= _maxHwPerCall) {
+            if (counter >= localMaxHwPerCall) {
                 break;
             }
         }
@@ -219,6 +220,7 @@ contract HardWorker is Controllable, IHardWorker {
 
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
             //slither-disable-next-line unused-return
+            //slither-disable-next-line low-level-calls
             (bool success, ) = msg.sender.call{value: gasCost}("");
             if(!success){
                 revert IControllable.ETHTransferFailed();
@@ -288,11 +290,13 @@ contract HardWorker is Controllable, IHardWorker {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getStorage() private pure returns (HardWorkerStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := HARDWORKER_STORAGE_LOCATION
         }
     }
 
+    //slither-disable-next-line timestamp
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
         HardWorkerStorage storage $ = _getStorage();
         IPlatform _platform = IPlatform(platform());

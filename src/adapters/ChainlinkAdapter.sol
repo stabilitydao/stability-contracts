@@ -19,13 +19,6 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     mapping(address asset => address priceFeed) public priceFeeds;
     EnumerableSet.AddressSet internal _assets;
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint[50 - 3] private __gap;
-
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }

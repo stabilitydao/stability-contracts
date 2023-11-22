@@ -26,6 +26,7 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
     ///         Save block.timestamp in the "created" variable
     /// @dev Use it only once after first logic setup
     /// @param platform_ Platform address
+    //slither-disable-next-line naming-convention
     function __Controllable_init(address platform_) internal onlyInitializing {
         if(platform_ == address(0) || IPlatform(platform_).multisig() == address(0)) {
             revert IncorrectZeroArgument();

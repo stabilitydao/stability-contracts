@@ -24,6 +24,7 @@ abstract contract UpgradeableProxy {
     function _implementation() internal view virtual returns (address impl) {
         bytes32 slot = _IMPLEMENTATION_SLOT;
         // solhint-disable-next-line no-inline-assembly
+        //slither-disable-next-line assembly
         assembly {
             impl := sload(slot)
         }
@@ -42,6 +43,7 @@ abstract contract UpgradeableProxy {
         bytes32 slot = _IMPLEMENTATION_SLOT;
 
         // solhint-disable-next-line no-inline-assembly
+        //slither-disable-next-line assembly
         assembly {
             sstore(slot, newImplementation)
         }
@@ -53,6 +55,7 @@ abstract contract UpgradeableProxy {
      * This function does not return to its internal call site, it will return directly to the external caller.
      */
     function _delegate(address implementation) internal virtual {
+        //slither-disable-next-line assembly
         assembly {
             // Copy msg.data. We take full control of memory in this inline assembly
             // block because it will not return to Solidity code. We overwrite the

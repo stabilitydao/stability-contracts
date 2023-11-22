@@ -28,6 +28,7 @@ interface IAmmAdapter {
     }
 
     /// @notice String ID of the adapter
+    //slither-disable-next-line naming-convention
     function DEX_ADAPTER_ID() external view returns(string memory);
 
     /// @notice Tokens of a pool supported by the adapter

@@ -41,6 +41,7 @@ interface IStrategy is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/    
 
     /// @dev Strategy logic string ID
+    //slither-disable-next-line naming-convention
     function STRATEGY_LOGIC_ID() external view returns(string memory);
 
     /// @dev Extra data

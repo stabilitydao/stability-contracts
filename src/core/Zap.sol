@@ -39,6 +39,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line calls-loop
     function deposit(
         address vault,
         address tokenIn,
@@ -67,7 +68,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint[] memory depositAmounts = new uint[](len);
         for (uint i; i < len; ++i) {
             if (tokenIn != assets[i]) {
-                // slither-disable-next-line low-level-calls calls-loop
+                //slither-disable-next-line low-level-calls
                 (bool success,bytes memory result) = agg.call(swapData[i]);
                 //nosemgrep
                 require(success, string(result));

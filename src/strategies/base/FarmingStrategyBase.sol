@@ -27,6 +27,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line naming-convention
     function __FarmingStrategyBase_init(address platform_, uint farmId_) internal onlyInitializing {
         StrategyLib.FarmingStrategyBase_init(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage()._id, platform_, farmId_);
     }

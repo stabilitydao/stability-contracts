@@ -47,6 +47,7 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
         (liquidity, amountsConsumed[0], amountsConsumed[1]) = getLiquidityForAmounts(pool, amounts[0], amounts[1], ticks[0], ticks[1]);
     }
 
+    //slither-disable-next-line similar-names
     function getLiquidityForAmounts(address pool, uint amount0Desired, uint amount1Desired, int24 lowerTick, int24 upperTick) public view returns (uint liquidity, uint amount0Consumed, uint amount1Consumed) {
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, , , , , ,) = IUniswapV3Pool(pool).slot0();
@@ -71,9 +72,11 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
         uint token1Price = getPrice(pool, token1, address(0), 0);
         uint token1Decimals = IERC20Metadata(token1).decimals();
+        //slither-disable-next-line similar-names
         uint token0Desired = token1Price;
         uint token1Desired = 10 ** token1Decimals;
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, token0Desired, token1Desired);
+        //slither-disable-next-line similar-names
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
@@ -175,10 +178,11 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
             return price;
         }
     }
-
     function uniswapV3SwapCallback(
+        //slither-disable-next-line similar-names
         int256 amount0Delta,
         int256 amount1Delta,
+        //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
         if(amount0Delta <= 0 && amount1Delta <= 0){

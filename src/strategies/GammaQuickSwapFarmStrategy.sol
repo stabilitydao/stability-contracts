@@ -122,7 +122,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
-        
+        //slither-disable-next-line uninitialized-local
         uint total;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
@@ -206,6 +206,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
         }
+        
+        //slither-disable-next-line uninitialized-local
         uint[4] memory minIn;
         value = $.uniProxy.deposit(amounts[0], amounts[1], address(this), __$._underlying, minIn);
         __$.total += value;
@@ -228,6 +230,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         $.masterChef.withdraw($.pid, value, address(this));
         amountsOut = new uint[](2);
         _$.total -= value;
+        //slither-disable-next-line uninitialized-local
         uint[4] memory minAmounts;
         (amountsOut[0], amountsOut[1]) = IHypervisor(_$._underlying).withdraw(value, receiver, address(this), minAmounts);
     }
@@ -286,6 +289,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
+    //slither-disable-next-line unused-return
     function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
@@ -348,6 +352,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev proportion of 1e18
+    //slither-disable-next-line naming-convention
     function _getProportion0(address pool_) internal view returns (uint) {
         IHypervisor hypervisor = IHypervisor(_getStrategyBaseStorage()._underlying);
         //slither-disable-next-line unused-return

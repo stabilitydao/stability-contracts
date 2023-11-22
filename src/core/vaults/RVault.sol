@@ -46,6 +46,7 @@ contract RVault is RVaultBase {
         if(vaultInitializationData.vaultInitAddresses.length != 1 || vaultInitializationData.vaultInitNums.length < 1){
             revert IControllable.IncorrectInitParams();
         }
+        //slither-disable-next-line uninitialized-local
         InitVars memory vars;
         vars.defaultBoostRewardTokens = CommonLib.filterAddresses(
             IPlatform(vaultInitializationData.platform).defaultBoostRewardTokens(),

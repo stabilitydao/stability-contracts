@@ -233,12 +233,14 @@ contract Platform is Controllable, IPlatform {
     //slither-disable-next-line reentrancy-benign
     //slither-disable-next-line reentrancy-events
     //slither-disable-next-line reentrancy-no-eth
+    //slither-disable-next-line calls-loop
     function upgrade() external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint ts = $.platformUpgradeTimelock;
         if(ts == 0){
             revert NoNewVersion();
         }
+        //slither-disable-next-line timestamp
         if(ts > block.timestamp){
             revert UpgradeTimerIsNotOver(ts);
         }
@@ -418,6 +420,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function getPlatformSettings() external view returns (PlatformSettings memory) {
         PlatformStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         PlatformSettings memory platformSettings;
         (platformSettings.fee,platformSettings.feeShareVaultManager,platformSettings.feeShareStrategyLogic,platformSettings.feeShareEcosystem) = getFees();
         platformSettings.networkName = $.networkName;
@@ -455,6 +458,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
         PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line unused-return
@@ -468,6 +472,7 @@ contract Platform is Controllable, IPlatform {
         uint len = bbToken.length;
         vaultsLimit = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (, vaultsLimit[i]) = $._allowedBBTokensVaults.tryGet(bbToken[i]);
         }
     }
@@ -530,12 +535,14 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function getData() external view returns(
         address[] memory platformAddresses,
         address[] memory bcAssets,
         address[] memory dexAggregators_,
         string[] memory vaultType,
         bytes32[] memory vaultExtra,
+        //slither-disable-next-line similar-names
         uint[] memory vaultBuildingPrice,
         string[] memory strategyId,
         bool[] memory isFarmingStrategy,

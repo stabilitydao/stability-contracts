@@ -56,6 +56,7 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
+    //slither-disable-next-line calls-loop
     function getPrice(address asset) public view returns (uint price, bool trusted) {
         PriceReaderStorage storage $ = _getStorage();
         address[] memory __adapters = $._adapters.values();
@@ -101,6 +102,7 @@ contract PriceReader is Controllable, IPriceReader {
     /// @inheritdoc IPriceReader
     function getAssetsPrice(address[] memory assets_, uint[] memory amounts_) external view returns (uint total, uint[] memory assetAmountPrice, bool trusted) {
         uint len = assets_.length;
+        //slither-disable-next-line uninitialized-local
         bool notTrustedPrices;
         assetAmountPrice = new uint[](len);
         for (uint i; i < len; ++i) {

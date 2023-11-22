@@ -27,6 +27,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line naming-convention
     function __StrategyBase_init(
         address platform_,
         string memory id_,
@@ -157,6 +158,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
+    //slither-disable-next-line unused-return
     function assetsAmounts() external view virtual returns (address[] memory assets_, uint[] memory amounts_) {
         (assets_, amounts_) = _assetsAmounts();
         return StrategyLib.assetsAmountsWithBalances(assets_, amounts_);

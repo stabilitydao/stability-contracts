@@ -78,8 +78,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         if(_ownerOf(tokenId) == address(0)){
             revert NotExist();
         }
-
         VaultManagerStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
@@ -118,6 +118,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
+    //slither-disable-next-line calls-loop
     function vaults() external view returns(
         address[] memory vaultAddress,
         string[] memory name,
