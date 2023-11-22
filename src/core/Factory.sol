@@ -35,7 +35,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
-    uint internal constant _PERMIT_PER_WEEK = 2;
+    uint internal constant _PERMIT_PER_WEEK = 1;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Factory")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FACTORY_STORAGE_LOCATION = 0x94b53192a2415b53b438d03f0efa946204c0118192627e3d5ed4ba034c9a0300;
@@ -54,9 +54,11 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         mapping(bytes32 deploymentKey => address vaultProxy) deploymentKey;
         /// @inheritdoc IFactory
         mapping(address vault => uint status) vaultStatus;
+        /// @inheritdoc IFactory
         mapping(address address_ => bool isStrategy_) isStrategy;
         EnumerableSet.Bytes32Set vaultTypeHashes;
         EnumerableSet.Bytes32Set strategyLogicIdHashes;
+
         mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
         address[] deployedVaults;
         Farm[] farms;
@@ -516,6 +518,16 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function vaultStatus(address vault) external view returns (uint status) {
         FactoryStorage storage $ = _getStorage();
         status = $.vaultStatus[vault];
+    }
+
+    /// @inheritdoc IFactory
+    function isStrategy(address address_) external view returns (bool) {
+        return _getStorage().isStrategy[address_];
+    }
+
+    /// @inheritdoc IFactory
+    function vaultsBuiltByPermitTokenId(uint week, uint builderPermitTokenId) external view returns (uint vaultsBuilt) {
+        return _getStorage().vaultsBuiltByPermitTokenId[week][builderPermitTokenId];
     }
 
     //endregion -- View functions -----
