@@ -53,6 +53,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         /// @inheritdoc IVault
         uint tokenId;
         /// @inheritdoc IVault
+        uint minTVL;
+        /// @inheritdoc IVault
         bool doHardWorkOnDeposit;
         /// @dev Immutable vault type ID
         string _type;
@@ -79,6 +81,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.tokenId = tokenId_;
         __ReentrancyGuard_init();
         $.doHardWorkOnDeposit = true;
+        $.minTVL = 100e18;
     }
 
     //endregion -- Init -----
@@ -107,6 +110,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
+    function setMinTVL(uint value) external onlyGovernanceOrMultisig {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.minTVL = value;
+        emit MinTVLChanged($.minTVL, value);
+    }
+
+    /// @inheritdoc IVault
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
         if(msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)){
@@ -130,8 +140,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
-                // todo #29 IPlatform variable
-                if (_tvl < 100e18) {
+                if (_tvl < $.minTVL) {
                     revert NotEnoughBalanceToPay();
                 }
             }
@@ -357,6 +366,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function doHardWorkOnDeposit() external view returns (bool) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
+    }
+
+    /// @inheritdoc IVault
+    function minTVL() external view returns (uint) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return $.minTVL;
     }
 
 

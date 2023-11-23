@@ -8,6 +8,7 @@ import "./IStrategy.sol";
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IVault is IERC165 {
     //region ----- Custom Errors -----
     error NotEnoughBalanceToPay();
@@ -25,6 +26,7 @@ interface IVault is IERC165 {
     event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
+    event MinTVLChanged(uint oldValue, uint newValue);
     event MaxSupply(uint maxShares);
 
     //endregion -- Events -----
@@ -91,6 +93,10 @@ interface IVault is IERC165 {
     /// @return trusted True means TVL calculated based only on oracle prices, false means AMM spot price was used.
     function tvl() external view returns (uint tvl_, bool trusted);
 
+    /// @notice Show minimum TVL for compensate if vault has not enough ETH
+    /// @return Minimum TVL for compensate.
+    function minTVL() external view returns (uint);
+
     /// @dev Calculation of consumed amounts, shares amount and liquidity/underlying value for provided available amounts of strategy assets
     /// @param assets_ Assets suitable for vault strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
     /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
@@ -141,6 +147,10 @@ interface IVault is IERC165 {
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
+
+    /// @notice Update new minimum TVL for compansate.
+    /// @param value New minimum TVL for compensate.
+    function setMinTVL(uint value) external;
 
     //endregion -- Write functions -----
 
