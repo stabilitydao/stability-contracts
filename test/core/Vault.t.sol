@@ -80,8 +80,12 @@ contract VaultTest is Test, FullMockSetup {
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
-        vault.depositAssets(assets, amounts, 0);
+        vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
+        vault.depositAssets(assets, amounts, 0, address(0));
 
+        factory.setVaultStatus(address(vault), 1);
+        vault.depositAssets(assets, amounts, 0, address(0));
+        
         vm.roll(block.number + 5);
 
         uint shares = vault.balanceOf(address(this));
@@ -96,7 +100,7 @@ contract VaultTest is Test, FullMockSetup {
         underlyingAssets[0] = address(lp);
         otherAmounts = new uint[](1);
         otherAmounts[0] = 1e16;
-        vault.depositAssets(underlyingAssets, otherAmounts, 0);
+        vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
         shares = vault.balanceOf(address(this));
 
         vm.roll(block.number + 6);
@@ -161,8 +165,14 @@ contract VaultTest is Test, FullMockSetup {
         tokenB.approve(address(vault), amounts[1]);
         lp.approve(address(vault), 1e18);
 
-        vault.depositAssets(assets, amounts, 0);
-        vault.depositAssets(underlyingAssets, otherAmounts, 0);
+        vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
+        vault.depositAssets(assets, amounts, 0, address(0));
+        vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
+        vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
+
+        factory.setVaultStatus(address(vault), 1);
+        vault.depositAssets(assets, amounts, 0, address(0));
+        vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
         uint shares = vault.balanceOf(address(this));
         assertGt(shares, 0);
 

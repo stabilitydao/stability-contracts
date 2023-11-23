@@ -66,8 +66,8 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         tokenA.approve(address(rVault), amounts[0]);
         tokenB.approve(address(rVault), amounts[1]);
 
-        vault.depositAssets(assets, amounts, 0);
-        rVault.depositAssets(assets, amounts, 0);
+        vault.depositAssets(assets, amounts, 0, address(0));
+        rVault.depositAssets(assets, amounts, 0, address(0));
 
         (uint sharePrice, bool sharePriceTrusted) = vault.price();
         assertEq(sharePrice, 1e18); // $1

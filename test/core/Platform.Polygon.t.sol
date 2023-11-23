@@ -401,7 +401,7 @@ contract PlatformPolygonTest is PolygonSetup {
         }
 
         // deposit
-        IVault(vault).depositAssets(assets, depositAmounts, 0);
+        IVault(vault).depositAssets(assets, depositAmounts, 0, address(0));
     }
 
     function _getRewardingInitParams(address bbToken) internal view returns (

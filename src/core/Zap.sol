@@ -16,6 +16,7 @@ import "../interfaces/IZap.sol";
 /// The swap is carried out through one of the DeX aggregators allowed in the platform.
 /// The platform architecture makes it possible to use ZAP for all created vaults.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     using SafeERC20 for IERC20;
 
@@ -45,7 +46,8 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint amountIn,
         address agg,
         bytes[] memory swapData,
-        uint minSharesOut
+        uint minSharesOut,
+        address receiver
     ) external nonReentrant {
         // todo check vault
 
@@ -55,6 +57,10 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {
             revert NotAllowedDexAggregator(agg);
+        }
+
+        if(receiver == address(0)){
+            receiver = msg.sender;
         }
 
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
@@ -79,10 +85,8 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
             _approveIfNeeds(assets[i], depositAmounts[i], vault);
         }
 
-        IVault(vault).depositAssets(assets, depositAmounts, minSharesOut);
-
-        // todo #29 use deposit receiver
-        IERC20(vault).safeTransfer(msg.sender, IERC20(vault).balanceOf(address(this)));
+        IVault(vault).depositAssets(assets, depositAmounts, minSharesOut, receiver);
+        IERC20(vault).safeTransfer(receiver, IERC20(vault).balanceOf(address(this)));
 
         _sendAllRemaining(tokenIn, assets,  IStrategy(strategy).underlying());
     }

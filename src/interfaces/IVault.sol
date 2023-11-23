@@ -53,6 +53,20 @@ interface IVault is IERC165 {
         uint[] vaultInitNums;
     }
 
+    /// @title Deposit Assets Data
+    /// @notice Data structure containing parameters for function depositAssets to avoid stack too deep.
+    /// @notice This structure use local variables. 
+    struct DepositAssetsData {
+        uint _totalSupply;
+        uint totalValue;
+        uint len;
+        address[] assets;
+        address underlying;
+        uint[] amountsConsumed;
+        uint value;
+        uint mintAmount;
+    }
+
     //endregion -- Data types -----
 
     //region ----- Read functions -----
@@ -122,7 +136,8 @@ interface IVault is IERC165 {
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
     /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user.
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external;
+    /// @param receiver Receiver of deposit. If receiver is zero address, receiver is msg.sender.
+    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external;
 
     /// @dev Burning shares of vault and obtaining strategy assets.
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
