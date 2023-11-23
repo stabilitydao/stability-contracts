@@ -74,6 +74,15 @@ interface IVault is IERC165 {
     /// @notice Immutable vault type ID
     function VAULT_TYPE() external view returns (string memory);
 
+    /// @return Required unique init addresses
+    function UNIQUE_INIT_ADDRESSES() external view returns (uint);
+
+    /// @return Required unique init nums
+    function UNIQUE_INIT_NUMS() external view returns (uint);
+
+    /// @return Required unique init addresses and nums
+    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums)
+
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
     function extra() external view returns (bytes32);

@@ -353,6 +353,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
+    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        return (IVault($.strategy.vault()).UNIQUE_INIT_ADDRESSES(), IVault($.strategy.vault()).UNIQUE_INIT_NUMS());
+    }
+
+    /// @inheritdoc IVault
     function strategy() external view returns (IStrategy) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.strategy;

@@ -34,6 +34,10 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function VAULT_TYPE() external view returns (string memory) {}
 
+    function UNIQUE_INIT_ADDRESSES() external view returns (uint) {}
+
+    function UNIQUE_INIT_NUMS() external view returns (uint) {}
+
     function price() external view returns (uint price_, bool trusted_) {}
 
     function tvl() external view returns (uint tvl_, bool trusted_) {}
