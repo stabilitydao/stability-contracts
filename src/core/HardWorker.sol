@@ -170,10 +170,9 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
-    //slither-disable-next-line reentrancy-events | cyclomatic-complexity
+    //slither-disable-next-line reentrancy-events cyclomatic-complexity
     function call(address[] memory vaults) external {
         HardWorkerStorage storage $ = _getStorage();
-
         uint startGas = gasleft();
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
