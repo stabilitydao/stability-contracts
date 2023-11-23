@@ -75,9 +75,11 @@ interface IVault is IERC165 {
     function VAULT_TYPE() external view returns (string memory);
 
     /// @return Required unique init addresses
+    //slither-disable-next-line naming-convention
     function UNIQUE_INIT_ADDRESSES() external view returns (uint);
 
     /// @return Required unique init nums
+    //slither-disable-next-line naming-convention
     function UNIQUE_INIT_NUMS() external view returns (uint);
 
     /// @return uniqueInitAddresses Return required unique init addresses
