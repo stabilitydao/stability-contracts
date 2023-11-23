@@ -161,7 +161,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        console.log("STATUS IS", IFactory(IPlatform($._platform).factory()).vaultStatus($.strategy.vault()));
         if(IFactory(IPlatform($._platform).factory()).vaultStatus($.strategy.vault()) != 1){
             revert IFactory.NotActiveVault();
         } 
@@ -170,6 +169,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             $.strategy.doHardWork();
         }
 
+        //slither-disable-next-line 1-1-uninitialized-local
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
