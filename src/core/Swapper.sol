@@ -259,6 +259,7 @@ contract Swapper is Controllable, ISwapper {
         uint len = route.length;
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
+            //slither-disable-next-line calls-loop
             price = IAmmAdapter(data.ammAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
         }
         return price;
@@ -275,6 +276,7 @@ contract Swapper is Controllable, ISwapper {
         uint len = route.length;
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
+            //slither-disable-next-line calls-loop
             price = IAmmAdapter(data.ammAdapter).getPrice(data.pool, data.tokenIn, data.tokenOut, price);
         }
         return price;
@@ -473,7 +475,7 @@ contract Swapper is Controllable, ISwapper {
     //endregion -- View functions -----
 
     //region ----- Internal logic -----
-
+    //slither-disable-next-line reentrancy-events
     function _swap(
         PoolData[] memory route,
         uint amount,
@@ -516,6 +518,7 @@ contract Swapper is Controllable, ISwapper {
     function _addBcAsset(address asset) internal {
         SwapperStorage storage $ = _getStorage();
         if (!$._bcAssets.contains(asset)) {
+            //slither-disable-next-line unused-return
             $._bcAssets.add(asset);
         }
     }

@@ -84,7 +84,7 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
         address implementation = strategyConfig.implementation;
         strategyData.strategyTokenId = strategyConfig.tokenId;
         strategyData.strategyExtra = IStrategy(implementation).extra();
-        return StrategyLogicLib.tokenURI(strategyData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
+        return StrategyLogicLib.tokenURI(strategyData, _platform.platformVersion(), _platform.getPlatformSettings());
     }
 
     /// @inheritdoc IERC165

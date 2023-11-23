@@ -91,6 +91,7 @@ contract KyberAdapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
+    //slither-disable-next-line reentrancy-events
     function swap(
         address pool,
         address tokenIn,
@@ -194,7 +195,7 @@ contract KyberAdapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function DEX_ADAPTER_ID() external pure returns(string memory) {
+    function dexAdapterID() external pure returns(string memory) {
         return AmmAdapterIdLib.KYBER;
     }
 }

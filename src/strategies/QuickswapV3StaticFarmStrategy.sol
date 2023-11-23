@@ -111,7 +111,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function initVariants(address platform_) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
         //slither-disable-next-line unused-return
-        return QuickswapLib.initVariants(platform_, ammAdapterId(), STRATEGY_LOGIC_ID());
+        return QuickswapLib.initVariants(platform_, ammAdapterId(), strategyLogicID());
     }
 
     /// @inheritdoc IStrategy
@@ -177,7 +177,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
+    function strategyLogicID() public pure override returns(string memory) {
         return StrategyIdLib.QUICKSWAPV3_STATIC_FARM;
     }
 
@@ -200,6 +200,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-no-eth
+    //slither-disable-next-line reentrancy-events
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
@@ -257,6 +258,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line timestamp
+    //slither-disable-next-line reentrancy-events
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         IFarmingCenter __farmingCenter = $._farmingCenter;
@@ -275,6 +277,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
             IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
             uint[] memory fees = new uint[](2);
+            //slither-disable-next-line timestamp
             fees[0] = collected0 > amountsOut[0] ? (collected0 - amountsOut[0]) : 0;
             fees[1] = collected1 > amountsOut[1] ? (collected1 - amountsOut[1]) : 0;
             emit FeesClaimed(fees);
@@ -312,6 +315,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint tokenId = $._tokenId;
         if (tokenId > 0 && total() > 0) {
             (__amounts[0], __amounts[1]) = __farmingCenter.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
+            //slither-disable-next-line reentrancy-events
             emit FeesClaimed(__amounts);
             (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
             if (__rewardAmounts[0] > 0) {
@@ -320,6 +324,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             if (__rewardAmounts[1] > 0) {
                 __rewardAmounts[1] = __farmingCenter.claimReward(__rewardAssets[1], address(this), 0, __rewardAmounts[1]);
             }
+            //slither-disable-next-line reentrancy-events
             emit RewardsClaimed(__rewardAmounts);
         }
         
@@ -394,6 +399,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     //slither-disable-next-line reentrancy-no-eth
+    //slither-disable-next-line reentrancy-events
     function _collectRewardsToState(uint tokenId, IncentiveKey memory key) internal {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();

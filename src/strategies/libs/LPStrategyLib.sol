@@ -89,7 +89,7 @@ library LPStrategyLib {
     ) external returns (bool needCompound) {
         needCompound = true;
         ProcessRevenueVars memory vars;
-        vars.vaultYpe = IVault(vault).VAULT_TYPE();
+        vars.vaultYpe = IVault(vault).vaultType();
         if (
             CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
             || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)

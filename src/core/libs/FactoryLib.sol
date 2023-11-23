@@ -460,7 +460,7 @@ library FactoryLib {
         string memory specificName,
         string memory vaultSymbol
     ) {
-        strategyId = IStrategy(strategyAddress).STRATEGY_LOGIC_ID();
+        strategyId = IStrategy(strategyAddress).strategyLogicID();
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
         specificName = IStrategy(strategyAddress).getSpecificName();

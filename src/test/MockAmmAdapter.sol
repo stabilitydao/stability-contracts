@@ -84,7 +84,7 @@ contract MockAmmAdapter is IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function DEX_ADAPTER_ID() external pure returns(string memory) {
+    function dexAdapterID() external pure returns(string memory) {
         return _DEX_ADAPTER_ID;
     }
 

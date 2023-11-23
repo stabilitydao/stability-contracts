@@ -48,6 +48,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
+    //slither-disable-next-line reentrancy-events
     function changeVaultParams(uint tokenId, address[] memory addresses, uint[] memory nums) external {
         VaultManagerStorage storage $ = _getStorage();
         _requireOwner(tokenId);
@@ -92,7 +93,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         (vaultData.tvl,) = vault.tvl();
         // slither-disable-next-line unused-return
         (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
-        vaultData.vaultType = vault.VAULT_TYPE();
+        vaultData.vaultType = vault.vaultType();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
         vaultData.vaultExtra = vault.extra();
         vaultData.strategyExtra = strategy.extra();
@@ -114,7 +115,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
         vaultData.strategyTokenId = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId))).tokenId;
 
-        return VaultManagerLib.tokenURI(vaultData, _platform.PLATFORM_VERSION(), _platform.getPlatformSettings());
+        return VaultManagerLib.tokenURI(vaultData, _platform.platformVersion(), _platform.getPlatformSettings());
     }
 
     /// @inheritdoc IVaultManager
@@ -146,8 +147,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             IVault vault = IVault(vaultAddress[i]);
             name[i] = IERC20Metadata(vaultAddress[i]).name();
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
-            vaultType[i] = vault.VAULT_TYPE();
-            strategyId[i] = vault.strategy().STRATEGY_LOGIC_ID();
+            vaultType[i] = vault.vaultType();
+            strategyId[i] = vault.strategy().strategyLogicID();
             //slither-disable-next-line unused-return
             (totalApr[i],strategyApr[i],,) = vault.getApr();
             //slither-disable-next-line unused-return

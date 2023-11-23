@@ -48,6 +48,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- User actions -----
 
     /// @inheritdoc IManagedVault
+    //slither-disable-next-line cyclomatic-complexity
     function changeParams(address[] memory addresses, uint[] memory nums) external {
         // todo #22 implement bbRatio changing
         if(IPlatform(platform()).vaultManager() != msg.sender){

@@ -65,7 +65,7 @@ contract MockStrategy is LPStrategyBase {
         return 'MOCKSWAP';
     }
 
-    function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
+    function strategyLogicID() public pure override returns(string memory) {
         return StrategyIdLib.DEV;
     }
 

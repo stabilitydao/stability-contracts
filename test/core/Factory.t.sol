@@ -186,7 +186,7 @@ contract FactoryTest is Test, MockSetup {
         assertEq(address(ILPStrategy(strategy).ammAdapter()), address(ammAdapter));
         assertEq(address(IStrategy(strategy).vault()), vault);
         assertEq(address(IStrategy(strategy).underlying()), address(1));
-        assertEq(IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH(), keccak256(abi.encodePacked(StrategyIdLib.DEV)));
+        assertEq(IStrategyProxy(strategy).strategyImplementationLogicIDHash(), keccak256(abi.encodePacked(StrategyIdLib.DEV)));
         assertEq(factory.deployedVaultsLength(), 1);
         assertEq(factory.deploymentKey(deploymentKey), vault);
         assertEq(factory.deployedVault(0), vault);
@@ -228,7 +228,7 @@ contract FactoryTest is Test, MockSetup {
         builderPermitToken.mint();
         (address vault,) = factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
 
-        bytes32 vaultTypeHash = IVaultProxy(vault).VAULT_TYPE_HASH();
+        bytes32 vaultTypeHash = IVaultProxy(vault).vaultTypeHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, vaultTypeHash));
         factory.upgradeVaultProxy(vault);
 
@@ -245,7 +245,7 @@ contract FactoryTest is Test, MockSetup {
             buildingPrice: builderPayPerVaultPrice
         }));
 
-        vaultTypeHash = IVaultProxy(vault).VAULT_TYPE_HASH();
+        vaultTypeHash = IVaultProxy(vault).vaultTypeHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, vaultTypeHash));
         factory.upgradeVaultProxy(vault);
 
@@ -289,7 +289,7 @@ contract FactoryTest is Test, MockSetup {
         builderPermitToken.mint();
         (, address strategy) = factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks);
 
-        bytes32 strategyProxyHash = IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH();
+        bytes32 strategyProxyHash = IStrategyProxy(strategy).strategyImplementationLogicIDHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, strategyProxyHash));
         factory.upgradeStrategyProxy(strategy);
 
@@ -345,7 +345,7 @@ contract FactoryTest is Test, MockSetup {
             tokenId: type(uint).max
         }), address(this));
 
-        strategyProxyHash = IStrategyProxy(strategy).STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH();
+        strategyProxyHash = IStrategyProxy(strategy).strategyImplementationLogicIDHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, strategyProxyHash));
         factory.upgradeStrategyProxy(strategy); 
 

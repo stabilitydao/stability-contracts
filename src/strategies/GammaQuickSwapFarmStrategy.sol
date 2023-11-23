@@ -123,37 +123,41 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
-        uint total;
+        uint localTotal;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, STRATEGY_LOGIC_ID())) {
-                ++total;
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
+                ++localTotal;
             }
         }
 
-        variants = new string[](total);
-        nums = new uint[](total);
-        total = 0;
+        variants = new string[](localTotal);
+        nums = new uint[](localTotal);
+        localTotal = 0;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, STRATEGY_LOGIC_ID())) {
-                nums[total] = i;
-                variants[total] = string.concat(
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
+                nums[localTotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTotal] = string.concat(
                     "Earn ",
+                    //slither-disable-next-line calls-loop
                     CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
                     " on QuickSwap by ",
+                    //slither-disable-next-line calls-loop
                     CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
                     " Gamma ",
+                    //slither-disable-next-line calls-loop
                     GammaLib.getPresetName(farm.nums[1]),
                     " LP"
                 );
-                ++total;
+                ++localTotal;
             }
         }
     }
 
     /// @inheritdoc IStrategy
-    function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
+    function strategyLogicID() public pure override returns(string memory) {
         return StrategyIdLib.GAMMA_QUICKSWAP_FARM;
     }
 

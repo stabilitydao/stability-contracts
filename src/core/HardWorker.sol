@@ -53,6 +53,7 @@ contract HardWorker is Controllable, IHardWorker {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line reentrancy-events
     function initialize(
         address platform_,
         address gelatoAutomate,
@@ -169,6 +170,7 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
+    //slither-disable-next-line reentrancy-events | cyclomatic-complexity
     function call(address[] memory vaults) external {
         HardWorkerStorage storage $ = _getStorage();
 
@@ -197,13 +199,12 @@ contract HardWorker is Controllable, IHardWorker {
                 emit GelatoDeposit(depositAmount);
             }
         }
-
         uint localMaxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
-        //slither-disable-next-line calls-loop
         for (uint i; i < vaultsLength; ++i) {
             IVault vault = IVault(vaults[i]);
+            //slither-disable-next-line calls-loop
             try vault.doHardWork() {} catch Error(string memory _err) {
                 revert(string(abi.encodePacked("Vault error: 0x", Strings.toHexString(address(vault)), " ", _err)));
             } catch (bytes memory _err) {
@@ -226,7 +227,6 @@ contract HardWorker is Controllable, IHardWorker {
                 revert IControllable.ETHTransferFailed();
             }
         }
-
         emit Call(counter, gasUsed, gasCost, isServer);
     }
 
@@ -297,6 +297,7 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     //slither-disable-next-line timestamp
+    //slither-disable-next-line cyclomatic-complexity
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
         HardWorkerStorage storage $ = _getStorage();
         IPlatform _platform = IPlatform(platform());
@@ -316,6 +317,7 @@ contract HardWorker is Controllable, IHardWorker {
             //slither-disable-next-line unused-return
             (uint tvl,) = vault.tvl();
             if(
+                //slither-disable-next-line timestamp
                 tvl > 0
                 && block.timestamp - strategy.lastHardWork() > delay_
                 && factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE

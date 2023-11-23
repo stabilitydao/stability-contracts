@@ -154,6 +154,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     
     //slither-disable-next-line reentrancy-benign
+    //slither-disable-next-line cyclomatic-complexity
     function deployVaultAndStrategy(
         string memory vaultType,
         string memory strategyId,
@@ -189,6 +190,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         if (vars.buildingPermitToken != address(0)) {
             uint balance = IERC721Enumerable(vars.buildingPermitToken).balanceOf(msg.sender);
             for (uint i; i < balance; ++i) {
+                //slither-disable-next-line calls-loop
                 uint tokenId = IERC721Enumerable(vars.buildingPermitToken).tokenOfOwnerByIndex(msg.sender, i);
                 uint epoch = block.timestamp / _WEEK;
                 uint builtThisWeek = $.vaultsBuiltByPermitTokenId[epoch][tokenId];
@@ -292,7 +294,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             revert NotActiveVault();
         }
         IVaultProxy proxy = IVaultProxy(vault);
-        bytes32 vaultTypeHash = proxy.VAULT_TYPE_HASH();
+        bytes32 vaultTypeHash = proxy.vaultTypeHash();
         address oldImplementation = proxy.implementation();
         VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
         address newImplementation = tempVaultConfig.implementation;
@@ -313,7 +315,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             revert NotStrategy();
         }
         IStrategyProxy proxy = IStrategyProxy(strategyProxy);
-        bytes32 idHash = proxy.STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH();
+        bytes32 idHash = proxy.strategyImplementationLogicIDHash();
         StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;
@@ -362,6 +364,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
+    //slither-disable-next-line calls-loop
     function strategies() external view returns (
         string[] memory id,
         bool[] memory deployAllowed,

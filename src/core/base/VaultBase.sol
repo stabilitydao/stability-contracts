@@ -138,7 +138,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 }
             }
         }
-
+        //slither-disable-next-line reentrancy-events
         emit HardWorkGas(gasUsed, gasCost, compensated);
     }
 
@@ -261,7 +261,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function VAULT_TYPE() external view returns (string memory) {
+    function vaultType() external view returns (string memory) {
         return _getVaultBaseStorage()._type;
     }
 

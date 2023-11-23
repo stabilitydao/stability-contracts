@@ -16,7 +16,7 @@ contract AlgebraAdapterTest is PolygonSetup {
     }
 
     function testViewMethods() public {
-        assertEq(keccak256(bytes(adapter.DEX_ADAPTER_ID())), _hash);
+        assertEq(keccak256(bytes(adapter.dexAdapterID())), _hash);
 
         vm.expectRevert(IAmmAdapter.NotSupportedByCAMM.selector);
         adapter.getLiquidityForAmounts(address(0), new uint[](2));

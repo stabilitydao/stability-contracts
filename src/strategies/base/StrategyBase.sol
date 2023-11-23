@@ -120,7 +120,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return  interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function STRATEGY_LOGIC_ID() public view virtual returns(string memory);
+    function strategyLogicID() public view virtual returns(string memory);
 
     /// @inheritdoc IStrategy
     function assets() public virtual view returns (address[] memory) {

@@ -30,6 +30,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         address[] memory _assets;
         uint exchangeAssetIndex;
         (_assets, exchangeAssetIndex) = LPStrategyLib.LPStrategyBase_init($, params.platform, params, ammAdapterId());
+        //slither-disable-next-line reentrancy-events
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
     }
 

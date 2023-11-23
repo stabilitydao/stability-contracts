@@ -5,6 +5,7 @@ pragma solidity ^0.8.22;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 interface ISwapper {
   event Swap(address indexed tokenIn, address indexed tokenOut, uint amount);
   event PoolAdded(PoolData poolData, bool assetAdded);
@@ -81,8 +82,8 @@ interface ISwapper {
 
   /// @notice Swap threshold for token
   /// @param token Swap input token
-  /// @return threshold Minimum amount of token for executing swap
-  function threshold(address token) external view returns (uint threshold);
+  /// @return threshold_ Minimum amount of token for executing swap
+  function threshold(address token) external view returns (uint threshold_);
 
   /// @notice Price of given tokenIn against tokenOut
   /// @param tokenIn Swap input token

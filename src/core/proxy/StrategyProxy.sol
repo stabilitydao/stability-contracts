@@ -47,7 +47,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         return _implementation();
     }
 
-    function STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH() external view returns (bytes32) {
+    function strategyImplementationLogicIDHash() external view returns (bytes32) {
         bytes32 idHash;
         bytes32 slot = _ID_SLOT;
         //slither-disable-next-line assembly

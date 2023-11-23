@@ -110,6 +110,7 @@ contract PriceReader is Controllable, IPriceReader {
             if (!_trusted) {
                 notTrustedPrices = true;
             }
+            //slither-disable-next-line calls-loop
             uint decimals = IERC20Metadata(assets_[i]).decimals();
             if(decimals <= 18){
                 assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * price / 1e18;

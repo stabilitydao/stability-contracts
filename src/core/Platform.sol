@@ -92,7 +92,7 @@ contract Platform is Controllable, IPlatform {
         PlatformUpgrade _pendingPlatformUpgrade;
         uint platformUpgradeTimelock;
         /// @inheritdoc IPlatform
-        string PLATFORM_VERSION;
+        string platformVersion;
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
@@ -118,7 +118,7 @@ contract Platform is Controllable, IPlatform {
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
         $._operators.add(msg.sender);
-        $.PLATFORM_VERSION = version;
+        $.platformVersion = version;
         emit PlatformVersion(version);
     }
 
@@ -213,11 +213,12 @@ contract Platform is Controllable, IPlatform {
             if(newImplementations[i] == address(0)){
                 revert IControllable.IncorrectZeroArgument();
             }
+            //slither-disable-next-line calls-loop
             if(CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION())){
                 revert SameVersion();
             }
         }
-        string memory oldVersion = $.PLATFORM_VERSION;
+        string memory oldVersion = $.platformVersion;
         if(CommonLib.eq(oldVersion, newVersion)){
             revert SameVersion();
         }
@@ -231,7 +232,6 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     //slither-disable-next-line reentrancy-benign
-    //slither-disable-next-line reentrancy-events
     //slither-disable-next-line reentrancy-no-eth
     //slither-disable-next-line calls-loop
     function upgrade() external onlyOperator {
@@ -249,6 +249,7 @@ contract Platform is Controllable, IPlatform {
         for (uint i; i < len; ++i) {
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
+            //slither-disable-next-line reentrancy-events
             emit ProxyUpgraded(
                 platformUpgrade.proxies[i],
                 platformUpgrade.newImplementations[i],
@@ -256,11 +257,12 @@ contract Platform is Controllable, IPlatform {
                 IControllable(platformUpgrade.proxies[i]).VERSION()
             );
         }
-        $.PLATFORM_VERSION = platformUpgrade.newVersion;
+        $.platformVersion = platformUpgrade.newVersion;
         $._pendingPlatformUpgrade.newVersion = '';
         $._pendingPlatformUpgrade.proxies = new address[](0);
         $._pendingPlatformUpgrade.newImplementations = new address[](0);
         $.platformUpgradeTimelock = 0;
+        //slither-disable-next-line reentrancy-events
         emit PlatformVersion(platformUpgrade.newVersion);
     }
 
@@ -570,6 +572,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function getBalance(address yourAccount) external view returns (
         address[] memory token,
         uint[] memory tokenPrice,
@@ -588,8 +591,9 @@ contract Platform is Controllable, IPlatform {
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
+            //slither-disable-next-line calls-loop
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
+            //slither-disable-next-line calls-loop
             tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
         }
 
@@ -599,7 +603,9 @@ contract Platform is Controllable, IPlatform {
         vaultUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
+            //slither-disable-next-line calls-loop
             (vaultSharePrice[i],) = IVault(vault[i]).price();
+            //slither-disable-next-line calls-loop
             vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);
         }
 
@@ -610,6 +616,7 @@ contract Platform is Controllable, IPlatform {
         nft[2] = $.strategyLogic;
         nftUserBalance = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
         }
 
@@ -617,10 +624,9 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    //slither-disable-next-line naming-convention
-    function PLATFORM_VERSION() external view returns (string memory) {
+    function platformVersion() external view returns (string memory) {
         PlatformStorage storage $ = _getStorage();
-        return $.PLATFORM_VERSION;
+        return $.platformVersion;
     }
 
     /// @inheritdoc IPlatform

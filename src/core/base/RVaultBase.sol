@@ -134,6 +134,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
 
     /// @inheritdoc IRVault
     // slither-disable-next-line reentrancy-no-eth
+    // slither-disable-next-line reentrancy-events
     function notifyTargetRewardAmount(uint i, uint amount) external {
         _updateRewards(address(0));
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
@@ -144,8 +145,8 @@ abstract contract RVaultBase is VaultBase, IRVault {
             revert IRVault.Overflow(type(uint).max / 1e18 - 1);
         }
 
-        address _rewardToken = $.rewardToken[i];
-        if(_rewardToken == address(0)){
+        address localRewardToken = $.rewardToken[i];
+        if(localRewardToken == address(0)){
             revert IRVault.RTNotFound();
         }
 
@@ -163,7 +164,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
             }
         }
 
-        IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(localRewardToken).safeTransferFrom(msg.sender, address(this), amount);
         //slither-disable-next-line timestamp
         if (block.timestamp >= $.periodFinishForToken[i]) {
             $.rewardRateForToken[i] = amount / _duration;
@@ -179,11 +180,11 @@ abstract contract RVaultBase is VaultBase, IRVault {
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint balance = IERC20(_rewardToken).balanceOf(address(this));
+        uint balance = IERC20(localRewardToken).balanceOf(address(this));
         if($.rewardRateForToken[i] > balance / _duration){
             revert IControllable.RewardIsTooBig();
         } 
-        emit RewardAdded(_rewardToken, amount);
+        emit RewardAdded(localRewardToken, amount);
     }
 
     //endregion -- User actions ----
@@ -321,15 +322,16 @@ abstract contract RVaultBase is VaultBase, IRVault {
     }
 
     /// @notice Transfer earned rewards to rewardsReceiver
-    //slither-disable-next-line timestamp
+    //slither-disable-next-line reentrancy-events
     function _payRewardTo(uint rewardTokenIndex, address owner, address receiver) internal {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
-        address _rewardToken = $.rewardToken[rewardTokenIndex];
+        address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = _earned(rewardTokenIndex, owner);
-        if (reward > 0 && IERC20(_rewardToken).balanceOf(address(this)) >= reward) {
+        //slither-disable-next-line timestamp
+        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
             $.rewardsForToken[rewardTokenIndex][owner] = 0;
-            IERC20(_rewardToken).safeTransfer(receiver, reward);
-            emit RewardPaid(owner, _rewardToken, reward);
+            IERC20(localRewardToken).safeTransfer(receiver, reward);
+            emit RewardPaid(owner, localRewardToken, reward);
         }
     }
 

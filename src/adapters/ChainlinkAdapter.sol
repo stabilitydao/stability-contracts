@@ -65,13 +65,14 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         return (uint(answer) * 1e10, updatedAt);
     }
 
+    //slither-disable-next-line unused-return
     function getAllPrices() external view returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps) {
         uint len = _assets.length();
         assets_ = _assets.values();
         prices = new uint[](len);
         timestamps = new uint[](len);
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
+            //slither-disable-next-line calls-loop
             (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData();
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;

@@ -41,7 +41,7 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
         return _implementation();
     }
 
-    function VAULT_TYPE_HASH() external view returns (bytes32) {
+    function vaultTypeHash() external view returns (bytes32) {
         bytes32 typeHash;
         bytes32 slot = _TYPE_SLOT;
         //slither-disable-next-line assembly

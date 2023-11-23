@@ -19,6 +19,6 @@ interface IVaultProxy {
   // todo change name
   /// @notice Vault type hash
   /// @return keccan256 hash of vault type ID string
-  function VAULT_TYPE_HASH() external view returns (bytes32);
+  function vaultTypeHash() external view returns (bytes32);
 
 }
