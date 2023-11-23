@@ -41,6 +41,7 @@ contract DeployPolygonForking is Script {
             upgradeAllowed: true,
             buildingPrice: 2e18
         }));
+        platform.setInitialBoost(1e18, 10 * 86400);
         vm.stopBroadcast();
     }
 
