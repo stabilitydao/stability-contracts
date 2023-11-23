@@ -169,7 +169,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             $.strategy.doHardWork();
         }
 
-        //slither-disable-next-line 1-1-uninitialized-local
+        //slither-disable-next-line uninitialized-local
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
