@@ -80,8 +80,9 @@ interface IVault is IERC165 {
     /// @return Required unique init nums
     function UNIQUE_INIT_NUMS() external view returns (uint);
 
-    /// @return Required unique init addresses and nums
-    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums)
+    /// @return uniqueInitAddresses Return required unique init addresses
+    /// @return uniqueInitNums Return required unique init nums
+    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
