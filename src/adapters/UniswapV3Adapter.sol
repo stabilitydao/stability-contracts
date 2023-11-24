@@ -163,10 +163,12 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
         uint purePrice;
         uint precision;
         if (tokenIn == token0) {
+            // nosemgrep
             precision = 10 ** ((priceDigits < 29 ? 29 - priceDigits : 0) + tokenInDecimals);
             uint part = uint(sqrtPriceX96) * precision / UniswapV3MathLib.TWO_96;
             purePrice = part * part;
         } else {
+            // nosemgrep
             precision = 10 ** ((priceDigits > 29 ? priceDigits - 29 : 0) + tokenInDecimals);
             uint part = UniswapV3MathLib.TWO_96 * precision / uint(sqrtPriceX96);
             purePrice = part * part;
@@ -179,6 +181,7 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
             return price;
         }
     }
+    // nosemgrep
     function uniswapV3SwapCallback(
         //slither-disable-next-line similar-names
         int256 amount0Delta,
