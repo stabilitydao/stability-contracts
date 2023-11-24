@@ -126,7 +126,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         uint[] memory sharePrice,
         uint[] memory tvl,
         uint[] memory totalApr,
-        uint[] memory strategyApr
+        uint[] memory strategyApr,
+        string[] memory strategySpecific
     ) {
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
@@ -138,6 +139,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         sharePrice = new uint[](len);
         totalApr = new uint[](len);
         strategyApr = new uint[](len);
+        strategySpecific = new string[](len);
         tvl = new uint[](len);
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
@@ -145,7 +147,10 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             name[i] = IERC20Metadata(vaultAddress[i]).name();
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
             vaultType[i] = vault.VAULT_TYPE();
-            strategyId[i] = vault.strategy().STRATEGY_LOGIC_ID();
+            IStrategy strategy = vault.strategy();
+            strategyId[i] = strategy.STRATEGY_LOGIC_ID();
+            //slither-disable-next-line unused-return
+            (strategySpecific[i],) = strategy.getSpecificName();
             //slither-disable-next-line unused-return
             (totalApr[i],strategyApr[i],,) = vault.getApr();
             //slither-disable-next-line unused-return

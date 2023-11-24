@@ -463,9 +463,10 @@ library FactoryLib {
         strategyId = IStrategy(strategyAddress).STRATEGY_LOGIC_ID();
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
-        specificName = IStrategy(strategyAddress).getSpecificName();
+        bool showSpecificInSymbol;
+        (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
         string memory bbAssetSymbol = bbAsset == address(0) ? '' : IERC20Metadata(bbAsset).symbol();
-        vaultSymbol = _getSymbol(vaultType, strategyId, CommonLib.implode(assetsSymbols, ""), specificName, bbAssetSymbol);
+        vaultSymbol = _getSymbol(vaultType, strategyId, CommonLib.implode(assetsSymbols, ""), showSpecificInSymbol ? specificName : '', bbAssetSymbol);
     }
 
     function getDeploymentKey(
