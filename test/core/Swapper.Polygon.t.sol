@@ -178,6 +178,8 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
+        // (uint amount0, uint amount1) = algebraAdapt_getAmountsForLiquidityity(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, int24 lowerTick, int24 upperTick, uint128 liquidity);
+
         (liquidity, amountsConsumed) = kyberAdapter.getLiquidityForAmounts(PolygonLib.POOL_KYBER_USDC_USDT, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);

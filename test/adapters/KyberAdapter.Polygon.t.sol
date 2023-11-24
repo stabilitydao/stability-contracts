@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import "../../src/interfaces/IAmmAdapter.sol";
+import "../../src/interfaces/ICAmmAdapter.sol";
 import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../base/chains/PolygonSetup.sol";
 
 contract KyberAdapterTest is PolygonSetup {
     bytes32 public _hash;
-    IAmmAdapter adapter;
+    ICAmmAdapter adapter;
 
     constructor() {
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.KYBER));
-        adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
+        adapter = ICAmmAdapter(platform.ammAdapter(_hash).proxy);
     }
 
     function testViewMethods() public {
-        assertEq(keccak256(bytes(adapter.DEX_ADAPTER_ID())), _hash);
+        assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
         vm.expectRevert(IAmmAdapter.NotSupportedByCAMM.selector);
         adapter.getLiquidityForAmounts(address(0), new uint[](2));
@@ -45,6 +45,18 @@ contract KyberAdapterTest is PolygonSetup {
         uint[] memory proportions = adapter.getProportions(pool);
         assertGt(proportions[0], 0);
         assertGt(proportions[1], 0);
+
+        uint prop0 = adapter.getProportion0(pool);
+        assertEq(prop0, proportions[0]);
+
+        uint price;
+
+        price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDC_DAI, PolygonLib.TOKEN_USDC, 276240);
+        assertEq(price, 991632976171952929);
+        // console.log(price);
+        price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDC_DAI, PolygonLib.TOKEN_DAI, 276240);
+        assertEq(price, 1008437);
+        // console.log(price);
     }
 
 }
