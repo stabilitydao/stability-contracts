@@ -371,5 +371,10 @@ interface IPlatform {
     /// @param dexAggRouter Address of DeX aggreagator router
     function removeDexAggregator(address dexAggRouter) external;
 
+    /// @notice Change initial boost rewards settings
+    /// @param minInitialBoostPerDay_ Minimal initial boost rewards per day USD amount which needs to create rewarding vault
+    /// @param minInitialBoostDuration_ Minimal boost rewards vesting duration for initial boost
+    function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external;
+
     //endregion -- Write functions -----
 }

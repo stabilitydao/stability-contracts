@@ -5,20 +5,40 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @dev Core interface of strategy logic
 interface IStrategy is IERC165 {
-    /// @dev A single universal initializer for all strategy implementations.
-    /// @param addresses All addresses that strategy requires for initialization. Min array length is 2.
-    ///        addresses[0]: platform (required)
-    ///        addresses[1]: vault (required)
-    ///        addresses[2]: initStrategyAddresses[0] (optional)
-    ///        addresses[3]: initStrategyAddresses[1] (optional)
-    ///        addresses[n]: initStrategyAddresses[n - 2] (optional)
-    /// @param nums All uint values that strategy requires for initialization. Min array length is 0.
-    /// @param ticks All int24 values that strategy requires for initialization. Min array length is 0.
-    function initialize(
-        address[] memory addresses,
-        uint[] memory nums,
-        int24[] memory ticks
-    ) external;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
+    event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.StrategyBase
+    struct StrategyBaseStorage {
+        /// @inheritdoc IStrategy
+        address vault;
+        /// @inheritdoc IStrategy
+        uint total;
+        /// @inheritdoc IStrategy
+        uint lastHardWork;
+        /// @inheritdoc IStrategy
+        uint lastApr;
+        /// @inheritdoc IStrategy
+        uint lastAprCompound;
+        /// @inheritdoc IStrategy
+        address[] _assets;
+        /// @inheritdoc IStrategy
+        address _underlying;
+        string _id;
+        uint _exchangeAssetIndex;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/    
 
     /// @dev Strategy logic string ID
     function STRATEGY_LOGIC_ID() external view returns(string memory);
@@ -101,6 +121,25 @@ interface IStrategy is IERC165 {
         uint[] memory nums,
         int24[] memory ticks
     );
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev A single universal initializer for all strategy implementations.
+    /// @param addresses All addresses that strategy requires for initialization. Min array length is 2.
+    ///        addresses[0]: platform (required)
+    ///        addresses[1]: vault (required)
+    ///        addresses[2]: initStrategyAddresses[0] (optional)
+    ///        addresses[3]: initStrategyAddresses[1] (optional)
+    ///        addresses[n]: initStrategyAddresses[n - 2] (optional)
+    /// @param nums All uint values that strategy requires for initialization. Min array length is 0.
+    /// @param ticks All int24 values that strategy requires for initialization. Min array length is 0.
+    function initialize(
+        address[] memory addresses,
+        uint[] memory nums,
+        int24[] memory ticks
+    ) external;
 
     /// @notice Invest strategy assets. Amounts of assets must be already on strategy contract balance.
     /// Only vault can call this.

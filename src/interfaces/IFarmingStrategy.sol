@@ -4,12 +4,34 @@ pragma solidity ^0.8.22;
 /// @dev Mostly this interface need for front-end and tests for interacting with farming strategies
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IFarmingStrategy {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    
     event RewardsClaimed(uint[] amounts);
 
-    //region ----- Custom Errors -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERRORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     error BadFarm();
     error IncorrectStrategyId();
-    //endregion -- Custom Errors -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.FarmingStrategyBase
+    struct FarmingStrategyBaseStorage {
+        /// @inheritdoc IFarmingStrategy
+        uint farmId;
+        address[] _rewardAssets;
+        uint[] _rewardsOnBalance;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Index of the farm used by initialized strategy
     function farmId() external view returns (uint);

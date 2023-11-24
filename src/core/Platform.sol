@@ -385,6 +385,11 @@ contract Platform is Controllable, IPlatform {
         emit AddBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
     }
 
+    /// @inheritdoc IPlatform
+    function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external onlyOperator {
+        _setInitialBoost(minInitialBoostPerDay_, minInitialBoostDuration_);
+    }
+
     //endregion -- Restricted actions ----
 
     //region ----- View functions -----

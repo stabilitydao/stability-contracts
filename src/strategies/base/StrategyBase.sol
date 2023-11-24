@@ -23,32 +23,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION = 0xb14b643f49bed6a2c6693bbd50f68dc950245db265c66acadbfa51ccc8c3ba00;
 
-
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    struct StrategyBaseStorage {
-        /// @inheritdoc IStrategy
-        address vault;
-        /// @inheritdoc IStrategy
-        uint total;
-        /// @inheritdoc IStrategy
-        uint lastHardWork;
-        /// @inheritdoc IStrategy
-        uint lastApr;
-        /// @inheritdoc IStrategy
-        uint lastAprCompound;
-        /// @inheritdoc IStrategy
-        address[] _assets;
-        /// @inheritdoc IStrategy
-        address _underlying;
-        string _id;
-        uint _exchangeAssetIndex;
-    }
-
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -104,13 +78,13 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     function doHardWork() external onlyVault {
-        //StrategyBaseStorage storage $ = _getStrategyBaseStorage();
-        address _vault = _getStrategyBaseStorage().vault;
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        address _vault = $.vault;
         //slither-disable-next-line unused-return
         (uint tvl,) = IVault(_vault).tvl();
         if (tvl > 0) {
             address _platform = platform();
-            uint exchangeAssetIndex = _getStrategyBaseStorage()._exchangeAssetIndex;
+            uint exchangeAssetIndex = $._exchangeAssetIndex;
 
             (
                 address[] memory __assets,
@@ -121,18 +95,18 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
             __amounts[exchangeAssetIndex] += _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
-            uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, _getStrategyBaseStorage()._id, __assets, __amounts);
+            uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, $._id, __assets, __amounts);
             
             bool needCompound = _processRevenue(__assets, amountsRemaining);
             
-            uint totalBefore = _getStrategyBaseStorage().total;
+            uint totalBefore = $.total;
 
             if (needCompound) {
                 _compound();
             }
             
-            (_getStrategyBaseStorage().lastApr, _getStrategyBaseStorage().lastAprCompound) = StrategyLib.emitApr(_getStrategyBaseStorage().lastHardWork, _platform, __assets, __amounts, tvl, totalBefore, _getStrategyBaseStorage().total, _getStrategyBaseStorage().vault);
-            _getStrategyBaseStorage().lastHardWork = block.timestamp;
+            StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
+            $.lastHardWork = block.timestamp;
         }
     }
 
@@ -142,9 +116,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
-        return 
-            interfaceId == type(IStrategy).interfaceId
-            || super.supportsInterface(interfaceId);
+        return  interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function STRATEGY_LOGIC_ID() public view virtual returns(string memory);
@@ -307,7 +279,4 @@ abstract contract StrategyBase is Controllable, IStrategy {
         }
     }
 
-    function _balance(address token) internal view returns (uint) {
-        return IERC20(token).balanceOf(address(this));
-    }
 }

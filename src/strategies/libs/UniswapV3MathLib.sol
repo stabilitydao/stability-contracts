@@ -18,6 +18,37 @@ library UniswapV3MathLib {
         uint feeGrowthGlobal;
     }
 
+    function calcPriceOut(
+        address tokenIn,
+        address token0,
+        uint160 sqrtPriceX96,
+        uint256 tokenInDecimals,
+        uint256 tokenOutDecimals,
+        uint amount
+    ) external pure returns (uint) {
+        uint divider = tokenOutDecimals < 18 ? _max(10 ** tokenOutDecimals / 10 ** tokenInDecimals, 1) : 1;
+
+        uint priceDigits = _countDigits(uint(sqrtPriceX96));
+        uint purePrice;
+        uint precision;
+        if (tokenIn == token0) {
+            precision = 10 ** ((priceDigits < 29 ? 29 - priceDigits : 0) + tokenInDecimals);
+            uint part = uint(sqrtPriceX96) * precision / TWO_96;
+            purePrice = part * part;
+        } else {
+            precision = 10 ** ((priceDigits > 29 ? priceDigits - 29 : 0) + tokenInDecimals);
+            uint part = TWO_96 * precision / uint(sqrtPriceX96);
+            purePrice = part * part;
+        }
+        uint price = purePrice / divider / precision / (precision > 1e18 ? (precision / 1e18) : 1);
+
+        if (amount != 0) {
+            return price * amount / (10 ** tokenInDecimals);
+        } else {
+            return price;
+        }
+    }
+
     /// @dev Working only for Uniswap V3 native fee calculations. Not usable for Kyber's auto compounding fees and other specific implementations.
     function computeFeesEarned(
         ComputeFeesEarnedCommonParams memory params,

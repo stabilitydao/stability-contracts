@@ -27,12 +27,13 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     string public constant VERSION = '1.0.0';
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickswapV3StaticFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION = 0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
+    bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGY_STORAGE_LOCATION = 0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @custom:storage-location erc7201:stability.QuickswapV3StaticFarmStrategy
     struct QuickSwapV3StaticFarmStrategyStorage {
         int24 lowerTick;
         int24 upperTick;
@@ -178,6 +179,12 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
         return StrategyIdLib.QUICKSWAPV3_STATIC_FARM;
+    }
+
+    /// @inheritdoc IStrategy
+    function getSpecificName() external view override returns (string memory) {
+        IFactory.Farm memory farm = _getFarm();
+        return string.concat(CommonLib.i2s(farm.ticks[0]), " ", CommonLib.i2s(farm.ticks[1]));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -375,7 +382,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _getQuickStaticFarmStorage() internal pure returns (QuickSwapV3StaticFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := QUICKSWAPV3STATICFARMSTRATEGYSTORAGE_STORAGE_LOCATION
+            $.slot := QUICKSWAPV3STATICFARMSTRATEGY_STORAGE_LOCATION
         }
     }
 
