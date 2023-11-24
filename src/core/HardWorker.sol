@@ -226,8 +226,7 @@ contract HardWorker is Controllable, IHardWorker {
         if (isServer) {
             if(gasCost > 0)
                 if(address(this).balance >= gasCost){
-                    //slither-disable-next-line unused-return
-                    //slither-disable-next-line low-level-calls
+                    //slither-disable-next-line unused-return low-level-calls
                     (bool success, ) = msg.sender.call{value: gasCost}("");
                     if(!success){
                         revert IControllable.ETHTransferFailed();
@@ -302,9 +301,8 @@ contract HardWorker is Controllable, IHardWorker {
             $.slot := HARDWORKER_STORAGE_LOCATION
         }
     }
-
-    //slither-disable-next-line timestamp
-    //slither-disable-next-line cyclomatic-complexity
+    
+    //slither-disable-next-line cyclomatic-complexity timestamp
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
         HardWorkerStorage storage $ = _getStorage();
         IPlatform _platform = IPlatform(platform());

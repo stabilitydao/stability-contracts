@@ -199,8 +199,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    //slither-disable-next-line reentrancy-no-eth
-    //slither-disable-next-line reentrancy-events
+    //slither-disable-next-line reentrancy-events reentrancy-no-eth
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
@@ -211,8 +210,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         INonfungiblePositionManager __nft = $._nft;
         
         // tokenId == 0 mean that there is no NFT managed by the strategy now
-        //slither-disable-next-line incorrect-equality
-        //slither-disable-next-line timestamp
+        //slither-disable-next-line timestamp incorrect-equality
         if (tokenId == 0) {
             address[] memory _assets = assets(); 
             //slither-disable-next-line unused-return
@@ -257,8 +255,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    //slither-disable-next-line timestamp
-    //slither-disable-next-line reentrancy-events
+    //slither-disable-next-line reentrancy-events timestamp
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         IFarmingCenter __farmingCenter = $._farmingCenter;
@@ -399,9 +396,8 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
         return IncentiveKey(_$._rewardAssets[0], _$._rewardAssets[1], pool(), $._startTime, $._endTime);
     }
-
-    //slither-disable-next-line reentrancy-no-eth
-    //slither-disable-next-line reentrancy-events
+    
+    //slither-disable-next-line reentrancy-events reentrancy-no-eth
     function _collectRewardsToState(uint tokenId, IncentiveKey memory key) internal {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();

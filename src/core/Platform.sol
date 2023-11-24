@@ -233,9 +233,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    //slither-disable-next-line reentrancy-benign
-    //slither-disable-next-line reentrancy-no-eth
-    //slither-disable-next-line calls-loop
+    //slither-disable-next-line reentrancy-benign reentrancy-no-eth calls-loop
     function upgrade() external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint ts = $.platformUpgradeTimelock;
@@ -617,8 +615,7 @@ contract Platform is Controllable, IPlatform {
         vaultUserBalance = new uint[](len);
         // nosemgrep
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
-            //slither-disable-next-line calls-loop
+            //slither-disable-next-line calls-loop unused-return
             (vaultSharePrice[i],) = IVault(vault[i]).price();
             //slither-disable-next-line calls-loop
             vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);

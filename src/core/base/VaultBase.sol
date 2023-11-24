@@ -124,8 +124,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (gasCost > 0) {
             bool canCompensate = payable(address(this)).balance >= gasCost;
             if (canCompensate) {
-                //slither-disable-next-line unused-return
-                //slither-disable-next-line low-level-calls
+                //slither-disable-next-line low-level-calls unused-return
                 (bool success, ) = msg.sender.call{value: gasCost}("");
                 if(!success) {
                     revert IControllable.ETHTransferFailed();

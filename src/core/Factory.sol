@@ -155,8 +155,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     /// @inheritdoc IFactory
     
-    //slither-disable-next-line reentrancy-benign
-    //slither-disable-next-line cyclomatic-complexity
+    //slither-disable-next-line cyclomatic-complexity reentrancy-benign
     function deployVaultAndStrategy(
         string memory vaultType,
         string memory strategyId,
