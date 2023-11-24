@@ -82,9 +82,9 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);
             // unreal but better to check
-            if(priceAfter > priceBefore){
-                revert IAmmAdapter.PriceIncreased();
-            }
+            // if(priceAfter > priceBefore){
+            //     revert IAmmAdapter.PriceIncreased();
+            // }
 
             uint priceImpact = (priceBefore - priceAfter) * ConstantsLib.DENOMINATOR / priceBefore;
             if(priceImpact >= priceImpactTolerance){

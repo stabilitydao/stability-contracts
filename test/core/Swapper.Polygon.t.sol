@@ -92,12 +92,12 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
         swapper.addPools(pools, true);
 
-        deal(PolygonLib.TOKEN_USDC, address(this), 2e6);
-        IERC20(PolygonLib.TOKEN_USDC).approve(address(swapper), 2e6);
-        deal(PolygonLib.TOKEN_USDT, address(this), 2e6);
-        IERC20(PolygonLib.TOKEN_USDT).approve(address(swapper), 2e6);
-        deal(PolygonLib.TOKEN_DAI, address(this), 2e18);
-        IERC20(PolygonLib.TOKEN_DAI).approve(address(swapper), 2e18);
+        deal(PolygonLib.TOKEN_USDC, address(this), 100002e6);
+        IERC20(PolygonLib.TOKEN_USDC).approve(address(swapper), 100002e6);
+        deal(PolygonLib.TOKEN_USDT, address(this), 1002e6);
+        IERC20(PolygonLib.TOKEN_USDT).approve(address(swapper), 1002e6);
+        deal(PolygonLib.TOKEN_DAI, address(this), 1002e18);
+        IERC20(PolygonLib.TOKEN_DAI).approve(address(swapper), 1002e18);
     }
 
     function testGetPrices() public {
@@ -204,16 +204,22 @@ contract SwapperPolygonTest is Test, PolygonSetup {
 
     function testSwap1Pool() public {
         // uniswap v3
+        vm.expectRevert();
+        swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, 100000e6, 1); // 0.001%
         swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, 1e6, 1_000); // 1%
     }
 
     function testSwap2Pools() public {
         // kyber - uniswapv3
+        vm.expectRevert();
+        swapper.swap(PolygonLib.TOKEN_DAI, PolygonLib.TOKEN_KNC, 1000e18, 1); // 0.001%
         swapper.swap(PolygonLib.TOKEN_DAI, PolygonLib.TOKEN_KNC, 1e18, 1_000); // 1%
     }
 
     function testSwap4Pools() public {
         // quickswap -> uniswapv3 -> quickswap -> quuickswap
+        vm.expectRevert();
+        swapper.swap(PolygonLib.TOKEN_USDT, PolygonLib.TOKEN_dQUICK, 100e6, 1); // 0.001%
         swapper.swap(PolygonLib.TOKEN_USDT, PolygonLib.TOKEN_dQUICK, 1e6, 1_000); // 1%
     }
 

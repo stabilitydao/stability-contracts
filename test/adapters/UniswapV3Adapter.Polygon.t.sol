@@ -64,6 +64,8 @@ contract UniswapV3AdapterTest is PolygonSetup {
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_DAI, 276420);
         assertEq(price, 990449);
         // console.log(price);
-    }
 
+        vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
+        UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, '');
+    }
 }

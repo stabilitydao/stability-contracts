@@ -57,6 +57,9 @@ contract KyberAdapterTest is PolygonSetup {
         price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDC_DAI, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);
         // console.log(price);
+
+        vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
+        KyberAdapter(address(adapter)).swapCallback(0, 0, '');
     }
 
 }

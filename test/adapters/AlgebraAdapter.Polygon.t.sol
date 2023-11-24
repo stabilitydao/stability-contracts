@@ -61,6 +61,9 @@ contract AlgebraAdapterTest is PolygonSetup {
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDC_DAI, PolygonLib.TOKEN_DAI, 276420);
         assertEq(price, 990449);
         // console.log(price);
+
+        vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
+        AlgebraAdapter(address(adapter)).algebraSwapCallback(0, 0, '');
     }
 
 }
