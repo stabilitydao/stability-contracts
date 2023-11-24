@@ -164,7 +164,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 IStrategy strategy = IVault(vars.vault).strategy();
                 address[] memory assets = strategy.assets();
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
-                assertEq(IAmmAdapter(vars.ammAdapter).dexAdapterID(), ILPStrategy(address(strategy)).ammAdapterId());
+                assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
                 vars.pool = ILPStrategy(address (strategy)).pool();
                 console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
 

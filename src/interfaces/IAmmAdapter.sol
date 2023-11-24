@@ -5,12 +5,17 @@ pragma solidity ^0.8.22;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IAmmAdapter {
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Custom Errors -----
     error PriceIncreased();
     error WrongCallbackAmount();
     error NotSupportedByCAMM();
-    //endregion -- Custom Errors -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event SwapInPool (
         address pool,
@@ -22,13 +27,21 @@ interface IAmmAdapter {
         uint amountOut
     );
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     struct SwapCallbackData {
         address tokenIn;
         uint amount;
     }
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @notice String ID of the adapter
-    function dexAdapterID() external view returns(string memory);
+    function ammAdapterId() external view returns(string memory);
 
     /// @notice Tokens of a pool supported by the adapter
     function poolTokens(address pool) external view returns (address[] memory);
@@ -71,6 +84,23 @@ interface IAmmAdapter {
     /// @return Proportions with 5 decimals precision. Max is 100_000, min is 0.
     function getProportions(address pool) external view returns (uint[] memory);
 
+    /// @notice Current price in pool without amount impact
+    /// @param pool Address of a pool supported by the adapter
+    /// @param tokenIn Token for sell
+    /// @param tokenOut Token for buy
+    /// @param amount Amount of tokenIn. For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
+    /// @return Amount of tokenOut with tokenOut decimals precision
+    function getPrice(
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        uint amount
+    ) external view returns (uint);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @notice Swap given tokenIn for tokenOut. Assume that tokenIn already sent to this contract.
     /// @param pool Address of a pool supported by the adapter
     /// @param tokenIn Token for sell
@@ -84,18 +114,6 @@ interface IAmmAdapter {
         address recipient,
         uint priceImpactTolerance
     ) external;
-
-    /// @notice Current price in pool without amount impact
-    /// @param pool Address of a pool supported by the adapter
-    /// @param tokenIn Token for sell
-    /// @param tokenOut Token for buy
-    /// @param amount Amount of tokenIn. For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
-    function getPrice(
-        address pool,
-        address tokenIn,
-        address tokenOut,
-        uint amount
-    ) external view returns (uint);
 
     /// @dev Initializer for proxied adapter
     function init(address platform) external;

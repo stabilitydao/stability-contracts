@@ -181,6 +181,12 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return StrategyIdLib.QUICKSWAPV3_STATIC_FARM;
     }
 
+    /// @inheritdoc IStrategy
+    function getSpecificName() external view override returns (string memory) {
+        IFactory.Farm memory farm = _getFarm();
+        return string.concat(CommonLib.i2s(farm.ticks[0]), " ", CommonLib.i2s(farm.ticks[1]));
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
