@@ -14,6 +14,7 @@ import "../../interfaces/IPlatform.sol";
 ///         Rewards are distributed smoothly by vesting with variable periods.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 abstract contract RVaultBase is VaultBase, IRVault {
     using SafeERC20 for IERC20;
 
@@ -73,6 +74,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint addressesLength = vaultInitAddresses.length;
         $.rewardTokensTotal = addressesLength;
+        // nosemgrep
         for (uint i; i < addressesLength; ++i) {
             $.rewardToken[i] = vaultInitAddresses[i];
             $.duration[i] = vaultInitNums[i];
@@ -206,6 +208,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         uint len = $.rewardTokensTotal;
         address[] memory rts = new address[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             rts[i] = $.rewardToken[i];
         }
@@ -272,6 +275,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     function _getAllRewards(address owner, address receiver) internal {
         _updateRewards(owner);
         uint len = _getRVaultBaseStorage().rewardTokensTotal;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             _payRewardTo(i, owner, receiver);
         }
@@ -283,15 +287,18 @@ abstract contract RVaultBase is VaultBase, IRVault {
         uint _rewardPerTokenStoredForToken = _rewardPerToken(tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
         $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable(tokenIndex);
-        if (account != address(0) && account != address(this)) {
-            $.rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
-            $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
+        if (account != address(0)) {
+            if(account != address(this)) {
+                $.rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
+                $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
+            }
         }
     }
 
     /// @dev Use it for any underlying movements
     function _updateRewards(address account) internal {
         uint len = _getRVaultBaseStorage().rewardTokensTotal;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             _updateReward(account, i);
         }
@@ -328,10 +335,12 @@ abstract contract RVaultBase is VaultBase, IRVault {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = _earned(rewardTokenIndex, owner);
         //slither-disable-next-line timestamp
-        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
-            $.rewardsForToken[rewardTokenIndex][owner] = 0;
-            IERC20(localRewardToken).safeTransfer(receiver, reward);
-            emit RewardPaid(owner, localRewardToken, reward);
+        if (reward > 0) {
+            if(IERC20(localRewardToken).balanceOf(address(this)) >= reward){
+                $.rewardsForToken[rewardTokenIndex][owner] = 0;
+                IERC20(localRewardToken).safeTransfer(receiver, reward);
+                emit RewardPaid(owner, localRewardToken, reward);
+            }
         }
     }
 

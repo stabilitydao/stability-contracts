@@ -6,6 +6,14 @@ import "../../interfaces/IPlatform.sol";
 
 library RVaultLib {
     uint public constant MAX_COMPOUND_RATIO = 90_000;
+    
+    // Custom Errors
+    error NoBBToken();
+    error NotAllowedBBToken();
+    error IncorrectNums();
+    error ZeroToken();
+    error ZeroVestingDuration();
+    error TooHighCompoundRation();
 
     function baseInitCheck(
         address platform_,
@@ -13,13 +21,14 @@ library RVaultLib {
         uint[] memory vaultInitNums
     ) external view {
         uint addressesLength = vaultInitAddresses.length;
-        require (addressesLength > 0, "RVaultBase: no bbToken");
-        require(IPlatform(platform_).allowedBBTokenVaults(vaultInitAddresses[0]) > 0, "RVaultBase: not allowed bbToken");
-        require (vaultInitNums.length == addressesLength * 2, "RVaultBase: incorrect nums");
+        if(addressesLength == 0) revert NoBBToken();
+        if(IPlatform(platform_).allowedBBTokenVaults(vaultInitAddresses[0]) == 0) revert NotAllowedBBToken();
+        if(vaultInitNums.length != addressesLength * 2) revert IncorrectNums();
+        // nosemgrep
         for (uint i; i < addressesLength; ++i) {
-            require(vaultInitAddresses[i] != address(0), "RVaultBase: zero token");
-            require(vaultInitNums[i] > 0, "RVaultBase: zero vesting duration");
+            if(vaultInitAddresses[i] == address(0)) revert ZeroToken();
+            if(vaultInitNums[i] == 0) revert ZeroVestingDuration();
         }
-        require(vaultInitNums[addressesLength * 2 - 1] <= MAX_COMPOUND_RATIO, "RVaultBase: too high compoundRatio");
+        if(vaultInitNums[addressesLength * 2 - 1] > MAX_COMPOUND_RATIO) revert TooHighCompoundRation();
     }
 }

@@ -10,6 +10,7 @@ import "../../interfaces/IPlatform.sol";
 /// @dev Base core contract.
 ///      It store an immutable platform proxy address in the storage and provides access control to inherited contracts.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 abstract contract Controllable is Initializable, IControllable, ERC165 {
     using SlotsLib for bytes32;
     
@@ -92,8 +93,9 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
 
     function _requireGovernanceOrMultisig() internal view {
         IPlatform _platform = IPlatform(platform());
-        if(_platform.governance() != msg.sender && _platform.multisig() != msg.sender){
-            revert NotGovernanceAndNotMultisig();
+        if(_platform.governance() != msg.sender){
+            if(_platform.multisig() != msg.sender)
+                revert NotGovernanceAndNotMultisig();
         }
     }
 

@@ -135,7 +135,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function addFarms(Farm[] memory farms_) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         uint len = farms_.length;
-        //nosemgrep
+        // nosemgrep
         for (uint i = 0; i < len; ++i) {
             $.farms.push(farms_[i]);
         }
@@ -191,6 +191,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
         if (vars.buildingPermitToken != address(0)) {
             uint balance = IERC721Enumerable(vars.buildingPermitToken).balanceOf(msg.sender);
+            // nosemgrep
             for (uint i; i < balance; ++i) {
                 //slither-disable-next-line calls-loop
                 uint tokenId = IERC721Enumerable(vars.buildingPermitToken).tokenOfOwnerByIndex(msg.sender, i);
@@ -230,6 +231,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             address[] memory initStrategyAddresses = new address[](2 + addressesLength);
             initStrategyAddresses[0] = vars.platform;
             initStrategyAddresses[1] = vault;
+            // nosemgrep
             for (uint i = 2; i < 2 + addressesLength; ++i) {
                 initStrategyAddresses[i] = strategyInitAddresses[i - 2];
             }
@@ -354,6 +356,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         upgradeAllowed = new bool[](len);
         buildingPrice = new uint[](len);
         extra = new bytes32[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             VaultConfig memory config = $.vaultConfig[hashes[i]];
             vaultType[i] = config.vaultType;
@@ -387,6 +390,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         tokenURI = new string[](len);
         extra = new bytes32[](len);
         IStrategyLogic strategyLogicNft = IStrategyLogic(IPlatform(platform()).strategyLogic());
+        // nosemgrep
         for (uint i; i < len; ++i) {
             StrategyLogicConfig memory config = $.strategyLogicConfig[hashes[i]];
             id[i] = config.id;

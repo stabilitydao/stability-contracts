@@ -189,8 +189,9 @@ contract AlgebraAdapter is Controllable, IAmmAdapter {
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
-        if(amount0Delta <= 0 && amount1Delta <= 0){
-            revert IAmmAdapter.WrongCallbackAmount();
+        if(amount0Delta <= 0){
+            if(amount1Delta <= 0)
+                revert IAmmAdapter.WrongCallbackAmount();
         }
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);

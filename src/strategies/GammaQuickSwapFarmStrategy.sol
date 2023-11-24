@@ -124,34 +124,38 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
         uint localTotal;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
-                ++localTotal;
+            if (farm.status == 0) {
+                if(CommonLib.eq(farm.strategyLogicId, strategyLogicID())) ++localTotal;
             }
         }
 
         variants = new string[](localTotal);
         nums = new uint[](localTotal);
         localTotal = 0;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
-                nums[localTotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTotal] = string.concat(
-                    "Earn ",
+            if (farm.status == 0) {
+                if(CommonLib.eq(farm.strategyLogicId, strategyLogicID())){
+                    nums[localTotal] = i;
                     //slither-disable-next-line calls-loop
-                    CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-                    " on QuickSwap by ",
-                    //slither-disable-next-line calls-loop
-                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-                    " Gamma ",
-                    //slither-disable-next-line calls-loop
-                    GammaLib.getPresetName(farm.nums[1]),
-                    " LP"
-                );
-                ++localTotal;
+                    variants[localTotal] = string.concat(
+                        "Earn ",
+                        //slither-disable-next-line calls-loop
+                        CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+                        " on QuickSwap by ",
+                        //slither-disable-next-line calls-loop
+                        CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+                        " Gamma ",
+                        //slither-disable-next-line calls-loop
+                        GammaLib.getPresetName(farm.nums[1]),
+                        " LP"
+                    );
+                    ++localTotal;
+                }
             }
         }
     }
@@ -188,6 +192,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         amounts = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
             amounts[i] = rewarder.pendingToken($.pid, address(this));
@@ -206,6 +211,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (claimRevenue) {
             (,,,uint[] memory rewardAmounts) = _claimRevenue();
             uint len = rewardAmounts.length;
+            // nosemgrep
             for (uint i; i < len; ++i) {
                 _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
@@ -266,28 +272,32 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = __rewardAssets.length;
         __rewardAmounts = new uint[](len);
         uint[] memory rewardBalanceBefore = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         $.masterChef.harvest($.pid, address(this));
+        // nosemgrep
         for (uint i; i < len; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
         }
 
         // special for farms with first 2 duplicate tokens
-        if (len > 1 && __rewardAssets[0] == __rewardAssets[1]) {
-            __rewardAmounts[0] = 0;
+        if (len > 1) {
+            if(__rewardAssets[0] == __rewardAssets[1]) __rewardAmounts[0] = 0;
         }
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
-        if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
-            uint valueToReceive;
-            (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
-            if (valueToReceive > 10) {
-                _depositAssets(amountsToDeposit, false);
+        if (amountsToDeposit[0] > 1){
+            if(amountsToDeposit[1] > 1){
+                uint valueToReceive;
+                (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
+                if (valueToReceive > 10) {
+                    _depositAssets(amountsToDeposit, false);
+                }
             }
         }
     }

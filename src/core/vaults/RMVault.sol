@@ -62,6 +62,7 @@ contract RMVault is RVaultBase, IManagedVault {
         if(addressesLength < _rewardTokensTotal - 1){
             revert IManagedVault.CantRemoveRewardToken();
         }
+        // nosemgrep
         for (uint i = 1; i < _rewardTokensTotal; ++i) {
             if(rewardToken(i) != addresses[i - 1]){
                 revert IManagedVault.IncorrectRewardToken(addresses[i - 1]);
@@ -72,6 +73,7 @@ contract RMVault is RVaultBase, IManagedVault {
         }
         RVaultBaseStorage storage _$ = _getRVaultBaseStorage();
         if (addressesLength > _rewardTokensTotal - 1) {
+            // nosemgrep
             for (uint i = _rewardTokensTotal; i < addressesLength + 1; ++i) {
                 uint i_1 = i - 1;
                 if(addresses[i_1] == address(0)){

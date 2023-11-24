@@ -313,19 +313,21 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         __amounts = new uint[](2);
         __rewardAmounts = new uint[](2);
         uint tokenId = $._tokenId;
-        if (tokenId > 0 && total() > 0) {
-            (__amounts[0], __amounts[1]) = __farmingCenter.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
-            //slither-disable-next-line reentrancy-events
-            emit FeesClaimed(__amounts);
-            (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
-            if (__rewardAmounts[0] > 0) {
-                __rewardAmounts[0] = __farmingCenter.claimReward(__rewardAssets[0], address(this), 0, __rewardAmounts[0]);
+        if (tokenId > 0) {
+            if(total() > 0) {
+                (__amounts[0], __amounts[1]) = __farmingCenter.collect(INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max));
+                //slither-disable-next-line reentrancy-events
+                emit FeesClaimed(__amounts);
+                (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
+                if (__rewardAmounts[0] > 0) {
+                    __rewardAmounts[0] = __farmingCenter.claimReward(__rewardAssets[0], address(this), 0, __rewardAmounts[0]);
+                }
+                if (__rewardAmounts[1] > 0) {
+                    __rewardAmounts[1] = __farmingCenter.claimReward(__rewardAssets[1], address(this), 0, __rewardAmounts[1]);
+                }
+                //slither-disable-next-line reentrancy-events
+                emit RewardsClaimed(__rewardAmounts);
             }
-            if (__rewardAmounts[1] > 0) {
-                __rewardAmounts[1] = __farmingCenter.claimReward(__rewardAssets[1], address(this), 0, __rewardAmounts[1]);
-            }
-            //slither-disable-next-line reentrancy-events
-            emit RewardsClaimed(__rewardAmounts);
         }
         
         uint fee = __$._feesOnBalance[0];

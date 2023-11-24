@@ -20,6 +20,7 @@ import "../interfaces/IVault.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -206,6 +207,7 @@ contract Platform is Controllable, IPlatform {
         if(len != newImplementations.length){
             revert IncorrectArrayLength();
         }
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if(proxies[i] == address(0)){
                 revert IControllable.IncorrectZeroArgument();
@@ -246,6 +248,7 @@ contract Platform is Controllable, IPlatform {
         }
         PlatformUpgrade memory platformUpgrade = $._pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
@@ -300,11 +303,12 @@ contract Platform is Controllable, IPlatform {
     function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint len = dexAggRouter.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
                 revert IControllable.IncorrectZeroArgument();
             }
-            //nosemgrep
+            // nosemgrep
             if (!$._dexAggregators.add(dexAggRouter[i])) {
                 continue;
             }
@@ -444,6 +448,7 @@ contract Platform is Controllable, IPlatform {
         ids = new string[](len);
         proxies = new address[](len);
         bytes32[] memory _ammAdapterIdHash = $._ammAdapterIdHash;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             bytes32 hash = _ammAdapterIdHash[i];
             AmmAdapter memory __ammAdapter = $._ammAdapter[hash];
@@ -478,6 +483,7 @@ contract Platform is Controllable, IPlatform {
         bbToken = $._allowedBBTokensVaults.keys();
         uint len = bbToken.length;
         vaultsLimit = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (, vaultsLimit[i]) = $._allowedBBTokensVaults.tryGet(bbToken[i]);
@@ -492,8 +498,9 @@ contract Platform is Controllable, IPlatform {
         uint[] memory limit = new uint[](len);
         //slither-disable-next-line uninitialized-local
         uint k;
+        // nosemgrep
         for (uint i; i < len; ++i) {
-            //nosemgrep
+            // nosemgrep
             limit[i] = $._allowedBBTokensVaults.get(allBbTokens[i]);
             if(limit[i] > 0) ++k;
         }
@@ -501,6 +508,7 @@ contract Platform is Controllable, IPlatform {
         vaultsLimit = new uint[](k);
         //slither-disable-next-line uninitialized-local
         uint y;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (limit[i] == 0) {
                 continue;
@@ -595,6 +603,7 @@ contract Platform is Controllable, IPlatform {
         uint len = token.length;
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
@@ -606,6 +615,7 @@ contract Platform is Controllable, IPlatform {
         len = vault.length;
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             //slither-disable-next-line calls-loop
@@ -620,6 +630,7 @@ contract Platform is Controllable, IPlatform {
         nft[1] = $.vaultManager;
         nft[2] = $.strategyLogic;
         nftUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
             nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
@@ -755,7 +766,7 @@ contract Platform is Controllable, IPlatform {
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
         PlatformStorage storage $ = _getStorage();
         address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
-        if(feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)){
+        if(feeShareEcosystem != 0){
             if(ecosystemRevenueReceiver_ == address(0)){
                 revert IControllable.IncorrectZeroArgument();
             } else {
@@ -795,6 +806,7 @@ contract Platform is Controllable, IPlatform {
      */
     function _addTokens(EnumerableSet.AddressSet storage tokenSet, address[] memory tokens) internal {
         uint len = tokens.length;
+        // nosemgrep
         for (uint i = 0; i < len; ++i) {
             if (!tokenSet.add(tokens[i])) {
                 revert TokenAlreadyExistsInSet({token: tokens[i]});

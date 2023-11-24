@@ -18,6 +18,7 @@ interface ISwapper {
   error UnknownAMMAdapter();
   error LessThenThreshold(uint minimumAmount);
   error NoRouteFound();
+  error NoRoutesForAssets();
   //endregion -- Custom Errors -----
 
   struct PoolData {

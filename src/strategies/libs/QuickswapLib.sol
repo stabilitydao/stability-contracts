@@ -14,32 +14,37 @@ library QuickswapLib {
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
         uint total;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyId)) {
-                ++total;
+            if (farm.status == 0) {
+                if(CommonLib.eq(farm.strategyLogicId, strategyId))
+                    ++total;    
             }
         }
 
         variants = new string[](total);
         nums = new uint[](total);
         total = 0;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyId)) {
-                nums[total] = i;
-                variants[total] = string.concat(
-                    "Earn ",
-                    CommonLib.implodeSymbols(farm.rewardAssets, ", "),
-                    " by static position ",
-                    CommonLib.i2s(farm.ticks[0]),
-                    "-",
-                    CommonLib.i2s(farm.ticks[1]),
-                    " in ",
-                    CommonLib.implodeSymbols(_ammAdapter.poolTokens(farm.pool), "-"),
-                    " pool on QuickSwapV3"
-                );
-                ++total;
+            if (farm.status == 0) {
+                if(CommonLib.eq(farm.strategyLogicId, strategyId)) {
+                    nums[total] = i;
+                    variants[total] = string.concat(
+                        "Earn ",
+                        CommonLib.implodeSymbols(farm.rewardAssets, ", "),
+                        " by static position ",
+                        CommonLib.i2s(farm.ticks[0]),
+                        "-",
+                        CommonLib.i2s(farm.ticks[1]),
+                        " in ",
+                        CommonLib.implodeSymbols(_ammAdapter.poolTokens(farm.pool), "-"),
+                        " pool on QuickSwapV3"
+                    );
+                    ++total;
+                }
             }
         }
     }

@@ -142,6 +142,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         totalApr = new uint[](len);
         strategyApr = new uint[](len);
         tvl = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
             IVault vault = IVault(vaultAddress[i]);
@@ -163,6 +164,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
         }

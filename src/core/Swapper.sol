@@ -14,6 +14,7 @@ import "../interfaces/IAmmAdapter.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -56,10 +57,11 @@ contract Swapper is Controllable, ISwapper {
     function addPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            if($.pools[pool.tokenIn].pool != address(0) && !rewrite){
-                revert AlreadyExist();
+            if($.pools[pool.tokenIn].pool != address(0)){
+                if(!rewrite) revert AlreadyExist();
             }
             $.pools[pool.tokenIn] = pool;
             bool assetAdded = $._assets.add(pool.tokenIn);
@@ -72,6 +74,7 @@ contract Swapper is Controllable, ISwapper {
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
@@ -82,8 +85,8 @@ contract Swapper is Controllable, ISwapper {
             if(poolData.ammAdapter == address(0)){
                 revert UnknownAMMAdapter();
             }
-            if($.pools[poolData.tokenIn].pool != address(0) && !rewrite){
-                revert AlreadyExist();
+            if($.pools[poolData.tokenIn].pool != address(0)){
+                if(!rewrite) revert AlreadyExist();
             }
             $.pools[poolData.tokenIn] = poolData;
             bool assetAdded = $._assets.add(poolData.tokenIn);
@@ -103,10 +106,11 @@ contract Swapper is Controllable, ISwapper {
     function addBlueChipsPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            if($.blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0) && !rewrite){
-                revert AlreadyExist();
+            if($.blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0)){
+                if(!rewrite) revert AlreadyExist();
             }
             $.blueChipsPools[pool.tokenIn][pool.tokenOut] = pool;
             $.blueChipsPools[pool.tokenOut][pool.tokenIn] = pool;
@@ -121,6 +125,7 @@ contract Swapper is Controllable, ISwapper {
     function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
@@ -128,11 +133,9 @@ contract Swapper is Controllable, ISwapper {
             poolData.tokenIn = pools_[i].tokenIn;
             poolData.tokenOut = pools_[i].tokenOut;
             poolData.ammAdapter = IPlatform(platform()).ammAdapter(keccak256(bytes(pools_[i].ammAdapterId))).proxy;
-            if(poolData.ammAdapter == address(0)){
-                revert UnknownAMMAdapter();
-            }
-            if($.blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0) && !rewrite){
-                revert AlreadyExist();
+            if(poolData.ammAdapter == address(0)) revert UnknownAMMAdapter();
+            if($.blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0)){
+                if(!rewrite) revert AlreadyExist();
             }
             $.blueChipsPools[poolData.tokenIn][poolData.tokenOut] = poolData;
             $.blueChipsPools[poolData.tokenOut][poolData.tokenIn] = poolData;
@@ -145,9 +148,7 @@ contract Swapper is Controllable, ISwapper {
     function removeBlueChipPool(address tokenIn, address tokenOut) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         delete $.blueChipsPools[tokenIn][tokenOut];
-        if(!$._bcAssets.remove(tokenIn)){
-            revert NotExist();
-        }
+        if(!$._bcAssets.remove(tokenIn)) revert NotExist();
         // do not remove tokenOut, assume tha tokenIn is the main target for the removing
         emit BlueChipPoolRemoved(tokenIn, tokenOut);
     }
@@ -160,7 +161,7 @@ contract Swapper is Controllable, ISwapper {
         if (tokenInLen != thresholdAmountLen){
             revert IControllable.IncorrectArrayLength();
         }
-        //nosemgrep
+        // nosemgrep
         for (uint i = 0; i < tokenInLen; ++i) {
             $.threshold[tokenIn[i]] = thresholdAmount[i];
         }
@@ -180,9 +181,7 @@ contract Swapper is Controllable, ISwapper {
     ) external {
         SwapperStorage storage $ = _getStorage();
         (PoolData[] memory route, string memory errorMessage) = buildRoute(tokenIn, tokenOut);
-        if (route.length == 0) {
-            revert(errorMessage);
-        }
+        if (route.length == 0) revert(errorMessage);
         uint thresholdTokenIn = $.threshold[tokenIn];
         if(amount < thresholdTokenIn){
             revert LessThenThreshold(thresholdTokenIn);
@@ -233,6 +232,7 @@ contract Swapper is Controllable, ISwapper {
         for (i = 0; i < bcAssetsLen; ++i) {
             _allAssets[i] = __bcAssets[i];
         }
+        // nosemgrep
         for (uint k; k < assetsLen; ++k) {
             if (!$._bcAssets.contains(__assets[k])) {
                 _allAssets[i] = __assets[k];
@@ -257,6 +257,7 @@ contract Swapper is Controllable, ISwapper {
             price = 10 ** IERC20Metadata(tokenIn).decimals();
         }
         uint len = route.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
             //slither-disable-next-line calls-loop
@@ -274,6 +275,7 @@ contract Swapper is Controllable, ISwapper {
             price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
         }
         uint len = route.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
             //slither-disable-next-line calls-loop
@@ -484,8 +486,9 @@ contract Swapper is Controllable, ISwapper {
         if(route.length == 0){
             revert IControllable.IncorrectArrayLength();
         } 
-
-        for (uint i; i < route.length; i++) {
+        uint routeLength = route.length;
+        // nosemgrep
+        for (uint i; i < routeLength; i++) {
             PoolData memory data = route[i];
 
             // if it is the first step send tokens to the swapper from the current contract
@@ -494,7 +497,7 @@ contract Swapper is Controllable, ISwapper {
             }
             address recipient;
             // if it is not the last step of the route send to the next swapper
-            if (i != route.length - 1) {
+            if (i != routeLength - 1) {
                 recipient = route[i + 1].ammAdapter;
             } else {
                 // if it is the last step need to send to the sender
@@ -509,6 +512,7 @@ contract Swapper is Controllable, ISwapper {
 
     function _cutRoute(PoolData[] memory route, uint length) internal pure returns (PoolData[] memory) {
         PoolData[] memory result = new PoolData[](length);
+        // nosemgrep
         for (uint i; i < length; ++i) {
             result[i] = route[i];
         }

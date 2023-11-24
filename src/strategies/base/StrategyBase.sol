@@ -166,12 +166,16 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view virtual returns (uint[] memory amountsConsumed, uint value) {
-        if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
-            if(amountsMax.length != 1){
-                revert IControllable.IncorrectArrayLength();
+        if (assets_.length == 1) {
+            if(assets_[0] == _getStrategyBaseStorage()._underlying){
+                if(assets_[0] != address(0)){
+                    if(amountsMax.length != 1){
+                        revert IControllable.IncorrectArrayLength();
+                    }
+                    value = amountsMax[0];
+                    amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
+                }       
             }
-            value = amountsMax[0];
-            amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
         } else {
             return _previewDepositAssets(assets_, amountsMax);
         }

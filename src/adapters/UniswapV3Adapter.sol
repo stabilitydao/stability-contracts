@@ -16,6 +16,7 @@ import "../integrations/uniswapv3/IUniswapV3Pool.sol";
 /// @author Uni3Swapper (https://github.com/tetu-io/tetu-liquidator/blob/master/contracts/swappers/Uni3Swapper.sol)
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 contract UniswapV3Adapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -189,8 +190,9 @@ contract UniswapV3Adapter is Controllable, IAmmAdapter {
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
-        if(amount0Delta <= 0 && amount1Delta <= 0){
-            revert IAmmAdapter.WrongCallbackAmount();
+        if(amount0Delta <= 0){
+            if(amount1Delta <= 0)
+                revert IAmmAdapter.WrongCallbackAmount();
         }
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
         IERC20(data.tokenIn).safeTransfer(msg.sender, data.amount);

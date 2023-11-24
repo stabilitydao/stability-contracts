@@ -3,7 +3,10 @@ pragma solidity ^0.8.22;
 
 /// @dev Interface of proxy contract for a vault implementation
 interface IVaultProxy {
-
+  //region ----- Custom Errors -----
+  error ProxyForbidden();
+  //endregion -- Custom Errors -----
+  
   /// @notice Initialize vault proxy by Factory
   /// @param type_ Vault type ID string
   function initProxy(string memory type_) external;
