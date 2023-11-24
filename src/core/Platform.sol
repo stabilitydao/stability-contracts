@@ -248,9 +248,11 @@ contract Platform is Controllable, IPlatform {
         uint len = platformUpgrade.proxies.length;
         // nosemgrep
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
+            //slither-disable-next-line calls-loop
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
-            //slither-disable-next-line reentrancy-events
+            //slither-disable-next-line calls-loop reentrancy-events
             emit ProxyUpgraded(
                 platformUpgrade.proxies[i],
                 platformUpgrade.newImplementations[i],

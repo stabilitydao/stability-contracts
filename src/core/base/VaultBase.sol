@@ -151,8 +151,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external virtual nonReentrant {
         // todo #29 check vault
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        //slither-disable-next-line timestamp
         if ($.doHardWorkOnDeposit) {
+             //slither-disable-next-line timestamp
             if(block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY)
                 $.strategy.doHardWork();
         }
@@ -172,9 +172,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert IControllable.IncorrectArrayLength();
         }
 
+        //slither-disable-next-line uninitialized-local
         uint[] memory amountsConsumed;
+        //slither-disable-next-line uninitialized-local
         uint value;
-
         if (len == 1) {
             if(underlying != address(0))
                 if(underlying == assets_[0]){

@@ -79,8 +79,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
-            // nosemgrep
-            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData();
+            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData(); // nosemgrep
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;
         }
