@@ -166,7 +166,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xe9333f), bytes3(0x191b1d)));
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xde43ff), bytes3(0x140414)));
     }
 
     /// @inheritdoc IStrategy
