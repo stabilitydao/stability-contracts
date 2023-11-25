@@ -180,8 +180,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external view virtual returns (string memory) {
-        return "";
+    function getSpecificName() external view virtual returns (string memory, bool) {
+        return ("", false);
     }
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.

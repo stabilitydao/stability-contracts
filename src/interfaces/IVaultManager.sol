@@ -62,6 +62,7 @@ interface IVaultManager is IERC721Metadata {
     /// @param tvl Current vault TVL in USD. 18 decimals
     /// @param totalApr Last total vault APR. Denominator is 100_00.
     /// @param strategyApr Last strategy APR. Denominator is 100_00.
+    /// @param strategySpecific Strategy specific name
     function vaults() external view returns(
         address[] memory vaultAddress,
         string[] memory name,
@@ -71,7 +72,8 @@ interface IVaultManager is IERC721Metadata {
         uint[] memory sharePrice,
         uint[] memory tvl,
         uint[] memory totalApr,
-        uint[] memory strategyApr
+        uint[] memory strategyApr,
+        string[] memory strategySpecific
     );
 
     /// @notice All deployed vault addresses

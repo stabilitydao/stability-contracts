@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
 /// @dev Get price, swap, liquidity calculations. Used by strategies and swapper
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
-interface IAmmAdapter {
+interface IAmmAdapter is IERC165 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -54,24 +56,6 @@ interface IAmmAdapter {
     /// @return liquidity Liquidity out value
     /// @return amountsConsumed Amounts of consumed assets when providing liquidity
     function getLiquidityForAmounts(address pool, uint[] memory amounts) external view returns (uint liquidity, uint[] memory amountsConsumed);
-
-    /// @notice Computes the maximum amount of liquidity received for given amounts of pool assets and the current
-    /// pool prices and the prices at the tick boundaries
-    /// This function signature can be used only for CAMMs.
-    /// @param pool Address of a pool supported by the adapter
-    /// @param amounts Ampunts of pool assets
-    /// @param ticks Tick boundaries. Lower and upper ticks for UniswapV3-like AMM position.
-    /// @return liquidity Liquidity out value
-    /// @return amountsConsumed Amounts of consumed assets of provided liquidity
-    function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed);
-
-    /// @notice Computes pool assets amounts for a given amount of liquidity, the current
-    /// pool prices and the prices at the tick boundaries
-    /// @param pool Address of a pool supported by the adapter
-    /// @param ticks Tick boundaries. Lower and upper ticks for UniswapV3-like AMM position.
-    /// @param liquidity Liquidity value
-    /// @return amounts Amounts out of provided liquidity
-    function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts);
 
     /// @notice Priced proportion of first pool asset.
     /// Helper method for pools with two tokens.

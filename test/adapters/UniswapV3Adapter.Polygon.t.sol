@@ -67,5 +67,9 @@ contract UniswapV3AdapterTest is PolygonSetup {
 
         vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
         UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, '');
+
+        assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
+        assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
+        assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
 }

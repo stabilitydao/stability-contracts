@@ -103,8 +103,9 @@ interface IStrategy is IERC165 {
     function getRevenue() external view returns (address[] memory assets_, uint[] memory amounts);
 
     /// @notice Optional specific name of investing strategy, underyling type, setup variation etc
-    /// @return Empty string or specific name
-    function getSpecificName() external view returns (string memory);
+    /// @return name Empty string or specific name
+    /// @return showInVaultSymbol Show specific in linked vault symbol
+    function getSpecificName() external view returns (string memory name, bool showInVaultSymbol);
 
     /// @notice Variants pf strategy initializations with description of money making mechanic.
     /// As example, if strategy need farm, then number of variations is number of available farms.

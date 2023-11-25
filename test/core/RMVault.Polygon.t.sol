@@ -6,6 +6,7 @@ import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/interfaces/IRVault.sol";
+import "../../src/interfaces/IManagedVault.sol";
 
 contract RMVaultTest is PolygonSetup {
     constructor() {
@@ -68,6 +69,7 @@ contract RMVaultTest is PolygonSetup {
         skip(86400);
 
         {
+            IVaultManager vaultManager = IVaultManager(platform.vaultManager());
             // set compound ratio to 0%
             address[] memory vaultChangeAddresses = new address[](2);
             vaultChangeAddresses[0] = platform.targetExchangeAsset();
@@ -77,10 +79,55 @@ contract RMVaultTest is PolygonSetup {
             vaultChangeNums[1] = 86400 * 30;
             vaultChangeNums[2] = 86400 * 365;
             vaultChangeNums[3] = 0;
-
-            IVaultManager(platform.vaultManager()).changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
             assertEq(vault.compoundRatio(), 0);
 
+            // bad paths
+            vm.expectRevert(IManagedVault.NotVaultManager.selector);
+            IManagedVault(address(vault)).changeParams(vaultChangeAddresses, vaultChangeNums);
+            
+            vaultChangeAddresses = new address[](3);
+            vm.expectRevert(IControllable.IncorrectInitParams.selector);
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+
+            vaultChangeAddresses = new address[](1);
+            vaultChangeNums = new uint[](3);
+            vm.expectRevert(IManagedVault.CantRemoveRewardToken.selector);
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+            
+            vaultChangeAddresses = new address[](2);
+            vaultChangeAddresses[0] = platform.targetExchangeAsset();
+            vaultChangeAddresses[1] = address(1);//assets[0];
+            vaultChangeNums = new uint[](4);
+            vaultChangeNums[0] = 86400 * 10;
+            vaultChangeNums[1] = 86400 * 30;
+            vaultChangeNums[2] = 86400 * 365;
+            vaultChangeNums[3] = 0;
+            vm.expectRevert(abi.encodeWithSelector(IManagedVault.IncorrectRewardToken.selector, address(1)));
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+
+            vaultChangeAddresses[1] = assets[0];
+            vaultChangeNums[1] = 86400 * 30 + 1;
+            vm.expectRevert(abi.encodeWithSelector(IManagedVault.CantChangeDuration.selector, vaultChangeNums[1]));
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+
+            vaultChangeAddresses = new address[](3);
+            vaultChangeAddresses[0] = platform.targetExchangeAsset();
+            vaultChangeAddresses[1] = assets[0];
+            vaultChangeAddresses[2] = assets[1];
+            vaultChangeNums = new uint[](5);
+            vaultChangeNums[0] = 86400 * 10;
+            vaultChangeNums[1] = 86400 * 30;
+            vaultChangeNums[2] = 86400 * 365;
+            vaultChangeNums[3] = 0;
+            vaultChangeNums[4] = 0;
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
+
+            vaultChangeAddresses[2] = address(0);
+            vaultChangeNums[3] = 86400 * 366;
+            vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+            vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
         }
         
         (uint sharePriceBefore,) = vault.price();
