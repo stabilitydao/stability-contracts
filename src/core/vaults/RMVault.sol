@@ -79,12 +79,12 @@ contract RMVault is RVaultBase, IManagedVault {
                 if(addresses[i_1] == address(0)){
                     revert IControllable.IncorrectZeroArgument();
                 }
-                if(nums[i_1] == 0){
+                if(nums[i] == 0){
                     revert IControllable.IncorrectZeroArgument();
                 }
                 _$.rewardTokensTotal = i + 1;
                 _$.rewardToken[i] = addresses[i_1];
-                _$.duration[i] = nums[i_1];
+                _$.duration[i] = nums[i];
                 emit AddedRewardToken(addresses[i_1], i);
             }
         }

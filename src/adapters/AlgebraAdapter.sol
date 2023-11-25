@@ -172,7 +172,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         return p;
     }
 
-    /// @inheritdoc IAmmAdapter
+    /// @inheritdoc ICAmmAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96, , , , , ,) = IAlgebraPool(pool).globalState();
@@ -182,7 +182,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         liquidity = uint(liquidityOut);
     }
 
-    /// @inheritdoc IAmmAdapter
+    /// @inheritdoc ICAmmAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = _getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
@@ -200,6 +200,14 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
+        return
+            interfaceId == type(ICAmmAdapter).interfaceId 
+            || interfaceId == type(IAmmAdapter).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -51,8 +51,8 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() external pure override returns (string memory) {
-        return 'Good Params';
+    function getSpecificName() external pure override returns (string memory, bool) {
+        return ('Good Params', true);
     }
 
     function extra() external pure returns (bytes32) {
