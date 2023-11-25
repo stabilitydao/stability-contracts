@@ -197,6 +197,14 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
     }
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
+        return
+            interfaceId == type(ICAmmAdapter).interfaceId 
+            || interfaceId == type(IAmmAdapter).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
