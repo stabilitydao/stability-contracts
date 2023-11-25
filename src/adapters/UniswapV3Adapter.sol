@@ -171,13 +171,13 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
     }
 
-    /// @inheritdoc IAmmAdapter
+    /// @inheritdoc ICAmmAdapter
     function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         amountsConsumed = new uint[](2);
         (liquidity, amountsConsumed[0], amountsConsumed[1]) = _getLiquidityForAmounts(pool, amounts[0], amounts[1], ticks[0], ticks[1]);
     }
 
-    /// @inheritdoc IAmmAdapter
+    /// @inheritdoc ICAmmAdapter
     function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = _getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
@@ -195,6 +195,14 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
+        return
+            interfaceId == type(ICAmmAdapter).interfaceId 
+            || interfaceId == type(IAmmAdapter).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -91,4 +91,9 @@ contract MockAmmAdapter is IAmmAdapter {
     function DEX_ADAPTER_VERSION() external pure returns(string memory) {
         return _DEX_ADAPTER_VERSION;
     }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IAmmAdapter).interfaceId;
+    }
 }

@@ -12,6 +12,7 @@ import "../integrations/algebra/IFarmingCenter.sol";
 import "../integrations/algebra/IncentiveKey.sol";
 import "../core/libs/CommonLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
+import "../interfaces/ICAmmAdapter.sol";
 
 /// @title Earning QuickSwapV3 farm rewards and swap fees by static liquidity position
 /// @author Alien Deployer (https://github.com/a17)
@@ -182,9 +183,9 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external view override returns (string memory) {
+    function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        return string.concat(CommonLib.i2s(farm.ticks[0]), " ", CommonLib.i2s(farm.ticks[1]));
+        return (string.concat(CommonLib.i2s(farm.ticks[0]), " ", CommonLib.i2s(farm.ticks[1])), false);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -362,7 +363,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
-        (value, amountsConsumed) = ammAdapter().getLiquidityForAmounts(pool(), amountsMax, ticks);
+        (value, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
     }
 
     /// @inheritdoc StrategyBase
@@ -371,7 +372,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
-        amounts_ = ammAdapter().getAmountsForLiquidity(pool(), ticks, uint128( _getStrategyBaseStorage().total));
+        amounts_ = ICAmmAdapter(address(ammAdapter())).getAmountsForLiquidity(pool(), ticks, uint128( _getStrategyBaseStorage().total));
         assets_ = assets();
     }
 
