@@ -39,10 +39,13 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function swapCallback(
+        //slither-disable-next-line similar-names
         int256 amount0Delta,
         int256 amount1Delta,
+        //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
+        // nosemgrep
         if(amount0Delta <= 0 && amount1Delta <= 0){
             revert IAmmAdapter.WrongCallbackAmount();
         }
@@ -55,6 +58,7 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IAmmAdapter
+    //slither-disable-next-line reentrancy-events
     function swap(
         address pool,
         address tokenIn,
@@ -201,14 +205,6 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
-    }
-
-    /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
-        return
-            interfaceId == type(ICAmmAdapter).interfaceId 
-            || interfaceId == type(IAmmAdapter).interfaceId
-            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
