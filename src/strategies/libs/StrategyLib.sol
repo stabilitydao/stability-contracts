@@ -150,11 +150,11 @@ library StrategyLib {
         uint duration = block.timestamp - $.lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         //slither-disable-next-line unused-return
-        (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
+        (uint earned,,uint[] memory assetPrices,) = priceReader.getAssetsPrice(assets, amounts);
         uint apr = computeApr(tvl, earned, duration);
         uint aprCompound = computeApr(totalBefore, $.total - totalBefore, duration);
         uint sharePrice = tvl * 1e18 / IERC20($.vault).totalSupply();
-        emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
+        emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice, assetPrices);
         $.lastApr = apr;
         $.lastAprCompound = aprCompound;
         $.lastHardWork = block.timestamp;
