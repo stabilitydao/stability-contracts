@@ -341,7 +341,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function previewWithdraw(uint sharesToBurn) external view returns(uint[] memory amountsOut){
+    function previewWithdraw(uint sharesToBurn) external view returns(uint[] memory){
         return _getVaultBaseStorage().strategy.previewWithdraw(sharesToBurn, totalSupply());
     }
 

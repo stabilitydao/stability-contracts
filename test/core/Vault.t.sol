@@ -126,9 +126,13 @@ contract VaultTest is Test, FullMockSetup {
 
         vm.roll(block.number + 6);
 
-        shares = vault.balanceOf(address(this));
+        shares = vault.balanceOf(address(this)); 
+        uint[] memory amountsOut = vault.previewWithdraw(shares);
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
-
+        uint[] memory amountsOut2 = vault.previewWithdraw(shares / 2);
+        for(uint i; i < amountsOut.length; i++){
+            assertApproxEqAbs(amountsOut[i] / 2,  amountsOut2[i], amountsOut[i] / 4000); //0.025%
+        }
         vm.roll(block.number + 6);
 
         vault.withdrawAssets(assets, shares - shares / 2, new uint[](2));
