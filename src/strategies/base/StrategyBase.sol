@@ -77,6 +77,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return StrategyLib.transferAssets(_getStrategyBaseStorage()._assets, amount, total_, receiver);
     }
 
+    /// @inheritdoc IStrategy
+    function previewWithdraw(uint amount, uint total_) external view returns (uint[] memory amountsOut) {
+        //slither-disable-next-line unused-return
+        return StrategyLib.previewWithdraw(_getStrategyBaseStorage()._assets, amount, total_);
+    }
+
     function doHardWork() external onlyVault {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         address _vault = $.vault;

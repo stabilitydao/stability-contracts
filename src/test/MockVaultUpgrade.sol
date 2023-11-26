@@ -52,6 +52,8 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function previewDepositAssets(address[] memory assets_, uint[] memory amounts) external pure returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {}
 
+    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory amountsOut) {}
+
     function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs) {}
 
     function depositAssets(address[] memory assets_, uint[] memory amounts, uint minSharesOut, address receiver) external {}

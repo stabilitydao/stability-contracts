@@ -131,6 +131,11 @@ interface IVault is IERC165 {
     /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
+    /// @notice Calculation of assets amount to receive for exact amount of shares.
+    /// @param sharesToBurn Amount of shares to burn
+    /// @return amountsOut Array of assets amounts to receive
+    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory amountsOut);
+
     /// @notice All available data on the latest declared APR (annual percentage rate)
     /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
     /// @return strategyApr Strategy investmnt APR declared on last HardWork.
