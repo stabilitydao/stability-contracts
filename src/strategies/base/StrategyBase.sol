@@ -157,7 +157,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    function assetsAmounts() external view virtual returns (address[] memory assets_, uint[] memory amounts_) {
+    function assetsAmounts() public view virtual returns (address[] memory assets_, uint[] memory amounts_) {
         (assets_, amounts_) = _assetsAmounts();
         return StrategyLib.assetsAmountsWithBalances(assets_, amounts_);
     }
@@ -174,6 +174,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
             return _previewDepositAssets(assets_, amountsMax);
         }
     }
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */

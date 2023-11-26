@@ -5,11 +5,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./Controllable.sol";
 import "../libs/ConstantsLib.sol";
+import "../libs/VaultStatusLib.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IPriceReader.sol";
 import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IAprOracle.sol";
+import "../../interfaces/IPlatform.sol";
+import "../../interfaces/IFactory.sol";
 
 /// @notice Base vault implementation.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
@@ -130,8 +133,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
-                // todo #29 IPlatform variable
-                if (_tvl < 100e18) {
+                if (_tvl < IPlatform(platform()).minTvlForFreeHardWork()) {
                     revert NotEnoughBalanceToPay();
                 }
             }
@@ -145,51 +147,54 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     //region ----- User actions -----
 
     /// @inheritdoc IVault
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external virtual nonReentrant {
-        // todo #29 check vault
+    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
+        if(IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE){
+            revert IFactory.NotActiveVault();
+        } 
+
         if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
             $.strategy.doHardWork();
         }
 
-        uint _totalSupply = totalSupply();
-        uint totalValue = $.strategy.total();
-        if(_totalSupply != 0 && totalValue == 0){
+        //slither-disable-next-line uninitialized-local
+        DepositAssetsData memory data;
+        data._totalSupply = totalSupply();
+        data.totalValue = $.strategy.total();
+        if(data._totalSupply != 0 && data.totalValue == 0){
             revert FuseTrigger();
         }
         
-        address[] memory assets = $.strategy.assets();
-        address underlying = $.strategy.underlying();
-
-        uint len = amountsMax.length;
-        if(len != assets_.length){
+        data.len = amountsMax.length;
+        if(data.len != assets_.length){
             revert IControllable.IncorrectArrayLength();
         }
 
-        uint[] memory amountsConsumed;
-        uint value;
+        data.assets = $.strategy.assets();
+        data.underlying = $.strategy.underlying();
 
-        if (len == 1 && underlying != address(0) && underlying == assets_[0]) {
-            value = amountsMax[0];
-            IERC20(underlying).safeTransferFrom(msg.sender, address($.strategy), value);
-            (amountsConsumed) = $.strategy.depositUnderlying(value);
+
+        if (data.len == 1 && data.underlying != address(0) && data.underlying == assets_[0]) {
+            data.value = amountsMax[0];
+            IERC20(data.underlying).safeTransferFrom(msg.sender, address($.strategy), data.value);
+            (data.amountsConsumed) = $.strategy.depositUnderlying(data.value);
         } else {
-            (amountsConsumed, value) = $.strategy.previewDepositAssets(assets_, amountsMax);
-            for (uint i; i < len; ++i) {
-                IERC20(assets[i]).safeTransferFrom(msg.sender, address($.strategy), amountsConsumed[i]);
+            (data.amountsConsumed, data.value) = $.strategy.previewDepositAssets(assets_, amountsMax);
+            for (uint i; i < data.len; ++i) {
+                IERC20(data.assets[i]).safeTransferFrom(msg.sender, address($.strategy), data.amountsConsumed[i]);
             }
-            value = $.strategy.depositAssets(amountsConsumed);
+            data.value = $.strategy.depositAssets(data.amountsConsumed);
         }
-
-        if(value == 0){
+        
+        if(data.value == 0){
             revert IControllable.IncorrectZeroArgument();
-        }
+        }  
 
-        uint mintAmount = _mintShares($, _totalSupply, value, totalValue, amountsConsumed, minSharesOut, assets);
+        data.mintAmount = _mintShares($, data._totalSupply, data.value, data.totalValue, data.amountsConsumed, minSharesOut, data.assets, receiver);
 
-        $.withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[receiver] = block.number;
 
-        emit DepositAssets(msg.sender, assets_, amountsConsumed, mintAmount);
+        emit DepositAssets(receiver, assets_, data.amountsConsumed, data.mintAmount);
     }
 
     /// @inheritdoc IVault
@@ -336,7 +341,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function strategy() external view returns (IStrategy) {
+    function previewWithdraw(uint sharesToBurn) external view returns(uint[] memory){
+        (address[] memory assets,uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
+        return _previewWithdraw(assets, assetsAmount, sharesToBurn, totalSupply());
+    }
+
+    /// @inheritdoc IVault
+    function getUniqueInitParamLength() public view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums);
+
+    /// @inheritdoc IVault
+    function strategy() public view returns (IStrategy) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.strategy;
     }
@@ -371,6 +385,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
     }
 
+    function _previewWithdraw(
+        address[] memory assets,
+        uint[] memory assetsAmount,
+        uint amount,
+        uint total_
+    ) internal pure returns (uint[] memory amountsOut) {
+        uint len = assets.length;
+        amountsOut = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amountsOut[i] = assetsAmount[i] * amount / total_;
+        }
+    }
+
     /// @dev Minting shares of the vault to the user's address when he deposits funds into the vault.
     ///
     /// During the first deposit, initial shares are also minted and sent to the dead address.
@@ -383,7 +410,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ///        Consumed amounts used by calculation of minted amount during the first deposit for setting the first share price to 1 USD.
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user after deposit
     /// @return mintAmount Amount of minted shares for the user
-    function _mintShares(VaultBaseStorage storage $, uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, uint minSharesOut, address[] memory assets) internal returns (uint mintAmount) {
+    function _mintShares(
+        VaultBaseStorage storage $, 
+        uint totalSupply_, 
+        uint value_, 
+        uint totalValue_, 
+        uint[] memory amountsConsumed, 
+        uint minSharesOut, 
+        address[] memory assets,
+        address receiver
+        ) internal returns (uint mintAmount) {
         uint initialShares;
         (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed, assets);
         uint _maxSupply = $.maxSupply;
@@ -396,8 +432,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (initialShares > 0) {
             _mint(ConstantsLib.DEAD_ADDRESS, initialShares);
         }
-
-        _mint(msg.sender, mintAmount);
+        if(receiver == address(0)) {
+            receiver = msg.sender;
+        }
+        _mint(receiver, mintAmount);
     }
 
     /// @dev Calculating amount of new shares for given deposited value and totals

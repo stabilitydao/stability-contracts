@@ -93,16 +93,18 @@ contract ZapTest is PolygonSetup {
         swapData[0] = abi.encodePacked(hex"e449022e0000000000000000000000000000000000000000000000000049ebbe088484df00000000000000000000000000000000000000000000000280875a9072ab0dd80000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000086f1d8390222a3691c28938ec7404a1661e618e08b1ccac8");
         swapData[1] =  abi.encodePacked(hex"e449022e0000000000000000000000000000000000000000000000000d96caf59edf7b21000000000000000000000000000000000000000000000000000000005fa1b0d20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000045dda9cb7c25131df268515131f647d726f506088b1ccac8");
 
-        deal(PolygonLib.TOKEN_WETH, address(this), 1e18);
-        IERC20(PolygonLib.TOKEN_WETH).approve(address(zap), 1e18);
-        zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, PolygonLib.ONE_INCH, swapData, 1);
+        deal(PolygonLib.TOKEN_WETH, address(this), 2e18);
+        IERC20(PolygonLib.TOKEN_WETH).approve(address(zap), 2e18);
+        zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, PolygonLib.ONE_INCH, swapData, 1, msg.sender);
+
+        zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, PolygonLib.ONE_INCH, swapData, 1, address(0));
 
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-        zap.deposit(vault, PolygonLib.TOKEN_WETH, 0, PolygonLib.ONE_INCH, swapData, 1);
+        zap.deposit(vault, PolygonLib.TOKEN_WETH, 0, PolygonLib.ONE_INCH, swapData, 1, msg.sender);
 
         vm.expectRevert(
             abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10))
         );
-        zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, address(10), swapData, 1);
+        zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, address(10), swapData, 1, msg.sender);
     }
 }
