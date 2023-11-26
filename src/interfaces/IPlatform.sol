@@ -94,7 +94,7 @@ interface IPlatform {
     //region ----- View functions -----
 
     /// @notice Platform version in CalVer scheme: YY.MM.MINOR-tag. Updates on core contract upgrades.
-    function PLATFORM_VERSION() external view returns (string memory);
+    function platformVersion() external view returns (string memory);
 
     /// @notice Time delay for proxy upgrades of core contracts and changing important platform settings by multisig
     function TIME_LOCK() external view returns (uint);

@@ -74,7 +74,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function transferAssets(uint amount, uint total_, address receiver) external onlyVault returns (uint[] memory amountsOut) {
         //slither-disable-next-line unused-return
-        return StrategyLib.transferAssets(_getStrategyBaseStorage()._assets, amount, total_, receiver);
+        return StrategyLib.transferAssets(_getStrategyBaseStorage(), amount, total_, receiver);
     }
 
     function doHardWork() external onlyVault {
@@ -106,7 +106,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
             }
             
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
-            $.lastHardWork = block.timestamp;
         }
     }
 
@@ -116,7 +115,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
-        return  interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function STRATEGY_LOGIC_ID() public view virtual returns(string memory);
