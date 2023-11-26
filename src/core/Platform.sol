@@ -162,7 +162,7 @@ contract Platform is Controllable, IPlatform {
         // _setFees(6_000, 30_000, 30_000, 0);
         _setFees(settings.fee, settings.feeShareVaultManager, settings.feeShareStrategyLogic, settings.feeShareEcosystem);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
-        emit MinTvlForFreeHardWorkChanged($.minTvlForFreeHardWork, 0);
+        emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
     }
 
     //endregion -- Init -----
@@ -397,8 +397,8 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setMinTvlForFreeHardWork(uint value) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        $.minTvlForFreeHardWork = value;
         emit MinTvlForFreeHardWorkChanged($.minTvlForFreeHardWork, value);
+        $.minTvlForFreeHardWork = value;
     }
 
     //endregion -- Restricted actions ----
