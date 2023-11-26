@@ -92,7 +92,7 @@ contract Platform is Controllable, IPlatform {
         PlatformUpgrade _pendingPlatformUpgrade;
         uint platformUpgradeTimelock;
         /// @inheritdoc IPlatform
-        string PLATFORM_VERSION;
+        string platformVersion;
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
@@ -118,7 +118,7 @@ contract Platform is Controllable, IPlatform {
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
         $._operators.add(msg.sender);
-        $.PLATFORM_VERSION = version;
+        $.platformVersion = version;
         emit PlatformVersion(version);
     }
 
@@ -217,7 +217,7 @@ contract Platform is Controllable, IPlatform {
                 revert SameVersion();
             }
         }
-        string memory oldVersion = $.PLATFORM_VERSION;
+        string memory oldVersion = $.platformVersion;
         if(CommonLib.eq(oldVersion, newVersion)){
             revert SameVersion();
         }
@@ -251,7 +251,7 @@ contract Platform is Controllable, IPlatform {
                 IControllable(platformUpgrade.proxies[i]).VERSION()
             );
         }
-        $.PLATFORM_VERSION = platformUpgrade.newVersion;
+        $.platformVersion = platformUpgrade.newVersion;
         $._pendingPlatformUpgrade.newVersion = '';
         $._pendingPlatformUpgrade.proxies = new address[](0);
         $._pendingPlatformUpgrade.newImplementations = new address[](0);
@@ -612,10 +612,9 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    //slither-disable-next-line naming-convention
-    function PLATFORM_VERSION() external view returns (string memory) {
+    function platformVersion() external view returns (string memory) {
         PlatformStorage storage $ = _getStorage();
-        return $.PLATFORM_VERSION;
+        return $.platformVersion;
     }
 
     /// @inheritdoc IPlatform
