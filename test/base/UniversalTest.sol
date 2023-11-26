@@ -236,7 +236,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();
-                    (uint totalRevenueUSD,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
+                    (uint totalRevenueUSD,,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
                     assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
                     if (totalRevenueUSD == 0) {
                         for (uint x; x < __assets.length; ++x) {
@@ -260,7 +260,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.entries = vm.getRecordedLogs();
                     vars.hwEventFound = false;
                     for (uint j = 0; j < vars.entries.length; ++j) {
-                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256)")) {
+                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])")) {
                             vars.hwEventFound = true;
                             (uint tempApr, uint tempAprCompound, uint tempEarned, uint tempTvl, uint tempDuration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
 

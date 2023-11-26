@@ -146,7 +146,7 @@ contract PriceReaderTest is Test, MockSetup {
         amounts[0] = 500e18;
         amounts[1] = 300e6;
         amounts[2] = 1e24;
-        (uint total, uint[] memory assetAmountPrice, bool trusted) = priceReader.getAssetsPrice(assets, amounts);
+        (uint total, uint[] memory assetAmountPrice,, bool trusted) = priceReader.getAssetsPrice(assets, amounts);
         assertEq(assetAmountPrice[0], 500e18);
         assertEq(assetAmountPrice[1], 300 * 2 * 1e18);
         assertEq(assetAmountPrice[2], 3 * 1e18);
