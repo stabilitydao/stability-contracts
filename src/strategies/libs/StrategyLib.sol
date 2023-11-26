@@ -57,8 +57,7 @@ library StrategyLib {
         uint len = assets.length;
         amountsOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            amountsOut[i] = IERC20(assets[i]).balanceOf(address(this)) * amount / total_;
-            amountsOut[i] = IERC20(assets[i]).balanceOf(address(this)) * amount / total_;
+            amountsOut[i] = balance(assets[i]) * amount / total_;
             IERC20(assets[i]).transfer(receiver, amountsOut[i]);
         }
     }

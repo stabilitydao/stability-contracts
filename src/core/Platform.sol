@@ -93,6 +93,8 @@ contract Platform is Controllable, IPlatform {
         uint platformUpgradeTimelock;
         /// @inheritdoc IPlatform
         string PLATFORM_VERSION;
+        /// @inheritdoc IPlatform
+        uint minTvlForFreeHardWork;
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
@@ -142,6 +144,7 @@ contract Platform is Controllable, IPlatform {
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
+        $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
             addresses.factory,
@@ -159,6 +162,7 @@ contract Platform is Controllable, IPlatform {
         // _setFees(6_000, 30_000, 30_000, 0);
         _setFees(settings.fee, settings.feeShareVaultManager, settings.feeShareStrategyLogic, settings.feeShareEcosystem);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
+        emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
     }
 
     //endregion -- Init -----
@@ -388,6 +392,13 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external onlyOperator {
         _setInitialBoost(minInitialBoostPerDay_, minInitialBoostDuration_);
+    }
+
+    /// @inheritdoc IPlatform
+    function setMinTvlForFreeHardWork(uint value) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit MinTvlForFreeHardWorkChanged($.minTvlForFreeHardWork, value);
+        $.minTvlForFreeHardWork = value;
     }
 
     //endregion -- Restricted actions ----
@@ -730,6 +741,12 @@ contract Platform is Controllable, IPlatform {
     function platformUpgradeTimelock() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
         return $.platformUpgradeTimelock;
+    }
+
+    /// @inheritdoc IPlatform
+    function minTvlForFreeHardWork() external view returns (uint) {
+        PlatformStorage storage $ = _getStorage();
+        return $.minTvlForFreeHardWork;
     }
 
     //endregion -- View functions -----
