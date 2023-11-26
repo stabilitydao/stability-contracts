@@ -272,7 +272,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         uint _tvl;
-        (_tvl,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
+        (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
             price_ = _tvl * 1e18 / __totalSupply;
@@ -284,7 +284,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-        (tvl_,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
+        (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
 
     /// @inheritdoc IVault
@@ -448,7 +448,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
+            (mintAmount,,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;

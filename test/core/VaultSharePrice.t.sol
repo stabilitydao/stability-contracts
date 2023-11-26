@@ -38,7 +38,7 @@ contract VaultSharePrice is Test, FullMockSetup {
         vm.roll(block.number + 6);
 
         PriceReader priceReader = PriceReader(platform.priceReader());
-        (uint total, uint[] memory assetAmountPrice,) = priceReader.getAssetsPrice(assets, amounts);
+        (uint total, uint[] memory assetAmountPrice,,) = priceReader.getAssetsPrice(assets, amounts);
         assertEq(total, 30e18); // $30
         assertEq(assetAmountPrice[0], 10e18); // $10
         assertEq(assetAmountPrice[1], 20e18); // $20
@@ -49,7 +49,7 @@ contract VaultSharePrice is Test, FullMockSetup {
         uint[] memory amountsOnBalance = new uint[](2);
         amountsOnBalance[0] = tokenA.balanceOf(address(this));
         amountsOnBalance[1] = tokenB.balanceOf(address(this));
-        (uint onBalanceUSD,,) = priceReader.getAssetsPrice(assets, amountsOnBalance);
+        (uint onBalanceUSD,,,) = priceReader.getAssetsPrice(assets, amountsOnBalance);
         assertEq(onBalanceUSD, 5e18); // %30 - $25 == $5
 
         // sharePrice is $1 after full withdraw

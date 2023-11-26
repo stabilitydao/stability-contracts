@@ -23,9 +23,10 @@ interface IPriceReader {
     /// @param assets_ Addresses of assets
     /// @param amounts_ Amount of asset. Index of asset same as in previous parameter.
     /// @return total Total USD value with 18 decimals
-    /// @return assetAmountPrice USD price of asset amount. Index of assetAmountPrice same as in parameters.
+    /// @return assetAmountPrice USD price of asset amount. Index of assetAmountPrice same as in assets_ parameters.
+    /// @return assetPrice USD price of asset. Index of assetAmountPrice same as in assets_ parameters.
     /// @return trusted True if only oracle prices was used for calculation.
-    function getAssetsPrice(address[] memory assets_, uint[] memory amounts_) external view returns (uint total, uint[] memory assetAmountPrice, bool trusted);
+    function getAssetsPrice(address[] memory assets_, uint[] memory amounts_) external view returns (uint total, uint[] memory assetAmountPrice, uint[] memory assetPrice, bool trusted);
 
     /// @notice Add oracle adapter to PriceReader
     /// Only operator (multisig is operator too) can add adapter
