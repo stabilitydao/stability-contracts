@@ -42,6 +42,7 @@ interface IZap {
         uint amountIn,
         address agg,
         bytes[] memory swapData,
-        uint minSharesOut
+        uint minSharesOut,
+        address receiver
     ) external;
 }

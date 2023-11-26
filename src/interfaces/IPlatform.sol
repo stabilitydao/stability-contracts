@@ -53,6 +53,7 @@ interface IPlatform {
     event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
+    event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
     //endregion -- Events -----
 
     //region ----- Data types -----
@@ -93,7 +94,7 @@ interface IPlatform {
     //region ----- View functions -----
 
     /// @notice Platform version in CalVer scheme: YY.MM.MINOR-tag. Updates on core contract upgrades.
-    function PLATFORM_VERSION() external view returns (string memory);
+    function platformVersion() external view returns (string memory);
 
     /// @notice Time delay for proxy upgrades of core contracts and changing important platform settings by multisig
     function TIME_LOCK() external view returns (uint);
@@ -229,6 +230,10 @@ interface IPlatform {
     /// @param dexAggRouter Address of DeX aggreagator router
     /// @return Can be used
     function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool);
+
+    /// @notice Show minimum TVL for compensate if vault has not enough ETH
+    /// @return Minimum TVL for compensate.
+    function minTvlForFreeHardWork() external view returns (uint);
 
     /// @notice Front-end platform viewer
     /// @return platformAddresses Platform core addresses
@@ -375,6 +380,11 @@ interface IPlatform {
     /// @param minInitialBoostPerDay_ Minimal initial boost rewards per day USD amount which needs to create rewarding vault
     /// @param minInitialBoostDuration_ Minimal boost rewards vesting duration for initial boost
     function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external;
+
+    
+    /// @notice Update new minimum TVL for compansate.
+    /// @param value New minimum TVL for compensate.
+    function setMinTvlForFreeHardWork(uint value) external;
 
     //endregion -- Write functions -----
 }

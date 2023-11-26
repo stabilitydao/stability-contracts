@@ -116,7 +116,7 @@ library PolygonLib {
             2e18
         );
         if (showLog) {
-            console.log('Deployed Stability platform', IPlatform(platform).PLATFORM_VERSION());
+            console.log('Deployed Stability platform', IPlatform(platform).platformVersion());
             console.log('Platform address: ', platform);
         }
         //endregion -- DeployPlatform ----

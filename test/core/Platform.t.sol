@@ -22,6 +22,15 @@ contract PlatformTest is Test  {
         platform = Platform(address(proxy));
     }
 
+    function testSetMinTvlForFreeHardWork() public {
+        platform.initialize(address(this), '23.11.0-dev');
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
+        vm.prank(address(1));
+        platform.setMinTvlForFreeHardWork(123);
+        platform.setMinTvlForFreeHardWork(123);
+        assertEq(platform.minTvlForFreeHardWork(), 123); 
+    }
+
     function testSetup() public {
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.initialize(address(0), '23.11.0-dev');
@@ -220,7 +229,7 @@ contract PlatformTest is Test  {
                 __implementations
             );
 
-            string memory oldVersion = platform.PLATFORM_VERSION();
+            string memory oldVersion = platform.platformVersion();
             vm.expectRevert(abi.encodeWithSelector(IPlatform.SameVersion.selector));
             platform.announcePlatformUpgrade(
                 oldVersion,
@@ -264,7 +273,7 @@ contract PlatformTest is Test  {
 
             assertEq(proxy.implementation(), address(vaultImplementationUpgrade));
             assertEq(CVault(payable(address(proxy))).VERSION(), "10.99.99");
-            assertEq(platform.PLATFORM_VERSION(), '2025.01.0-beta');
+            assertEq(platform.platformVersion(), '2025.01.0-beta');
         } else {
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
             platform.initialize(multisig, '23.11.0-dev');

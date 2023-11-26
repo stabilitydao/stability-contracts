@@ -9,11 +9,16 @@ import "../libs/CommonLib.sol";
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 contract CVault is VaultBase {
     //region ----- Constants -----
 
     /// @dev Version of CVault implementation
     string public constant VERSION = '1.0.0';
+
+    uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
+
+    uint internal constant _UNIQUE_INIT_NUMS = 0;
 
     //endregion -- Constants -----
 
@@ -42,6 +47,11 @@ contract CVault is VaultBase {
 
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00bb99), bytes3(0x00110a)));
+    }
+
+    /// @inheritdoc IVault
+    function getUniqueInitParamLength() public pure override returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+        return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----

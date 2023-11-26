@@ -49,16 +49,17 @@ library StrategyLib {
     }
 
     function transferAssets(
-        address[] memory assets,
+        IStrategy.StrategyBaseStorage storage $,
         uint amount,
         uint total_,
         address receiver
     ) external returns (uint[] memory amountsOut) {
+        address[] memory assets = $._assets;
+
         uint len = assets.length;
         amountsOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            amountsOut[i] = IERC20(assets[i]).balanceOf(address(this)) * amount / total_;
-            amountsOut[i] = IERC20(assets[i]).balanceOf(address(this)) * amount / total_;
+            amountsOut[i] = balance(assets[i]) * amount / total_;
             IERC20(assets[i]).transfer(receiver, amountsOut[i]);
         }
     }
@@ -156,6 +157,7 @@ library StrategyLib {
         emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
         $.lastApr = apr;
         $.lastAprCompound = aprCompound;
+        $.lastHardWork = block.timestamp;
     }
 
     function balance(address token) public view returns (uint) {

@@ -61,7 +61,7 @@ contract RMVaultTest is PolygonSetup {
         IERC20(assets[1]).approve(address(vault), depositAmounts[1]);
 
         // deposit
-        vault.depositAssets(assets, depositAmounts, 0);
+        vault.depositAssets(assets, depositAmounts, 0, address(0));
         (uint tvl, ) = vault.tvl();
 
         assertGt(tvl, 0, "RMVault test: tvl is zero");
