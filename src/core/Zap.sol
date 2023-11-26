@@ -86,7 +86,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         }
 
         IVault(vault).depositAssets(assets, depositAmounts, minSharesOut, receiver);
-        IERC20(vault).transfer(receiver, IERC20(vault).balanceOf(address(this)));
 
         _sendAllRemaining(tokenIn, assets,  IStrategy(strategy).underlying());
     }
