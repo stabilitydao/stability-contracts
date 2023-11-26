@@ -51,7 +51,7 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() external pure override returns (string memory, bool) {
+    function getSpecificName() public view override virtual returns (string memory, bool) {
         return ('Good Params', true);
     }
 
@@ -78,10 +78,10 @@ contract MockStrategy is LPStrategyBase {
         total = total_;
     }*/
 
-    function setFees(uint fee0_, uint fee1_) external {
-        _fee0 = fee0_;
-        _fee1 = fee1_;
-    }
+    // function setFees(uint fee0_, uint fee1_) external {
+    //     _fee0 = fee0_;
+    //     _fee1 = fee1_;
+    // }
 
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
@@ -114,7 +114,7 @@ contract MockStrategy is LPStrategyBase {
         IMockERC20($._underlying).mint(value);
     }
 
-    function depositUnderlying(uint amount) external override returns (uint[] memory amountsConsumed) {
+    function depositUnderlying(uint amount) public override virtual returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
         require(_depositedToken0 > 0, "Mock: deposit assets first");
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -145,7 +145,7 @@ contract MockStrategy is LPStrategyBase {
         _depositedToken1 -= amountsOut[1];
     }
 
-    function withdrawUnderlying(uint amount, address receiver) external override {
+    function withdrawUnderlying(uint amount, address receiver) public override virtual {
         // no msg.sender checks
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         bool fuseTriggered = $.total == 0;
@@ -190,7 +190,5 @@ contract MockStrategy is LPStrategyBase {
         amounts = new uint[](0);
     }
 
-    function _liquidateRewards(address /*exchangeAsset*/, address[] memory /*rewardAssets_*/, uint[] memory /*rewardAmounts_*/) internal pure override returns (uint earnedExchangeAsset) {
-        return 0;
-    }
+    function _liquidateRewards(address /*exchangeAsset*/, address[] memory /*rewardAssets_*/, uint[] memory /*rewardAmounts_*/) internal pure override returns (uint earnedExchangeAsset) {}
 }

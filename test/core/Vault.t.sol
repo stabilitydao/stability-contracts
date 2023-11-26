@@ -60,6 +60,8 @@ contract VaultTest is Test, FullMockSetup {
         amounts[0] = 10e18;
         amounts[1] = 10e6;
 
+        uint[] memory otherAmounts = new uint[](2);
+
         tokenA.mint(amounts[0]);
         tokenB.mint(amounts[1]);
         lp.mint(1e18);
@@ -68,12 +70,13 @@ contract VaultTest is Test, FullMockSetup {
         tokenB.approve(address(vault), amounts[1]);
         lp.approve(address(vault), 1e18);
 
+
         (uint[] memory amountsConsumed, uint sharesOut,) = vault.previewDepositAssets(assets, amounts);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
         // check with other proportions
-        uint[] memory otherAmounts = new uint[](2);
+
         otherAmounts[0] = 10e18;
         otherAmounts[1] = 10e36;
         (amountsConsumed,,) = vault.previewDepositAssets(assets, otherAmounts);
@@ -84,6 +87,17 @@ contract VaultTest is Test, FullMockSetup {
         vault.depositAssets(assets, amounts, 0, address(0));
 
         factory.setVaultStatus(address(vault), 1);
+
+        {
+            // underlying token deposit
+            address[] memory underlyingAssets = new address[](1);
+            underlyingAssets[0] = address(lp);
+            otherAmounts = new uint[](1);
+            otherAmounts[0] = 1e16;
+            vm.expectRevert("Mock: deposit assets first");
+            vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
+        }
+
         vault.depositAssets(assets, amounts, 0, address(0));
         
         vm.roll(block.number + 5);
@@ -96,12 +110,14 @@ contract VaultTest is Test, FullMockSetup {
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
 
         // underlying token deposit
-        address[] memory underlyingAssets = new address[](1);
-        underlyingAssets[0] = address(lp);
-        otherAmounts = new uint[](1);
-        otherAmounts[0] = 1e16;
-        vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
-        shares = vault.balanceOf(address(this));
+        {
+            address[] memory underlyingAssets = new address[](1);
+            underlyingAssets[0] = address(lp);
+            otherAmounts = new uint[](1);
+            otherAmounts[0] = 1e16;
+            vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
+            shares = vault.balanceOf(address(this));
+        }
 
         vm.roll(block.number + 6);
 
@@ -121,9 +137,23 @@ contract VaultTest is Test, FullMockSetup {
 
         vault.doHardWork();
 
-        otherAmounts[0] = 0;
-        vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
+        // revenue
+        (,uint[] memory __amounts) = strategy.getRevenue();
+        assertEq(__amounts.length, 0);
 
+        // mock strategy getters for coverage
+        (string[] memory variants,,,) = strategy.initVariants(address(0));
+        assertEq(variants.length, 2);
+        assertEq(strategy.ammAdapterId(), 'MOCKSWAP');
+
+        {
+            address[] memory underlyingAssets = new address[](1);
+            underlyingAssets[0] = address(lp);
+            otherAmounts = new uint[](1);
+            otherAmounts[0] = 0;
+            vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
+        }
+        
         vm.roll(block.number + 6);
 
         shares = vault.balanceOf(address(this)); 

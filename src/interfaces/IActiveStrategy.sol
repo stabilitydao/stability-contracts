@@ -16,6 +16,7 @@ interface IActiveStrategy {
 
     error NotNeedRebalance();
     error NeedRebalance();
+    error NotSupported();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
