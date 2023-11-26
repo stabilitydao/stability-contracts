@@ -23,9 +23,9 @@ contract RMVault is RVaultBase, IManagedVault {
     /// @dev Version of RMVault implementation
     string public constant VERSION = '1.0.0';
 
-    uint internal constant UNIQUE_INIT_ADDRESSES = 1;
+    uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 
-    uint internal constant UNIQUE_INIT_NUMS = 0;
+    uint internal constant _UNIQUE_INIT_NUMS = 0;
 
     //endregion -- Constants -----
 
@@ -108,7 +108,7 @@ contract RMVault is RVaultBase, IManagedVault {
 
     /// @inheritdoc IVault
     function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
-        return (UNIQUE_INIT_ADDRESSES, UNIQUE_INIT_NUMS);
+        return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----

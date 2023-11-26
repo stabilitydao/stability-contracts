@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./Controllable.sol";
 import "../libs/ConstantsLib.sol";
+import "../libs/VaultStatusLib.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IPriceReader.sol";
@@ -148,7 +149,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        if(IFactory(IPlatform(platform()).factory()).vaultStatus($.strategy.vault()) != 1){
+        if(IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE){
             revert IFactory.NotActiveVault();
         } 
 
@@ -345,7 +346,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() external view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums) {} 
+    function getUniqueInitParamLength() public view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @inheritdoc IVault
     function strategy() external view returns (IStrategy) {

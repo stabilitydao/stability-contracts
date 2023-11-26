@@ -384,7 +384,7 @@ interface IPlatform {
     
     /// @notice Update new minimum TVL for compansate.
     /// @param value New minimum TVL for compensate.
-    function setMinTVL(uint value) external;
+    function setMinTvlForFreeHardWork(uint value) external;
 
     //endregion -- Write functions -----
 }

@@ -356,6 +356,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                 }
 
+                
+                (uint uniqueInitAddresses, uint uniqueInitNums) =  IVault(vars.vault).getUniqueInitParamLength();
+                assertEq(uniqueInitAddresses, 1);
+                assertEq(uniqueInitNums, 0);
+
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          TEST ZAP                          */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

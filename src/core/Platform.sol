@@ -394,7 +394,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function setMinTVL(uint value) external onlyGovernanceOrMultisig {
+    function setMinTvlForFreeHardWork(uint value) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
         $.minTVL = value;
         emit MinTVLChanged($.minTVL, value);

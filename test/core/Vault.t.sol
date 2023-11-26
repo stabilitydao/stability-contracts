@@ -198,10 +198,6 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.balanceOf(address(this)), 0);
 
         vault.doHardWork();
-
-        (uint uniqueInitAddresses, uint uniqueInitNums) =  vault.getUniqueInitParamLength();
-        assertEq(uniqueInitAddresses, 1);
-        assertEq(uniqueInitNums, 0);
     }
 
     function _initAll() internal {

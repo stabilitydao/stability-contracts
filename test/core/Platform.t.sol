@@ -22,12 +22,12 @@ contract PlatformTest is Test  {
         platform = Platform(address(proxy));
     }
 
-    function testSetMinTVL() public {
+    function testSetMinTvlForFreeHardWork() public {
         platform.initialize(address(this), '23.11.0-dev');
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         vm.prank(address(1));
-        platform.setMinTVL(123);
-        platform.setMinTVL(123);
+        platform.setMinTvlForFreeHardWork(123);
+        platform.setMinTvlForFreeHardWork(123);
         assertEq(platform.minTVL(), 123); 
     }
 
