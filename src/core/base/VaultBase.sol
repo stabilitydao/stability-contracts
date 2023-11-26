@@ -133,7 +133,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
-                if (_tvl < IPlatform(platform()).minTVL()) {
+                if (_tvl < IPlatform(platform()).minTvlForFreeHardWork()) {
                     revert NotEnoughBalanceToPay();
                 }
             }

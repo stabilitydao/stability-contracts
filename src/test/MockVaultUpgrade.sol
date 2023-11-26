@@ -44,7 +44,7 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function tvl() external view returns (uint tvl_, bool trusted_) {}
 
-    function minTVL() external view returns (uint) {}
+    function minTvlForFreeHardWork() external view returns (uint) {}
 
     function setMaxSupply(uint maxShares) external {}
 

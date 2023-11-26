@@ -233,7 +233,7 @@ interface IPlatform {
 
     /// @notice Show minimum TVL for compensate if vault has not enough ETH
     /// @return Minimum TVL for compensate.
-    function minTVL() external view returns (uint);
+    function minTvlForFreeHardWork() external view returns (uint);
 
     /// @notice Front-end platform viewer
     /// @return platformAddresses Platform core addresses

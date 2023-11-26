@@ -55,21 +55,23 @@ library StrategyLib {
         address receiver
     ) external returns (uint[] memory amountsOut) {
         uint len = assets.length;
-        amountsOut = previewWithdraw(assets, amount, total_);
+        amountsOut = new uint[](len);
         for (uint i; i < len; ++i) {
+            amountsOut[i] = balance(assets[i]) * amount / total_;
             IERC20(assets[i]).transfer(receiver, amountsOut[i]);
         }
     }
 
     function previewWithdraw(
         address[] memory assets,
+        uint[] memory assetsAmount,
         uint amount,
         uint total_
     ) public view returns (uint[] memory amountsOut) {
         uint len = assets.length;
         amountsOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            amountsOut[i] = balance(assets[i]) * amount / total_;
+            amountsOut[i] = assetsAmount[i] * amount / total_;
         }
     }
 

@@ -94,7 +94,7 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         string PLATFORM_VERSION;
         /// @inheritdoc IPlatform
-        uint minTVL;
+        uint minTvlForFreeHardWork;
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
@@ -144,7 +144,7 @@ contract Platform is Controllable, IPlatform {
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
-        $.minTVL = 100e18;
+        $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
             addresses.factory,
@@ -396,8 +396,8 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setMinTvlForFreeHardWork(uint value) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        $.minTVL = value;
-        emit MinTVLChanged($.minTVL, value);
+        $.minTvlForFreeHardWork = value;
+        emit MinTVLChanged($.minTvlForFreeHardWork, value);
     }
 
     //endregion -- Restricted actions ----
@@ -743,9 +743,9 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function minTVL() external view returns (uint) {
+    function minTvlForFreeHardWork() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
-        return $.minTVL;
+        return $.minTvlForFreeHardWork;
     }
 
     //endregion -- View functions -----

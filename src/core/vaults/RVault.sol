@@ -22,13 +22,13 @@ contract RVault is RVaultBase {
     /// @dev Version of RVault implementation
     string public constant VERSION = '1.0.0';
 
-    uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
-
-    uint internal constant _UNIQUE_INIT_NUMS = 0;
-
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 
     uint public constant BOOST_REWARD_DURATION = 86400 * 30;
+
+    uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
+
+    uint internal constant _UNIQUE_INIT_NUMS = 0;
 
     //endregion -- Constants -----
 

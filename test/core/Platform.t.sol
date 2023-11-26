@@ -28,7 +28,7 @@ contract PlatformTest is Test  {
         vm.prank(address(1));
         platform.setMinTvlForFreeHardWork(123);
         platform.setMinTvlForFreeHardWork(123);
-        assertEq(platform.minTVL(), 123); 
+        assertEq(platform.minTvlForFreeHardWork(), 123); 
     }
 
     function testSetup() public {
