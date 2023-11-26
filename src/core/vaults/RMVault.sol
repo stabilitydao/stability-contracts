@@ -23,11 +23,9 @@ contract RMVault is RVaultBase, IManagedVault {
     /// @dev Version of RMVault implementation
     string public constant VERSION = '1.0.0';
 
-    /// @inheritdoc IVault
-    uint public constant UNIQUE_INIT_ADDRESSES = 1;
+    uint internal constant UNIQUE_INIT_ADDRESSES = 1;
 
-    /// @inheritdoc IVault
-    uint public constant UNIQUE_INIT_NUMS = 0;
+    uint internal constant UNIQUE_INIT_NUMS = 0;
 
     //endregion -- Constants -----
 
@@ -106,6 +104,11 @@ contract RMVault is RVaultBase, IManagedVault {
     /// @inheritdoc IVault
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xd45a1d), bytes3(0x170a03)));
+    }
+
+    /// @inheritdoc IVault
+    function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+        return (UNIQUE_INIT_ADDRESSES, UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----

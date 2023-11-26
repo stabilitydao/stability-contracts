@@ -93,6 +93,8 @@ contract Platform is Controllable, IPlatform {
         uint platformUpgradeTimelock;
         /// @inheritdoc IPlatform
         string PLATFORM_VERSION;
+        /// @inheritdoc IPlatform
+        uint minTVL;
         mapping(bytes32 ammAdapterIdHash => AmmAdapter ammAdpater) _ammAdapter;
         /// @dev Hashes of AMM adapter ID string
         bytes32[] _ammAdapterIdHash;
@@ -142,6 +144,7 @@ contract Platform is Controllable, IPlatform {
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
+        $.minTVL = 100e18;
         emit Addresses(
             $.multisig,
             addresses.factory,
@@ -388,6 +391,13 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external onlyOperator {
         _setInitialBoost(minInitialBoostPerDay_, minInitialBoostDuration_);
+    }
+
+    /// @inheritdoc IPlatform
+    function setMinTVL(uint value) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        $.minTVL = value;
+        emit MinTVLChanged($.minTVL, value);
     }
 
     //endregion -- Restricted actions ----
@@ -730,6 +740,12 @@ contract Platform is Controllable, IPlatform {
     function platformUpgradeTimelock() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
         return $.platformUpgradeTimelock;
+    }
+
+    /// @inheritdoc IPlatform
+    function minTVL() external view returns (uint) {
+        PlatformStorage storage $ = _getStorage();
+        return $.minTVL;
     }
 
     //endregion -- View functions -----

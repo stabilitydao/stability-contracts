@@ -55,13 +55,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         /// @inheritdoc IVault
         uint tokenId;
         /// @inheritdoc IVault
-        uint minTVL;
-        /// @inheritdoc IVault
         bool doHardWorkOnDeposit;
         /// @dev Immutable vault type ID
         string _type;
-        /// @inheritdoc IPlatform
-        address _platform;
     }
 
 
@@ -85,8 +81,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.tokenId = tokenId_;
         __ReentrancyGuard_init();
         $.doHardWorkOnDeposit = true;
-        $.minTVL = 100e18;
-        $._platform = platform_;
     }
 
     //endregion -- Init -----
@@ -115,13 +109,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function setMinTVL(uint value) external onlyGovernanceOrMultisig {
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        $.minTVL = value;
-        emit MinTVLChanged($.minTVL, value);
-    }
-
-    /// @inheritdoc IVault
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
         if(msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)){
@@ -145,7 +132,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             } else {
                 //slither-disable-next-line unused-return
                 (uint _tvl,) = tvl();
-                if (_tvl < $.minTVL) {
+                if (_tvl < IPlatform(platform()).minTVL()) {
                     revert NotEnoughBalanceToPay();
                 }
             }
@@ -161,7 +148,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        if(IFactory(IPlatform($._platform).factory()).vaultStatus($.strategy.vault()) != 1){
+        if(IFactory(IPlatform(platform()).factory()).vaultStatus($.strategy.vault()) != 1){
             revert IFactory.NotActiveVault();
         } 
 
@@ -358,10 +345,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums) {
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        return (IVault($.strategy.vault()).UNIQUE_INIT_ADDRESSES(), IVault($.strategy.vault()).UNIQUE_INIT_NUMS());
-    }
+    function getUniqueInitParamLength() external view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums) {} 
 
     /// @inheritdoc IVault
     function strategy() external view returns (IStrategy) {
@@ -385,12 +369,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function doHardWorkOnDeposit() external view returns (bool) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
-    }
-
-    /// @inheritdoc IVault
-    function minTVL() external view returns (uint) {
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        return $.minTVL;
     }
 
 
@@ -439,7 +417,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (initialShares > 0) {
             _mint(ConstantsLib.DEAD_ADDRESS, initialShares);
         }
-        if(receiver == address(0)) receiver = msg.sender;
+        if(receiver == address(0)) {
+            receiver = msg.sender;
+        }
         _mint(receiver, mintAmount);
     }
 

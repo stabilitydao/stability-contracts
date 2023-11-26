@@ -86,7 +86,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         }
 
         IVault(vault).depositAssets(assets, depositAmounts, minSharesOut, receiver);
-        IERC20(vault).safeTransfer(receiver, IERC20(vault).balanceOf(address(this)));
+        IERC20(vault).transfer(receiver, IERC20(vault).balanceOf(address(this)));
 
         _sendAllRemaining(tokenIn, assets,  IStrategy(strategy).underlying());
     }
@@ -129,23 +129,23 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         }
     }
 
-    // function getWithdrawSwapAmounts(
-    //     address vault,
-    //     address tokenOut,
-    //     uint amountShares
-    // ) external view returns(
-    //     address[] memory tokensIn,
-    //     uint[] memory swapAmounts
-    // ) {
-    //     address strategy = address(IVault(vault).strategy());
-    //     tokensIn = IStrategy(strategy).assets();
-    //     uint len = tokensIn.length;
+/*     function getWithdrawSwapAmounts(
+         address vault,
+         address tokenOut,
+         uint amountShares
+        ) external view returns(
+         address[] memory tokensIn,
+         uint[] memory swapAmounts
+        ) {
+         address strategy = address(IVault(vault).strategy());
+         tokensIn = IStrategy(strategy).assets();
+         uint len = tokensIn.length;
 
-    //     swapAmounts = new uint[](len);
+         swapAmounts = new uint[](len);
 
-    //     // IVault(vault). todo need previewWithdraw
+         swapAmounts = IVault(vault).previewWithdraw(amountShares);
 
-    // }
+    } */
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

@@ -26,7 +26,6 @@ interface IVault is IERC165 {
     event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
-    event MinTVLChanged(uint oldValue, uint newValue);
     event MaxSupply(uint maxShares);
 
     //endregion -- Events -----
@@ -74,17 +73,9 @@ interface IVault is IERC165 {
     /// @notice Immutable vault type ID
     function VAULT_TYPE() external view returns (string memory);
 
-    /// @return Required unique init addresses
-    //slither-disable-next-line naming-convention
-    function UNIQUE_INIT_ADDRESSES() external view returns (uint);
-
-    /// @return Required unique init nums
-    //slither-disable-next-line naming-convention
-    function UNIQUE_INIT_NUMS() external view returns (uint);
-
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
-    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums);
+    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums); 
 
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
@@ -118,10 +109,6 @@ interface IVault is IERC165 {
     /// @return tvl_ Total USD value of final assets in vault
     /// @return trusted True means TVL calculated based only on oracle prices, false means AMM spot price was used.
     function tvl() external view returns (uint tvl_, bool trusted);
-
-    /// @notice Show minimum TVL for compensate if vault has not enough ETH
-    /// @return Minimum TVL for compensate.
-    function minTVL() external view returns (uint);
 
     /// @dev Calculation of consumed amounts, shares amount and liquidity/underlying value for provided available amounts of strategy assets
     /// @param assets_ Assets suitable for vault strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
@@ -179,10 +166,6 @@ interface IVault is IERC165 {
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
-
-    /// @notice Update new minimum TVL for compansate.
-    /// @param value New minimum TVL for compensate.
-    function setMinTVL(uint value) external;
 
     //endregion -- Write functions -----
 

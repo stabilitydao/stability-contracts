@@ -22,11 +22,9 @@ contract RVault is RVaultBase {
     /// @dev Version of RVault implementation
     string public constant VERSION = '1.0.0';
 
-    /// @inheritdoc IVault
-    uint public constant UNIQUE_INIT_ADDRESSES = 1;
+    uint internal constant UNIQUE_INIT_ADDRESSES = 1;
 
-    /// @inheritdoc IVault
-    uint public constant UNIQUE_INIT_NUMS = 0;
+    uint internal constant UNIQUE_INIT_NUMS = 0;
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 
@@ -87,6 +85,11 @@ contract RVault is RVaultBase {
     /// @inheritdoc IVault
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x6052ff), bytes3(0x090816)));
+    }
+
+    /// @inheritdoc IVault
+    function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+        return (UNIQUE_INIT_ADDRESSES, UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----
