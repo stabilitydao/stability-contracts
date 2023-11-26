@@ -175,12 +175,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
         }
     }
 
-    /// @inheritdoc IStrategy
-    function previewWithdraw(uint amount, uint total_) external view returns (uint[] memory amountsOut) {
-        //slither-disable-next-line unused-return
-        (,uint[] memory assetsAmount) = assetsAmounts();
-        return StrategyLib.previewWithdraw(_getStrategyBaseStorage()._assets, assetsAmount, amount, total_);
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */

@@ -62,19 +62,6 @@ library StrategyLib {
         }
     }
 
-    function previewWithdraw(
-        address[] memory assets,
-        uint[] memory assetsAmount,
-        uint amount,
-        uint total_
-    ) public view returns (uint[] memory amountsOut) {
-        uint len = assets.length;
-        amountsOut = new uint[](len);
-        for (uint i; i < len; ++i) {
-            amountsOut[i] = assetsAmount[i] * amount / total_;
-        }
-    }
-
     function extractFees(
         address platform,
         address vault,

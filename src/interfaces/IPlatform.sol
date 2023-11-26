@@ -53,7 +53,7 @@ interface IPlatform {
     event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
-    event MinTVLChanged(uint oldValue, uint newValue);
+    event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
     //endregion -- Events -----
 
     //region ----- Data types -----

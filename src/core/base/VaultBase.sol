@@ -342,14 +342,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function previewWithdraw(uint sharesToBurn) external view returns(uint[] memory){
-        return _getVaultBaseStorage().strategy.previewWithdraw(sharesToBurn, totalSupply());
+        (address[] memory assets,uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
+        return _previewWithdraw(assets, assetsAmount, sharesToBurn, totalSupply());
     }
 
     /// @inheritdoc IVault
     function getUniqueInitParamLength() public view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @inheritdoc IVault
-    function strategy() external view returns (IStrategy) {
+    function strategy() public view returns (IStrategy) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.strategy;
     }
@@ -381,6 +382,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line assembly
         assembly {
             $.slot := VAULTBASE_STORAGE_LOCATION
+        }
+    }
+
+    function _previewWithdraw(
+        address[] memory assets,
+        uint[] memory assetsAmount,
+        uint amount,
+        uint total_
+    ) internal pure returns (uint[] memory amountsOut) {
+        uint len = assets.length;
+        amountsOut = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amountsOut[i] = assetsAmount[i] * amount / total_;
         }
     }
 

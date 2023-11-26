@@ -97,12 +97,6 @@ interface IStrategy is IERC165 {
     /// @return value Liquidity value or underlying token amount minted when investing
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint value);
 
-    /// @notice Calculation of assets amount to receive for exact amount of shares.
-    /// @param amount Amount of shares to burn
-    /// @param total_ Total supply of shares
-    /// @return amountsOut Array of assets amounts to receive
-    function previewWithdraw(uint amount, uint total_) external view returns (uint[] memory amountsOut);
-
     /// @notice All strategy revenue (pool fees, farm rewards etc) that not claimed by strategy yet
     /// @return assets_ Revenue assets
     /// @return amounts Amounts. Index of asset same as in previous array.
