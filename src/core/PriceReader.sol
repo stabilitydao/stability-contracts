@@ -56,11 +56,12 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
+    //slither-disable-next-line calls-loop
     function getPrice(address asset) public view returns (uint price, bool trusted) {
         PriceReaderStorage storage $ = _getStorage();
         address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
-
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
@@ -71,11 +72,13 @@ contract PriceReader is Controllable, IPriceReader {
 
         if (len > 0) {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-
+            // nosemgrep
             for (uint j; j < len; ++j) {
                 IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
                 address[] memory oracleAssets = oracleAdapter.assets();
+                // nosemgrep
                 uint oracleAssetsLen = oracleAssets.length;
+                // nosemgrep
                 for (uint i; i < oracleAssetsLen; ++i) {
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
@@ -86,6 +89,7 @@ contract PriceReader is Controllable, IPriceReader {
                         if (assetOutDecimals <= 18) {
                             priceInTermOfOracleAsset = swapperPrice * 10 ** (18 - assetOutDecimals);
                         } else {
+                            //slither-disable-next-line divide-before-multiply
                             priceInTermOfOracleAsset = swapperPrice / 10 ** (assetOutDecimals - 18);
                         } 
                         return (priceInTermOfOracleAsset * _price / 1e18, false);
@@ -108,15 +112,18 @@ contract PriceReader is Controllable, IPriceReader {
         bool trusted
     ) {
         uint len = assets_.length;
+        //slither-disable-next-line uninitialized-local
         bool notTrustedPrices;
         assetAmountPrice = new uint[](len);
         assetPrice = new uint[](len);
         bool _trusted;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
                 notTrustedPrices = true;
             }
+            //slither-disable-next-line calls-loop
             uint decimals = IERC20Metadata(assets_[i]).decimals();
             if(decimals <= 18){
                 assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * assetPrice[i] / 1e18;

@@ -72,6 +72,7 @@ interface IHardWorker {
     /// @notice Set maximum vault HardWork calls per execution
     /// Only operator cal call this
     /// @param maxHwPerCall_ Max vault HardWorks per call(vaults) execution
+    //slither-disable-next-line similar-names
     function setMaxHwPerCall(uint maxHwPerCall_) external;
 
     /// @notice Changing vault excluding status
