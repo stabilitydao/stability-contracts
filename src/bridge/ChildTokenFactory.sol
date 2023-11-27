@@ -25,7 +25,8 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
 
     /// @custom:storage-location erc7201:stability.ChildTokenFactory
     struct ChildTokenFactoryStorage {
-        address parent;
+        mapping(address child => address parent) parentERC20;
+        mapping(address child => address parent) parentERC721;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -47,7 +48,9 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory name,
         string memory symbol
     ) external returns(address) {
+        ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol);
+        $.parentERC20[address(childERC20)] = parentToken;
         return address(childERC20);
     }
 
@@ -59,7 +62,9 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory symbol,
         string memory baseURI
     ) external returns(address) {
+        ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI);
+        $.parentERC721[address(childERC721)] = parentToken;
         return address(childERC721);
     }
 
