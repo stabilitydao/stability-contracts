@@ -287,11 +287,9 @@ abstract contract RVaultBase is VaultBase, IRVault {
         uint _rewardPerTokenStoredForToken = _rewardPerToken(tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
         $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable(tokenIndex);
-        if (account != address(0)) {
-            if(account != address(this)) {
-                $.rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
-                $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
-            }
+        if (account != address(0) && account != address(this)) {
+            $.rewardsForToken[tokenIndex][account] = _earned(tokenIndex, account);
+            $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
         }
     }
 
@@ -335,12 +333,10 @@ abstract contract RVaultBase is VaultBase, IRVault {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = _earned(rewardTokenIndex, owner);
         //slither-disable-next-line timestamp
-        if (reward > 0) {
-            if(IERC20(localRewardToken).balanceOf(address(this)) >= reward){
-                $.rewardsForToken[rewardTokenIndex][owner] = 0;
-                IERC20(localRewardToken).safeTransfer(receiver, reward);
-                emit RewardPaid(owner, localRewardToken, reward);
-            }
+        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward){
+            $.rewardsForToken[rewardTokenIndex][owner] = 0;
+            IERC20(localRewardToken).safeTransfer(receiver, reward);
+            emit RewardPaid(owner, localRewardToken, reward);
         }
     }
 

@@ -785,12 +785,9 @@ contract Platform is Controllable, IPlatform {
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
         PlatformStorage storage $ = _getStorage();
         address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
-        if(feeShareEcosystem != 0){
-            if(ecosystemRevenueReceiver_ == address(0)){
-                revert IControllable.IncorrectZeroArgument();
-            } else {
-                revert IncorrectFee(0,0);
-            }
+        if(feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)){
+            revert IControllable.IncorrectZeroArgument();
+            // revert IncorrectFee(0,0);
         } 
         if(fee < MIN_FEE || fee > MAX_FEE){
              revert IncorrectFee(MIN_FEE, MAX_FEE);
