@@ -370,6 +370,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     function _generateDescription(IFactory.Farm memory farm, IAmmAdapter _ammAdapter) internal view returns(string memory) {
+        //slither-disable-next-line calls-loop
         return string.concat(
                     "Earn ",
                     //slither-disable-next-line calls-loop
