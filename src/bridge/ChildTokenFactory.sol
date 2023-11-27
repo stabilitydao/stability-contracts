@@ -3,6 +3,8 @@ pragma solidity ^0.8.22;
 
 import "../core/base/Controllable.sol";
 import "../interfaces/IChildTokenFactory.sol";
+import "./ChildERC20.sol";
+import "./ChildERC721.sol";
 
 /// @notice ChildTokenFactory
 /// @author Jude (https://github.com/iammrjude)
@@ -44,7 +46,10 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         uint64 parentChainId,
         string memory name,
         string memory symbol
-    ) external returns(address) {}
+    ) external returns(address) {
+        ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol);
+        return address(childERC20);
+    }
 
     /// @inheritdoc IChildTokenFactory
     function deployChildERC721(
@@ -53,7 +58,10 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory name,
         string memory symbol,
         string memory baseURI
-    ) external returns(address) {}
+    ) external returns(address) {
+        ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI);
+        return address(childERC721);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

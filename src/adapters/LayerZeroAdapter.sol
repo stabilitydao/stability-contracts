@@ -4,9 +4,9 @@ pragma solidity ^0.8.22;
 import "../core/base/Controllable.sol";
 import "../interfaces/IInterChainAdapter.sol";
 
-/// @notice InterChainAdapter
+/// @notice LayerZeroAdapter
 /// @author Jude (https://github.com/iammrjude)
-contract InterChainAdapter is Controllable, IInterChainAdapter {
+contract LayerZeroAdapter is Controllable, IInterChainAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -14,15 +14,15 @@ contract InterChainAdapter is Controllable, IInterChainAdapter {
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.InterChainAdapter")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant INTERCHAINADAPTER_STORAGE_LOCATION = 0xf1b0b8a265a7826a14e989ee0002a4420703072cf04d8bfbcbe28e1498633c00;
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.LayerZeroAdapter")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant LAYERZEROADAPTER_STORAGE_LOCATION = 0x9754ba55f050389152acb9ea97154f952cafd8d183292010aa7b20edfc20be00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         STORAGE                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:storage-location erc7201:stability.InterChainAdapter
-    struct InterChainAdapterStorage {
+    /// @custom:storage-location erc7201:stability.LayerZeroAdapter
+    struct LayerZeroAdapterStorage {
         address parent;
     }
 
@@ -55,10 +55,10 @@ contract InterChainAdapter is Controllable, IInterChainAdapter {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getStorage() private pure returns (InterChainAdapterStorage storage $) {
+    function _getStorage() private pure returns (LayerZeroAdapterStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := INTERCHAINADAPTER_STORAGE_LOCATION
+            $.slot := LAYERZEROADAPTER_STORAGE_LOCATION
         }
     }
 }

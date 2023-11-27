@@ -10,5 +10,5 @@ interface IChildERC721 {
 
     function mint(address to, uint tokenId) external;
 
-    function burn(address from, uint tokenId) external;
+    function burn(uint tokenId) external;
 }

@@ -23,7 +23,8 @@ contract Bridge is Controllable, IBridge {
 
     /// @custom:storage-location erc7201:stability.Bridge
     struct BridgeStorage {
-        uint64 chainId;
+        mapping (bytes32 linkHash => Link) link;
+        Link[] links;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -39,13 +40,19 @@ contract Bridge is Controllable, IBridge {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridge
-    function chainId() external view returns(uint64) {}
+    function chainId() external view returns(uint64) {
+        return uint64(block.chainid);
+    }
 
     /// @inheritdoc IBridge
-    function link(bytes32 linkHash) external view returns(Link memory) {}
+    function link(bytes32 linkHash) external view returns(Link memory) {
+        return _getStorage().link[linkHash];
+    }
 
     /// @inheritdoc IBridge
-    function links() external view returns (Link[] memory) {}
+    function links() external view returns (Link[] memory) {
+        return _getStorage().links;
+    }
 
     /// @inheritdoc IBridge
     function adapterStatus(string memory adapterId) external view returns(bool active, uint priority) {}
@@ -67,20 +74,22 @@ contract Bridge is Controllable, IBridge {
     function interChainReceive(address token, uint amountOrTokenId, uint64 chainFrom) external {}
 
     /// @inheritdoc IBridge
-    function addLink(Link memory link_) external {}
+    function addLink(Link memory link_) external onlyOperator {
+        _getStorage().links.push(link_);
+    }
 
     /// @inheritdoc IBridge
-    function setLinkAdapters(string[] memory adapterIds) external {}
+    function setLinkAdapters(string[] memory adapterIds) external onlyOperator {}
 
     function setTarget(address token, uint64 chainTo, address targetToken, bytes32 linkHash) external {}
 
     function addAdapters(string[] memory adapterIds, uint priority) external {}
 
     /// @inheritdoc IBridge
-    function changeAdapterPriority(string memory adapterId, uint newPriority) external {}
+    function changeAdapterPriority(string memory adapterId, uint newPriority) external onlyOperator {}
 
     /// @inheritdoc IBridge
-    function emergencyStopAdapter(string memory adapterId, string memory reason) external {}
+    function emergencyStopAdapter(string memory adapterId, string memory reason) external onlyOperator {}
 
     /// @inheritdoc IBridge
     function enableAdapter(string memory adapterId) external {}

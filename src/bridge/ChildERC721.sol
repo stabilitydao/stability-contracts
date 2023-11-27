@@ -20,6 +20,9 @@ contract ChildERC721 is ERC721, IChildERC721 {
 
     /// @custom:storage-location erc7201:stability.ChildERC721
     struct ChildERC721Storage {
+        address parentToken;
+        uint64 parentChainId;
+        string baseURI;
         address bridge;
     }
     
@@ -27,15 +30,30 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
+    constructor(
+        address parentToken,
+        uint64 parentChainId,
+        string memory name,
+        string memory symbol,
+        string memory baseURI
+    ) ERC721(name, symbol) {
+        ChildERC721Storage storage $ = _getStorage();
+        $.parentToken = parentToken;
+        $.parentChainId = parentChainId;
+        $.baseURI = baseURI;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function mint(address to, uint tokenId) external {}
+    function mint(address to, uint tokenId) external {
+        _safeMint(to, tokenId);
+    }
 
-    function burn(address from, uint tokenId) external {}
+    function burn(uint tokenId) external {
+        _burn(tokenId);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -43,11 +61,19 @@ contract ChildERC721 is ERC721, IChildERC721 {
 
     function bridge() external view returns(address) {}
 
-    function parent() external view returns(address token, uint64 chainId) {}
+    function parent() external pure returns(address token, uint64 chainId) {
+        ChildERC721Storage memory $ = _getStorage();
+        return ($.parentToken, $.parentChainId);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _baseURI() internal pure override returns (string memory) {
+        ChildERC721Storage memory $ = _getStorage();
+        return $.baseURI;
+    }
 
     function _getStorage() private pure returns (ChildERC721Storage storage $) {
         //slither-disable-next-line assembly
