@@ -17,7 +17,6 @@ import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 /// Primary executor is server script, reserve executor is Gelato Automate.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
-/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 contract HardWorker is Controllable, IHardWorker {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -54,7 +53,6 @@ contract HardWorker is Controllable, IHardWorker {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //slither-disable-next-line reentrancy-events
     function initialize(
         address platform_,
         address gelatoAutomate,
@@ -129,9 +127,8 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
         HardWorkerStorage storage $ = _getStorage();
-        if($.delayServer == delayServer_){
-            if($.delayGelato == delayGelato_)
-                revert AlreadyExist();
+        if($.delayServer == delayServer_ && $.delayGelato == delayGelato_){
+            revert AlreadyExist();
         }
         $.delayServer = delayServer_;
         $.delayGelato = delayGelato_;
@@ -156,7 +153,6 @@ contract HardWorker is Controllable, IHardWorker {
             revert IControllable.IncorrectArrayLength();
         }
         IFactory factory = IFactory(IPlatform(platform()).factory());
-        // nosemgrep
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
@@ -173,16 +169,15 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
-    //slither-disable-next-line cyclomatic-complexity
     function call(address[] memory vaults) external {
         HardWorkerStorage storage $ = _getStorage();
+
         uint startGas = gasleft();
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
         bool isGelato = msg.sender == $.dedicatedGelatoMsgSender;
-        if(!isServer){
-            if(!isGelato)
-                revert NotServerOrGelato();
+        if(!isServer && !isGelato){
+            revert NotServerOrGelato();
         }
 
         if (isGelato) {
@@ -194,7 +189,6 @@ contract HardWorker is Controllable, IHardWorker {
                 if(contractBal < depositAmount){
                     revert NotEnoughETH();
                 }
-                //slither-disable-next-line reentrancy-events
                 _treasury.depositFunds{value: depositAmount}(
                     address(this),
                     ETH,
@@ -203,20 +197,19 @@ contract HardWorker is Controllable, IHardWorker {
                 emit GelatoDeposit(depositAmount);
             }
         }
-        uint localMaxHwPerCall = $.maxHwPerCall;
+
+        uint _maxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
-        // nosemgrep
         for (uint i; i < vaultsLength; ++i) {
             IVault vault = IVault(vaults[i]);
-            //slither-disable-next-line calls-loop
             try vault.doHardWork() {} catch Error(string memory _err) {
                 revert(string(abi.encodePacked("Vault error: 0x", Strings.toHexString(address(vault)), " ", _err)));
             } catch (bytes memory _err) {
                 revert(string(abi.encodePacked("Vault low-level error: 0x", Strings.toHexString(address(vault)), " ", string(_err))));
             }
             ++counter;
-            if (counter >= localMaxHwPerCall) {
+            if (counter >= _maxHwPerCall) {
                 break;
             }
         }
@@ -224,16 +217,14 @@ contract HardWorker is Controllable, IHardWorker {
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
 
-        if (isServer) {
-            if(gasCost > 0)
-                if(address(this).balance >= gasCost){
-                    //slither-disable-next-line low-level-calls unused-return
-                    (bool success, ) = msg.sender.call{value: gasCost}("");
-                    if(!success){
-                        revert IControllable.ETHTransferFailed();
-                    }
-                }
+        if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
+            //slither-disable-next-line unused-return
+            (bool success, ) = msg.sender.call{value: gasCost}("");
+            if(!success){
+                revert IControllable.ETHTransferFailed();
+            }
         }
+
         emit Call(counter, gasUsed, gasCost, isServer);
     }
 
@@ -297,13 +288,11 @@ contract HardWorker is Controllable, IHardWorker {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getStorage() private pure returns (HardWorkerStorage storage $) {
-        //slither-disable-next-line assembly
         assembly {
             $.slot := HARDWORKER_STORAGE_LOCATION
         }
     }
 
-    //slither-disable-next-line timestamp cyclomatic-complexity
     function _checker(uint delay_) internal view returns (bool canExec, bytes memory execPayload) {
         HardWorkerStorage storage $ = _getStorage();
         IPlatform _platform = IPlatform(platform());
@@ -311,9 +300,7 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaults = IVaultManager(_platform.vaultManager()).vaultAddresses();
         uint len = vaults.length;
         address[] memory vaultsForHardWork = new address[](len);
-        // slither-disable-next-line uninitialized-local
         uint counter;
-        // nosemgrep
         for (uint i; i < len; ++i) {
             if ($.excludedVaults[vaults[i]]) {
                 continue;
@@ -323,13 +310,13 @@ contract HardWorker is Controllable, IHardWorker {
             IStrategy strategy = vault.strategy();
             //slither-disable-next-line unused-return
             (uint tvl,) = vault.tvl();
-            //slither-disable-next-line timestamp
-            if(tvl > 0) {
-                if(block.timestamp - strategy.lastHardWork() > delay_)
-                    if(factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE){
-                        ++counter;
-                        vaultsForHardWork[i] = vaults[i];
-                    }
+            if(
+                tvl > 0
+                && block.timestamp - strategy.lastHardWork() > delay_
+                && factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE
+            ) {
+                ++counter;
+                vaultsForHardWork[i] = vaults[i];
             }
         }
 
@@ -338,7 +325,6 @@ contract HardWorker is Controllable, IHardWorker {
         } else {
             address[] memory vaultsResult = new address[](counter);
             uint j;
-            // nosemgrep
             for (uint i; i < len; ++i) {
                 if (vaultsForHardWork[i] == address(0)) {
                     continue;
