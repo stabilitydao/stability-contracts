@@ -56,29 +56,35 @@ abstract contract StrategyBase is Controllable, IStrategy {
         if ($.lastHardWork == 0) {
             $.lastHardWork = block.timestamp;
         }
+        _beforeDeposit();
         return _depositAssets(amounts, true);
     }
 
     /// @inheritdoc IStrategy
     function withdrawAssets(address[] memory assets_, uint value, address receiver) external virtual onlyVault returns (uint[] memory amountsOut) {
+        _beforeWithdraw();
         return _withdrawAssets(assets_, value, receiver);
     }
 
     function depositUnderlying(uint amount) external virtual override onlyVault returns(uint[] memory amountsConsumed) {
+        _beforeDeposit();
         return _depositUnderlying(amount);
     }
 
     function withdrawUnderlying(uint amount, address receiver) external virtual override onlyVault {
+        _beforeWithdraw();
         _withdrawUnderlying(amount, receiver);
     }
 
     /// @inheritdoc IStrategy
     function transferAssets(uint amount, uint total_, address receiver) external onlyVault returns (uint[] memory amountsOut) {
+        _beforeTransferAssets();
         //slither-disable-next-line unused-return
-        return StrategyLib.transferAssets(_getStrategyBaseStorage()._assets, amount, total_, receiver);
+        return StrategyLib.transferAssets(_getStrategyBaseStorage(), amount, total_, receiver);
     }
 
     function doHardWork() external onlyVault {
+        _beforeDoHardWork();
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         address _vault = $.vault;
         //slither-disable-next-line unused-return
@@ -107,7 +113,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
             }
             
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
-            $.lastHardWork = block.timestamp;
         }
     }
 
@@ -117,7 +122,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
-        return  interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function strategyLogicID() public view virtual returns(string memory);
@@ -158,8 +163,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    //slither-disable-next-line unused-return
-    function assetsAmounts() external view virtual returns (address[] memory assets_, uint[] memory amounts_) {
+    function assetsAmounts() public view virtual returns (address[] memory assets_, uint[] memory amounts_) {
         (assets_, amounts_) = _assetsAmounts();
         return StrategyLib.assetsAmountsWithBalances(assets_, amounts_);
     }
@@ -180,6 +184,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
             return _previewDepositAssets(assets_, amountsMax);
         }
     }
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */
@@ -204,6 +209,18 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
     function _previewDepositUnderlying(uint /*amount*/) internal view virtual returns(uint[] memory /*amountsConsumed*/) {
     }
+
+    /// @dev Can be overrided by derived base strategies for custom logic
+    function _beforeDeposit() internal virtual {}
+    
+    /// @dev Can be overrided by derived base strategies for custom logic
+    function _beforeWithdraw() internal virtual {}
+
+    /// @dev Can be overrided by derived base strategies for custom logic
+    function _beforeTransferAssets() internal virtual {}
+
+    /// @dev Can be overrided by derived base strategies for custom logic
+    function _beforeDoHardWork() internal virtual {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */

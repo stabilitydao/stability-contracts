@@ -199,6 +199,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
                 if (builtThisWeek < _PERMIT_PER_WEEK) {
                     $.vaultsBuiltByPermitTokenId[epoch][tokenId] = builtThisWeek + 1;
                     vars.permit = true;
+                    break;
                 }
             }
         }

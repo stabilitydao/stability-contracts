@@ -26,6 +26,10 @@ contract RVault is RVaultBase {
 
     uint public constant BOOST_REWARD_DURATION = 86400 * 30;
 
+    uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
+
+    uint internal constant _UNIQUE_INIT_NUMS = 0;
+
     //endregion -- Constants -----
 
     //region ----- Data types -----
@@ -83,6 +87,11 @@ contract RVault is RVaultBase {
     /// @inheritdoc IVault
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x6052ff), bytes3(0x090816)));
+    }
+
+    /// @inheritdoc IVault
+    function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+        return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----

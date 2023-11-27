@@ -8,6 +8,7 @@ import "./IStrategy.sol";
 /// Fungible, static non-fungible and actively re-balancing liquidity is supported, as well as single token liquidity provided to lending protocols.
 /// Vaults can be used for active concentrated liquidity management and market making.
 /// @author Jude (https://github.com/iammrjude)
+/// @author JodsMigel (https://github.com/JodsMigel)
 interface IVault is IERC165 {
     //region ----- Custom Errors -----
     error NotEnoughBalanceToPay();
@@ -51,12 +52,30 @@ interface IVault is IERC165 {
         uint[] vaultInitNums;
     }
 
+    /// @title Deposit Assets Data
+    /// @notice Data structure containing parameters for function depositAssets to avoid stack too deep.
+    /// @notice This structure use local variables. 
+    struct DepositAssetsData {
+        uint _totalSupply;
+        uint totalValue;
+        uint len;
+        address[] assets;
+        address underlying;
+        uint[] amountsConsumed;
+        uint value;
+        uint mintAmount;
+    }
+
     //endregion -- Data types -----
 
     //region ----- Read functions -----
 
     /// @notice Immutable vault type ID
     function vaultType() external view returns (string memory);
+
+    /// @return uniqueInitAddresses Return required unique init addresses
+    /// @return uniqueInitNums Return required unique init nums
+    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums); 
 
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
@@ -99,6 +118,11 @@ interface IVault is IERC165 {
     /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
+    /// @notice Calculation of assets amount to receive for exact amount of shares.
+    /// @param sharesToBurn Amount of shares to burn
+    /// @return amountsOut Array of assets amounts to receive
+    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory amountsOut);
+
     /// @notice All available data on the latest declared APR (annual percentage rate)
     /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
     /// @return strategyApr Strategy investmnt APR declared on last HardWork.
@@ -116,7 +140,8 @@ interface IVault is IERC165 {
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
     /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user.
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut) external;
+    /// @param receiver Receiver of deposit. If receiver is zero address, receiver is msg.sender.
+    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external;
 
     /// @dev Burning shares of vault and obtaining strategy assets.
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.

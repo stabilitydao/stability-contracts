@@ -195,7 +195,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 // deposit
-                IVault(vars.vault).depositAssets(assets, depositAmounts, 0);
+                IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
                 (uint tvl, ) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
@@ -236,7 +236,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();
-                    (uint totalRevenueUSD,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
+                    (uint totalRevenueUSD,,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
                     assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
                     if (totalRevenueUSD == 0) {
                         for (uint x; x < __assets.length; ++x) {
@@ -260,7 +260,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.entries = vm.getRecordedLogs();
                     vars.hwEventFound = false;
                     for (uint j = 0; j < vars.entries.length; ++j) {
-                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256)")) {
+                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])")) {
                             vars.hwEventFound = true;
                             (uint tempApr, uint tempAprCompound, uint tempEarned, uint tempTvl, uint tempDuration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
 
@@ -329,7 +329,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     (, uint sharesOut, uint valueOut) = IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
                     assertEq(valueOut, totalWas);
                     uint lastHw = strategy.lastHardWork();
-                    IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0);
+                    IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
                     assertGt(strategy.lastHardWork(), lastHw);
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
                     assertGt(strategy.total(), totalWas);
@@ -355,6 +355,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vm.stopPrank(); 
                     }
                 }
+
+                
+                (uint uniqueInitAddresses, uint uniqueInitNums) =  IVault(vars.vault).getUniqueInitParamLength();
+                assertEq(uniqueInitAddresses, 1);
+                assertEq(uniqueInitNums, 0);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          TEST ZAP                          */

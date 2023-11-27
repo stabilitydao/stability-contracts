@@ -102,24 +102,33 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
-    function getAssetsPrice(address[] memory assets_, uint[] memory amounts_) external view returns (uint total, uint[] memory assetAmountPrice, bool trusted) {
+    function getAssetsPrice(
+        address[] memory assets_,
+        uint[] memory amounts_
+    ) external view returns (
+        uint total,
+        uint[] memory assetAmountPrice,
+        uint[] memory assetPrice,
+        bool trusted
+    ) {
         uint len = assets_.length;
         //slither-disable-next-line uninitialized-local
         bool notTrustedPrices;
         assetAmountPrice = new uint[](len);
-        // nosemgrep
+        assetPrice = new uint[](len);
+        bool _trusted;
         for (uint i; i < len; ++i) {
-            (uint price, bool _trusted) = getPrice(assets_[i]);
+            (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
                 notTrustedPrices = true;
             }
             //slither-disable-next-line calls-loop
             uint decimals = IERC20Metadata(assets_[i]).decimals();
             if(decimals <= 18){
-                assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * price / 1e18;
+                assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * assetPrice[i] / 1e18;
                 total += assetAmountPrice[i];
             } else {
-                assetAmountPrice[i] = amounts_[i] * price / 10**decimals;
+                assetAmountPrice[i] = amounts_[i] * assetPrice[i] / 10**decimals;
                 total += assetAmountPrice[i];
             }
         }
