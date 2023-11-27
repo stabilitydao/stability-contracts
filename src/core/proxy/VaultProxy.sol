@@ -25,7 +25,9 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
     }
 
     function upgrade() external {
-        if(msg.sender != IPlatform(IControllable(address(this)).platform()).factory()) revert ProxyForbidden();
+        if(msg.sender != IPlatform(IControllable(address(this)).platform()).factory()) {
+            revert ProxyForbidden();
+        }
         bytes32 typeHash;
         bytes32 slot = _TYPE_SLOT;
         //slither-disable-next-line assembly
