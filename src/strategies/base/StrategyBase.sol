@@ -27,7 +27,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //slither-disable-next-line naming-convention
     function __StrategyBase_init(
         address platform_,
         string memory id_,
@@ -165,22 +164,17 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function assetsAmounts() public view virtual returns (address[] memory assets_, uint[] memory amounts_) {
         (assets_, amounts_) = _assetsAmounts();
-        //slither-disable-next-line unused-return
         return StrategyLib.assetsAmountsWithBalances(assets_, amounts_);
     }
 
     /// @inheritdoc IStrategy
     function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view virtual returns (uint[] memory amountsConsumed, uint value) {
-        if (assets_.length == 1) {
-            if(assets_[0] == _getStrategyBaseStorage()._underlying){
-                if(assets_[0] != address(0)){
-                    if(amountsMax.length != 1){
-                        revert IControllable.IncorrectArrayLength();
-                    }
-                    value = amountsMax[0];
-                    amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
-                }       
+        if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
+            if(amountsMax.length != 1){
+                revert IControllable.IncorrectArrayLength();
             }
+            value = amountsMax[0];
+            amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
         } else {
             return _previewDepositAssets(assets_, amountsMax);
         }
