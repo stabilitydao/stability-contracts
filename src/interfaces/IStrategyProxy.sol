@@ -19,6 +19,6 @@ interface IStrategyProxy {
   // todo change name
   /// @notice Strategy logic hash
   /// @return keccan256 hash of strategy logic ID string
-  function strategyImplementationLogicIDHash() external view returns (bytes32);
+  function strategyImplementationLogicIdHash() external view returns (bytes32);
 
 }

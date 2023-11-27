@@ -18,10 +18,6 @@ library FactoryLib {
 
     uint public constant BOOST_REWARD_DURATION = 86400 * 30;
 
-    error BoostDurationTooLow();
-    error BoostAmountTooLow();
-    error BoostAmountIsZero();
-
     struct WhatToBuildVars {
         bytes32[] strategyIdHashes;
         uint strategyIdHashesLen;
@@ -494,7 +490,7 @@ library FactoryLib {
         string memory specificName,
         string memory vaultSymbol
     ) {
-        strategyId = IStrategy(strategyAddress).strategyLogicID();
+        strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
         bool showSpecificInSymbol;
@@ -603,7 +599,9 @@ library FactoryLib {
             for (uint i; i < boostTokensLen; ++i) {
                 address token = vaultInitAddresses[1 + i];
                 uint durationSeconds = vars.isRewardingVaultType ? BOOST_REWARD_DURATION : vaultInitNums[1 + i];
-                if(durationSeconds < vars.minInitialBoostDuration) revert BoostDurationTooLow();
+                if(durationSeconds < vars.minInitialBoostDuration){
+                    revert IFactory.BoostDurationTooLow();
+                }
                 uint initialNotifyAmount = vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
                 //slither-disable-next-line unused-return
                 (uint price,) = priceReader.getPrice(token);
@@ -614,8 +612,12 @@ library FactoryLib {
                     IRVault(vault).notifyTargetRewardAmount(1 + i, initialNotifyAmount);
                 }
             }
-            if(totalInitialBoostUsdPerDay == 0) revert BoostAmountIsZero();
-            if(totalInitialBoostUsdPerDay < vars.minInitialBoostPerDay) revert BoostAmountTooLow();
+            if(totalInitialBoostUsdPerDay == 0){
+                revert IFactory.BoostAmountIsZero();
+            }
+            if(totalInitialBoostUsdPerDay < vars.minInitialBoostPerDay){
+                revert IFactory.BoostAmountTooLow();
+            }
         }
     }
 }

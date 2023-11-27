@@ -319,7 +319,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             revert NotStrategy();
         }
         IStrategyProxy proxy = IStrategyProxy(strategyProxy);
-        bytes32 idHash = proxy.strategyImplementationLogicIDHash();
+        bytes32 idHash = proxy.strategyImplementationLogicIdHash();
         StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;

@@ -49,7 +49,7 @@ interface IStrategy is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/    
 
     /// @dev Strategy logic string ID
-    function strategyLogicID() external view returns(string memory);
+    function strategyLogicId() external view returns(string memory);
 
     /// @dev Extra data
     /// @return 0-2 bytes - strategy color

@@ -53,6 +53,7 @@ contract HardWorker is Controllable, IHardWorker {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line reentrancy-events
     function initialize(
         address platform_,
         address gelatoAutomate,
@@ -127,6 +128,7 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
         HardWorkerStorage storage $ = _getStorage();
+        // nosemgrep
         if($.delayServer == delayServer_ && $.delayGelato == delayGelato_){
             revert AlreadyExist();
         }
@@ -136,6 +138,7 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
+    //slither-disable-next-line similar-names
     function setMaxHwPerCall(uint maxHwPerCall_) external onlyOperator {
         HardWorkerStorage storage $ = _getStorage();
         if(maxHwPerCall_ <= 0){
@@ -153,6 +156,7 @@ contract HardWorker is Controllable, IHardWorker {
             revert IControllable.IncorrectArrayLength();
         }
         IFactory factory = IFactory(IPlatform(platform()).factory());
+        // nosemgrep
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
@@ -169,6 +173,7 @@ contract HardWorker is Controllable, IHardWorker {
     }
 
     /// @inheritdoc IHardWorker
+    //slither-disable-next-line cyclomatic-complexity
     function call(address[] memory vaults) external {
         HardWorkerStorage storage $ = _getStorage();
 
@@ -176,6 +181,7 @@ contract HardWorker is Controllable, IHardWorker {
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
         bool isGelato = msg.sender == $.dedicatedGelatoMsgSender;
+        // nosemgrep
         if(!isServer && !isGelato){
             revert NotServerOrGelato();
         }
@@ -189,6 +195,7 @@ contract HardWorker is Controllable, IHardWorker {
                 if(contractBal < depositAmount){
                     revert NotEnoughETH();
                 }
+                //slither-disable-next-line reentrancy-events 
                 _treasury.depositFunds{value: depositAmount}(
                     address(this),
                     ETH,
@@ -201,8 +208,10 @@ contract HardWorker is Controllable, IHardWorker {
         uint _maxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
+        // nosemgrep
         for (uint i; i < vaultsLength; ++i) {
             IVault vault = IVault(vaults[i]);
+            //slither-disable-next-line calls-loop
             try vault.doHardWork() {} catch Error(string memory _err) {
                 revert(string(abi.encodePacked("Vault error: 0x", Strings.toHexString(address(vault)), " ", _err)));
             } catch (bytes memory _err) {
@@ -216,9 +225,9 @@ contract HardWorker is Controllable, IHardWorker {
 
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
-
-        if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
-            //slither-disable-next-line unused-return
+        //slither-disable-next-line unused-return
+        if (isServer && gasCost > 0 && address(this).balance >= gasCost) { // nosemgrep
+            //slither-disable-next-line low-level-calls
             (bool success, ) = msg.sender.call{value: gasCost}("");
             if(!success){
                 revert IControllable.ETHTransferFailed();
@@ -288,6 +297,7 @@ contract HardWorker is Controllable, IHardWorker {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getStorage() private pure returns (HardWorkerStorage storage $) {
+        //slither-disable-next-line assembly
         assembly {
             $.slot := HARDWORKER_STORAGE_LOCATION
         }
@@ -300,7 +310,9 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaults = IVaultManager(_platform.vaultManager()).vaultAddresses();
         uint len = vaults.length;
         address[] memory vaultsForHardWork = new address[](len);
+        //slither-disable-next-line uninitialized-local
         uint counter;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if ($.excludedVaults[vaults[i]]) {
                 continue;
@@ -310,7 +322,9 @@ contract HardWorker is Controllable, IHardWorker {
             IStrategy strategy = vault.strategy();
             //slither-disable-next-line unused-return
             (uint tvl,) = vault.tvl();
+            // nosemgrep
             if(
+                //slither-disable-next-line timestamp
                 tvl > 0
                 && block.timestamp - strategy.lastHardWork() > delay_
                 && factory.vaultStatus(vaults[i]) == VaultStatusLib.ACTIVE
@@ -325,6 +339,7 @@ contract HardWorker is Controllable, IHardWorker {
         } else {
             address[] memory vaultsResult = new address[](counter);
             uint j;
+            // nosemgrep
             for (uint i; i < len; ++i) {
                 if (vaultsForHardWork[i] == address(0)) {
                     continue;

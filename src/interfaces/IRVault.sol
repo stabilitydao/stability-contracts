@@ -11,6 +11,12 @@ interface IRVault is IVault {
     error NotAllowed();
     error Overflow(uint maxAmount);
     error RTNotFound();
+    error NoBBToken();
+    error NotAllowedBBToken();
+    error IncorrectNums();
+    error ZeroToken();
+    error ZeroVestingDuration();
+    error TooHighCompoundRation();
     //endregion -- Custom Errors -----
 
     event RewardAdded(address rewardToken, uint reward);

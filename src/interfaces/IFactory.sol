@@ -19,6 +19,9 @@ interface IFactory {
     error UpgradeDenied(bytes32 _hash);
     error AlreadyLastVersion(bytes32 _hash);
     error NotStrategy();
+    error BoostDurationTooLow();
+    error BoostAmountTooLow();
+    error BoostAmountIsZero();
 
     //endregion ----- Custom Errors -----
 

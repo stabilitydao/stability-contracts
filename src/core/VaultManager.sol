@@ -152,7 +152,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
             vaultType[i] = vault.vaultType();
             IStrategy strategy = vault.strategy();
-            strategyId[i] = strategy.strategyLogicID();
+            strategyId[i] = strategy.strategyLogicId();
             //slither-disable-next-line unused-return
             (strategySpecific[i],) = strategy.getSpecificName();
             //slither-disable-next-line unused-return
