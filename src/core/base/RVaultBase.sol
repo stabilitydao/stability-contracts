@@ -258,11 +258,9 @@ abstract contract RVaultBase is VaultBase, IRVault {
         return $.rewardTokensTotal;
     }
 
-
     //endregion -- View functions -----
 
     //region ----- Internal logic -----
-
 
     function _getRVaultBaseStorage() internal pure returns (RVaultBaseStorage storage $) {
         //slither-disable-next-line assembly
@@ -270,7 +268,6 @@ abstract contract RVaultBase is VaultBase, IRVault {
             $.slot := RVAULTBASE_STORAGE_LOCATION
         }
     }
-
 
     function _getAllRewards(address owner, address receiver) internal {
         _updateRewards(owner);
