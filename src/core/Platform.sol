@@ -20,6 +20,7 @@ import "../interfaces/IVault.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -213,6 +214,7 @@ contract Platform is Controllable, IPlatform {
         if(len != newImplementations.length){
             revert IncorrectArrayLength();
         }
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if(proxies[i] == address(0)){
                 revert IControllable.IncorrectZeroArgument();
@@ -220,6 +222,7 @@ contract Platform is Controllable, IPlatform {
             if(newImplementations[i] == address(0)){
                 revert IControllable.IncorrectZeroArgument();
             }
+            //slither-disable-next-line calls-loop
             if(CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION())){
                 revert SameVersion();
             }
@@ -237,20 +240,26 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line reentrancy-benign reentrancy-no-eth calls-loop
     function upgrade() external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint ts = $.platformUpgradeTimelock;
         if(ts == 0){
             revert NoNewVersion();
         }
+        //slither-disable-next-line timestamp
         if(ts > block.timestamp){
             revert UpgradeTimerIsNotOver(ts);
         }
         PlatformUpgrade memory platformUpgrade = $.pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
+            //slither-disable-next-line calls-loop
             IProxy(platformUpgrade.proxies[i]).upgrade(platformUpgrade.newImplementations[i]);
+            //slither-disable-next-line calls-loop reentrancy-events
             emit ProxyUpgraded(
                 platformUpgrade.proxies[i],
                 platformUpgrade.newImplementations[i],
@@ -263,6 +272,7 @@ contract Platform is Controllable, IPlatform {
         $.pendingPlatformUpgrade.proxies = new address[](0);
         $.pendingPlatformUpgrade.newImplementations = new address[](0);
         $.platformUpgradeTimelock = 0;
+        //slither-disable-next-line reentrancy-events
         emit PlatformVersion(platformUpgrade.newVersion);
     }
 
@@ -300,6 +310,7 @@ contract Platform is Controllable, IPlatform {
     function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint len = dexAggRouter.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
                 revert IControllable.IncorrectZeroArgument();
@@ -434,6 +445,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function getPlatformSettings() external view returns (PlatformSettings memory) {
         PlatformStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         PlatformSettings memory platformSettings;
         (platformSettings.fee,platformSettings.feeShareVaultManager,platformSettings.feeShareStrategyLogic,platformSettings.feeShareEcosystem) = getFees();
         platformSettings.networkName = $.networkName;
@@ -450,6 +462,7 @@ contract Platform is Controllable, IPlatform {
         ids = new string[](len);
         proxies = new address[](len);
         bytes32[] memory _ammAdapterIdHash = $.ammAdapterIdHash;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             bytes32 hash = _ammAdapterIdHash[i];
             AmmAdapter memory __ammAdapter = $.ammAdapter[hash];
@@ -471,6 +484,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
         PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line unused-return
@@ -483,7 +497,9 @@ contract Platform is Controllable, IPlatform {
         bbToken = $.allowedBBTokensVaults.keys();
         uint len = bbToken.length;
         vaultsLimit = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (, vaultsLimit[i]) = $.allowedBBTokensVaults.tryGet(bbToken[i]);
         }
     }
@@ -496,6 +512,7 @@ contract Platform is Controllable, IPlatform {
         uint[] memory limit = new uint[](len);
         //slither-disable-next-line uninitialized-local
         uint k;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             //nosemgrep
             limit[i] = $.allowedBBTokensVaults.get(allBbTokens[i]);
@@ -505,6 +522,7 @@ contract Platform is Controllable, IPlatform {
         vaultsLimit = new uint[](k);
         //slither-disable-next-line uninitialized-local
         uint y;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (limit[i] == 0) {
                 continue;
@@ -546,12 +564,14 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function getData() external view returns(
         address[] memory platformAddresses,
         address[] memory bcAssets,
         address[] memory dexAggregators_,
         string[] memory vaultType,
         bytes32[] memory vaultExtra,
+        //slither-disable-next-line similar-names
         uint[] memory vaultBuildingPrice,
         string[] memory strategyId,
         bool[] memory isFarmingStrategy,
@@ -579,6 +599,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    //slither-disable-next-line unused-return
     function getBalance(address yourAccount) external view returns (
         address[] memory token,
         uint[] memory tokenPrice,
@@ -596,9 +617,11 @@ contract Platform is Controllable, IPlatform {
         uint len = token.length;
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
+            //slither-disable-next-line calls-loop
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
+            //slither-disable-next-line calls-loop
             tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
         }
 
@@ -606,9 +629,11 @@ contract Platform is Controllable, IPlatform {
         len = vault.length;
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
+            //slither-disable-next-line calls-loop unused-return
             (vaultSharePrice[i],) = IVault(vault[i]).price();
+            //slither-disable-next-line calls-loop
             vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);
         }
 
@@ -618,7 +643,9 @@ contract Platform is Controllable, IPlatform {
         nft[1] = $.vaultManager;
         nft[2] = $.strategyLogic;
         nftUserBalance = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
         }
 
@@ -759,11 +786,8 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
         if(feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)){
-            if(ecosystemRevenueReceiver_ == address(0)){
-                revert IControllable.IncorrectZeroArgument();
-            } else {
-                revert IncorrectFee(0,0);
-            }
+            revert IControllable.IncorrectZeroArgument();
+            // revert IncorrectFee(0,0);
         } 
         if(fee < MIN_FEE || fee > MAX_FEE){
              revert IncorrectFee(MIN_FEE, MAX_FEE);
@@ -798,6 +822,7 @@ contract Platform is Controllable, IPlatform {
      */
     function _addTokens(EnumerableSet.AddressSet storage tokenSet, address[] memory tokens) internal {
         uint len = tokens.length;
+        // nosemgrep
         for (uint i = 0; i < len; ++i) {
             if (!tokenSet.add(tokens[i])) {
                 revert TokenAlreadyExistsInSet({token: tokens[i]});

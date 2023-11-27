@@ -19,13 +19,6 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     mapping(address asset => address priceFeed) public priceFeeds;
     EnumerableSet.AddressSet internal _assets;
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint[50 - 3] private __gap;
-
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }
@@ -35,11 +28,13 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         if(len != priceFeeds_.length){
             revert IControllable.IncorrectArrayLength();
         }
-
+        // nosemgrep
         for (uint i; i < len; ++i) {
+            // nosemgrep
             if(!_assets.add(assets_[i])){
                 revert IControllable.AlreadyExist();
             }
+            // nosemgrep
             priceFeeds[assets_[i]] = priceFeeds_[i];
         }
 
@@ -48,10 +43,13 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
 
     function removePriceFeeds(address[] memory assets_) external onlyOperator {
         uint len = assets_.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
+            // nosemgrep
             if(!_assets.remove(assets_[i])){
                 revert IControllable.NotExist();
             }
+            // nosemgrep
             priceFeeds[assets_[i]] = address(0);
         }
         emit RemovedPriceFeeds(assets_);
@@ -72,14 +70,16 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         return (uint(answer) * 1e10, updatedAt);
     }
 
+    //slither-disable-next-line unused-return
     function getAllPrices() external view returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps) {
         uint len = _assets.length();
         assets_ = _assets.values();
         prices = new uint[](len);
         timestamps = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
-            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData();
+            //slither-disable-next-line calls-loop
+            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData(); // nosemgrep
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;
         }

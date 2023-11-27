@@ -49,6 +49,7 @@ contract AprOracle is Controllable, IAprOracle {
         if(len != aprs.length) {
             revert IControllable.IncorrectArrayLength();
         }
+        // nosemgrep
         for (uint i; i < len; ++i) {
             $.assetApr[assets[i]] = aprs[i];
         }
@@ -64,6 +65,7 @@ contract AprOracle is Controllable, IAprOracle {
         AprOracleStorage storage $ = _getStorage();
         uint len = assets.length;
         aprs = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             aprs[i] = $.assetApr[assets[i]];
         }

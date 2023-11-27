@@ -40,7 +40,7 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.symbol(), 'xVAULT');
         assertEq(vault.platform(), address(platform));
         assertEq(address(vault.strategy()), address(strategy));
-        assertEq(strategy.STRATEGY_LOGIC_ID(), "Dev Alpha DeepSpaceSwap Farm");
+        assertEq(strategy.strategyLogicId(), "Dev Alpha DeepSpaceSwap Farm");
 
         vault.setMaxSupply(1e20);
 

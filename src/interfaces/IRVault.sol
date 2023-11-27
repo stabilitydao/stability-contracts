@@ -4,12 +4,19 @@ pragma solidity ^0.8.22;
 import "./IVault.sol";
 
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 interface IRVault is IVault {
 
     //region ----- Custom Errors -----
     error NotAllowed();
     error Overflow(uint maxAmount);
     error RTNotFound();
+    error NoBBToken();
+    error NotAllowedBBToken();
+    error IncorrectNums();
+    error ZeroToken();
+    error ZeroVestingDuration();
+    error TooHighCompoundRation();
     //endregion -- Custom Errors -----
 
     event RewardAdded(address rewardToken, uint reward);
@@ -30,7 +37,7 @@ interface IRVault is IVault {
 
     /// @dev A mapping of reward tokens that able to be distributed to this contract.
     /// Token with index 0 always is bbToken.
-    function rewardToken(uint tokenIndex) external view returns(address rewardToken);
+    function rewardToken(uint tokenIndex) external view returns(address rewardToken_);
 
     /// @notice Re-investing ratio
     /// @dev Changeable ratio of revenue part for re-investing. Other part goes to rewarding by bbToken.

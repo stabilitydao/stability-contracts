@@ -75,6 +75,7 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
             revert NotExist();
         }
         StrategyLogicStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         StrategyData memory strategyData;
         strategyData.strategyId = $.tokenStrategyLogic[tokenId];
         IPlatform _platform = IPlatform(platform());

@@ -395,7 +395,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
                 assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
 
-                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
+                if (keccak256(bytes(strategy.strategyLogicId())) == keccak256(bytes(strategyId))) {
                     assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
                     assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
                     assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
