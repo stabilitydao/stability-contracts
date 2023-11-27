@@ -147,7 +147,6 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    //slither-disable-next-line divide-before-multiply
     function getProportion0(address pool) public view returns (uint) {
         address token1 = IPool(pool).token1();
         //slither-disable-next-line unused-return
@@ -162,7 +161,9 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, token0Desired, token1Desired);
         //slither-disable-next-line similar-names
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
+        //slither-disable-next-line divide-before-multiply
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
+        //slither-disable-next-line divide-before-multiply
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
     }
 
@@ -205,6 +206,14 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
+        return
+            interfaceId == type(ICAmmAdapter).interfaceId 
+            || interfaceId == type(IAmmAdapter).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

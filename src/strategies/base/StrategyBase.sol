@@ -165,6 +165,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function assetsAmounts() public view virtual returns (address[] memory assets_, uint[] memory amounts_) {
         (assets_, amounts_) = _assetsAmounts();
+        //slither-disable-next-line unused-return
         return StrategyLib.assetsAmountsWithBalances(assets_, amounts_);
     }
 

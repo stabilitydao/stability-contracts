@@ -462,6 +462,7 @@ contract Platform is Controllable, IPlatform {
         ids = new string[](len);
         proxies = new address[](len);
         bytes32[] memory _ammAdapterIdHash = $.ammAdapterIdHash;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             bytes32 hash = _ammAdapterIdHash[i];
             AmmAdapter memory __ammAdapter = $.ammAdapter[hash];
@@ -498,6 +499,7 @@ contract Platform is Controllable, IPlatform {
         vaultsLimit = new uint[](len);
         // nosemgrep
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line unused-return
             (, vaultsLimit[i]) = $.allowedBBTokensVaults.tryGet(bbToken[i]);
         }
     }

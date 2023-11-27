@@ -126,7 +126,6 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    //slither-disable-next-line divide-before-multiply
     function getPrice(
         address pool,
         address tokenIn,
@@ -207,6 +206,14 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
+        return
+            interfaceId == type(ICAmmAdapter).interfaceId 
+            || interfaceId == type(IAmmAdapter).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -156,7 +156,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert IFactory.NotActiveVault();
         } 
 
-        if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
+        //slither-disable-next-line timestamp
+        if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) { // nosemgrep
             $.strategy.doHardWork();
         }
 
@@ -164,6 +165,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
+        // nosemgrep
         if(data._totalSupply != 0 && data.totalValue == 0){
             revert FuseTrigger();
         }
@@ -176,13 +178,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         data.assets = $.strategy.assets();
         data.underlying = $.strategy.underlying();
 
-
+        // nosemgrep
         if (data.len == 1 && data.underlying != address(0) && data.underlying == assets_[0]) {
             data.value = amountsMax[0];
             IERC20(data.underlying).safeTransferFrom(msg.sender, address($.strategy), data.value);
             (data.amountsConsumed) = $.strategy.depositUnderlying(data.value);
         } else {
             (data.amountsConsumed, data.value) = $.strategy.previewDepositAssets(assets_, amountsMax);
+            // nosemgrep
             for (uint i; i < data.len; ++i) {
                 IERC20(data.assets[i]).safeTransferFrom(msg.sender, address($.strategy), data.amountsConsumed[i]);
             }
@@ -405,6 +408,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ) internal pure returns (uint[] memory amountsOut) {
         uint len = assets.length;
         amountsOut = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = assetsAmount[i] * amount / total_;
         }

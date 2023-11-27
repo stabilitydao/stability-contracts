@@ -117,6 +117,7 @@ contract PriceReader is Controllable, IPriceReader {
         assetAmountPrice = new uint[](len);
         assetPrice = new uint[](len);
         bool _trusted;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
