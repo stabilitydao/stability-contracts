@@ -24,11 +24,13 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line naming-convention
     function __LPStrategyBase_init(LPStrategyBaseInitParams memory params) internal onlyInitializing {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         address[] memory _assets;
         uint exchangeAssetIndex;
         (_assets, exchangeAssetIndex) = LPStrategyLib.LPStrategyBase_init($, params.platform, params, ammAdapterId());
+        //slither-disable-next-line reentrancy-events
         __StrategyBase_init(params.platform, params.id, params.vault, _assets, params.underlying, exchangeAssetIndex);
     }
 
@@ -66,6 +68,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line dead-code
     function _previewDepositAssets(uint[] memory amountsMax) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         (value, amountsConsumed) = $.ammAdapter.getLiquidityForAmounts($.pool, amountsMax);

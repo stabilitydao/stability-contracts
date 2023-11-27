@@ -65,7 +65,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     //endregion -- Storage -----
 
     //region ----- Init -----
-
+    //slither-disable-next-line naming-convention
     function __VaultBase_init(
         address platform_,
         string memory type_,
@@ -110,8 +110,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
+    //slither-disable-next-line reentrancy-events
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
+        // nosemgrep
         if(msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)){
             revert IncorrectMsgSender();
         }
@@ -120,11 +122,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.strategy.doHardWork();
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
+        //slither-disable-next-line uninitialized-local
         bool compensated;
         if (gasCost > 0) {
             bool canCompensate = payable(address(this)).balance >= gasCost;
+            //slither-disable-next-line unused-return
             if (canCompensate) {
-                //slither-disable-next-line unused-return
+                //slither-disable-next-line low-level-calls
                 (bool success, ) = msg.sender.call{value: gasCost}("");
                 if(!success) {
                     revert IControllable.ETHTransferFailed();
@@ -152,8 +156,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if(IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE){
             revert IFactory.NotActiveVault();
         } 
-
-        if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
+        //slither-disable-next-line timestamp
+        if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {// nosemgrep
             $.strategy.doHardWork();
         }
 
@@ -161,6 +165,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
+        // nosemgrep
         if(data._totalSupply != 0 && data.totalValue == 0){
             revert FuseTrigger();
         }
@@ -173,13 +178,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         data.assets = $.strategy.assets();
         data.underlying = $.strategy.underlying();
 
-
+        // nosemgrep
         if (data.len == 1 && data.underlying != address(0) && data.underlying == assets_[0]) {
             data.value = amountsMax[0];
             IERC20(data.underlying).safeTransferFrom(msg.sender, address($.strategy), data.value);
             (data.amountsConsumed) = $.strategy.depositUnderlying(data.value);
         } else {
             (data.amountsConsumed, data.value) = $.strategy.previewDepositAssets(assets_, amountsMax);
+            // nosemgrep
             for (uint i; i < data.len; ++i) {
                 IERC20(data.assets[i]).safeTransferFrom(msg.sender, address($.strategy), data.amountsConsumed[i]);
             }
@@ -213,16 +219,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         _beforeWithdraw($);
 
         IStrategy _strategy = $.strategy;
-        uint _totalSupply = totalSupply();
+        uint localTotalSupply = totalSupply();
         uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
         address underlying = _strategy.underlying();
+        // nosemgrep
         bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
         // fuse is not triggered
         if (totalValue > 0) {
-            uint value = amountShares * totalValue / _totalSupply;
+            uint value = amountShares * totalValue / localTotalSupply;
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
                 amountsOut[0] = value;
@@ -233,14 +240,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         } else {
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / _totalSupply;
+                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                 $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
             } else {
-                amountsOut = $.strategy.transferAssets(amountShares, _totalSupply, msg.sender);
+                amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, msg.sender);
             }
         }
 
         uint len = amountsOut.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if(amountsOut[i] < minAssetAmountsOut[i]){
                 revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
@@ -262,7 +270,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function VAULT_TYPE() external view returns (string memory) {
+    function vaultType() external view returns (string memory) {
         return _getVaultBaseStorage()._type;
     }
 
@@ -272,6 +280,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         uint _tvl;
+        //slither-disable-next-line unused-return
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
@@ -284,6 +293,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        //slither-disable-next-line unused-return
         (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
 
@@ -307,8 +317,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (underlying != address(0)) {
             ++assetsLengthTmp;
         }
+        uint strategyAssetsLength = strategyAssets.length;
         address[] memory queryAprAssets = new address[](assetsLengthTmp);
-        for (uint i; i < strategyAssets.length; ++i) {
+        // nosemgrep
+        for (uint i; i < strategyAssetsLength; ++i) {
             queryAprAssets[i] = strategyAssets[i];
         }
         if (underlying != address(0)) {
@@ -316,20 +328,23 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
         uint[] memory queryAprs = IAprOracle(IPlatform(platform()).aprOracle()).getAprs(queryAprAssets);
         assetsLengthTmp = 0;
-        for (uint i; i < queryAprs.length; ++i) {
+        uint queryAprsLength = queryAprs.length;
+        // nosemgrep
+        for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 ++assetsLengthTmp;
             }
         }
         assetsWithApr = new address[](assetsLengthTmp);
         assetsAprs = new uint[](assetsLengthTmp);
-
+        //slither-disable-next-line uninitialized-local
         uint k;
-        for (uint i; i < queryAprs.length; ++i) {
+        // nosemgrep
+        for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 assetsWithApr[k] = queryAprAssets[i];
                 assetsAprs[k] = queryAprs[i];
-                if (i < strategyAssets.length) {
+                if (i < strategyAssetsLength) {
                     totalApr += assetsAprs[k] * proportions[i] / 1e18;
                 } else {
                     totalApr += assetsAprs[k];
@@ -393,6 +408,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ) internal pure returns (uint[] memory amountsOut) {
         uint len = assets.length;
         amountsOut = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = assetsAmount[i] * amount / total_;
         }
@@ -423,6 +439,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint initialShares;
         (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed, assets);
         uint _maxSupply = $.maxSupply;
+        // nosemgrep
         if(_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply){
             revert ExceedMaxSupply(_maxSupply);
         }

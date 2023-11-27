@@ -21,6 +21,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         address strategyImplementation = strategyConfig.implementation;
         _init(strategyImplementation);
         bytes32 slot = _ID_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             sstore(slot, strategyIdHash)
         }
@@ -32,6 +33,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         }
         bytes32 strategyIdHash;
         bytes32 slot = _ID_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             strategyIdHash := sload(slot)
         }
@@ -45,9 +47,10 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         return _implementation();
     }
 
-    function STRATEGY_IMPLEMENTATION_LOGIC_ID_HASH() external view returns (bytes32) {
+    function strategyImplementationLogicIdHash() external view returns (bytes32) {
         bytes32 idHash;
         bytes32 slot = _ID_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             idHash := sload(slot)
         }

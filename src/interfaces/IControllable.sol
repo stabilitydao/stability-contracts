@@ -7,8 +7,6 @@ pragma solidity ^0.8.22;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IControllable {
-
-  
     //region ----- Custom Errors -----
     error IncorrectZeroArgument();
     error IncorrectMsgSender();

@@ -48,6 +48,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
+    //slither-disable-next-line reentrancy-events
     function changeVaultParams(uint tokenId, address[] memory addresses, uint[] memory nums) external {
         VaultManagerStorage storage $ = _getStorage();
         _requireOwner(tokenId);
@@ -78,21 +79,21 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         if(_ownerOf(tokenId) == address(0)){
             revert NotExist();
         }
-
         VaultManagerStorage storage $ = _getStorage();
+        //slither-disable-next-line uninitialized-local
         VaultData memory vaultData;
         IPlatform _platform = IPlatform(platform());
         IFactory factory = IFactory(_platform.factory());
         vaultData.vault = $.tokenVault[tokenId];
         IVault vault = IVault(vaultData.vault);
         IStrategy strategy = vault.strategy();
-        //slither-disable-next-line unused-return
+        // slither-disable-next-line unused-return
         (vaultData.sharePrice,) = vault.price();
-        //slither-disable-next-line unused-return
+        // slither-disable-next-line unused-return
         (vaultData.tvl,) = vault.tvl();
-        //slither-disable-next-line unused-return
+        // slither-disable-next-line unused-return
         (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
-        vaultData.vaultType = vault.VAULT_TYPE();
+        vaultData.vaultType = vault.vaultType();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
         vaultData.vaultExtra = vault.extra();
         vaultData.strategyExtra = strategy.extra();
@@ -104,6 +105,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             bbAsset = rts[0];
         }
 
+        // slither-disable-next-line unused-return
         (
             vaultData.strategyId,,
             vaultData.assetsSymbols,
@@ -117,6 +119,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
+    //slither-disable-next-line calls-loop
     function vaults() external view returns(
         address[] memory vaultAddress,
         string[] memory name,
@@ -141,14 +144,15 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         strategyApr = new uint[](len);
         strategySpecific = new string[](len);
         tvl = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
             IVault vault = IVault(vaultAddress[i]);
             name[i] = IERC20Metadata(vaultAddress[i]).name();
             symbol[i] = IERC20Metadata(vaultAddress[i]).symbol();
-            vaultType[i] = vault.VAULT_TYPE();
+            vaultType[i] = vault.vaultType();
             IStrategy strategy = vault.strategy();
-            strategyId[i] = strategy.STRATEGY_LOGIC_ID();
+            strategyId[i] = strategy.strategyLogicId();
             //slither-disable-next-line unused-return
             (strategySpecific[i],) = strategy.getSpecificName();
             //slither-disable-next-line unused-return
@@ -165,6 +169,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
         }

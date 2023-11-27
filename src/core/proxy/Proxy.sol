@@ -15,6 +15,7 @@ contract Proxy is UpgradeableProxy, IProxy {
     }
 
     /// @inheritdoc IProxy
+    //slither-disable-next-line naming-convention
     function upgrade(address _newImplementation) external override {
         if(IControllable(address(this)).platform() != msg.sender){
             revert IControllable.NotPlatform();

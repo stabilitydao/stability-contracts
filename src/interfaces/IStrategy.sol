@@ -49,7 +49,7 @@ interface IStrategy is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/    
 
     /// @dev Strategy logic string ID
-    function STRATEGY_LOGIC_ID() external view returns(string memory);
+    function strategyLogicId() external view returns(string memory);
 
     /// @dev Extra data
     /// @return 0-2 bytes - strategy color
@@ -131,6 +131,10 @@ interface IStrategy is IERC165 {
         int24[] memory ticks
     );
 
+    /// @notice How strategy earns money
+    /// @return Description in free form
+    function description() external view returns(string memory);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -180,10 +184,10 @@ interface IStrategy is IERC165 {
     /// This method is called by vault w/o underlying on triggered fuse mode.
     /// Only vault can call this.
     /// @param amount Ampunt of liquidity value that user withdraw
-    /// @param total Total amount of strategy liquidity
+    /// @param totalAmount Total amount of strategy liquidity
     /// @param receiver User of vault which withdraw assets
     /// @return amountsOut Amounts of strategy assets sent to user
-    function transferAssets(uint amount, uint total, address receiver) external returns (uint[] memory amountsOut);
+    function transferAssets(uint amount, uint totalAmount, address receiver) external returns (uint[] memory amountsOut);
 
     /// @notice Execute HardWork
     /// During HardWork strategy claiming revenue and processing it.

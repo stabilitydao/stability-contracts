@@ -40,6 +40,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    //slither-disable-next-line calls-loop
     function deposit(
         address vault,
         address tokenIn,
@@ -71,14 +72,16 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address[] memory assets = IStrategy(strategy).assets();
         uint len = assets.length;
         uint[] memory depositAmounts = new uint[](len);
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (tokenIn != assets[i]) {
-                // slither-disable-next-line low-level-calls calls-loop
+                //slither-disable-next-line low-level-calls
                 (bool success,bytes memory result) = agg.call(swapData[i]);
-                //nosemgrep
+                // nosemgrep
                 require(success, string(result));
             }
         }
+        // nosemgrep
         for (uint i; i < len; ++i) {
             // slither-disable-next-line calls-loop
             depositAmounts[i] = IERC20(assets[i]).balanceOf(address(this));
@@ -113,6 +116,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         uint[] memory proportions = IStrategy(strategy).getAssetsProportions();
         uint amountInUsed = 0;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (tokensOut[i] == tokenIn) {
                 amountInUsed += amountIn * proportions[i] / 1e18;
@@ -163,6 +167,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         _sendRemaining(tokenIn);
 
         uint len = strategyAssets.length;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             _sendRemaining(strategyAssets[i]);
         }

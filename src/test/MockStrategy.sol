@@ -16,6 +16,10 @@ contract MockStrategy is LPStrategyBase {
     uint private _fee0;
     uint private _fee1;
 
+    /// @inheritdoc IStrategy
+    function description() external pure returns(string memory) {
+        return "";
+    }
 
     function setLastApr(uint apr) external {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -65,7 +69,7 @@ contract MockStrategy is LPStrategyBase {
         return 'MOCKSWAP';
     }
 
-    function STRATEGY_LOGIC_ID() public pure override returns(string memory) {
+    function strategyLogicId() public pure override returns(string memory) {
         return StrategyIdLib.DEV;
     }
 

@@ -82,6 +82,7 @@ library UniswapV3MathLib {
     }
 
     function getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
+        // nosemgrep
         if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
             lowerTick = (tick / tickSpacing - 1) * tickSpacing;
         } else {
@@ -310,6 +311,7 @@ library UniswapV3MathLib {
         result = mulDiv(a, b, denominator);
         if (mulmod(a, b, denominator) > 0) {
             require(result < type(uint).max);
+            // nosemgrep
             result++;
         }
     }
@@ -344,6 +346,7 @@ library UniswapV3MathLib {
             tick < 0 ? uint256(- int256(tick)) : uint256(int256(tick));
 
         // EDIT: 0.8 compatibility
+        // nosemgrep
         require(absTick <= uint256(int256(MAX_TICK)), "T");
 
         uint256 ratio =

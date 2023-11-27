@@ -14,6 +14,10 @@ docs/
 .env
 
 .idea
+.vscode
 lcov.info
 report.txt
 semgrep.sarif
+
+# Semgrep rules
+rules/

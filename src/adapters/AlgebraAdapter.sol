@@ -39,10 +39,13 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function algebraSwapCallback(
+        //slither-disable-next-line similar-names
         int256 amount0Delta,
         int256 amount1Delta,
+        //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
+        // nosemgrep
         if(amount0Delta <= 0 && amount1Delta <= 0){
             revert IAmmAdapter.WrongCallbackAmount();
         }
@@ -55,6 +58,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IAmmAdapter
+    //slither-disable-next-line reentrancy-events
     function swap(
         address pool,
         address tokenIn,
@@ -154,11 +158,15 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
         uint token1Price = getPrice(pool, token1, address(0), 0);
         uint token1Decimals = IERC20Metadata(token1).decimals();
+        //slither-disable-next-line similar-names
         uint token0Desired = token1Price;
         uint token1Desired = 10 ** token1Decimals;
         uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, token0Desired, token1Desired);
+        //slither-disable-next-line similar-names
         (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
+        //slither-disable-next-line divide-before-multiply
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
+        //slither-disable-next-line divide-before-multiply
         return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
     }
 

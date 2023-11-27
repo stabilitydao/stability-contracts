@@ -166,7 +166,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
                 assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
                 vars.pool = ILPStrategy(address (strategy)).pool();
-                console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
+                
+                console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), ". Strategy: ", strategy.description()));
 
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
@@ -395,7 +396,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
                 assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);
 
-                if (keccak256(bytes(strategy.STRATEGY_LOGIC_ID())) == keccak256(bytes(strategyId))) {
+                if (keccak256(bytes(strategy.strategyLogicId())) == keccak256(bytes(strategyId))) {
                     assertEq(strategy.supportsInterface(type(ILPStrategy).interfaceId), true);
                     assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
                     assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);

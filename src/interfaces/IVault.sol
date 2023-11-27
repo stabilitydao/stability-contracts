@@ -71,7 +71,7 @@ interface IVault is IERC165 {
     //region ----- Read functions -----
 
     /// @notice Immutable vault type ID
-    function VAULT_TYPE() external view returns (string memory);
+    function vaultType() external view returns (string memory);
 
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
@@ -99,9 +99,9 @@ interface IVault is IERC165 {
     /// @dev USD price of share with 18 decimals.
     ///      ONLY FOR OFF-CHAIN USE.
     ///      Not trusted vault share price can be manipulated.
-    /// @return price Price of 1e18 shares with 18 decimals precision
+    /// @return price_ Price of 1e18 shares with 18 decimals precision
     /// @return trusted True means oracle price, false means AMM spot price
-    function price() external view returns (uint price, bool trusted);
+    function price() external view returns (uint price_, bool trusted);
 
     /// @dev USD price of assets managed by strategy with 18 decimals
     ///      ONLY FOR OFF-CHAIN USE.

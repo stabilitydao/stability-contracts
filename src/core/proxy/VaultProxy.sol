@@ -18,15 +18,19 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
         (,address vaultImplementation,,,) = IFactory(msg.sender).vaultConfig(typeHash);
         _init(vaultImplementation);
         bytes32 slot = _TYPE_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             sstore(slot, typeHash)
         }
     }
 
     function upgrade() external {
-        require(msg.sender == IPlatform(IControllable(address(this)).platform()).factory(), "Proxy: Forbidden");
+        if(msg.sender != IPlatform(IControllable(address(this)).platform()).factory()) {
+            revert ProxyForbidden();
+        }
         bytes32 typeHash;
         bytes32 slot = _TYPE_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             typeHash := sload(slot)
         }
@@ -39,9 +43,10 @@ contract VaultProxy is UpgradeableProxy, IVaultProxy {
         return _implementation();
     }
 
-    function VAULT_TYPE_HASH() external view returns (bytes32) {
+    function vaultTypeHash() external view returns (bytes32) {
         bytes32 typeHash;
         bytes32 slot = _TYPE_SLOT;
+        //slither-disable-next-line assembly
         assembly {
             typeHash := sload(slot)
         }

@@ -97,6 +97,7 @@ interface IPlatform {
     function platformVersion() external view returns (string memory);
 
     /// @notice Time delay for proxy upgrades of core contracts and changing important platform settings by multisig
+    //slither-disable-next-line naming-convention
     function TIME_LOCK() external view returns (uint);
 
     /// @notice DAO governance
