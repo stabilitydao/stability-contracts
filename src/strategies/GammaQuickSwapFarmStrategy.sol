@@ -141,18 +141,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
-                variants[localTtotal] = string.concat(
-                    "Earn ",
-                    //slither-disable-next-line calls-loop
-                    CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-                    " on QuickSwap by ",
-                    //slither-disable-next-line calls-loop
-                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-                    " Gamma ",
-                    //slither-disable-next-line calls-loop
-                    GammaLib.getPresetName(farm.nums[1]),
-                    " LP"
-                );
+                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
                 ++localTtotal;
             }
         }
@@ -179,6 +168,14 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
         return (GammaLib.getPresetName(farm.nums[1]), true);
+    }
+
+    /// @inheritdoc IStrategy
+    function description() external view returns(string memory) {
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        return _generateDescription(farm, $lp.ammAdapter);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -372,7 +369,23 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 
-    function _getGammaQuickStorage() internal pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
+    function _generateDescription(IFactory.Farm memory farm, IAmmAdapter _ammAdapter) internal view returns(string memory) {
+        //slither-disable-next-line calls-loop
+        return string.concat(
+                    "Earn ",
+                    //slither-disable-next-line calls-loop
+                    CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+                    " on QuickSwap by ",
+                    //slither-disable-next-line calls-loop
+                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+                    " Gamma ",
+                    //slither-disable-next-line calls-loop
+                    GammaLib.getPresetName(farm.nums[1]),
+                    " LP"
+                );
+    }
+
+    function _getGammaQuickStorage() private pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := GAMMAQUICKSWAPFARMSTRATEGY_STORAGE_LOCATION

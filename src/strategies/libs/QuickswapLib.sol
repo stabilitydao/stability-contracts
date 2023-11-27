@@ -5,6 +5,7 @@ import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IAmmAdapter.sol";
 import "../../core/libs/CommonLib.sol";
+import "../../integrations/algebra/IFarmingCenter.sol";
 
 library QuickswapLib {
     function initVariants(address platform_, string memory ammAdapterId, string memory strategyId) public view returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
@@ -30,7 +31,14 @@ library QuickswapLib {
             // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyId)) {
                 nums[total] = i;
-                variants[total] = string.concat(
+                variants[total] = generateDescription(farm, _ammAdapter);
+                ++total;
+            }
+        }
+    }
+
+    function generateDescription(IFactory.Farm memory farm, IAmmAdapter ammAdapter) public view returns(string memory) {
+        return string.concat(
                     "Earn ",
                     CommonLib.implodeSymbols(farm.rewardAssets, ", "),
                     " by static position ",
@@ -38,11 +46,13 @@ library QuickswapLib {
                     "-",
                     CommonLib.i2s(farm.ticks[1]),
                     " in ",
-                    CommonLib.implodeSymbols(_ammAdapter.poolTokens(farm.pool), "-"),
+                    CommonLib.implodeSymbols(ammAdapter.poolTokens(farm.pool), "-"),
                     " pool on QuickSwapV3"
                 );
-                ++total;
-            }
-        }
+    }
+
+    function getRewards(uint __tokenId, IFarmingCenter _farmingCenter, IncentiveKey memory key) external view returns (uint[] memory amounts) {
+        amounts = new uint[](2);
+        (amounts[0], amounts[1]) = _farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
     }
 }

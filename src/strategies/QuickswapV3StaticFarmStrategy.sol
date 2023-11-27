@@ -188,6 +188,14 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return (string.concat(CommonLib.i2s(farm.ticks[0]), " ", CommonLib.i2s(farm.ticks[1])), false);
     }
 
+    /// @inheritdoc IStrategy
+    function description() external view returns(string memory) {
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        return QuickswapLib.generateDescription(farm, $lp.ammAdapter);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -195,10 +203,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
         QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
-        amounts = new uint[](2);
-        uint __tokenId = $._tokenId;
-        IncentiveKey memory key = _getIncentiveKey();
-        (amounts[0], amounts[1]) = $._farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
+        return QuickswapLib.getRewards($._tokenId, $._farmingCenter, _getIncentiveKey());
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
