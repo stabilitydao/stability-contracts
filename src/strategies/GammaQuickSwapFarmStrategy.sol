@@ -122,40 +122,32 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTotal;
-        // nosemgrep
+        
+        uint localTtotal;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0) {
-                if(CommonLib.eq(farm.strategyLogicId, strategyLogicID())) ++localTotal;
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
+                ++localTtotal;
             }
         }
 
-        variants = new string[](localTotal);
-        nums = new uint[](localTotal);
-        localTotal = 0;
-        // nosemgrep
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0) {
-                if(CommonLib.eq(farm.strategyLogicId, strategyLogicID())){
-                    nums[localTotal] = i;
-                    //slither-disable-next-line calls-loop
-                    variants[localTotal] = string.concat(
-                        "Earn ",
-                        //slither-disable-next-line calls-loop
-                        CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-                        " on QuickSwap by ",
-                        //slither-disable-next-line calls-loop
-                        CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-                        " Gamma ",
-                        //slither-disable-next-line calls-loop
-                        GammaLib.getPresetName(farm.nums[1]),
-                        " LP"
-                    );
-                    ++localTotal;
-                }
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicID())) {
+                nums[localTtotal] = i;
+                variants[localTtotal] = string.concat(
+                    "Earn ",
+                    CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+                    " on QuickSwap by ",
+                    CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+                    " Gamma ",
+                    GammaLib.getPresetName(farm.nums[1]),
+                    " LP"
+                );
+                ++localTtotal;
             }
         }
     }
@@ -192,7 +184,6 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         amounts = new uint[](len);
-        // nosemgrep
         for (uint i; i < len; ++i) {
             IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
             amounts[i] = rewarder.pendingToken($.pid, address(this));
@@ -211,13 +202,10 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (claimRevenue) {
             (,,,uint[] memory rewardAmounts) = _claimRevenue();
             uint len = rewardAmounts.length;
-            // nosemgrep
             for (uint i; i < len; ++i) {
                 _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
         }
-        
-        //slither-disable-next-line uninitialized-local
         uint[4] memory minIn;
         value = $.uniProxy.deposit(amounts[0], amounts[1], address(this), __$._underlying, minIn);
         __$.total += value;
@@ -240,7 +228,6 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         $.masterChef.withdraw($.pid, value, address(this));
         amountsOut = new uint[](2);
         _$.total -= value;
-        //slither-disable-next-line uninitialized-local
         uint[4] memory minAmounts;
         (amountsOut[0], amountsOut[1]) = IHypervisor(_$._underlying).withdraw(value, receiver, address(this), minAmounts);
     }
@@ -272,38 +259,33 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = __rewardAssets.length;
         __rewardAmounts = new uint[](len);
         uint[] memory rewardBalanceBefore = new uint[](len);
-        // nosemgrep
         for (uint i; i < len; ++i) {
             rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         $.masterChef.harvest($.pid, address(this));
-        // nosemgrep
         for (uint i; i < len; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
         }
 
         // special for farms with first 2 duplicate tokens
-        if (len > 1) {
-            if(__rewardAssets[0] == __rewardAssets[1]) __rewardAmounts[0] = 0;
+        if (len > 1 && __rewardAssets[0] == __rewardAssets[1]) {
+            __rewardAmounts[0] = 0;
         }
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
-        if (amountsToDeposit[0] > 1){
-            if(amountsToDeposit[1] > 1){
-                uint valueToReceive;
-                (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
-                if (valueToReceive > 10) {
-                    _depositAssets(amountsToDeposit, false);
-                }
+        if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
+            uint valueToReceive;
+            (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
+            if (valueToReceive > 10) {
+                _depositAssets(amountsToDeposit, false);
             }
         }
     }
 
     /// @inheritdoc StrategyBase
-    //slither-disable-next-line unused-return
     function _previewDepositAssets(uint[] memory amountsMax) internal view override (StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
@@ -366,7 +348,6 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev proportion of 1e18
-    //slither-disable-next-line naming-convention
     function _getProportion0(address pool_) internal view returns (uint) {
         IHypervisor hypervisor = IHypervisor(_getStrategyBaseStorage()._underlying);
         //slither-disable-next-line unused-return
@@ -375,7 +356,6 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2**(96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
         uint pool0PricedInToken1 = pool0 *  price / _PRECISION;
-        //slither-disable-next-line divide-before-multiply
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 
