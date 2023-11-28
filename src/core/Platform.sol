@@ -229,7 +229,7 @@ contract Platform is Controllable, IPlatform {
         if (len != newImplementations.length) {
             revert IncorrectArrayLength();
         }
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (proxies[i] == address(0)) {
                 revert IControllable.IncorrectZeroArgument();
@@ -268,7 +268,7 @@ contract Platform is Controllable, IPlatform {
         }
         PlatformUpgrade memory platformUpgrade = $.pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
             string memory oldContractVersion = IControllable(platformUpgrade.proxies[i]).VERSION();
@@ -330,7 +330,7 @@ contract Platform is Controllable, IPlatform {
     function addDexAggregators(address[] memory dexAggRouter) external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint len = dexAggRouter.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (dexAggRouter[i] == address(0)) {
                 revert IControllable.IncorrectZeroArgument();
@@ -508,7 +508,7 @@ contract Platform is Controllable, IPlatform {
         ids = new string[](len);
         proxies = new address[](len);
         bytes32[] memory _ammAdapterIdHash = $.ammAdapterIdHash;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             bytes32 hash = _ammAdapterIdHash[i];
             AmmAdapter memory __ammAdapter = $.ammAdapter[hash];
@@ -543,7 +543,7 @@ contract Platform is Controllable, IPlatform {
         bbToken = $.allowedBBTokensVaults.keys();
         uint len = bbToken.length;
         vaultsLimit = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (, vaultsLimit[i]) = $.allowedBBTokensVaults.tryGet(bbToken[i]);
@@ -562,7 +562,7 @@ contract Platform is Controllable, IPlatform {
         uint[] memory limit = new uint[](len);
         //slither-disable-next-line uninitialized-local
         uint k;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //nosemgrep
             limit[i] = $.allowedBBTokensVaults.get(allBbTokens[i]);
@@ -572,7 +572,7 @@ contract Platform is Controllable, IPlatform {
         vaultsLimit = new uint[](k);
         //slither-disable-next-line uninitialized-local
         uint y;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (limit[i] == 0) {
                 continue;
@@ -675,7 +675,7 @@ contract Platform is Controllable, IPlatform {
         uint len = token.length;
         tokenPrice = new uint[](len);
         tokenUserBalance = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
             (tokenPrice[i],) = _priceReader.getPrice(token[i]);
@@ -687,7 +687,7 @@ contract Platform is Controllable, IPlatform {
         len = vault.length;
         vaultSharePrice = new uint[](len);
         vaultUserBalance = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop unused-return
             (vaultSharePrice[i],) = IVault(vault[i]).price();
@@ -701,7 +701,7 @@ contract Platform is Controllable, IPlatform {
         nft[1] = $.vaultManager;
         nft[2] = $.strategyLogic;
         nftUserBalance = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
             nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
@@ -860,6 +860,7 @@ contract Platform is Controllable, IPlatform {
     ) internal {
         PlatformStorage storage $ = _getStorage();
         address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
+        //nosemgrep
         if (feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)) {
             revert IControllable.IncorrectZeroArgument();
             // revert IncorrectFee(0,0);
@@ -897,7 +898,7 @@ contract Platform is Controllable, IPlatform {
      */
     function _addTokens(EnumerableSet.AddressSet storage tokenSet, address[] memory tokens) internal {
         uint len = tokens.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i = 0; i < len; ++i) {
             if (!tokenSet.add(tokens[i])) {
                 revert TokenAlreadyExistsInSet({token: tokens[i]});

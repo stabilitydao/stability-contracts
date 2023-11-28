@@ -46,7 +46,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
-        // nosemgrep
+        //nosemgrep
         if (amount0Delta <= 0 && amount1Delta <= 0) {
             revert IAmmAdapter.WrongCallbackAmount();
         }
@@ -219,14 +219,25 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    //slither-disable-next-line similar-names
     function _getLiquidityForAmounts(
         address pool,
+        //slither-disable-next-line similar-names
         uint amount0Desired,
+        //slither-disable-next-line similar-names
         uint amount1Desired,
         int24 lowerTick,
         int24 upperTick
-    ) internal view returns (uint liquidity, uint amount0Consumed, uint amount1Consumed) {
+    )
+        internal
+        view
+        returns (
+            uint liquidity,
+            //slither-disable-next-line similar-names
+            uint amount0Consumed,
+            //slither-disable-next-line similar-names
+            uint amount1Consumed
+        )
+    {
         //slither-disable-next-line unused-return
         (uint160 sqrtRatioX96,,,,,,) = IUniswapV3Pool(pool).slot0();
         uint128 liquidityOut =

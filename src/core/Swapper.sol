@@ -57,10 +57,10 @@ contract Swapper is Controllable, ISwapper {
     function addPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            // nosemgrep
+            //nosemgrep
             if ($.pools[pool.tokenIn].pool != address(0) && !rewrite) {
                 revert AlreadyExist();
             }
@@ -74,7 +74,7 @@ contract Swapper is Controllable, ISwapper {
     function addPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
@@ -86,7 +86,7 @@ contract Swapper is Controllable, ISwapper {
             if (poolData.ammAdapter == address(0)) {
                 revert UnknownAMMAdapter();
             }
-            // nosemgrep
+            //nosemgrep
             if ($.pools[poolData.tokenIn].pool != address(0) && !rewrite) {
                 revert AlreadyExist();
             }
@@ -108,10 +108,10 @@ contract Swapper is Controllable, ISwapper {
     function addBlueChipsPools(PoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory pool = pools_[i];
-            // nosemgrep
+            //nosemgrep
             if ($.blueChipsPools[pool.tokenIn][pool.tokenOut].pool != address(0) && !rewrite) {
                 revert AlreadyExist();
             }
@@ -127,7 +127,7 @@ contract Swapper is Controllable, ISwapper {
     function addBlueChipsPools(AddPoolData[] memory pools_, bool rewrite) external onlyOperator {
         SwapperStorage storage $ = _getStorage();
         uint len = pools_.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line uninitialized-local
             PoolData memory poolData;
@@ -139,7 +139,7 @@ contract Swapper is Controllable, ISwapper {
             if (poolData.ammAdapter == address(0)) {
                 revert UnknownAMMAdapter();
             }
-            // nosemgrep
+            //nosemgrep
             if ($.blueChipsPools[poolData.tokenIn][poolData.tokenOut].pool != address(0) && !rewrite) {
                 revert AlreadyExist();
             }
@@ -169,7 +169,7 @@ contract Swapper is Controllable, ISwapper {
         if (tokenInLen != thresholdAmountLen) {
             revert IControllable.IncorrectArrayLength();
         }
-        // nosemgrep
+        //nosemgrep
         for (uint i = 0; i < tokenInLen; ++i) {
             $.threshold[tokenIn[i]] = thresholdAmount[i];
         }
@@ -230,11 +230,11 @@ contract Swapper is Controllable, ISwapper {
             }
         }
         address[] memory _allAssets = new address[](total);
-        // nosemgrep
+        //nosemgrep
         for (i = 0; i < bcAssetsLen; ++i) {
             _allAssets[i] = __bcAssets[i];
         }
-        // nosemgrep
+        //nosemgrep
         for (uint k; k < assetsLen; ++k) {
             if (!$._bcAssets.contains(__assets[k])) {
                 _allAssets[i] = __assets[k];
@@ -259,7 +259,7 @@ contract Swapper is Controllable, ISwapper {
             price = 10 ** IERC20Metadata(tokenIn).decimals();
         }
         uint len = route.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
             //slither-disable-next-line calls-loop
@@ -277,7 +277,7 @@ contract Swapper is Controllable, ISwapper {
             price = 10 ** IERC20Metadata(route[0].tokenIn).decimals();
         }
         uint len = route.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             PoolData memory data = route[i];
             //slither-disable-next-line calls-loop
@@ -483,7 +483,7 @@ contract Swapper is Controllable, ISwapper {
             revert IControllable.IncorrectArrayLength();
         }
         uint routeLength = route.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < routeLength; i++) {
             PoolData memory data = route[i];
 
@@ -508,7 +508,7 @@ contract Swapper is Controllable, ISwapper {
 
     function _cutRoute(PoolData[] memory route, uint length) internal pure returns (PoolData[] memory) {
         PoolData[] memory result = new PoolData[](length);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < length; ++i) {
             result[i] = route[i];
         }

@@ -62,7 +62,7 @@ contract PriceReader is Controllable, IPriceReader {
         PriceReaderStorage storage $ = _getStorage();
         address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
@@ -73,13 +73,13 @@ contract PriceReader is Controllable, IPriceReader {
 
         if (len > 0) {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-            // nosemgrep
+            //nosemgrep
             for (uint j; j < len; ++j) {
                 IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
                 address[] memory oracleAssets = oracleAdapter.assets();
-                // nosemgrep
+                //nosemgrep
                 uint oracleAssetsLen = oracleAssets.length;
-                // nosemgrep
+                //nosemgrep
                 for (uint i; i < oracleAssetsLen; ++i) {
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
@@ -113,7 +113,7 @@ contract PriceReader is Controllable, IPriceReader {
         assetAmountPrice = new uint[](len);
         assetPrice = new uint[](len);
         bool _trusted;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
