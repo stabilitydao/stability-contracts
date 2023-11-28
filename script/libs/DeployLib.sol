@@ -111,7 +111,9 @@ library DeployLib {
                 aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
-                zap: address(vars.zap)
+                rebalancer: address(0),
+                zap: address(vars.zap),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: networkName,
