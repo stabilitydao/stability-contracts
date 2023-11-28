@@ -41,7 +41,9 @@ contract FactoryTest is Test, MockSetup {
                 aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(0),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',

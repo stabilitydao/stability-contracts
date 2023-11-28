@@ -6,8 +6,9 @@ pragma solidity ^0.8.22;
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IPlatform {
-
-    //region ----- Custom Errors -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error AlreadyAnnounced();
     error SameVersion();
@@ -17,10 +18,11 @@ interface IPlatform {
     error NotEnoughAllowedBBToken();
     error TokenAlreadyExistsInSet(address token);
     error AggregatorNotExists(address dexAggRouter);
-    
-    //endregion ----- Custom Errors -----
 
-    //region ----- Events -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     event PlatformVersion(string version);
     event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);
     event CancelUpgrade(string oldVersion, string newVersion);
@@ -35,7 +37,9 @@ interface IPlatform {
         address strategyLogic_,
         address aprOracle_,
         address hardWorker,
-        address zap
+        address rebalancer,
+        address zap,
+        address bridge
     );
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
@@ -54,9 +58,13 @@ interface IPlatform {
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
     event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
-    //endregion -- Events -----
+    event Rebalancer(address rebalancer_);
+    event Bridge(address bridge_);
 
-    //region ----- Data types -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     struct PlatformUpgrade {
         string newVersion;
         address[] proxies;
@@ -88,10 +96,13 @@ interface IPlatform {
         address targetExchangeAsset;
         address hardWorker;
         address zap;
+        address bridge;
+        address rebalancer;
     }
-    //endregion -- Data types -----
 
-    //region ----- View functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Platform version in CalVer scheme: YY.MM.MINOR-tag. Updates on core contract upgrades.
     function platformVersion() external view returns (string memory);
@@ -106,31 +117,6 @@ interface IPlatform {
     /// @notice Core team multi signature wallet. Development and operations fund
     function multisig() external view returns (address);
 
-    /// @notice Platform factory assembling vaults. Stores settings, strategy logic, farms.
-    /// Provides the opportunity to upgrade vaults and strategies.
-    function factory() external view returns (address);
-
-    /// @notice Combining oracle and DeX spot prices
-    function priceReader() external view returns (address);
-
-    /// @notice Providing underlying assets APRs on-chain
-    function aprOracle() external view returns (address);
-
-    /// @notice On-chain price quoter and swapper
-    function swapper() external view returns (address);
-
-    /// @notice The holders of these NFT receive a share of the vault revenue
-    function vaultManager() external view returns (address);
-
-    /// @notice The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
-    function strategyLogic() external view returns (address);
-
-    /// @notice HardWork resolver and caller
-    function hardWorker() external view returns (address);
-
-    /// @notice ZAP feature
-    function zap() external view returns (address);
-
     /// @notice This NFT allow user to build limited number of vaults per week
     function buildingPermitToken() external view returns (address);
 
@@ -139,6 +125,51 @@ interface IPlatform {
 
     /// @notice Receiver of ecosystem revenue
     function ecosystemRevenueReceiver() external view returns (address);
+
+    /// @dev The best asset in a network for swaps between strategy assets and farms rewards assets
+    ///      The target exchange asset is used for finding the best strategy's exchange asset.
+    ///      Rhe fewer routes needed to swap to the target exchange asset, the better.
+    function targetExchangeAsset() external view returns (address);
+
+    /// @notice Platform factory assembling vaults. Stores settings, strategy logic, farms.
+    /// Provides the opportunity to upgrade vaults and strategies.
+    /// @return Address of Factory proxy
+    function factory() external view returns (address);
+
+    /// @notice The holders of these NFT receive a share of the vault revenue
+    /// @return Address of VaultManager proxy
+    function vaultManager() external view returns (address);
+
+    /// @notice The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
+    function strategyLogic() external view returns (address);
+
+    /// @notice Combining oracle and DeX spot prices
+    /// @return Address of PriceReader proxy
+    function priceReader() external view returns (address);
+
+    /// @notice Providing underlying assets APRs on-chain
+    /// @return Address of AprOracle proxy
+    function aprOracle() external view returns (address);
+
+    /// @notice On-chain price quoter and swapper
+    /// @return Address of Swapper proxy
+    function swapper() external view returns (address);
+
+    /// @notice HardWork resolver and caller
+    /// @return Address of HardWorker proxy
+    function hardWorker() external view returns (address);
+
+    /// @notice Rebalance resolver
+    /// @return Address of Rebalancer proxy
+    function rebalancer() external view returns (address);
+
+    /// @notice ZAP feature
+    /// @return Address of Zap proxy
+    function zap() external view returns (address);
+
+    /// @notice Stability Bridge
+    /// @return Address of Bridge proxy
+    function bridge() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
@@ -159,11 +190,6 @@ interface IPlatform {
     ///         3-5 bytes - background color
     ///         6-31 bytes - free
     function networkExtra() external view returns (bytes32);
-
-    /// @dev The best asset in a network for swaps between strategy assets and farms rewards assets
-    ///      The target exchange asset is used for finding the best strategy's exchange asset.
-    ///      Rhe fewer routes needed to swap to the target exchange asset, the better.
-    function targetExchangeAsset() external view returns (address);
 
     /// @notice Pending platform upgrade data
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory);
@@ -292,9 +318,9 @@ interface IPlatform {
         uint buildingPayPerVaultTokenBalance
     );
 
-    //endregion -- View functions -----
-
-    //region ----- Write functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Add platform operator. 
     /// Only governance and multisig can add operator.
@@ -382,10 +408,17 @@ interface IPlatform {
     /// @param minInitialBoostDuration_ Minimal boost rewards vesting duration for initial boost
     function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external;
 
-    
     /// @notice Update new minimum TVL for compansate.
     /// @param value New minimum TVL for compensate.
     function setMinTvlForFreeHardWork(uint value) external;
 
-    //endregion -- Write functions -----
+    /// @notice Setup Rebalancer.
+    /// Only Goverannce or Multisig can do this when Rebalancer is not set.
+    /// @param rebalancer_ Proxy address of Bridge
+    function setupRebalancer(address rebalancer_) external;
+
+    /// @notice Setup Bridge.
+    /// Only Goverannce or Multisig can do this when Bridge is not set.
+    /// @param bridge_ Proxy address of Bridge
+    function setupBridge(address bridge_) external;
 }
