@@ -10,7 +10,11 @@ import "./IStrategy.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IVault is IERC165 {
-    //region ----- Custom Errors -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     error NotEnoughBalanceToPay();
     error FuseTrigger();
     error ExceedSlippage(uint mintToUser, uint minToMint);
@@ -18,9 +22,10 @@ interface IVault is IERC165 {
     error ExceedMaxSupply(uint maxSupply);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error WaitAFewBlocks();
-    //endregion -- Custom Errors -----
-    
-    //region ----- Events -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
     event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
@@ -28,9 +33,26 @@ interface IVault is IERC165 {
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
 
-    //endregion -- Events -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Data types -----
+    /// @custom:storage-location erc7201:stability.VaultBase
+    struct VaultBaseStorage {
+        /// @dev Prevents manipulations with deposit and withdraw in short time.
+        ///      For simplification we are setup new withdraw request on each deposit/transfer.
+        mapping(address msgSender => uint blockNumber) withdrawRequests;
+        /// @inheritdoc IVault
+        IStrategy strategy;
+        /// @inheritdoc IVault
+        uint maxSupply;
+        /// @inheritdoc IVault
+        uint tokenId;
+        /// @inheritdoc IVault
+        bool doHardWorkOnDeposit;
+        /// @dev Immutable vault type ID
+        string _type;
+    }
 
     /// @title Vault Initialization Data
     /// @notice Data structure containing parameters for initializing a new vault.
@@ -66,9 +88,9 @@ interface IVault is IERC165 {
         uint mintAmount;
     }
 
-    //endregion -- Data types -----
-
-    //region ----- Read functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Immutable vault type ID
     function vaultType() external view returns (string memory);
@@ -130,9 +152,9 @@ interface IVault is IERC165 {
     /// @return assetsAprs Underlying APR of asset
     function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
 
-    //endregion -- Read functions -----
-
-    //region ----- Write functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Deposit final assets (pool assets) to the strategy and minting of vault shares.
     ///      If the strategy interacts with a pool or farms through an underlying token, then it will be minted.
@@ -166,7 +188,4 @@ interface IVault is IERC165 {
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
-
-    //endregion -- Write functions -----
-
 }

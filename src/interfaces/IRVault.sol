@@ -3,11 +3,16 @@ pragma solidity ^0.8.22;
 
 import "./IVault.sol";
 
+/// @notice Interface of Rewarding Vault
+/// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 interface IRVault is IVault {
 
-    //region ----- Custom Errors -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     error NotAllowed();
     error Overflow(uint maxAmount);
     error RTNotFound();
@@ -17,13 +22,50 @@ interface IRVault is IVault {
     error ZeroToken();
     error ZeroVestingDuration();
     error TooHighCompoundRation();
-    //endregion -- Custom Errors -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event RewardAdded(address rewardToken, uint reward);
     event RewardPaid(address indexed user, address rewardToken, uint reward);
     event SetRewardsRedirect(address owner, address receiver);
     event AddedRewardToken(address indexed token, uint indexed tokenIndex);
     event CompoundRatio(uint compoundRatio_);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.RVaultBase
+    struct RVaultBaseStorage {
+        /// @inheritdoc IRVault
+        mapping(uint tokenIndex => address rewardToken) rewardToken;
+        /// @inheritdoc IRVault
+        mapping(uint tokenIndex => uint durationSeconds) duration;
+        /// @inheritdoc IRVault
+        mapping(address owner => address receiver) rewardsRedirect;
+        /// @dev Timestamp value when current period of rewards will be ended
+        mapping(uint tokenIndex => uint finishTimestamp) periodFinishForToken;
+        /// @dev Reward rate in normal circumstances is distributed rewards divided on duration
+        mapping(uint tokenIndex => uint rewardRate) rewardRateForToken;
+        /// @dev Last rewards snapshot time. Updated on each share movements
+        mapping(uint tokenIndex => uint lastUpdateTimestamp) lastUpdateTimeForToken;
+        /// @dev Rewards snapshot calculated from rewardPerToken(rt). Updated on each share movements
+        mapping(uint tokenIndex => uint rewardPerTokenStored) rewardPerTokenStoredForToken;
+        /// @dev User personal reward rate snapshot. Updated on each share movements
+        mapping(uint tokenIndex => mapping(address user => uint rewardPerTokenPaid)) userRewardPerTokenPaidForToken;
+        /// @dev User personal earned reward snapshot. Updated on each share movements
+        mapping(uint tokenIndex => mapping(address user => uint earned))  rewardsForToken;
+        /// @inheritdoc IRVault
+        uint rewardTokensTotal;
+        /// @inheritdoc IRVault
+        uint compoundRatio;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice All vault rewarding tokens
     /// @return Reward token addresses
@@ -49,27 +91,11 @@ interface IRVault is IVault {
     /// @return durationSeconds Duration for distributing of notified reward
     function duration(uint tokenIndex) external view returns(uint durationSeconds);
 
-    /// @notice Filling vault with rewards
-    /// @dev Update rewardRateForToken
-    /// If period ended: reward / duration
-    /// else add leftover to the reward amount and refresh the period
-    /// (reward + ((periodFinishForToken - block.timestamp) * rewardRateForToken)) / duration
-    /// @param tokenIndex Index of rewarding token
-    /// @param amount Amount for rewarding
-    function notifyTargetRewardAmount(uint tokenIndex, uint amount) external;
-
     /// @notice Return earned rewards for specific token and account
     ///         Accurate value returns only after updateRewards call
     ///         ((balanceOf(account)
     ///           * (rewardPerToken - userRewardPerTokenPaidForToken)) / 10**18) + rewardsForToken
     function earned(uint rewardTokenIndex, address account) external view returns (uint);
-
-    /// @notice Update and Claim all rewards for caller
-    function getAllRewards() external;
-
-    /// @notice Update and Claim rewards for specific token
-    /// @param rt Index of reward token
-    function getReward(uint rt) external;
 
     /// @notice Return reward per token ratio by reward token address
     ///                rewardPerTokenStoredForToken + (
@@ -83,6 +109,26 @@ interface IRVault is IVault {
     /// @param owner Token owner address
     /// @return receiver Return reward's receiver
     function rewardsRedirect(address owner) external view returns (address receiver);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Filling vault with rewards
+    /// @dev Update rewardRateForToken
+    /// If period ended: reward / duration
+    /// else add leftover to the reward amount and refresh the period
+    /// (reward + ((periodFinishForToken - block.timestamp) * rewardRateForToken)) / duration
+    /// @param tokenIndex Index of rewarding token
+    /// @param amount Amount for rewarding
+    function notifyTargetRewardAmount(uint tokenIndex, uint amount) external;
+
+    /// @notice Update and Claim all rewards for caller
+    function getAllRewards() external;
+
+    /// @notice Update and Claim rewards for specific token
+    /// @param rt Index of reward token
+    function getReward(uint rt) external;
 
     /// @dev All rewards for given owner could be claimed for receiver address.
     /// @param owner Token owner address
