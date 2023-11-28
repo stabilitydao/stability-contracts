@@ -76,7 +76,9 @@ contract PriceReaderTest is Test, MockSetup {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(11)
+                rebalancer: address(0),
+                zap: address(11),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',

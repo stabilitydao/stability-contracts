@@ -16,7 +16,10 @@ import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVault.sol";
 
 /// @notice The main contract of the platform.
-///         It stores core and infrastructure addresses, list of operators, fee settings and allows the governance to upgrade contracts.
+///         It stores core and infrastructure addresses, list of operators, fee settings, allows plaform upgrades etc.
+///         ┏┓┏┳┓┏┓┳┓┳┓ ┳┏┳┓┓┏  ┏┓┓ ┏┓┏┳┓┏┓┏┓┳┓┳┳┓
+///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
+///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -25,7 +28,9 @@ contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-    //region ----- Constants -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
     string public constant VERSION = '1.0.0';
@@ -48,9 +53,9 @@ contract Platform is Controllable, IPlatform {
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Platform")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PLATFORM_STORAGE_LOCATION = 0x263d5089de5bb3f97c8effd51f1a153b36e97065a51e67a94885830ed03a7a00;
 
-    //endregion -- Constants -----
-
-    //region ----- Storage -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                          STORAGE                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.Platform
     struct PlatformStorage {
@@ -59,11 +64,19 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address multisig;
         /// @inheritdoc IPlatform
+        address buildingPermitToken;
+        /// @inheritdoc IPlatform
+        address buildingPayPerVaultToken;
+        /// @inheritdoc IPlatform
+        address ecosystemRevenueReceiver;        
+        /// @inheritdoc IPlatform
+        address targetExchangeAsset;
+        /// @inheritdoc IPlatform
+        address factory;
+        /// @inheritdoc IPlatform
         address vaultManager;
         /// @inheritdoc IPlatform
         address strategyLogic;
-        /// @inheritdoc IPlatform
-        address factory;
         /// @inheritdoc IPlatform
         address priceReader;
         /// @inheritdoc IPlatform
@@ -71,17 +84,13 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address swapper;
         /// @inheritdoc IPlatform
-        address buildingPermitToken;
-        /// @inheritdoc IPlatform
-        address buildingPayPerVaultToken;
-        /// @inheritdoc IPlatform
-        address ecosystemRevenueReceiver;
-        /// @inheritdoc IPlatform
         address hardWorker;
+        /// @inheritdoc IPlatform
+        address rebalancer;
         /// @inheritdoc IPlatform
         address zap;
         /// @inheritdoc IPlatform
-        address targetExchangeAsset;
+        address bridge;
         /// @inheritdoc IPlatform
         string networkName;
         /// @inheritdoc IPlatform
@@ -113,9 +122,9 @@ contract Platform is Controllable, IPlatform {
         uint feeShareEcosystem;
     }
 
-    //endregion -- Storage -----
-
-    //region ----- Init -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      INITIALIZATION                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function initialize(address multisig_, string memory version) public initializer {
         PlatformStorage storage $ = _getStorage();
@@ -147,7 +156,9 @@ contract Platform is Controllable, IPlatform {
         $.aprOracle = addresses.aprOracle;
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
+        $.rebalancer = addresses.rebalancer;
         $.zap = addresses.zap;
+        $.bridge = addresses.bridge;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -159,19 +170,20 @@ contract Platform is Controllable, IPlatform {
             addresses.strategyLogic,
             addresses.aprOracle,
             addresses.hardWorker,
-            addresses.zap
+            addresses.rebalancer,
+            addresses.zap,
+            addresses.bridge
         );
         $.networkName = settings.networkName;
         $.networkExtra = settings.networkExtra;
-        // _setFees(6_000, 30_000, 30_000, 0);
         _setFees(settings.fee, settings.feeShareVaultManager, settings.feeShareStrategyLogic, settings.feeShareEcosystem);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
         emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
     }
 
-    //endregion -- Init -----
-
-    //region ----- Restricted actions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function setEcosystemRevenueReceiver(address receiver) external onlyGovernanceOrMultisig {
         if(receiver == address(0)){
@@ -415,9 +427,23 @@ contract Platform is Controllable, IPlatform {
         $.minTvlForFreeHardWork = value;
     }
 
-    //endregion -- Restricted actions ----
+    /// @inheritdoc IPlatform
+    function setupRebalancer(address rebalancer_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit Rebalancer(rebalancer_);
+        $.rebalancer = rebalancer_;
+    }
 
-    //region ----- View functions -----
+    /// @inheritdoc IPlatform
+    function setupBridge(address bridge_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit Bridge(bridge_);
+        $.bridge = bridge_;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IPlatform
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory) {
@@ -659,9 +685,15 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function aprOracle() external view returns (address) {
+    function governance() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
-        return $.aprOracle;
+        return $.governance;
+    }
+
+    /// @inheritdoc IPlatform
+    function multisig() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.multisig;
     }
 
     /// @inheritdoc IPlatform
@@ -683,21 +715,69 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    function targetExchangeAsset() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.targetExchangeAsset;
+    }
+
+    /// @inheritdoc IPlatform
     function factory() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.factory;
     }
 
     /// @inheritdoc IPlatform
-    function governance() external view returns (address) {
+    function vaultManager() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
-        return $.governance;
+        return $.vaultManager;
+    }
+
+    /// @inheritdoc IPlatform
+    function strategyLogic() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.strategyLogic;
+    }
+
+    /// @inheritdoc IPlatform
+    function priceReader() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.priceReader;
+    }
+
+    /// @inheritdoc IPlatform
+    function aprOracle() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.aprOracle;
+    }
+
+    /// @inheritdoc IPlatform
+    function swapper() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.swapper;
     }
 
     /// @inheritdoc IPlatform
     function hardWorker() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.hardWorker;
+    }
+
+    /// @inheritdoc IPlatform
+    function rebalancer() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.rebalancer;
+    }
+
+    /// @inheritdoc IPlatform
+    function zap() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.zap;
+    }
+
+    /// @inheritdoc IPlatform
+    function bridge() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.bridge;
     }
 
     /// @inheritdoc IPlatform
@@ -710,48 +790,6 @@ contract Platform is Controllable, IPlatform {
     function minInitialBoostPerDay() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
         return $.minInitialBoostPerDay;
-    }
-
-    /// @inheritdoc IPlatform
-    function multisig() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.multisig;
-    }
-
-    /// @inheritdoc IPlatform
-    function priceReader() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.priceReader;
-    }
-
-    /// @inheritdoc IPlatform
-    function strategyLogic() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.strategyLogic;
-    }
-
-    /// @inheritdoc IPlatform
-    function swapper() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.swapper;
-    }
-
-    /// @inheritdoc IPlatform
-    function targetExchangeAsset() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.targetExchangeAsset;
-    }
-
-    /// @inheritdoc IPlatform
-    function vaultManager() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.vaultManager;
-    }
-
-    /// @inheritdoc IPlatform
-    function zap() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.zap;
     }
 
     /// @inheritdoc IPlatform
@@ -778,9 +816,9 @@ contract Platform is Controllable, IPlatform {
         return $.minTvlForFreeHardWork;
     }
 
-    //endregion -- View functions -----
-
-    //region ----- Internal logic -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _setFees(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) internal {
         PlatformStorage storage $ = _getStorage();
@@ -837,5 +875,4 @@ contract Platform is Controllable, IPlatform {
         }
     }
 
-    //endregion -- Internal logic -----
 }

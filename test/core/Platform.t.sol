@@ -55,7 +55,9 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(101),
+                zap: address(0),
+                bridge: address(102)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -72,6 +74,21 @@ contract PlatformTest is Test  {
         platform.setInitialBoost(31e18, 31 * 86400);
         assertEq(platform.minInitialBoostPerDay(), 31e18);
         assertEq(platform.minInitialBoostDuration(), 31 * 86400);
+
+        assertEq(platform.rebalancer(), address(101));
+        assertEq(platform.bridge(), address(102));
+
+        platform.setupRebalancer(address(1001));
+        platform.setupBridge(address(1002));
+
+        assertEq(platform.rebalancer(), address(1001));
+        assertEq(platform.bridge(), address(1002));
+
+        assertEq(platform.networkName(), 'Localhost Ethereum');
+        assertEq(platform.networkExtra(), CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))));
+
+        assertEq(platform.ecosystemRevenueReceiver(), address(0));
+
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.setup(
             IPlatform.SetupAddresses({
@@ -85,7 +102,9 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
@@ -482,7 +501,9 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: 'Localhost Ethereum',
