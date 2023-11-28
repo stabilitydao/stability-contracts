@@ -8,7 +8,6 @@ import "./IVault.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
 interface IRVault is IVault {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -56,7 +55,7 @@ interface IRVault is IVault {
         /// @dev User personal reward rate snapshot. Updated on each share movements
         mapping(uint tokenIndex => mapping(address user => uint rewardPerTokenPaid)) userRewardPerTokenPaidForToken;
         /// @dev User personal earned reward snapshot. Updated on each share movements
-        mapping(uint tokenIndex => mapping(address user => uint earned))  rewardsForToken;
+        mapping(uint tokenIndex => mapping(address user => uint earned)) rewardsForToken;
         /// @inheritdoc IRVault
         uint rewardTokensTotal;
         /// @inheritdoc IRVault
@@ -75,21 +74,21 @@ interface IRVault is IVault {
     function rewardTokensTotal() external view returns (uint);
 
     /// @notice Immutable reward buy-back token with tokenIndex 0
-    function bbToken() external view returns(address);
+    function bbToken() external view returns (address);
 
     /// @dev A mapping of reward tokens that able to be distributed to this contract.
     /// Token with index 0 always is bbToken.
-    function rewardToken(uint tokenIndex) external view returns(address rewardToken_);
+    function rewardToken(uint tokenIndex) external view returns (address rewardToken_);
 
     /// @notice Re-investing ratio
     /// @dev Changeable ratio of revenue part for re-investing. Other part goes to rewarding by bbToken.
     /// @return Ratio of re-investing part of revenue. Denominator is 100_000.
-    function compoundRatio() external view returns(uint);
+    function compoundRatio() external view returns (uint);
 
     /// @notice Vesting period for distribution reward
     /// @param tokenIndex Index of rewarding token
     /// @return durationSeconds Duration for distributing of notified reward
-    function duration(uint tokenIndex) external view returns(uint durationSeconds);
+    function duration(uint tokenIndex) external view returns (uint durationSeconds);
 
     /// @notice Return earned rewards for specific token and account
     ///         Accurate value returns only after updateRewards call
@@ -143,5 +142,4 @@ interface IRVault is IVault {
     ///         Sender should have allowance for push rewards for the owner.
     /// @param owner Token owner address
     function getAllRewardsFor(address owner) external;
-
 }

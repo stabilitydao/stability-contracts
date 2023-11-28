@@ -6,10 +6,13 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ConstantsLib.sol";
 
 library CommonLib {
-    function filterAddresses(address[] memory addresses, address addressToRemove) external pure returns (address[] memory filteredAddresses) {
+    function filterAddresses(
+        address[] memory addresses,
+        address addressToRemove
+    ) external pure returns (address[] memory filteredAddresses) {
         uint len = addresses.length;
         uint newLen;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (addresses[i] != addressToRemove) {
                 ++newLen;
@@ -17,7 +20,7 @@ library CommonLib {
         }
         filteredAddresses = new address[](newLen);
         uint k;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (addresses[i] != addressToRemove) {
                 filteredAddresses[k] = addresses[i];
@@ -25,9 +28,9 @@ library CommonLib {
             }
         }
     }
-    
+
     function formatUsdAmount(uint amount) external pure returns (string memory formattedPrice) {
-        uint dollars = amount / 10**18;
+        uint dollars = amount / 10 ** 18;
         string memory priceStr;
         if (dollars >= 1000) {
             uint kDollars = dollars / 1000;
@@ -40,7 +43,7 @@ library CommonLib {
         } else if (dollars >= 100) {
             priceStr = Strings.toString(dollars);
         } else {
-            uint dollarsFraction = (amount - dollars * 10**18) / 10**14;
+            uint dollarsFraction = (amount - dollars * 10 ** 18) / 10 ** 14;
             if (dollarsFraction > 0) {
                 string memory dollarsFractionDelimiter = ".";
                 if (dollarsFraction < 10) {
@@ -50,7 +53,9 @@ library CommonLib {
                 } else if (dollarsFraction < 1000) {
                     dollarsFractionDelimiter = ".0";
                 }
-                priceStr = string.concat(Strings.toString(dollars), dollarsFractionDelimiter, Strings.toString(dollarsFraction));
+                priceStr = string.concat(
+                    Strings.toString(dollars), dollarsFractionDelimiter, Strings.toString(dollarsFraction)
+                );
             } else {
                 priceStr = Strings.toString(dollars);
             }
@@ -69,14 +74,17 @@ library CommonLib {
         formattedApr = string.concat(Strings.toString(aprInt), delimiter, Strings.toString(aprFraction), "%");
     }
 
-    function implodeSymbols(address[] memory assets, string memory delimiter) external view returns (string memory outString) {
+    function implodeSymbols(
+        address[] memory assets,
+        string memory delimiter
+    ) external view returns (string memory outString) {
         return implode(getSymbols(assets), delimiter);
     }
 
     function implode(string[] memory strings, string memory delimiter) public pure returns (string memory outString) {
         uint len = strings.length;
         bool hasDelimiter = bytes(delimiter).length > 0;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (i == 0) {
                 outString = strings[0];
@@ -94,14 +102,14 @@ library CommonLib {
     function getSymbols(address[] memory assets) public view returns (string[] memory symbols) {
         uint len = assets.length;
         symbols = new string[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             symbols[i] = IERC20Metadata(assets[i]).symbol();
         }
     }
 
     function bytesToBytes32(bytes memory b) external pure returns (bytes32 out) {
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < b.length; ++i) {
             out |= bytes32(b[i] & 0xFF) >> (i * 8);
         }
@@ -113,7 +121,7 @@ library CommonLib {
         bytes memory converted = new bytes(buffer.length * 2);
         bytes memory _base = "0123456789abcdef";
         uint baseLength = _base.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < buffer.length; ++i) {
             converted[i * 2] = _base[uint8(buffer[i]) / baseLength];
             converted[i * 2 + 1] = _base[uint8(buffer[i]) % baseLength];
@@ -125,7 +133,7 @@ library CommonLib {
         uint words = 1;
         bytes memory idBytes = bytes(id);
         uint idBytesLength = idBytes.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < idBytesLength; ++i) {
             if (keccak256(bytes(abi.encodePacked(idBytes[i]))) == keccak256(bytes(" "))) {
                 ++words;
@@ -134,7 +142,7 @@ library CommonLib {
         bytes memory _shortId = new bytes(words);
         uint k = 1;
         _shortId[0] = idBytes[0];
-        // nosemgrep
+        //nosemgrep
         for (uint i = 1; i < idBytesLength; ++i) {
             if (keccak256(bytes(abi.encodePacked(idBytes[i]))) == keccak256(bytes(" "))) {
                 _shortId[k] = idBytes[i + 1];

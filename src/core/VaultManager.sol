@@ -20,15 +20,15 @@ import "../interfaces/IManagedVault.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManager {
-
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultManager")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant VAULTMANAGER_STORAGE_LOCATION = 0xdc91b926f64ceb646f47da4c796e445221faf197fcaee29e875daf63dcf64e00;
-    
+    bytes32 private constant VAULTMANAGER_STORAGE_LOCATION =
+        0xdc91b926f64ceb646f47da4c796e445221faf197fcaee29e875daf63dcf64e00;
+
     //endregion ----- Constants -----
 
     //region ----- Storage -----
@@ -36,8 +36,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     /// @custom:storage-location erc7201:stability.VaultManager
     struct VaultManagerStorage {
         /// @inheritdoc IVaultManager
-        mapping (uint tokenId => address vault) tokenVault;
-        mapping (uint tokenId => address account) _revenueReceiver;
+        mapping(uint tokenId => address vault) tokenVault;
+        mapping(uint tokenId => address account) _revenueReceiver;
     }
 
     //endregion -- Storage -----
@@ -75,8 +75,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @dev Returns current token URI metadata
     /// @param tokenId Token ID to fetch URI for.
-    function tokenURI(uint tokenId) public view override (ERC721Upgradeable, IERC721Metadata) returns (string memory) {
-        if(_ownerOf(tokenId) == address(0)){
+    function tokenURI(uint tokenId) public view override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        if (_ownerOf(tokenId) == address(0)) {
             revert NotExist();
         }
         VaultManagerStorage storage $ = _getStorage();
@@ -92,7 +92,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         // slither-disable-next-line unused-return
         (vaultData.tvl,) = vault.tvl();
         // slither-disable-next-line unused-return
-        (vaultData.totalApr,vaultData.strategyApr,,) = vault.getApr();
+        (vaultData.totalApr, vaultData.strategyApr,,) = vault.getApr();
         vaultData.vaultType = vault.vaultType();
         vaultData.name = IERC20Metadata(vaultData.vault).name();
         vaultData.vaultExtra = vault.extra();
@@ -106,12 +106,8 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         }
 
         // slither-disable-next-line unused-return
-        (
-            vaultData.strategyId,,
-            vaultData.assetsSymbols,
-            vaultData.strategySpecific,
-            vaultData.symbol
-        ) = factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
+        (vaultData.strategyId,, vaultData.assetsSymbols, vaultData.strategySpecific, vaultData.symbol) =
+            factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
 
         vaultData.strategyTokenId = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId))).tokenId;
 
@@ -120,18 +116,22 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
 
     /// @inheritdoc IVaultManager
     //slither-disable-next-line calls-loop
-    function vaults() external view returns(
-        address[] memory vaultAddress,
-        string[] memory name,
-        string[] memory symbol,
-        string[] memory vaultType,
-        string[] memory strategyId,
-        uint[] memory sharePrice,
-        uint[] memory tvl,
-        uint[] memory totalApr,
-        uint[] memory strategyApr,
-        string[] memory strategySpecific
-    ) {
+    function vaults()
+        external
+        view
+        returns (
+            address[] memory vaultAddress,
+            string[] memory name,
+            string[] memory symbol,
+            string[] memory vaultType,
+            string[] memory strategyId,
+            uint[] memory sharePrice,
+            uint[] memory tvl,
+            uint[] memory totalApr,
+            uint[] memory strategyApr,
+            string[] memory strategySpecific
+        )
+    {
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
@@ -144,7 +144,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         strategyApr = new uint[](len);
         strategySpecific = new string[](len);
         tvl = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
             IVault vault = IVault(vaultAddress[i]);
@@ -156,7 +156,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             //slither-disable-next-line unused-return
             (strategySpecific[i],) = strategy.getSpecificName();
             //slither-disable-next-line unused-return
-            (totalApr[i],strategyApr[i],,) = vault.getApr();
+            (totalApr[i], strategyApr[i],,) = vault.getApr();
             //slither-disable-next-line unused-return
             (sharePrice[i],) = vault.price();
             //slither-disable-next-line unused-return
@@ -165,32 +165,36 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IVaultManager
-    function vaultAddresses() external view returns(address[] memory vaultAddress) {
+    function vaultAddresses() external view returns (address[] memory vaultAddress) {
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
         }
     }
 
     /// @inheritdoc IVaultManager
-    function vaultInfo(address vault) external view returns(
-        address strategy,
-        address[] memory strategyAssets,
-        address underlying,
-        address[] memory assetsWithApr,
-        uint[] memory assetsAprs,
-        uint lastHardWork
-    ) {
+    function vaultInfo(address vault)
+        external
+        view
+        returns (
+            address strategy,
+            address[] memory strategyAssets,
+            address underlying,
+            address[] memory assetsWithApr,
+            uint[] memory assetsAprs,
+            uint lastHardWork
+        )
+    {
         IVault v = IVault(vault);
         IStrategy s = v.strategy();
         strategy = address(s);
         strategyAssets = s.assets();
         underlying = s.underlying();
         //slither-disable-next-line unused-return
-        (,,assetsWithApr, assetsAprs) = v.getApr();
+        (,, assetsWithApr, assetsAprs) = v.getApr();
         lastHardWork = s.lastHardWork();
     }
 
@@ -210,15 +214,18 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     }
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view override (ERC721EnumerableUpgradeable, IERC165, Controllable) returns (bool) {
-        return 
-            interfaceId == type(IVaultManager).interfaceId
-            || interfaceId == type(IControllable).interfaceId
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721EnumerableUpgradeable, IERC165, Controllable)
+        returns (bool)
+    {
+        return interfaceId == type(IVaultManager).interfaceId || interfaceId == type(IControllable).interfaceId
             || super.supportsInterface(interfaceId);
     }
 
     function _requireOwner(uint tokenId) internal view {
-        if(_ownerOf(tokenId) != msg.sender){
+        if (_ownerOf(tokenId) != msg.sender) {
             revert NotTheOwner();
         }
     }
@@ -231,6 +238,6 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
             $.slot := VAULTMANAGER_STORAGE_LOCATION
         }
     }
-    
+
     //endregion ----- Internal logic -----
 }

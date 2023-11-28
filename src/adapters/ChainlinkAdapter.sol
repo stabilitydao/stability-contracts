@@ -14,7 +14,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     event RemovedPriceFeeds(address[] assets);
 
     /// @dev Version of ChainlinkAdapter implementation
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     mapping(address asset => address priceFeed) public priceFeeds;
     EnumerableSet.AddressSet internal _assets;
@@ -25,16 +25,16 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
 
     function addPriceFeeds(address[] memory assets_, address[] memory priceFeeds_) external onlyOperator {
         uint len = assets_.length;
-        if(len != priceFeeds_.length){
+        if (len != priceFeeds_.length) {
             revert IControllable.IncorrectArrayLength();
         }
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
-            if(!_assets.add(assets_[i])){
+            //nosemgrep
+            if (!_assets.add(assets_[i])) {
                 revert IControllable.AlreadyExist();
             }
-            // nosemgrep
+            //nosemgrep
             priceFeeds[assets_[i]] = priceFeeds_[i];
         }
 
@@ -43,13 +43,13 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
 
     function removePriceFeeds(address[] memory assets_) external onlyOperator {
         uint len = assets_.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
-            if(!_assets.remove(assets_[i])){
+            //nosemgrep
+            if (!_assets.remove(assets_[i])) {
                 revert IControllable.NotExist();
             }
-            // nosemgrep
+            //nosemgrep
             priceFeeds[assets_[i]] = address(0);
         }
         emit RemovedPriceFeeds(assets_);
@@ -63,7 +63,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
 
     function getPrice(address asset) external view returns (uint price, uint timestamp) {
         if (!_assets.contains(asset)) {
-            return (0,0);
+            return (0, 0);
         }
         //slither-disable-next-line unused-return
         (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[asset]).latestRoundData();
@@ -71,21 +71,25 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
     }
 
     //slither-disable-next-line unused-return
-    function getAllPrices() external view returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps) {
+    function getAllPrices()
+        external
+        view
+        returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps)
+    {
         uint len = _assets.length();
         assets_ = _assets.values();
         prices = new uint[](len);
         timestamps = new uint[](len);
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
-            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData(); // nosemgrep
+            (, int answer,, uint updatedAt,) = IAggregatorV3Interface(priceFeeds[assets_[i]]).latestRoundData(); //nosemgrep
             prices[i] = uint(answer) * 1e10;
             timestamps[i] = updatedAt;
         }
     }
 
-    function assets() external view returns(address[] memory) {
+    function assets() external view returns (address[] memory) {
         return _assets.values();
     }
 }

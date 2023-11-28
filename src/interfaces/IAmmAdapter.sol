@@ -19,7 +19,7 @@ interface IAmmAdapter is IERC165 {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event SwapInPool (
+    event SwapInPool(
         address pool,
         address tokenIn,
         address tokenOut,
@@ -43,7 +43,7 @@ interface IAmmAdapter is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice String ID of the adapter
-    function ammAdapterId() external view returns(string memory);
+    function ammAdapterId() external view returns (string memory);
 
     /// @notice Tokens of a pool supported by the adapter
     function poolTokens(address pool) external view returns (address[] memory);
@@ -55,7 +55,10 @@ interface IAmmAdapter is IERC165 {
     /// @param amounts Ampunts of pool assets
     /// @return liquidity Liquidity out value
     /// @return amountsConsumed Amounts of consumed assets when providing liquidity
-    function getLiquidityForAmounts(address pool, uint[] memory amounts) external view returns (uint liquidity, uint[] memory amountsConsumed);
+    function getLiquidityForAmounts(
+        address pool,
+        uint[] memory amounts
+    ) external view returns (uint liquidity, uint[] memory amountsConsumed);
 
     /// @notice Priced proportion of first pool asset.
     /// Helper method for pools with two tokens.
@@ -74,12 +77,7 @@ interface IAmmAdapter is IERC165 {
     /// @param tokenOut Token for buy
     /// @param amount Amount of tokenIn. For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
     /// @return Amount of tokenOut with tokenOut decimals precision
-    function getPrice(
-        address pool,
-        address tokenIn,
-        address tokenOut,
-        uint amount
-    ) external view returns (uint);
+    function getPrice(address pool, address tokenIn, address tokenOut, uint amount) external view returns (uint);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */

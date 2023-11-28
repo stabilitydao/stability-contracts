@@ -10,7 +10,6 @@ import "./IStrategy.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IVault is IERC165 {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -76,7 +75,7 @@ interface IVault is IERC165 {
 
     /// @title Deposit Assets Data
     /// @notice Data structure containing parameters for function depositAssets to avoid stack too deep.
-    /// @notice This structure use local variables. 
+    /// @notice This structure use local variables.
     struct DepositAssetsData {
         uint _totalSupply;
         uint totalValue;
@@ -97,7 +96,7 @@ interface IVault is IERC165 {
 
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
-    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums); 
+    function getUniqueInitParamLength() external view returns (uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
@@ -116,7 +115,7 @@ interface IVault is IERC165 {
     function tokenId() external view returns (uint);
 
     /// @dev Trigger doHardwork on invest action. Enabled by default.
-    function doHardWorkOnDeposit() external view returns(bool);
+    function doHardWorkOnDeposit() external view returns (bool);
 
     /// @dev USD price of share with 18 decimals.
     ///      ONLY FOR OFF-CHAIN USE.
@@ -138,7 +137,10 @@ interface IVault is IERC165 {
     /// @return amountsConsumed Amounts of strategy assets that can be deposited by providing amountsMax
     /// @return sharesOut Amount of vault shares that will be minted
     /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
-    function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
+    function previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
     /// @notice Calculation of assets amount to receive for exact amount of shares.
     /// @param sharesToBurn Amount of shares to burn
@@ -150,7 +152,10 @@ interface IVault is IERC165 {
     /// @return strategyApr Strategy investmnt APR declared on last HardWork.
     /// @return assetsWithApr Assets with underlying APR
     /// @return assetsAprs Underlying APR of asset
-    function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
+    function getApr()
+        external
+        view
+        returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -163,7 +168,12 @@ interface IVault is IERC165 {
     /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user.
     /// @param receiver Receiver of deposit. If receiver is zero address, receiver is msg.sender.
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external;
+    function depositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax,
+        uint minSharesOut,
+        address receiver
+    ) external;
 
     /// @dev Burning shares of vault and obtaining strategy assets.
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
@@ -182,9 +192,7 @@ interface IVault is IERC165 {
     /// @notice Initialization function for the vault.
     /// @dev This function is usually called by the Factory during the creation of a new vault.
     /// @param vaultInitializationData Data structure containing parameters for vault initialization.
-    function initialize(
-        VaultInitializationData memory vaultInitializationData
-    ) external;
+    function initialize(VaultInitializationData memory vaultInitializationData) external;
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;

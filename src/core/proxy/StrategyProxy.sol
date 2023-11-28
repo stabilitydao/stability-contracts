@@ -12,7 +12,7 @@ import "../../interfaces/IStrategyProxy.sol";
 /// @author Jude (https://github.com/iammrjude)
 contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     /// @dev Strategy logic id
-    bytes32 private constant _ID_SLOT = bytes32(uint256(keccak256("eip1967.strategyProxy.id")) - 1);
+    bytes32 private constant _ID_SLOT = bytes32(uint(keccak256("eip1967.strategyProxy.id")) - 1);
 
     function initStrategyProxy(string memory id) external {
         bytes32 strategyIdHash = keccak256(abi.encodePacked(id));
@@ -28,7 +28,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     }
 
     function upgrade() external {
-        if(IPlatform(IControllable(address(this)).platform()).factory() != msg.sender){
+        if (IPlatform(IControllable(address(this)).platform()).factory() != msg.sender) {
             revert IControllable.NotFactory();
         }
         bytes32 strategyIdHash;

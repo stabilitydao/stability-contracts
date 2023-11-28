@@ -10,5 +10,4 @@ contract MockStrategyUpgrade is MockStrategy {
 
     // add this to be excluded from coverage report
     function test() public {}
-
 }

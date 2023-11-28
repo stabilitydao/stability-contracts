@@ -33,7 +33,7 @@ abstract contract MockSetup {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         vaultImplementation = new CVault();
         rVaultImplementation = new RVault();
         rmVaultImplementation = new RMVault();
