@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -23,7 +24,9 @@ import "../../interfaces/IFactory.sol";
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
 
-    //region ----- Constants -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
     string public constant VERSION_VAULT_BASE = '1.0.0';
@@ -40,31 +43,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant VAULTBASE_STORAGE_LOCATION = 0xd602ae9af1fed726d4890dcf3c81a074ed87a6343646550e5de293c5a9330a00;
 
-    //endregion -- Constants -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      INITIALIZATION                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Storage -----
-
-    /// @custom:storage-location erc7201:stability.VaultBase
-    struct VaultBaseStorage {
-        /// @dev Prevents manipulations with deposit and withdraw in short time.
-        ///      For simplification we are setup new withdraw request on each deposit/transfer.
-        mapping(address msgSender => uint blockNumber) withdrawRequests;
-        /// @inheritdoc IVault
-        IStrategy strategy;
-        /// @inheritdoc IVault
-        uint maxSupply;
-        /// @inheritdoc IVault
-        uint tokenId;
-        /// @inheritdoc IVault
-        bool doHardWorkOnDeposit;
-        /// @dev Immutable vault type ID
-        string _type;
-    }
-
-
-    //endregion -- Storage -----
-
-    //region ----- Init -----
     //slither-disable-next-line naming-convention
     function __VaultBase_init(
         address platform_,
@@ -84,16 +66,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.doHardWorkOnDeposit = true;
     }
 
-    //endregion -- Init -----
-
-    //region ----- Callbacks -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CALLBACKS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Need to receive ETH for HardWork and re-balance gas compensation
     receive() external payable {}
 
-    //endregion -- Callbacks -----
-
-    //region ----- Restricted actions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IVault
     function setMaxSupply(uint maxShares) public virtual onlyGovernanceOrMultisig {
@@ -146,9 +128,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit HardWorkGas(gasUsed, gasCost, compensated);
     }
 
-    //endregion -- Restricted actions ----
-
-    //region ----- User actions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       USER ACTIONS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IVault
     function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
@@ -260,9 +242,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit WithdrawAssets(msg.sender, assets_, amountShares, amountsOut);
     }
 
-    //endregion -- User actions ----
-
-    //region ----- View functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
@@ -352,7 +334,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 ++k;
             }
         }
-
     }
 
     /// @inheritdoc IVault
@@ -388,10 +369,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return $.doHardWorkOnDeposit;
     }
 
-
-    //endregion -- View functions -----
-
-    //region ----- Internal logic -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getVaultBaseStorage() internal pure returns (VaultBaseStorage storage $) {
         //slither-disable-next-line assembly
@@ -493,15 +473,4 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.withdrawRequests[from] = block.number;
         $.withdrawRequests[to] = block.number;
     }
-
-    // function _afterTokenTransfer(
-    //     address from,
-    //     address to,
-    //     uint /*amount*/
-    // ) internal override {
-    //     _withdrawRequests[from] = block.number;
-    //     _withdrawRequests[to] = block.number;
-    // }
-
-    //endregion -- Internal logic -----
 }
