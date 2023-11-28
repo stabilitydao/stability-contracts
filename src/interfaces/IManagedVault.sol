@@ -4,7 +4,6 @@ pragma solidity ^0.8.22;
 /// @dev Managed vaults allow the owner of the VaultManager token to change their parameters.
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IManagedVault {
-
     //region ----- Custom Errors -----
     error CantRemoveRewardToken();
     error NotVaultManager();

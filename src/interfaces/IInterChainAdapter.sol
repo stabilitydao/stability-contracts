@@ -23,5 +23,4 @@ interface IInterChainAdapter {
 
     /// @notice Send message to other blockchain
     function sendMessage(Message memory message) external;
-
 }

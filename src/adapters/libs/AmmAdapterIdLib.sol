@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 library AmmAdapterIdLib {
-    string constant public UNISWAPV3 = 'UniswapV3';
-    string constant public ALGEBRA = 'Algebra';
-    string constant public KYBER = 'KyberSwap';
+    string public constant UNISWAPV3 = "UniswapV3";
+    string public constant ALGEBRA = "Algebra";
+    string public constant KYBER = "KyberSwap";
 }

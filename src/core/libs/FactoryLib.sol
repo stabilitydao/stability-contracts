@@ -25,7 +25,6 @@ library FactoryLib {
         uint farmsLen;
         string[] vaultTypes;
         uint vaultTypesLen;
-
         // getVaultInitParamsVariants returns
         string[] vaultType;
         uint[] usedAddresses;
@@ -34,7 +33,6 @@ library FactoryLib {
         uint[] allVaultInitNums;
         uint allVaultInitAddressesIndex;
         uint allVaultInitNumsIndex;
-
         // strategy initVariants returns
         string[] strategyVariantDesc;
         uint strategyVariantDescLen;
@@ -44,11 +42,9 @@ library FactoryLib {
         uint allStrategyInitAddressesIndex;
         uint allStrategyInitNumsIndex;
         uint allStrategyInitTicksIndex;
-
         // target vault init params
         address[] vaultInitAddresses;
         uint[] vaultInitNums;
-
         // target strategy init params
         address[] strategyInitAddresses;
         uint[] strategyInitNums;
@@ -56,7 +52,6 @@ library FactoryLib {
         uint usedStrategyInitAddresses;
         uint usedStrategyInitNums;
         uint usedStrategyInitTicks;
-
         // total results, used for counters too
         uint total;
         uint totalVaultInitAddresses;
@@ -64,7 +59,6 @@ library FactoryLib {
         uint totalStrategyInitAddresses;
         uint totalStrategyInitNums;
         uint totalStrategyInitTicks;
-
         // counters and length
         uint i;
         uint j;
@@ -85,17 +79,21 @@ library FactoryLib {
         uint len;
     }
 
-    function whatToBuild(address platform) external view returns (
-        string[] memory desc,
-        string[] memory vaultType,
-        string[] memory strategyId,
-        uint[10][] memory initIndexes,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums,
-        address[] memory strategyInitAddresses,
-        uint[] memory strategyInitNums,
-        int24[] memory strategyInitTicks
-    ) {
+    function whatToBuild(address platform)
+        external
+        view
+        returns (
+            string[] memory desc,
+            string[] memory vaultType,
+            string[] memory strategyId,
+            uint[10][] memory initIndexes,
+            address[] memory vaultInitAddresses,
+            uint[] memory vaultInitNums,
+            address[] memory strategyInitAddresses,
+            uint[] memory strategyInitNums,
+            int24[] memory strategyInitTicks
+        )
+    {
         WhatToBuildVars memory vars;
 
         IFactory factory = IFactory(IPlatform(platform).factory());
@@ -110,13 +108,8 @@ library FactoryLib {
             strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
 
             if (strategyConfig.deployAllowed) {
-                (
-                    vars.vaultType,
-                    vars.usedAddresses,
-                    vars.usedNums,
-                    vars.allVaultInitAddresses,
-                    vars.allVaultInitNums
-                ) = _getVaultInitParamsVariants(platform, strategyConfig.implementation);
+                (vars.vaultType, vars.usedAddresses, vars.usedNums, vars.allVaultInitAddresses, vars.allVaultInitNums) =
+                    _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 // nosemgrep
                 vars.vaultTypesLen = vars.vaultType.length;
 
@@ -157,7 +150,8 @@ library FactoryLib {
                         vars.strategyInitAddresses = new address[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitAddresses[c] = vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
+                            vars.strategyInitAddresses[c] =
+                                vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
                             ++vars.allStrategyInitAddressesIndex;
                             ++vars.usedStrategyInitAddresses;
                         }
@@ -188,7 +182,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1,0,0,1,0]
+                            [1, 0, 0, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {
@@ -225,13 +219,8 @@ library FactoryLib {
             //slither-disable-next-line unused-return
             strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
             if (strategyConfig.deployAllowed) {
-                (
-                    vars.vaultType,
-                    vars.usedAddresses,
-                    vars.usedNums,
-                    vars.allVaultInitAddresses,
-                    vars.allVaultInitNums
-                ) = _getVaultInitParamsVariants(platform, strategyConfig.implementation);
+                (vars.vaultType, vars.usedAddresses, vars.usedNums, vars.allVaultInitAddresses, vars.allVaultInitNums) =
+                    _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 // nosemgrep
                 vars.vaultTypesLen = vars.vaultType.length;
 
@@ -272,7 +261,8 @@ library FactoryLib {
                         vars.strategyInitAddresses = new address[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitAddresses[c] = vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
+                            vars.strategyInitAddresses[c] =
+                                vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
                             ++vars.allStrategyInitAddressesIndex;
                             ++vars.usedStrategyInitAddresses;
                         }
@@ -303,7 +293,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1,0,0,1,0]
+                            [1, 0, 0, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {
@@ -316,7 +306,8 @@ library FactoryLib {
                             initIndexes[vars.total][2] = vars.totalVaultInitNums;
                             initIndexes[vars.total][3] = vars.totalVaultInitNums + vars.usedNums[k];
                             initIndexes[vars.total][4] = vars.totalStrategyInitAddresses;
-                            initIndexes[vars.total][5] = vars.totalStrategyInitAddresses + vars.usedStrategyInitAddresses;
+                            initIndexes[vars.total][5] =
+                                vars.totalStrategyInitAddresses + vars.usedStrategyInitAddresses;
                             initIndexes[vars.total][6] = vars.totalStrategyInitNums;
                             initIndexes[vars.total][7] = vars.totalStrategyInitNums + vars.usedStrategyInitNums;
                             initIndexes[vars.total][8] = vars.totalStrategyInitTicks;
@@ -331,7 +322,8 @@ library FactoryLib {
                             }
                             // nosemgrep
                             for (uint c; c < vars.usedStrategyInitAddresses; ++c) {
-                                strategyInitAddresses[vars.totalStrategyInitAddresses + c] = vars.strategyInitAddresses[c];
+                                strategyInitAddresses[vars.totalStrategyInitAddresses + c] =
+                                    vars.strategyInitAddresses[c];
                             }
                             // nosemgrep
                             for (uint c; c < vars.usedStrategyInitNums; ++c) {
@@ -355,13 +347,20 @@ library FactoryLib {
         }
     }
 
-    function _getVaultInitParamsVariants(address platform, address strategyImplementation) internal view returns (
-        string[] memory vaultType,
-        uint[] memory usedAddresses,
-        uint[] memory usedNums,
-        address[] memory allVaultInitAddresses,
-        uint[] memory allVaultInitNums
-    ) {
+    function _getVaultInitParamsVariants(
+        address platform,
+        address strategyImplementation
+    )
+        internal
+        view
+        returns (
+            string[] memory vaultType,
+            uint[] memory usedAddresses,
+            uint[] memory usedNums,
+            address[] memory allVaultInitAddresses,
+            uint[] memory allVaultInitNums
+        )
+    {
         GetVaultInitParamsVariantsVars memory vars;
         vars.vaultTypes = IStrategy(strategyImplementation).supportedVaultTypes();
         vars.len = vars.vaultTypes.length;
@@ -374,7 +373,7 @@ library FactoryLib {
                 ++vars.total;
             } else if (
                 CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
-                || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
+                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
             ) {
                 vars.total += allowedBBTokensLen;
                 vars.totalVaultInitAddresses += allowedBBTokensLen;
@@ -385,7 +384,7 @@ library FactoryLib {
         usedNums = new uint[](vars.total);
         allVaultInitAddresses = new address[](vars.totalVaultInitAddresses);
         allVaultInitNums = new uint[](vars.totalVaultInitNums); // now its always 0, but function can be upgraded without changing interface
-        
+
         // vaultType index, allVaultInitAddresses index, allVaultInitNums index
         uint[3] memory indexes;
         // nosemgrep
@@ -395,7 +394,7 @@ library FactoryLib {
                 ++indexes[0];
             } else if (
                 CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
-                || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
+                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
             ) {
                 // nosemgrep
                 for (uint k; k < allowedBBTokensLen; ++k) {
@@ -409,7 +408,10 @@ library FactoryLib {
         }
     }
 
-    function getExchangeAssetIndex(address platform, address[] memory assets) external view returns (uint exchangeAssetIndex) {
+    function getExchangeAssetIndex(
+        address platform,
+        address[] memory assets
+    ) external view returns (uint exchangeAssetIndex) {
         address targetExchangeAsset = IPlatform(platform).targetExchangeAsset();
         uint len = assets.length;
         // nosemgrep
@@ -433,10 +435,10 @@ library FactoryLib {
                 exchangeAssetIndex = i;
             }
         }
-        if(exchangeAssetIndex == type(uint).max){
+        if (exchangeAssetIndex == type(uint).max) {
             revert ISwapper.NoRouteFound();
-        }  
-        if(exchangeAssetIndex > type(uint).max) revert ISwapper.NoRoutesForAssets();
+        }
+        if (exchangeAssetIndex > type(uint).max) revert ISwapper.NoRoutesForAssets();
     }
 
     function _getSymbol(
@@ -447,24 +449,32 @@ library FactoryLib {
         string memory bbAssetSymbol
     ) internal pure returns (string memory) {
         bytes memory vaultTypeBytes = bytes(vaultType);
-        string memory prefix = 'v';
-        if (vaultTypeBytes[0] == 'C') {
-            prefix = 'C';
+        string memory prefix = "v";
+        if (vaultTypeBytes[0] == "C") {
+            prefix = "C";
         }
         if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
-            prefix = 'R';
+            prefix = "R";
         }
         if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
-            prefix = 'RM';
+            prefix = "RM";
         }
         if (CommonLib.eq(vaultType, VaultTypeLib.SPLITTER_MANAGED)) {
-            prefix = 'SM';
+            prefix = "SM";
         }
         if (CommonLib.eq(vaultType, VaultTypeLib.SPLITTER_AUTO)) {
-            prefix = 'SA';
+            prefix = "SA";
         }
-        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat('-', bbAssetSymbol) : '';
-        return string.concat(prefix, "-", symbols, bbAssetStr, "-", CommonLib.shortId(strategyLogicId), bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : "");
+        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
+        return string.concat(
+            prefix,
+            "-",
+            symbols,
+            bbAssetStr,
+            "-",
+            CommonLib.shortId(strategyLogicId),
+            bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : ""
+        );
     }
 
     function getName(
@@ -483,20 +493,34 @@ library FactoryLib {
         }
     }
 
-    function getStrategyData(string memory vaultType, address strategyAddress, address bbAsset) public view returns (
-        string memory strategyId,
-        address[] memory assets,
-        string[] memory assetsSymbols,
-        string memory specificName,
-        string memory vaultSymbol
-    ) {
+    function getStrategyData(
+        string memory vaultType,
+        address strategyAddress,
+        address bbAsset
+    )
+        public
+        view
+        returns (
+            string memory strategyId,
+            address[] memory assets,
+            string[] memory assetsSymbols,
+            string memory specificName,
+            string memory vaultSymbol
+        )
+    {
         strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
         bool showSpecificInSymbol;
         (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
-        string memory bbAssetSymbol = bbAsset == address(0) ? '' : IERC20Metadata(bbAsset).symbol();
-        vaultSymbol = _getSymbol(vaultType, strategyId, CommonLib.implode(assetsSymbols, ""), showSpecificInSymbol ? specificName : '', bbAssetSymbol);
+        string memory bbAssetSymbol = bbAsset == address(0) ? "" : IERC20Metadata(bbAsset).symbol();
+        vaultSymbol = _getSymbol(
+            vaultType,
+            strategyId,
+            CommonLib.implode(assetsSymbols, ""),
+            showSpecificInSymbol ? specificName : "",
+            bbAssetSymbol
+        );
     }
 
     function getDeploymentKey(
@@ -584,10 +608,7 @@ library FactoryLib {
     ) external {
         VaultPostDeployVars memory vars;
         vars.isRewardingVaultType = CommonLib.eq(vaultType, VaultTypeLib.REWARDING);
-        if (
-            vars.isRewardingVaultType
-            || CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)
-        ) {
+        if (vars.isRewardingVaultType || CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
             IPlatform(platform).useAllowedBBTokenVault(vaultInitAddresses[0]);
             IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
             vars.minInitialBoostDuration = IPlatform(platform).minInitialBoostDuration();
@@ -599,26 +620,27 @@ library FactoryLib {
             for (uint i; i < boostTokensLen; ++i) {
                 address token = vaultInitAddresses[1 + i];
                 uint durationSeconds = vars.isRewardingVaultType ? BOOST_REWARD_DURATION : vaultInitNums[1 + i];
-                if(durationSeconds < vars.minInitialBoostDuration){
+                if (durationSeconds < vars.minInitialBoostDuration) {
                     revert IFactory.BoostDurationTooLow();
                 }
-                uint initialNotifyAmount = vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
+                uint initialNotifyAmount =
+                    vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
                 //slither-disable-next-line unused-return
                 (uint price,) = priceReader.getPrice(token);
-                totalInitialBoostUsdPerDay += initialNotifyAmount * 1e18 / 10**IERC20Metadata(token).decimals() * price / 1e18 * 86400 / durationSeconds;
+                totalInitialBoostUsdPerDay += initialNotifyAmount * 1e18 / 10 ** IERC20Metadata(token).decimals()
+                    * price / 1e18 * 86400 / durationSeconds;
                 if (initialNotifyAmount > 0) {
                     IERC20(token).safeTransferFrom(msg.sender, address(this), initialNotifyAmount);
                     IERC20(token).forceApprove(vault, initialNotifyAmount);
                     IRVault(vault).notifyTargetRewardAmount(1 + i, initialNotifyAmount);
                 }
             }
-            if(totalInitialBoostUsdPerDay == 0){
+            if (totalInitialBoostUsdPerDay == 0) {
                 revert IFactory.BoostAmountIsZero();
             }
-            if(totalInitialBoostUsdPerDay < vars.minInitialBoostPerDay){
+            if (totalInitialBoostUsdPerDay < vars.minInitialBoostPerDay) {
                 revert IFactory.BoostAmountTooLow();
             }
         }
     }
 }
-

@@ -24,7 +24,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         proxy = new Proxy();
         proxy.initProxy(address(new Swapper()));
         swapper = Swapper(address(proxy));
@@ -63,7 +63,6 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenIn: PolygonLib.TOKEN_DAI,
             tokenOut: PolygonLib.TOKEN_USDC
         });
-
 
         pools[2] = ISwapper.PoolData({
             pool: PolygonLib.POOL_QUICKSWAPV3_USDT_DAI,
@@ -114,16 +113,16 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         // 10.657801141267248159
         assertGt(price, 1e18);
         assertLt(price, 1e20);
- 
+
         //9.999179532829849850
         price = swapper.getPrice(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI, 10e6);
         assertGt(price, 90e17);
-        assertLt(price, 110e17); 
+        assertLt(price, 110e17);
 
         price = swapper.getPrice(PolygonLib.TOKEN_USDC, address(1), 0);
-        assertEq(price,0);
+        assertEq(price, 0);
     }
-    
+
     function testGetPricesForRoute() public {
         (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI);
         uint price = swapper.getPriceForRoute(route, 0);
@@ -146,8 +145,8 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         //9.999179532829849850
         price = swapper.getPriceForRoute(route, 10e6);
         assertGt(price, 90e17);
-        assertLt(price, 110e17); 
-    } 
+        assertLt(price, 110e17);
+    }
 
     function testIsRouteExist() public {
         bool result = swapper.isRouteExist(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI);
@@ -168,19 +167,22 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         int24[] memory ticks = new int24[](2);
         ticks[0] = -60;
         ticks[1] = 60;
-        (uint liquidity, uint[] memory amountsConsumed) = uniswapV3Adapter.getLiquidityForAmounts(PolygonLib.POOL_UNISWAPV3_USDC_USDT_100, amounts, ticks);
+        (uint liquidity, uint[] memory amountsConsumed) =
+            uniswapV3Adapter.getLiquidityForAmounts(PolygonLib.POOL_UNISWAPV3_USDC_USDT_100, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
-        (liquidity, amountsConsumed) = algebraAdapter.getLiquidityForAmounts(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, amounts, ticks);
+        (liquidity, amountsConsumed) =
+            algebraAdapter.getLiquidityForAmounts(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
         // (uint amount0, uint amount1) = algebraAdapt_getAmountsForLiquidityity(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, int24 lowerTick, int24 upperTick, uint128 liquidity);
 
-        (liquidity, amountsConsumed) = kyberAdapter.getLiquidityForAmounts(PolygonLib.POOL_KYBER_USDC_USDT, amounts, ticks);
+        (liquidity, amountsConsumed) =
+            kyberAdapter.getLiquidityForAmounts(PolygonLib.POOL_KYBER_USDC_USDT, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
@@ -250,15 +252,14 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         swapper.swapWithRoute(route, 1e6, 1_000); // 1%
         ISwapper.PoolData[] memory _route = new ISwapper.PoolData[](0);
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
-        swapper.swapWithRoute(_route, 1e6, 1_000); 
+        swapper.swapWithRoute(_route, 1e6, 1_000);
     }
-
 
     function testSetup() public {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         proxy = new Proxy();
         proxy.initProxy(address(new Swapper()));
         swapper = Swapper(address(proxy));
@@ -301,7 +302,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        swapper.addPools(pools, false); 
+        swapper.addPools(pools, false);
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
@@ -312,9 +313,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         vm.expectRevert(abi.encodeWithSelector(ISwapper.UnknownAMMAdapter.selector));
-        swapper.addPools(pools_, false); 
+        swapper.addPools(pools_, false);
 
-         pools_[0] = ISwapper.AddPoolData({
+        pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: PolygonLib.TOKEN_USDC,
@@ -322,7 +323,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        swapper.addPools(pools_, false); 
+        swapper.addPools(pools_, false);
     }
 
     function testAddRemoveBlueChipsPools() public {
@@ -334,9 +335,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
-        swapper.addBlueChipsPools(pools, false); 
+        swapper.addBlueChipsPools(pools, false);
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        swapper.addBlueChipsPools(pools, false); 
+        swapper.addBlueChipsPools(pools, false);
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
@@ -347,9 +348,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         vm.expectRevert(abi.encodeWithSelector(ISwapper.UnknownAMMAdapter.selector));
-        swapper.addBlueChipsPools(pools_, false); 
+        swapper.addBlueChipsPools(pools_, false);
 
-         pools_[0] = ISwapper.AddPoolData({
+        pools_[0] = ISwapper.AddPoolData({
             pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: PolygonLib.TOKEN_USDC,
@@ -357,15 +358,13 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        swapper.addBlueChipsPools(pools_, false); 
+        swapper.addBlueChipsPools(pools_, false);
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         swapper.removeBlueChipPool(address(1), address(2));
 
-        swapper.removeBlueChipPool(PolygonLib.TOKEN_USDC,PolygonLib.TOKEN_USDT);
-        address pool = swapper.blueChipsPools(PolygonLib.TOKEN_USDC,PolygonLib.TOKEN_USDT).pool;
-        assertEq(pool,address(0));
-
-    } 
-
+        swapper.removeBlueChipPool(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT);
+        address pool = swapper.blueChipsPools(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT).pool;
+        assertEq(pool, address(0));
+    }
 }

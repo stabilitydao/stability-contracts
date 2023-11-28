@@ -24,9 +24,13 @@ interface IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event PlatformVersion(string version);
-    event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);
+    event UpgradeAnnounce(
+        string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock
+    );
     event CancelUpgrade(string oldVersion, string newVersion);
-    event ProxyUpgraded(address indexed proxy, address implementation, string oldContractVersion, string newContractVersion);
+    event ProxyUpgraded(
+        address indexed proxy, address implementation, string oldContractVersion, string newContractVersion
+    );
     event Addresses(
         address multisig_,
         address factory_,
@@ -70,6 +74,7 @@ interface IPlatform {
         address[] proxies;
         address[] newImplementations;
     }
+
     struct PlatformSettings {
         string networkName;
         bytes32 networkExtra;
@@ -80,10 +85,12 @@ interface IPlatform {
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
     }
+
     struct AmmAdapter {
         string id;
         address proxy;
     }
+
     struct SetupAddresses {
         address factory;
         address priceReader;
@@ -199,21 +206,24 @@ interface IPlatform {
     /// @return feeShareVaultManager Revenue fee share % of VaultManager tokenId owner
     /// @return feeShareStrategyLogic Revenue fee share % of StrategyLogic tokenId owner
     /// @return feeShareEcosystem Revenue fee share % of ecosystemFeeReceiver
-    function getFees() external view returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+    function getFees()
+        external
+        view
+        returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
 
     /// @notice Platform settings
     function getPlatformSettings() external view returns (PlatformSettings memory);
 
     /// @notice AMM adapters of the platform
-    function getAmmAdapters() external view returns(string[] memory id, address[] memory proxy);
+    function getAmmAdapters() external view returns (string[] memory id, address[] memory proxy);
 
     /// @notice Get AMM adapter data by hash
     /// @param ammAdapterIdHash Keccak256 hash of adapter ID string
     /// @return ID string and proxy address of AMM adapter
-    function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory);
+    function ammAdapter(bytes32 ammAdapterIdHash) external view returns (AmmAdapter memory);
 
     /// @notice Allowed buy-back tokens for rewarding vaults
-    function allowedBBTokens() external view returns(address[] memory);
+    function allowedBBTokens() external view returns (address[] memory);
 
     /// @notice Vaults building limit for buy-back token.
     /// This limit decrements when a vault for BB-token is built.
@@ -229,7 +239,10 @@ interface IPlatform {
     /// @notice Non-zero vaults building limits for allowed buy-back tokens.
     /// @return bbToken Allowed buy-back tokens
     /// @return vaultsLimit Number of vaults that can be built for BB-tokens
-    function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit);
+    function allowedBBTokenVaultsFiltered()
+        external
+        view
+        returns (address[] memory bbToken, uint[] memory vaultsLimit);
 
     /// @notice Check address for existance in operators list
     /// @param operator Address
@@ -238,25 +251,25 @@ interface IPlatform {
 
     /// @notice Tokens that can be used for boost rewards of rewarding vaults
     /// @return Addresses of tokens
-    function allowedBoostRewardTokens() external view returns(address[] memory);
+    function allowedBoostRewardTokens() external view returns (address[] memory);
 
     /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
     /// @return Addresses of tokens
-    function defaultBoostRewardTokens() external view returns(address[] memory);
+    function defaultBoostRewardTokens() external view returns (address[] memory);
 
     /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
     /// @param addressToRemove This address will be removed from default boost reward tokens
     /// @return Addresses of tokens
-    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory);
+    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns (address[] memory);
 
     /// @notice Allowed DeX aggregators
     /// @return Addresses of DeX aggregator rounters
-    function dexAggregators() external view returns(address[] memory);
+    function dexAggregators() external view returns (address[] memory);
 
     /// @notice DeX aggregator router address is allowed to be used in the platform
     /// @param dexAggRouter Address of DeX aggreagator router
     /// @return Can be used
-    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool);
+    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns (bool);
 
     /// @notice Show minimum TVL for compensate if vault has not enough ETH
     /// @return Minimum TVL for compensate.
@@ -278,18 +291,21 @@ interface IPlatform {
     /// @return isFarmingStrategy True if strategy is farming strategy. Index of strategy same as in previous array.
     /// @return strategyTokenURI StrategyLogic NFT tokenId metadata and on-chain image. Index of strategy same as in previous array.
     /// @return strategyExtra Strategy color, background color and other extra data. Index of strategy same as in previous array.
-    function getData() external view returns(
-        address[] memory platformAddresses,
-        address[] memory bcAssets,
-        address[] memory dexAggregators_,
-        string[] memory vaultType,
-        bytes32[] memory vaultExtra,
-        uint[] memory vaultBulldingPrice,
-        string[] memory strategyId,
-        bool[] memory isFarmingStrategy,
-        string[] memory strategyTokenURI,
-        bytes32[] memory strategyExtra
-    );
+    function getData()
+        external
+        view
+        returns (
+            address[] memory platformAddresses,
+            address[] memory bcAssets,
+            address[] memory dexAggregators_,
+            string[] memory vaultType,
+            bytes32[] memory vaultExtra,
+            uint[] memory vaultBulldingPrice,
+            string[] memory strategyId,
+            bool[] memory isFarmingStrategy,
+            string[] memory strategyTokenURI,
+            bytes32[] memory strategyExtra
+        );
 
     // todo add vaultSymbol, vaultName
     /// @notice Front-end balances, prices and vault list viewer
@@ -306,28 +322,31 @@ interface IPlatform {
     ///         nft[2] StrategyLogic
     /// @return nftUserBalance User balance of NFT. Index of NFT same as in previous array.
     /// @return buildingPayPerVaultTokenBalance User balance of vault creation paying token
-    function getBalance(address yourAccount) external view returns (
-        address[] memory token,
-        uint[] memory tokenPrice,
-        uint[] memory tokenUserBalance,
-        address[] memory vault,
-        uint[] memory vaultSharePrice,
-        uint[] memory vaultUserBalance,
-        address[] memory nft,
-        uint[] memory nftUserBalance,
-        uint buildingPayPerVaultTokenBalance
-    );
+    function getBalance(address yourAccount)
+        external
+        view
+        returns (
+            address[] memory token,
+            uint[] memory tokenPrice,
+            uint[] memory tokenUserBalance,
+            address[] memory vault,
+            uint[] memory vaultSharePrice,
+            uint[] memory vaultUserBalance,
+            address[] memory nft,
+            uint[] memory nftUserBalance,
+            uint buildingPayPerVaultTokenBalance
+        );
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Add platform operator. 
+    /// @notice Add platform operator.
     /// Only governance and multisig can add operator.
     /// @param operator Address of new operator
     function addOperator(address operator) external;
 
-    /// @notice Remove platform operator. 
+    /// @notice Remove platform operator.
     /// Only governance and multisig can remove operator.
     /// @param operator Address of operator to remove
     function removeOperator(address operator) external;
@@ -388,7 +407,10 @@ interface IPlatform {
     /// @notice Add default boost reward token
     /// @param allowedBoostRewardToken Address of allowed boost reward token
     /// @param defaultBoostRewardToken Address of default boost reward token
-    function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external;
+    function addBoostTokens(
+        address[] memory allowedBoostRewardToken,
+        address[] memory defaultBoostRewardToken
+    ) external;
 
     /// @notice Decrease allowed BB-token vault building limit when vault is built
     /// Only Factory can do it.

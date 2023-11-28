@@ -25,7 +25,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -60,7 +60,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
             revert NotAllowedDexAggregator(agg);
         }
 
-        if(receiver == address(0)){
+        if (receiver == address(0)) {
             receiver = msg.sender;
         }
 
@@ -76,7 +76,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         for (uint i; i < len; ++i) {
             if (tokenIn != assets[i]) {
                 //slither-disable-next-line low-level-calls
-                (bool success,bytes memory result) = agg.call(swapData[i]);
+                (bool success, bytes memory result) = agg.call(swapData[i]);
                 // nosemgrep
                 require(success, string(result));
             }
@@ -90,7 +90,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         IVault(vault).depositAssets(assets, depositAmounts, minSharesOut, receiver);
 
-        _sendAllRemaining(tokenIn, assets,  IStrategy(strategy).underlying());
+        _sendAllRemaining(tokenIn, assets, IStrategy(strategy).underlying());
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -102,10 +102,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address vault,
         address tokenIn,
         uint amountIn
-    ) external view returns(
-        address[] memory tokensOut,
-        uint[] memory swapAmounts
-    ) {
+    ) external view returns (address[] memory tokensOut, uint[] memory swapAmounts) {
         // todo check vault
 
         address strategy = address(IVault(vault).strategy());
@@ -132,7 +129,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         }
     }
 
-/*     function getWithdrawSwapAmounts(
+    /*     function getWithdrawSwapAmounts(
          address vault,
          address tokenOut,
          uint amountShares

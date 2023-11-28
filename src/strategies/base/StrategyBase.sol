@@ -16,12 +16,13 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    
+
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = '1.0.0';
+    string public constant VERSION_STRATEGY_BASE = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant STRATEGYBASE_STORAGE_LOCATION = 0xb14b643f49bed6a2c6693bbd50f68dc950245db265c66acadbfa51ccc8c3ba00;
+    bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
+        0xb14b643f49bed6a2c6693bbd50f68dc950245db265c66acadbfa51ccc8c3ba00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -38,7 +39,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
     ) internal onlyInitializing {
         __Controllable_init(platform_);
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
-        ($._id, $.vault, $._assets, $._underlying, $._exchangeAssetIndex) = (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
+        ($._id, $.vault, $._assets, $._underlying, $._exchangeAssetIndex) =
+            (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -61,12 +63,22 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    function withdrawAssets(address[] memory assets_, uint value, address receiver) external virtual onlyVault returns (uint[] memory amountsOut) {
+    function withdrawAssets(
+        address[] memory assets_,
+        uint value,
+        address receiver
+    ) external virtual onlyVault returns (uint[] memory amountsOut) {
         _beforeWithdraw();
         return _withdrawAssets(assets_, value, receiver);
     }
 
-    function depositUnderlying(uint amount) external virtual override onlyVault returns(uint[] memory amountsConsumed) {
+    function depositUnderlying(uint amount)
+        external
+        virtual
+        override
+        onlyVault
+        returns (uint[] memory amountsConsumed)
+    {
         _beforeDeposit();
         return _depositUnderlying(amount);
     }
@@ -77,7 +89,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    function transferAssets(uint amount, uint total_, address receiver) external onlyVault returns (uint[] memory amountsOut) {
+    function transferAssets(
+        uint amount,
+        uint total_,
+        address receiver
+    ) external onlyVault returns (uint[] memory amountsOut) {
         _beforeTransferAssets();
         //slither-disable-next-line unused-return
         return StrategyLib.transferAssets(_getStrategyBaseStorage(), amount, total_, receiver);
@@ -100,18 +116,19 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 uint[] memory __rewardAmounts
             ) = _claimRevenue();
 
-            __amounts[exchangeAssetIndex] += _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
+            __amounts[exchangeAssetIndex] +=
+                _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
             uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, $._id, __assets, __amounts);
-            
+
             bool needCompound = _processRevenue(__assets, amountsRemaining);
-            
+
             uint totalBefore = $.total;
 
             if (needCompound) {
                 _compound();
             }
-            
+
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
         }
     }
@@ -121,14 +138,14 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(Controllable, IERC165) returns (bool) {
         return interfaceId == type(IStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function strategyLogicId() public view virtual returns(string memory);
+    function strategyLogicId() public view virtual returns (string memory);
 
     /// @inheritdoc IStrategy
-    function assets() public virtual view returns (address[] memory) {
+    function assets() public view virtual returns (address[] memory) {
         return _getStrategyBaseStorage()._assets;
     }
 
@@ -170,10 +187,13 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view virtual returns (uint[] memory amountsConsumed, uint value) {
+    function previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view virtual returns (uint[] memory amountsConsumed, uint value) {
         // nosemgrep
         if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
-            if(amountsMax.length != 1){
+            if (amountsMax.length != 1) {
                 revert IControllable.IncorrectArrayLength();
             }
             value = amountsMax[0];
@@ -182,7 +202,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
             return _previewDepositAssets(assets_, amountsMax);
         }
     }
-
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */
@@ -195,22 +214,26 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Cosumed amounts of invested assets
-    function _depositUnderlying(uint /*amount*/) internal virtual returns(uint[] memory /*amountsConsumed*/) {
-        revert(_getStrategyBaseStorage()._underlying == address(0) ? 'no underlying' : 'not implemented');
+    function _depositUnderlying(uint /*amount*/ ) internal virtual returns (uint[] memory /*amountsConsumed*/ ) {
+        revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Wothdraw underlying invested and send to receiver
-    function _withdrawUnderlying(uint /*amount*/, address /*receiver*/) internal virtual {
-        revert(_getStrategyBaseStorage()._underlying == address(0) ? 'no underlying' : 'not implemented');
+    function _withdrawUnderlying(uint, /*amount*/ address /*receiver*/ ) internal virtual {
+        revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
-    function _previewDepositUnderlying(uint /*amount*/) internal view virtual returns(uint[] memory /*amountsConsumed*/) {
-    }
+    function _previewDepositUnderlying(uint /*amount*/ )
+        internal
+        view
+        virtual
+        returns (uint[] memory /*amountsConsumed*/ )
+    {}
 
     /// @dev Can be overrided by derived base strategies for custom logic
     function _beforeDeposit() internal virtual {}
-    
+
     /// @dev Can be overrided by derived base strategies for custom logic
     function _beforeWithdraw() internal virtual {}
 
@@ -225,7 +248,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IStrategy
-    function supportedVaultTypes() external view virtual returns(string[] memory types);
+    function supportedVaultTypes() external view virtual returns (string[] memory types);
 
     /// @dev Investing assets. Amounts must be on strategy contract balance.
     /// @param amounts Amounts of strategy assets to invest
@@ -240,7 +263,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @param value Part of strategy total value to withdraw
     /// @param receiver User address
     /// @return amountsOut Amounts of assets sent to user
-    function _withdrawAssets(address[] memory assets_, uint value, address receiver) internal virtual returns (uint[] memory amountsOut);
+    function _withdrawAssets(
+        address[] memory assets_,
+        uint value,
+        address receiver
+    ) internal virtual returns (uint[] memory amountsOut);
 
     /// @dev Withdraw strategy assets from investing and send to user.
     /// This light form of _withdrawAssets is suitable for implementation into final strategy contract.
@@ -254,11 +281,26 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @return __amounts Amounts of claimed revenue in form of strategy assets
     /// @return __rewardAssets Farming reward assets
     /// @return __rewardAmounts Amounts of claimed farming rewards
-    function _claimRevenue() internal virtual returns (address[] memory __assets, uint[] memory __amounts, address[] memory __rewardAssets, uint[] memory __rewardAmounts);
+    function _claimRevenue()
+        internal
+        virtual
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        );
 
-    function _processRevenue(address[] memory assets_, uint[] memory amountsRemaining) internal virtual returns (bool needCompound);
+    function _processRevenue(
+        address[] memory assets_,
+        uint[] memory amountsRemaining
+    ) internal virtual returns (bool needCompound);
 
-    function _liquidateRewards(address exchangeAsset, address[] memory rewardAssets_, uint[] memory rewardAmounts_) internal virtual returns (uint earnedExchangeAsset);
+    function _liquidateRewards(
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_
+    ) internal virtual returns (uint earnedExchangeAsset);
 
     /// @dev Reinvest strategy assets of strategy contract balance
     function _compound() internal virtual;
@@ -274,14 +316,21 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @param amountsMax Amounts of specified assets available for investing
     /// @return amountsConsumed Cosumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
-    function _previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) internal view virtual returns (uint[] memory amountsConsumed, uint value);
+    function _previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal view virtual returns (uint[] memory amountsConsumed, uint value);
 
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided strategy assets and amounts.
     /// Light form of _previewDepositAssets is suitable for implementation into final strategy contract.
     /// @param amountsMax Amounts of specified assets available for investing
     /// @return amountsConsumed Cosumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
-    function _previewDepositAssets(uint[] memory amountsMax) internal view virtual returns (uint[] memory amountsConsumed, uint value);
+    function _previewDepositAssets(uint[] memory amountsMax)
+        internal
+        view
+        virtual
+        returns (uint[] memory amountsConsumed, uint value);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
@@ -295,9 +344,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     function _requireVault() internal view {
-        if(msg.sender != _getStrategyBaseStorage().vault) {
+        if (msg.sender != _getStrategyBaseStorage().vault) {
             revert IControllable.NotVault();
         }
     }
-
 }

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.22;
 
 library VaultStatusLib {
-    uint constant internal NOT_EXIST = 0;
-    uint constant internal ACTIVE = 1;
-    uint constant internal DEPRECATED = 2;
-    uint constant internal EMERGENCY_EXIT = 3;
-    uint constant internal DISABLED = 4;
+    uint internal constant NOT_EXIST = 0;
+    uint internal constant ACTIVE = 1;
+    uint internal constant DEPRECATED = 2;
+    uint internal constant EMERGENCY_EXIT = 3;
+    uint internal constant DISABLED = 4;
 }

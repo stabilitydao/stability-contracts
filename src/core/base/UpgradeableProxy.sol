@@ -3,7 +3,6 @@ pragma solidity ^0.8.22;
 
 /// @title Simple ERC-1967 upgradeable proxy implementation
 abstract contract UpgradeableProxy {
-
     error ImplementationIsNotContract();
 
     /// @dev This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
@@ -41,7 +40,7 @@ abstract contract UpgradeableProxy {
 
     /// @dev Stores a new address in the EIP1967 implementation slot.
     function _setImplementation(address newImplementation) private {
-        if(newImplementation.code.length == 0) revert ImplementationIsNotContract();
+        if (newImplementation.code.length == 0) revert ImplementationIsNotContract();
         bytes32 slot = _IMPLEMENTATION_SLOT;
         // solhint-disable-next-line no-inline-assembly
         //slither-disable-next-line assembly
@@ -72,12 +71,8 @@ abstract contract UpgradeableProxy {
 
             switch result
             // delegatecall returns 0 on error.
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return (0, returndatasize())
-            }
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
         }
     }
 

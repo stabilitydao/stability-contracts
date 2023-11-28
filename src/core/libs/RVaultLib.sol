@@ -12,7 +12,7 @@ library RVaultLib {
     using SafeERC20 for IERC20;
 
     uint public constant MAX_COMPOUND_RATIO = 90_000;
-    
+
     // Custom Errors
 
     function __RVaultBase_init(
@@ -22,25 +22,25 @@ library RVaultLib {
         uint[] memory vaultInitNums
     ) external {
         uint addressesLength = vaultInitAddresses.length;
-        if(addressesLength == 0){
+        if (addressesLength == 0) {
             revert IRVault.NoBBToken();
         }
-        if(IPlatform(platform_).allowedBBTokenVaults(vaultInitAddresses[0]) == 0){
+        if (IPlatform(platform_).allowedBBTokenVaults(vaultInitAddresses[0]) == 0) {
             revert IRVault.NotAllowedBBToken();
         }
-        if(vaultInitNums.length != addressesLength * 2){
+        if (vaultInitNums.length != addressesLength * 2) {
             revert IRVault.IncorrectNums();
         }
         // nosemgrep
         for (uint i; i < addressesLength; ++i) {
-            if(vaultInitAddresses[i] == address(0)){
+            if (vaultInitAddresses[i] == address(0)) {
                 revert IRVault.ZeroToken();
             }
-            if(vaultInitNums[i] == 0){
+            if (vaultInitNums[i] == 0) {
                 revert IRVault.ZeroVestingDuration();
             }
         }
-        if(vaultInitNums[addressesLength * 2 - 1] > MAX_COMPOUND_RATIO){
+        if (vaultInitNums[addressesLength * 2 - 1] > MAX_COMPOUND_RATIO) {
             revert IRVault.TooHighCompoundRation();
         }
 
@@ -65,24 +65,23 @@ library RVaultLib {
     }
 
     function rewardPerToken(IRVault.RVaultBaseStorage storage $, uint rewardTokenIndex) public view returns (uint) {
-        uint totalSupplyWithoutItself = IERC20(address(this)).totalSupply() - IERC20(address(this)).balanceOf(address(this));
+        uint totalSupplyWithoutItself =
+            IERC20(address(this)).totalSupply() - IERC20(address(this)).balanceOf(address(this));
         if (totalSupplyWithoutItself == 0) {
             return $.rewardPerTokenStoredForToken[rewardTokenIndex];
         }
-        return
-            $.rewardPerTokenStoredForToken[rewardTokenIndex] + (
-            (lastTimeRewardApplicable($.periodFinishForToken[rewardTokenIndex]) - $.lastUpdateTimeForToken[rewardTokenIndex])
-            * $.rewardRateForToken[rewardTokenIndex]
-            * 1e18
-            / totalSupplyWithoutItself
-        );
+        return $.rewardPerTokenStoredForToken[rewardTokenIndex]
+            + (
+                (
+                    lastTimeRewardApplicable($.periodFinishForToken[rewardTokenIndex])
+                        - $.lastUpdateTimeForToken[rewardTokenIndex]
+                ) * $.rewardRateForToken[rewardTokenIndex] * 1e18 / totalSupplyWithoutItself
+            );
     }
 
     function earned(IRVault.RVaultBaseStorage storage $, uint rt, address account) public view returns (uint) {
-        return 
-            IERC20(address(this)).balanceOf(account)
-            * (rewardPerToken($, rt) - $.userRewardPerTokenPaidForToken[rt][account])
-            / 1e18
+        return IERC20(address(this)).balanceOf(account)
+            * (rewardPerToken($, rt) - $.userRewardPerTokenPaidForToken[rt][account]) / 1e18
             + $.rewardsForToken[rt][account];
     }
 
@@ -99,11 +98,16 @@ library RVaultLib {
 
     /// @dev Transfer earned rewards to rewardsReceiver
     //slither-disable-next-line reentrancy-events
-    function payRewardTo(IRVault.RVaultBaseStorage storage $, uint rewardTokenIndex, address owner, address receiver) public {
+    function payRewardTo(
+        IRVault.RVaultBaseStorage storage $,
+        uint rewardTokenIndex,
+        address owner,
+        address receiver
+    ) public {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = earned($, rewardTokenIndex, owner);
         //slither-disable-next-line timestamp
-        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward){
+        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
             $.rewardsForToken[rewardTokenIndex][owner] = 0;
             IERC20(localRewardToken).safeTransfer(receiver, reward);
             emit IRVault.RewardPaid(owner, localRewardToken, reward);
@@ -132,16 +136,21 @@ library RVaultLib {
         return Math.min(block.timestamp, periodFinishForToken);
     }
 
-    function notifyTargetRewardAmount(IRVault.RVaultBaseStorage storage $, IVault.VaultBaseStorage storage _$_, uint i, uint amount) external {
+    function notifyTargetRewardAmount(
+        IRVault.RVaultBaseStorage storage $,
+        IVault.VaultBaseStorage storage _$_,
+        uint i,
+        uint amount
+    ) external {
         updateRewards($, address(0));
 
         // overflow fix according to https://sips.synthetix.io/sips/sip-77
-        if(amount >= type(uint).max / 1e18){
+        if (amount >= type(uint).max / 1e18) {
             revert IRVault.Overflow(type(uint).max / 1e18 - 1);
         }
 
         address localRewardToken = $.rewardToken[i];
-        if(localRewardToken == address(0)){
+        if (localRewardToken == address(0)) {
             revert IRVault.RTNotFound();
         }
 
@@ -150,11 +159,11 @@ library RVaultLib {
         uint _oldRewardRateForToken = $.rewardRateForToken[i];
 
         if (i == 0) {
-            if(address(_$_.strategy) != msg.sender){
+            if (address(_$_.strategy) != msg.sender) {
                 revert IControllable.IncorrectMsgSender();
             }
         } else {
-            if(amount <= _oldRewardRateForToken * _duration / 100){
+            if (amount <= _oldRewardRateForToken * _duration / 100) {
                 revert IControllable.RewardIsTooSmall();
             }
         }
@@ -176,10 +185,9 @@ library RVaultLib {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = IERC20(localRewardToken).balanceOf(address(this));
-        if($.rewardRateForToken[i] > balance / _duration){
+        if ($.rewardRateForToken[i] > balance / _duration) {
             revert IControllable.RewardIsTooBig();
-        } 
+        }
         emit IRVault.RewardAdded(localRewardToken, amount);
     }
-
 }

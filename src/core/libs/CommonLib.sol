@@ -6,7 +6,10 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ConstantsLib.sol";
 
 library CommonLib {
-    function filterAddresses(address[] memory addresses, address addressToRemove) external pure returns (address[] memory filteredAddresses) {
+    function filterAddresses(
+        address[] memory addresses,
+        address addressToRemove
+    ) external pure returns (address[] memory filteredAddresses) {
         uint len = addresses.length;
         uint newLen;
         // nosemgrep
@@ -25,9 +28,9 @@ library CommonLib {
             }
         }
     }
-    
+
     function formatUsdAmount(uint amount) external pure returns (string memory formattedPrice) {
-        uint dollars = amount / 10**18;
+        uint dollars = amount / 10 ** 18;
         string memory priceStr;
         if (dollars >= 1000) {
             uint kDollars = dollars / 1000;
@@ -40,7 +43,7 @@ library CommonLib {
         } else if (dollars >= 100) {
             priceStr = Strings.toString(dollars);
         } else {
-            uint dollarsFraction = (amount - dollars * 10**18) / 10**14;
+            uint dollarsFraction = (amount - dollars * 10 ** 18) / 10 ** 14;
             if (dollarsFraction > 0) {
                 string memory dollarsFractionDelimiter = ".";
                 if (dollarsFraction < 10) {
@@ -50,7 +53,9 @@ library CommonLib {
                 } else if (dollarsFraction < 1000) {
                     dollarsFractionDelimiter = ".0";
                 }
-                priceStr = string.concat(Strings.toString(dollars), dollarsFractionDelimiter, Strings.toString(dollarsFraction));
+                priceStr = string.concat(
+                    Strings.toString(dollars), dollarsFractionDelimiter, Strings.toString(dollarsFraction)
+                );
             } else {
                 priceStr = Strings.toString(dollars);
             }
@@ -69,7 +74,10 @@ library CommonLib {
         formattedApr = string.concat(Strings.toString(aprInt), delimiter, Strings.toString(aprFraction), "%");
     }
 
-    function implodeSymbols(address[] memory assets, string memory delimiter) external view returns (string memory outString) {
+    function implodeSymbols(
+        address[] memory assets,
+        string memory delimiter
+    ) external view returns (string memory outString) {
         return implode(getSymbols(assets), delimiter);
     }
 

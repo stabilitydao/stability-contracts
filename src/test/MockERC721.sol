@@ -4,7 +4,6 @@ pragma solidity ^0.8.22;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 
 contract MockERC721 is ERC721EnumerableUpgradeable {
-
     // add this to be excluded from coverage report
     function test() public {}
 

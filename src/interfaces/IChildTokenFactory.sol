@@ -15,8 +15,8 @@ interface IChildTokenFactory {
         uint64 parentChainId,
         string memory name,
         string memory symbol
-    ) external returns(address);
-    
+    ) external returns (address);
+
     /// @notice Deploy new child (synthetic) ERC-721 token
     /// @param parentToken Parent natural ERC-721 token in other blockchain
     /// @param parentChainId Parent chain ID
@@ -30,5 +30,5 @@ interface IChildTokenFactory {
         string memory name,
         string memory symbol,
         string memory baseURI
-    ) external returns(address);
+    ) external returns (address);
 }

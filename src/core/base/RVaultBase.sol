@@ -23,10 +23,11 @@ abstract contract RVaultBase is VaultBase, IRVault {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of RVaultBase implementation
-    string public constant VERSION_RVAULT_BASE = '1.0.0';
+    string public constant VERSION_RVAULT_BASE = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RVaultBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant RVAULTBASE_STORAGE_LOCATION = 0xb5732c585a6784b4587829603e9853db681fd231004dc454c3ae683d1ebdca00;
+    bytes32 private constant RVAULTBASE_STORAGE_LOCATION =
+        0xb5732c585a6784b4587829603e9853db681fd231004dc454c3ae683d1ebdca00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -72,7 +73,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
     function getAllRewardsAndRedirect(address owner) external {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         address receiver = $.rewardsRedirect[owner];
-        if(receiver == address(0)){
+        if (receiver == address(0)) {
             revert IControllable.IncorrectZeroArgument();
         }
         _getAllRewards(owner, receiver);
@@ -86,7 +87,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
             // we check approval of shares for msg.sender. Msg sender should have approval for max amount
             // As approved amount is deducted every transfer, we checks it with max / 10
             uint allowance = allowance(owner, msg.sender);
-            if(allowance <= (type(uint).max / 10)){
+            if (allowance <= (type(uint).max / 10)) {
                 revert NotAllowed();
             }
         }
@@ -114,16 +115,15 @@ abstract contract RVaultBase is VaultBase, IRVault {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override (IERC165, VaultBase) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, VaultBase) returns (bool) {
         return interfaceId == type(IRVault).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IRVault
-    function bbToken() public view returns(address) {
+    function bbToken() public view returns (address) {
         return _getRVaultBaseStorage().rewardToken[0];
     }
 
-    
     function rewardTokens() external view returns (address[] memory) {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return RVaultLib.rewardTokens($);
@@ -145,17 +145,17 @@ abstract contract RVaultBase is VaultBase, IRVault {
     }
 
     /// @inheritdoc IRVault
-    function rewardToken(uint tokenIndex) public view returns(address) {
+    function rewardToken(uint tokenIndex) public view returns (address) {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.rewardToken[tokenIndex];
     }
 
     /// @inheritdoc IRVault
-    function duration(uint tokenIndex) public view returns(uint) {
+    function duration(uint tokenIndex) public view returns (uint) {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         return $.duration[tokenIndex];
     }
-    
+
     /// @inheritdoc IRVault
     function rewardsRedirect(address owner) public view returns (address) {
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
@@ -195,11 +195,7 @@ abstract contract RVaultBase is VaultBase, IRVault {
         return RVaultLib.rewardPerToken($, rewardTokenIndex);
     }
 
-    function _update(
-        address from,
-        address to,
-        uint value
-    ) internal override {
+    function _update(address from, address to, uint value) internal override {
         super._update(from, to, value);
         RVaultBaseStorage storage $ = _getRVaultBaseStorage();
         RVaultLib.updateRewards($, from);

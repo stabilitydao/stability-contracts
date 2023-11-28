@@ -10,7 +10,11 @@ import "../../src/strategies/GammaQuickSwapFarmStrategy.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 library DeployStrategyLib {
-    function deployStrategy(address platform, string memory id, bool farming) internal returns (address implementation) {
+    function deployStrategy(
+        address platform,
+        string memory id,
+        bool farming
+    ) internal returns (address implementation) {
         IFactory factory = IFactory(IPlatform(platform).factory());
         implementation = factory.strategyLogicConfig(keccak256(bytes(id))).implementation;
         if (implementation != address(0)) {
@@ -25,7 +29,7 @@ library DeployStrategyLib {
             implementation = address(new GammaQuickSwapFarmStrategy());
         }
 
-        require(implementation != address(0), 'DeployStrategyLib: unknown strategy');
+        require(implementation != address(0), "DeployStrategyLib: unknown strategy");
 
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
