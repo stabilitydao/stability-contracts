@@ -131,6 +131,10 @@ interface IStrategy is IERC165 {
         int24[] memory ticks
     );
 
+    /// @notice How strategy earns money
+    /// @return Description in free form
+    function description() external view returns(string memory);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
