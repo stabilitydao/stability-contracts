@@ -282,6 +282,10 @@ interface IPlatform {
     ///        platformAddresses[2] strategyLogic
     ///        platformAddresses[3] buildingPermitToken
     ///        platformAddresses[4] buildingPayPerVaultToken
+    ///        platformAddresses[5] governance
+    ///        platformAddresses[6] multisig
+    ///        platformAddresses[7] zap
+    ///        platformAddresses[8] bridge
     /// @return bcAssets Blue chip token addresses
     /// @return dexAggregators_ DeX aggregators allowed to be used entire the platform
     /// @return vaultType Vault type ID strings

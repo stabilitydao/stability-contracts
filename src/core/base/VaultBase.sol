@@ -494,6 +494,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         super._update(from, to, value);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.withdrawRequests[from] = block.number;
-        $.withdrawRequests[to] = block.number;
+        if (to != IPlatform(platform()).zap()) {
+            $.withdrawRequests[to] = block.number;
+        }
     }
 }
