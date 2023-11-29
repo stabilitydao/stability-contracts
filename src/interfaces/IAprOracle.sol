@@ -9,7 +9,6 @@ pragma solidity ^0.8.22;
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IAprOracle {
-
     //region ----- Events -----
     event SetAprs(address[] assets, uint[] aprs);
     //endregion -- Events -----

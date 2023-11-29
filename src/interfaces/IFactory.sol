@@ -6,7 +6,6 @@ pragma solidity ^0.8.22;
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IFactory {
-
     //region ----- Custom Errors -----
 
     error VaultImplementationIsNotAvailable();
@@ -25,7 +24,6 @@ interface IFactory {
 
     //endregion ----- Custom Errors -----
 
-
     //region ----- Events -----
 
     event VaultAndStrategy(
@@ -40,29 +38,13 @@ interface IFactory {
         bytes32 deploymentKey,
         uint vaultManagerTokenId
     );
-    event StrategyProxyUpgraded(
-        address proxy,
-        address oldImplementation,
-        address newImplementation
-    );
-    event VaultProxyUpgraded(
-        address proxy,
-        address oldImplementation,
-        address newImplementation
-    );
+    event StrategyProxyUpgraded(address proxy, address oldImplementation, address newImplementation);
+    event VaultProxyUpgraded(address proxy, address oldImplementation, address newImplementation);
     event VaultConfigChanged(
-        string type_,
-        address implementation,
-        bool deployAllowed,
-        bool upgradeAllowed,
-        bool newVaultType
+        string type_, address implementation, bool deployAllowed, bool upgradeAllowed, bool newVaultType
     );
     event StrategyLogicConfigChanged(
-        string id,
-        address implementation,
-        bool deployAllowed,
-        bool upgradeAllowed,
-        bool newStrategy
+        string id, address implementation, bool deployAllowed, bool upgradeAllowed, bool newStrategy
     );
     event VaultStatus(address indexed vault, uint newStatus);
     event NewFarm(Farm[] farms);
@@ -100,7 +82,7 @@ interface IFactory {
     }
 
     //endregion -- Data types -----
-    
+
     //region ----- View functions -----
 
     /// @notice All vaults deployed by the factory
@@ -136,13 +118,20 @@ interface IFactory {
 
     // todo remove, use new function without calculating vault symbol on the fly for not initialized vaults
     // factory required that special functionally only internally, not for interface
-    function getStrategyData(string memory vaultType, address strategyAddress, address bbAsset) external view returns (
-        string memory strategyId,
-        address[] memory assets,
-        string[] memory assetsSymbols,
-        string memory specificName,
-        string memory vaultSymbol
-    );
+    function getStrategyData(
+        string memory vaultType,
+        address strategyAddress,
+        address bbAsset
+    )
+        external
+        view
+        returns (
+            string memory strategyId,
+            address[] memory assets,
+            string[] memory assetsSymbols,
+            string memory specificName,
+            string memory vaultSymbol
+        );
 
     /// @dev Get best asset of assets to be strategy exchange asset
     function getExchangeAssetIndex(address[] memory assets) external view returns (uint);
@@ -192,17 +181,20 @@ interface IFactory {
     /// @return strategyInitAddresses Strategy initizlization addresses for deployVaultAndStrategy method for all building variants.
     /// @return strategyInitNums Strategy initizlization uint numbers for deployVaultAndStrategy method for all building variants.
     /// @return strategyInitTicks Strategy initizlization int24 ticks for deployVaultAndStrategy method for all building variants.
-    function whatToBuild() external view returns (
-        string[] memory desc,
-        string[] memory vaultType,
-        string[] memory strategyId,
-        uint[10][] memory initIndexes,
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums,
-        address[] memory strategyInitAddresses,
-        uint[] memory strategyInitNums,
-        int24[] memory strategyInitTicks
-    );
+    function whatToBuild()
+        external
+        view
+        returns (
+            string[] memory desc,
+            string[] memory vaultType,
+            string[] memory strategyId,
+            uint[10][] memory initIndexes,
+            address[] memory vaultInitAddresses,
+            uint[] memory vaultInitNums,
+            address[] memory strategyInitAddresses,
+            uint[] memory strategyInitNums,
+            int24[] memory strategyInitTicks
+        );
 
     /// @notice Governance and multisig can set a vault status other than Active - the default status.
     /// HardWorker only works with active vaults.
@@ -218,7 +210,10 @@ interface IFactory {
     /// @param week Week index (timestamp / (86400 * 7))
     /// @param builderPermitTokenId Token ID of buildingPermitToken NFT
     /// @return vaultsBuilt Vaults built
-    function vaultsBuiltByPermitTokenId(uint week, uint builderPermitTokenId) external view returns (uint vaultsBuilt);
+    function vaultsBuiltByPermitTokenId(
+        uint week,
+        uint builderPermitTokenId
+    ) external view returns (uint vaultsBuilt);
 
     /// @notice Data on all factory strategies.
     /// The output values are matched by index in the arrays.
@@ -229,15 +224,18 @@ interface IFactory {
     /// @return tokenId Token ID of StrategyLogic NFT
     /// @return tokenURI StrategyLogic NFT tokenId metadata and on-chain image
     /// @return extra Strategy color, background color and other extra data
-    function strategies() external view returns (
-        string[] memory id,
-        bool[] memory deployAllowed,
-        bool[] memory upgradeAllowed,
-        bool[] memory farming,
-        uint[] memory tokenId,
-        string[] memory tokenURI,
-        bytes32[] memory extra
-    );
+    function strategies()
+        external
+        view
+        returns (
+            string[] memory id,
+            bool[] memory deployAllowed,
+            bool[] memory upgradeAllowed,
+            bool[] memory farming,
+            uint[] memory tokenId,
+            string[] memory tokenURI,
+            bytes32[] memory extra
+        );
 
     /// @notice Get config of vault type
     /// @param typeHash Keccak256 hash of vault type string
@@ -246,14 +244,17 @@ interface IFactory {
     /// @return deployAllowed New vaults can be deployed
     /// @return upgradeAllowed Vaults can be upgraded
     /// @return buildingPrice Price of building new vault
-    function vaultConfig(bytes32 typeHash) external view returns (
-        string memory vaultType,
-        address implementation,
-        bool deployAllowed,
-        bool upgradeAllowed,
-        uint buildingPrice
-    );
-    
+    function vaultConfig(bytes32 typeHash)
+        external
+        view
+        returns (
+            string memory vaultType,
+            address implementation,
+            bool deployAllowed,
+            bool upgradeAllowed,
+            uint buildingPrice
+        );
+
     /// @notice Data on all factory vault types
     /// The output values are matched by index in the arrays.
     /// @return vaultType Vault type string
@@ -262,14 +263,17 @@ interface IFactory {
     /// @return upgradeAllowed Vaults can be upgraded
     /// @return buildingPrice  Price of building new vault
     /// @return extra Vault type color, background color and other extra data
-    function vaultTypes() external view returns (
-        string[] memory vaultType,
-        address[] memory implementation,
-        bool[] memory deployAllowed,
-        bool[] memory upgradeAllowed,
-        uint[] memory buildingPrice,
-        bytes32[] memory extra
-    );
+    function vaultTypes()
+        external
+        view
+        returns (
+            string[] memory vaultType,
+            address[] memory implementation,
+            bool[] memory deployAllowed,
+            bool[] memory upgradeAllowed,
+            uint[] memory buildingPrice,
+            bytes32[] memory extra
+        );
 
     //endregion -- View functions -----
 

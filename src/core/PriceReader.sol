@@ -18,11 +18,12 @@ contract PriceReader is Controllable, IPriceReader {
     //region ----- Constants -----
 
     /// @dev Version of PriceReader implementation
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.PriceReader")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant PRICEREADER_STORAGE_LOCATION = 0x5fb640640fb9e5b309b8dbb32d70e4c1afbc916914ea7278d067186632e15f00;
-    
+    bytes32 private constant PRICEREADER_STORAGE_LOCATION =
+        0x5fb640640fb9e5b309b8dbb32d70e4c1afbc916914ea7278d067186632e15f00;
+
     //endregion ----- Constants -----
 
     //region ----- Storage -----
@@ -41,7 +42,7 @@ contract PriceReader is Controllable, IPriceReader {
     /// @inheritdoc IPriceReader
     function addAdapter(address adapter_) external onlyOperator {
         PriceReaderStorage storage $ = _getStorage();
-        if(!$._adapters.add(adapter_)){
+        if (!$._adapters.add(adapter_)) {
             revert AlreadyExist();
         }
         emit AdapterAdded(adapter_);
@@ -49,7 +50,7 @@ contract PriceReader is Controllable, IPriceReader {
 
     function removeAdapter(address adapter_) external onlyOperator {
         PriceReaderStorage storage $ = _getStorage();
-        if(!$._adapters.remove(adapter_)){
+        if (!$._adapters.remove(adapter_)) {
             revert NotExist();
         }
         emit AdapterRemoved(adapter_);
@@ -61,7 +62,7 @@ contract PriceReader is Controllable, IPriceReader {
         PriceReaderStorage storage $ = _getStorage();
         address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
@@ -72,13 +73,13 @@ contract PriceReader is Controllable, IPriceReader {
 
         if (len > 0) {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-            // nosemgrep
+            //nosemgrep
             for (uint j; j < len; ++j) {
                 IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
                 address[] memory oracleAssets = oracleAdapter.assets();
-                // nosemgrep
+                //nosemgrep
                 uint oracleAssetsLen = oracleAssets.length;
-                // nosemgrep
+                //nosemgrep
                 for (uint i; i < oracleAssetsLen; ++i) {
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
@@ -91,7 +92,7 @@ contract PriceReader is Controllable, IPriceReader {
                         } else {
                             //slither-disable-next-line divide-before-multiply
                             priceInTermOfOracleAsset = swapperPrice / 10 ** (assetOutDecimals - 18);
-                        } 
+                        }
                         return (priceInTermOfOracleAsset * _price / 1e18, false);
                     }
                 }
@@ -105,19 +106,14 @@ contract PriceReader is Controllable, IPriceReader {
     function getAssetsPrice(
         address[] memory assets_,
         uint[] memory amounts_
-    ) external view returns (
-        uint total,
-        uint[] memory assetAmountPrice,
-        uint[] memory assetPrice,
-        bool trusted
-    ) {
+    ) external view returns (uint total, uint[] memory assetAmountPrice, uint[] memory assetPrice, bool trusted) {
         uint len = assets_.length;
         //slither-disable-next-line uninitialized-local
         bool notTrustedPrices;
         assetAmountPrice = new uint[](len);
         assetPrice = new uint[](len);
         bool _trusted;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
             (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
@@ -125,35 +121,35 @@ contract PriceReader is Controllable, IPriceReader {
             }
             //slither-disable-next-line calls-loop
             uint decimals = IERC20Metadata(assets_[i]).decimals();
-            if(decimals <= 18){
-                assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals)  * assetPrice[i] / 1e18;
+            if (decimals <= 18) {
+                assetAmountPrice[i] = amounts_[i] * 10 ** (18 - decimals) * assetPrice[i] / 1e18;
                 total += assetAmountPrice[i];
             } else {
-                assetAmountPrice[i] = amounts_[i] * assetPrice[i] / 10**decimals;
+                assetAmountPrice[i] = amounts_[i] * assetPrice[i] / 10 ** decimals;
                 total += assetAmountPrice[i];
             }
         }
         trusted = !notTrustedPrices;
     }
 
-    function adapters() external view returns(address[] memory) {
+    function adapters() external view returns (address[] memory) {
         PriceReaderStorage storage $ = _getStorage();
         return $._adapters.values();
     }
 
-    function adaptersLength() external view returns(uint) {
+    function adaptersLength() external view returns (uint) {
         PriceReaderStorage storage $ = _getStorage();
         return $._adapters.length();
     }
 
     //region ----- Internal logic -----
-    
+
     function _getStorage() private pure returns (PriceReaderStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := PRICEREADER_STORAGE_LOCATION
         }
     }
-    
+
     //endregion ----- Internal logic -----
 }

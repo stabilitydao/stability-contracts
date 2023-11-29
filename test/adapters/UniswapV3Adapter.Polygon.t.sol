@@ -50,7 +50,7 @@ contract UniswapV3AdapterTest is PolygonSetup {
         assertEq(prop0, proportions[0]);
 
         uint price;
-        
+
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_USDC, 276240);
         assertEq(price, 991632976171952929);
         // console.log(price);
@@ -66,7 +66,7 @@ contract UniswapV3AdapterTest is PolygonSetup {
         // console.log(price);
 
         vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
-        UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, '');
+        UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, "");
 
         assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
