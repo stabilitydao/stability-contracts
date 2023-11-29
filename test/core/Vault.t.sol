@@ -36,8 +36,8 @@ contract VaultTest is Test, FullMockSetup {
     function testSetup() public {
         _initAll();
 
-        assertEq(vault.name(), 'Test vault');
-        assertEq(vault.symbol(), 'xVAULT');
+        assertEq(vault.name(), "Test vault");
+        assertEq(vault.symbol(), "xVAULT");
         assertEq(vault.platform(), address(platform));
         assertEq(address(vault.strategy()), address(strategy));
         assertEq(strategy.strategyLogicId(), "Dev Alpha DeepSpaceSwap Farm");
@@ -53,8 +53,8 @@ contract VaultTest is Test, FullMockSetup {
         _initAll();
 
         address[] memory assets = new address[](2);
-        assets[0] = address (tokenA);
-        assets[1] = address (tokenB);
+        assets[0] = address(tokenA);
+        assets[1] = address(tokenB);
 
         uint[] memory amounts = new uint[](2);
         amounts[0] = 10e18;
@@ -85,7 +85,7 @@ contract VaultTest is Test, FullMockSetup {
 
         factory.setVaultStatus(address(vault), 1);
         vault.depositAssets(assets, amounts, 0, address(0));
-        
+
         vm.roll(block.number + 5);
 
         uint shares = vault.balanceOf(address(this));
@@ -116,7 +116,7 @@ contract VaultTest is Test, FullMockSetup {
         vm.prank(address(666));
         vault.doHardWork();
 
-        (bool success, ) = payable(address(vault)).call{value: 5e17}("");
+        (bool success,) = payable(address(vault)).call{value: 5e17}("");
         assertEq(success, true);
 
         vault.doHardWork();
@@ -126,12 +126,12 @@ contract VaultTest is Test, FullMockSetup {
 
         vm.roll(block.number + 6);
 
-        shares = vault.balanceOf(address(this)); 
+        shares = vault.balanceOf(address(this));
         uint[] memory amountsOut = vault.previewWithdraw(shares);
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
         uint[] memory amountsOut2 = vault.previewWithdraw(shares / 2);
-        for(uint i; i < amountsOut.length; i++){
-            assertApproxEqAbs(amountsOut[i] / 2,  amountsOut2[i], amountsOut[i] / 4000); //0.025%
+        for (uint i; i < amountsOut.length; i++) {
+            assertApproxEqAbs(amountsOut[i] / 2, amountsOut2[i], amountsOut[i] / 4000); //0.025%
         }
         vm.roll(block.number + 6);
 
@@ -143,14 +143,14 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.doHardWorkOnDeposit(), false);
         vault.setDoHardWorkOnDeposit(true);
         assertEq(vault.doHardWorkOnDeposit(), true);
-    } 
+    }
 
     function testFuse() public {
         _initAll();
 
         address[] memory assets = new address[](2);
-        assets[0] = address (tokenA);
-        assets[1] = address (tokenB);
+        assets[0] = address(tokenA);
+        assets[1] = address(tokenB);
 
         uint[] memory amounts = new uint[](2);
         amounts[0] = 10e18;
@@ -205,15 +205,15 @@ contract VaultTest is Test, FullMockSetup {
     }
 
     function _initAll() internal {
-        vault.initialize(                                                
+        vault.initialize(
             IVault.VaultInitializationData({
-                platform:           address(platform),
-                strategy:           address(strategy),
-                name:               'Test vault',
-                symbol:             'xVAULT',
-                tokenId:            0,
+                platform: address(platform),
+                strategy: address(strategy),
+                name: "Test vault",
+                symbol: "xVAULT",
+                tokenId: 0,
                 vaultInitAddresses: new address[](0),
-                vaultInitNums:      new uint[](0)
+                vaultInitNums: new uint[](0)
             })
         );
 
@@ -224,11 +224,6 @@ contract VaultTest is Test, FullMockSetup {
         addresses[3] = address(lp);
         addresses[4] = address(tokenA);
 
-        strategy.initialize(
-            addresses,
-            new uint[](0),
-            new int24[](0)
-        );
-
+        strategy.initialize(addresses, new uint[](0), new int24[](0));
     }
 }

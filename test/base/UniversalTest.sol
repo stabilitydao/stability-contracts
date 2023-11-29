@@ -36,6 +36,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         uint farmId;
         address underlying;
     }
+
     struct TestStrategiesVars {
         address[] allowedBBTokens;
         address strategyLogic;
@@ -67,7 +68,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     function testNull() public {}
 
     function _testStrategies() internal {
-        console.log(string.concat('Universal test of strategy logic', strategyId));
+        console.log(string.concat("Universal test of strategy logic", strategyId));
 
         deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
         IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
@@ -83,15 +84,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         platform.setAllowedBBTokenVaults(vars.allowedBBTokens[0], 1e6);
         vars.strategyLogic = platform.strategyLogic();
         for (uint i; i < strategies.length; ++i) {
-            assertNotEq(StrategyDeveloperLib.getDeveloper(strategies[i].id), address(0), "Universal test: put your address to StrategyDeveloperLib");
-            IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
+            assertNotEq(
+                StrategyDeveloperLib.getDeveloper(strategies[i].id),
+                address(0),
+                "Universal test: put your address to StrategyDeveloperLib"
+            );
+            IFactory.StrategyLogicConfig memory strategyConfig =
+                factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
             // (,vars.strategyImplementation,,,vars.farming, vars.tokenId) = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
-            (vars.strategyImplementation, vars.farming, vars.tokenId) = (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
-            writeNftSvgToFile(vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg"));
+            (vars.strategyImplementation, vars.farming, vars.tokenId) =
+                (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
+            writeNftSvgToFile(
+                vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
+            );
             vars.types = IStrategy(vars.strategyImplementation).supportedVaultTypes();
 
             for (uint k; k < vars.types.length; ++k) {
-
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                       CREATE VAULT                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -104,7 +112,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     if (vars.isRVault) {
                         vaultInitAddresses = new address[](1);
                         vaultInitAddresses[0] = vars.allowedBBTokens[0];
-                        vaultInitNums = new uint[](1 + platform.defaultBoostRewardTokensFiltered(vars.allowedBBTokens[0]).length);
+                        vaultInitNums =
+                            new uint[](1 + platform.defaultBoostRewardTokensFiltered(vars.allowedBBTokens[0]).length);
                         vaultInitNums[0] = 3000e18; // 3k PROFIT
                         deal(vaultInitAddresses[0], address(this), 3000e18);
                         IERC20(vaultInitAddresses[0]).approve(address(factory), 3000e18);
@@ -141,7 +150,15 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     // test bad params
                     initStrategyAddresses = new address[](1);
                     vm.expectRevert(IControllable.IncorrectInitParams.selector);
-                    factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+                    factory.deployVaultAndStrategy(
+                        vars.types[k],
+                        strategies[i].id,
+                        vaultInitAddresses,
+                        vaultInitNums,
+                        initStrategyAddresses,
+                        nums,
+                        ticks
+                    );
                     initStrategyAddresses = new address[](0);
 
                     IFactory.Farm memory f = factory.farm(nums[0]);
@@ -149,14 +166,30 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     f.ticks = new int24[](1000);
                     factory.updateFarm(nums[0], f);
                     vm.expectRevert(IFarmingStrategy.BadFarm.selector);
-                    factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+                    factory.deployVaultAndStrategy(
+                        vars.types[k],
+                        strategies[i].id,
+                        vaultInitAddresses,
+                        vaultInitNums,
+                        initStrategyAddresses,
+                        nums,
+                        ticks
+                    );
                     f.ticks = goodTicks;
                     factory.updateFarm(nums[0], f);
                     ///
 
-                    factory.deployVaultAndStrategy(vars.types[k], strategies[i].id, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+                    factory.deployVaultAndStrategy(
+                        vars.types[k],
+                        strategies[i].id,
+                        vaultInitAddresses,
+                        vaultInitNums,
+                        initStrategyAddresses,
+                        nums,
+                        ticks
+                    );
 
-                    assertEq(IERC721(platform.vaultManager()).ownerOf(i), address (this));
+                    assertEq(IERC721(platform.vaultManager()).ownerOf(i), address(this));
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
@@ -165,8 +198,21 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 address[] memory assets = strategy.assets();
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
                 assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
-                vars.pool = ILPStrategy(address (strategy)).pool();
-                console.log(string.concat(IERC20Metadata(vars.vault).symbol(),' [Compound ratio: ', vars.isRVault || vars.isRMVault ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000) : '100', '%]. Name: ', IERC20Metadata(vars.vault).name(), "."));
+                vars.pool = ILPStrategy(address(strategy)).pool();
+
+                console.log(
+                    string.concat(
+                        IERC20Metadata(vars.vault).symbol(),
+                        " [Compound ratio: ",
+                        vars.isRVault || vars.isRMVault
+                            ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000)
+                            : "100",
+                        "%]. Name: ",
+                        IERC20Metadata(vars.vault).name(),
+                        ". Strategy: ",
+                        strategy.description()
+                    )
+                );
 
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
@@ -174,7 +220,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 {
                     uint[] memory assetsProportions = IStrategy(address(strategy)).getAssetsProportions();
-                    for(uint x; x < assetsProportions.length; x++){
+                    for (uint x; x < assetsProportions.length; x++) {
                         assertGt(assetsProportions[x], 0);
                     }
                 }
@@ -188,7 +234,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 for (uint j; j < assets.length; ++j) {
                     (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
 
-                    require (price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
+                    require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
                     deal(assets[j], address(this), depositAmounts[j]);
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
@@ -196,7 +242,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
-                (uint tvl, ) = IVault(vars.vault).tvl();
+                (uint tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
                 skip(6 hours);
@@ -229,7 +275,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 skip(3 hours);
                 vm.roll(block.number + 6);
 
-                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2));
+                IVault(vars.vault).withdrawAssets(
+                    assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2)
+                );
 
                 skip(3 hours);
                 vm.roll(block.number + 6);
@@ -240,8 +288,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
                     if (totalRevenueUSD == 0) {
                         for (uint x; x < __assets.length; ++x) {
-                            console.log(string.concat('__assets[',Strings.toString(x),']:'), IERC20Metadata(__assets[x]).symbol());
-                            console.log(string.concat(' amounts[',Strings.toString(x),']:'), amounts[x]);
+                            console.log(
+                                string.concat("__assets[", Strings.toString(x), "]:"),
+                                IERC20Metadata(__assets[x]).symbol()
+                            );
+                            console.log(string.concat(" amounts[", Strings.toString(x), "]:"), amounts[x]);
                         }
                     }
                 }
@@ -260,9 +311,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.entries = vm.getRecordedLogs();
                     vars.hwEventFound = false;
                     for (uint j = 0; j < vars.entries.length; ++j) {
-                        if (vars.entries[j].topics[0] == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])")) {
+                        if (
+                            vars.entries[j].topics[0]
+                                == keccak256("HardWork(uint256,uint256,uint256,uint256,uint256,uint256,uint256[])")
+                        ) {
                             vars.hwEventFound = true;
-                            (uint tempApr, uint tempAprCompound, uint tempEarned, uint tempTvl, uint tempDuration) = abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
+                            (uint tempApr, uint tempAprCompound, uint tempEarned, uint tempTvl, uint tempDuration) =
+                                abi.decode(vars.entries[j].data, (uint, uint, uint, uint, uint));
 
                             vars.apr = tempApr;
                             vars.aprCompound = tempAprCompound;
@@ -270,14 +325,21 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             tvl = tempTvl;
                             vars.duration = tempDuration;
 
-                            console.log(string.concat(
-                                '    APR: ', CommonLib.formatApr(tempApr),
-                                '. APR compound: ', CommonLib.formatApr(tempAprCompound),
-                                '. Earned: ', CommonLib.formatUsdAmount(tempEarned),
-                                '. TVL: ', CommonLib.formatUsdAmount(tempTvl),
-                                '. Duration: ', Strings.toString(tempDuration),
-                                '.'
-                            ));
+                            console.log(
+                                string.concat(
+                                    "    APR: ",
+                                    CommonLib.formatApr(tempApr),
+                                    ". APR compound: ",
+                                    CommonLib.formatApr(tempAprCompound),
+                                    ". Earned: ",
+                                    CommonLib.formatUsdAmount(tempEarned),
+                                    ". TVL: ",
+                                    CommonLib.formatUsdAmount(tempTvl),
+                                    ". Duration: ",
+                                    Strings.toString(tempDuration),
+                                    "."
+                                )
+                            );
 
                             assertGt(tempApr, 0);
                             assertGt(tempEarned, 0);
@@ -326,7 +388,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     underlyingAssets[0] = underlying;
                     uint[] memory underlyingAmounts = new uint[](1);
                     underlyingAmounts[0] = totalWas;
-                    (, uint sharesOut, uint valueOut) = IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
+                    (, uint sharesOut, uint valueOut) =
+                        IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
                     assertEq(valueOut, totalWas);
                     uint lastHw = strategy.lastHardWork();
                     IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
@@ -345,19 +408,18 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
                 } else {
                     {
-                    vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
-                    strategy.depositUnderlying(18);
-                    vm.startPrank(strategy.vault());
-                    vm.expectRevert("no underlying");
-                    strategy.depositUnderlying(18);
-                    vm.expectRevert("no underlying");
-                    strategy.withdrawUnderlying(18, address(123));
-                    vm.stopPrank(); 
+                        vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
+                        strategy.depositUnderlying(18);
+                        vm.startPrank(strategy.vault());
+                        vm.expectRevert("no underlying");
+                        strategy.depositUnderlying(18);
+                        vm.expectRevert("no underlying");
+                        strategy.withdrawUnderlying(18, address(123));
+                        vm.stopPrank();
                     }
                 }
 
-                
-                (uint uniqueInitAddresses, uint uniqueInitNums) =  IVault(vars.vault).getUniqueInitParamLength();
+                (uint uniqueInitAddresses, uint uniqueInitNums) = IVault(vars.vault).getUniqueInitParamLength();
                 assertEq(uniqueInitAddresses, 1);
                 assertEq(uniqueInitNums, 0);
 
@@ -366,7 +428,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
                     IZap zap = IZap(platform.zap());
-                    (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
+                    (, uint[] memory swapAmounts) =
+                        zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
                     assertEq(swapAmounts.length, 2);
                 }
 
@@ -390,7 +453,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 assertEq(strategy.supportsInterface(type(IERC165).interfaceId), true);
                 assertEq(strategy.supportsInterface(type(IControllable).interfaceId), true);
                 assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
-                    
+
                 assertEq(strategy.supportsInterface(type(IERC721).interfaceId), false);
                 assertEq(strategy.supportsInterface(type(IERC721Metadata).interfaceId), false);
                 assertEq(strategy.supportsInterface(type(IERC721Enumerable).interfaceId), false);

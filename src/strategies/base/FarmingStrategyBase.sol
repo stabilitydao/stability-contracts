@@ -12,16 +12,16 @@ import "../../interfaces/ISwapper.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = '1.0.0';
+    string public constant VERSION_FARMING_STRATEGY_BASE = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION = 0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
+    bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION =
+        0xe61f0a7b2953b9e28e48cc07562ad7979478dcaee972e68dcf3b10da2cba6000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -29,7 +29,9 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
 
     //slither-disable-next-line naming-convention
     function __FarmingStrategyBase_init(address platform_, uint farmId_) internal onlyInitializing {
-        StrategyLib.FarmingStrategyBase_init(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage()._id, platform_, farmId_);
+        StrategyLib.FarmingStrategyBase_init(
+            _getFarmingStrategyBaseStorage(), _getStrategyBaseStorage()._id, platform_, farmId_
+        );
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -37,7 +39,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override (StrategyBase) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(StrategyBase) returns (bool) {
         return interfaceId == type(IFarmingStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -70,13 +72,17 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _liquidateRewards(address exchangeAsset, address[] memory rewardAssets_, uint[] memory rewardAmounts_) internal override returns (uint earnedExchangeAsset) {
+    function _liquidateRewards(
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_
+    ) internal override returns (uint earnedExchangeAsset) {
         return StrategyLib.liquidateRewards(platform(), exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
     function _getFarmingStrategyBaseStorage() internal pure returns (FarmingStrategyBaseStorage storage $) {
         //slither-disable-next-line assembly
-        assembly { 
+        assembly {
             $.slot := FARMINGSTRATEGYBASE_STORAGE_LOCATION
         }
     }

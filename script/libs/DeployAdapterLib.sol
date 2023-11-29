@@ -10,7 +10,7 @@ import "../../src/adapters/KyberAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
-        address existAdapter = address(IPlatform(platform).ammAdapter(keccak256(bytes (id))).proxy);
+        address existAdapter = address(IPlatform(platform).ammAdapter(keccak256(bytes(id))).proxy);
         if (existAdapter != address(0)) {
             return existAdapter;
         }

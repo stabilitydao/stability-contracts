@@ -47,7 +47,7 @@ contract AlgebraAdapterTest is PolygonSetup {
         assertGt(proportions[1], 0);
 
         uint price;
-        
+
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDC_DAI, PolygonLib.TOKEN_USDC, 276240);
         assertEq(price, 991632976171952929);
         // console.log(price);
@@ -63,11 +63,10 @@ contract AlgebraAdapterTest is PolygonSetup {
         // console.log(price);
 
         vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
-        AlgebraAdapter(address(adapter)).algebraSwapCallback(0, 0, '');
+        AlgebraAdapter(address(adapter)).algebraSwapCallback(0, 0, "");
 
         assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
-
 }
