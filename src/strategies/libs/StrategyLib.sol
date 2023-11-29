@@ -32,15 +32,21 @@ library StrategyLib {
         uint amountEcosystem;
     }
 
-    function FarmingStrategyBase_init(IFarmingStrategy.FarmingStrategyBaseStorage storage $, string memory id, address platform, uint farmId) external {
+    function FarmingStrategyBase_init(
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $,
+        string memory id,
+        address platform,
+        uint farmId
+    ) external {
         $.farmId = farmId;
 
         IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(farmId);
-        if(keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))){
+        if (keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))) {
             revert IFarmingStrategy.IncorrectStrategyId();
         }
         uint len = farm.rewardAssets.length;
         address swapper = IPlatform(platform).swapper();
+        //nosemgrep
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
@@ -49,13 +55,16 @@ library StrategyLib {
     }
 
     function transferAssets(
-        address[] memory assets,
+        IStrategy.StrategyBaseStorage storage $,
         uint amount,
         uint total_,
         address receiver
     ) external returns (uint[] memory amountsOut) {
+        address[] memory assets = $._assets;
+
         uint len = assets.length;
         amountsOut = new uint[](len);
+        //nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = balance(assets[i]) * amount / total_;
             IERC20(assets[i]).transfer(receiver, amountsOut[i]);
@@ -68,7 +77,7 @@ library StrategyLib {
         string memory _id,
         address[] memory assets_,
         uint[] memory amounts_
-    ) external returns(uint[] memory amountsRemaining) {
+    ) external returns (uint[] memory amountsRemaining) {
         ExtractFeesVars memory vars = ExtractFeesVars({
             platform: IPlatform(platform),
             feePlatform: 0,
@@ -83,13 +92,17 @@ library StrategyLib {
         // IPlatform _platform = IPlatform(platform);
         // uint[] memory fees = new uint[](4);
         // uint[] memory feeAmounts = new uint[](4);
-        (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) = vars.platform.getFees();
-        address vaultManagerReceiver = IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
+        (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) =
+            vars.platform.getFees();
+        address vaultManagerReceiver =
+            IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
         //slither-disable-next-line unused-return
         uint strategyLogicTokenId = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id))).tokenId;
-        address strategyLogicReceiver = IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
+        address strategyLogicReceiver =
+            IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
         uint len = assets_.length;
         amountsRemaining = new uint[](len);
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (amounts_[i] > 0) {
                 // revenue fee amount of assets_[i]
@@ -104,11 +117,14 @@ library StrategyLib {
                 vars.amountStrategyLogic = vars.amountPlatform * vars.feeShareStrategyLogic / ConstantsLib.DENOMINATOR;
 
                 // Ecosystem amount
-                vars.amountEcosystem = vars.amountPlatform  * vars.feeShareEcosystem / ConstantsLib.DENOMINATOR;
+                vars.amountEcosystem = vars.amountPlatform * vars.feeShareEcosystem / ConstantsLib.DENOMINATOR;
 
                 // Multisig share and amount
-                uint multisigShare = ConstantsLib.DENOMINATOR - vars.feeShareVaultManager - vars.feeShareStrategyLogic - vars.feeShareEcosystem;
-                uint multisigAmount = multisigShare > 0 ? vars.amountPlatform  - vars.amountVaultManager - vars.amountStrategyLogic - vars.amountEcosystem : 0;
+                uint multisigShare = ConstantsLib.DENOMINATOR - vars.feeShareVaultManager - vars.feeShareStrategyLogic
+                    - vars.feeShareEcosystem;
+                uint multisigAmount = multisigShare > 0
+                    ? vars.amountPlatform - vars.amountVaultManager - vars.amountStrategyLogic - vars.amountEcosystem
+                    : 0;
 
                 // send amounts
                 IERC20(assets_[i]).safeTransfer(vaultManagerReceiver, vars.amountVaultManager);
@@ -119,18 +135,28 @@ library StrategyLib {
                 if (multisigAmount > 0) {
                     IERC20(assets_[i]).safeTransfer(vars.platform.multisig(), multisigAmount);
                 }
-                emit IStrategy.ExtractFees(vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount);
+                emit IStrategy.ExtractFees(
+                    vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount
+                );
             }
         }
     }
 
-    function liquidateRewards(address platform, address exchangeAsset, address[] memory rewardAssets_, uint[] memory rewardAmounts_) external returns (uint earnedExchangeAsset) {
+    function liquidateRewards(
+        address platform,
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_
+    ) external returns (uint earnedExchangeAsset) {
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         uint len = rewardAssets_.length;
         uint exchangeAssetBalanceBefore = balance(exchangeAsset);
+        //nosemgrep
         for (uint i; i < len; ++i) {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
-                swapper.swap(rewardAssets_[i], exchangeAsset, rewardAmounts_[i], ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
+                swapper.swap(
+                    rewardAssets_[i], exchangeAsset, rewardAmounts_[i], ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
+                );
             }
         }
         uint exchangeAssetBalanceAfter = balance(exchangeAsset);
@@ -148,13 +174,14 @@ library StrategyLib {
         uint duration = block.timestamp - $.lastHardWork;
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         //slither-disable-next-line unused-return
-        (uint earned,,) = priceReader.getAssetsPrice(assets, amounts);
+        (uint earned,, uint[] memory assetPrices,) = priceReader.getAssetsPrice(assets, amounts);
         uint apr = computeApr(tvl, earned, duration);
         uint aprCompound = computeApr(totalBefore, $.total - totalBefore, duration);
         uint sharePrice = tvl * 1e18 / IERC20($.vault).totalSupply();
-        emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice);
+        emit IStrategy.HardWork(apr, aprCompound, earned, tvl, duration, sharePrice, assetPrices);
         $.lastApr = apr;
         $.lastAprCompound = aprCompound;
+        $.lastHardWork = block.timestamp;
     }
 
     function balance(address token) public view returns (uint) {
@@ -171,13 +198,17 @@ library StrategyLib {
     }
 
     function revertUnderlying(address underlying) external pure {
-        revert(underlying == address(0) ? 'StrategyBase: no underlying' : 'StrategyBase: not implemented');
+        revert(underlying == address(0) ? "StrategyBase: no underlying" : "StrategyBase: not implemented");
     }
 
-    function assetsAmountsWithBalances(address[] memory assets_, uint[] memory amounts_) external view returns (address[] memory assets, uint[] memory amounts) {
+    function assetsAmountsWithBalances(
+        address[] memory assets_,
+        uint[] memory amounts_
+    ) external view returns (address[] memory assets, uint[] memory amounts) {
         assets = assets_;
         amounts = amounts_;
         uint len = assets_.length;
+        //nosemgrep
         for (uint i; i < len; ++i) {
             amounts[i] += balance(assets_[i]);
         }
@@ -203,5 +234,4 @@ library StrategyLib {
     //         }
     //     }
     // }
-
 }

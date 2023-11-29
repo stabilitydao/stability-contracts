@@ -6,8 +6,9 @@ pragma solidity ^0.8.22;
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IPlatform {
-
-    //region ----- Custom Errors -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error AlreadyAnnounced();
     error SameVersion();
@@ -17,14 +18,19 @@ interface IPlatform {
     error NotEnoughAllowedBBToken();
     error TokenAlreadyExistsInSet(address token);
     error AggregatorNotExists(address dexAggRouter);
-    
-    //endregion ----- Custom Errors -----
 
-    //region ----- Events -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     event PlatformVersion(string version);
-    event UpgradeAnnounce(string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock);
+    event UpgradeAnnounce(
+        string oldVersion, string newVersion, address[] proxies, address[] newImplementations, uint timelock
+    );
     event CancelUpgrade(string oldVersion, string newVersion);
-    event ProxyUpgraded(address indexed proxy, address implementation, string oldContractVersion, string newContractVersion);
+    event ProxyUpgraded(
+        address indexed proxy, address implementation, string oldContractVersion, string newContractVersion
+    );
     event Addresses(
         address multisig_,
         address factory_,
@@ -35,7 +41,9 @@ interface IPlatform {
         address strategyLogic_,
         address aprOracle_,
         address hardWorker,
-        address zap
+        address rebalancer,
+        address zap,
+        address bridge
     );
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
@@ -54,14 +62,19 @@ interface IPlatform {
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
     event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
-    //endregion -- Events -----
+    event Rebalancer(address rebalancer_);
+    event Bridge(address bridge_);
 
-    //region ----- Data types -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     struct PlatformUpgrade {
         string newVersion;
         address[] proxies;
         address[] newImplementations;
     }
+
     struct PlatformSettings {
         string networkName;
         bytes32 networkExtra;
@@ -72,10 +85,12 @@ interface IPlatform {
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
     }
+
     struct AmmAdapter {
         string id;
         address proxy;
     }
+
     struct SetupAddresses {
         address factory;
         address priceReader;
@@ -88,15 +103,19 @@ interface IPlatform {
         address targetExchangeAsset;
         address hardWorker;
         address zap;
+        address bridge;
+        address rebalancer;
     }
-    //endregion -- Data types -----
 
-    //region ----- View functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Platform version in CalVer scheme: YY.MM.MINOR-tag. Updates on core contract upgrades.
-    function PLATFORM_VERSION() external view returns (string memory);
+    function platformVersion() external view returns (string memory);
 
     /// @notice Time delay for proxy upgrades of core contracts and changing important platform settings by multisig
+    //slither-disable-next-line naming-convention
     function TIME_LOCK() external view returns (uint);
 
     /// @notice DAO governance
@@ -104,31 +123,6 @@ interface IPlatform {
 
     /// @notice Core team multi signature wallet. Development and operations fund
     function multisig() external view returns (address);
-
-    /// @notice Platform factory assembling vaults. Stores settings, strategy logic, farms.
-    /// Provides the opportunity to upgrade vaults and strategies.
-    function factory() external view returns (address);
-
-    /// @notice Combining oracle and DeX spot prices
-    function priceReader() external view returns (address);
-
-    /// @notice Providing underlying assets APRs on-chain
-    function aprOracle() external view returns (address);
-
-    /// @notice On-chain price quoter and swapper
-    function swapper() external view returns (address);
-
-    /// @notice The holders of these NFT receive a share of the vault revenue
-    function vaultManager() external view returns (address);
-
-    /// @notice The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
-    function strategyLogic() external view returns (address);
-
-    /// @notice HardWork resolver and caller
-    function hardWorker() external view returns (address);
-
-    /// @notice ZAP feature
-    function zap() external view returns (address);
 
     /// @notice This NFT allow user to build limited number of vaults per week
     function buildingPermitToken() external view returns (address);
@@ -138,6 +132,51 @@ interface IPlatform {
 
     /// @notice Receiver of ecosystem revenue
     function ecosystemRevenueReceiver() external view returns (address);
+
+    /// @dev The best asset in a network for swaps between strategy assets and farms rewards assets
+    ///      The target exchange asset is used for finding the best strategy's exchange asset.
+    ///      Rhe fewer routes needed to swap to the target exchange asset, the better.
+    function targetExchangeAsset() external view returns (address);
+
+    /// @notice Platform factory assembling vaults. Stores settings, strategy logic, farms.
+    /// Provides the opportunity to upgrade vaults and strategies.
+    /// @return Address of Factory proxy
+    function factory() external view returns (address);
+
+    /// @notice The holders of these NFT receive a share of the vault revenue
+    /// @return Address of VaultManager proxy
+    function vaultManager() external view returns (address);
+
+    /// @notice The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
+    function strategyLogic() external view returns (address);
+
+    /// @notice Combining oracle and DeX spot prices
+    /// @return Address of PriceReader proxy
+    function priceReader() external view returns (address);
+
+    /// @notice Providing underlying assets APRs on-chain
+    /// @return Address of AprOracle proxy
+    function aprOracle() external view returns (address);
+
+    /// @notice On-chain price quoter and swapper
+    /// @return Address of Swapper proxy
+    function swapper() external view returns (address);
+
+    /// @notice HardWork resolver and caller
+    /// @return Address of HardWorker proxy
+    function hardWorker() external view returns (address);
+
+    /// @notice Rebalance resolver
+    /// @return Address of Rebalancer proxy
+    function rebalancer() external view returns (address);
+
+    /// @notice ZAP feature
+    /// @return Address of Zap proxy
+    function zap() external view returns (address);
+
+    /// @notice Stability Bridge
+    /// @return Address of Bridge proxy
+    function bridge() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
@@ -159,11 +198,6 @@ interface IPlatform {
     ///         6-31 bytes - free
     function networkExtra() external view returns (bytes32);
 
-    /// @dev The best asset in a network for swaps between strategy assets and farms rewards assets
-    ///      The target exchange asset is used for finding the best strategy's exchange asset.
-    ///      Rhe fewer routes needed to swap to the target exchange asset, the better.
-    function targetExchangeAsset() external view returns (address);
-
     /// @notice Pending platform upgrade data
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory);
 
@@ -172,21 +206,24 @@ interface IPlatform {
     /// @return feeShareVaultManager Revenue fee share % of VaultManager tokenId owner
     /// @return feeShareStrategyLogic Revenue fee share % of StrategyLogic tokenId owner
     /// @return feeShareEcosystem Revenue fee share % of ecosystemFeeReceiver
-    function getFees() external view returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+    function getFees()
+        external
+        view
+        returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
 
     /// @notice Platform settings
     function getPlatformSettings() external view returns (PlatformSettings memory);
 
     /// @notice AMM adapters of the platform
-    function getAmmAdapters() external view returns(string[] memory id, address[] memory proxy);
+    function getAmmAdapters() external view returns (string[] memory id, address[] memory proxy);
 
     /// @notice Get AMM adapter data by hash
     /// @param ammAdapterIdHash Keccak256 hash of adapter ID string
     /// @return ID string and proxy address of AMM adapter
-    function ammAdapter(bytes32 ammAdapterIdHash) external view returns(AmmAdapter memory);
+    function ammAdapter(bytes32 ammAdapterIdHash) external view returns (AmmAdapter memory);
 
     /// @notice Allowed buy-back tokens for rewarding vaults
-    function allowedBBTokens() external view returns(address[] memory);
+    function allowedBBTokens() external view returns (address[] memory);
 
     /// @notice Vaults building limit for buy-back token.
     /// This limit decrements when a vault for BB-token is built.
@@ -202,7 +239,10 @@ interface IPlatform {
     /// @notice Non-zero vaults building limits for allowed buy-back tokens.
     /// @return bbToken Allowed buy-back tokens
     /// @return vaultsLimit Number of vaults that can be built for BB-tokens
-    function allowedBBTokenVaultsFiltered() external view returns (address[] memory bbToken, uint[] memory vaultsLimit);
+    function allowedBBTokenVaultsFiltered()
+        external
+        view
+        returns (address[] memory bbToken, uint[] memory vaultsLimit);
 
     /// @notice Check address for existance in operators list
     /// @param operator Address
@@ -211,25 +251,25 @@ interface IPlatform {
 
     /// @notice Tokens that can be used for boost rewards of rewarding vaults
     /// @return Addresses of tokens
-    function allowedBoostRewardTokens() external view returns(address[] memory);
+    function allowedBoostRewardTokens() external view returns (address[] memory);
 
     /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
     /// @return Addresses of tokens
-    function defaultBoostRewardTokens() external view returns(address[] memory);
+    function defaultBoostRewardTokens() external view returns (address[] memory);
 
     /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
     /// @param addressToRemove This address will be removed from default boost reward tokens
     /// @return Addresses of tokens
-    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns(address[] memory);
+    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns (address[] memory);
 
     /// @notice Allowed DeX aggregators
     /// @return Addresses of DeX aggregator rounters
-    function dexAggregators() external view returns(address[] memory);
+    function dexAggregators() external view returns (address[] memory);
 
     /// @notice DeX aggregator router address is allowed to be used in the platform
     /// @param dexAggRouter Address of DeX aggreagator router
     /// @return Can be used
-    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns(bool);
+    function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns (bool);
 
     /// @notice Show minimum TVL for compensate if vault has not enough ETH
     /// @return Minimum TVL for compensate.
@@ -242,6 +282,10 @@ interface IPlatform {
     ///        platformAddresses[2] strategyLogic
     ///        platformAddresses[3] buildingPermitToken
     ///        platformAddresses[4] buildingPayPerVaultToken
+    ///        platformAddresses[5] governance
+    ///        platformAddresses[6] multisig
+    ///        platformAddresses[7] zap
+    ///        platformAddresses[8] bridge
     /// @return bcAssets Blue chip token addresses
     /// @return dexAggregators_ DeX aggregators allowed to be used entire the platform
     /// @return vaultType Vault type ID strings
@@ -251,18 +295,21 @@ interface IPlatform {
     /// @return isFarmingStrategy True if strategy is farming strategy. Index of strategy same as in previous array.
     /// @return strategyTokenURI StrategyLogic NFT tokenId metadata and on-chain image. Index of strategy same as in previous array.
     /// @return strategyExtra Strategy color, background color and other extra data. Index of strategy same as in previous array.
-    function getData() external view returns(
-        address[] memory platformAddresses,
-        address[] memory bcAssets,
-        address[] memory dexAggregators_,
-        string[] memory vaultType,
-        bytes32[] memory vaultExtra,
-        uint[] memory vaultBulldingPrice,
-        string[] memory strategyId,
-        bool[] memory isFarmingStrategy,
-        string[] memory strategyTokenURI,
-        bytes32[] memory strategyExtra
-    );
+    function getData()
+        external
+        view
+        returns (
+            address[] memory platformAddresses,
+            address[] memory bcAssets,
+            address[] memory dexAggregators_,
+            string[] memory vaultType,
+            bytes32[] memory vaultExtra,
+            uint[] memory vaultBulldingPrice,
+            string[] memory strategyId,
+            bool[] memory isFarmingStrategy,
+            string[] memory strategyTokenURI,
+            bytes32[] memory strategyExtra
+        );
 
     // todo add vaultSymbol, vaultName
     /// @notice Front-end balances, prices and vault list viewer
@@ -279,28 +326,31 @@ interface IPlatform {
     ///         nft[2] StrategyLogic
     /// @return nftUserBalance User balance of NFT. Index of NFT same as in previous array.
     /// @return buildingPayPerVaultTokenBalance User balance of vault creation paying token
-    function getBalance(address yourAccount) external view returns (
-        address[] memory token,
-        uint[] memory tokenPrice,
-        uint[] memory tokenUserBalance,
-        address[] memory vault,
-        uint[] memory vaultSharePrice,
-        uint[] memory vaultUserBalance,
-        address[] memory nft,
-        uint[] memory nftUserBalance,
-        uint buildingPayPerVaultTokenBalance
-    );
+    function getBalance(address yourAccount)
+        external
+        view
+        returns (
+            address[] memory token,
+            uint[] memory tokenPrice,
+            uint[] memory tokenUserBalance,
+            address[] memory vault,
+            uint[] memory vaultSharePrice,
+            uint[] memory vaultUserBalance,
+            address[] memory nft,
+            uint[] memory nftUserBalance,
+            uint buildingPayPerVaultTokenBalance
+        );
 
-    //endregion -- View functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Write functions -----
-
-    /// @notice Add platform operator. 
+    /// @notice Add platform operator.
     /// Only governance and multisig can add operator.
     /// @param operator Address of new operator
     function addOperator(address operator) external;
 
-    /// @notice Remove platform operator. 
+    /// @notice Remove platform operator.
     /// Only governance and multisig can remove operator.
     /// @param operator Address of operator to remove
     function removeOperator(address operator) external;
@@ -361,7 +411,10 @@ interface IPlatform {
     /// @notice Add default boost reward token
     /// @param allowedBoostRewardToken Address of allowed boost reward token
     /// @param defaultBoostRewardToken Address of default boost reward token
-    function addBoostTokens(address[] memory allowedBoostRewardToken, address[] memory defaultBoostRewardToken) external;
+    function addBoostTokens(
+        address[] memory allowedBoostRewardToken,
+        address[] memory defaultBoostRewardToken
+    ) external;
 
     /// @notice Decrease allowed BB-token vault building limit when vault is built
     /// Only Factory can do it.
@@ -381,10 +434,17 @@ interface IPlatform {
     /// @param minInitialBoostDuration_ Minimal boost rewards vesting duration for initial boost
     function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external;
 
-    
     /// @notice Update new minimum TVL for compansate.
     /// @param value New minimum TVL for compensate.
     function setMinTvlForFreeHardWork(uint value) external;
 
-    //endregion -- Write functions -----
+    /// @notice Setup Rebalancer.
+    /// Only Goverannce or Multisig can do this when Rebalancer is not set.
+    /// @param rebalancer_ Proxy address of Bridge
+    function setupRebalancer(address rebalancer_) external;
+
+    /// @notice Setup Bridge.
+    /// Only Goverannce or Multisig can do this when Bridge is not set.
+    /// @param bridge_ Proxy address of Bridge
+    function setupBridge(address bridge_) external;
 }

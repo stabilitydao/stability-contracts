@@ -9,8 +9,15 @@ interface IStrategy is IERC165 {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event HardWork(uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice);
-    event ExtractFees(uint vaultManagerReceiverFee, uint strategyLogicReceiverFee, uint ecosystemRevenueReceiverFee, uint multisigReceiverFee);
+    event HardWork(
+        uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice, uint[] assetPrices
+    );
+    event ExtractFees(
+        uint vaultManagerReceiverFee,
+        uint strategyLogicReceiverFee,
+        uint ecosystemRevenueReceiverFee,
+        uint multisigReceiverFee
+    );
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -38,10 +45,10 @@ interface IStrategy is IERC165 {
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/    
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Strategy logic string ID
-    function STRATEGY_LOGIC_ID() external view returns(string memory);
+    function strategyLogicId() external view returns (string memory);
 
     /// @dev Extra data
     /// @return 0-2 bytes - strategy color
@@ -51,7 +58,7 @@ interface IStrategy is IERC165 {
 
     /// @dev Types of vault that supported by strategy implementation
     /// @return types Vault type ID strings
-    function supportedVaultTypes() external view returns(string[] memory types);
+    function supportedVaultTypes() external view returns (string[] memory types);
 
     /// @dev Linked vault address
     function vault() external view returns (address);
@@ -95,7 +102,10 @@ interface IStrategy is IERC165 {
     /// @param amountsMax Amounts of specified assets available for investing
     /// @return amountsConsumed Cosumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
-    function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint value);
+    function previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view returns (uint[] memory amountsConsumed, uint value);
 
     /// @notice All strategy revenue (pool fees, farm rewards etc) that not claimed by strategy yet
     /// @return assets_ Revenue assets
@@ -116,12 +126,14 @@ interface IStrategy is IERC165 {
     /// @return addresses Init strategy addresses. Indexes for each variants depends of copmpared arrays lengths.
     /// @return nums Init strategy numbers. Indexes for each variants depends of copmpared arrays lengths.
     /// @return ticks Init strategy ticks. Indexes for each variants depends of copmpared arrays lengths.
-    function initVariants(address platform_) external view returns (
-        string[] memory variants,
-        address[] memory addresses,
-        uint[] memory nums,
-        int24[] memory ticks
-    );
+    function initVariants(address platform_)
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks);
+
+    /// @notice How strategy earns money
+    /// @return Description in free form
+    function description() external view returns (string memory);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -136,23 +148,19 @@ interface IStrategy is IERC165 {
     ///        addresses[n]: initStrategyAddresses[n - 2] (optional)
     /// @param nums All uint values that strategy requires for initialization. Min array length is 0.
     /// @param ticks All int24 values that strategy requires for initialization. Min array length is 0.
-    function initialize(
-        address[] memory addresses,
-        uint[] memory nums,
-        int24[] memory ticks
-    ) external;
+    function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) external;
 
     /// @notice Invest strategy assets. Amounts of assets must be already on strategy contract balance.
     /// Only vault can call this.
     /// @param amounts Anounts of strategy assets
     /// @return value Liquidity value or underlying token amount
-    function depositAssets(uint[] memory amounts) external returns(uint value);
+    function depositAssets(uint[] memory amounts) external returns (uint value);
 
     /// @notice Invest underlying asset. Asset must be already on strategy contract balance.
     /// Only vault can call this.
     /// @param amount Amount of underlying asset to invest
     /// @return amountsConsumed Cosumed amounts of invested assets
-    function depositUnderlying(uint amount) external returns(uint[] memory amountsConsumed);
+    function depositUnderlying(uint amount) external returns (uint[] memory amountsConsumed);
 
     /// @dev For specified amount of shares and assets_, withdraw strategy assets from farm/pool/staking and send to receiver if possible
     /// Only vault can call this.
@@ -160,7 +168,11 @@ interface IStrategy is IERC165 {
     /// @param value Part of strategy total value to withdraw
     /// @param receiver User address
     /// @return amountsOut Amounts of assets sent to user
-    function withdrawAssets(address[] memory assets_, uint value, address receiver) external returns (uint[] memory amountsOut);
+    function withdrawAssets(
+        address[] memory assets_,
+        uint value,
+        address receiver
+    ) external returns (uint[] memory amountsOut);
 
     /// @notice Wothdraw underlying invested and send to receiver
     /// Only vault can call this.
@@ -172,13 +184,22 @@ interface IStrategy is IERC165 {
     /// This method is called by vault w/o underlying on triggered fuse mode.
     /// Only vault can call this.
     /// @param amount Ampunt of liquidity value that user withdraw
-    /// @param total Total amount of strategy liquidity
+    /// @param totalAmount Total amount of strategy liquidity
     /// @param receiver User of vault which withdraw assets
     /// @return amountsOut Amounts of strategy assets sent to user
-    function transferAssets(uint amount, uint total, address receiver) external returns (uint[] memory amountsOut);
+    function transferAssets(
+        uint amount,
+        uint totalAmount,
+        address receiver
+    ) external returns (uint[] memory amountsOut);
 
     /// @notice Execute HardWork
     /// During HardWork strategy claiming revenue and processing it.
     /// Only vault can call this.
     function doHardWork() external;
+
+    /// @notice Emergency stop investing by strategy, withdraw liquidity without rewards.
+    /// This action triggers FUSE mode.
+    /// Only governance or multisig can call this.
+    // function emergencyStopInvesting() external;
 }

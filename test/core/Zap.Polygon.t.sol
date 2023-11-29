@@ -5,7 +5,6 @@ import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 
-
 contract ZapTest is PolygonSetup {
     constructor() {
         _init();
@@ -27,17 +26,33 @@ contract ZapTest is PolygonSetup {
             // farmId
             initStrategyNums[0] = 6; // WMATIC-USDC narrow
 
-            factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.GAMMA_QUICKSWAP_FARM, vaultInitAddresses, vaultInitNums, initStrategyAddresses, initStrategyNums, initStrategyTicks);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.COMPOUNDING,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                initStrategyNums,
+                initStrategyTicks
+            );
 
             initStrategyNums[0] = 7; // WMATIC-WETH wide
-            factory.deployVaultAndStrategy(VaultTypeLib.COMPOUNDING, StrategyIdLib.GAMMA_QUICKSWAP_FARM, vaultInitAddresses, vaultInitNums, initStrategyAddresses, initStrategyNums, initStrategyTicks);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.COMPOUNDING,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                initStrategyNums,
+                initStrategyTicks
+            );
         }
 
         address vault = factory.deployedVault(0);
         address vault1 = factory.deployedVault(1);
 
         IZap zap = IZap(platform.zap());
-        
+
         (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vault, PolygonLib.TOKEN_USDC, 1000e6);
         assertEq(swapAmounts.length, 2);
         assertGt(swapAmounts[0], 0);
@@ -50,9 +65,9 @@ contract ZapTest is PolygonSetup {
         (, swapAmounts) = zap.getDepositSwapAmounts(vault, PolygonLib.TOKEN_WETH, 1e18);
         assertGt(swapAmounts[0], 0);
         assertGt(swapAmounts[1], 0);
-        console.log('Deposit WETH to WMATIC-USDC Gamma LP');
-        console.log('swapAmounts[0]', swapAmounts[0]);
-        console.log('swapAmounts[1]', swapAmounts[1]);
+        console.log("Deposit WETH to WMATIC-USDC Gamma LP");
+        console.log("swapAmounts[0]", swapAmounts[0]);
+        console.log("swapAmounts[1]", swapAmounts[1]);
 
         (, swapAmounts) = zap.getDepositSwapAmounts(vault1, PolygonLib.TOKEN_USDC, 1000e6);
         assertGt(swapAmounts[0], 0); // 20806874719093983
@@ -90,8 +105,12 @@ contract ZapTest is PolygonSetup {
         // }
 
         bytes[] memory swapData = new bytes[](2);
-        swapData[0] = abi.encodePacked(hex"e449022e0000000000000000000000000000000000000000000000000049ebbe088484df00000000000000000000000000000000000000000000000280875a9072ab0dd80000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000086f1d8390222a3691c28938ec7404a1661e618e08b1ccac8");
-        swapData[1] =  abi.encodePacked(hex"e449022e0000000000000000000000000000000000000000000000000d96caf59edf7b21000000000000000000000000000000000000000000000000000000005fa1b0d20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000045dda9cb7c25131df268515131f647d726f506088b1ccac8");
+        swapData[0] = abi.encodePacked(
+            hex"e449022e0000000000000000000000000000000000000000000000000049ebbe088484df00000000000000000000000000000000000000000000000280875a9072ab0dd80000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000086f1d8390222a3691c28938ec7404a1661e618e08b1ccac8"
+        );
+        swapData[1] = abi.encodePacked(
+            hex"e449022e0000000000000000000000000000000000000000000000000d96caf59edf7b21000000000000000000000000000000000000000000000000000000005fa1b0d20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000180000000000000000000000045dda9cb7c25131df268515131f647d726f506088b1ccac8"
+        );
 
         deal(PolygonLib.TOKEN_WETH, address(this), 2e18);
         IERC20(PolygonLib.TOKEN_WETH).approve(address(zap), 2e18);
@@ -102,9 +121,7 @@ contract ZapTest is PolygonSetup {
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 0, PolygonLib.ONE_INCH, swapData, 1, msg.sender);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10))
-        );
+        vm.expectRevert(abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10)));
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, address(10), swapData, 1, msg.sender);
 
         vm.roll(block.number + 6);

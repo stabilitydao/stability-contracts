@@ -29,8 +29,8 @@ contract ProxyTest is Test, MockSetup {
             IVault.VaultInitializationData({
                 platform: address(platform),
                 strategy: address(0),
-                name: 'V',
-                symbol: 'V',
+                name: "V",
+                symbol: "V",
                 tokenId: 0,
                 vaultInitAddresses: new address[](0),
                 vaultInitNums: new uint[](0)
@@ -48,7 +48,7 @@ contract ProxyTest is Test, MockSetup {
         vm.prank(address(platform));
         proxy.upgrade(address(vaultImplementationUpgrade));
 
-        assertEq(vault.VERSION(), '10.99.99');
+        assertEq(vault.VERSION(), "10.99.99");
 
         // IControllable
         assertEq(proxy.implementation(), address(vaultImplementationUpgrade));

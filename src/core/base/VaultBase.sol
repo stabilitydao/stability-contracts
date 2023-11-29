@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -23,10 +24,12 @@ import "../../interfaces/IFactory.sol";
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
 
-    //region ----- Constants -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = '1.0.0';
+    string public constant VERSION_VAULT_BASE = "1.0.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -38,34 +41,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     uint internal constant _MIN_HARDWORK_DELAY = 3600;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant VAULTBASE_STORAGE_LOCATION = 0xd602ae9af1fed726d4890dcf3c81a074ed87a6343646550e5de293c5a9330a00;
+    bytes32 private constant VAULTBASE_STORAGE_LOCATION =
+        0xd602ae9af1fed726d4890dcf3c81a074ed87a6343646550e5de293c5a9330a00;
 
-    //endregion -- Constants -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      INITIALIZATION                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Storage -----
-
-    /// @custom:storage-location erc7201:stability.VaultBase
-    struct VaultBaseStorage {
-        /// @dev Prevents manipulations with deposit and withdraw in short time.
-        ///      For simplification we are setup new withdraw request on each deposit/transfer.
-        mapping(address msgSender => uint blockNumber) withdrawRequests;
-        /// @inheritdoc IVault
-        IStrategy strategy;
-        /// @inheritdoc IVault
-        uint maxSupply;
-        /// @inheritdoc IVault
-        uint tokenId;
-        /// @inheritdoc IVault
-        bool doHardWorkOnDeposit;
-        /// @dev Immutable vault type ID
-        string _type;
-    }
-
-
-    //endregion -- Storage -----
-
-    //region ----- Init -----
-
+    //slither-disable-next-line naming-convention
     function __VaultBase_init(
         address platform_,
         string memory type_,
@@ -84,16 +67,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.doHardWorkOnDeposit = true;
     }
 
-    //endregion -- Init -----
-
-    //region ----- Callbacks -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CALLBACKS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Need to receive ETH for HardWork and re-balance gas compensation
     receive() external payable {}
 
-    //endregion -- Callbacks -----
-
-    //region ----- Restricted actions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IVault
     function setMaxSupply(uint maxShares) public virtual onlyGovernanceOrMultisig {
@@ -110,9 +93,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
+    //slither-disable-next-line reentrancy-events
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
-        if(msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)){
+        //nosemgrep
+        if (msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)) {
             revert IncorrectMsgSender();
         }
         uint startGas = gasleft();
@@ -120,13 +105,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.strategy.doHardWork();
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
+        //slither-disable-next-line uninitialized-local
         bool compensated;
         if (gasCost > 0) {
             bool canCompensate = payable(address(this)).balance >= gasCost;
+            //slither-disable-next-line unused-return
             if (canCompensate) {
-                //slither-disable-next-line unused-return
-                (bool success, ) = msg.sender.call{value: gasCost}("");
-                if(!success) {
+                //slither-disable-next-line low-level-calls
+                (bool success,) = msg.sender.call{value: gasCost}("");
+                if (!success) {
                     revert IControllable.ETHTransferFailed();
                 }
                 compensated = true;
@@ -142,18 +129,24 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit HardWorkGas(gasUsed, gasCost, compensated);
     }
 
-    //endregion -- Restricted actions ----
-
-    //region ----- User actions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       USER ACTIONS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IVault
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external virtual nonReentrant {
+    function depositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax,
+        uint minSharesOut,
+        address receiver
+    ) external virtual nonReentrant {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        if(IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE){
+        if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
-        } 
-
+        }
+        //slither-disable-next-line timestamp
         if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
+            //nosemgrep
             $.strategy.doHardWork();
         }
 
@@ -161,36 +154,40 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
-        if(data._totalSupply != 0 && data.totalValue == 0){
+        //nosemgrep
+        if (data._totalSupply != 0 && data.totalValue == 0) {
             revert FuseTrigger();
         }
-        
+
         data.len = amountsMax.length;
-        if(data.len != assets_.length){
+        if (data.len != assets_.length) {
             revert IControllable.IncorrectArrayLength();
         }
 
         data.assets = $.strategy.assets();
         data.underlying = $.strategy.underlying();
 
-
+        //nosemgrep
         if (data.len == 1 && data.underlying != address(0) && data.underlying == assets_[0]) {
             data.value = amountsMax[0];
             IERC20(data.underlying).safeTransferFrom(msg.sender, address($.strategy), data.value);
             (data.amountsConsumed) = $.strategy.depositUnderlying(data.value);
         } else {
             (data.amountsConsumed, data.value) = $.strategy.previewDepositAssets(assets_, amountsMax);
+            //nosemgrep
             for (uint i; i < data.len; ++i) {
                 IERC20(data.assets[i]).safeTransferFrom(msg.sender, address($.strategy), data.amountsConsumed[i]);
             }
             data.value = $.strategy.depositAssets(data.amountsConsumed);
         }
-        
-        if(data.value == 0){
-            revert IControllable.IncorrectZeroArgument();
-        }  
 
-        data.mintAmount = _mintShares($, data._totalSupply, data.value, data.totalValue, data.amountsConsumed, minSharesOut, data.assets, receiver);
+        if (data.value == 0) {
+            revert IControllable.IncorrectZeroArgument();
+        }
+
+        data.mintAmount = _mintShares(
+            $, data._totalSupply, data.value, data.totalValue, data.amountsConsumed, minSharesOut, data.assets, receiver
+        );
 
         $.withdrawRequests[receiver] = block.number;
 
@@ -198,14 +195,18 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external virtual nonReentrant {
-        if(amountShares == 0){
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut
+    ) external virtual nonReentrant {
+        if (amountShares == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
-        if(amountShares > balanceOf(msg.sender)){
+        if (amountShares > balanceOf(msg.sender)) {
             revert NotEnoughBalanceToPay();
         }
-        if(assets_.length != minAssetAmountsOut.length){
+        if (assets_.length != minAssetAmountsOut.length) {
             revert IControllable.IncorrectArrayLength();
         }
 
@@ -213,16 +214,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         _beforeWithdraw($);
 
         IStrategy _strategy = $.strategy;
-        uint _totalSupply = totalSupply();
+        uint localTotalSupply = totalSupply();
         uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
         address underlying = _strategy.underlying();
+        //nosemgrep
         bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
         // fuse is not triggered
         if (totalValue > 0) {
-            uint value = amountShares * totalValue / _totalSupply;
+            uint value = amountShares * totalValue / localTotalSupply;
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
                 amountsOut[0] = value;
@@ -233,16 +235,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         } else {
             if (isUnderlyingWithdrawal) {
                 amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / _totalSupply;
+                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                 $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
             } else {
-                amountsOut = $.strategy.transferAssets(amountShares, _totalSupply, msg.sender);
+                amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, msg.sender);
             }
         }
 
         uint len = amountsOut.length;
+        //nosemgrep
         for (uint i; i < len; ++i) {
-            if(amountsOut[i] < minAssetAmountsOut[i]){
+            if (amountsOut[i] < minAssetAmountsOut[i]) {
                 revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
             }
         }
@@ -252,17 +255,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit WithdrawAssets(msg.sender, assets_, amountShares, amountsOut);
     }
 
-    //endregion -- User actions ----
-
-    //region ----- View functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override (Controllable, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(Controllable, IERC165) returns (bool) {
         return interfaceId == type(IVault).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IVault
-    function VAULT_TYPE() external view returns (string memory) {
+    function vaultType() external view returns (string memory) {
         return _getVaultBaseStorage()._type;
     }
 
@@ -272,7 +275,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         uint _tvl;
-        (_tvl,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
+        //slither-disable-next-line unused-return
+        (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
             price_ = _tvl * 1e18 / __totalSupply;
@@ -284,19 +288,28 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-        (tvl_,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
+        //slither-disable-next-line unused-return
+        (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
 
     /// @inheritdoc IVault
-    function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
+    function previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (amountsConsumed, valueOut) = $.strategy.previewDepositAssets(assets_, amountsMax);
         //slither-disable-next-line unused-return
-        (sharesOut,) = _calcMintShares(totalSupply(), valueOut, $.strategy.total(), amountsConsumed, $.strategy.assets());
+        (sharesOut,) =
+            _calcMintShares(totalSupply(), valueOut, $.strategy.total(), amountsConsumed, $.strategy.assets());
     }
 
     /// @inheritdoc IVault
-    function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs) {
+    function getApr()
+        external
+        view
+        returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs)
+    {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         strategyApr = $.strategy.lastApr();
         totalApr = strategyApr;
@@ -307,8 +320,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (underlying != address(0)) {
             ++assetsLengthTmp;
         }
+        uint strategyAssetsLength = strategyAssets.length;
         address[] memory queryAprAssets = new address[](assetsLengthTmp);
-        for (uint i; i < strategyAssets.length; ++i) {
+        //nosemgrep
+        for (uint i; i < strategyAssetsLength; ++i) {
             queryAprAssets[i] = strategyAssets[i];
         }
         if (underlying != address(0)) {
@@ -316,20 +331,23 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
         uint[] memory queryAprs = IAprOracle(IPlatform(platform()).aprOracle()).getAprs(queryAprAssets);
         assetsLengthTmp = 0;
-        for (uint i; i < queryAprs.length; ++i) {
+        uint queryAprsLength = queryAprs.length;
+        //nosemgrep
+        for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 ++assetsLengthTmp;
             }
         }
         assetsWithApr = new address[](assetsLengthTmp);
         assetsAprs = new uint[](assetsLengthTmp);
-
+        //slither-disable-next-line uninitialized-local
         uint k;
-        for (uint i; i < queryAprs.length; ++i) {
+        //nosemgrep
+        for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 assetsWithApr[k] = queryAprAssets[i];
                 assetsAprs[k] = queryAprs[i];
-                if (i < strategyAssets.length) {
+                if (i < strategyAssetsLength) {
                     totalApr += assetsAprs[k] * proportions[i] / 1e18;
                 } else {
                     totalApr += assetsAprs[k];
@@ -337,17 +355,16 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 ++k;
             }
         }
-
     }
 
     /// @inheritdoc IVault
-    function previewWithdraw(uint sharesToBurn) external view returns(uint[] memory){
-        (address[] memory assets,uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
+    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory) {
+        (address[] memory assets, uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
         return _previewWithdraw(assets, assetsAmount, sharesToBurn, totalSupply());
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() public view virtual returns(uint uniqueInitAddresses, uint uniqueInitNums);
+    function getUniqueInitParamLength() public view virtual returns (uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @inheritdoc IVault
     function strategy() public view returns (IStrategy) {
@@ -373,10 +390,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return $.doHardWorkOnDeposit;
     }
 
-
-    //endregion -- View functions -----
-
-    //region ----- Internal logic -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getVaultBaseStorage() internal pure returns (VaultBaseStorage storage $) {
         //slither-disable-next-line assembly
@@ -393,6 +409,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     ) internal pure returns (uint[] memory amountsOut) {
         uint len = assets.length;
         amountsOut = new uint[](len);
+        //nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = assetsAmount[i] * amount / total_;
         }
@@ -411,35 +428,42 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user after deposit
     /// @return mintAmount Amount of minted shares for the user
     function _mintShares(
-        VaultBaseStorage storage $, 
-        uint totalSupply_, 
-        uint value_, 
-        uint totalValue_, 
-        uint[] memory amountsConsumed, 
-        uint minSharesOut, 
+        VaultBaseStorage storage $,
+        uint totalSupply_,
+        uint value_,
+        uint totalValue_,
+        uint[] memory amountsConsumed,
+        uint minSharesOut,
         address[] memory assets,
         address receiver
-        ) internal returns (uint mintAmount) {
+    ) internal returns (uint mintAmount) {
         uint initialShares;
-        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_,  totalValue_, amountsConsumed, assets);
+        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets);
         uint _maxSupply = $.maxSupply;
-        if(_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply){
+        //nosemgrep
+        if (_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply) {
             revert ExceedMaxSupply(_maxSupply);
         }
-        if(mintAmount < minSharesOut){
+        if (mintAmount < minSharesOut) {
             revert ExceedSlippage(mintAmount, minSharesOut);
         }
         if (initialShares > 0) {
             _mint(ConstantsLib.DEAD_ADDRESS, initialShares);
         }
-        if(receiver == address(0)) {
+        if (receiver == address(0)) {
             receiver = msg.sender;
         }
         _mint(receiver, mintAmount);
     }
 
     /// @dev Calculating amount of new shares for given deposited value and totals
-    function _calcMintShares(uint totalSupply_, uint value_, uint totalValue_, uint[] memory amountsConsumed, address[] memory assets) internal view returns (uint mintAmount, uint initialShares) {
+    function _calcMintShares(
+        uint totalSupply_,
+        uint value_,
+        uint totalValue_,
+        uint[] memory amountsConsumed,
+        address[] memory assets
+    ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
             initialShares = 0; // hide warning
@@ -448,11 +472,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
+            (mintAmount,,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;
-            if(mintAmount < initialShares * 1000){
+            if (mintAmount < initialShares * 1000) {
                 revert NotEnoughAmountToInitSupply(mintAmount, initialShares * 1000);
             }
             mintAmount -= initialShares;
@@ -460,31 +484,18 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     function _beforeWithdraw(VaultBaseStorage storage $) internal {
-        if($.withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number){
+        if ($.withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
         }
         $.withdrawRequests[msg.sender] = block.number;
     }
 
-    function _update(
-        address from,
-        address to,
-        uint value
-    ) internal virtual override {
+    function _update(address from, address to, uint value) internal virtual override {
         super._update(from, to, value);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.withdrawRequests[from] = block.number;
-        $.withdrawRequests[to] = block.number;
+        if (to != IPlatform(platform()).zap()) {
+            $.withdrawRequests[to] = block.number;
+        }
     }
-
-    // function _afterTokenTransfer(
-    //     address from,
-    //     address to,
-    //     uint /*amount*/
-    // ) internal override {
-    //     _withdrawRequests[from] = block.number;
-    //     _withdrawRequests[to] = block.number;
-    // }
-
-    //endregion -- Internal logic -----
 }

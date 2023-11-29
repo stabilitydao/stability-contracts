@@ -14,7 +14,7 @@ contract CVault is VaultBase {
     //region ----- Constants -----
 
     /// @dev Version of CVault implementation
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 
@@ -25,9 +25,7 @@ contract CVault is VaultBase {
     //region ----- Init -----
 
     /// @inheritdoc IVault
-    function initialize(
-        VaultInitializationData memory vaultInitializationData
-    ) initializer public {
+    function initialize(VaultInitializationData memory vaultInitializationData) public initializer {
         __VaultBase_init(
             vaultInitializationData.platform,
             VaultTypeLib.COMPOUNDING,
@@ -36,7 +34,8 @@ contract CVault is VaultBase {
             vaultInitializationData.symbol,
             vaultInitializationData.tokenId
         );
-        if(vaultInitializationData.vaultInitAddresses.length != 0 || vaultInitializationData.vaultInitNums.length != 0) {
+        if (vaultInitializationData.vaultInitAddresses.length != 0 || vaultInitializationData.vaultInitNums.length != 0)
+        {
             revert IControllable.IncorrectInitParams();
         }
     }
@@ -50,10 +49,9 @@ contract CVault is VaultBase {
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() public pure override returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+    function getUniqueInitParamLength() public pure override returns (uint uniqueInitAddresses, uint uniqueInitNums) {
         return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----
-
 }

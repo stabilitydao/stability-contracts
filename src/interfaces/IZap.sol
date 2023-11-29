@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-
 /// @title ZAP feature
 interface IZap {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,12 +24,7 @@ interface IZap {
         address vault,
         address tokenIn,
         uint amountIn
-    ) external view returns(
-        address[] memory tokensOut,
-        uint[] memory swapAmounts
-    );
-
-
+    ) external view returns (address[] memory tokensOut, uint[] memory swapAmounts);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           WRITE                            */

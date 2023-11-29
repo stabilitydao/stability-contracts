@@ -15,19 +15,20 @@ contract Proxy is UpgradeableProxy, IProxy {
     }
 
     /// @inheritdoc IProxy
+    //slither-disable-next-line naming-convention
     function upgrade(address _newImplementation) external override {
-        if(IControllable(address(this)).platform() != msg.sender){
+        if (IControllable(address(this)).platform() != msg.sender) {
             revert IControllable.NotPlatform();
         }
         _upgradeTo(_newImplementation);
         // the new contract must have the same ABI and you must have the power to change it again
-        if(IControllable(address(this)).platform() != msg.sender){
+        if (IControllable(address(this)).platform() != msg.sender) {
             revert IControllable.NotPlatform();
         }
     }
 
     /// @inheritdoc IProxy
-    function implementation() external override view returns (address) {
+    function implementation() external view override returns (address) {
         return _implementation();
     }
 }

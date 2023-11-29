@@ -12,7 +12,7 @@ import "../../src/core/StrategyLogic.sol";
 import "../../src/core/libs/ConstantsLib.sol";
 import "../../src/interfaces/IControllable.sol";
 
-contract PlatformTest is Test  {
+contract PlatformTest is Test {
     Platform public platform;
     StrategyLogic public strategyLogic;
 
@@ -23,26 +23,26 @@ contract PlatformTest is Test  {
     }
 
     function testSetMinTvlForFreeHardWork() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         vm.prank(address(1));
         platform.setMinTvlForFreeHardWork(123);
         platform.setMinTvlForFreeHardWork(123);
-        assertEq(platform.minTvlForFreeHardWork(), 123); 
+        assertEq(platform.minTvlForFreeHardWork(), 123);
     }
 
     function testSetup() public {
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-        platform.initialize(address(0), '23.11.0-dev');
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(0), "23.11.0-dev");
+        platform.initialize(address(this), "23.11.0-dev");
         vm.expectRevert(abi.encodeWithSelector(Initializable.InvalidInitialization.selector));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         assertEq(platform.governance(), address(0));
         assertEq(platform.multisig(), address(this));
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         Platform platform2 = Platform(address(proxy));
-        platform2.initialize(address(this),  '23.11.0-dev');
+        platform2.initialize(address(this), "23.11.0-dev");
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(1),
@@ -55,10 +55,12 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(101),
+                zap: address(0),
+                bridge: address(102)
             }),
             IPlatform.PlatformSettings({
-                networkName: 'Localhost Ethereum',
+                networkName: "Localhost Ethereum",
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
@@ -72,6 +74,23 @@ contract PlatformTest is Test  {
         platform.setInitialBoost(31e18, 31 * 86400);
         assertEq(platform.minInitialBoostPerDay(), 31e18);
         assertEq(platform.minInitialBoostDuration(), 31 * 86400);
+
+        assertEq(platform.rebalancer(), address(101));
+        assertEq(platform.bridge(), address(102));
+
+        platform.setupRebalancer(address(1001));
+        platform.setupBridge(address(1002));
+
+        assertEq(platform.rebalancer(), address(1001));
+        assertEq(platform.bridge(), address(1002));
+
+        assertEq(platform.networkName(), "Localhost Ethereum");
+        assertEq(
+            platform.networkExtra(), CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)))
+        );
+
+        assertEq(platform.ecosystemRevenueReceiver(), address(0));
+
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.setup(
             IPlatform.SetupAddresses({
@@ -85,10 +104,12 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: 'Localhost Ethereum',
+                networkName: "Localhost Ethereum",
                 networkExtra: bytes32(0),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
@@ -101,7 +122,7 @@ contract PlatformTest is Test  {
     }
 
     function testAddRemoveOperator(address operator) public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         if (operator == address(this)) {
             vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         } else {
@@ -111,7 +132,7 @@ contract PlatformTest is Test  {
         platform.addOperator(operator);
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         platform.addOperator(operator);
-        
+
         assertEq(platform.isOperator(operator), true);
         address[] memory operatorsList = platform.operatorsList();
 
@@ -136,7 +157,7 @@ contract PlatformTest is Test  {
 
     function testProxyUpgrade(address multisig) public {
         if (multisig != address(0)) {
-            platform.initialize(multisig, '23.11.0-dev');
+            platform.initialize(multisig, "23.11.0-dev");
 
             // its not fabric vault
             CVault vaultImplementation = new CVault();
@@ -150,8 +171,8 @@ contract PlatformTest is Test  {
                 IVault.VaultInitializationData({
                     platform: address(platform),
                     strategy: address(0),
-                    name: 'V',
-                    symbol: 'V',
+                    name: "V",
+                    symbol: "V",
                     tokenId: 0,
                     vaultInitAddresses: new address[](0),
                     vaultInitNums: new uint[](0)
@@ -165,27 +186,15 @@ contract PlatformTest is Test  {
 
             if (multisig != address(this)) {
                 vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
-                platform.announcePlatformUpgrade(
-                    '2025.01.0-beta',
-                    proxies,
-                    implementations
-                );
+                platform.announcePlatformUpgrade("2025.01.0-beta", proxies, implementations);
             }
 
             vm.startPrank(multisig);
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                implementations
-            );
-            
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, implementations);
+
             vm.expectRevert(abi.encodeWithSelector(IPlatform.AlreadyAnnounced.selector));
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                implementations
-            );
- 
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, implementations);
+
             vm.stopPrank();
             platform.cancelUpgrade();
             vm.startPrank(multisig);
@@ -195,53 +204,29 @@ contract PlatformTest is Test  {
             _implementations[1] = address(vaultImplementationUpgrade);
 
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                _implementations
-            );
- 
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, _implementations);
+
             address[] memory _proxies = new address[](1);
             _proxies[0] = address(0);
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                _proxies,
-                implementations
-            ); 
+            platform.announcePlatformUpgrade("2025.01.0-beta", _proxies, implementations);
 
             address[] memory __implementations = new address[](1);
             __implementations[0] = address(0);
 
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                __implementations
-            ); 
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, __implementations);
 
             _proxies[0] = address(vaultImplementationUpgrade);
             __implementations[0] = address(vaultImplementationUpgrade);
             vm.expectRevert(abi.encodeWithSelector(IPlatform.SameVersion.selector));
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                _proxies,
-                __implementations
-            );
+            platform.announcePlatformUpgrade("2025.01.0-beta", _proxies, __implementations);
 
-            string memory oldVersion = platform.PLATFORM_VERSION();
+            string memory oldVersion = platform.platformVersion();
             vm.expectRevert(abi.encodeWithSelector(IPlatform.SameVersion.selector));
-            platform.announcePlatformUpgrade(
-                oldVersion,
-                proxies,
-                implementations
-            );
-          
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                implementations
-            );
+            platform.announcePlatformUpgrade(oldVersion, proxies, implementations);
+
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, implementations);
             vm.stopPrank();
 
             assertEq(platform.pendingPlatformUpgrade().proxies[0], address(proxy));
@@ -255,11 +240,7 @@ contract PlatformTest is Test  {
             platform.upgrade();
 
             vm.prank(multisig);
-            platform.announcePlatformUpgrade(
-                '2025.01.0-beta',
-                proxies,
-                implementations
-            );
+            platform.announcePlatformUpgrade("2025.01.0-beta", proxies, implementations);
 
             skip(30 minutes);
 
@@ -273,24 +254,23 @@ contract PlatformTest is Test  {
 
             assertEq(proxy.implementation(), address(vaultImplementationUpgrade));
             assertEq(CVault(payable(address(proxy))).VERSION(), "10.99.99");
-            assertEq(platform.PLATFORM_VERSION(), '2025.01.0-beta');
+            assertEq(platform.platformVersion(), "2025.01.0-beta");
         } else {
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-            platform.initialize(multisig, '23.11.0-dev');
+            platform.initialize(multisig, "23.11.0-dev");
         }
-
     }
 
     function testSetFees() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         address govAddr = platform.governance();
 
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernance.selector));
-        platform.setFees(1,1,1,1); 
+        platform.setFees(1, 1, 1, 1);
 
         vm.startPrank(govAddr);
-        platform.setFees(6_000, 30_000, 30_000, 0); 
+        platform.setFees(6_000, 30_000, 30_000, 0);
         (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) = platform.getFees();
         assertEq(fee, 6_000);
         assertEq(feeShareVaultManager, 30_000);
@@ -298,33 +278,33 @@ contract PlatformTest is Test  {
         assertEq(feeShareEcosystem, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-        platform.setFees(6_000, 30_000, 30_000, 5); 
+        platform.setFees(6_000, 30_000, 30_000, 5);
 
         uint _minFee = platform.MIN_FEE();
         uint _maxFee = platform.MAX_FEE();
-        
+
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(3_000, 30_000, 30_000, 0); 
+        platform.setFees(3_000, 30_000, 30_000, 0);
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(13_000, 30_000, 30_000, 0); 
+        platform.setFees(13_000, 30_000, 30_000, 0);
 
         _minFee = platform.MIN_FEE_SHARE_VAULT_MANAGER();
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 3_000, 30_000, 0); 
+        platform.setFees(6_000, 3_000, 30_000, 0);
 
         _minFee = platform.MIN_FEE_SHARE_STRATEGY_LOGIC();
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 30_000, 3_000, 0); 
+        platform.setFees(6_000, 30_000, 3_000, 0);
 
         _maxFee = ConstantsLib.DENOMINATOR;
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, 0, _maxFee));
-        platform.setFees(10_000, 60_000, 50_000, 0); 
+        platform.setFees(10_000, 60_000, 50_000, 0);
 
         vm.stopPrank();
     }
 
     function testAddRemoveUseAllowedBBToken() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         platform.setAllowedBBTokenVaults(address(1), 5);
         platform.setAllowedBBTokenVaults(address(2), 5);
         platform.setAllowedBBTokenVaults(address(3), 1);
@@ -335,30 +315,30 @@ contract PlatformTest is Test  {
         platform.useAllowedBBTokenVault(address(3));
         vm.stopPrank();
 
-        (address[] memory bbToken, ) = platform.allowedBBTokenVaults();
+        (address[] memory bbToken,) = platform.allowedBBTokenVaults();
         assertEq(bbToken[0], address(1));
         assertEq(bbToken[1], address(2));
- 
+
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         platform.removeAllowedBBToken(address(5));
 
         platform.removeAllowedBBToken(bbToken[0]);
-        
-        (bbToken, ) = platform.allowedBBTokenVaults();
+
+        (bbToken,) = platform.allowedBBTokenVaults();
         //EnumerableSet.remove change positions inside array
         assertEq(bbToken[0], address(3));
         assertEq(bbToken[1], address(2));
 
         platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 1); 
+        (bbToken,) = platform.allowedBBTokenVaults();
+        assertEq(bbToken.length, 1);
         platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken, ) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 0); 
+        (bbToken,) = platform.allowedBBTokenVaults();
+        assertEq(bbToken.length, 0);
     }
 
     function testAddRemoveAllowedBoostRewardToken() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         platform.addAllowedBoostRewardToken(address(1));
         platform.addAllowedBoostRewardToken(address(2));
 
@@ -381,7 +361,7 @@ contract PlatformTest is Test  {
     }
 
     function testAddRemoveDefaultBoostRewardToken() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         platform.addDefaultBoostRewardToken(address(1));
         platform.addDefaultBoostRewardToken(address(2));
 
@@ -401,7 +381,6 @@ contract PlatformTest is Test  {
         platform.removeDefaultBoostRewardToken(address(2));
         defaultTokens = platform.defaultBoostRewardTokens();
         assertEq(defaultTokens.length, 0);
-
     }
 
     function testAddBoostTokens() public {
@@ -411,7 +390,7 @@ contract PlatformTest is Test  {
         address[] memory defaultBoostRewardTokens = new address[](1);
         defaultBoostRewardTokens[0] = address(208);
 
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         platform.addBoostTokens(allowedBoostRewardTokens, defaultBoostRewardTokens);
 
         address[] memory alreadyAddedAllowedBoostRewardToken = new address[](1);
@@ -429,11 +408,10 @@ contract PlatformTest is Test  {
         assertEq(allowedTokens.length, 2);
         assertEq(allowedTokens[0], address(101));
         assertEq(allowedTokens[1], address(105));
-
     }
 
     function testGetAmmAdapters() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         platform.addAmmAdapter("myId", address(1));
         platform.addAmmAdapter("myId2", address(2));
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
@@ -444,21 +422,20 @@ contract PlatformTest is Test  {
         assertEq(ids[1], "myId2");
         assertEq(proxies[0], address(1));
         assertEq(proxies[1], address(2));
-
     }
 
     function testGetData() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        {   
+        {
             (address[] memory _platformAddresses,,,,,,,,,) = platform.getData();
             delete _platformAddresses;
-        } 
+        }
 
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StrategyLogic()));
         strategyLogic = StrategyLogic(address(proxy));
-        strategyLogic.init(address(platform)); 
+        strategyLogic.init(address(platform));
 
         proxy = new Proxy();
         proxy.initProxy(address(new Factory()));
@@ -482,10 +459,12 @@ contract PlatformTest is Test  {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: 'Localhost Ethereum',
+                networkName: "Localhost Ethereum",
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
@@ -494,7 +473,7 @@ contract PlatformTest is Test  {
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
-        ); 
+        );
 
         (
             address[] memory platformAddresses,
@@ -509,22 +488,20 @@ contract PlatformTest is Test  {
             bytes32[] memory strategyExtra
         ) = platform.getData();
 
-
         assertEq(platformAddresses[0], platform.factory());
         assertEq(platformAddresses[1], platform.vaultManager());
         assertEq(platformAddresses[2], platform.strategyLogic());
         assertEq(platformAddresses[3], platform.buildingPermitToken());
-        assertEq(platformAddresses[4], platform.buildingPayPerVaultToken()); 
-        assertEq(vaultType.length, 0); 
-        assertEq(bcAssets.length, 0); 
-        assertEq(dexAggregators_.length, 0); 
-        assertEq(vaultExtra.length, 0); 
-        assertEq(vaultBuildingPrice.length, 0); 
-        assertEq(strategyId.length, 0); 
-        assertEq(isFarmingStrategy.length, 0); 
-        assertEq(strategyTokenURI.length, 0); 
-        assertEq(strategyExtra.length, 0);  
-
+        assertEq(platformAddresses[4], platform.buildingPayPerVaultToken());
+        assertEq(vaultType.length, 0);
+        assertEq(bcAssets.length, 0);
+        assertEq(dexAggregators_.length, 0);
+        assertEq(vaultExtra.length, 0);
+        assertEq(vaultBuildingPrice.length, 0);
+        assertEq(strategyId.length, 0);
+        assertEq(isFarmingStrategy.length, 0);
+        assertEq(strategyTokenURI.length, 0);
+        assertEq(strategyExtra.length, 0);
 
         address _logic = platform.strategyLogic();
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotTheOwner.selector));
@@ -536,14 +513,14 @@ contract PlatformTest is Test  {
     }
 
     function testEcosystemRevenueReceiver() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         platform.setEcosystemRevenueReceiver(address(0));
         platform.setEcosystemRevenueReceiver(address(1));
     }
 
     function testDexAggregators() public {
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
 
         address[] memory dexAggRouter = new address[](2);
         dexAggRouter[0] = address(1);
@@ -553,7 +530,7 @@ contract PlatformTest is Test  {
         dexAggRouter[0] = address(8);
         dexAggRouter[1] = address(9);
         platform.addDexAggregators(dexAggRouter);
-        
+
         address[] memory dexAggs = platform.dexAggregators();
         assertEq(dexAggs.length, 4);
         assertEq(dexAggs[3], address(9));
@@ -575,18 +552,17 @@ contract PlatformTest is Test  {
         platform.removeDexAggregator(address(1));
         dexAggRouter[0] = address(1);
         platform.addDexAggregators(dexAggRouter);
-
     }
 
     function testErc165() public {
         assertEq(platform.supportsInterface(type(IERC165).interfaceId), true);
         assertEq(platform.supportsInterface(type(IControllable).interfaceId), true);
-        
-        platform.initialize(address(this), '23.11.0-dev');
+
+        platform.initialize(address(this), "23.11.0-dev");
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new StrategyLogic()));
         strategyLogic = StrategyLogic(address(proxy));
-        strategyLogic.init(address(platform)); 
+        strategyLogic.init(address(platform));
         assertEq(strategyLogic.supportsInterface(type(IERC165).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IControllable).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IERC721).interfaceId), true);

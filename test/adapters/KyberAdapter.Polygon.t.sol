@@ -59,11 +59,10 @@ contract KyberAdapterTest is PolygonSetup {
         // console.log(price);
 
         vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
-        KyberAdapter(address(adapter)).swapCallback(0, 0, '');
+        KyberAdapter(address(adapter)).swapCallback(0, 0, "");
 
         assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
-
 }

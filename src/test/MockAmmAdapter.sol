@@ -20,14 +20,17 @@ contract MockAmmAdapter is IAmmAdapter {
 
     function init(address) external {}
 
-    function poolTokens(address /*pool*/) external view returns (address[] memory) {
+    function poolTokens(address /*pool*/ ) external view returns (address[] memory) {
         address[] memory assets = new address[](2);
         assets[0] = _asset0;
         assets[1] = _asset1;
         return assets;
     }
 
-    function getLiquidityForAmounts(address/* pool*/, uint[] memory amounts) public pure returns (uint liquidity, uint[] memory amountsConsumed) {
+    function getLiquidityForAmounts(
+        address, /* pool*/
+        uint[] memory amounts
+    ) public pure returns (uint liquidity, uint[] memory amountsConsumed) {
         uint price0to1 = 2e6;
 
         amountsConsumed = new uint[](2);
@@ -42,19 +45,32 @@ contract MockAmmAdapter is IAmmAdapter {
         liquidity = amountsConsumed[0] * amountsConsumed[1];
     }
 
-    function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory/* ticks*/) external pure returns (uint liquidity, uint[] memory amountsConsumed) {
+    function getLiquidityForAmounts(
+        address pool,
+        uint[] memory amounts,
+        int24[] memory /* ticks*/
+    ) external pure returns (uint liquidity, uint[] memory amountsConsumed) {
         return getLiquidityForAmounts(pool, amounts);
     }
 
-    function getAmountsForLiquidity(address /*pool*/, int24[] memory /*ticks*/, uint128 /*liquidity*/) external pure returns (uint[] memory /*amounts*/) {
-        revert('unavailable');
+    function getAmountsForLiquidity(
+        address, /*pool*/
+        int24[] memory, /*ticks*/
+        uint128 /*liquidity*/
+    ) external pure returns (uint[] memory /*amounts*/ ) {
+        revert("unavailable");
     }
 
-    function getAmountsForLiquidity(address /*pool*/, int24 /*lowerTick*/, int24 /*upperTick*/, uint128 /*liquidity*/) public pure returns (uint /*amount0*/, uint /*amount1*/) {
-        revert('unavailable');
+    function getAmountsForLiquidity(
+        address, /*pool*/
+        int24, /*lowerTick*/
+        int24, /*upperTick*/
+        uint128 /*liquidity*/
+    ) public pure returns (uint, /*amount0*/ uint /*amount1*/ ) {
+        revert("unavailable");
     }
 
-    function getProportion0(address /*pool*/) public pure returns (uint) {
+    function getProportion0(address /*pool*/ ) public pure returns (uint) {
         return 5e17;
     }
 
@@ -75,20 +91,20 @@ contract MockAmmAdapter is IAmmAdapter {
     ) external {}
 
     function getPrice(
-        address /*pool*/,
-        address /*tokenIn*/,
-        address /*tokenOut*/,
+        address, /*pool*/
+        address, /*tokenIn*/
+        address, /*tokenOut*/
         uint /*amount*/
     ) external pure returns (uint) {
         return 2e18;
     }
 
     /// @inheritdoc IAmmAdapter
-    function ammAdapterId() external pure returns(string memory) {
+    function ammAdapterId() external pure returns (string memory) {
         return _DEX_ADAPTER_ID;
     }
 
-    function DEX_ADAPTER_VERSION() external pure returns(string memory) {
+    function DEX_ADAPTER_VERSION() external pure returns (string memory) {
         return _DEX_ADAPTER_VERSION;
     }
 
