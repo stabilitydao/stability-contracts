@@ -45,4 +45,13 @@ interface IZap {
         uint minSharesOut,
         address receiver
     ) external;
+
+    function withdraw(
+        address vault,
+        address tokenOut,
+        address agg,
+        bytes[] memory swapData,
+        uint sharesToBurn,
+        uint[] memory minAssetAmountsOut
+    ) external;
 }

@@ -106,5 +106,11 @@ contract ZapTest is PolygonSetup {
             abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10))
         );
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, address(10), swapData, 1, msg.sender);
+
+        vm.roll(block.number + 6);
+        IERC20(vault).approve(address(zap), 2e18);
+        uint[] memory minToWithdraw = IVault(vault).previewWithdraw(100000);
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 100000, minToWithdraw); 
+
     }
 }
