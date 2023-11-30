@@ -199,7 +199,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_,
         uint amountShares,
         uint[] memory minAssetAmountsOut
-    ) external virtual nonReentrant {
+    ) external virtual nonReentrant returns(uint[] memory){
         if (amountShares == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
@@ -253,6 +253,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         _burn(msg.sender, amountShares);
 
         emit WithdrawAssets(msg.sender, assets_, amountShares, amountsOut);
+
+        return amountsOut;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -357,11 +359,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
     }
 
-    /// @inheritdoc IVault
-    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory) {
-        (address[] memory assets, uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
-        return _previewWithdraw(assets, assetsAmount, sharesToBurn, totalSupply());
-    }
 
     /// @inheritdoc IVault
     function getUniqueInitParamLength() public view virtual returns (uint uniqueInitAddresses, uint uniqueInitNums);
@@ -398,20 +395,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line assembly
         assembly {
             $.slot := VAULTBASE_STORAGE_LOCATION
-        }
-    }
-
-    function _previewWithdraw(
-        address[] memory assets,
-        uint[] memory assetsAmount,
-        uint amount,
-        uint total_
-    ) internal pure returns (uint[] memory amountsOut) {
-        uint len = assets.length;
-        amountsOut = new uint[](len);
-        //nosemgrep
-        for (uint i; i < len; ++i) {
-            amountsOut[i] = assetsAmount[i] * amount / total_;
         }
     }
 

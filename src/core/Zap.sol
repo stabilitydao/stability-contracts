@@ -110,11 +110,11 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         address strategy = address(IVault(vault).strategy());
         address[] memory assets = IStrategy(strategy).assets();
-
-        IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut);
-
+        uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut);
+ 
         uint len = swapData.length;
         for (uint i; i < len; ++i) {
+            _approveIfNeeds(assets[i], amountsOut[i], agg);
             // slither-disable-next-line calls-loop
             (bool success, bytes memory result) = agg.call(swapData[i]);
             //nosemgrep
