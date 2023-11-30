@@ -305,10 +305,14 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 _getLPStrategyBaseStorage()._feesOnBalance[1] += fees[1];
             }
         }
-        _getStrategyBaseStorage().total -= value;
-        // think total is always gt zero because we have initial shares
-        $._nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
-        __farmingCenter.enterFarming(key, tokenId, 0, false);
+        StrategyBaseStorage storage _$_ = _getStrategyBaseStorage();
+        uint newTotal = _$_.total - value;
+        _$_.total = newTotal;
+        // total can be zero during fuse trigger
+        if (newTotal > 0) {
+            $._nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
+            __farmingCenter.enterFarming(key, tokenId, 0, false);
+        }
     }
 
     /// @inheritdoc StrategyBase
