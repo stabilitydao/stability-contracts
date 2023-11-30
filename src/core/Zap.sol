@@ -40,7 +40,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //slither-disable-next-line calls-loop
+    /// @inheritdoc IZap
     function deposit(
         address vault,
         address tokenIn,
@@ -93,6 +93,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         _sendAllRemaining(tokenIn, assets, IStrategy(strategy).underlying());
     }
 
+    /// @inheritdoc IZap
     function withdraw(
         address vault,
         address tokenOut,
