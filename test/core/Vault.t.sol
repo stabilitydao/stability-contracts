@@ -127,6 +127,8 @@ contract VaultTest is Test, FullMockSetup {
         vm.roll(block.number + 6);
 
         shares = vault.balanceOf(address(this));
+        vault.withdrawAssets(assets, shares / 2, new uint[](2));
+        vm.roll(block.number + 6);
 
         vault.withdrawAssets(assets, shares - shares / 2, new uint[](2));
 
