@@ -116,6 +116,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         for (uint i; i < len; ++i) {
             _approveIfNeeds(assets[i], amountsOut[i], agg);
             // slither-disable-next-line calls-loop
+            // slither-disable-next-line low-level-calls
             (bool success, bytes memory result) = agg.call(swapData[i]);
             //nosemgrep
             require(success, string(result));
