@@ -134,7 +134,7 @@ contract ZapTest is PolygonSetup {
         minToWithdraw[1] = 0;
 
         // swap WMATIC -> USDT
-/* 
+        /* 
         {
         "toAmount": "996136",
         "tx": {
@@ -160,17 +160,17 @@ contract ZapTest is PolygonSetup {
             "gasPrice": "337104975215"
         }
         }
-*/
+        */
         // wmatic 1306248617253482942
-        // usdc 322827 
+        // usdc 322827
         swapData[0] = abi.encodePacked(
             hex"e449022e0000000000000000000000000000000000000000000000001220ba3253bd31be0000000000000000000000000000000000000000000000000000000000079994000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009b08288c3be4f62bbf8d1c20ac9c5e6f9467d8b78b1ccac8"
         );
         swapData[1] = abi.encodePacked(
             hex"e449022e000000000000000000000000000000000000000000000000000000000004ed0b000000000000000000000000000000000000000000000000000000000002765600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000dac8a8e6dbf8c690ec6815e0ff03491b2770255d8b1ccac8"
         );
-        deal(PolygonLib.TOKEN_USDT ,address(this), 0);
-        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, minToWithdraw);  
+        deal(PolygonLib.TOKEN_USDT, address(this), 0);
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, minToWithdraw);
         assertApproxEqAbs(IERC20(PolygonLib.TOKEN_USDT).balanceOf(address(this)), 1e6, 1000);
     }
 }

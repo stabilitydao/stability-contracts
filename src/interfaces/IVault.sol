@@ -175,7 +175,11 @@ interface IVault is IERC165 {
     /// @param amountShares Shares amount for burning
     /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
     /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
-    function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external returns(uint[] memory);
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut
+    ) external returns (uint[] memory);
 
     /// @dev Setting of vault capacity
     /// @param maxShares If totalSupply() exceeds this value, deposits will not be possible

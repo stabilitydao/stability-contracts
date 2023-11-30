@@ -199,7 +199,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_,
         uint amountShares,
         uint[] memory minAssetAmountsOut
-    ) external virtual nonReentrant returns(uint[] memory){
+    ) external virtual nonReentrant returns (uint[] memory) {
         if (amountShares == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
@@ -358,7 +358,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             }
         }
     }
-
 
     /// @inheritdoc IVault
     function getUniqueInitParamLength() public view virtual returns (uint uniqueInitAddresses, uint uniqueInitNums);

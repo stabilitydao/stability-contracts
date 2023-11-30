@@ -101,7 +101,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint sharesToBurn,
         uint[] memory minAssetAmountsOut
     ) external nonReentrant {
-        
         if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {
             revert NotAllowedDexAggregator(agg);
         }
@@ -111,7 +110,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address strategy = address(IVault(vault).strategy());
         address[] memory assets = IStrategy(strategy).assets();
         uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut);
- 
+
         uint len = swapData.length;
         for (uint i; i < len; ++i) {
             _approveIfNeeds(assets[i], amountsOut[i], agg);
@@ -122,8 +121,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         }
 
         _sendAllRemaining(tokenOut, assets, IStrategy(strategy).underlying());
-
-    } 
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -160,7 +158,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
             }
         }
     }
-
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
