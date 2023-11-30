@@ -133,9 +133,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
         }
     }
 
-    function emergencyStopInvesting() external onlyGovernanceOrMultisig {
-        //Вывести средства, сделав totalValue == 0
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
