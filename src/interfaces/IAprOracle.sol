@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev This oracle is needed to obtain APR of underlying assets in an on-chain environment.
 ///      These APRs are usually accessible from the protocol APIs.

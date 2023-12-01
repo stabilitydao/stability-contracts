@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../proxy/VaultProxy.sol";
 import "../proxy/StrategyProxy.sol";

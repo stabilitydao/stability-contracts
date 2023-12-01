@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 ///@notice Restored from 0x4d47fd5a29904Dae0Ef51b1c450C9750F15D7856
 interface IKyberQuoterV2 {

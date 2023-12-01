@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
 /// Hardwork is important task of any vault - claiming revenue and processing it by strategy, updating rewarding,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev Base core interface implemented by most platform contracts.
 ///      Inherited contracts store an immutable Platform proxy address in the storage,

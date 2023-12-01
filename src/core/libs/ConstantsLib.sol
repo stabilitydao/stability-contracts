@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 library ConstantsLib {
     uint internal constant SWAP_REVENUE_PRICE_IMPACT_TOLERANCE = 1_000;
