@@ -10,7 +10,7 @@ import "../../interfaces/IPlatform.sol";
 /// @dev Base core contract.
 ///      It store an immutable platform proxy address in the storage and provides access control to inherited contracts.
 /// @author Alien Deployer (https://github.com/a17)
-/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
+/// @author 0xhokugava (https://github.com/0xhokugava)
 abstract contract Controllable is Initializable, IControllable, ERC165 {
     using SlotsLib for bytes32;
 
