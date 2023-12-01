@@ -40,7 +40,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //slither-disable-next-line calls-loop
+    /// @inheritdoc IZap
     function deposit(
         address vault,
         address tokenIn,
@@ -93,6 +93,38 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         _sendAllRemaining(tokenIn, assets, IStrategy(strategy).underlying());
     }
 
+    /// @inheritdoc IZap
+    function withdraw(
+        address vault,
+        address tokenOut,
+        address agg,
+        bytes[] memory swapData,
+        uint sharesToBurn,
+        uint[] memory minAssetAmountsOut
+    ) external nonReentrant {
+        if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {
+            revert NotAllowedDexAggregator(agg);
+        }
+
+        IERC20(vault).safeTransferFrom(msg.sender, address(this), sharesToBurn);
+
+        address strategy = address(IVault(vault).strategy());
+        address[] memory assets = IStrategy(strategy).assets();
+        uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut);
+
+        uint len = swapData.length;
+        for (uint i; i < len; ++i) {
+            _approveIfNeeds(assets[i], amountsOut[i], agg);
+            // slither-disable-next-line calls-loop
+            // slither-disable-next-line low-level-calls
+            (bool success, bytes memory result) = agg.call(swapData[i]);
+            //nosemgrep
+            require(success, string(result));
+        }
+
+        _sendAllRemaining(tokenOut, assets, IStrategy(strategy).underlying());
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -128,24 +160,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
             }
         }
     }
-
-    /*     function getWithdrawSwapAmounts(
-         address vault,
-         address tokenOut,
-         uint amountShares
-        ) external view returns(
-         address[] memory tokensIn,
-         uint[] memory swapAmounts
-        ) {
-         address strategy = address(IVault(vault).strategy());
-         tokensIn = IStrategy(strategy).assets();
-         uint len = tokensIn.length;
-
-         swapAmounts = new uint[](len);
-
-         swapAmounts = IVault(vault).previewWithdraw(amountShares);
-
-    } */
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

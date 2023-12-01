@@ -4,10 +4,22 @@ pragma solidity ^0.8.22;
 import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IAmmAdapter.sol";
+import "../../interfaces/IFarmingStrategy.sol";
 import "../../core/libs/CommonLib.sol";
 import "../../integrations/algebra/IFarmingCenter.sol";
 
 library QuickswapLib {
+    /// @custom:storage-location erc7201:stability.QuickswapV3StaticFarmStrategy
+    struct QuickSwapV3StaticFarmStrategyStorage {
+        int24 lowerTick;
+        int24 upperTick;
+        uint _tokenId;
+        uint _startTime;
+        uint _endTime;
+        INonfungiblePositionManager _nft;
+        IFarmingCenter _farmingCenter;
+    }
+
     function initVariants(
         address platform_,
         string memory ammAdapterId,
@@ -71,5 +83,33 @@ library QuickswapLib {
     ) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = _farmingCenter.eternalFarming().getRewardInfo(key, __tokenId);
+    }
+
+    //slither-disable-next-line reentrancy-events
+    function collectRewardsToState(
+        QuickSwapV3StaticFarmStrategyStorage storage $,
+        IFarmingStrategy.FarmingStrategyBaseStorage storage _$,
+        uint tokenId,
+        IncentiveKey memory key
+    ) external {
+        (uint reward, uint bonusReward) = $._farmingCenter.collectRewards(key, tokenId);
+
+        if (reward > 0) {
+            address token = _$._rewardAssets[0];
+            reward = $._farmingCenter.claimReward(token, address(this), 0, reward);
+            _$._rewardsOnBalance[0] += reward;
+        }
+        if (bonusReward > 0) {
+            address token = _$._rewardAssets[1];
+            bonusReward = $._farmingCenter.claimReward(token, address(this), 0, bonusReward);
+            _$._rewardsOnBalance[1] += bonusReward;
+        }
+
+        if (reward > 0 || bonusReward > 0) {
+            uint[] memory __rewardAmounts = new uint[](2);
+            __rewardAmounts[0] = reward;
+            __rewardAmounts[1] = bonusReward;
+            emit IFarmingStrategy.RewardsClaimed(__rewardAmounts);
+        }
     }
 }

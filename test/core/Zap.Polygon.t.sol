@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+import {console} from "forge-std/Test.sol";
 import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
@@ -123,5 +124,53 @@ contract ZapTest is PolygonSetup {
 
         vm.expectRevert(abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10)));
         zap.deposit(vault, PolygonLib.TOKEN_WETH, 1e18, address(10), swapData, 1, msg.sender);
+
+        vm.roll(block.number + 6);
+        IERC20(vault).approve(address(zap), 2e18);
+        IStrategy strategy = IVault(vault).strategy();
+        address[] memory assets = strategy.assets();
+        uint[] memory minToWithdraw = new uint[](assets.length);
+        minToWithdraw[0] = 0;
+        minToWithdraw[1] = 0;
+
+        // swap WMATIC -> USDT
+        /* 
+        {
+        "toAmount": "996136",
+        "tx": {
+            "from": "0x3d0c177e035c30bb8681e5859eb98d114b48b935",
+            "to": "0x1111111254eeb25477b68fb85ed929f73a960582",
+            "data": "0xe449022e0000000000000000000000000000000000000000000000001220ba3253bd31be0000000000000000000000000000000000000000000000000000000000079994000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009b08288c3be4f62bbf8d1c20ac9c5e6f9467d8b78b1ccac8",
+            "value": "0",
+            "gas": 0,
+            "gasPrice": "446206898092"
+        }
+        }
+
+        // swap USDC -> USDT
+
+        {
+        "toAmount": "322732",
+        "tx": {
+            "from": "0x3d0c177e035c30bb8681e5859eb98d114b48b935",
+            "to": "0x1111111254eeb25477b68fb85ed929f73a960582",
+            "data": "0xe449022e000000000000000000000000000000000000000000000000000000000004ed0b000000000000000000000000000000000000000000000000000000000002765600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000dac8a8e6dbf8c690ec6815e0ff03491b2770255d8b1ccac8",
+            "value": "0",
+            "gas": 0,
+            "gasPrice": "337104975215"
+        }
+        }
+        */
+        // wmatic 1306248617253482942
+        // usdc 322827
+        swapData[0] = abi.encodePacked(
+            hex"e449022e0000000000000000000000000000000000000000000000001220ba3253bd31be0000000000000000000000000000000000000000000000000000000000079994000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009b08288c3be4f62bbf8d1c20ac9c5e6f9467d8b78b1ccac8"
+        );
+        swapData[1] = abi.encodePacked(
+            hex"e449022e000000000000000000000000000000000000000000000000000000000004ed0b000000000000000000000000000000000000000000000000000000000002765600000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000dac8a8e6dbf8c690ec6815e0ff03491b2770255d8b1ccac8"
+        );
+        deal(PolygonLib.TOKEN_USDT, address(this), 0);
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, minToWithdraw);
+        assertApproxEqAbs(IERC20(PolygonLib.TOKEN_USDT).balanceOf(address(this)), 1e6, 1000);
     }
 }
