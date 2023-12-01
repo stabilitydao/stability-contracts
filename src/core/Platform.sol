@@ -23,7 +23,7 @@ import "../interfaces/IVault.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
-/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
+/// @author 0xhokugava (https://github.com/0xhokugava)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
