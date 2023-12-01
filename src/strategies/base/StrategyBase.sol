@@ -99,6 +99,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return StrategyLib.transferAssets(_getStrategyBaseStorage(), amount, total_, receiver);
     }
 
+    /// @inheritdoc IStrategy
     function doHardWork() external onlyVault {
         _beforeDoHardWork();
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -133,6 +134,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
         }
     }
 
+    /// @inheritdoc IStrategy
+    function emergencyStopInvesting() external onlyGovernanceOrMultisig {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        // slither-disable-next-line unused-return
+        _withdrawAssets($.total, address(this));
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */

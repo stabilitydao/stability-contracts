@@ -201,5 +201,5 @@ interface IStrategy is IERC165 {
     /// @notice Emergency stop investing by strategy, withdraw liquidity without rewards.
     /// This action triggers FUSE mode.
     /// Only governance or multisig can call this.
-    // function emergencyStopInvesting() external;
+    function emergencyStopInvesting() external;
 }
