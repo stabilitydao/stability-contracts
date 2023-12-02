@@ -74,12 +74,14 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint[] memory depositAmounts = new uint[](len);
         //nosemgrep
         for (uint i; i < len; ++i) {
-            if (tokenIn != assets[i]) {
-                //slither-disable-next-line low-level-calls
-                (bool success, bytes memory result) = agg.call(swapData[i]);
-                //nosemgrep
-                require(success, string(result));
+            if (tokenIn == assets[i]) {
+                continue;
             }
+
+            //slither-disable-next-line low-level-calls
+            (bool success, bytes memory result) = agg.call(swapData[i]);
+            //nosemgrep
+            require(success, string(result));
         }
         //nosemgrep
         for (uint i; i < len; ++i) {
@@ -105,8 +107,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         if (!IPlatform(platform()).isAllowedDexAggregatorRouter(agg)) {
             revert NotAllowedDexAggregator(agg);
         }
-
-        // IERC20(vault).safeTransferFrom(msg.sender, address(this), sharesToBurn);
 
         address strategy = address(IVault(vault).strategy());
         address[] memory assets = IStrategy(strategy).assets();
