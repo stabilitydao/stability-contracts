@@ -9,6 +9,7 @@ interface IZap {
 
     error StrategyNotSupported();
     error NotAllowedDexAggregator(address dexAggRouter);
+    error AggSwapFailed(string reason);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           VIEW                            */

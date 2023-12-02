@@ -80,8 +80,9 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
             //slither-disable-next-line low-level-calls
             (bool success, bytes memory result) = agg.call(swapData[i]);
-            //nosemgrep
-            require(success, string(result));
+            if (!success) {
+                revert AggSwapFailed(string(result));
+            }
         }
         //nosemgrep
         for (uint i; i < len; ++i) {
@@ -115,12 +116,17 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         uint len = swapData.length;
         for (uint i; i < len; ++i) {
+            if (tokenOut == assets[i]) {
+                continue;
+            }
+
             _approveIfNeeds(assets[i], amountsOut[i], agg);
             // slither-disable-next-line calls-loop
             // slither-disable-next-line low-level-calls
             (bool success, bytes memory result) = agg.call(swapData[i]);
-            //nosemgrep
-            require(success, string(result));
+            if (!success) {
+                revert AggSwapFailed(string(result));
+            }
         }
 
         _sendAllRemaining(tokenOut, assets, IStrategy(strategy).underlying());
@@ -136,14 +142,10 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address tokenIn,
         uint amountIn
     ) external view returns (address[] memory tokensOut, uint[] memory swapAmounts) {
-        // todo check vault
-
         address strategy = address(IVault(vault).strategy());
         tokensOut = IStrategy(strategy).assets();
         uint len = tokensOut.length;
-
         swapAmounts = new uint[](len);
-
         uint[] memory proportions = IStrategy(strategy).getAssetsProportions();
         uint amountInUsed = 0;
         //nosemgrep
@@ -152,7 +154,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
                 amountInUsed += amountIn * proportions[i] / 1e18;
                 continue;
             }
-
             if (i < len - 1) {
                 swapAmounts[i] = amountIn * proportions[i] / 1e18;
                 amountInUsed += swapAmounts[i];
