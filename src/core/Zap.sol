@@ -110,7 +110,8 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
 
         address strategy = address(IVault(vault).strategy());
         address[] memory assets = IStrategy(strategy).assets();
-        uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut, address(this), msg.sender);
+        uint[] memory amountsOut =
+            IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut, address(this), msg.sender);
 
         uint len = swapData.length;
         for (uint i; i < len; ++i) {

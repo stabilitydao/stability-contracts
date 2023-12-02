@@ -130,12 +130,9 @@ contract VaultTest is Test, FullMockSetup {
         shares = vault.balanceOf(address(this));
 
         vm.prank(address(100));
-        vm.expectRevert(abi.encodeWithSelector(
-            IERC20Errors.ERC20InsufficientAllowance.selector,
-            address(100),
-            0,
-            shares / 2
-        ));
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(100), 0, shares / 2)
+        );
         vault.withdrawAssets(assets, shares / 2, new uint[](2), address(this), address(this));
 
         vault.withdrawAssets(assets, shares / 2, new uint[](2));

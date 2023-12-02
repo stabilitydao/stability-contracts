@@ -453,38 +453,37 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint[] memory amountsOut;
 
         {
-        address underlying = _strategy.underlying();
-        //nosemgrep
-        bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
+            address underlying = _strategy.underlying();
+            //nosemgrep
+            bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
-        // fuse is not triggered
-        if (totalValue > 0) {
-            uint value = amountShares * totalValue / localTotalSupply;
-            if (isUnderlyingWithdrawal) {
-                amountsOut = new uint[](1);
-                amountsOut[0] = value;
-                $.strategy.withdrawUnderlying(amountsOut[0], receiver);
+            // fuse is not triggered
+            if (totalValue > 0) {
+                uint value = amountShares * totalValue / localTotalSupply;
+                if (isUnderlyingWithdrawal) {
+                    amountsOut = new uint[](1);
+                    amountsOut[0] = value;
+                    $.strategy.withdrawUnderlying(amountsOut[0], receiver);
+                } else {
+                    amountsOut = $.strategy.withdrawAssets(assets_, value, receiver);
+                }
             } else {
-                amountsOut = $.strategy.withdrawAssets(assets_, value, receiver);
+                if (isUnderlyingWithdrawal) {
+                    amountsOut = new uint[](1);
+                    amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
+                    $.strategy.withdrawUnderlying(amountsOut[0], receiver);
+                } else {
+                    amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, receiver);
+                }
             }
-        } else {
-            if (isUnderlyingWithdrawal) {
-                amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
-                $.strategy.withdrawUnderlying(amountsOut[0], receiver);
-            } else {
-                amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, receiver);
-            }
-        }
 
-        uint len = amountsOut.length;
-        //nosemgrep
-        for (uint i; i < len; ++i) {
-            if (amountsOut[i] < minAssetAmountsOut[i]) {
-                revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
+            uint len = amountsOut.length;
+            //nosemgrep
+            for (uint i; i < len; ++i) {
+                if (amountsOut[i] < minAssetAmountsOut[i]) {
+                    revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
+                }
             }
-        }
-
         }
 
         _burn(owner, amountShares);

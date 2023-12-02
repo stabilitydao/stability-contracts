@@ -27,7 +27,9 @@ interface IVault is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
-    event WithdrawAssets(address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut);
+    event WithdrawAssets(
+        address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut
+    );
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
