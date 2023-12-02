@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/core/proxy/Proxy.sol";
@@ -127,6 +128,16 @@ contract VaultTest is Test, FullMockSetup {
         vm.roll(block.number + 6);
 
         shares = vault.balanceOf(address(this));
+
+        vm.prank(address(100));
+        vm.expectRevert(abi.encodeWithSelector(
+            IERC20Errors.ERC20InsufficientAllowance.selector,
+            address(100),
+            0,
+            shares / 2
+        ));
+        vault.withdrawAssets(assets, shares / 2, new uint[](2), address(this), address(this));
+
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
         vm.roll(block.number + 6);
 

@@ -21,7 +21,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Constants -----
 
     /// @dev Version of RMVault implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 

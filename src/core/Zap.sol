@@ -25,7 +25,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -106,11 +106,11 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
             revert NotAllowedDexAggregator(agg);
         }
 
-        IERC20(vault).safeTransferFrom(msg.sender, address(this), sharesToBurn);
+        // IERC20(vault).safeTransferFrom(msg.sender, address(this), sharesToBurn);
 
         address strategy = address(IVault(vault).strategy());
         address[] memory assets = IStrategy(strategy).assets();
-        uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut);
+        uint[] memory amountsOut = IVault(vault).withdrawAssets(assets, sharesToBurn, minAssetAmountsOut, address(this), msg.sender);
 
         uint len = swapData.length;
         for (uint i; i < len; ++i) {

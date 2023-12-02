@@ -76,6 +76,14 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
         uint[] memory minAssetAmountsOut
     ) external returns (uint[] memory) {}
 
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external returns (uint[] memory) {}
+
     function withdrawUnderlying(uint amountShares, uint minAmountOut) external {}
 
     function doHardWork() external {}
