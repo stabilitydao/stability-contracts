@@ -1,4 +1,3 @@
-
 # Stability Platform contracts
 
 > Asset management, liquidity mining and yield farming platform.
@@ -6,8 +5,6 @@
 > Vaults use tokenized developed asset management strategy logics.
 >
 > -- [Stability Book](https://book.stabilitydao.org)
-
-**Contracts are currently being developed. Alpha version is not deployed yet.**
 
 ## Contributing
 
@@ -34,3 +31,9 @@ Contributions can be made in the form of developing strategies, developing the c
 
 * Stability Platform uses [CalVer](https://calver.org/) scheme **YY.MM.MINOR-TAG**
 * Core contracts and strategies use [SemVer](https://semver.org/) scheme **MAJOR.MINOR.PATCH**
+
+## Deployments
+
+### Polygon [137]
+
+* **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
