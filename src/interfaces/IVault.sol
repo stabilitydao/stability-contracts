@@ -27,7 +27,9 @@ interface IVault is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
-    event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
+    event WithdrawAssets(
+        address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut
+    );
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
@@ -179,6 +181,21 @@ interface IVault is IERC165 {
         address[] memory assets_,
         uint amountShares,
         uint[] memory minAssetAmountsOut
+    ) external returns (uint[] memory);
+
+    /// @dev Burning shares of vault and obtaining strategy assets.
+    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
+    /// @param amountShares Shares amount for burning
+    /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
+    /// @param receiver Receiver of assets
+    /// @param owner Owner of vault shares
+    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
     ) external returns (uint[] memory);
 
     /// @dev Setting of vault capacity

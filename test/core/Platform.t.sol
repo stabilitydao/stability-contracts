@@ -250,6 +250,11 @@ contract PlatformTest is Test {
 
             skip(30 days);
 
+            vm.startPrank(address(100));
+            vm.expectRevert(IControllable.NotOperator.selector);
+            platform.upgrade();
+            vm.stopPrank();
+
             platform.upgrade();
 
             assertEq(proxy.implementation(), address(vaultImplementationUpgrade));
@@ -335,6 +340,9 @@ contract PlatformTest is Test {
         platform.removeAllowedBBToken(bbToken[0]);
         (bbToken,) = platform.allowedBBTokenVaults();
         assertEq(bbToken.length, 0);
+
+        vm.expectRevert(IControllable.NotFactory.selector);
+        platform.useAllowedBBTokenVault(address(100));
     }
 
     function testAddRemoveAllowedBoostRewardToken() public {
