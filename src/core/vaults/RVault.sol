@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../base/VaultBase.sol";
@@ -20,7 +20,7 @@ contract RVault is RVaultBase {
     //region ----- Constants -----
 
     /// @dev Version of RVault implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 

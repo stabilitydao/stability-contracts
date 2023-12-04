@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
@@ -31,7 +31,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -104,6 +104,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         bytes32 typeHash = keccak256(abi.encodePacked(type_));
         $.vaultConfig[typeHash] = vaultConfig_;
         bool newVaultType = $.vaultTypeHashes.add(typeHash);
+        if (!newVaultType) {
+            _requireGovernanceOrMultisig();
+        }
         emit VaultConfigChanged(
             type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
         );
@@ -126,6 +129,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
         $.strategyLogicConfig[strategyIdHash] = config;
         bool newStrategy = $.strategyLogicIdHashes.add(strategyIdHash);
+        if (!newStrategy) {
+            _requireGovernanceOrMultisig();
+        }
         emit StrategyLogicConfigChanged(
             config.id, config.implementation, config.deployAllowed, config.upgradeAllowed, newStrategy
         );

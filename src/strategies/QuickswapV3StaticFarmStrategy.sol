@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
@@ -32,21 +32,6 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         0xff83c69ed3c661de3e53f59e0214ea7febe443c8a1e59df04782000d2154ec00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @custom:storage-location erc7201:stability.QuickswapV3StaticFarmStrategy
-    struct QuickSwapV3StaticFarmStrategyStorage {
-        int24 lowerTick;
-        int24 upperTick;
-        uint _tokenId;
-        uint _startTime;
-        uint _endTime;
-        INonfungiblePositionManager _nft;
-        IFarmingCenter _farmingCenter;
-    }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -60,7 +45,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (farm.addresses.length != 2 || farm.nums.length != 2 || farm.ticks.length != 2) {
             revert IFarmingStrategy.BadFarm();
         }
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         $._startTime = farm.nums[0];
         $._endTime = farm.nums[1];
         $.lowerTick = farm.ticks[0];
@@ -126,7 +111,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     //slither-disable-next-line unused-return
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         FarmingStrategyBaseStorage storage __$ = _getFarmingStrategyBaseStorage();
         __assets = new address[](4);
@@ -221,7 +206,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         return QuickswapLib.getRewards($._tokenId, $._farmingCenter, _getIncentiveKey());
     }
 
@@ -232,7 +217,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-events
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         IFarmingCenter __farmingCenter = $._farmingCenter;
         uint128 liquidity;
@@ -288,7 +273,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-events
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         IFarmingCenter __farmingCenter = $._farmingCenter;
         amountsOut = new uint[](2);
         IncentiveKey memory key = _getIncentiveKey();
@@ -320,10 +305,14 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 _getLPStrategyBaseStorage()._feesOnBalance[1] += fees[1];
             }
         }
-        _getStrategyBaseStorage().total -= value;
-        // think total is always gt zero because we have initial shares
-        $._nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
-        __farmingCenter.enterFarming(key, tokenId, 0, false);
+        StrategyBaseStorage storage _$_ = _getStrategyBaseStorage();
+        uint newTotal = _$_.total - value;
+        _$_.total = newTotal;
+        // total can be zero during fuse trigger
+        if (newTotal > 0) {
+            $._nft.safeTransferFrom(address(this), address(__farmingCenter), tokenId);
+            __farmingCenter.enterFarming(key, tokenId, 0, false);
+        }
     }
 
     /// @inheritdoc StrategyBase
@@ -338,7 +327,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
         LPStrategyBaseStorage storage __$ = _getLPStrategyBaseStorage();
         IFarmingCenter __farmingCenter = $._farmingCenter;
@@ -405,7 +394,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
@@ -414,7 +403,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
@@ -428,7 +417,11 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getQuickStaticFarmStorage() internal pure returns (QuickSwapV3StaticFarmStrategyStorage storage $) {
+    function _getQuickStaticFarmStorage()
+        internal
+        pure
+        returns (QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $)
+    {
         //slither-disable-next-line assembly
         assembly {
             $.slot := QUICKSWAPV3STATICFARMSTRATEGY_STORAGE_LOCATION
@@ -440,33 +433,15 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     function _getIncentiveKey() private view returns (IncentiveKey memory) {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
         return IncentiveKey(_$._rewardAssets[0], _$._rewardAssets[1], pool(), $._startTime, $._endTime);
     }
 
     //slither-disable-next-line reentrancy-events
     function _collectRewardsToState(uint tokenId, IncentiveKey memory key) internal {
-        QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
-        (uint reward, uint bonusReward) = $._farmingCenter.collectRewards(key, tokenId);
-
-        if (reward > 0) {
-            address token = _$._rewardAssets[0];
-            reward = $._farmingCenter.claimReward(token, address(this), 0, reward);
-            _$._rewardsOnBalance[0] += reward;
-        }
-        if (bonusReward > 0) {
-            address token = _$._rewardAssets[1];
-            bonusReward = $._farmingCenter.claimReward(token, address(this), 0, bonusReward);
-            _$._rewardsOnBalance[1] += bonusReward;
-        }
-
-        if (reward > 0 || bonusReward > 0) {
-            uint[] memory __rewardAmounts = new uint[](2);
-            __rewardAmounts[0] = reward;
-            __rewardAmounts[1] = bonusReward;
-            emit RewardsClaimed(__rewardAmounts);
-        }
+        QuickswapLib.collectRewardsToState($, _$, tokenId, key);
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title KyberSwap v2 factory
 /// @notice Deploys KyberSwap v2 pools and manages control over government fees

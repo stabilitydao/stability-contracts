@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
@@ -197,4 +197,9 @@ interface IStrategy is IERC165 {
     /// During HardWork strategy claiming revenue and processing it.
     /// Only vault can call this.
     function doHardWork() external;
+
+    /// @notice Emergency stop investing by strategy, withdraw liquidity without rewards.
+    /// This action triggers FUSE mode.
+    /// Only governance or multisig can call this.
+    function emergencyStopInvesting() external;
 }

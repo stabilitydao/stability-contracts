@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -23,7 +23,7 @@ import "../interfaces/IVault.sol";
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
-/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
+/// @author 0xhokugava (https://github.com/0xhokugava)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -638,12 +638,17 @@ contract Platform is Controllable, IPlatform {
             revert NotExist();
         }
 
-        platformAddresses = new address[](5);
+        platformAddresses = new address[](9);
         platformAddresses[0] = factory_;
         platformAddresses[1] = $.vaultManager;
         platformAddresses[2] = $.strategyLogic;
         platformAddresses[3] = $.buildingPermitToken;
         platformAddresses[4] = $.buildingPayPerVaultToken;
+        platformAddresses[5] = $.governance;
+        platformAddresses[6] = $.multisig;
+        platformAddresses[7] = $.zap;
+        platformAddresses[8] = $.bridge;
+
         ISwapper _swapper = ISwapper($.swapper);
         bcAssets = _swapper.bcAssets();
         dexAggregators_ = $.dexAggregators.values();

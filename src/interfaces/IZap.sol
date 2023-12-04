@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title ZAP feature
 interface IZap {
@@ -9,6 +9,7 @@ interface IZap {
 
     error StrategyNotSupported();
     error NotAllowedDexAggregator(address dexAggRouter);
+    error AggSwapFailed(string reason);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           VIEW                            */
@@ -30,6 +31,14 @@ interface IZap {
     /*                           WRITE                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @notice Allows to deposit into vault with swap tokenIn to vault assets
+    /// @param vault Address of vault to invest
+    /// @param tokenIn Input token address
+    /// @param amountIn Amount of input token
+    /// @param agg Address of aggregator
+    /// @param swapData Swap data from 1inch API
+    /// @param minSharesOut Minimum expected shares to be minted for user
+    /// @param receiver Receiver of minted shares
     function deposit(
         address vault,
         address tokenIn,
@@ -38,5 +47,21 @@ interface IZap {
         bytes[] memory swapData,
         uint minSharesOut,
         address receiver
+    ) external;
+
+    /// @notice Allows to withdraw assets from vault with swap to exact tokenOut
+    /// @param vault Address of vault to withdraw
+    /// @param tokenOut Output token address
+    /// @param agg Address of aggregator
+    /// @param swapData Swap data from 1inch API
+    /// @param sharesToBurn Shares to be burn (exchage) for assets
+    /// @param minAssetAmountsOut Minimum expected asstes amount to be withdraw from vault
+    function withdraw(
+        address vault,
+        address tokenOut,
+        address agg,
+        bytes[] memory swapData,
+        uint sharesToBurn,
+        uint[] memory minAssetAmountsOut
     ) external;
 }

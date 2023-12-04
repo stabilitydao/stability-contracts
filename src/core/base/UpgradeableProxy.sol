@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title Simple ERC-1967 upgradeable proxy implementation
 abstract contract UpgradeableProxy {

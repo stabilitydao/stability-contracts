@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "./IStrategy.sol";
 
@@ -27,7 +27,9 @@ interface IVault is IERC165 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
-    event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
+    event WithdrawAssets(
+        address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut
+    );
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
@@ -142,11 +144,6 @@ interface IVault is IERC165 {
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
-    /// @notice Calculation of assets amount to receive for exact amount of shares.
-    /// @param sharesToBurn Amount of shares to burn
-    /// @return amountsOut Array of assets amounts to receive
-    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory amountsOut);
-
     /// @notice All available data on the latest declared APR (annual percentage rate)
     /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
     /// @return strategyApr Strategy investmnt APR declared on last HardWork.
@@ -179,7 +176,27 @@ interface IVault is IERC165 {
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
     /// @param amountShares Shares amount for burning
     /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
-    function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external;
+    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut
+    ) external returns (uint[] memory);
+
+    /// @dev Burning shares of vault and obtaining strategy assets.
+    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
+    /// @param amountShares Shares amount for burning
+    /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
+    /// @param receiver Receiver of assets
+    /// @param owner Owner of vault shares
+    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external returns (uint[] memory);
 
     /// @dev Setting of vault capacity
     /// @param maxShares If totalSupply() exceeds this value, deposits will not be possible

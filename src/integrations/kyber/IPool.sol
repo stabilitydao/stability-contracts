@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {IPoolActions} from './pool/IPoolActions.sol';
 import {IPoolEvents} from './pool/IPoolEvents.sol';
