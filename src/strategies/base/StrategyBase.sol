@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../../core/base/Controllable.sol";
 import "../../core/libs/VaultTypeLib.sol";
@@ -99,6 +99,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return StrategyLib.transferAssets(_getStrategyBaseStorage(), amount, total_, receiver);
     }
 
+    /// @inheritdoc IStrategy
     function doHardWork() external onlyVault {
         _beforeDoHardWork();
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -131,6 +132,13 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
         }
+    }
+
+    /// @inheritdoc IStrategy
+    function emergencyStopInvesting() external onlyGovernanceOrMultisig {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        // slither-disable-next-line unused-return
+        _withdrawAssets($.total, address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

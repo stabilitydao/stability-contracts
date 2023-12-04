@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import "../../src/core/Factory.sol";
@@ -89,6 +89,21 @@ contract FactoryTest is Test, MockSetup {
             })
         );
 
+        platform.addOperator(address(101));
+        assertEq(platform.isOperator(address(101)), true);
+        vm.startPrank(address(101));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: address(vaultImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: builderPayPerVaultPrice
+            })
+        );
+        vm.stopPrank();
+
         (, address impl, bool deployAllowed, bool upgradeAllowed,) =
             factory.vaultConfig(keccak256(abi.encodePacked(VaultTypeLib.COMPOUNDING)));
         assertEq(impl, address(vaultImplementation));
@@ -111,6 +126,23 @@ contract FactoryTest is Test, MockSetup {
             }),
             address(this)
         );
+
+        assertEq(platform.isOperator(address(101)), true);
+        vm.startPrank(address(101));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.DEV,
+                implementation: address(strategyImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: type(uint).max
+            }),
+            address(this)
+        );
+        vm.stopPrank();
+
         uint strategyLogicTokenId = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV))).tokenId;
         bytes32[] memory hashes = factory.strategyLogicIdHashes();
         assertEq(hashes.length, 1);

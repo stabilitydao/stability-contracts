@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../base/VaultBase.sol";
 import "../libs/VaultTypeLib.sol";
@@ -14,7 +14,7 @@ contract CVault is VaultBase {
     //region ----- Constants -----
 
     /// @dev Version of CVault implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 

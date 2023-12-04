@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -57,6 +57,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         address ammAdapter;
         address pool;
         bool hwEventFound;
+        uint depositUsdValue;
+        uint withdrawnUsdValue;
     }
 
     modifier universalTest() {
@@ -463,6 +465,36 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(strategy.supportsInterface(type(IFarmingStrategy).interfaceId), true);
                     assertEq(strategy.supportsInterface(type(IStrategy).interfaceId), true);
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                         EMERGENCY                          */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+                vars.depositUsdValue = 0;
+                for (uint j; j < assets.length; ++j) {
+                    (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
+                    depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
+                    deal(assets[j], address(this), depositAmounts[j]);
+                    IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
+                    vars.depositUsdValue += depositAmounts[j] * price / 1e18;
+                }
+                IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
+                vm.roll(block.number + 6);
+                (tvl,) = IVault(vars.vault).tvl();
+
+                vm.prank(platform.multisig());
+                strategy.emergencyStopInvesting();
+                assertEq(strategy.total(), 0);
+
+                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](2));
+
+                vars.withdrawnUsdValue = 0;
+                for (uint j; j < assets.length; ++j) {
+                    (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
+                    uint balNow = IERC20(assets[j]).balanceOf(address(this));
+                    vars.withdrawnUsdValue += balNow * price / 1e18;
+                }
+                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
             }
         }
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev Managed vaults allow the owner of the VaultManager token to change their parameters.
 /// @author JodsMigel (https://github.com/JodsMigel)

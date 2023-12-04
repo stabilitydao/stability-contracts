@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/core/proxy/Proxy.sol";
@@ -60,12 +61,12 @@ contract VaultTest is Test, FullMockSetup {
         amounts[0] = 10e18;
         amounts[1] = 10e6;
 
-        tokenA.mint(amounts[0]);
-        tokenB.mint(amounts[1]);
+        tokenA.mint(amounts[0] * 2);
+        tokenB.mint(amounts[1] * 2);
         lp.mint(1e18);
 
-        tokenA.approve(address(vault), amounts[0]);
-        tokenB.approve(address(vault), amounts[1]);
+        tokenA.approve(address(vault), amounts[0] * 2);
+        tokenB.approve(address(vault), amounts[1] * 2);
         lp.approve(address(vault), 1e18);
 
         (uint[] memory amountsConsumed, uint sharesOut,) = vault.previewDepositAssets(assets, amounts);
@@ -84,6 +85,19 @@ contract VaultTest is Test, FullMockSetup {
         vault.depositAssets(assets, amounts, 0, address(0));
 
         factory.setVaultStatus(address(vault), 1);
+
+        amounts = new uint[](3);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vault.depositAssets(assets, amounts, 0, address(0));
+        amounts = new uint[](2);
+
+        amounts[0] = 1e12;
+        amounts[1] = 1e4;
+        vm.expectRevert(abi.encodeWithSelector(IVault.NotEnoughAmountToInitSupply.selector, 5e12, 1e18));
+        vault.depositAssets(assets, amounts, 0, address(0));
+        amounts[0] = 10e18;
+        amounts[1] = 10e6;
+
         vault.depositAssets(assets, amounts, 0, address(0));
 
         vm.roll(block.number + 5);
@@ -127,22 +141,53 @@ contract VaultTest is Test, FullMockSetup {
         vm.roll(block.number + 6);
 
         shares = vault.balanceOf(address(this));
-        uint[] memory amountsOut = vault.previewWithdraw(shares);
-        vault.withdrawAssets(assets, shares / 2, new uint[](2));
-        uint[] memory amountsOut2 = vault.previewWithdraw(shares / 2);
-        for (uint i; i < amountsOut.length; i++) {
-            assertApproxEqAbs(amountsOut[i] / 2, amountsOut2[i], amountsOut[i] / 4000); //0.025%
-        }
-        vm.roll(block.number + 6);
 
+        vm.prank(address(100));
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(100), 0, shares / 2)
+        );
+        vault.withdrawAssets(assets, shares / 2, new uint[](2), address(this), address(this));
+
+        vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+        vault.withdrawAssets(assets, 0, new uint[](2));
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vault.withdrawAssets(assets, shares / 2, new uint[](3));
+
+        vm.expectRevert(IVault.NotEnoughBalanceToPay.selector);
+        vault.withdrawAssets(assets, shares * 10, new uint[](2));
+
+        uint[] memory minOuts = new uint[](2);
+        minOuts[0] = 1e30;
+        minOuts[1] = 0;
+        vm.expectRevert(
+            abi.encodeWithSelector(IVault.ExceedSlippageExactAsset.selector, assets[0], 2498900000500000000, 1e30)
+        );
+        vault.withdrawAssets(assets, shares / 2, minOuts);
+
+        vault.withdrawAssets(assets, shares / 2, new uint[](2));
+        vm.roll(block.number + 6);
         vault.withdrawAssets(assets, shares - shares / 2, new uint[](2));
 
-        assertEq(vault.balanceOf(address(this)), 0);
+        assertEq(vault.balanceOf(address(this)), 0, "Withdrawn not all");
 
         vault.setDoHardWorkOnDeposit(false);
         assertEq(vault.doHardWorkOnDeposit(), false);
         vault.setDoHardWorkOnDeposit(true);
         assertEq(vault.doHardWorkOnDeposit(), true);
+
+        assertEq(vault.maxSupply(), 0);
+
+        amounts = new uint[](2);
+        amounts[0] = 10e18;
+        amounts[1] = 10e6;
+
+        vm.expectRevert();
+        vault.depositAssets(assets, amounts, 1e30, address(0));
+
+        vault.setMaxSupply(1e3);
+        vm.expectRevert();
+        vault.depositAssets(assets, amounts, 0, address(0));
     }
 
     function testFuse() public {

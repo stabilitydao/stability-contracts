@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./VaultBase.sol";
@@ -14,7 +14,7 @@ import "../../interfaces/IPlatform.sol";
 ///         Rewards are distributed smoothly by vesting with variable periods.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
-/// @author 0x6c71777172656474 (https://github.com/0x6c71777172656474)
+/// @author 0xhokugava (https://github.com/0xhokugava)
 abstract contract RVaultBase is VaultBase, IRVault {
     using SafeERC20 for IERC20;
 

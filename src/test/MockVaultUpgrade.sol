@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -70,7 +70,19 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function depositUnderlying(uint amount, uint minSharesOut) external {}
 
-    function withdrawAssets(address[] memory assets_, uint amount, uint[] memory minAssetAmountsOut) external {}
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amount,
+        uint[] memory minAssetAmountsOut
+    ) external returns (uint[] memory) {}
+
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external returns (uint[] memory) {}
 
     function withdrawUnderlying(uint amountShares, uint minAmountOut) external {}
 

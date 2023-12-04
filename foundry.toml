@@ -8,10 +8,13 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 title = "Stability Platform Contracts"
 ignore = ["./src/test/**/*.sol"]
 
-[rpc_endpoints]
-polygon = "${POLYGON_RPC_URL}"
-
 [fmt]
 int_types = "short"
 ignore = ["./src/integrations/**/*.sol"]
 multiline_func_header = "params_first"
+
+[rpc_endpoints]
+polygon = "${POLYGON_RPC_URL}"
+
+[etherscan]
+polygon = { key = "${ETHERSCAN_API_KEY}", chain = 137  }

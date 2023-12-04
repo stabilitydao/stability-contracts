@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -29,7 +29,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "1.0.0";
+    string public constant VERSION_VAULT_BASE = "1.0.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -199,60 +199,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_,
         uint amountShares,
         uint[] memory minAssetAmountsOut
-    ) external virtual nonReentrant {
-        if (amountShares == 0) {
-            revert IControllable.IncorrectZeroArgument();
-        }
-        if (amountShares > balanceOf(msg.sender)) {
-            revert NotEnoughBalanceToPay();
-        }
-        if (assets_.length != minAssetAmountsOut.length) {
-            revert IControllable.IncorrectArrayLength();
-        }
+    ) external virtual nonReentrant returns (uint[] memory) {
+        return _withdrawAssets(assets_, amountShares, minAssetAmountsOut, msg.sender, msg.sender);
+    }
 
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        _beforeWithdraw($);
-
-        IStrategy _strategy = $.strategy;
-        uint localTotalSupply = totalSupply();
-        uint totalValue = _strategy.total();
-
-        uint[] memory amountsOut;
-        address underlying = _strategy.underlying();
-        //nosemgrep
-        bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
-
-        // fuse is not triggered
-        if (totalValue > 0) {
-            uint value = amountShares * totalValue / localTotalSupply;
-            if (isUnderlyingWithdrawal) {
-                amountsOut = new uint[](1);
-                amountsOut[0] = value;
-                $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
-            } else {
-                amountsOut = $.strategy.withdrawAssets(assets_, value, msg.sender);
-            }
-        } else {
-            if (isUnderlyingWithdrawal) {
-                amountsOut = new uint[](1);
-                amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
-                $.strategy.withdrawUnderlying(amountsOut[0], msg.sender);
-            } else {
-                amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, msg.sender);
-            }
-        }
-
-        uint len = amountsOut.length;
-        //nosemgrep
-        for (uint i; i < len; ++i) {
-            if (amountsOut[i] < minAssetAmountsOut[i]) {
-                revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
-            }
-        }
-
-        _burn(msg.sender, amountShares);
-
-        emit WithdrawAssets(msg.sender, assets_, amountShares, amountsOut);
+    /// @inheritdoc IVault
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external virtual nonReentrant returns (uint[] memory) {
+        return _withdrawAssets(assets_, amountShares, minAssetAmountsOut, receiver, owner);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -358,12 +317,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IVault
-    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory) {
-        (address[] memory assets, uint[] memory assetsAmount) = IStrategy(strategy()).assetsAmounts();
-        return _previewWithdraw(assets, assetsAmount, sharesToBurn, totalSupply());
-    }
-
-    /// @inheritdoc IVault
     function getUniqueInitParamLength() public view virtual returns (uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @inheritdoc IVault
@@ -398,20 +351,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line assembly
         assembly {
             $.slot := VAULTBASE_STORAGE_LOCATION
-        }
-    }
-
-    function _previewWithdraw(
-        address[] memory assets,
-        uint[] memory assetsAmount,
-        uint amount,
-        uint total_
-    ) internal pure returns (uint[] memory amountsOut) {
-        uint len = assets.length;
-        amountsOut = new uint[](len);
-        //nosemgrep
-        for (uint i; i < len; ++i) {
-            amountsOut[i] = assetsAmount[i] * amount / total_;
         }
     }
 
@@ -483,19 +422,88 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
     }
 
-    function _beforeWithdraw(VaultBaseStorage storage $) internal {
-        if ($.withdrawRequests[msg.sender] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
+    function _withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) internal virtual returns (uint[] memory) {
+        if (msg.sender != owner) {
+            _spendAllowance(owner, msg.sender, amountShares);
+        }
+
+        if (amountShares == 0) {
+            revert IControllable.IncorrectZeroArgument();
+        }
+        if (amountShares > balanceOf(owner)) {
+            revert NotEnoughBalanceToPay();
+        }
+        if (assets_.length != minAssetAmountsOut.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
+
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        _beforeWithdraw($, owner);
+
+        IStrategy _strategy = $.strategy;
+        uint localTotalSupply = totalSupply();
+        uint totalValue = _strategy.total();
+
+        uint[] memory amountsOut;
+
+        {
+            address underlying = _strategy.underlying();
+            //nosemgrep
+            bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
+
+            // fuse is not triggered
+            if (totalValue > 0) {
+                uint value = amountShares * totalValue / localTotalSupply;
+                if (isUnderlyingWithdrawal) {
+                    amountsOut = new uint[](1);
+                    amountsOut[0] = value;
+                    $.strategy.withdrawUnderlying(amountsOut[0], receiver);
+                } else {
+                    amountsOut = $.strategy.withdrawAssets(assets_, value, receiver);
+                }
+            } else {
+                if (isUnderlyingWithdrawal) {
+                    amountsOut = new uint[](1);
+                    amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
+                    $.strategy.withdrawUnderlying(amountsOut[0], receiver);
+                } else {
+                    amountsOut = $.strategy.transferAssets(amountShares, localTotalSupply, receiver);
+                }
+            }
+
+            uint len = amountsOut.length;
+            //nosemgrep
+            for (uint i; i < len; ++i) {
+                if (amountsOut[i] < minAssetAmountsOut[i]) {
+                    revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
+                }
+            }
+        }
+
+        _burn(owner, amountShares);
+
+        emit WithdrawAssets(msg.sender, owner, assets_, amountShares, amountsOut);
+
+        return amountsOut;
+    }
+
+    function _beforeWithdraw(VaultBaseStorage storage $, address owner) internal {
+        if ($.withdrawRequests[owner] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
         }
-        $.withdrawRequests[msg.sender] = block.number;
+        $.withdrawRequests[owner] = block.number;
     }
 
     function _update(address from, address to, uint value) internal virtual override {
         super._update(from, to, value);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.withdrawRequests[from] = block.number;
-        if (to != IPlatform(platform()).zap()) {
-            $.withdrawRequests[to] = block.number;
-        }
+        $.withdrawRequests[to] = block.number;
     }
 }
