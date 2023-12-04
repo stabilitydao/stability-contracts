@@ -21,7 +21,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /// @custom:storage-location erc7201:stability.ChildERC721
     struct ChildERC721Storage {
         address parentToken;
-        uint64 parentChainId;
+        uint16 parentChainId;
         string baseURI;
         address bridge;
     }
@@ -32,15 +32,17 @@ contract ChildERC721 is ERC721, IChildERC721 {
 
     constructor(
         address parentToken,
-        uint64 parentChainId,
+        uint16 parentChainId,
         string memory name,
         string memory symbol,
-        string memory baseURI
+        string memory baseURI,
+        address bridge_
     ) ERC721(name, symbol) {
         ChildERC721Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;
         $.baseURI = baseURI;
+        $.bridge = bridge_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -59,9 +61,11 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function bridge() external view returns(address) {}
+    function bridge() external view returns(address) {
+        return _getStorage().bridge;
+    }
 
-    function parent() external pure returns(address token, uint64 chainId) {
+    function parent() external pure returns(address token, uint16 chainId) {
         ChildERC721Storage memory $ = _getStorage();
         return ($.parentToken, $.parentChainId);
     }

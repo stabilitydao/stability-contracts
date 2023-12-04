@@ -25,8 +25,8 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
 
     /// @custom:storage-location erc7201:stability.ChildTokenFactory
     struct ChildTokenFactoryStorage {
-        mapping(address child => address parent) parentERC20;
-        mapping(address child => address parent) parentERC721;
+        mapping(address parent => address child) childTokenOf;
+        mapping(address child => address parent) parentTokenOf;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -44,28 +44,42 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
     /// @inheritdoc IChildTokenFactory
     function deployChildERC20(
         address parentToken,
-        uint64 parentChainId,
+        uint16 parentChainId,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address bridge
     ) external returns(address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
-        ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol);
-        $.parentERC20[address(childERC20)] = parentToken;
+        ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol, bridge);
+        $.childTokenOf[parentToken] = address(childERC20);
+        $.parentTokenOf[address(childERC20)] = parentToken;
         return address(childERC20);
     }
 
     /// @inheritdoc IChildTokenFactory
     function deployChildERC721(
         address parentToken,
-        uint64 parentChainId,
+        uint16 parentChainId,
         string memory name,
         string memory symbol,
-        string memory baseURI
+        string memory baseURI,
+        address bridge
     ) external returns(address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
-        ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI);
-        $.parentERC721[address(childERC721)] = parentToken;
+        ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI, bridge);
+        $.childTokenOf[parentToken] = address(childERC721);
+        $.parentTokenOf[address(childERC721)] = parentToken;
         return address(childERC721);
+    }
+
+    /// @inheritdoc IChildTokenFactory
+    function getChildTokenOf(address parentToken) external view returns (address) {
+        return _getStorage().childTokenOf[parentToken];
+    }
+
+    /// @inheritdoc IChildTokenFactory
+    function getParentTokenOf(address childToken) external view returns (address) {
+        return _getStorage().parentTokenOf[childToken];
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

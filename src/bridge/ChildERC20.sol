@@ -21,7 +21,7 @@ contract ChildERC20 is ERC20, IChildERC20 {
     /// @custom:storage-location erc7201:stability.ChildERC20
     struct ChildERC20Storage {
         address parentToken;
-        uint64 parentChainId;
+        uint16 parentChainId;
         address bridge;
     }
 
@@ -31,13 +31,15 @@ contract ChildERC20 is ERC20, IChildERC20 {
 
     constructor(
         address parentToken,
-        uint64 parentChainId,
+        uint16 parentChainId,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address bridge_
     ) ERC20(name, symbol) {
         ChildERC20Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;
+        $.bridge = bridge_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -56,9 +58,11 @@ contract ChildERC20 is ERC20, IChildERC20 {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function bridge() external view returns(address) {}
+    function bridge() external view returns(address) {
+        return _getStorage().bridge;
+    }
 
-    function parent() external view returns(address token, uint64 chainId) {}
+    function parent() external view returns(address token, uint16 chainId) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

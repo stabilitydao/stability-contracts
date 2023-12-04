@@ -6,9 +6,9 @@ pragma solidity ^0.8.22;
 interface IBridge {
     struct Link {
         /// @dev Sorted chain A (chain A < chain B)
-        uint64 chainA;
+        uint16 chainA;
         /// @dev Sorted chain B
-        uint64 chainB;
+        uint16 chainB;
         /// @dev Address of Bridge contract in chain A
         address bridgeA;
         /// @dev Address of Bridge contract in chain B
@@ -18,7 +18,7 @@ interface IBridge {
     }
 
     /// @notice Current chain ID
-    function chainId() external view returns (uint64);
+    function chainId() external view returns (uint16);
 
     /// @notice Get link
     /// @param linkHash Hash of link string ID
@@ -44,20 +44,25 @@ interface IBridge {
     /// @param chainTo Target chain ID
     /// @return targetToken Address of target token. address(0) when not exists.
     /// @return linkHash Hash of link string ID for bridging
-    function getTarget(address token, uint64 chainTo) external view returns (address targetToken, bytes32 linkHash);
+    function getTarget(address token, uint16 chainTo) external view returns (address targetToken, bytes32 linkHash);
 
     /// @notice Transfer supported ERC20 or ERC721 token to another blockchain
     /// @param token Address of input token
     /// @param amountOrTokenId Amount for ERC-20 or tokenId for ERC-721
     /// @param chainTo Target chain ID
-    function interChainTransfer(address token, uint amountOrTokenId, uint64 chainTo) external payable;
+    /// @param nft Specify if the token is ERC-20 or ERC-721
+    /// @param lock Specify if the action is to lock or burn
+    function interChainTransfer(address token, uint amountOrTokenId, uint16 chainTo, bool nft, bool lock) external payable;
 
-    /// @notice Receive tokens from another blockchain.
-    /// Only adapters can call this.
-    /// @param token Address of output token for bridging
-    /// @param amountOrTokenId Amount for ERC-20 or tokenId for ERC-721
-    /// @param chainFrom Source chain ID
-    function interChainReceive(address token, uint amountOrTokenId, uint64 chainFrom) external;
+    /// @notice Allows the contract to receive inter-chain messages.
+    /// @dev This function is designed to handle messages originating from another chain.
+    /// @param srcChainId The ID of the source chain from which the message originates.
+    /// @param srcAddress The address on the source chain that initiated the message.
+    /// @param nonce A unique identifier for the message to prevent replay attacks.
+    /// @param payload The data payload containing information or instructions from the source chain.
+    /// @dev Emits an event signaling the successful reception of the inter-chain message.
+    /// @dev Access to this function may be restricted to specific roles or conditions.   
+    function interChainReceive(uint16 srcChainId, bytes memory srcAddress, uint64 nonce, bytes memory payload) external;
 
     /// @notice Add new link to the bridge
     /// Only operator can call this.
@@ -69,7 +74,7 @@ interface IBridge {
     /// @param adapterIds String IDs of inter-chain adapters
     function setLinkAdapters(string[] memory adapterIds) external;
 
-    function setTarget(address token, uint64 chainTo, address targetToken, bytes32 linkHash) external;
+    function setTarget(address token, uint16 chainTo, address targetToken, bytes32 linkHash) external;
 
     function addAdapters(string[] memory adapterIds, uint priority) external;
 

@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "../core/base/Controllable.sol";
 import "../interfaces/IBridge.sol";
+import "../interfaces/IChildERC20.sol";
+import "../interfaces/IChildERC721.sol";
+import "../interfaces/IChildTokenFactory.sol";
 
 /// @title Stability Bridge
 /// @author Jude (https://github.com/iammrjude)
@@ -25,6 +30,7 @@ contract Bridge is Controllable, IBridge {
     struct BridgeStorage {
         mapping (bytes32 linkHash => Link) link;
         Link[] links;
+        address childTokenFactory;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -40,8 +46,8 @@ contract Bridge is Controllable, IBridge {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridge
-    function chainId() external view returns(uint64) {
-        return uint64(block.chainid);
+    function chainId() external view returns(uint16) {
+        return uint16(block.chainid);
     }
 
     /// @inheritdoc IBridge
@@ -61,17 +67,27 @@ contract Bridge is Controllable, IBridge {
     function adapters() external view returns(string[] memory) {}
 
     /// @inheritdoc IBridge
-    function getTarget(address token, uint64 chainTo) external view returns(address targetToken, bytes32 linkHash) {}
+    function getTarget(address token, uint16 chainTo) external view returns(address targetToken, bytes32 linkHash) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridge
-    function interChainTransfer(address token, uint amountOrTokenId, uint64 chainTo) external payable {}
+    function interChainTransfer(address token, uint amountOrTokenId, uint16 chainTo, bool nft, bool lock) external payable {
+        // lock > mint > burn > unlock
+        if (lock) lockToken(token, amountOrTokenId, chainTo, nft);
+        if (!lock) burnToken(token, amountOrTokenId, chainTo, nft);
+    }
 
     /// @inheritdoc IBridge
-    function interChainReceive(address token, uint amountOrTokenId, uint64 chainFrom) external {}
+    function interChainReceive(uint16 srcChainId, bytes memory srcAddress, uint64 nonce, bytes memory payload) external {
+        (address toAddress, uint amountOrTokenId, address token, bool nft, bool mint) = abi.decode(payload, (address,uint,address,bool,bool));
+        address childToken = IChildTokenFactory(_getStorage().childTokenFactory).getChildTokenOf(token);
+        address parentToken = IChildTokenFactory(_getStorage().childTokenFactory).getParentTokenOf(token);
+        if (mint) mintToken(childToken, amountOrTokenId, nft);
+        if (!mint) unlockToken(parentToken, amountOrTokenId, nft);
+    }
 
     /// @inheritdoc IBridge
     function addLink(Link memory link_) external onlyOperator {
@@ -81,7 +97,7 @@ contract Bridge is Controllable, IBridge {
     /// @inheritdoc IBridge
     function setLinkAdapters(string[] memory adapterIds) external onlyOperator {}
 
-    function setTarget(address token, uint64 chainTo, address targetToken, bytes32 linkHash) external {}
+    function setTarget(address token, uint16 chainTo, address targetToken, bytes32 linkHash) external {}
 
     function addAdapters(string[] memory adapterIds, uint priority) external {}
 
@@ -90,6 +106,11 @@ contract Bridge is Controllable, IBridge {
 
     /// @inheritdoc IBridge
     function emergencyStopAdapter(string memory adapterId, string memory reason) external onlyOperator {}
+
+    function setChildTokenFactory(address childTokenFactory_) external onlyOperator {
+        BridgeStorage storage $ = _getStorage();
+        $.childTokenFactory = childTokenFactory_;
+    }
 
     /// @inheritdoc IBridge
     function enableAdapter(string memory adapterId) external {}
@@ -103,5 +124,49 @@ contract Bridge is Controllable, IBridge {
         assembly {
             $.slot := BRIDGE_STORAGE_LOCATION
         }
+    }
+
+    function lockToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) internal {
+        if (nft) {
+            IERC721(token).safeTransferFrom(msg.sender, address(this), amountOrTokenId);
+        } else {
+            IERC20(token).transferFrom(msg.sender, address(this), amountOrTokenId);
+        }
+        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, true);
+        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    }
+
+    function mintToken(address token, uint amountOrTokenId, bool nft) internal {
+        if (nft) {
+            IChildERC721(token).mint(msg.sender, amountOrTokenId);
+        } else {
+            IChildERC20(token).mint(msg.sender, amountOrTokenId);
+        }
+    }
+
+    function burnToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) internal {
+        if (nft) {
+            IChildERC721(token).burn(amountOrTokenId);
+        } else {
+            IChildERC20(token).burn(msg.sender, amountOrTokenId);
+        }
+        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, false);
+        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    }
+
+    function unlockToken(address token, uint amountOrTokenId, bool nft) internal {
+        if (nft) {
+            IERC721(token).safeTransferFrom(address(this), msg.sender, amountOrTokenId);
+        } else {
+            IERC20(token).transfer(msg.sender, amountOrTokenId);
+        }
+    }
+
+    function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal {
+        (address toAddress, uint amountOrTokenId, address token, bool nft, bool mint) = abi.decode(_payload, (address,uint,address,bool,bool));
+        address childToken = IChildTokenFactory(_getStorage().childTokenFactory).getChildTokenOf(token);
+        address parentToken = IChildTokenFactory(_getStorage().childTokenFactory).getParentTokenOf(token);
+        if (mint) mintToken(childToken, amountOrTokenId, nft);
+        if (!mint) unlockToken(parentToken, amountOrTokenId, nft);
     }
 }

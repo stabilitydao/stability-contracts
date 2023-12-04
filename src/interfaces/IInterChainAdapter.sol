@@ -7,8 +7,8 @@ interface IInterChainAdapter {
     /// @dev Message to be sent from one blockchain to another
     struct Message {
         bytes32 action;
-        uint64 chainFrom;
-        uint64 chainTo;
+        uint16 chainFrom;
+        uint16 chainTo;
         bytes32[3] extraPayload;
         address[] addresses;
         uint[] numbers;
