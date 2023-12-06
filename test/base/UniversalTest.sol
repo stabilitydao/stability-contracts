@@ -372,10 +372,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                      ADD REWARDS                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if(strategies[i].farmId == 0) {
+                if (strategies[i].farmId == 0) {
                     IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(0);
 
-                    IncentiveKey memory key = IncentiveKey(farm.rewardAssets[0], farm.rewardAssets[1], farm.pool, farm.nums[0], farm.nums[1]);
+                    IncentiveKey memory key = 
+                        IncentiveKey(farm.rewardAssets[0], farm.rewardAssets[1], farm.pool, farm.nums[0], farm.nums[1]);
                     address algebraEternalFarming = address(0x8a26436e41d0b5fc4C6Ed36C1976fafBe173444E);
                     address virtualPool = address(0x1601bA8e8E25366561b2dA7B09F32F57b216c0bD);
                     IAlgebraEternalFarming algebraFarming = IAlgebraEternalFarming(algebraEternalFarming);
@@ -383,7 +384,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IERC20(farm.rewardAssets[1]).balanceOf(address(this)), 100e18);
 
                     IERC20(farm.rewardAssets[1]).approve(algebraEternalFarming, 10e18);
-                    assertEq(IERC20(farm.rewardAssets[1]).allowance(address(this),algebraEternalFarming), 10e18);
+                    assertEq(IERC20(farm.rewardAssets[1]).allowance(address(this), algebraEternalFarming), 10e18);
 
                     vm.startPrank(algebraEternalFarming);
                     IAlgebraEternalVirtualPool(virtualPool).addRewards(0, 10e18);
