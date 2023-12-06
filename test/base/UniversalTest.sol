@@ -233,7 +233,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 // deposit on first strategy
                 if (strategies[i].farmId == 0) {
-                    uint256[] memory depAssets = new uint256[](2);
+                    uint[] memory depAssets = new uint[](2);
                     depAssets[0] = 2000e18;
                     depAssets[1] = 2000e18;
 
@@ -241,7 +241,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     deal(assets[1], address(this), depAssets[1]);
                     IERC20(assets[0]).approve(vars.vault, depAssets[0]);
                     IERC20(assets[1]).approve(vars.vault, depAssets[1]);
-                    IVault(vars.vault).depositAssets(assets,depAssets,0,address(0));
+                    IVault(vars.vault).depositAssets(assets, depAssets, 0, address(0));
                 }
 
                 // get amounts for deposit

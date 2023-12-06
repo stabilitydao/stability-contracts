@@ -8,10 +8,7 @@ import "../../src/interfaces/IFactory.sol";
 import "../../src/interfaces/IPlatform.sol";
 import {IncentiveKey} from "../../src/integrations/algebra/IncentiveKey.sol";
 
-contract QuickSwapV3StaticFarmStrategyBonusReward is
-    PolygonSetup,
-    UniversalTest
-{
+contract QuickSwapV3StaticFarmStrategyBonusReward is PolygonSetup, UniversalTest {
     address wmatic = address(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
     address quick = address(0xB5C064F955D8e7F38fE0460C556a72987494eE17);
     address algebraEternalFarming = address(0x8a26436e41d0b5fc4C6Ed36C1976fafBe173444E);
@@ -20,12 +17,7 @@ contract QuickSwapV3StaticFarmStrategyBonusReward is
 
     function testStrategyUniversalP() public universalTest {
         strategies.push(
-            Strategy({
-                id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
-                pool: address(0),
-                farmId: 0,
-                underlying: address(0)
-            })
+            Strategy({id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM, pool: address(0), farmId: 0, underlying: address(0)})
         );
     }
 
