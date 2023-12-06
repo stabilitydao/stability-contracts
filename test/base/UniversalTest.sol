@@ -26,6 +26,10 @@ import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IHardWorker.sol";
 import "../../src/interfaces/IZap.sol";
 
+import {IncentiveKey} from "../../src/integrations/algebra/IncentiveKey.sol";
+import "../../src/integrations/algebra/IAlgebraEternalFarming.sol";
+import "../../src/integrations/algebra/IAlgebraEternalVirtualPool.sol";
+
 abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
     string public strategyId;
@@ -366,6 +370,41 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                      ADD REWARDS                           */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                if(strategies[i].farmId == 0){
+                    IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(0);
+
+                    IncentiveKey memory key = IncentiveKey(
+                        farm.rewardAssets[0],
+                        farm.rewardAssets[1],
+                        farm.pool,
+                        farm.nums[0],
+                        farm.nums[1]
+                    );
+
+                    console.logBytes32(keccak256(abi.encode(key)));
+
+                    address algebraEternalFarming = address(0x8a26436e41d0b5fc4C6Ed36C1976fafBe173444E);
+                    address virtualPool = address(0x1601bA8e8E25366561b2dA7B09F32F57b216c0bD);
+                    IAlgebraEternalFarming algebraFarming = IAlgebraEternalFarming(
+                        algebraEternalFarming
+                    );
+                    deal(farm.rewardAssets[1], address(this), 100e18);
+                    assertEq(IERC20(farm.rewardAssets[1]).balanceOf(address(this)), 100e18);
+
+                    IERC20(farm.rewardAssets[1]).approve(algebraEternalFarming, 10e18);
+                    assertEq(IERC20(farm.rewardAssets[1]).allowance(address(this),algebraEternalFarming),10e18);
+
+                    vm.startPrank(algebraEternalFarming);
+                    IAlgebraEternalVirtualPool(virtualPool).addRewards(0, 10e18);
+                    IAlgebraEternalVirtualPool(virtualPool).setRates(1106846000000000000000000, 100000000000000);
+                    vm.stopPrank();
+
+                    skip(6 hours);                    
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*           CLAIM REWARDS FROM REWARDING VAULTS              */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 if (vars.isRVault || vars.isRMVault) {
@@ -380,9 +419,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getReward(0);
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
-
-                    IRVault(vars.vault).rewardTokensTotal();
-                    IRVault(vars.vault).rewardToken(1);
+                    // console.log(IRVault(vars.vault).rewardTokensTotal());
+                    // IRVault(vars.vault).rewardToken(1);
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
