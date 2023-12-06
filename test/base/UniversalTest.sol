@@ -231,6 +231,19 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+                // deposit on first strategy
+                if (strategies[i].farmId == 0) {
+                    uint256[] memory depAssets = new uint256[](2);
+                    depAssets[0] = 2000e18;
+                    depAssets[1] = 2000e18;
+
+                    deal(assets[0], address(this), depAssets[0]);
+                    deal(assets[1], address(this), depAssets[1]);
+                    IERC20(assets[0]).approve(vars.vault, depAssets[0]);
+                    IERC20(assets[1]).approve(vars.vault, depAssets[1]);
+                    IVault(vars.vault).depositAssets(assets,depAssets,0,address(0));
+                }
+
                 // get amounts for deposit
                 uint[] memory depositAmounts = new uint[](assets.length);
                 for (uint j; j < assets.length; ++j) {
@@ -367,6 +380,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getReward(0);
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
+
+                    IRVault(vars.vault).rewardTokensTotal();
+                    IRVault(vars.vault).rewardToken(1);
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

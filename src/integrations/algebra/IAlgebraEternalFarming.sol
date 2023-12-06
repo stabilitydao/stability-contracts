@@ -9,4 +9,16 @@ interface IAlgebraEternalFarming {
         IncentiveKey memory key,
         uint256 tokenId
     ) external view returns (uint256 reward, uint256 bonusReward);
+
+    function addRewards(
+        IncentiveKey memory key,
+        uint256 rewardAmount,
+        uint256 bonusRewardAmount
+    ) external;
+
+    function collectRewards(
+        IncentiveKey memory key,
+        uint256 tokenId,
+        address _owner
+    ) external;
 }
