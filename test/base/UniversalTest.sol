@@ -374,8 +374,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 if (strategies[i].farmId == 0) {
                     IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(0);
-
-                    IncentiveKey memory key = 
+                    IncentiveKey memory key =
                         IncentiveKey(farm.rewardAssets[0], farm.rewardAssets[1], farm.pool, farm.nums[0], farm.nums[1]);
                     address algebraEternalFarming = address(0x8a26436e41d0b5fc4C6Ed36C1976fafBe173444E);
                     address virtualPool = address(0x1601bA8e8E25366561b2dA7B09F32F57b216c0bD);
@@ -389,7 +388,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vm.startPrank(algebraEternalFarming);
                     IAlgebraEternalVirtualPool(virtualPool).addRewards(0, 10e18);
                     IAlgebraEternalVirtualPool(virtualPool).setRates(1106846000000000000000000, 100000000000000);
-                    vm.stopPrank();                  
+                    vm.stopPrank();
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
