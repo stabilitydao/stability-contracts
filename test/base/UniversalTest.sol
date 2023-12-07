@@ -232,7 +232,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if(strategies[i].farmId == 0) {
+                if (strategies[i].farmId == 0) {
                     test_Deposit(vars.vault, assets[0], assets[1]);
                 }
                 // get amounts for deposit
