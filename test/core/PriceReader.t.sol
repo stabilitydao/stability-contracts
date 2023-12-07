@@ -121,7 +121,7 @@ contract PriceReaderTest is Test, MockSetup {
         priceFeeds[0] = address(aggregatorV3InterfaceTokenA);
         priceFeeds[1] = address(aggregatorV3InterfaceTokenB);
         priceFeeds[2] = address(aggregatorV3InterfaceTokenD);
-        
+
         address[] memory fakeAssets = new address[](2);
         fakeAssets[0] = address(tokenA);
         fakeAssets[1] = address(tokenA);
