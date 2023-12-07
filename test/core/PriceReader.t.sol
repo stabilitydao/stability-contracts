@@ -121,6 +121,20 @@ contract PriceReaderTest is Test, MockSetup {
         priceFeeds[0] = address(aggregatorV3InterfaceTokenA);
         priceFeeds[1] = address(aggregatorV3InterfaceTokenB);
         priceFeeds[2] = address(aggregatorV3InterfaceTokenD);
+        
+        address[] memory fakeAssets = new address[](2);
+        fakeAssets[0] = address(tokenA);
+        fakeAssets[1] = address(tokenA);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        chainlinkAdapter.addPriceFeeds(assets, fakeAssets);
+
+        address[] memory sameAssets = new address[](3);
+        sameAssets[0] = address(tokenA);
+        sameAssets[1] = address(tokenA);
+        sameAssets[2] = address(tokenA);
+        vm.expectRevert(IControllable.AlreadyExist.selector);
+        chainlinkAdapter.addPriceFeeds(sameAssets, priceFeeds);
+
         chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
 
         {
@@ -164,6 +178,10 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(allPrices[1], 2 * 1e18);
         address[] memory removeAssets = new address[](1);
         removeAssets[0] = address(tokenA);
+        address[] memory removeNotExistingAsset = new address[](1);
+        removeNotExistingAsset[0] = address(123);
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
+        chainlinkAdapter.removePriceFeeds(removeNotExistingAsset);
         chainlinkAdapter.removePriceFeeds(removeAssets);
         allAssets = chainlinkAdapter.assets();
         assertEq(allAssets[0], address(tokenD));

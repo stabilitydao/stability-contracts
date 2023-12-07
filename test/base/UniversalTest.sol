@@ -217,8 +217,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     )
                 );
 
+                strategy.lastAprCompound();
+
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
+                    IFarmingStrategy(address(strategy)).farmId();
                 }
 
                 {
@@ -344,6 +347,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 )
                             );
 
+                            StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
+
                             assertGt(tempApr, 0);
                             assertGt(tempEarned, 0);
                             assertGt(tempTvl, 0);
@@ -373,8 +378,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getReward(0);
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
-                    // console.log(IRVault(vars.vault).rewardTokensTotal());
-                    // IRVault(vars.vault).rewardToken(1);
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -503,6 +506,12 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.withdrawnUsdValue += balNow * price / 1e18;
                 }
                 assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
+
+                vm.expectRevert(bytes("StrategyBase: no underlying"));
+                StrategyLib.revertUnderlying(address(0));
+
+                vm.expectRevert(bytes("StrategyBase: not implemented"));
+                StrategyLib.revertUnderlying(address(123));
             }
         }
     }
