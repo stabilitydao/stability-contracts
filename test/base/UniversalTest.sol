@@ -67,8 +67,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         _testStrategies();
     }
 
-    function test_Deposit(address vault, address assets0, address asset1) internal virtual {}
-    function test_AddRewards(Platform platform) internal virtual {}
+    function _addRewards(uint farmId) internal virtual {}
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -232,9 +231,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if (strategies[i].farmId == 0) {
-                    test_Deposit(vars.vault, assets[0], assets[1]);
-                }
+
                 // get amounts for deposit
                 uint[] memory depositAmounts = new uint[](assets.length);
                 for (uint j; j < assets.length; ++j) {
@@ -359,9 +356,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                      ADD REWARDS                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if (strategies[i].farmId == 0) {
-                    test_AddRewards(platform);
-                }
+                _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*           CLAIM REWARDS FROM REWARDING VAULTS              */
