@@ -6,7 +6,7 @@ import "../src/adapters/AlgebraAdapter.sol";
 import "../src/adapters/UniswapV3Adapter.sol";
 import "../src/adapters/KyberAdapter.sol";
 import "../src/core/Zap.sol";
-import "../src/strategies/QuickSwapV3StaticFarmStrategy.sol";
+import "../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 
 contract PrepareUpgrade2Polygon is Script {
     function run() external {
