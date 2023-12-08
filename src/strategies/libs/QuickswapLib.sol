@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IAmmAdapter.sol";
@@ -9,6 +10,8 @@ import "../../core/libs/CommonLib.sol";
 import "../../integrations/algebra/IFarmingCenter.sol";
 
 library QuickswapLib {
+    using SafeERC20 for IERC20;
+
     /// @custom:storage-location erc7201:stability.QuickswapV3StaticFarmStrategy
     struct QuickSwapV3StaticFarmStrategyStorage {
         int24 lowerTick;
@@ -92,16 +95,17 @@ library QuickswapLib {
         uint tokenId,
         IncentiveKey memory key
     ) external {
-        (uint reward, uint bonusReward) = $._farmingCenter.collectRewards(key, tokenId);
+        IFarmingCenter farmingCenter = $._farmingCenter;
+        (uint reward, uint bonusReward) = farmingCenter.collectRewards(key, tokenId);
 
         if (reward > 0) {
             address token = _$._rewardAssets[0];
-            reward = $._farmingCenter.claimReward(token, address(this), 0, reward);
+            reward = claimReward(farmingCenter, token, reward);
             _$._rewardsOnBalance[0] += reward;
         }
         if (bonusReward > 0) {
             address token = _$._rewardAssets[1];
-            bonusReward = $._farmingCenter.claimReward(token, address(this), 0, bonusReward);
+            bonusReward = claimReward(farmingCenter, token, bonusReward);
             _$._rewardsOnBalance[1] += bonusReward;
         }
 
@@ -110,6 +114,20 @@ library QuickswapLib {
             __rewardAmounts[0] = reward;
             __rewardAmounts[1] = bonusReward;
             emit IFarmingStrategy.RewardsClaimed(__rewardAmounts);
+        }
+    }
+
+    function claimReward(
+        IFarmingCenter farmingCenter,
+        address token,
+        uint rewardAmount
+    ) public returns (uint rewardOut) {
+        if (rewardAmount != 0) {
+            try farmingCenter.claimReward(token, address(this), 0, rewardAmount) returns (uint /*reward*/ ) {
+                rewardOut = rewardAmount;
+            } catch {
+                // an exception in reward-claiming shouldn't stop hardwork / withdraw
+            }
         }
     }
 }

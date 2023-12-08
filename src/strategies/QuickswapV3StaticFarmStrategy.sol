@@ -346,14 +346,8 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             );
             emit FeesClaimed(__amounts);
             (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
-            if (__rewardAmounts[0] > 0) {
-                __rewardAmounts[0] =
-                    __farmingCenter.claimReward(__rewardAssets[0], address(this), 0, __rewardAmounts[0]);
-            }
-            if (__rewardAmounts[1] > 0) {
-                __rewardAmounts[1] =
-                    __farmingCenter.claimReward(__rewardAssets[1], address(this), 0, __rewardAmounts[1]);
-            }
+            __rewardAmounts[0] = QuickswapLib.claimReward(__farmingCenter, __rewardAssets[0], __rewardAmounts[0]);
+            __rewardAmounts[1] = QuickswapLib.claimReward(__farmingCenter, __rewardAssets[1], __rewardAmounts[1]);
             emit RewardsClaimed(__rewardAmounts);
         }
 

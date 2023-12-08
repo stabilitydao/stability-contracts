@@ -69,6 +69,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _addRewards(uint farmId) internal virtual {}
 
+    function _preHardWork() internal virtual {}
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -309,6 +311,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                _preHardWork();
                 vm.txGasPrice(15e10); // 150gwei
                 {
                     vars.apr = 0;
