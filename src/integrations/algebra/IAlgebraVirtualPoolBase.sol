@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import '../../integrations/algebra/IAlgebraVirtualPool.sol';
+import './IAlgebraVirtualPool.sol';
 
 /// @title Base interface for virtual pools
 interface IAlgebraVirtualPoolBase is IAlgebraVirtualPool {

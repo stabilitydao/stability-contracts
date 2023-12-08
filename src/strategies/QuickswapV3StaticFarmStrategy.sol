@@ -262,8 +262,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 // exit farming (undeposit)
                 __farmingCenter.exitFarming(key, tokenId, false);
             } else {
-                // todo will never thrown to that logic branch
-                __nft.safeTransferFrom(address(this), address($._farmingCenter), tokenId);
+                __nft.safeTransferFrom(address(this), address($._farmingCenter), tokenId); // todo: can never thrown
             }
         }
         $._farmingCenter.enterFarming(key, tokenId, 0, false);

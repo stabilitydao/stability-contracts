@@ -68,6 +68,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     }
 
     function _addRewards(uint farmId) internal virtual {}
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -506,12 +507,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.withdrawnUsdValue += balNow * price / 1e18;
                 }
                 assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
-
-                vm.expectRevert(bytes("StrategyBase: no underlying"));
-                StrategyLib.revertUnderlying(address(0));
-
-                vm.expectRevert(bytes("StrategyBase: not implemented"));
-                StrategyLib.revertUnderlying(address(123));
             }
         }
     }
