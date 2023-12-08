@@ -200,7 +200,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
-                assertEq(IVaultManager(platform.vaultManager()).tokenVault(factory.deployedVaultsLength() - 1), vars.vault);
+                assertEq(
+                    IVaultManager(platform.vaultManager()).tokenVault(factory.deployedVaultsLength() - 1), vars.vault
+                );
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
                 strategy.getSpecificName();
