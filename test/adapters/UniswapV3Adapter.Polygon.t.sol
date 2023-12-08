@@ -49,6 +49,10 @@ contract UniswapV3AdapterTest is PolygonSetup {
         uint prop0 = adapter.getProportion0(pool);
         assertEq(prop0, proportions[0]);
 
+        uint[] memory props = adapter.getProportions(pool, ticks);
+        assertGt(props[0], 0);
+        assertGt(props[1], 0);
+
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_USDC, 276240);
