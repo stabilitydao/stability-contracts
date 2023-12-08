@@ -13,6 +13,12 @@ interface ICAmmAdapter is IAmmAdapter {
     /// @return Output amount of swap 1.0 tokenIn in pool without price impact
     function getPriceAtTick(address pool, address tokenIn, int24 tick) external view returns (uint);
 
+    /// @notice Priced proportions of pool assets in specified range
+    /// @param pool Address of a pool supported by the adapter
+    /// @param ticks Tick boundaries. Lower and upper ticks for UniswapV3-like AMM position.
+    /// @return Proportions with 5 decimals precision. Max is 100_000, min is 0.
+    function getProportions(address pool, int24[] memory ticks) external view returns (uint[] memory);
+
     /// @notice Computes the maximum amount of liquidity received for given amounts of pool assets and the current
     /// pool prices and the prices at the tick boundaries
     /// @param pool Address of a pool supported by the adapter

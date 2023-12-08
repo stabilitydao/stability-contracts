@@ -4,17 +4,66 @@ pragma solidity ^0.8.23;
 import {console} from "forge-std/Test.sol";
 import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
+import "../../src/interfaces/IPriceReader.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 
 contract ZapTest is PolygonSetup {
+    IPriceReader public priceReader;
+
+    struct ZapTestVars {
+        address depositToken;
+        uint depositTokenDecimals;
+        uint depositAmount;
+        uint depositTokenPrice;
+        uint inputPrice;
+        uint asset0Price;
+        uint asset1Price;
+        uint asset0Decimals;
+        uint asset1Decimals;
+        uint[] swapAmounts;
+        uint[] previewDepositAmounts;
+    }
+
     constructor() {
         _init();
+
+        priceReader = IPriceReader(platform.priceReader());
 
         deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
         IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
 
         deal(platform.targetExchangeAsset(), address(this), 1e9);
         IERC20(platform.targetExchangeAsset()).approve(address(factory), 1e9);
+    }
+
+    function _testZapGetDepositAmounts(address vault, address depositToken, uint depositAmount) internal {
+        IZap zap = IZap(platform.zap());
+        IStrategy strategy = IVault(vault).strategy();
+        address[] memory assets = strategy.assets();
+        ZapTestVars memory v;
+        v.depositTokenDecimals = IERC20Metadata(depositToken).decimals();
+        v.asset0Decimals = IERC20Metadata(assets[0]).decimals();
+        v.asset1Decimals = IERC20Metadata(assets[1]).decimals();
+        (v.depositTokenPrice,) = priceReader.getPrice(depositToken);
+        (v.asset0Price,) = priceReader.getPrice(assets[0]);
+        (v.asset1Price,) = priceReader.getPrice(assets[1]);
+        v.inputPrice = depositAmount * v.depositTokenPrice / 1e18;
+        (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vault, depositToken, depositAmount);
+
+        uint swapAmount0OfDepositToken = swapAmounts[0] * v.depositTokenPrice / 10 ** v.depositTokenDecimals;
+        uint swapAmount1OfDepositToken = swapAmounts[1] * v.depositTokenPrice / 10 ** v.depositTokenDecimals;
+        // console.log('swapAmount0OfDepositToken', swapAmount0OfDepositToken);
+        uint swapAmountsPrice = swapAmount0OfDepositToken + swapAmount1OfDepositToken;
+        // console.log('swapAmounts estimated price', swapAmountsPrice);
+        v.previewDepositAmounts = new uint[](2);
+        v.previewDepositAmounts[0] = swapAmount0OfDepositToken * 1e18 / v.asset0Price;
+        v.previewDepositAmounts[1] = swapAmount1OfDepositToken * 1e18 / v.asset1Price;
+        assertEq(v.inputPrice / 1e14, swapAmountsPrice / 1e14); // 1e14 ~ $0.0001
+        (uint[] memory amountsConsumed,,) = IVault(vault).previewDepositAssets(assets, v.previewDepositAmounts);
+        uint consumedAmountsPrice = amountsConsumed[0] * v.asset0Price / 10 ** v.asset0Decimals
+            + amountsConsumed[1] * v.asset1Price / 10 ** v.asset1Decimals;
+        // console.log('consumedAmountsPrice', consumedAmountsPrice);
+        assertGe(consumedAmountsPrice / 1e14, v.inputPrice / 1e14); // 1e14 ~ $0.0001
     }
 
     function testZapDepositWithdraw() public {
@@ -47,14 +96,32 @@ contract ZapTest is PolygonSetup {
                 initStrategyNums,
                 initStrategyTicks
             );
+
+            initStrategyNums[0] = 0; // USDC-DAI
+
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.COMPOUNDING,
+                StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                initStrategyNums,
+                initStrategyTicks
+            );
         }
 
         address vault = factory.deployedVault(0);
+        IStrategy strategy = IVault(vault).strategy();
+        address[] memory assets = strategy.assets();
         address vault1 = factory.deployedVault(1);
+        address vault2 = factory.deployedVault(2);
 
         IZap zap = IZap(platform.zap());
 
-        (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vault, PolygonLib.TOKEN_USDC, 1000e6);
+        ZapTestVars memory v;
+        v.depositToken = PolygonLib.TOKEN_USDC;
+        v.depositAmount = 1000e6;
+        (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vault, v.depositToken, v.depositAmount);
         assertEq(swapAmounts.length, 2);
         assertGt(swapAmounts[0], 0);
         assertEq(swapAmounts[1], 0);
@@ -63,14 +130,11 @@ contract ZapTest is PolygonSetup {
         assertEq(swapAmounts[0], 0);
         assertGt(swapAmounts[1], 0);
 
-        (, swapAmounts) = zap.getDepositSwapAmounts(vault, PolygonLib.TOKEN_WETH, 1e18);
-        assertGt(swapAmounts[0], 0);
-        assertGt(swapAmounts[1], 0);
-        console.log("Deposit WETH to WMATIC-USDC Gamma LP");
-        console.log("swapAmounts[0]", swapAmounts[0]);
-        console.log("swapAmounts[1]", swapAmounts[1]);
+        _testZapGetDepositAmounts(vault, PolygonLib.TOKEN_WETH, 2e18);
 
-        (, swapAmounts) = zap.getDepositSwapAmounts(vault1, PolygonLib.TOKEN_USDC, 1000e6);
+        _testZapGetDepositAmounts(vault2, PolygonLib.TOKEN_WMATIC, 3000e18);
+
+        (, swapAmounts) = zap.getDepositSwapAmounts(vault1, PolygonLib.TOKEN_USDC, v.depositAmount);
         assertGt(swapAmounts[0], 0); // 20806874719093983
         assertGt(swapAmounts[1], 0); // 979193125280906017
 
@@ -145,8 +209,7 @@ contract ZapTest is PolygonSetup {
 
         vm.roll(block.number + 6);
         IERC20(vault).approve(address(zap), 2e18);
-        IStrategy strategy = IVault(vault).strategy();
-        address[] memory assets = strategy.assets();
+
         uint[] memory minToWithdraw = new uint[](assets.length);
         minToWithdraw[0] = 0;
         minToWithdraw[1] = 0;
