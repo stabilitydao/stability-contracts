@@ -253,18 +253,21 @@ contract ZapTest is PolygonSetup {
         deal(PolygonLib.TOKEN_USDT, address(this), 0);
 
         vm.expectRevert(abi.encodeWithSelector(IZap.NotAllowedDexAggregator.selector, address(10)));
-        zap.withdraw(vault, PolygonLib.TOKEN_USDT, address(10), swapData, 1e18, minToWithdraw);
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, address(10), swapData, 1e18, 0);
 
         swapData[0] = abi.encodePacked(
             hex"0502b1c50000000000000000000000000d500b1d8e8ef31e21c99d1db9a6444d3adf12700000000000000000000000000000000000000000000000008f072683364131be00000000000000000000000000000000000000000000000000000000007f0ed10000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000100000000000000003b6d0340604229c960e5cacf2aaeac8be68ac07ba9df81c38b1ccac8"
         );
         vm.expectRevert(abi.encodeWithSelector(IZap.AggSwapFailed.selector, ""));
-        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, minToWithdraw);
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, 0);
         swapData[0] = abi.encodePacked(
             hex"e449022e0000000000000000000000000000000000000000000000001220ba3253bd31be0000000000000000000000000000000000000000000000000000000000079994000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009b08288c3be4f62bbf8d1c20ac9c5e6f9467d8b78b1ccac8"
         );
 
-        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, minToWithdraw);
+        vm.expectRevert(abi.encodeWithSelector(IZap.Slippage.selector, 999724, 1000001));
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, 1e6 + 1);
+
+        zap.withdraw(vault, PolygonLib.TOKEN_USDT, PolygonLib.ONE_INCH, swapData, 1e18, 1e5);
         assertApproxEqAbs(IERC20(PolygonLib.TOKEN_USDT).balanceOf(address(this)), 1e6, 1000);
     }
 }

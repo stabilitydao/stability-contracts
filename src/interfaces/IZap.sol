@@ -10,6 +10,7 @@ interface IZap {
     error StrategyNotSupported();
     error NotAllowedDexAggregator(address dexAggRouter);
     error AggSwapFailed(string reason);
+    error Slippage(uint amountOut, uint minAmountOut);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           VIEW                            */
@@ -55,13 +56,13 @@ interface IZap {
     /// @param agg Address of aggregator
     /// @param swapData Swap data from 1inch API
     /// @param sharesToBurn Shares to be burn (exchage) for assets
-    /// @param minAssetAmountsOut Minimum expected asstes amount to be withdraw from vault
+    /// @param minAmountOut Minimum expected amount of tokenOut to be received
     function withdraw(
         address vault,
         address tokenOut,
         address agg,
         bytes[] memory swapData,
         uint sharesToBurn,
-        uint[] memory minAssetAmountsOut
+        uint minAmountOut
     ) external;
 }
