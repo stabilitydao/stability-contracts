@@ -67,6 +67,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         _testStrategies();
     }
 
+    function _addRewards(uint farmId) internal virtual {}
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -216,8 +218,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     )
                 );
 
+                strategy.lastAprCompound();
+
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
+                    IFarmingStrategy(address(strategy)).farmId();
                 }
 
                 {
@@ -343,6 +348,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 )
                             );
 
+                            StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
+
                             assertGt(tempApr, 0);
                             assertGt(tempEarned, 0);
                             assertGt(tempTvl, 0);
@@ -351,6 +358,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                     require(vars.hwEventFound, "UniversalTest: HardWork event not emited");
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                      ADD REWARDS                           */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*           CLAIM REWARDS FROM REWARDING VAULTS              */

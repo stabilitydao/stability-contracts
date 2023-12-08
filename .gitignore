@@ -21,3 +21,6 @@ semgrep.sarif
 
 # Semgrep rules
 rules/
+
+# Test coverage report
+report/
