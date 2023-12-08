@@ -73,7 +73,7 @@ library RVaultLib {
         return $.rewardPerTokenStoredForToken[rewardTokenIndex]
             + (
                 (
-                    lastTimeRewardApplicable($.periodFinishForToken[rewardTokenIndex])
+                    _lastTimeRewardApplicable($.periodFinishForToken[rewardTokenIndex])
                         - $.lastUpdateTimeForToken[rewardTokenIndex]
                 ) * $.rewardRateForToken[rewardTokenIndex] * 1e18 / totalSupplyWithoutItself
             );
@@ -89,7 +89,7 @@ library RVaultLib {
     function updateReward(IRVault.RVaultBaseStorage storage $, address account, uint tokenIndex) public {
         uint _rewardPerTokenStoredForToken = rewardPerToken($, tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
-        $.lastUpdateTimeForToken[tokenIndex] = lastTimeRewardApplicable($.periodFinishForToken[tokenIndex]);
+        $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable($.periodFinishForToken[tokenIndex]);
         if (account != address(0) && account != address(this)) {
             $.rewardsForToken[tokenIndex][account] = earned($, tokenIndex, account);
             $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
@@ -132,7 +132,7 @@ library RVaultLib {
         }
     }
 
-    function lastTimeRewardApplicable(uint periodFinishForToken) public view returns (uint) {
+    function _lastTimeRewardApplicable(uint periodFinishForToken) internal view returns (uint) {
         return Math.min(block.timestamp, periodFinishForToken);
     }
 

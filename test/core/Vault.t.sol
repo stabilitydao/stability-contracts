@@ -48,6 +48,13 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(strategy.underlying(), address(lp));
         address[] memory assets = strategy.assets();
         assertEq(assets[0], address(tokenA));
+
+        // cover MockStrategy
+        strategy.ammAdapterId();
+        strategy.setFees(0, 0);
+        strategy.getRevenue();
+        strategy.description();
+        strategy.initVariants(address(0));
     }
 
     function testDepositWithdrawHardWork() public {

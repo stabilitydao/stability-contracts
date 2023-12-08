@@ -102,7 +102,7 @@ library LPStrategyLib {
             IRVault rVault = IRVault(vault);
             vars.compoundRatio = rVault.compoundRatio();
             vars.bbToken = rVault.bbToken();
-            vars.bbAmountBefore = balance(vars.bbToken);
+            vars.bbAmountBefore = _balance(vars.bbToken);
 
             {
                 uint otherAssetIndex = exchangeAssetIndex == 0 ? 1 : 0;
@@ -157,10 +157,10 @@ library LPStrategyLib {
                 }
             }
 
-            uint bbAmount = balance(vars.bbToken) - vars.bbAmountBefore;
+            uint bbAmount = _balance(vars.bbToken) - vars.bbAmountBefore;
 
             if (bbAmount > 0) {
-                approveIfNeeded(vars.bbToken, bbAmount, vault);
+                _approveIfNeeded(vars.bbToken, bbAmount, vault);
                 rVault.notifyTargetRewardAmount(0, bbAmount);
             }
 
@@ -182,8 +182,8 @@ library LPStrategyLib {
         SwapForDepositProportionVars memory vars;
         vars.swapper = ISwapper(IPlatform(platform).swapper());
         vars.price = ammAdapter.getPrice(_pool, assets[1], address(0), 0);
-        vars.balance0 = balance(assets[0]);
-        vars.balance1 = balance(assets[1]);
+        vars.balance0 = _balance(assets[0]);
+        vars.balance1 = _balance(assets[1]);
         vars.asset1decimals = IERC20Metadata(assets[1]).decimals();
         vars.threshold0 = vars.swapper.threshold(assets[0]);
         vars.threshold1 = vars.swapper.threshold(assets[1]);
@@ -219,19 +219,19 @@ library LPStrategyLib {
                     }
                 }
 
-                amountsToDeposit[0] = balance(assets[0]);
-                amountsToDeposit[1] = balance(assets[1]);
+                amountsToDeposit[0] = _balance(assets[0]);
+                amountsToDeposit[1] = _balance(assets[1]);
             }
         }
     }
 
-    function balance(address token) public view returns (uint) {
+    function _balance(address token) internal view returns (uint) {
         return IERC20(token).balanceOf(address(this));
     }
 
     /// @notice Make infinite approve of {token} to {spender} if the approved amount is less than {amount}
     /// @dev Should NOT be used for third-party pools
-    function approveIfNeeded(address token, uint amount, address spender) public {
+    function _approveIfNeeded(address token, uint amount, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) < amount) {
             // infinite approve, 2*255 is more gas efficient then type(uint).max
             IERC20(token).forceApprove(spender, 2 ** 255);

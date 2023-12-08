@@ -140,6 +140,9 @@ contract MockStrategy is LPStrategyBase {
         IMockERC20($._assets[1]).mint(addedToken1);
 
         $.total += amount;
+
+        // cover base strategy internal method
+        _previewDepositUnderlying(0);
     }
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {

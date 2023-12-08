@@ -101,6 +101,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
             );
+            assertEq(IStrategyLogic(vars.strategyLogic).tokenStrategyLogic(vars.tokenId), strategies[i].id);
             vars.types = IStrategy(vars.strategyImplementation).supportedVaultTypes();
 
             for (uint k; k < vars.types.length; ++k) {
@@ -197,8 +198,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
+                assertEq(IVaultManager(platform.vaultManager()).tokenVault(factory.deployedVaultsLength() - 1), vars.vault);
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
+                strategy.getSpecificName();
+                strategy.lastAprCompound();
                 address[] memory assets = strategy.assets();
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
                 assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
@@ -217,8 +221,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         strategy.description()
                     )
                 );
-
-                strategy.lastAprCompound();
 
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
