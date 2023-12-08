@@ -8,12 +8,14 @@ import "../../interfaces/IFactory.sol";
 import "../../interfaces/IStrategyProxy.sol";
 
 /// @title EIP1967 Upgradeable proxy implementation for built by Factory strategies.
+/// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author Jude (https://github.com/iammrjude)
 contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
     /// @dev Strategy logic id
     bytes32 private constant _ID_SLOT = bytes32(uint(keccak256("eip1967.strategyProxy.id")) - 1);
 
+    /// @inheritdoc IStrategyProxy
     function initStrategyProxy(string memory id) external {
         bytes32 strategyIdHash = keccak256(abi.encodePacked(id));
         //slither-disable-next-line unused-return
@@ -27,6 +29,7 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         }
     }
 
+    /// @inheritdoc IStrategyProxy
     function upgrade() external {
         if (IPlatform(IControllable(address(this)).platform()).factory() != msg.sender) {
             revert IControllable.NotFactory();
@@ -43,10 +46,12 @@ contract StrategyProxy is UpgradeableProxy, IStrategyProxy {
         _upgradeTo(strategyImplementation);
     }
 
+    /// @inheritdoc IStrategyProxy
     function implementation() external view returns (address) {
         return _implementation();
     }
 
+    /// @inheritdoc IStrategyProxy
     function strategyImplementationLogicIdHash() external view returns (bytes32) {
         bytes32 idHash;
         bytes32 slot = _ID_SLOT;

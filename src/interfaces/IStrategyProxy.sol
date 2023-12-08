@@ -15,7 +15,6 @@ interface IStrategyProxy {
     /// @return Address of strategy implementation contract
     function implementation() external view returns (address);
 
-    // todo change name
     /// @notice Strategy logic hash
     /// @return keccan256 hash of strategy logic ID string
     function strategyImplementationLogicIdHash() external view returns (bytes32);
