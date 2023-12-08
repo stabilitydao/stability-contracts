@@ -162,10 +162,14 @@ contract RMVaultTest is PolygonSetup {
         vault.setRewardsRedirect(address(this), address(1));
         vault.getAllRewardsAndRedirect(address(this));
 
+        vault.rewardToken(vault.tokenId());
+
         vm.prank(address(123));
         vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(this));
         vault.getAllRewardsFor(address(this));
+
+        vault.rewardTokensTotal();
 
         assertGt(vault.rewardPerToken(0), 0);
     }

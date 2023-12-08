@@ -197,10 +197,6 @@ library StrategyLib {
         return earned * 1e18 * ConstantsLib.DENOMINATOR * uint(365) / tvl / (duration * 1e18 / 1 days);
     }
 
-    function revertUnderlying(address underlying) external pure {
-        revert(underlying == address(0) ? "StrategyBase: no underlying" : "StrategyBase: not implemented");
-    }
-
     function assetsAmountsWithBalances(
         address[] memory assets_,
         uint[] memory amounts_
