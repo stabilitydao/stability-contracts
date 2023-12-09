@@ -127,10 +127,10 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
         uint localTtotal;
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
+            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 ++localTtotal;
             }
@@ -139,10 +139,10 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         variants = new string[](localTtotal);
         nums = new uint[](localTtotal);
         localTtotal = 0;
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
+            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
@@ -192,8 +192,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         amounts = new uint[](len);
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
             amounts[i] = rewarder.pendingToken($.pid, address(this));
         }
@@ -211,8 +211,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (claimRevenue) {
             (,,, uint[] memory rewardAmounts) = _claimRevenue();
             uint len = rewardAmounts.length;
-            for (uint i; i < len; ++i) {
-                //nosemgrep
+            for (uint i; i < len; ++i) { // nosemgrep
+                // nosemgrep
                 _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
         }
@@ -276,18 +276,18 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = __rewardAssets.length;
         __rewardAmounts = new uint[](len);
         uint[] memory rewardBalanceBefore = new uint[](len);
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         $.masterChef.harvest($.pid, address(this));
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
         }
 
         // special for farms with first 2 duplicate tokens
-        //nosemgrep
+        // nosemgrep
         if (len > 1 && __rewardAssets[0] == __rewardAssets[1]) {
             __rewardAmounts[0] = 0;
         }
@@ -296,7 +296,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
-        //nosemgrep
+        // nosemgrep
         if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
             uint valueToReceive;
             (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);

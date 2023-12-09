@@ -93,6 +93,7 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
 
     function _requireGovernanceOrMultisig() internal view {
         IPlatform _platform = IPlatform(platform());
+        // nosemgrep
         if (_platform.governance() != msg.sender && _platform.multisig() != msg.sender) {
             revert NotGovernanceAndNotMultisig();
         }

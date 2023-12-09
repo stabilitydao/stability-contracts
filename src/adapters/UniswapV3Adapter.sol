@@ -39,6 +39,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    // nosemgrep
     function uniswapV3SwapCallback(
         //slither-disable-next-line similar-names
         int amount0Delta,
@@ -46,7 +47,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
-        //nosemgrep
+        // nosemgrep
         if (amount0Delta <= 0 && amount1Delta <= 0) {
             revert IAmmAdapter.WrongCallbackAmount();
         }

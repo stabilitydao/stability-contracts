@@ -121,7 +121,7 @@ contract HardWorker is Controllable, IHardWorker {
     /// @inheritdoc IHardWorker
     function setDelays(uint delayServer_, uint delayGelato_) external onlyGovernanceOrMultisig {
         HardWorkerStorage storage $ = _getStorage();
-        //nosemgrep
+        // nosemgrep
         if ($.delayServer == delayServer_ && $.delayGelato == delayGelato_) {
             revert AlreadyExist();
         }
@@ -149,7 +149,7 @@ contract HardWorker is Controllable, IHardWorker {
             revert IControllable.IncorrectArrayLength();
         }
         IFactory factory = IFactory(IPlatform(platform()).factory());
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             // calls-loop here is not dangerous
             //slither-disable-next-line calls-loop
@@ -174,7 +174,7 @@ contract HardWorker is Controllable, IHardWorker {
 
         bool isServer = $.dedicatedServerMsgSender[msg.sender];
         bool isGelato = msg.sender == $.dedicatedGelatoMsgSender;
-        //nosemgrep
+        // nosemgrep
         if (!isServer && !isGelato) {
             revert NotServerOrGelato();
         }
@@ -197,7 +197,7 @@ contract HardWorker is Controllable, IHardWorker {
         uint _maxHwPerCall = $.maxHwPerCall;
         uint vaultsLength = vaults.length;
         uint counter;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < vaultsLength; ++i) {
             IVault vault = IVault(vaults[i]);
             //slither-disable-next-line calls-loop
@@ -222,8 +222,8 @@ contract HardWorker is Controllable, IHardWorker {
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
         //slither-disable-next-line unused-return
-        if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
-            //nosemgrep
+        if (isServer && gasCost > 0 && address(this).balance >= gasCost) { // nosemgrep
+            // nosemgrep
             //slither-disable-next-line low-level-calls
             (bool success,) = msg.sender.call{value: gasCost}("");
             if (!success) {
@@ -309,7 +309,7 @@ contract HardWorker is Controllable, IHardWorker {
         address[] memory vaultsForHardWork = new address[](len);
         //slither-disable-next-line uninitialized-local
         uint counter;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if ($.excludedVaults[vaults[i]]) {
                 continue;
@@ -319,7 +319,7 @@ contract HardWorker is Controllable, IHardWorker {
             IStrategy strategy = vault.strategy();
             //slither-disable-next-line unused-return
             (uint tvl,) = vault.tvl();
-            //nosemgrep
+            // nosemgrep
             if (
                 //slither-disable-next-line timestamp
                 tvl > 0 && block.timestamp - strategy.lastHardWork() > delay_
@@ -335,7 +335,7 @@ contract HardWorker is Controllable, IHardWorker {
         } else {
             address[] memory vaultsResult = new address[](counter);
             uint j;
-            //nosemgrep
+            // nosemgrep
             for (uint i; i < len; ++i) {
                 if (vaultsForHardWork[i] == address(0)) {
                     continue;

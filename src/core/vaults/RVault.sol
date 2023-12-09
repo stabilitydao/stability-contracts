@@ -62,7 +62,7 @@ contract RVault is RVaultBase {
         vars.vaultInitAddresses_[1] = vaultInitializationData.vaultInitAddresses[0]; // first boost reward token
         vars.vaultInitNums_[0] = BB_TOKEN_DURATION;
         vars.vaultInitNums_[1] = BOOST_REWARD_DURATION;
-        //nosemgrep
+        // nosemgrep
         for (uint i = 2; i < len; ++i) {
             vars.vaultInitAddresses_[i] = vars.defaultBoostRewardTokens[i - 2];
             vars.vaultInitNums_[i] = BOOST_REWARD_DURATION;

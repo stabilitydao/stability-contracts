@@ -17,7 +17,7 @@ abstract contract UpgradeableProxy {
 
     /// @dev Post deploy initialisation for compatability with EIP-1167 factory
     function _init(address _logic) internal {
-        //nosemgrep
+        // nosemgrep
         require(_implementation() == address(0), "Already inited");
         _setImplementation(_logic);
     }

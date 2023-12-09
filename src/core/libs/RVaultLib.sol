@@ -31,7 +31,7 @@ library RVaultLib {
         if (vaultInitNums.length != addressesLength * 2) {
             revert IRVault.IncorrectNums();
         }
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < addressesLength; ++i) {
             if (vaultInitAddresses[i] == address(0)) {
                 revert IRVault.ZeroToken();
@@ -45,7 +45,7 @@ library RVaultLib {
         }
 
         $.rewardTokensTotal = addressesLength;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < addressesLength; ++i) {
             $.rewardToken[i] = vaultInitAddresses[i];
             $.duration[i] = vaultInitNums[i];
@@ -57,7 +57,7 @@ library RVaultLib {
     function rewardTokens(IRVault.RVaultBaseStorage storage $) external view returns (address[] memory) {
         uint len = $.rewardTokensTotal;
         address[] memory rts = new address[](len);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             rts[i] = $.rewardToken[i];
         }
@@ -90,7 +90,7 @@ library RVaultLib {
         uint _rewardPerTokenStoredForToken = rewardPerToken($, tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
         $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable($.periodFinishForToken[tokenIndex]);
-        if (account != address(0) && account != address(this)) {
+        if (account != address(0) && account != address(this)) { // nosemgrep
             $.rewardsForToken[tokenIndex][account] = earned($, tokenIndex, account);
             $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
         }
@@ -107,7 +107,7 @@ library RVaultLib {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = earned($, rewardTokenIndex, owner);
         //slither-disable-next-line timestamp
-        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
+        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) { // nosemgrep
             $.rewardsForToken[rewardTokenIndex][owner] = 0;
             IERC20(localRewardToken).safeTransfer(receiver, reward);
             emit IRVault.RewardPaid(owner, localRewardToken, reward);
@@ -117,7 +117,7 @@ library RVaultLib {
     /// @dev Use it for any underlying movements
     function updateRewards(IRVault.RVaultBaseStorage storage $, address account) public {
         uint len = $.rewardTokensTotal;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             updateReward($, account, i);
         }
@@ -126,7 +126,7 @@ library RVaultLib {
     function getAllRewards(IRVault.RVaultBaseStorage storage $, address owner, address receiver) external {
         updateRewards($, owner);
         uint len = $.rewardTokensTotal;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             payRewardTo($, i, owner, receiver);
         }

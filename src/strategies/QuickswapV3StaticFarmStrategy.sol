@@ -339,7 +339,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         __amounts = new uint[](2);
         __rewardAmounts = new uint[](2);
         uint tokenId = $._tokenId;
-        //nosemgrep
+        // nosemgrep
         if (tokenId > 0 && total() > 0) {
             (__amounts[0], __amounts[1]) = __farmingCenter.collect(
                 INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max)

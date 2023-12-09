@@ -38,10 +38,10 @@ library QuickswapLib {
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
         uint total;
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
+            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyId)) {
                 ++total;
             }
@@ -50,10 +50,10 @@ library QuickswapLib {
         variants = new string[](total);
         nums = new uint[](total);
         total = 0;
-        for (uint i; i < len; ++i) {
-            //nosemgrep
+        for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
+            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyId)) {
                 nums[total] = i;
                 variants[total] = generateDescription(farm, _ammAdapter);

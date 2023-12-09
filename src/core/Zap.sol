@@ -41,6 +41,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IZap
+    // slither-disable-next-line calls-loop
     function deposit(
         address vault,
         address tokenIn,
@@ -72,19 +73,18 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address[] memory assets = IStrategy(strategy).assets();
         uint len = assets.length;
         uint[] memory depositAmounts = new uint[](len);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (tokenIn == assets[i]) {
                 continue;
             }
-
             //slither-disable-next-line low-level-calls
             (bool success, bytes memory result) = agg.call(swapData[i]);
             if (!success) {
                 revert AggSwapFailed(string(result));
             }
         }
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             // slither-disable-next-line calls-loop
             depositAmounts[i] = IERC20(assets[i]).balanceOf(address(this));
@@ -97,6 +97,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     }
 
     /// @inheritdoc IZap
+    // slither-disable-next-line calls-loop
     function withdraw(
         address vault,
         address tokenOut,
@@ -114,13 +115,12 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         address[] memory assets = IStrategy(strategy).assets();
         uint[] memory amountsOut =
             IVault(vault).withdrawAssets(assets, sharesToBurn, new uint[](len), address(this), msg.sender);
-        for (uint i; i < len; ++i) {
+        for (uint i; i < len; ++i) { // nosemgrep
             if (tokenOut == assets[i]) {
                 continue;
             }
 
             _approveIfNeeds(assets[i], amountsOut[i], agg);
-            // slither-disable-next-line calls-loop
             // slither-disable-next-line low-level-calls
             (bool success, bytes memory result) = agg.call(swapData[i]);
             if (!success) {
@@ -152,7 +152,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         swapAmounts = new uint[](len);
         uint[] memory proportions = IStrategy(strategy).getAssetsProportions();
         uint amountInUsed = 0;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (tokensOut[i] == tokenIn) {
                 amountInUsed += amountIn * proportions[i] / 1e18;
@@ -184,7 +184,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         _sendRemaining(tokenIn);
 
         uint len = strategyAssets.length;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             _sendRemaining(strategyAssets[i]);
         }
