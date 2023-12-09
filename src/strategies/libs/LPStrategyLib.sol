@@ -48,7 +48,7 @@ library LPStrategyLib {
         uint len = _assets.length;
         exchangeAssetIndex = IFactory(IPlatform(platform).factory()).getExchangeAssetIndex(_assets);
         address swapper = IPlatform(params.platform).swapper();
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IERC20(_assets[i]).forceApprove(swapper, type(uint).max);
         }
@@ -74,7 +74,7 @@ library LPStrategyLib {
         if (len != _assets.length) {
             revert ILPStrategy.IncorrectAssetsLength();
         }
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (assets_[i] != _assets[i]) {
                 revert ILPStrategy.IncorrectAssets();
@@ -189,7 +189,7 @@ library LPStrategyLib {
         vars.threshold1 = vars.swapper.threshold(assets[1]);
         if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {
             uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
-            //nosemgrep
+            // nosemgrep
             if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
                 uint prop0Balances =
                     vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;

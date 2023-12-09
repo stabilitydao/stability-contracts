@@ -81,7 +81,7 @@ library UniswapV3MathLib {
         int24 tick,
         int24 tickSpacing
     ) internal pure returns (int24 lowerTick, int24 upperTick) {
-        //nosemgrep
+        // nosemgrep
         if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
             lowerTick = (tick / tickSpacing - 1) * tickSpacing;
         } else {
@@ -330,7 +330,7 @@ library UniswapV3MathLib {
         result = mulDiv(a, b, denominator);
         if (mulmod(a, b, denominator) > 0) {
             require(result < type(uint).max);
-            //nosemgrep
+            // nosemgrep
             result++;
         }
     }
@@ -364,7 +364,7 @@ library UniswapV3MathLib {
         uint absTick = tick < 0 ? uint(-int(tick)) : uint(int(tick));
 
         // EDIT: 0.8 compatibility
-        //nosemgrep
+        // nosemgrep
         require(absTick <= uint(int(MAX_TICK)), "T");
 
         uint ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;

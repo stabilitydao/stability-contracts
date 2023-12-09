@@ -29,7 +29,7 @@ library DeployStrategyLib {
             implementation = address(new GammaQuickSwapFarmStrategy());
         }
 
-        //nosemgrep
+        // nosemgrep
         require(implementation != address(0), "DeployStrategyLib: unknown strategy");
 
         factory.setStrategyLogicConfig(

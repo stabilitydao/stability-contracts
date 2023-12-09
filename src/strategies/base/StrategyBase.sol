@@ -199,7 +199,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         address[] memory assets_,
         uint[] memory amountsMax
     ) external view virtual returns (uint[] memory amountsConsumed, uint value) {
-        //nosemgrep
+        // nosemgrep
         if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
             if (amountsMax.length != 1) {
                 revert IControllable.IncorrectArrayLength();

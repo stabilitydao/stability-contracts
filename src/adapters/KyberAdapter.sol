@@ -45,7 +45,7 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
-        //nosemgrep
+        // nosemgrep
         if (amount0Delta <= 0 && amount1Delta <= 0) {
             revert IAmmAdapter.WrongCallbackAmount();
         }
