@@ -221,8 +221,9 @@ contract HardWorker is Controllable, IHardWorker {
 
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
+        // nosemgrep
         //slither-disable-next-line unused-return
-        if (isServer && gasCost > 0 && address(this).balance >= gasCost) { // nosemgrep
+        if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
             // nosemgrep
             //slither-disable-next-line low-level-calls
             (bool success,) = msg.sender.call{value: gasCost}("");

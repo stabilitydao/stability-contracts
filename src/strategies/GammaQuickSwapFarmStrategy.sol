@@ -125,9 +125,10 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
+        // nosemgrep
         //slither-disable-next-line uninitialized-local
         uint localTtotal;
-        for (uint i; i < len; ++i) { // nosemgrep
+        for (uint i; i < len; ++i) {
             // nosemgrep
             IFactory.Farm memory farm = farms[i];
             // nosemgrep
@@ -139,7 +140,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         variants = new string[](localTtotal);
         nums = new uint[](localTtotal);
         localTtotal = 0;
-        for (uint i; i < len; ++i) { // nosemgrep
+        // nosemgrep
+        for (uint i; i < len; ++i) {
             // nosemgrep
             IFactory.Farm memory farm = farms[i];
             // nosemgrep
@@ -192,7 +194,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         amounts = new uint[](len);
-        for (uint i; i < len; ++i) { // nosemgrep
+        // nosemgrep
+        for (uint i; i < len; ++i) {
             // nosemgrep
             IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
             amounts[i] = rewarder.pendingToken($.pid, address(this));
@@ -211,7 +214,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (claimRevenue) {
             (,,, uint[] memory rewardAmounts) = _claimRevenue();
             uint len = rewardAmounts.length;
-            for (uint i; i < len; ++i) { // nosemgrep
+            // nosemgrep
+            for (uint i; i < len; ++i) {
                 // nosemgrep
                 _$._rewardsOnBalance[i] += rewardAmounts[i];
             }
@@ -276,12 +280,14 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = __rewardAssets.length;
         __rewardAmounts = new uint[](len);
         uint[] memory rewardBalanceBefore = new uint[](len);
-        for (uint i; i < len; ++i) { // nosemgrep
+        // nosemgrep
+        for (uint i; i < len; ++i) {
             // nosemgrep
             rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         $.masterChef.harvest($.pid, address(this));
-        for (uint i; i < len; ++i) { // nosemgrep
+        // nosemgrep
+        for (uint i; i < len; ++i) {
             // nosemgrep
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
         }

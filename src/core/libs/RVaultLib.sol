@@ -90,7 +90,8 @@ library RVaultLib {
         uint _rewardPerTokenStoredForToken = rewardPerToken($, tokenIndex);
         $.rewardPerTokenStoredForToken[tokenIndex] = _rewardPerTokenStoredForToken;
         $.lastUpdateTimeForToken[tokenIndex] = _lastTimeRewardApplicable($.periodFinishForToken[tokenIndex]);
-        if (account != address(0) && account != address(this)) { // nosemgrep
+        // nosemgrep
+        if (account != address(0) && account != address(this)) {
             $.rewardsForToken[tokenIndex][account] = earned($, tokenIndex, account);
             $.userRewardPerTokenPaidForToken[tokenIndex][account] = _rewardPerTokenStoredForToken;
         }
@@ -106,8 +107,9 @@ library RVaultLib {
     ) public {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = earned($, rewardTokenIndex, owner);
+        // nosemgrep
         //slither-disable-next-line timestamp
-        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) { // nosemgrep
+        if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
             $.rewardsForToken[rewardTokenIndex][owner] = 0;
             IERC20(localRewardToken).safeTransfer(receiver, reward);
             emit IRVault.RewardPaid(owner, localRewardToken, reward);
