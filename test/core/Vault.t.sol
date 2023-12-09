@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "../../src/core/vaults/CVault.sol";
+import "../../src/core/vaults/RVault.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/test/MockStrategy.sol";
@@ -13,6 +14,7 @@ import "../../src/interfaces/IVault.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
+    RVault public rVault;
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
     MockAmmAdapter public mockAmmAdapter;
@@ -32,6 +34,11 @@ contract VaultTest is Test, FullMockSetup {
         strategy = MockStrategy(address(strategyProxy));
 
         mockAmmAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
+
+        // RVault
+        vaultProxy = new Proxy();
+        vaultProxy.initProxy(address(new RVault()));
+        rVault = RVault(payable(address(vaultProxy)));
     }
 
     function testSetup() public {
@@ -48,6 +55,13 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(strategy.underlying(), address(lp));
         address[] memory assets = strategy.assets();
         assertEq(assets[0], address(tokenA));
+
+        // cover MockStrategy
+        strategy.ammAdapterId();
+        strategy.setFees(0, 0);
+        strategy.getRevenue();
+        strategy.description();
+        strategy.initVariants(address(0));
     }
 
     function testDepositWithdrawHardWork() public {
@@ -249,7 +263,35 @@ contract VaultTest is Test, FullMockSetup {
         vault.doHardWork();
     }
 
+    function testRVault() public {
+        vm.expectRevert(IControllable.IncorrectInitParams.selector);
+        rVault.initialize(
+            IVault.VaultInitializationData({
+                platform: address(platform),
+                strategy: address(strategy),
+                name: "Test RVault",
+                symbol: "xRVAULT",
+                tokenId: 0,
+                vaultInitAddresses: new address[](1),
+                vaultInitNums: new uint[](0)
+            })
+        );
+    }
+
     function _initAll() internal {
+        vm.expectRevert(IControllable.IncorrectInitParams.selector);
+        vault.initialize(
+            IVault.VaultInitializationData({
+                platform: address(platform),
+                strategy: address(strategy),
+                name: "Test vault",
+                symbol: "xVAULT",
+                tokenId: 0,
+                vaultInitAddresses: new address[](1),
+                vaultInitNums: new uint[](0)
+            })
+        );
+
         vault.initialize(
             IVault.VaultInitializationData({
                 platform: address(platform),

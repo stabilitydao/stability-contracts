@@ -25,7 +25,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickswapV3StaticFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGY_STORAGE_LOCATION =
@@ -346,14 +346,8 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             );
             emit FeesClaimed(__amounts);
             (__rewardAmounts[0], __rewardAmounts[1]) = __farmingCenter.collectRewards(_getIncentiveKey(), tokenId);
-            if (__rewardAmounts[0] > 0) {
-                __rewardAmounts[0] =
-                    __farmingCenter.claimReward(__rewardAssets[0], address(this), 0, __rewardAmounts[0]);
-            }
-            if (__rewardAmounts[1] > 0) {
-                __rewardAmounts[1] =
-                    __farmingCenter.claimReward(__rewardAssets[1], address(this), 0, __rewardAmounts[1]);
-            }
+            __rewardAmounts[0] = QuickswapLib.claimReward(__farmingCenter, __rewardAssets[0], __rewardAmounts[0]);
+            __rewardAmounts[1] = QuickswapLib.claimReward(__farmingCenter, __rewardAssets[1], __rewardAmounts[1]);
             emit RewardsClaimed(__rewardAmounts);
         }
 
@@ -429,7 +423,11 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     function _getProportion0(address pool_) internal view returns (uint) {
-        return ammAdapter().getProportion0(pool_);
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        int24[] memory ticks = new int24[](2);
+        ticks[0] = $.lowerTick;
+        ticks[1] = $.upperTick;
+        return ICAmmAdapter(address(ammAdapter())).getProportions(pool_, ticks)[0];
     }
 
     function _getIncentiveKey() private view returns (IncentiveKey memory) {

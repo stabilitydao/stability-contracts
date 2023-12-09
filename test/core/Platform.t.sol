@@ -11,6 +11,7 @@ import "../../src/core/Swapper.sol";
 import "../../src/core/StrategyLogic.sol";
 import "../../src/core/libs/ConstantsLib.sol";
 import "../../src/interfaces/IControllable.sol";
+import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 contract PlatformTest is Test {
     Platform public platform;
@@ -576,5 +577,9 @@ contract PlatformTest is Test {
         assertEq(strategyLogic.supportsInterface(type(IERC721).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IERC721Enumerable).interfaceId), true);
         assertEq(strategyLogic.supportsInterface(type(IStrategyLogic).interfaceId), true);
+    }
+
+    function testOther() public {
+        assertEq(StrategyDeveloperLib.getDeveloper("unknown"), address(0));
     }
 }
