@@ -130,7 +130,8 @@ contract Bridge is Controllable, IBridge {
         if (nft) {
             IERC721(token).safeTransferFrom(msg.sender, address(this), amountOrTokenId);
         } else {
-            IERC20(token).transferFrom(msg.sender, address(this), amountOrTokenId);
+            bool success = IERC20(token).transferFrom(msg.sender, address(this), amountOrTokenId);
+            if (!success) revert TokenTransferFailed();
         }
         bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, true);
         // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
@@ -158,7 +159,8 @@ contract Bridge is Controllable, IBridge {
         if (nft) {
             IERC721(token).safeTransferFrom(address(this), msg.sender, amountOrTokenId);
         } else {
-            IERC20(token).transfer(msg.sender, amountOrTokenId);
+            bool success = IERC20(token).transfer(msg.sender, amountOrTokenId);
+            if (!success) revert TokenTransferFailed();
         }
     }
 

@@ -4,6 +4,8 @@ pragma solidity ^0.8.23;
 /// @title Stability Bridge
 /// @author Alien Deployer (https://github.com/a17)
 interface IBridge {
+    error TokenTransferFailed();
+    
     struct Link {
         /// @dev Sorted chain A (chain A < chain B)
         uint16 chainA;

@@ -35,7 +35,7 @@ contract ChildERC20 is ERC20, IChildERC20 {
         string memory name,
         string memory symbol,
         address bridge_
-    ) ERC20(name, symbol) {
+    ) ERC20(name, symbol) payable {
         ChildERC20Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;

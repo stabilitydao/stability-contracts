@@ -37,12 +37,17 @@ contract ChildERC721 is ERC721, IChildERC721 {
         string memory symbol,
         string memory baseURI,
         address bridge_
-    ) ERC721(name, symbol) {
+    ) ERC721(name, symbol) payable {
         ChildERC721Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;
         $.baseURI = baseURI;
         $.bridge = bridge_;
+    }
+
+    modifier onlyBridge() {
+        _requireBridge();
+        _;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -83,6 +88,12 @@ contract ChildERC721 is ERC721, IChildERC721 {
         //slither-disable-next-line assembly
         assembly {
             $.slot := CHILDERC721_STORAGE_LOCATION
+        }
+    }
+
+    function _requireBridge() internal view {
+        if (this.bridge() != msg.sender) {
+            revert NotBridge();
         }
     }
 }

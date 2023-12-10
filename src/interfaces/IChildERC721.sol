@@ -2,6 +2,8 @@
 pragma solidity ^0.8.23;
 
 interface IChildERC721 {
+    error NotBridge();
+    
     function bridge() external view returns (address);
 
     function parent() external view returns (address token, uint16 chainId);
