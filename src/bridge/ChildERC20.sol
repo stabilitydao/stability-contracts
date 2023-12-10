@@ -42,15 +42,20 @@ contract ChildERC20 is ERC20, IChildERC20 {
         $.bridge = bridge_;
     }
 
+    modifier onlyBridge() {
+        _requireBridge();
+        _;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     
-    function mint(address to, uint amount) external {
+    function mint(address to, uint amount) external onlyBridge {
         _mint(to, amount);
     }
 
-    function burn(address from, uint amount) external {
+    function burn(address from, uint amount) external onlyBridge {
         _burn(from, amount);
     }
 
@@ -72,6 +77,12 @@ contract ChildERC20 is ERC20, IChildERC20 {
         //slither-disable-next-line assembly
         assembly {
             $.slot := CHILDERC20_STORAGE_LOCATION
+        }
+    }
+
+    function _requireBridge() internal view {
+        if (this.bridge() != msg.sender) {
+            revert NotBridge();
         }
     }
 }
