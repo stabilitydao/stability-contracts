@@ -199,7 +199,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
         address[] memory assets_,
         uint[] memory amountsMax
     ) external view virtual returns (uint[] memory amountsConsumed, uint value) {
-        //nosemgrep
+        // nosemgrep
         if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
             if (amountsMax.length != 1) {
                 revert IControllable.IncorrectArrayLength();
@@ -214,11 +214,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc IStrategy
-    function getSpecificName() external view virtual returns (string memory, bool) {
-        return ("", false);
-    }
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Cosumed amounts of invested assets

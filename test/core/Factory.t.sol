@@ -346,6 +346,9 @@ contract FactoryTest is Test, MockSetup {
             })
         );
 
+        vm.expectRevert(IVaultProxy.ProxyForbidden.selector);
+        IVaultProxy(vault).upgrade();
+
         factory.upgradeVaultProxy(vault);
     }
 
@@ -459,6 +462,9 @@ contract FactoryTest is Test, MockSetup {
             }),
             address(this)
         );
+
+        vm.expectRevert(IControllable.NotFactory.selector);
+        IStrategyProxy(strategy).upgrade();
 
         factory.upgradeStrategyProxy(strategy);
     }

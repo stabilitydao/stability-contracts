@@ -46,7 +46,7 @@ library StrategyLib {
         }
         uint len = farm.rewardAssets.length;
         address swapper = IPlatform(platform).swapper();
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
@@ -64,7 +64,7 @@ library StrategyLib {
 
         uint len = assets.length;
         amountsOut = new uint[](len);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = balance(assets[i]) * amount / total_;
             IERC20(assets[i]).transfer(receiver, amountsOut[i]);
@@ -102,7 +102,7 @@ library StrategyLib {
             IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
         uint len = assets_.length;
         amountsRemaining = new uint[](len);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (amounts_[i] > 0) {
                 // revenue fee amount of assets_[i]
@@ -151,7 +151,7 @@ library StrategyLib {
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         uint len = rewardAssets_.length;
         uint exchangeAssetBalanceBefore = balance(exchangeAsset);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
                 swapper.swap(
@@ -197,10 +197,6 @@ library StrategyLib {
         return earned * 1e18 * ConstantsLib.DENOMINATOR * uint(365) / tvl / (duration * 1e18 / 1 days);
     }
 
-    function revertUnderlying(address underlying) external pure {
-        revert(underlying == address(0) ? "StrategyBase: no underlying" : "StrategyBase: not implemented");
-    }
-
     function assetsAmountsWithBalances(
         address[] memory assets_,
         uint[] memory amounts_
@@ -208,7 +204,7 @@ library StrategyLib {
         assets = assets_;
         amounts = amounts_;
         uint len = assets_.length;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < len; ++i) {
             amounts[i] += balance(assets_[i]);
         }

@@ -67,6 +67,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         _testStrategies();
     }
 
+    function _addRewards(uint farmId) internal virtual {}
+
+    function _preHardWork() internal virtual {}
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -99,6 +103,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
             );
+            assertEq(IStrategyLogic(vars.strategyLogic).tokenStrategyLogic(vars.tokenId), strategies[i].id);
             vars.types = IStrategy(vars.strategyImplementation).supportedVaultTypes();
 
             for (uint k; k < vars.types.length; ++k) {
@@ -195,8 +200,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
+                assertEq(
+                    IVaultManager(platform.vaultManager()).tokenVault(factory.deployedVaultsLength() - 1), vars.vault
+                );
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
+                strategy.getSpecificName();
+                strategy.lastAprCompound();
                 address[] memory assets = strategy.assets();
                 vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
                 assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
@@ -218,6 +228,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
+                    IFarmingStrategy(address(strategy)).farmId();
                 }
 
                 {
@@ -302,6 +313,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                _preHardWork();
                 vm.txGasPrice(15e10); // 150gwei
                 {
                     vars.apr = 0;
@@ -343,6 +355,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 )
                             );
 
+                            StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
+
                             assertGt(tempApr, 0);
                             assertGt(tempEarned, 0);
                             assertGt(tempTvl, 0);
@@ -351,6 +365,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                     require(vars.hwEventFound, "UniversalTest: HardWork event not emited");
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                      ADD REWARDS                           */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*           CLAIM REWARDS FROM REWARDING VAULTS              */

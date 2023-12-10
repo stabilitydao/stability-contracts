@@ -96,7 +96,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     //slither-disable-next-line reentrancy-events
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
-        //nosemgrep
+        // nosemgrep
         if (msg.sender != _platform.hardWorker() && !_platform.isOperator(msg.sender)) {
             revert IncorrectMsgSender();
         }
@@ -144,9 +144,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
         }
+        // nosemgrep
         //slither-disable-next-line timestamp
         if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
-            //nosemgrep
+            // nosemgrep
             $.strategy.doHardWork();
         }
 
@@ -154,7 +155,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         DepositAssetsData memory data;
         data._totalSupply = totalSupply();
         data.totalValue = $.strategy.total();
-        //nosemgrep
+        // nosemgrep
         if (data._totalSupply != 0 && data.totalValue == 0) {
             revert FuseTrigger();
         }
@@ -167,14 +168,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         data.assets = $.strategy.assets();
         data.underlying = $.strategy.underlying();
 
-        //nosemgrep
+        // nosemgrep
         if (data.len == 1 && data.underlying != address(0) && data.underlying == assets_[0]) {
             data.value = amountsMax[0];
             IERC20(data.underlying).safeTransferFrom(msg.sender, address($.strategy), data.value);
             (data.amountsConsumed) = $.strategy.depositUnderlying(data.value);
         } else {
             (data.amountsConsumed, data.value) = $.strategy.previewDepositAssets(assets_, amountsMax);
-            //nosemgrep
+            // nosemgrep
             for (uint i; i < data.len; ++i) {
                 IERC20(data.assets[i]).safeTransferFrom(msg.sender, address($.strategy), data.amountsConsumed[i]);
             }
@@ -281,7 +282,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
         uint strategyAssetsLength = strategyAssets.length;
         address[] memory queryAprAssets = new address[](assetsLengthTmp);
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < strategyAssetsLength; ++i) {
             queryAprAssets[i] = strategyAssets[i];
         }
@@ -291,7 +292,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint[] memory queryAprs = IAprOracle(IPlatform(platform()).aprOracle()).getAprs(queryAprAssets);
         assetsLengthTmp = 0;
         uint queryAprsLength = queryAprs.length;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 ++assetsLengthTmp;
@@ -301,7 +302,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         assetsAprs = new uint[](assetsLengthTmp);
         //slither-disable-next-line uninitialized-local
         uint k;
-        //nosemgrep
+        // nosemgrep
         for (uint i; i < queryAprsLength; ++i) {
             if (queryAprs[i] > 0) {
                 assetsWithApr[k] = queryAprAssets[i];
@@ -379,7 +380,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint initialShares;
         (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets);
         uint _maxSupply = $.maxSupply;
-        //nosemgrep
+        // nosemgrep
         if (_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply) {
             revert ExceedMaxSupply(_maxSupply);
         }
@@ -454,7 +455,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         {
             address underlying = _strategy.underlying();
-            //nosemgrep
+            // nosemgrep
             bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
 
             // fuse is not triggered
@@ -478,7 +479,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             }
 
             uint len = amountsOut.length;
-            //nosemgrep
+            // nosemgrep
             for (uint i; i < len; ++i) {
                 if (amountsOut[i] < minAssetAmountsOut[i]) {
                     revert ExceedSlippageExactAsset(assets_[i], amountsOut[i], minAssetAmountsOut[i]);
