@@ -54,11 +54,11 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function mint(address to, uint tokenId) external {
+    function mint(address to, uint tokenId) external onlyBridge {
         _safeMint(to, tokenId);
     }
 
-    function burn(uint tokenId) external {
+    function burn(uint tokenId) external onlyBridge {
         _burn(tokenId);
     }
 
