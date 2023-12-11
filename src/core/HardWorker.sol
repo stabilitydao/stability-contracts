@@ -221,8 +221,8 @@ contract HardWorker is Controllable, IHardWorker {
 
         uint gasUsed = startGas - gasleft();
         uint gasCost = gasUsed * tx.gasprice;
+        //slither-disable-start unused-return
         // nosemgrep
-        //slither-disable-next-line unused-return
         if (isServer && gasCost > 0 && address(this).balance >= gasCost) {
             // nosemgrep
             //slither-disable-next-line low-level-calls
@@ -231,7 +231,7 @@ contract HardWorker is Controllable, IHardWorker {
                 revert IControllable.ETHTransferFailed();
             }
         }
-
+        //slither-disable-end unused-return
         emit Call(counter, gasUsed, gasCost, isServer);
     }
 
