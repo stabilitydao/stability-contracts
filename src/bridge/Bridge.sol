@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -8,13 +9,16 @@ import "../interfaces/IBridge.sol";
 import "../interfaces/IChildERC20.sol";
 import "../interfaces/IChildERC721.sol";
 import "../interfaces/IChildTokenFactory.sol";
+import "./lzApp/NonblockingLzApp.sol";
 
 /// @title Stability Bridge
 /// @author Jude (https://github.com/iammrjude)
-contract Bridge is Controllable, IBridge {
+contract Bridge is Controllable, IBridge, NonblockingLzApp {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    bytes public constant PAYLOAD = "\x01\x02\x03\x04";
 
     /// @inheritdoc IControllable
     string public constant VERSION = '1.0.0';
@@ -37,8 +41,9 @@ contract Bridge is Controllable, IBridge {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     
-    function initialize(address platform_) external initializer {
+    function initialize(address platform_, address _lzEndpoint) external initializer {
         __Controllable_init(platform_);
+        __NonblockingLzApp_init(_lzEndpoint);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -75,18 +80,13 @@ contract Bridge is Controllable, IBridge {
 
     /// @inheritdoc IBridge
     function interChainTransfer(address token, uint amountOrTokenId, uint16 chainTo, bool nft, bool lock) external payable {
-        // lock > mint > burn > unlock
         if (lock) lockToken(token, amountOrTokenId, chainTo, nft);
         if (!lock) burnToken(token, amountOrTokenId, chainTo, nft);
     }
 
     /// @inheritdoc IBridge
     function interChainReceive(uint16 srcChainId, bytes memory srcAddress, uint64 nonce, bytes memory payload) external {
-        (address toAddress, uint amountOrTokenId, address token, bool nft, bool mint) = abi.decode(payload, (address,uint,address,bool,bool));
-        address childToken = IChildTokenFactory(_getStorage().childTokenFactory).getChildTokenOf(token);
-        address parentToken = IChildTokenFactory(_getStorage().childTokenFactory).getParentTokenOf(token);
-        if (mint) mintToken(childToken, amountOrTokenId, nft);
-        if (!mint) unlockToken(parentToken, amountOrTokenId, nft);
+        _nonblockingLzReceive(srcChainId, srcAddress, nonce, payload);
     }
 
     /// @inheritdoc IBridge
@@ -126,49 +126,74 @@ contract Bridge is Controllable, IBridge {
         }
     }
 
-    function lockToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) internal {
+    function lockToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) public payable {
         if (nft) {
             IERC721(token).safeTransferFrom(msg.sender, address(this), amountOrTokenId);
         } else {
             bool success = IERC20(token).transferFrom(msg.sender, address(this), amountOrTokenId);
             if (!success) revert TokenTransferFailed();
         }
-        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, true);
-        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, nft, true);
+        _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
     }
 
-    function mintToken(address token, uint amountOrTokenId, bool nft) internal {
+    function mintToken(address token, address to, uint amountOrTokenId, bool nft) internal {
         if (nft) {
-            IChildERC721(token).mint(msg.sender, amountOrTokenId);
+            IChildERC721(token).mint(to, amountOrTokenId);
         } else {
-            IChildERC20(token).mint(msg.sender, amountOrTokenId);
+            IChildERC20(token).mint(to, amountOrTokenId);
         }
     }
 
-    function burnToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) internal {
+    function burnToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) public payable {
         if (nft) {
             IChildERC721(token).burn(amountOrTokenId);
         } else {
             IChildERC20(token).burn(msg.sender, amountOrTokenId);
         }
-        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, false);
-        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+        bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, nft, false);
+        _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
     }
 
-    function unlockToken(address token, uint amountOrTokenId, bool nft) internal {
+    function unlockToken(address token, address to, uint amountOrTokenId, bool nft) internal {
         if (nft) {
-            IERC721(token).safeTransferFrom(address(this), msg.sender, amountOrTokenId);
+            IERC721(token).safeTransferFrom(address(this), to, amountOrTokenId);
         } else {
-            bool success = IERC20(token).transfer(msg.sender, amountOrTokenId);
+            bool success = IERC20(token).transfer(to, amountOrTokenId);
             if (!success) revert TokenTransferFailed();
         }
     }
 
-    function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal {
+    function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal override {
         (address toAddress, uint amountOrTokenId, address token, bool nft, bool mint) = abi.decode(_payload, (address,uint,address,bool,bool));
         address childToken = IChildTokenFactory(_getStorage().childTokenFactory).getChildTokenOf(token);
         address parentToken = IChildTokenFactory(_getStorage().childTokenFactory).getParentTokenOf(token);
-        if (mint) mintToken(childToken, amountOrTokenId, nft);
-        if (!mint) unlockToken(parentToken, amountOrTokenId, nft);
+        if (mint) mintToken(childToken, toAddress, amountOrTokenId, nft);
+        if (!mint) unlockToken(parentToken, toAddress, amountOrTokenId, nft);
+    }
+
+    function estimateFee(
+        uint16 _dstChainId,
+        bool _useZro,
+        bytes calldata _adapterParams
+    ) public view returns (uint nativeFee, uint zroFee) {
+        return lzEndpoint.estimateFees(_dstChainId, address(this), PAYLOAD, _useZro, _adapterParams);
+    }
+
+    // function incrementCounter(uint16 _dstChainId) public payable {
+    //     _lzSend(_dstChainId, PAYLOAD, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    // }
+
+    function setOracle(uint16 dstChainId, address oracle) external onlyOwner {
+        uint TYPE_ORACLE = 6;
+        // set the Oracle
+        lzEndpoint.setConfig(lzEndpoint.getSendVersion(address(this)), dstChainId, TYPE_ORACLE, abi.encode(oracle));
+    }
+
+    function getOracle(uint16 remoteChainId) external view returns (address _oracle) {
+        bytes memory bytesOracle = lzEndpoint.getConfig(lzEndpoint.getSendVersion(address(this)), remoteChainId, address(this), 6);
+        assembly {
+            _oracle := mload(add(bytesOracle, 32))
+        }
     }
 }
