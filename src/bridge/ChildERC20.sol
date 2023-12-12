@@ -12,7 +12,8 @@ contract ChildERC20 is ERC20, IChildERC20 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ChildERC20")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant CHILDERC20_STORAGE_LOCATION = 0xb506eeb1b3f54d9da380c49fc8733ef6a2bcc9d32137471ed8d9a6613e6fb900;
+    bytes32 private constant CHILDERC20_STORAGE_LOCATION =
+        0xb506eeb1b3f54d9da380c49fc8733ef6a2bcc9d32137471ed8d9a6613e6fb900;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         STORAGE                            */
@@ -35,7 +36,7 @@ contract ChildERC20 is ERC20, IChildERC20 {
         string memory name,
         string memory symbol,
         address bridge_
-    ) ERC20(name, symbol) payable {
+    ) payable ERC20(name, symbol) {
         ChildERC20Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;
@@ -50,7 +51,7 @@ contract ChildERC20 is ERC20, IChildERC20 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    
+
     function mint(address to, uint amount) external onlyBridge {
         _mint(to, amount);
     }
@@ -63,11 +64,11 @@ contract ChildERC20 is ERC20, IChildERC20 {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function bridge() external view returns(address) {
+    function bridge() external view returns (address) {
         return _getStorage().bridge;
     }
 
-    function parent() external view returns(address token, uint16 chainId) {}
+    function parent() external view returns (address token, uint16 chainId) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

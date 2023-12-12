@@ -14,10 +14,11 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ChildTokenFactory")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant CHILDTOKENFACTORY_STORAGE_LOCATION = 0x60d85ab01da9561f1b5ee0277c3493def657ac9ed7765078710b0dc83f201c00;
+    bytes32 private constant CHILDTOKENFACTORY_STORAGE_LOCATION =
+        0x60d85ab01da9561f1b5ee0277c3493def657ac9ed7765078710b0dc83f201c00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         STORAGE                            */
@@ -36,7 +37,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
     function initialize(address platform_) external initializer {
         __Controllable_init(platform_);
     }
-    
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -48,7 +49,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory name,
         string memory symbol,
         address bridge
-    ) external returns(address) {
+    ) external returns (address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol, bridge);
         $.childTokenOf[parentToken] = address(childERC20);
@@ -64,7 +65,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory symbol,
         string memory baseURI,
         address bridge
-    ) external returns(address) {
+    ) external returns (address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI, bridge);
         $.childTokenOf[parentToken] = address(childERC721);

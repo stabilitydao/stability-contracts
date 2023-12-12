@@ -46,7 +46,8 @@ abstract contract LzApp is Initializable, OwnableUpgradeable, ILayerZeroReceiver
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
         require(
-            _srcAddress.length == trustedRemote.length && trustedRemote.length > 0 && keccak256(_srcAddress) == keccak256(trustedRemote),
+            _srcAddress.length == trustedRemote.length && trustedRemote.length > 0
+                && keccak256(_srcAddress) == keccak256(trustedRemote),
             "LzApp: invalid source sending contract"
         );
 
@@ -72,7 +73,9 @@ abstract contract LzApp is Initializable, OwnableUpgradeable, ILayerZeroReceiver
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
         require(trustedRemote.length != 0, "LzApp: destination chain is not a trusted source");
         _checkPayloadSize(_dstChainId, _payload.length);
-        lzEndpoint.send{value: _nativeFee}(_dstChainId, trustedRemote, _payload, _refundAddress, _zroPaymentAddress, _adapterParams);
+        lzEndpoint.send{value: _nativeFee}(
+            _dstChainId, trustedRemote, _payload, _refundAddress, _zroPaymentAddress, _adapterParams
+        );
     }
 
     function _checkGasLimit(
@@ -158,11 +161,7 @@ abstract contract LzApp is Initializable, OwnableUpgradeable, ILayerZeroReceiver
         emit SetPrecrime(_precrime);
     }
 
-    function setMinDstGas(
-        uint16 _dstChainId,
-        uint16 _packetType,
-        uint _minGas
-    ) external onlyOwner {
+    function setMinDstGas(uint16 _dstChainId, uint16 _packetType, uint _minGas) external onlyOwner {
         minDstGasLookup[_dstChainId][_packetType] = _minGas;
         emit SetMinDstGas(_dstChainId, _packetType, _minGas);
     }
