@@ -107,13 +107,14 @@ library RVaultLib {
     ) public {
         address localRewardToken = $.rewardToken[rewardTokenIndex];
         uint reward = earned($, rewardTokenIndex, owner);
+        //slither-disable-start timestamp
         // nosemgrep
-        //slither-disable-next-line timestamp
         if (reward > 0 && IERC20(localRewardToken).balanceOf(address(this)) >= reward) {
             $.rewardsForToken[rewardTokenIndex][owner] = 0;
             IERC20(localRewardToken).safeTransfer(receiver, reward);
             emit IRVault.RewardPaid(owner, localRewardToken, reward);
         }
+        //slither-disable-end timestamp
     }
 
     /// @dev Use it for any underlying movements

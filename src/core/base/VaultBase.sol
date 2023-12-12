@@ -144,10 +144,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
         }
+
+        // slither-disable-start timestamp
         // nosemgrep
-        //slither-disable-next-line timestamp
         if ($.doHardWorkOnDeposit && block.timestamp > $.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
-            // nosemgrep
+            // slither-disable-end timestamp
             $.strategy.doHardWork();
         }
 
