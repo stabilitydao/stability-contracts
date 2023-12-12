@@ -125,9 +125,9 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
-        // nosemgrep
         //slither-disable-next-line uninitialized-local
         uint localTtotal;
+        // nosemgrep
         for (uint i; i < len; ++i) {
             // nosemgrep
             IFactory.Farm memory farm = farms[i];
