@@ -69,9 +69,8 @@ contract ChildTokenFactoryTest is Test, MockSetup {
         vm.expectRevert(IControllable.NotOperator.selector);
         childTokenFactory.deployChildERC721(parentERC721Token, 1, "Profit Maker", "PM", uri, bridge);
 
-        address childERC721 = childTokenFactory.deployChildERC721(
-            parentERC721Token, 1, "Profit Maker", "PM", uri, bridge
-        );
+        address childERC721 =
+            childTokenFactory.deployChildERC721(parentERC721Token, 1, "Profit Maker", "PM", uri, bridge);
         assertEq(childTokenFactory.getChildTokenOf(parentERC721Token), childERC721);
         assertEq(childTokenFactory.getParentTokenOf(childERC721), parentERC721Token);
 
