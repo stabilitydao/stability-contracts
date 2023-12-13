@@ -5,7 +5,7 @@ pragma solidity ^0.8.23;
 /// @author Alien Deployer (https://github.com/a17)
 interface IBridge {
     error TokenTransferFailed();
-    
+
     struct Link {
         /// @dev Sorted chain A (chain A < chain B)
         uint16 chainA;
@@ -54,7 +54,13 @@ interface IBridge {
     /// @param chainTo Target chain ID
     /// @param nft Specify if the token is ERC-20 or ERC-721
     /// @param lock Specify if the action is to lock or burn
-    function interChainTransfer(address token, uint amountOrTokenId, uint16 chainTo, bool nft, bool lock) external payable;
+    function interChainTransfer(
+        address token,
+        uint amountOrTokenId,
+        uint16 chainTo,
+        bool nft,
+        bool lock
+    ) external payable;
 
     /// @notice Allows the contract to receive inter-chain messages.
     /// @dev This function is designed to handle messages originating from another chain.
@@ -63,8 +69,13 @@ interface IBridge {
     /// @param nonce A unique identifier for the message to prevent replay attacks.
     /// @param payload The data payload containing information or instructions from the source chain.
     /// @dev Emits an event signaling the successful reception of the inter-chain message.
-    /// @dev Access to this function may be restricted to specific roles or conditions.   
-    function interChainReceive(uint16 srcChainId, bytes memory srcAddress, uint64 nonce, bytes memory payload) external;
+    /// @dev Access to this function may be restricted to specific roles or conditions.
+    function interChainReceive(
+        uint16 srcChainId,
+        bytes memory srcAddress,
+        uint64 nonce,
+        bytes memory payload
+    ) external;
 
     /// @notice Add new link to the bridge
     /// Only operator can call this.

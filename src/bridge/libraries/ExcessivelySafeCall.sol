@@ -34,20 +34,19 @@ library ExcessivelySafeCall {
         // we call via assembly to avoid memcopying a very large returndata
         // returned by a malicious contract
         assembly {
-            _success := call(
-                _gas, // gas
-                _target, // recipient
-                0, // ether value
-                add(_calldata, 0x20), // inloc
-                mload(_calldata), // inlen
-                0, // outloc
-                0 // outlen
-            )
+            _success :=
+                call(
+                    _gas, // gas
+                    _target, // recipient
+                    0, // ether value
+                    add(_calldata, 0x20), // inloc
+                    mload(_calldata), // inlen
+                    0, // outloc
+                    0 // outlen
+                )
             // limit our copy to 256 bytes
             _toCopy := returndatasize()
-            if gt(_toCopy, _maxCopy) {
-                _toCopy := _maxCopy
-            }
+            if gt(_toCopy, _maxCopy) { _toCopy := _maxCopy }
             // Store the length of the copied bytes
             mstore(_returnData, _toCopy)
             // copy the bytes from returndata[0:_toCopy]
@@ -86,19 +85,18 @@ library ExcessivelySafeCall {
         // we call via assembly to avoid memcopying a very large returndata
         // returned by a malicious contract
         assembly {
-            _success := staticcall(
-                _gas, // gas
-                _target, // recipient
-                add(_calldata, 0x20), // inloc
-                mload(_calldata), // inlen
-                0, // outloc
-                0 // outlen
-            )
+            _success :=
+                staticcall(
+                    _gas, // gas
+                    _target, // recipient
+                    add(_calldata, 0x20), // inloc
+                    mload(_calldata), // inlen
+                    0, // outloc
+                    0 // outlen
+                )
             // limit our copy to 256 bytes
             _toCopy := returndatasize()
-            if gt(_toCopy, _maxCopy) {
-                _toCopy := _maxCopy
-            }
+            if gt(_toCopy, _maxCopy) { _toCopy := _maxCopy }
             // Store the length of the copied bytes
             mstore(_returnData, _toCopy)
             // copy the bytes from returndata[0:_toCopy]

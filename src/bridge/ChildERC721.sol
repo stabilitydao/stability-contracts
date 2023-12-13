@@ -12,7 +12,8 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ChildERC721")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant CHILDERC721_STORAGE_LOCATION = 0xbb2be940d8cc9a19c405bb2e9a1cc56dc19be950653b2045384a2537f8e3f800;
+    bytes32 private constant CHILDERC721_STORAGE_LOCATION =
+        0xbb2be940d8cc9a19c405bb2e9a1cc56dc19be950653b2045384a2537f8e3f800;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         STORAGE                            */
@@ -25,7 +26,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
         string baseURI;
         address bridge;
     }
-    
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -37,7 +38,7 @@ contract ChildERC721 is ERC721, IChildERC721 {
         string memory symbol,
         string memory baseURI,
         address bridge_
-    ) ERC721(name, symbol) payable {
+    ) payable ERC721(name, symbol) {
         ChildERC721Storage storage $ = _getStorage();
         $.parentToken = parentToken;
         $.parentChainId = parentChainId;
@@ -66,11 +67,11 @@ contract ChildERC721 is ERC721, IChildERC721 {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function bridge() external view returns(address) {
+    function bridge() external view returns (address) {
         return _getStorage().bridge;
     }
 
-    function parent() external pure returns(address token, uint16 chainId) {
+    function parent() external pure returns (address token, uint16 chainId) {
         ChildERC721Storage memory $ = _getStorage();
         return ($.parentToken, $.parentChainId);
     }
