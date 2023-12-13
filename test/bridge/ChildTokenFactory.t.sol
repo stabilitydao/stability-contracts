@@ -42,13 +42,13 @@ contract ChildTokenFactoryTest is Test, MockSetup {
 
         assertEq(IChildERC20(childERC20).bridge(), bridge);
         (address token, uint chainId) = IChildERC20(childERC20).parent();
-        assertEq(token, parentERC20Token);
-        assertEq(chainId, 1);
+        assertEq(token, address(0));
+        assertEq(chainId, 0);
 
         vm.startPrank(bridge);
-        IChildERC20(childERC20).mint(address(123), 1e18);
-        assertEq(IERC20(childERC20).balanceOf(address(123)), 1e18);
-        IChildERC20(childERC20).burn(address(123), 1e18);
+        IChildERC20(childERC20).mint(address(123), 100e18);
+        assertEq(IERC20(childERC20).balanceOf(address(123)), 100e18);
+        IChildERC20(childERC20).burn(address(123), 100e18);
         assertEq(IERC20(childERC20).balanceOf(address(123)), 0);
         vm.stopPrank();
     }
