@@ -74,6 +74,22 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
 
     /// @inheritdoc IBridge
     function getTarget(address token, uint16 chainTo) external view returns (address targetToken, bytes32 linkHash) {}
+    
+    function estimateFee(
+        uint16 _dstChainId,
+        bool _useZro,
+        bytes calldata _adapterParams
+    ) public view returns (uint nativeFee, uint zroFee) {
+        return lzEndpoint.estimateFees(_dstChainId, address(this), PAYLOAD, _useZro, _adapterParams);
+    }
+
+    function getOracle(uint16 remoteChainId) external view returns (address _oracle) {
+        bytes memory bytesOracle =
+            lzEndpoint.getConfig(lzEndpoint.getSendVersion(address(this)), remoteChainId, address(this), 6);
+        assembly {
+            _oracle := mload(add(bytesOracle, 32))
+        }
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
@@ -127,17 +143,6 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
     /// @inheritdoc IBridge
     function enableAdapter(string memory adapterId) external {}
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       INTERNAL LOGIC                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _getStorage() private pure returns (BridgeStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := BRIDGE_STORAGE_LOCATION
-        }
-    }
-
     function lockToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) public payable {
         if (nft) {
             IERC721(token).safeTransferFrom(msg.sender, address(this), amountOrTokenId);
@@ -149,14 +154,6 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
         _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
     }
 
-    function mintToken(address token, address to, uint amountOrTokenId, bool nft) internal {
-        if (nft) {
-            IChildERC721(token).mint(to, amountOrTokenId);
-        } else {
-            IChildERC20(token).mint(to, amountOrTokenId);
-        }
-    }
-
     function burnToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) public payable {
         if (nft) {
             IChildERC721(token).burn(amountOrTokenId);
@@ -165,6 +162,31 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
         }
         bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, nft, false);
         _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    }
+
+    function setOracle(uint16 dstChainId, address oracle) external onlyOwner {
+        uint TYPE_ORACLE = 6;
+        // set the Oracle
+        lzEndpoint.setConfig(lzEndpoint.getSendVersion(address(this)), dstChainId, TYPE_ORACLE, abi.encode(oracle));
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _getStorage() private pure returns (BridgeStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := BRIDGE_STORAGE_LOCATION
+        }
+    }
+
+    function mintToken(address token, address to, uint amountOrTokenId, bool nft) internal {
+        if (nft) {
+            IChildERC721(token).mint(to, amountOrTokenId);
+        } else {
+            IChildERC20(token).mint(to, amountOrTokenId);
+        }
     }
 
     function unlockToken(address token, address to, uint amountOrTokenId, bool nft) internal {
