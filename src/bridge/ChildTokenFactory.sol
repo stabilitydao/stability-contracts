@@ -49,7 +49,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory name,
         string memory symbol,
         address bridge
-    ) external returns (address) {
+    ) external onlyOperator returns (address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC20 childERC20 = new ChildERC20(parentToken, parentChainId, name, symbol, bridge);
         $.childTokenOf[parentToken] = address(childERC20);
@@ -65,7 +65,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
         string memory symbol,
         string memory baseURI,
         address bridge
-    ) external returns (address) {
+    ) external onlyOperator returns (address) {
         ChildTokenFactoryStorage storage $ = _getStorage();
         ChildERC721 childERC721 = new ChildERC721(parentToken, parentChainId, name, symbol, baseURI, bridge);
         $.childTokenOf[parentToken] = address(childERC721);

@@ -68,7 +68,10 @@ contract ChildERC20 is ERC20, IChildERC20 {
         return _getStorage().bridge;
     }
 
-    function parent() external view returns (address token, uint16 chainId) {}
+    function parent() external pure returns (address token, uint16 chainId) {
+        ChildERC20Storage memory $ = _getStorage();
+        return ($.parentToken, $.parentChainId);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

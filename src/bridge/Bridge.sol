@@ -206,4 +206,8 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
         if (mint) mintToken(childToken, toAddress, amountOrTokenId, nft);
         if (!mint) unlockToken(parentToken, toAddress, amountOrTokenId, nft);
     }
+
+    // function incrementCounter(uint16 _dstChainId) public payable {
+    //     _lzSend(_dstChainId, PAYLOAD, payable(msg.sender), address(0x0), bytes(""), msg.value);
+    // }
 }
