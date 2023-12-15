@@ -61,8 +61,8 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() external pure override returns (string memory, bool) {
-        return ("Good Params", true);
+    function getSpecificName() public view override virtual returns (string memory, bool) {
+        return ('Good Params', true);
     }
 
     function extra() external pure returns (bytes32) {
@@ -88,10 +88,10 @@ contract MockStrategy is LPStrategyBase {
         total = total_;
     }*/
 
-    // function setFees(uint fee0_, uint fee1_) external {
-    //     _fee0 = fee0_;
-    //     _fee1 = fee1_;
-    // }
+    function setFees(uint fee0_, uint fee1_) external {
+        _fee0 = fee0_;
+        _fee1 = fee1_;
+    }
 
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
@@ -208,7 +208,11 @@ contract MockStrategy is LPStrategyBase {
         amounts = new uint[](0);
     }
 
-    function _liquidateRewards(address /*exchangeAsset*/, address[] memory /*rewardAssets_*/, uint[] memory /*rewardAmounts_*/) internal pure override returns (uint earnedExchangeAsset) {
+    function _liquidateRewards(
+        address, /*exchangeAsset*/
+        address[] memory, /*rewardAssets_*/
+        uint[] memory /*rewardAmounts_*/
+    ) internal pure override returns (uint earnedExchangeAsset) {
         return 0;
     }
 }

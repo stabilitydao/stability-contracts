@@ -23,7 +23,7 @@ contract MockActiveStrategy is MockStrategy, ActiveStrategyBase {
         return super.supportsInterface(interfaceId);
     }
 
-    function getSpecificName() public view override(MockStrategy, StrategyBase) returns (string memory, bool) {
+    function getSpecificName() public view override(MockStrategy, IStrategy) returns (string memory, bool) {
         return super.getSpecificName();
     }
 
