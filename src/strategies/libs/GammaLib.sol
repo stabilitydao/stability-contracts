@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 library GammaLib {
-    enum Presets{ NARROW, WIDE, DYNAMIC, STABLE }
+    enum Presets {
+        NARROW,
+        WIDE,
+        DYNAMIC,
+        STABLE
+    }
 
     function getPresetName(uint preset) external pure returns (string memory) {
         if (preset == uint(Presets.NARROW)) {

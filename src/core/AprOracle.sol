@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "./base/Controllable.sol";
 import "../interfaces/IAprOracle.sol";
@@ -15,19 +15,20 @@ contract AprOracle is Controllable, IAprOracle {
 
     /// @custom:storage-location erc7201:stability.AprOracle
     struct AprOracleStorage {
-        mapping (address asset => uint apr) assetApr;
+        mapping(address asset => uint apr) assetApr;
     }
-    
+
     //region ----- Storage -----
 
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AprOracle")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant APRORACLE_STORAGE_LOCATION = 0x0dc0ce6c496f1b862d4b48237a101bb40130a02088e33738cbe0a34f7cf84300;
-    
+    bytes32 private constant APRORACLE_STORAGE_LOCATION =
+        0x0dc0ce6c496f1b862d4b48237a101bb40130a02088e33738cbe0a34f7cf84300;
+
     //region ----- Constants -----
 
     function initialize(address platform_) external initializer {
@@ -38,7 +39,7 @@ contract AprOracle is Controllable, IAprOracle {
     function setAprs(address[] memory assets, uint[] memory aprs) external onlyOperator {
         AprOracleStorage storage $ = _getStorage();
         uint len = assets.length;
-        if(len != aprs.length) {
+        if (len != aprs.length) {
             revert IControllable.IncorrectArrayLength();
         }
         // nosemgrep

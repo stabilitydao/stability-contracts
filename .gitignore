@@ -21,3 +21,9 @@ semgrep.sarif
 
 # Semgrep rules
 rules/
+
+# Test coverage report
+report/
+
+# OS files
+.DS_Store

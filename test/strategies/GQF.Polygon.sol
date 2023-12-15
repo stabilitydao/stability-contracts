@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
@@ -25,11 +25,8 @@ contract GammaQuickSwapFarmStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _addStrategy(uint farmId) internal {
-        strategies.push(Strategy({
-            id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
-            pool: address(0),
-            farmId: farmId,
-            underlying: address(0)
-        }));
+        strategies.push(
+            Strategy({id: StrategyIdLib.GAMMA_QUICKSWAP_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+        );
     }
 }

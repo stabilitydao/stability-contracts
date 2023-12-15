@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "./IStrategy.sol";
 
@@ -10,7 +10,10 @@ import "./IStrategy.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IVault is IERC165 {
-    //region ----- Custom Errors -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     error NotEnoughBalanceToPay();
     error FuseTrigger();
     error ExceedSlippage(uint mintToUser, uint minToMint);
@@ -18,19 +21,39 @@ interface IVault is IERC165 {
     error ExceedMaxSupply(uint maxSupply);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error WaitAFewBlocks();
-    //endregion -- Custom Errors -----
-    
-    //region ----- Events -----
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
-    event WithdrawAssets(address indexed account, address[] assets, uint sharesAmount, uint[] amountsOut);
+    event WithdrawAssets(
+        address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut
+    );
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
 
-    //endregion -- Events -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //region ----- Data types -----
+    /// @custom:storage-location erc7201:stability.VaultBase
+    struct VaultBaseStorage {
+        /// @dev Prevents manipulations with deposit and withdraw in short time.
+        ///      For simplification we are setup new withdraw request on each deposit/transfer.
+        mapping(address msgSender => uint blockNumber) withdrawRequests;
+        /// @inheritdoc IVault
+        IStrategy strategy;
+        /// @inheritdoc IVault
+        uint maxSupply;
+        /// @inheritdoc IVault
+        uint tokenId;
+        /// @inheritdoc IVault
+        bool doHardWorkOnDeposit;
+        /// @dev Immutable vault type ID
+        string _type;
+    }
 
     /// @title Vault Initialization Data
     /// @notice Data structure containing parameters for initializing a new vault.
@@ -54,7 +77,7 @@ interface IVault is IERC165 {
 
     /// @title Deposit Assets Data
     /// @notice Data structure containing parameters for function depositAssets to avoid stack too deep.
-    /// @notice This structure use local variables. 
+    /// @notice This structure use local variables.
     struct DepositAssetsData {
         uint _totalSupply;
         uint totalValue;
@@ -66,16 +89,16 @@ interface IVault is IERC165 {
         uint mintAmount;
     }
 
-    //endregion -- Data types -----
-
-    //region ----- Read functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VIEW FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Immutable vault type ID
     function vaultType() external view returns (string memory);
 
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
-    function getUniqueInitParamLength() external view returns(uint uniqueInitAddresses, uint uniqueInitNums); 
+    function getUniqueInitParamLength() external view returns (uint uniqueInitAddresses, uint uniqueInitNums);
 
     /// @notice Vault type extra data
     /// @return Vault type color, background color and other extra data
@@ -94,7 +117,7 @@ interface IVault is IERC165 {
     function tokenId() external view returns (uint);
 
     /// @dev Trigger doHardwork on invest action. Enabled by default.
-    function doHardWorkOnDeposit() external view returns(bool);
+    function doHardWorkOnDeposit() external view returns (bool);
 
     /// @dev USD price of share with 18 decimals.
     ///      ONLY FOR OFF-CHAIN USE.
@@ -116,23 +139,24 @@ interface IVault is IERC165 {
     /// @return amountsConsumed Amounts of strategy assets that can be deposited by providing amountsMax
     /// @return sharesOut Amount of vault shares that will be minted
     /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
-    function previewDepositAssets(address[] memory assets_, uint[] memory amountsMax) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
-
-    /// @notice Calculation of assets amount to receive for exact amount of shares.
-    /// @param sharesToBurn Amount of shares to burn
-    /// @return amountsOut Array of assets amounts to receive
-    function previewWithdraw(uint sharesToBurn) external view returns (uint[] memory amountsOut);
+    function previewDepositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
     /// @notice All available data on the latest declared APR (annual percentage rate)
     /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
     /// @return strategyApr Strategy investmnt APR declared on last HardWork.
     /// @return assetsWithApr Assets with underlying APR
     /// @return assetsAprs Underlying APR of asset
-    function getApr() external view returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
+    function getApr()
+        external
+        view
+        returns (uint totalApr, uint strategyApr, address[] memory assetsWithApr, uint[] memory assetsAprs);
 
-    //endregion -- Read functions -----
-
-    //region ----- Write functions -----
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Deposit final assets (pool assets) to the strategy and minting of vault shares.
     ///      If the strategy interacts with a pool or farms through an underlying token, then it will be minted.
@@ -141,13 +165,38 @@ interface IVault is IERC165 {
     /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
     /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user.
     /// @param receiver Receiver of deposit. If receiver is zero address, receiver is msg.sender.
-    function depositAssets(address[] memory assets_, uint[] memory amountsMax, uint minSharesOut, address receiver) external;
+    function depositAssets(
+        address[] memory assets_,
+        uint[] memory amountsMax,
+        uint minSharesOut,
+        address receiver
+    ) external;
 
     /// @dev Burning shares of vault and obtaining strategy assets.
     /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
     /// @param amountShares Shares amount for burning
     /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
-    function withdrawAssets(address[] memory assets_, uint amountShares, uint[] memory minAssetAmountsOut) external;
+    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut
+    ) external returns (uint[] memory);
+
+    /// @dev Burning shares of vault and obtaining strategy assets.
+    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
+    /// @param amountShares Shares amount for burning
+    /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
+    /// @param receiver Receiver of assets
+    /// @param owner Owner of vault shares
+    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
+    function withdrawAssets(
+        address[] memory assets_,
+        uint amountShares,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external returns (uint[] memory);
 
     /// @dev Setting of vault capacity
     /// @param maxShares If totalSupply() exceeds this value, deposits will not be possible
@@ -160,13 +209,8 @@ interface IVault is IERC165 {
     /// @notice Initialization function for the vault.
     /// @dev This function is usually called by the Factory during the creation of a new vault.
     /// @param vaultInitializationData Data structure containing parameters for vault initialization.
-    function initialize(
-        VaultInitializationData memory vaultInitializationData
-    ) external;
+    function initialize(VaultInitializationData memory vaultInitializationData) external;
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
-
-    //endregion -- Write functions -----
-
 }

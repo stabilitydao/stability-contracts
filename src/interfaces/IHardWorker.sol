@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev HardWork resolver and caller. Primary executor is server script, reserve executor is Gelato Automate.
 /// Hardwork is important task of any vault - claiming revenue and processing it by strategy, updating rewarding,
@@ -7,7 +7,6 @@ pragma solidity ^0.8.22;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IHardWorker {
-
     //region ----- Custom Errors -----
     error NotExistWithObject(address notExistObject);
     error AlreadyExclude(address alreadyExcludedObject);
@@ -30,36 +29,36 @@ interface IHardWorker {
     function excludedVaults(address vault) external view returns (bool);
 
     /// @notice Maximum vault HardWork calls per execution
-    function maxHwPerCall() external view returns(uint);
+    function maxHwPerCall() external view returns (uint);
 
     /// @notice Check dedicated server address allowance for execute vault HardWorks
-    function dedicatedServerMsgSender(address sender) external view returns(bool allowed);
+    function dedicatedServerMsgSender(address sender) external view returns (bool allowed);
 
     /// @notice Dedicated Gelato OPS proxy for HardWorker contract address.
     /// OPS proxy is deployed at HardWorker initialization.
     /// @return Immutable Gelato dedicated msg.sender
-    function dedicatedGelatoMsgSender() external view returns(address);
+    function dedicatedGelatoMsgSender() external view returns (address);
 
     /// @notice Checker method for calling from server script
     /// @return canExec Hard Work can be executed
     /// @return execPayload Vault addresses for HardWork
-    function checkerServer() external view returns(bool canExec, bytes memory execPayload);
+    function checkerServer() external view returns (bool canExec, bytes memory execPayload);
 
     /// @notice Checker method for calling from Gelato Automate
     /// @return canExec Hard Work can be executed
     /// @return execPayload Vault addresses for HardWork
-    function checkerGelato() external view returns(bool canExec, bytes memory execPayload);
+    function checkerGelato() external view returns (bool canExec, bytes memory execPayload);
 
     /// @notice Gelato Automate task ID created by this contract
-    function gelatoTaskId() external view returns(bytes32);
+    function gelatoTaskId() external view returns (bytes32);
 
     /// @notice ETH balance of HardWork contract on Gelato
     /// @return ETH amount with 18 decimals
-    function gelatoBalance() external view returns(uint);
+    function gelatoBalance() external view returns (uint);
 
     /// @notice Return minimum required ETH balance of HardWork contract on Gelato
     /// @return ETH amount with 18 decimals
-    function gelatoMinBalance() external view returns(uint);
+    function gelatoMinBalance() external view returns (uint);
 
     /// @notice Setup allowance status for dedicated server address
     function setDedicatedServerMsgSender(address sender, bool allowed) external;
@@ -83,5 +82,4 @@ interface IHardWorker {
     /// @notice Call vault HardWorks
     /// @param vaults Addresses of vault from checkerServer/checkerGelato output
     function call(address[] memory vaults) external;
-
 }

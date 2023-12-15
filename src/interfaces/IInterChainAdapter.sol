@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title Interoperability adapter
 /// @author Alien Deployer (https://github.com/a17)
@@ -23,5 +23,4 @@ interface IInterChainAdapter {
 
     /// @notice Send message to other blockchain
     function sendMessage(Message memory message) external;
-
 }

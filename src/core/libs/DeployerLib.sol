@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../proxy/VaultProxy.sol";
 import "../proxy/StrategyProxy.sol";
 
 library DeployerLib {
-    function deployVaultProxy() external returns(address) {
+    function deployVaultProxy() external returns (address) {
         return address(new VaultProxy());
     }
 
-    function deployStrategyProxy() external returns(address) {
+    function deployStrategyProxy() external returns (address) {
         return address(new StrategyProxy());
     }
 }

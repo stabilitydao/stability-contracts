@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "./MockStrategy.sol";
 
@@ -10,5 +10,4 @@ contract MockStrategyUpgrade is MockStrategy {
 
     // add this to be excluded from coverage report
     function test() public {}
-
 }

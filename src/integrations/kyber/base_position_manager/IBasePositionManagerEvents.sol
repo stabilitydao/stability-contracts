@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 interface IBasePositionManagerEvents {
   /// @notice Emitted when a token is minted for a given position

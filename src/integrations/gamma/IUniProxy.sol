@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 interface IUniProxy {
     /// @notice Get the amount of token to deposit for the given amount of pair token

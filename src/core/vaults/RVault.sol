@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../base/VaultBase.sol";
@@ -20,7 +20,7 @@ contract RVault is RVaultBase {
     //region ----- Constants -----
 
     /// @dev Version of RVault implementation
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.1";
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 
@@ -44,10 +44,9 @@ contract RVault is RVaultBase {
     //region ----- Init -----
 
     /// @inheritdoc IVault
-    function initialize(
-        VaultInitializationData memory vaultInitializationData
-    ) initializer public {
-        if(vaultInitializationData.vaultInitAddresses.length != 1 || vaultInitializationData.vaultInitNums.length < 1){
+    function initialize(VaultInitializationData memory vaultInitializationData) public initializer {
+        if (vaultInitializationData.vaultInitAddresses.length != 1 || vaultInitializationData.vaultInitNums.length < 1)
+        {
             revert IControllable.IncorrectInitParams();
         }
         //slither-disable-next-line uninitialized-local
@@ -90,10 +89,14 @@ contract RVault is RVaultBase {
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+    function getUniqueInitParamLength()
+        public
+        pure
+        override(IVault, VaultBase)
+        returns (uint uniqueInitAddresses, uint uniqueInitNums)
+    {
         return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----
-
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/interfaces/IPlatform.sol";
@@ -10,7 +10,11 @@ import "../../src/strategies/GammaQuickSwapFarmStrategy.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 library DeployStrategyLib {
-    function deployStrategy(address platform, string memory id, bool farming) internal returns (address implementation) {
+    function deployStrategy(
+        address platform,
+        string memory id,
+        bool farming
+    ) internal returns (address implementation) {
         IFactory factory = IFactory(IPlatform(platform).factory());
         implementation = factory.strategyLogicConfig(keccak256(bytes(id))).implementation;
         if (implementation != address(0)) {
@@ -25,7 +29,8 @@ library DeployStrategyLib {
             implementation = address(new GammaQuickSwapFarmStrategy());
         }
 
-        require(implementation != address(0), 'DeployStrategyLib: unknown strategy');
+        // nosemgrep
+        require(implementation != address(0), "DeployStrategyLib: unknown strategy");
 
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({

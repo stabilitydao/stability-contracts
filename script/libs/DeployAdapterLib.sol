@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -10,7 +10,7 @@ import "../../src/adapters/KyberAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
-        address existAdapter = address(IPlatform(platform).ammAdapter(keccak256(bytes (id))).proxy);
+        address existAdapter = address(IPlatform(platform).ammAdapter(keccak256(bytes(id))).proxy);
         if (existAdapter != address(0)) {
             return existAdapter;
         }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import "../../src/core/PriceReader.sol";
@@ -34,7 +34,7 @@ contract PriceReaderTest is Test, MockSetup {
         proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
 
         proxy = new Proxy();
         proxy.initProxy(address(new Swapper()));
@@ -63,7 +63,6 @@ contract PriceReaderTest is Test, MockSetup {
     }
 
     function testOraclePrices() public {
-
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(1),
@@ -76,10 +75,12 @@ contract PriceReaderTest is Test, MockSetup {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                zap: address(11)
+                rebalancer: address(0),
+                zap: address(11),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: 'Localhost Ethereum',
+                networkName: "Localhost Ethereum",
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
@@ -88,8 +89,8 @@ contract PriceReaderTest is Test, MockSetup {
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
-        ); 
-        
+        );
+
         MockAmmAdapter dexAdapter = new MockAmmAdapter(address(tokenE), address(tokenD));
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
@@ -100,7 +101,7 @@ contract PriceReaderTest is Test, MockSetup {
             tokenOut: address(tokenD)
         });
 
-        swapper.addPools(pools, false); 
+        swapper.addPools(pools, false);
 
         priceReader.initialize(address(platform));
         chainlinkAdapter.initialize(address(platform));
@@ -120,25 +121,39 @@ contract PriceReaderTest is Test, MockSetup {
         priceFeeds[0] = address(aggregatorV3InterfaceTokenA);
         priceFeeds[1] = address(aggregatorV3InterfaceTokenB);
         priceFeeds[2] = address(aggregatorV3InterfaceTokenD);
+
+        address[] memory fakeAssets = new address[](2);
+        fakeAssets[0] = address(tokenA);
+        fakeAssets[1] = address(tokenA);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        chainlinkAdapter.addPriceFeeds(assets, fakeAssets);
+
+        address[] memory sameAssets = new address[](3);
+        sameAssets[0] = address(tokenA);
+        sameAssets[1] = address(tokenA);
+        sameAssets[2] = address(tokenA);
+        vm.expectRevert(IControllable.AlreadyExist.selector);
+        chainlinkAdapter.addPriceFeeds(sameAssets, priceFeeds);
+
         chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
 
         {
-        // getPrice test
-        (uint priceA, bool trustedA) = priceReader.getPrice(address(tokenA));
-        (uint priceB, bool trustedB) = priceReader.getPrice(address(tokenB));
-        (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD)); 
-        (uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
-        (uint _zero, bool _false) = priceReader.getPrice(address(this)); 
-        assertEq(priceA, 1e18);
-        assertEq(trustedA, true);
-        assertEq(priceB, 2 * 1e18);
-        assertEq(trustedB, true); 
-        assertEq(priceD, 3 * 1e18);
-        assertEq(trustedD, true); 
-        assertEq(priceE, 3 * 2e12);
-        assertEq(trustedE, false);
-        assertEq(_zero, 0);
-        assertEq(_false, false);
+            // getPrice test
+            (uint priceA, bool trustedA) = priceReader.getPrice(address(tokenA));
+            (uint priceB, bool trustedB) = priceReader.getPrice(address(tokenB));
+            (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD));
+            (uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
+            (uint _zero, bool _false) = priceReader.getPrice(address(this));
+            assertEq(priceA, 1e18);
+            assertEq(trustedA, true);
+            assertEq(priceB, 2 * 1e18);
+            assertEq(trustedB, true);
+            assertEq(priceD, 3 * 1e18);
+            assertEq(trustedD, true);
+            assertEq(priceE, 3 * 2e12);
+            assertEq(trustedE, false);
+            assertEq(_zero, 0);
+            assertEq(_false, false);
         }
 
         // getAssetsPrice test
@@ -151,8 +166,8 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(assetAmountPrice[1], 300 * 2 * 1e18);
         assertEq(assetAmountPrice[2], 3 * 1e18);
         assertEq(total, 1103 * 1e18);
-        assertEq(trusted, true); 
-        
+        assertEq(trusted, true);
+
         priceReader.removeAdapter(address(chainlinkAdapter));
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         priceReader.removeAdapter(address(chainlinkAdapter));
@@ -163,10 +178,14 @@ contract PriceReaderTest is Test, MockSetup {
         assertEq(allPrices[1], 2 * 1e18);
         address[] memory removeAssets = new address[](1);
         removeAssets[0] = address(tokenA);
+        address[] memory removeNotExistingAsset = new address[](1);
+        removeNotExistingAsset[0] = address(123);
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
+        chainlinkAdapter.removePriceFeeds(removeNotExistingAsset);
         chainlinkAdapter.removePriceFeeds(removeAssets);
         allAssets = chainlinkAdapter.assets();
         assertEq(allAssets[0], address(tokenD));
         (uint price,) = chainlinkAdapter.getPrice(address(this));
-        assertEq(price, 0); 
+        assertEq(price, 0);
     }
 }

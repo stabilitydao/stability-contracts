@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -23,7 +23,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -40,13 +40,13 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
 
     function algebraSwapCallback(
         //slither-disable-next-line similar-names
-        int256 amount0Delta,
-        int256 amount1Delta,
+        int amount0Delta,
+        int amount1Delta,
         //slither-disable-next-line naming-convention
         bytes calldata _data
     ) external {
         // nosemgrep
-        if(amount0Delta <= 0 && amount1Delta <= 0){
+        if (amount0Delta <= 0 && amount1Delta <= 0) {
             revert IAmmAdapter.WrongCallbackAmount();
         }
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
@@ -90,8 +90,8 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
             // }
 
             uint priceImpact = (priceBefore - priceAfter) * ConstantsLib.DENOMINATOR / priceBefore;
-            if(priceImpact >= priceImpactTolerance){
-                revert (string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+            if (priceImpact >= priceImpactTolerance) {
+                revert(string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
             }
         }
 
@@ -112,7 +112,7 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IAmmAdapter
-    function ammAdapterId() external pure returns(string memory) {
+    function ammAdapterId() external pure returns (string memory) {
         return AmmAdapterIdLib.ALGEBRA;
     }
 
@@ -126,48 +126,31 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getPrice(
-        address pool,
-        address tokenIn,
-        address /*tokenOut*/,
-        uint amount
-    ) public view returns (uint) {
+    function getPrice(address pool, address tokenIn, address, /*tokenOut*/ uint amount) public view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
         address token1 = IAlgebraPool(pool).token1();
 
-        uint256 tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
-        uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        uint tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        uint tokenOutDecimals =
+            tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         //slither-disable-next-line unused-return
         (uint160 sqrtPriceX96,,,,,,) = IAlgebraPool(pool).globalState();
 
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
     }
 
-
     /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(address, uint[] memory) external pure returns (uint, uint[] memory) {
         revert IAmmAdapter.NotSupportedByCAMM();
     }
 
-        /// @inheritdoc IAmmAdapter
+    /// @inheritdoc IAmmAdapter
     function getProportion0(address pool) public view returns (uint) {
-        address token1 = IAlgebraPool(pool).token1();
         //slither-disable-next-line unused-return
-        (uint160 sqrtRatioX96, int24 tick,,,,,) = IAlgebraPool(pool).globalState();
+        (, int24 tick,,,,,) = IAlgebraPool(pool).globalState();
         int24 tickSpacing = IAlgebraPool(pool).tickSpacing();
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
-        uint token1Price = getPrice(pool, token1, address(0), 0);
-        uint token1Decimals = IERC20Metadata(token1).decimals();
-        //slither-disable-next-line similar-names
-        uint token0Desired = token1Price;
-        uint token1Desired = 10 ** token1Decimals;
-        uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, token0Desired, token1Desired);
-        //slither-disable-next-line similar-names
-        (uint amount0Consumed, uint amount1Consumed) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
-        //slither-disable-next-line divide-before-multiply
-        uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
-        //slither-disable-next-line divide-before-multiply
-        return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+        return _getProportion0(pool, lowerTick, upperTick);
     }
 
     /// @inheritdoc IAmmAdapter
@@ -179,40 +162,53 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc ICAmmAdapter
-    function getLiquidityForAmounts(address pool, uint[] memory amounts, int24[] memory ticks) external view returns (uint liquidity, uint[] memory amountsConsumed) {
+    function getProportions(address pool, int24[] memory ticks) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
+        p[0] = _getProportion0(pool, ticks[0], ticks[1]);
+        p[1] = 1e18 - p[0];
+        return p;
+    }
+
+    /// @inheritdoc ICAmmAdapter
+    function getLiquidityForAmounts(
+        address pool,
+        uint[] memory amounts,
+        int24[] memory ticks
+    ) external view returns (uint liquidity, uint[] memory amountsConsumed) {
         //slither-disable-next-line unused-return
-        (uint160 sqrtRatioX96, , , , , ,) = IAlgebraPool(pool).globalState();
-        uint128 liquidityOut = UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, ticks[0], ticks[1], amounts[0], amounts[1]);
+        (uint160 sqrtRatioX96,,,,,,) = IAlgebraPool(pool).globalState();
+        uint128 liquidityOut =
+            UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, ticks[0], ticks[1], amounts[0], amounts[1]);
         amountsConsumed = new uint[](2);
-        (amountsConsumed[0], amountsConsumed[1]) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, ticks[0], ticks[1], liquidityOut);
+        (amountsConsumed[0], amountsConsumed[1]) =
+            UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, ticks[0], ticks[1], liquidityOut);
         liquidity = uint(liquidityOut);
     }
 
     /// @inheritdoc ICAmmAdapter
-    function getAmountsForLiquidity(address pool, int24[] memory ticks, uint128 liquidity) external view returns (uint[] memory amounts) {
+    function getAmountsForLiquidity(
+        address pool,
+        int24[] memory ticks,
+        uint128 liquidity
+    ) external view returns (uint[] memory amounts) {
         amounts = new uint[](2);
         (amounts[0], amounts[1]) = _getAmountsForLiquidity(pool, ticks[0], ticks[1], liquidity);
     }
 
     /// @inheritdoc ICAmmAdapter
-    function getPriceAtTick(
-        address pool,
-        address tokenIn,
-        int24 tick
-    ) external view returns (uint) {
+    function getPriceAtTick(address pool, address tokenIn, int24 tick) external view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
         address token1 = IAlgebraPool(pool).token1();
-        uint256 tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
-        uint256 tokenOutDecimals = tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        uint tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
+        uint tokenOutDecimals =
+            tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint160 sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, 0);
     }
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view override (Controllable, IERC165) returns (bool) {
-        return
-            interfaceId == type(ICAmmAdapter).interfaceId 
-            || interfaceId == type(IAmmAdapter).interfaceId
+    function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
+        return interfaceId == type(ICAmmAdapter).interfaceId || interfaceId == type(IAmmAdapter).interfaceId
             || super.supportsInterface(interfaceId);
     }
 
@@ -220,9 +216,34 @@ contract AlgebraAdapter is Controllable, ICAmmAdapter {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getAmountsForLiquidity(address pool, int24 lowerTick, int24 upperTick, uint128 liquidity) internal view returns (uint amount0, uint amount1) {
+    function _getProportion0(address pool, int24 lowerTick, int24 upperTick) internal view returns (uint) {
+        address token1 = IAlgebraPool(pool).token1();
         //slither-disable-next-line unused-return
-        (uint160 sqrtRatioX96, , , , , ,) = IAlgebraPool(pool).globalState();
+        (uint160 sqrtRatioX96,,,,,,) = IAlgebraPool(pool).globalState();
+        uint token1Price = getPrice(pool, token1, address(0), 0);
+        uint token1Decimals = IERC20Metadata(token1).decimals();
+        //slither-disable-next-line similar-names
+        uint token0Desired = token1Price;
+        uint token1Desired = 10 ** token1Decimals;
+        uint128 liquidityOut =
+            UniswapV3MathLib.getLiquidityForAmounts(sqrtRatioX96, lowerTick, upperTick, token0Desired, token1Desired);
+        //slither-disable-next-line similar-names
+        (uint amount0Consumed, uint amount1Consumed) =
+            UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidityOut);
+        //slither-disable-next-line divide-before-multiply
+        uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
+        //slither-disable-next-line divide-before-multiply
+        return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+    }
+
+    function _getAmountsForLiquidity(
+        address pool,
+        int24 lowerTick,
+        int24 upperTick,
+        uint128 liquidity
+    ) internal view returns (uint amount0, uint amount1) {
+        //slither-disable-next-line unused-return
+        (uint160 sqrtRatioX96,,,,,,) = IAlgebraPool(pool).globalState();
         (amount0, amount1) = UniswapV3MathLib.getAmountsForLiquidity(sqrtRatioX96, lowerTick, upperTick, liquidity);
     }
 }

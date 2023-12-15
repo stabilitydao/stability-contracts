@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../integrations/chainlink/IAggregatorV3Interface.sol";
 
@@ -18,13 +18,11 @@ contract MockAggregatorV3Interface is IAggregatorV3Interface {
         _updatedAt = updatedAt_;
     }
 
-    function latestRoundData() external view returns (
-        uint80 roundId,
-        int answer,
-        uint startedAt,
-        uint updatedAt,
-        uint80 answeredInRound
-    ) {
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int answer, uint startedAt, uint updatedAt, uint80 answeredInRound)
+    {
         return (0, _answer, _updatedAt, _updatedAt, 0);
     }
 }

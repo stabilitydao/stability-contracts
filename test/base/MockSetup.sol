@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {Platform} from "../../src/core/Platform.sol";
 import "../../src/core/PriceReader.sol";
@@ -33,7 +33,7 @@ abstract contract MockSetup {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
-        platform.initialize(address(this), '23.11.0-dev');
+        platform.initialize(address(this), "23.11.0-dev");
         vaultImplementation = new CVault();
         rVaultImplementation = new RVault();
         rmVaultImplementation = new RMVault();

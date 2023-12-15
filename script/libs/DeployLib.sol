@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import "../../src/core/proxy/Proxy.sol";
@@ -111,7 +111,9 @@ library DeployLib {
                 aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
-                zap: address(vars.zap)
+                rebalancer: address(0),
+                zap: address(vars.zap),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: networkName,
@@ -127,27 +129,33 @@ library DeployLib {
 
         // set all vault configs
         require(buildingPayPerVaultPrice.length == 3, "DeployLib: incorrect buildingPrice length");
-        vars.factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.COMPOUNDING,
-            implementation: address(new CVault()),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice[0]
-        }));
-        vars.factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.REWARDING,
-            implementation: address(new RVault()),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice[1]
-        }));
-        vars.factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.REWARDING_MANAGED,
-            implementation: address(new RMVault()),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice[2]
-        }));
+        vars.factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: address(new CVault()),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice[0]
+            })
+        );
+        vars.factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.REWARDING,
+                implementation: address(new RVault()),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice[1]
+            })
+        );
+        vars.factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.REWARDING_MANAGED,
+                implementation: address(new RMVault()),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice[2]
+            })
+        );
 
         return address(vars.platform);
     }
@@ -155,7 +163,7 @@ library DeployLib {
     function logDeployAmmAdapters(address platform, bool showLog) external view {
         if (showLog) {
             (string[] memory ammAdaptersNames,) = IPlatform(platform).getAmmAdapters();
-            console.log('Deployed AMM adapters:', CommonLib.implode(ammAdaptersNames, ', '));
+            console.log("Deployed AMM adapters:", CommonLib.implode(ammAdaptersNames, ", "));
         }
     }
 
@@ -167,17 +175,17 @@ library DeployLib {
             string[] memory assetsStr = new string[](assets_.length);
             for (uint i; i < assets_.length; ++i) {
                 (uint price,) = priceReader.getPrice(assets_[i]);
-                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), ' ', CommonLib.formatUsdAmount(price));
+                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(price));
             }
-            console.log('Added blue chip pools to swapper with assets:', CommonLib.implode(assetsStr, ', '));
+            console.log("Added blue chip pools to swapper with assets:", CommonLib.implode(assetsStr, ", "));
 
             assets_ = swapper.assets();
             assetsStr = new string[](assets_.length);
             for (uint i; i < assets_.length; ++i) {
                 (uint price,) = priceReader.getPrice(assets_[i]);
-                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), ' ', CommonLib.formatUsdAmount(price));
+                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(price));
             }
-            console.log('Added pools to swapper with assets:', CommonLib.implode(assetsStr, ', '));
+            console.log("Added pools to swapper with assets:", CommonLib.implode(assetsStr, ", "));
         }
     }
 
@@ -186,16 +194,19 @@ library DeployLib {
             (address[] memory assets_, uint[] memory prices,) = IOracleAdapter(adapter).getAllPrices();
             string[] memory assetsStr = new string[](assets_.length);
             for (uint i; i < assets_.length; ++i) {
-                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), ' ', CommonLib.formatUsdAmount(prices[i]));
+                assetsStr[i] =
+                    string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(prices[i]));
             }
-            console.log(string.concat('Deployed ', name, ' adapter. Added price feeds: ', CommonLib.implode(assetsStr, ', ')));
+            console.log(
+                string.concat("Deployed ", name, " adapter. Added price feeds: ", CommonLib.implode(assetsStr, ", "))
+            );
         }
     }
 
     function logAddedFarms(address factory, bool showLog) external view {
         if (showLog) {
             IFactory.Farm[] memory _farms = IFactory(factory).farms();
-            console.log('Added farms:', _farms.length);
+            console.log("Added farms:", _farms.length);
         }
     }
 
@@ -206,14 +217,20 @@ library DeployLib {
             address[] memory allowedRewardTokens = _platform.allowedBoostRewardTokens();
             string[] memory assetsStr = new string[](bbTokens.length);
             for (uint i; i < bbTokens.length; ++i) {
-                assetsStr[i] = string.concat(IERC20Metadata(bbTokens[i]).symbol(), ' - ', CommonLib.u2s(_platform.allowedBBTokenVaults(bbTokens[i])));
+                assetsStr[i] = string.concat(
+                    IERC20Metadata(bbTokens[i]).symbol(),
+                    " - ",
+                    CommonLib.u2s(_platform.allowedBBTokenVaults(bbTokens[i]))
+                );
             }
-            console.log(string.concat('Added allowed bbTokens vault building limit: ', CommonLib.implode(assetsStr, ', ')));
+            console.log(
+                string.concat("Added allowed bbTokens vault building limit: ", CommonLib.implode(assetsStr, ", "))
+            );
             assetsStr = new string[](allowedRewardTokens.length);
             for (uint i; i < allowedRewardTokens.length; ++i) {
                 assetsStr[i] = IERC20Metadata(allowedRewardTokens[i]).symbol();
             }
-            console.log(string.concat('Added allowed reward tokens: ', CommonLib.implode(assetsStr, ', ')));
+            console.log(string.concat("Added allowed reward tokens: ", CommonLib.implode(assetsStr, ", ")));
         }
     }
 
@@ -224,7 +241,11 @@ library DeployLib {
             bytes32[] memory hashes = factory.strategyLogicIdHashes();
             for (uint i; i < hashes.length; ++i) {
                 IFactory.StrategyLogicConfig memory strategyConfig = factory.strategyLogicConfig(hashes[i]);
-                console.log(string.concat('Deployed strategy ', strategyConfig.id, ' [', CommonLib.u2s(strategyConfig.tokenId) , ']'));
+                console.log(
+                    string.concat(
+                        "Deployed strategy ", strategyConfig.id, " [", CommonLib.u2s(strategyConfig.tokenId), "]"
+                    )
+                );
             }
         }
     }

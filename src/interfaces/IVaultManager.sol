@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
@@ -11,11 +11,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IVaultManager is IERC721Metadata {
-
     //region ----- Events -----
     event ChangeVaultParams(uint tokenId, address[] addresses, uint[] nums);
     event SetRevenueReceiver(uint tokenId, address receiver);
     //endregion -- Events -----
+
     struct VaultData {
         // vault
         uint tokenId;
@@ -29,7 +29,6 @@ interface IVaultManager is IERC721Metadata {
         uint tvl;
         uint totalApr;
         bytes32 vaultExtra;
-
         // strategy
         uint strategyTokenId;
         string strategyId;
@@ -62,22 +61,25 @@ interface IVaultManager is IERC721Metadata {
     /// @param totalApr Last total vault APR. Denominator is 100_00.
     /// @param strategyApr Last strategy APR. Denominator is 100_00.
     /// @param strategySpecific Strategy specific name
-    function vaults() external view returns(
-        address[] memory vaultAddress,
-        string[] memory name,
-        string[] memory symbol,
-        string[] memory vaultType,
-        string[] memory strategyId,
-        uint[] memory sharePrice,
-        uint[] memory tvl,
-        uint[] memory totalApr,
-        uint[] memory strategyApr,
-        string[] memory strategySpecific
-    );
+    function vaults()
+        external
+        view
+        returns (
+            address[] memory vaultAddress,
+            string[] memory name,
+            string[] memory symbol,
+            string[] memory vaultType,
+            string[] memory strategyId,
+            uint[] memory sharePrice,
+            uint[] memory tvl,
+            uint[] memory totalApr,
+            uint[] memory strategyApr,
+            string[] memory strategySpecific
+        );
 
     /// @notice All deployed vault addresses
     /// @return vaultAddress Addresses of vault proxy
-    function vaultAddresses() external view returns(address[] memory vaultAddress);
+    function vaultAddresses() external view returns (address[] memory vaultAddress);
 
     /// @notice Vault extended info getter
     /// @param vault Address of vault proxy
@@ -87,14 +89,17 @@ interface IVaultManager is IERC721Metadata {
     /// @return assetsWithApr Assets with underlying APRs that can be provided by AprOracle
     /// @return assetsAprs APRs of assets with APR. Matched by index wuth previous param.
     /// @return lastHardWork Last HardWork time
-    function vaultInfo(address vault) external view returns(
-        address strategy,
-        address[] memory strategyAssets,
-        address underlying,
-        address[] memory assetsWithApr,
-        uint[] memory assetsAprs,
-        uint lastHardWork
-    );
+    function vaultInfo(address vault)
+        external
+        view
+        returns (
+            address strategy,
+            address[] memory strategyAssets,
+            address underlying,
+            address[] memory assetsWithApr,
+            uint[] memory assetsAprs,
+            uint lastHardWork
+        );
 
     //endregion -- View functions -----
 

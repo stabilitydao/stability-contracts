@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title Permissionless pool actions
 /// @notice Contains pool methods that can be called by anyone

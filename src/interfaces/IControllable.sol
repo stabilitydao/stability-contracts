@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @dev Base core interface implemented by most platform contracts.
 ///      Inherited contracts store an immutable Platform proxy address in the storage,
@@ -27,17 +27,16 @@ interface IControllable {
     error RewardIsTooBig();
     //endregion -- Custom Errors -----
 
-  event ContractInitialized(address platform, uint ts, uint block);
+    event ContractInitialized(address platform, uint ts, uint block);
 
-  /// @notice Stability Platform main contract address
-  function platform() external view returns (address);
+    /// @notice Stability Platform main contract address
+    function platform() external view returns (address);
 
-  /// @notice Version of contract implementation
-  /// @dev SemVer scheme MAJOR.MINOR.PATCH
-  //slither-disable-next-line naming-convention
-  function VERSION() external view returns (string memory);
+    /// @notice Version of contract implementation
+    /// @dev SemVer scheme MAJOR.MINOR.PATCH
+    //slither-disable-next-line naming-convention
+    function VERSION() external view returns (string memory);
 
-  /// @notice Block number when contract was initialized
-  function createdBlock() external view returns (uint);
-
+    /// @notice Block number when contract was initialized
+    function createdBlock() external view returns (uint);
 }

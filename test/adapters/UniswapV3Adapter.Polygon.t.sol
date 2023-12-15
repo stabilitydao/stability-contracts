@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../../src/interfaces/ICAmmAdapter.sol";
 import "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -49,8 +49,12 @@ contract UniswapV3AdapterTest is PolygonSetup {
         uint prop0 = adapter.getProportion0(pool);
         assertEq(prop0, proportions[0]);
 
+        uint[] memory props = adapter.getProportions(pool, ticks);
+        assertGt(props[0], 0);
+        assertGt(props[1], 0);
+
         uint price;
-        
+
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_USDC, 276240);
         assertEq(price, 991632976171952929);
         // console.log(price);
@@ -66,7 +70,7 @@ contract UniswapV3AdapterTest is PolygonSetup {
         // console.log(price);
 
         vm.expectRevert(IAmmAdapter.WrongCallbackAmount.selector);
-        UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, '');
+        UniswapV3Adapter(address(adapter)).uniswapV3SwapCallback(0, 0, "");
 
         assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);

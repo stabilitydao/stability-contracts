@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 interface IStrategyLogic is IERC721Metadata {
-
     //region ----- Events -----
     event SetRevenueReceiver(uint tokenId, address receiver);
     //endregion -- Events -----

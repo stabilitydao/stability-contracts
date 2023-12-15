@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 /// @title Stability Bridge
 /// @author Alien Deployer (https://github.com/a17)
@@ -18,12 +18,12 @@ interface IBridge {
     }
 
     /// @notice Current chain ID
-    function chainId() external view returns(uint64);
+    function chainId() external view returns (uint64);
 
     /// @notice Get link
     /// @param linkHash Hash of link string ID
     /// @return Link data
-    function link(bytes32 linkHash) external view returns(Link memory);
+    function link(bytes32 linkHash) external view returns (Link memory);
 
     /// @notice All links in the Bridge (in current chain)
     /// @return Links data
@@ -33,18 +33,18 @@ interface IBridge {
     /// @param adapterId String ID of adapter
     /// @return active Enabled and can be used for bridging
     /// @return priority Priority of the adapter. 0 - max priority.
-    function adapterStatus(string memory adapterId) external view returns(bool active, uint priority);
+    function adapterStatus(string memory adapterId) external view returns (bool active, uint priority);
 
     /// @notice Inter-chain adapters available in current chain
     /// @return String IDs of adapters
-    function adapters() external view returns(string[] memory);
+    function adapters() external view returns (string[] memory);
 
     /// @notice Get target token for bridging
     /// @param token Address of input token for bridging
     /// @param chainTo Target chain ID
     /// @return targetToken Address of target token. address(0) when not exists.
     /// @return linkHash Hash of link string ID for bridging
-    function getTarget(address token, uint64 chainTo) external view returns(address targetToken, bytes32 linkHash);
+    function getTarget(address token, uint64 chainTo) external view returns (address targetToken, bytes32 linkHash);
 
     /// @notice Transfer supported ERC20 or ERC721 token to another blockchain
     /// @param token Address of input token

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "../interfaces/IAmmAdapter.sol";
 
@@ -20,7 +20,7 @@ interface ILPStrategy {
     error IncorrectAssetsLength();
     error IncorrectAssets();
     error IncorrectAmountsLength();
-    
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -47,7 +47,7 @@ interface ILPStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev AMM adapter string ID for interacting with pool
-    function ammAdapterId() external view returns(string memory);
+    function ammAdapterId() external view returns (string memory);
 
     /// @dev AMM adapter address for interacting with pool
     function ammAdapter() external view returns (IAmmAdapter);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "../base/chains/PolygonSetup.sol";
@@ -8,7 +8,6 @@ import "../../src/interfaces/IVaultManager.sol";
 import "../../src/interfaces/IHardWorker.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
-
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     struct BuildingVars {
@@ -37,9 +36,9 @@ contract PlatformPolygonTest is PolygonSetup {
         IERC20(PolygonLib.TOKEN_USDC).approve(address(factory), 1e12);
     }
 
-    
     bool canReceive;
-    receive() external payable{
+
+    receive() external payable {
         require(canReceive);
     }
 
@@ -60,7 +59,7 @@ contract PlatformPolygonTest is PolygonSetup {
             assertGt(tokenPrice[i], 0);
             if (token[i] == PolygonLib.TOKEN_USDC) {
                 assertEq(tokenUserBalance[i], 1e12);
-            } else if(token[i] == platform.allowedBBTokens()[0]) {
+            } else if (token[i] == platform.allowedBBTokens()[0]) {
                 assertEq(tokenUserBalance[i], 5e24);
             } else {
                 assertEq(tokenUserBalance[i], 0);
@@ -110,14 +109,14 @@ contract PlatformPolygonTest is PolygonSetup {
             vars.allStrategyInitNums = allStrategyInitNums;
             vars.allStrategyInitTicks = allStrategyInitTicks;
         }
-        
+
         uint len = vars.desc.length;
         assertGt(len, 0);
         assertEq(len, vars.vaultType.length);
         assertEq(len, vars.strategyId.length);
         assertEq(len, vars.initIndexes.length);
 
-        console.log('whatToBuild:');
+        console.log("whatToBuild:");
         for (uint i; i < len; ++i) {
             uint paramsLen = vars.initIndexes[i][1] - vars.initIndexes[i][0];
             address[] memory vaultInitAddresses = new address[](paramsLen);
@@ -145,17 +144,21 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitTicks[k] = vars.allStrategyInitTicks[vars.initIndexes[i][8] + k];
             }
 
-            string memory vaultInitSymbols = vaultInitAddresses.length > 0 ? string.concat(' ', CommonLib.implodeSymbols(vaultInitAddresses, '-')) : '';
+            string memory vaultInitSymbols = vaultInitAddresses.length > 0
+                ? string.concat(" ", CommonLib.implodeSymbols(vaultInitAddresses, "-"))
+                : "";
 
             if (CommonLib.eq(vars.vaultType[i], VaultTypeLib.REWARDING)) {
-                (vaultInitAddresses, vaultInitNums) = _getRewardingInitParams(vars.allVaultInitAddresses[vars.initIndexes[i][0]]);
+                (vaultInitAddresses, vaultInitNums) =
+                    _getRewardingInitParams(vars.allVaultInitAddresses[vars.initIndexes[i][0]]);
             }
 
             if (CommonLib.eq(vars.vaultType[i], VaultTypeLib.REWARDING_MANAGED)) {
-                (vaultInitAddresses, vaultInitNums) = _getRewardingManagedInitParams(vars.allVaultInitAddresses[vars.initIndexes[i][0]]);
+                (vaultInitAddresses, vaultInitNums) =
+                    _getRewardingManagedInitParams(vars.allVaultInitAddresses[vars.initIndexes[i][0]]);
             }
 
-            console.log(string.concat(' Vault: ', vars.vaultType[i], vaultInitSymbols, '. Strategy: ', vars.desc[i]));
+            console.log(string.concat(" Vault: ", vars.vaultType[i], vaultInitSymbols, ". Strategy: ", vars.desc[i]));
 
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
@@ -165,11 +168,11 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitAddresses,
                 strategyInitNums,
                 strategyInitTicks
-            ); 
-            (,,,,uint[] memory vaultSharePrice,uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
+            );
+            (,,,, uint[] memory vaultSharePrice, uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
             assertEq(vaultSharePrice[0], 0);
             assertEq(vaultUserBalance[0], 0);
-            bytes32 deploymentKey = factory.getDeploymentKey(                
+            bytes32 deploymentKey = factory.getDeploymentKey(
                 vars.vaultType[i],
                 vars.strategyId[i],
                 vaultInitAddresses,
@@ -177,7 +180,7 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitAddresses,
                 strategyInitNums,
                 strategyInitTicks
-                );
+            );
             vm.expectRevert(abi.encodeWithSelector(IFactory.SuchVaultAlreadyDeployed.selector, deploymentKey));
             factory.deployVaultAndStrategy(
                 vars.vaultType[i],
@@ -201,20 +204,24 @@ contract PlatformPolygonTest is PolygonSetup {
                 string[] memory name,
                 string[] memory symbol,
                 string[] memory _vaultType,
-                string[] memory _strategyId,,,,,
+                string[] memory _strategyId,
+                ,
+                ,
+                ,
+                ,
             ) = vaultManager.vaults();
-            console.log('Built:');
+            console.log("Built:");
             for (uint i; i < vaultAddress.length; ++i) {
                 assertGt(bytes(symbol[i]).length, 0);
                 assertGt(bytes(name[i]).length, 0);
                 assertGt(bytes(_vaultType[i]).length, 0);
                 assertGt(bytes(_strategyId[i]).length, 0);
-                console.log(string.concat(' ', symbol[i]));
+                console.log(string.concat(" ", symbol[i]));
 
                 _depositToVault(vaultAddress[i], 1e21);
             }
         }
-        
+
         IHardWorker hw = IHardWorker(platform.hardWorker());
         bool canExec;
         bytes memory execPayload;
@@ -245,7 +252,7 @@ contract PlatformPolygonTest is PolygonSetup {
             address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
             vaultAddressesForChangeExcludeStatus[0] = vaultAddress[0];
             bool[] memory status = new bool[](1);
-            
+
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, new bool[](3));
 
@@ -257,7 +264,9 @@ contract PlatformPolygonTest is PolygonSetup {
             vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
             hw.changeVaultExcludeStatus(new address[](0), new bool[](0));
 
-            vm.expectRevert(abi.encodeWithSelector(IHardWorker.AlreadyExclude.selector, vaultAddressesForChangeExcludeStatus[0]));
+            vm.expectRevert(
+                abi.encodeWithSelector(IHardWorker.AlreadyExclude.selector, vaultAddressesForChangeExcludeStatus[0])
+            );
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
 
             status[0] = true;
@@ -270,17 +279,11 @@ contract PlatformPolygonTest is PolygonSetup {
         // check vault manager method
         {
             (address[] memory vaultAddress,,,,,,,,,) = vaultManager.vaults();
-            (
-                address strategy,
-                address[] memory strategyAssets,
-                ,
-                ,
-                ,
-            ) = vaultManager.vaultInfo(vaultAddress[0]);
+            (address strategy, address[] memory strategyAssets,,,,) = vaultManager.vaultInfo(vaultAddress[0]);
             assertNotEq(strategy, address(0));
             assertGt(strategyAssets.length, 0);
         }
- 
+
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         hw.setMaxHwPerCall(0);
         hw.setMaxHwPerCall(5);
@@ -297,7 +300,7 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.deal(address(hw), 0);
         vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         (success,) = address(hw).call(execPayload);
- 
+
         vm.deal(address(hw), 2e18);
         (success,) = address(hw).call(execPayload);
         assertEq(success, true);
@@ -324,7 +327,6 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(delayServer, 1 hours);
         assertEq(delayGelato, 2 hours);
 
-
         address[] memory vaultsForHardWork = new address[](1);
         address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
         vaultsForHardWork[0] = vault_;
@@ -336,44 +338,37 @@ contract PlatformPolygonTest is PolygonSetup {
         canReceive = true;
         hw.call(vaultsForHardWork);
 
-        //Still yellow! 
+        //Still yellow!
         vm.startPrank(address(hw.dedicatedGelatoMsgSender()));
 
         //lower
-        deal(address(hw), 0); 
+        deal(address(hw), 0);
         assertGt(hw.gelatoMinBalance(), address(hw).balance);
         hw.call(vaultsForHardWork);
 
         //equal
-        deal(address(hw), hw.gelatoMinBalance()); 
+        deal(address(hw), hw.gelatoMinBalance());
         assertEq(address(hw).balance, hw.gelatoMinBalance());
         hw.call(vaultsForHardWork);
 
         //higher
-        deal(address(hw), type(uint).max); 
+        deal(address(hw), type(uint).max);
         assertGt(address(hw).balance, hw.gelatoMinBalance());
         hw.call(vaultsForHardWork);
 
         vm.stopPrank();
-        
 
         skip(1 hours);
         skip(100);
         (canExec,) = hw.checkerGelato();
         assertEq(canExec, false);
         (canExec,) = hw.checkerServer();
-        assertEq(canExec, true); 
+        assertEq(canExec, true);
     }
 
     function testErc165() public {
         IFactory factory = IFactory(platform.factory());
-        (
-            string[] memory vaultType_,
-            address[] memory implementation,
-            ,
-            ,
-            ,
-        ) = factory.vaultTypes();
+        (string[] memory vaultType_, address[] memory implementation,,,,) = factory.vaultTypes();
         for (uint i; i < vaultType_.length; ++i) {
             assertEq(IVault(implementation[i]).supportsInterface(type(IERC165).interfaceId), true);
             assertEq(IVault(implementation[i]).supportsInterface(type(IControllable).interfaceId), true);
@@ -404,10 +399,11 @@ contract PlatformPolygonTest is PolygonSetup {
         IVault(vault).depositAssets(assets, depositAmounts, 0, address(0));
     }
 
-    function _getRewardingInitParams(address bbToken) internal view returns (
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
-    ) {
+    function _getRewardingInitParams(address bbToken)
+        internal
+        view
+        returns (address[] memory vaultInitAddresses, uint[] memory vaultInitNums)
+    {
         vaultInitAddresses = new address[](1);
         vaultInitAddresses[0] = bbToken;
         address[] memory defaultBoostRewardsTokensFiltered = platform.defaultBoostRewardTokensFiltered(bbToken);
@@ -415,10 +411,11 @@ contract PlatformPolygonTest is PolygonSetup {
         vaultInitNums[0] = 3000e18;
     }
 
-    function _getRewardingManagedInitParams(address bbToken) internal pure returns (
-        address[] memory vaultInitAddresses,
-        uint[] memory vaultInitNums
-    ) {
+    function _getRewardingManagedInitParams(address bbToken)
+        internal
+        pure
+        returns (address[] memory vaultInitAddresses, uint[] memory vaultInitNums)
+    {
         vaultInitAddresses = new address[](3);
         vaultInitAddresses[0] = bbToken;
         vaultInitAddresses[1] = bbToken;

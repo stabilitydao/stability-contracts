@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "../base/chains/PolygonSetup.sol";
@@ -44,10 +44,18 @@ contract RMVaultTest is PolygonSetup {
             // farmId
             nums[0] = 6; // WMATIC-USDC narrow
 
-            factory.deployVaultAndStrategy(VaultTypeLib.REWARDING_MANAGED, StrategyIdLib.GAMMA_QUICKSWAP_FARM, vaultInitAddresses, vaultInitNums, initStrategyAddresses, nums, ticks);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.REWARDING_MANAGED,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                nums,
+                ticks
+            );
         }
 
-        assertEq(IERC721(platform.vaultManager()).ownerOf(0), address (this));
+        assertEq(IERC721(platform.vaultManager()).ownerOf(0), address(this));
 
         IRVault vault = IRVault(factory.deployedVault(0));
         IStrategy strategy = vault.strategy();
@@ -62,7 +70,7 @@ contract RMVaultTest is PolygonSetup {
 
         // deposit
         vault.depositAssets(assets, depositAmounts, 0, address(0));
-        (uint tvl, ) = vault.tvl();
+        (uint tvl,) = vault.tvl();
 
         assertGt(tvl, 0, "RMVault test: tvl is zero");
 
@@ -85,7 +93,7 @@ contract RMVaultTest is PolygonSetup {
             // bad paths
             vm.expectRevert(IManagedVault.NotVaultManager.selector);
             IManagedVault(address(vault)).changeParams(vaultChangeAddresses, vaultChangeNums);
-            
+
             vaultChangeAddresses = new address[](3);
             vm.expectRevert(IControllable.IncorrectInitParams.selector);
             vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
@@ -94,10 +102,10 @@ contract RMVaultTest is PolygonSetup {
             vaultChangeNums = new uint[](3);
             vm.expectRevert(IManagedVault.CantRemoveRewardToken.selector);
             vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
-            
+
             vaultChangeAddresses = new address[](2);
             vaultChangeAddresses[0] = platform.targetExchangeAsset();
-            vaultChangeAddresses[1] = address(1);//assets[0];
+            vaultChangeAddresses[1] = address(1); //assets[0];
             vaultChangeNums = new uint[](4);
             vaultChangeNums[0] = 86400 * 10;
             vaultChangeNums[1] = 86400 * 30;
@@ -129,7 +137,7 @@ contract RMVaultTest is PolygonSetup {
             vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
             vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
         }
-        
+
         (uint sharePriceBefore,) = vault.price();
         vault.doHardWork();
         (uint sharePriceAfter,) = vault.price();
@@ -145,7 +153,7 @@ contract RMVaultTest is PolygonSetup {
         vm.expectRevert(IControllable.NotMultisig.selector);
         vault.setRewardsRedirect(address(this), address(1));
         vault.setRewardsRedirect(address(this), address(1));
-        assertEq ((vault.rewardsRedirect(address(this))), address(1));
+        assertEq((vault.rewardsRedirect(address(this))), address(1));
 
         vault.setRewardsRedirect(address(this), address(0));
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
@@ -154,11 +162,15 @@ contract RMVaultTest is PolygonSetup {
         vault.setRewardsRedirect(address(this), address(1));
         vault.getAllRewardsAndRedirect(address(this));
 
+        vault.rewardToken(vault.tokenId());
+
         vm.prank(address(123));
         vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(this));
         vault.getAllRewardsFor(address(this));
 
-        assertGt(vault.rewardPerToken(0), 0); 
+        vault.rewardTokensTotal();
+
+        assertGt(vault.rewardPerToken(0), 0);
     }
 }

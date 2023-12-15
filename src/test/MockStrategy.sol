@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,15 +9,15 @@ import "../strategies/libs/StrategyIdLib.sol";
 import "../core/libs/CommonLib.sol";
 
 contract MockStrategy is LPStrategyBase {
-    string public constant VERSION = '10.99.99';
-    
+    string public constant VERSION = "10.99.99";
+
     uint private _depositedToken0;
     uint private _depositedToken1;
     uint private _fee0;
     uint private _fee1;
 
     /// @inheritdoc IStrategy
-    function description() external pure returns(string memory) {
+    function description() external pure returns (string memory) {
         return "";
     }
 
@@ -28,21 +28,27 @@ contract MockStrategy is LPStrategyBase {
 
     function initialize(
         address[] memory addresses,
-        uint[] memory /*nums*/,
+        uint[] memory, /*nums*/
         int24[] memory /*ticks*/
-    ) initializer public {
+    ) public initializer {
         require(addresses[3] != address(0), "Strategy: underlying token cant be zero for this strategy");
 
-        __LPStrategyBase_init(LPStrategyBaseInitParams({
-            id: StrategyIdLib.DEV,
-            platform: addresses[0],
-            vault: addresses[1],
-            pool: addresses[2],
-            underlying : addresses[3]
-        }));
+        __LPStrategyBase_init(
+            LPStrategyBaseInitParams({
+                id: StrategyIdLib.DEV,
+                platform: addresses[0],
+                vault: addresses[1],
+                pool: addresses[2],
+                underlying: addresses[3]
+            })
+        );
     }
 
-    function initVariants(address) public pure returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks) {
+    function initVariants(address)
+        public
+        pure
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
         variants = new string[](2);
         variants[0] = "Collect fees in mock pool A";
         variants[1] = "Collect fees in mock pool B";
@@ -55,8 +61,8 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() public view override virtual returns (string memory, bool) {
-        return ('Good Params', true);
+    function getSpecificName() external pure override returns (string memory, bool) {
+        return ("Good Params", true);
     }
 
     function extra() external pure returns (bytes32) {
@@ -65,11 +71,11 @@ contract MockStrategy is LPStrategyBase {
         return CommonLib.bytesToBytes32(abi.encodePacked(color, bgColor));
     }
 
-    function ammAdapterId() public pure override returns(string memory) {
-        return 'MOCKSWAP';
+    function ammAdapterId() public pure override returns (string memory) {
+        return "MOCKSWAP";
     }
 
-    function strategyLogicId() public pure override returns(string memory) {
+    function strategyLogicId() public pure override returns (string memory) {
         return StrategyIdLib.DEV;
     }
 
@@ -78,7 +84,7 @@ contract MockStrategy is LPStrategyBase {
         $.total = 0;
     }
 
-/*    function untriggerFuse(uint total_) external {
+    /*    function untriggerFuse(uint total_) external {
         total = total_;
     }*/
 
@@ -99,15 +105,15 @@ contract MockStrategy is LPStrategyBase {
         amounts_ = new uint[](2);
 
         // because assets on strategy balance
-//        amounts_[0] = _depositedToken0;
-//        amounts_[1] = _depositedToken1;
+        //        amounts_[0] = _depositedToken0;
+        //        amounts_[1] = _depositedToken1;
     }
 
-    function _getProportion0(address /*pool*/) internal pure returns (uint) {
+    function _getProportion0(address /*pool*/ ) internal pure returns (uint) {
         return 5e17;
     }
 
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/) internal override returns(uint value) {
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         // no msg.sender checks
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         uint[] memory amountsConsumed;
@@ -134,6 +140,9 @@ contract MockStrategy is LPStrategyBase {
         IMockERC20($._assets[1]).mint(addedToken1);
 
         $.total += amount;
+
+        // cover base strategy internal method
+        _previewDepositUnderlying(0);
     }
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
@@ -167,12 +176,17 @@ contract MockStrategy is LPStrategyBase {
         IERC20($._underlying).transfer(receiver, amount);
     }
 
-    function _claimRevenue() internal virtual override returns(
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    ) {
+    function _claimRevenue()
+        internal
+        virtual
+        override
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
+    {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         IMockERC20($._assets[0]).mint(_fee0);
         IMockERC20($._assets[1]).mint(_fee1);
@@ -194,5 +208,7 @@ contract MockStrategy is LPStrategyBase {
         amounts = new uint[](0);
     }
 
-    function _liquidateRewards(address /*exchangeAsset*/, address[] memory /*rewardAssets_*/, uint[] memory /*rewardAmounts_*/) internal pure override returns (uint earnedExchangeAsset) {}
+    function _liquidateRewards(address /*exchangeAsset*/, address[] memory /*rewardAssets_*/, uint[] memory /*rewardAmounts_*/) internal pure override returns (uint earnedExchangeAsset) {
+        return 0;
+    }
 }

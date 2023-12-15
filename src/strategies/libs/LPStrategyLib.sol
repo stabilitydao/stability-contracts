@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,7 +11,6 @@ import "../../interfaces/IPlatform.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/ISwapper.sol";
 import "../../interfaces/IRVault.sol";
-
 
 library LPStrategyLib {
     using SafeERC20 for IERC20;
@@ -38,7 +37,7 @@ library LPStrategyLib {
         address platform,
         ILPStrategy.LPStrategyBaseInitParams memory params,
         string memory ammAdapterId
-    ) external returns(address[] memory _assets, uint exchangeAssetIndex) {
+    ) external returns (address[] memory _assets, uint exchangeAssetIndex) {
         IPlatform.AmmAdapter memory ammAdapterData = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId)));
         if (ammAdapterData.proxy == address(0)) {
             revert ILPStrategy.ZeroAmmAdapter();
@@ -59,7 +58,11 @@ library LPStrategyLib {
         $.ammAdapter = ammAdapter;
     }
 
-    function checkPreviewDepositAssets(address[] memory assets_, address[] memory _assets, uint[] memory amountsMax) external pure {
+    function checkPreviewDepositAssets(
+        address[] memory assets_,
+        address[] memory _assets,
+        uint[] memory amountsMax
+    ) external pure {
         if (_assets.length != amountsMax.length) {
             revert ILPStrategy.IncorrectAmountsLength();
         }
@@ -94,23 +97,26 @@ library LPStrategyLib {
         vars.vaultYpe = IVault(vault).vaultType();
         if (
             CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
-            || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
+                || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
         ) {
             IRVault rVault = IRVault(vault);
             vars.compoundRatio = rVault.compoundRatio();
             vars.bbToken = rVault.bbToken();
-            vars.bbAmountBefore = balance(vars.bbToken);
+            vars.bbAmountBefore = _balance(vars.bbToken);
 
             {
                 uint otherAssetIndex = exchangeAssetIndex == 0 ? 1 : 0;
 
-                uint exchangeAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio) * amountsRemaining[exchangeAssetIndex] / ConstantsLib.DENOMINATOR;
-                uint otherAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio) * amountsRemaining[otherAssetIndex] / ConstantsLib.DENOMINATOR;
+                uint exchangeAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio)
+                    * amountsRemaining[exchangeAssetIndex] / ConstantsLib.DENOMINATOR;
+                uint otherAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio)
+                    * amountsRemaining[otherAssetIndex] / ConstantsLib.DENOMINATOR;
 
                 // try to make less swaps
                 if (otherAssetBBAmount > 0) {
                     if (exchangeAssetBBAmount > 0) {
-                        uint otherAssetBBAmountPrice = ammAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
+                        uint otherAssetBBAmountPrice =
+                            ammAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
                         uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
                         if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
                             otherAssetBBAmount = 0;
@@ -124,7 +130,12 @@ library LPStrategyLib {
                 if (exchangeAssetBBAmount > 0) {
                     if (assets_[exchangeAssetIndex] != vars.bbToken) {
                         if (exchangeAssetBBAmount > swapper.threshold(assets_[exchangeAssetIndex])) {
-                            swapper.swap(assets_[exchangeAssetIndex], vars.bbToken, exchangeAssetBBAmount, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
+                            swapper.swap(
+                                assets_[exchangeAssetIndex],
+                                vars.bbToken,
+                                exchangeAssetBBAmount,
+                                ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
+                            );
                         }
                     } else {
                         vars.bbAmountBefore -= exchangeAssetBBAmount;
@@ -133,7 +144,12 @@ library LPStrategyLib {
                 if (otherAssetBBAmount > 0) {
                     if (assets_[otherAssetIndex] != vars.bbToken) {
                         if (otherAssetBBAmount > swapper.threshold(assets_[otherAssetIndex])) {
-                            swapper.swap(assets_[otherAssetIndex], vars.bbToken, otherAssetBBAmount, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
+                            swapper.swap(
+                                assets_[otherAssetIndex],
+                                vars.bbToken,
+                                otherAssetBBAmount,
+                                ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
+                            );
                         }
                     } else {
                         vars.bbAmountBefore -= otherAssetBBAmount;
@@ -141,10 +157,10 @@ library LPStrategyLib {
                 }
             }
 
-            uint bbAmount = balance(vars.bbToken) - vars.bbAmountBefore;
+            uint bbAmount = _balance(vars.bbToken) - vars.bbAmountBefore;
 
             if (bbAmount > 0) {
-                approveIfNeeded(vars.bbToken, bbAmount, vault);
+                _approveIfNeeded(vars.bbToken, bbAmount, vault);
                 rVault.notifyTargetRewardAmount(0, bbAmount);
             }
 
@@ -154,7 +170,6 @@ library LPStrategyLib {
         }
     }
 
-
     /// @dev For now this support only pools of 2 tokens
     function swapForDepositProportion(
         address platform,
@@ -162,13 +177,13 @@ library LPStrategyLib {
         address _pool,
         address[] memory assets,
         uint prop0Pool
-    ) external returns(uint[] memory amountsToDeposit) {
+    ) external returns (uint[] memory amountsToDeposit) {
         amountsToDeposit = new uint[](2);
         SwapForDepositProportionVars memory vars;
         vars.swapper = ISwapper(IPlatform(platform).swapper());
         vars.price = ammAdapter.getPrice(_pool, assets[1], address(0), 0);
-        vars.balance0 = balance(assets[0]);
-        vars.balance1 = balance(assets[1]);
+        vars.balance0 = _balance(assets[0]);
+        vars.balance1 = _balance(assets[1]);
         vars.asset1decimals = IERC20Metadata(assets[1]).decimals();
         vars.threshold0 = vars.swapper.threshold(assets[0]);
         vars.threshold1 = vars.swapper.threshold(assets[1]);
@@ -176,44 +191,50 @@ library LPStrategyLib {
             uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
             // nosemgrep
             if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
-                uint prop0Balances = vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
+                uint prop0Balances =
+                    vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
                 if (prop0Balances > prop0Pool) {
                     // extra assets[0]
-                    uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18 * vars.price / 10 ** vars.asset1decimals;
+                    uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18
+                        * vars.price / 10 ** vars.asset1decimals;
                     uint extraBalance = vars.balance0 - correctAsset0Balance;
                     uint toSwapAsset0 = extraBalance - extraBalance * prop0Pool / 1e18;
                     // swap assets[0] to assets[1]
                     if (toSwapAsset0 > vars.threshold0) {
-                        vars.swapper.swap(assets[0], assets[1], toSwapAsset0, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
+                        vars.swapper.swap(
+                            assets[0], assets[1], toSwapAsset0, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
+                        );
                     }
                 } else {
                     // extra assets[1]
-                    uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18 * 10 ** vars.asset1decimals / vars.price;
+                    uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18
+                        * 10 ** vars.asset1decimals / vars.price;
                     uint extraBalance = vars.balance1 - correctAsset1Balance;
                     uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
                     // swap assets[1] to assets[0]
                     if (toSwapAsset1 > vars.threshold1) {
-                        vars.swapper.swap(assets[1], assets[0], toSwapAsset1, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE);
+                        vars.swapper.swap(
+                            assets[1], assets[0], toSwapAsset1, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
+                        );
                     }
                 }
 
-                amountsToDeposit[0] = balance(assets[0]);
-                amountsToDeposit[1] = balance(assets[1]);
+                amountsToDeposit[0] = _balance(assets[0]);
+                amountsToDeposit[1] = _balance(assets[1]);
             }
         }
     }
 
-    function balance(address token) public view returns (uint) {
+    function _balance(address token) internal view returns (uint) {
         return IERC20(token).balanceOf(address(this));
     }
 
     /// @notice Make infinite approve of {token} to {spender} if the approved amount is less than {amount}
     /// @dev Should NOT be used for third-party pools
-    function approveIfNeeded(address token, uint amount, address spender) public {
+    function _approveIfNeeded(address token, uint amount, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) < amount) {
             // infinite approve, 2*255 is more gas efficient then type(uint).max
             IERC20(token).forceApprove(spender, 2 ** 255);
         }
     }
-
 }

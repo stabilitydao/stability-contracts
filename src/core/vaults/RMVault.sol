@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../base/VaultBase.sol";
@@ -21,7 +21,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Constants -----
 
     /// @dev Version of RMVault implementation
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.1";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 
@@ -32,9 +32,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Init -----
 
     /// @inheritdoc IVault
-    function initialize(
-        VaultInitializationData memory vaultInitializationData
-    ) initializer public {
+    function initialize(VaultInitializationData memory vaultInitializationData) public initializer {
         __RVaultBase_init(
             vaultInitializationData.platform,
             VaultTypeLib.REWARDING_MANAGED,
@@ -55,23 +53,23 @@ contract RMVault is RVaultBase, IManagedVault {
     //slither-disable-next-line cyclomatic-complexity
     function changeParams(address[] memory addresses, uint[] memory nums) external {
         // todo #22 implement bbRatio changing
-        if(IPlatform(platform()).vaultManager() != msg.sender){
+        if (IPlatform(platform()).vaultManager() != msg.sender) {
             revert IManagedVault.NotVaultManager();
         }
         uint addressesLength = addresses.length;
-        if(nums.length != addressesLength + 2){
+        if (nums.length != addressesLength + 2) {
             revert IControllable.IncorrectInitParams();
         }
         uint _rewardTokensTotal = rewardTokensTotal();
-        if(addressesLength < _rewardTokensTotal - 1){
+        if (addressesLength < _rewardTokensTotal - 1) {
             revert IManagedVault.CantRemoveRewardToken();
         }
         // nosemgrep
         for (uint i = 1; i < _rewardTokensTotal; ++i) {
-            if(rewardToken(i) != addresses[i - 1]){
+            if (rewardToken(i) != addresses[i - 1]) {
                 revert IManagedVault.IncorrectRewardToken(addresses[i - 1]);
             }
-            if(duration(i) != nums[i]){
+            if (duration(i) != nums[i]) {
                 revert IManagedVault.CantChangeDuration(nums[i]);
             }
         }
@@ -80,10 +78,10 @@ contract RMVault is RVaultBase, IManagedVault {
             // nosemgrep
             for (uint i = _rewardTokensTotal; i < addressesLength + 1; ++i) {
                 uint i_1 = i - 1;
-                if(addresses[i_1] == address(0)){
+                if (addresses[i_1] == address(0)) {
                     revert IControllable.IncorrectZeroArgument();
                 }
-                if(nums[i] == 0){
+                if (nums[i] == 0) {
                     revert IControllable.IncorrectZeroArgument();
                 }
                 _$.rewardTokensTotal = i + 1;
@@ -110,10 +108,14 @@ contract RMVault is RVaultBase, IManagedVault {
     }
 
     /// @inheritdoc IVault
-    function getUniqueInitParamLength() public pure override(IVault, VaultBase) returns(uint uniqueInitAddresses, uint uniqueInitNums) {
+    function getUniqueInitParamLength()
+        public
+        pure
+        override(IVault, VaultBase)
+        returns (uint uniqueInitAddresses, uint uniqueInitNums)
+    {
         return (_UNIQUE_INIT_ADDRESSES, _UNIQUE_INIT_NUMS);
     }
 
     //endregion -- View functions -----
-
 }

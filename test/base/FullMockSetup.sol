@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.23;
 
 import {Platform} from "../../src/core/Platform.sol";
 import "../../src/core/PriceReader.sol";
@@ -16,7 +16,6 @@ import "../../src/test/MockERC721.sol";
 import "./MockSetup.sol";
 import "../../src/core/AprOracle.sol";
 import "../../src/core/HardWorker.sol";
-
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;
@@ -85,10 +84,12 @@ abstract contract FullMockSetup is MockSetup {
                 aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
-                zap: address(0)
+                rebalancer: address(0),
+                zap: address(0),
+                bridge: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: 'Localhost Ethereum',
+                networkName: "Localhost Ethereum",
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 feeShareVaultManager: 30_000,
@@ -101,39 +102,48 @@ abstract contract FullMockSetup is MockSetup {
 
         MockAmmAdapter ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
 
-        platform.addAmmAdapter('MOCKSWAP', address(ammAdapter));
+        platform.addAmmAdapter("MOCKSWAP", address(ammAdapter));
 
         // setup factory
         uint buildingPayPerVaultPrice = 1e16;
-        factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.COMPOUNDING,
-            implementation: address(vaultImplementation),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice
-        }));
-        factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.REWARDING,
-            implementation: address(rVaultImplementation),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice
-        }));
-        factory.setVaultConfig(IFactory.VaultConfig({
-            vaultType: VaultTypeLib.REWARDING_MANAGED,
-            implementation: address(rmVaultImplementation),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            buildingPrice: buildingPayPerVaultPrice
-        }));
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: address(vaultImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice
+            })
+        );
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.REWARDING,
+                implementation: address(rVaultImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice
+            })
+        );
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.REWARDING_MANAGED,
+                implementation: address(rmVaultImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPayPerVaultPrice
+            })
+        );
         MockStrategy strategyImplementation = new MockStrategy();
-        factory.setStrategyLogicConfig(IFactory.StrategyLogicConfig({
-            id: StrategyIdLib.DEV,
-            implementation: address(strategyImplementation),
-            deployAllowed: true,
-            upgradeAllowed: true,
-            farming: false,
-            tokenId: type(uint).max
-        }), address(this));
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.DEV,
+                implementation: address(strategyImplementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: type(uint).max
+            }),
+            address(this)
+        );
     }
 }
