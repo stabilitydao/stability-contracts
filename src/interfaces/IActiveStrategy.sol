@@ -23,22 +23,20 @@ interface IActiveStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Active strategy swaps assets during re-balancing though DeX aggregators
-    function swaps() external view returns(bool);
+    function swaps() external view returns (bool);
 
     /// @notice Active strategy need to re-balance liquidity position now
-    function needRebalance() external view returns(bool);
+    function needRebalance() external view returns (bool);
 
     /// @notice Active strategy need to re-balance liquidity position now with swaps of assets
     /// @return need Need re-balancing
     /// @return swapAssetIn Assets IN for swap
     /// @return swapAssetOut Asset OUT for swap
     /// @return swapAmount Amounts for swaps
-    function needRebalanceWithSwap() external view returns (
-        bool need,
-        address[] memory swapAssetIn,
-        address[] memory swapAssetOut,
-        uint[] memory swapAmount
-    );
+    function needRebalanceWithSwap()
+        external
+        view
+        returns (bool need, address[] memory swapAssetIn, address[] memory swapAssetOut, uint[] memory swapAmount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -46,7 +44,7 @@ interface IActiveStrategy {
 
     /// @notice Execute re-balancing of active strategy
     function rebalance() external;
-    
+
     /// @notice Execute re-balancing of active strategy with swaps by DeX aggregator
     /// @param swapAssetIn Assets IN for swap
     /// @param swapAssetOut Asset OUT for swap

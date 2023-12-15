@@ -61,8 +61,8 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() public view override virtual returns (string memory, bool) {
-        return ('Good Params', true);
+    function getSpecificName() public view virtual override returns (string memory, bool) {
+        return ("Good Params", true);
     }
 
     function extra() external pure returns (bytes32) {
@@ -124,7 +124,7 @@ contract MockStrategy is LPStrategyBase {
         IMockERC20($._underlying).mint(value);
     }
 
-    function depositUnderlying(uint amount) public override virtual returns (uint[] memory amountsConsumed) {
+    function depositUnderlying(uint amount) public virtual override returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
         require(_depositedToken0 > 0, "Mock: deposit assets first");
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -158,7 +158,7 @@ contract MockStrategy is LPStrategyBase {
         _depositedToken1 -= amountsOut[1];
     }
 
-    function withdrawUnderlying(uint amount, address receiver) public override virtual {
+    function withdrawUnderlying(uint amount, address receiver) public virtual override {
         // no msg.sender checks
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         bool fuseTriggered = $.total == 0;

@@ -85,7 +85,6 @@ contract VaultTest is Test, FullMockSetup {
         tokenB.approve(address(vault), amounts[1] * 2);
         lp.approve(address(vault), 1e18);
 
-
         (uint[] memory amountsConsumed, uint sharesOut,) = vault.previewDepositAssets(assets, amounts);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
@@ -155,13 +154,13 @@ contract VaultTest is Test, FullMockSetup {
         vault.doHardWork();
 
         // revenue
-        (,uint[] memory __amounts) = strategy.getRevenue();
+        (, uint[] memory __amounts) = strategy.getRevenue();
         assertEq(__amounts.length, 0);
 
         // mock strategy getters for coverage
         (string[] memory variants,,,) = strategy.initVariants(address(0));
         assertEq(variants.length, 2);
-        assertEq(strategy.ammAdapterId(), 'MOCKSWAP');
+        assertEq(strategy.ammAdapterId(), "MOCKSWAP");
 
         {
             address[] memory underlyingAssets = new address[](1);
@@ -170,7 +169,7 @@ contract VaultTest is Test, FullMockSetup {
             otherAmounts[0] = 0;
             vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
         }
-        
+
         vm.roll(block.number + 6);
 
         shares = vault.balanceOf(address(this));
