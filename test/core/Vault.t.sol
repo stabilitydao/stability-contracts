@@ -8,6 +8,7 @@ import "../../src/core/vaults/RVault.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/test/MockStrategy.sol";
+import "../../src/test/MockActiveStrategy.sol";
 import "../../src/test/MockAmmAdapter.sol";
 import "../base/FullMockSetup.sol";
 import "../../src/interfaces/IVault.sol";
