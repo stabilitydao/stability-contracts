@@ -45,7 +45,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
     /// @inheritdoc IChildTokenFactory
     function deployChildERC20(
         address parentToken,
-        uint16 parentChainId,
+        uint64 parentChainId,
         string memory name,
         string memory symbol,
         address bridge
@@ -60,7 +60,7 @@ contract ChildTokenFactory is Controllable, IChildTokenFactory {
     /// @inheritdoc IChildTokenFactory
     function deployChildERC721(
         address parentToken,
-        uint16 parentChainId,
+        uint64 parentChainId,
         string memory name,
         string memory symbol,
         string memory baseURI,

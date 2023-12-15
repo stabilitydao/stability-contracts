@@ -13,7 +13,7 @@ interface IChildTokenFactory {
     /// @return Address of deployed child ERC-20 token
     function deployChildERC20(
         address parentToken,
-        uint16 parentChainId,
+        uint64 parentChainId,
         string memory name,
         string memory symbol,
         address bridge
@@ -29,7 +29,7 @@ interface IChildTokenFactory {
     /// @return Address of deployed child ERC-721 token
     function deployChildERC721(
         address parentToken,
-        uint16 parentChainId,
+        uint64 parentChainId,
         string memory name,
         string memory symbol,
         string memory baseURI,

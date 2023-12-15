@@ -8,9 +8,9 @@ interface IBridge {
 
     struct Link {
         /// @dev Sorted chain A (chain A < chain B)
-        uint16 chainA;
+        uint64 chainA;
         /// @dev Sorted chain B
-        uint16 chainB;
+        uint64 chainB;
         /// @dev Address of Bridge contract in chain A
         address bridgeA;
         /// @dev Address of Bridge contract in chain B
@@ -20,7 +20,7 @@ interface IBridge {
     }
 
     /// @notice Current chain ID
-    function chainId() external view returns (uint16);
+    function chainId() external view returns (uint64);
 
     /// @notice Get link
     /// @param linkHash Hash of link string ID
@@ -46,7 +46,7 @@ interface IBridge {
     /// @param chainTo Target chain ID
     /// @return targetToken Address of target token. address(0) when not exists.
     /// @return linkHash Hash of link string ID for bridging
-    function getTarget(address token, uint16 chainTo) external view returns (address targetToken, bytes32 linkHash);
+    function getTarget(address token, uint64 chainTo) external view returns (address targetToken, bytes32 linkHash);
 
     /// @notice Transfer supported ERC20 or ERC721 token to another blockchain
     /// @param token Address of input token
@@ -57,7 +57,7 @@ interface IBridge {
     function interChainTransfer(
         address token,
         uint amountOrTokenId,
-        uint16 chainTo,
+        uint64 chainTo,
         bool nft,
         bool lock
     ) external payable;
@@ -71,7 +71,7 @@ interface IBridge {
     /// @dev Emits an event signaling the successful reception of the inter-chain message.
     /// @dev Access to this function may be restricted to specific roles or conditions.
     function interChainReceive(
-        uint16 srcChainId,
+        uint64 srcChainId,
         bytes memory srcAddress,
         uint64 nonce,
         bytes memory payload
@@ -87,7 +87,7 @@ interface IBridge {
     /// @param adapterIds String IDs of inter-chain adapters
     function setLinkAdapters(string[] memory adapterIds) external;
 
-    function setTarget(address token, uint16 chainTo, address targetToken, bytes32 linkHash) external;
+    function setTarget(address token, uint64 chainTo, address targetToken, bytes32 linkHash) external;
 
     function addAdapters(string[] memory adapterIds, uint priority) external;
 
