@@ -52,30 +52,14 @@ interface IBridge {
     /// @param token Address of input token
     /// @param amountOrTokenId Amount for ERC-20 or tokenId for ERC-721
     /// @param chainTo Target chain ID
-    /// @param nft Specify if the token is ERC-20 or ERC-721
-    /// @param lock Specify if the action is to lock or burn
-    function interChainTransfer(
-        address token,
-        uint amountOrTokenId,
-        uint64 chainTo,
-        bool nft,
-        bool lock
-    ) external payable;
+    function interChainTransfer(address token, uint amountOrTokenId, uint64 chainTo) external payable;
 
-    /// @notice Allows the contract to receive inter-chain messages.
-    /// @dev This function is designed to handle messages originating from another chain.
-    /// @param srcChainId The ID of the source chain from which the message originates.
-    /// @param srcAddress The address on the source chain that initiated the message.
-    /// @param nonce A unique identifier for the message to prevent replay attacks.
-    /// @param payload The data payload containing information or instructions from the source chain.
-    /// @dev Emits an event signaling the successful reception of the inter-chain message.
-    /// @dev Access to this function may be restricted to specific roles or conditions.
-    function interChainReceive(
-        uint64 srcChainId,
-        bytes memory srcAddress,
-        uint64 nonce,
-        bytes memory payload
-    ) external;
+    /// @notice Receive tokens from another blockchain.
+    /// Only adapters can call this.
+    /// @param token Address of output token for bridging
+    /// @param amountOrTokenId Amount for ERC-20 or tokenId for ERC-721
+    /// @param chainFrom Source chain ID
+    function interChainReceive(address token, uint amountOrTokenId, uint64 chainFrom) external;
 
     /// @notice Add new link to the bridge
     /// Only operator can call this.
