@@ -11,6 +11,7 @@ import "./Utils.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
 import "../../src/strategies/base/StrategyBase.sol";
 import "../../src/strategies/base/FarmingStrategyBase.sol";
+import "../../src/strategies/base/ActiveStrategyBase.sol";
 import "../../src/strategies/libs/UniswapV3MathLib.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 import "../../src/interfaces/ISwapper.sol";
