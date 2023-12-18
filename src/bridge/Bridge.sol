@@ -8,17 +8,14 @@ import "../core/base/Controllable.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IChildERC20.sol";
 import "../interfaces/IChildERC721.sol";
-import "../interfaces/IChildTokenFactory.sol";
-import "./lzApp/NonblockingLzApp.sol";
+import "../interfaces/IInterChainAdapter.sol";
 
 /// @title Stability Bridge
 /// @author Jude (https://github.com/iammrjude)
-contract Bridge is Controllable, IBridge, NonblockingLzApp {
+contract Bridge is Controllable, IBridge {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    bytes public constant PAYLOAD = "\x01\x02\x03\x04";
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
@@ -42,9 +39,8 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, address _lzEndpoint) external initializer {
+    function initialize(address platform_) external initializer {
         __Controllable_init(platform_);
-        __NonblockingLzApp_init(_lzEndpoint);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -52,8 +48,8 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridge
-    function chainId() external view returns (uint16) {
-        return uint16(block.chainid);
+    function chainId() external view returns (uint64) {
+        return uint64(block.chainid);
     }
 
     /// @inheritdoc IBridge
@@ -73,49 +69,17 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
     function adapters() external view returns (string[] memory) {}
 
     /// @inheritdoc IBridge
-    function getTarget(address token, uint16 chainTo) external view returns (address targetToken, bytes32 linkHash) {}
-
-    function estimateFee(
-        uint16 _dstChainId,
-        bool _useZro,
-        bytes calldata _adapterParams
-    ) public view returns (uint nativeFee, uint zroFee) {
-        return lzEndpoint.estimateFees(_dstChainId, address(this), PAYLOAD, _useZro, _adapterParams);
-    }
-
-    function getOracle(uint16 remoteChainId) external view returns (address _oracle) {
-        bytes memory bytesOracle =
-            lzEndpoint.getConfig(lzEndpoint.getSendVersion(address(this)), remoteChainId, address(this), 6);
-        assembly {
-            _oracle := mload(add(bytesOracle, 32))
-        }
-    }
+    function getTarget(address token, uint64 chainTo) external view returns (address targetToken, bytes32 linkHash) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IBridge
-    function interChainTransfer(
-        address token,
-        uint amountOrTokenId,
-        uint16 chainTo,
-        bool nft,
-        bool lock
-    ) external payable {
-        if (lock) lockToken(token, amountOrTokenId, chainTo, nft);
-        if (!lock) burnToken(token, amountOrTokenId, chainTo, nft);
-    }
+    function interChainTransfer(address token, uint amountOrTokenId, uint64 chainTo) external payable {}
 
     /// @inheritdoc IBridge
-    function interChainReceive(
-        uint16 srcChainId,
-        bytes memory srcAddress,
-        uint64 nonce,
-        bytes memory payload
-    ) external {
-        _nonblockingLzReceive(srcChainId, srcAddress, nonce, payload);
-    }
+    function interChainReceive(address token, uint amountOrTokenId, uint64 chainFrom) external {}
 
     /// @inheritdoc IBridge
     function addLink(Link memory link_) external onlyOperator {
@@ -125,7 +89,7 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
     /// @inheritdoc IBridge
     function setLinkAdapters(string[] memory adapterIds) external onlyOperator {}
 
-    function setTarget(address token, uint16 chainTo, address targetToken, bytes32 linkHash) external {}
+    function setTarget(address token, uint64 chainTo, address targetToken, bytes32 linkHash) external {}
 
     function addAdapters(string[] memory adapterIds, uint priority) external {}
 
@@ -151,7 +115,7 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
             if (!success) revert TokenTransferFailed();
         }
         bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, nft, true);
-        _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
+        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
     }
 
     function burnToken(address token, uint amountOrTokenId, uint16 chainTo, bool nft) public payable {
@@ -161,13 +125,7 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
             IChildERC20(token).burn(msg.sender, amountOrTokenId);
         }
         bytes memory payload = abi.encode(msg.sender, amountOrTokenId, token, nft, false);
-        _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
-    }
-
-    function setOracle(uint16 dstChainId, address oracle) external onlyOwner {
-        uint TYPE_ORACLE = 6;
-        // set the Oracle
-        lzEndpoint.setConfig(lzEndpoint.getSendVersion(address(this)), dstChainId, TYPE_ORACLE, abi.encode(oracle));
+        // _lzSend(chainTo, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -197,17 +155,4 @@ contract Bridge is Controllable, IBridge, NonblockingLzApp {
             if (!success) revert TokenTransferFailed();
         }
     }
-
-    function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal override {
-        (address toAddress, uint amountOrTokenId, address token, bool nft, bool mint) =
-            abi.decode(_payload, (address, uint, address, bool, bool));
-        address childToken = IChildTokenFactory(_getStorage().childTokenFactory).getChildTokenOf(token);
-        address parentToken = IChildTokenFactory(_getStorage().childTokenFactory).getParentTokenOf(token);
-        if (mint) mintToken(childToken, toAddress, amountOrTokenId, nft);
-        if (!mint) unlockToken(parentToken, toAddress, amountOrTokenId, nft);
-    }
-
-    // function incrementCounter(uint16 _dstChainId) public payable {
-    //     _lzSend(_dstChainId, PAYLOAD, payable(msg.sender), address(0x0), bytes(""), msg.value);
-    // }
 }
