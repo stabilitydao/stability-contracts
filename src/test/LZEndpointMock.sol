@@ -3,9 +3,9 @@
 pragma solidity ^0.8.23;
 pragma abicoder v2;
 
-import "../interfaces/ILayerZeroReceiver.sol";
-import "../interfaces/ILayerZeroEndpoint.sol";
-import "../libs/LzLib.sol";
+import "../integrations/layerzero/ILayerZeroReceiver.sol";
+import "../integrations/layerzero/ILayerZeroEndpoint.sol";
+import "../adapters/base/libs/LzLib.sol";
 
 /*
 like a real LayerZero endpoint but can be mocked, which handle message transmission, verification, and receipt.

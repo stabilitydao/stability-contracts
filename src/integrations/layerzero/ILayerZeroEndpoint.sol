@@ -37,7 +37,7 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
         bytes calldata _payload
     ) external;
 
-    // @notice get the inboundNonce of a lzApp from a source chain which could be EVM or non-EVM chain
+    // @notice get the inboundNonce of a base from a source chain which could be EVM or non-EVM chain
     // @param _srcChainId - the source chain identifier
     // @param _srcAddress - the source chain contract address
     function getInboundNonce(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (uint64);

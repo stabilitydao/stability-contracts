@@ -4,17 +4,18 @@ pragma solidity ^0.8.23;
 import "../core/base/Controllable.sol";
 import "../interfaces/IInterChainAdapter.sol";
 import "../interfaces/IChildTokenFactory.sol";
-import "./lzApp/NonblockingLzApp.sol";
+import "./base/NonblockingLzApp.sol";
+import "./libs/InterChainAdapterIdLib.sol";
 
 /// @author Jude (https://github.com/iammrjude)
-contract LayerZeroInterChainAdapter is Controllable, IInterChainAdapter, NonblockingLzApp {
+contract LayerZeroAdapter is Controllable, IInterChainAdapter, NonblockingLzApp {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     bytes public constant PAYLOAD = "\x01\x02\x03\x04";
 
-    /// @dev Version of LayerZeroInterChainAdapter implementation
+    /// @dev Version of LayerZeroAdapter implementation
     string public constant VERSION = "1.0.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -34,7 +35,9 @@ contract LayerZeroInterChainAdapter is Controllable, IInterChainAdapter, Nonbloc
     function sendMessage(Message memory message) external {}
 
     /// @inheritdoc IInterChainAdapter
-    function interChainAdapterId() external returns (string memory) {}
+    function interChainAdapterId() external returns (string memory) {
+        return InterChainAdapterIdLib.LAYERZERO;
+    }
 
     function setOracle(uint16 dstChainId, address oracle) external onlyOwner {
         uint TYPE_ORACLE = 6;
@@ -47,7 +50,9 @@ contract LayerZeroInterChainAdapter is Controllable, IInterChainAdapter, Nonbloc
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IInterChainAdapter
-    function endpoint() external view returns (address) {}
+    function endpoint() external view returns (address) {
+        return address(lzEndpoint);
+    }
 
     function estimateFee(
         uint16 _dstChainId,
