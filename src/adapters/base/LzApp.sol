@@ -4,9 +4,9 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interfaces/ILayerZeroReceiver.sol";
-import "./interfaces/ILayerZeroUserApplicationConfig.sol";
-import "./interfaces/ILayerZeroEndpoint.sol";
+import "../../integrations/layerzero/ILayerZeroReceiver.sol";
+import "../../integrations/layerzero/ILayerZeroUserApplicationConfig.sol";
+import "../../integrations/layerzero/ILayerZeroEndpoint.sol";
 import "../libraries/BytesLib.sol";
 
 /*
