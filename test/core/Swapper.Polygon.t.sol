@@ -52,16 +52,16 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         // add routes
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](6);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapter: address(uniswapV3Adapter),
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
         pools[1] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_DAI_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100,
             ammAdapter: address(uniswapV3Adapter),
             tokenIn: PolygonLib.TOKEN_DAI,
-            tokenOut: PolygonLib.TOKEN_USDC
+            tokenOut: PolygonLib.TOKEN_USDCe
         });
 
         pools[2] = ISwapper.PoolData({
@@ -71,10 +71,10 @@ contract SwapperPolygonTest is Test, PolygonSetup {
             tokenOut: PolygonLib.TOKEN_DAI
         });
         pools[3] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_QUICKSWAPV3_USDC_QUICK,
+            pool: PolygonLib.POOL_QUICKSWAPV3_USDCe_QUICK,
             ammAdapter: address(algebraAdapter),
             tokenIn: PolygonLib.TOKEN_QUICK,
-            tokenOut: PolygonLib.TOKEN_USDC
+            tokenOut: PolygonLib.TOKEN_USDCe
         });
         pools[4] = ISwapper.PoolData({
             pool: PolygonLib.POOL_QUICKSWAPV3_dQUICK_QUICK,
@@ -84,15 +84,15 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         });
 
         pools[5] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_KYBER_KNC_USDC,
+            pool: PolygonLib.POOL_KYBER_KNC_USDCe,
             ammAdapter: address(kyberAdapter),
             tokenIn: PolygonLib.TOKEN_KNC,
-            tokenOut: PolygonLib.TOKEN_USDC
+            tokenOut: PolygonLib.TOKEN_USDCe
         });
         swapper.addPools(pools, true);
 
-        deal(PolygonLib.TOKEN_USDC, address(this), 100002e6);
-        IERC20(PolygonLib.TOKEN_USDC).approve(address(swapper), 100002e6);
+        deal(PolygonLib.TOKEN_USDCe, address(this), 100002e6);
+        IERC20(PolygonLib.TOKEN_USDCe).approve(address(swapper), 100002e6);
         deal(PolygonLib.TOKEN_USDT, address(this), 1002e6);
         IERC20(PolygonLib.TOKEN_USDT).approve(address(swapper), 1002e6);
         deal(PolygonLib.TOKEN_DAI, address(this), 1002e18);
@@ -100,7 +100,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
     }
 
     function testGetPrices() public {
-        uint price = swapper.getPrice(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI, 0);
+        uint price = swapper.getPrice(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI, 0);
         assertGt(price, 9e17);
         assertLt(price, 11e17);
 
@@ -115,16 +115,16 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertLt(price, 1e20);
 
         //9.999179532829849850
-        price = swapper.getPrice(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI, 10e6);
+        price = swapper.getPrice(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI, 10e6);
         assertGt(price, 90e17);
         assertLt(price, 110e17);
 
-        price = swapper.getPrice(PolygonLib.TOKEN_USDC, address(1), 0);
+        price = swapper.getPrice(PolygonLib.TOKEN_USDCe, address(1), 0);
         assertEq(price, 0);
     }
 
     function testGetPricesForRoute() public {
-        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI);
+        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI);
         uint price = swapper.getPriceForRoute(route, 0);
         assertGt(price, 9e17);
         assertLt(price, 11e17);
@@ -141,7 +141,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertGt(price, 1e18);
         assertLt(price, 1e20);
 
-        (route,) = swapper.buildRoute(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI);
+        (route,) = swapper.buildRoute(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI);
         //9.999179532829849850
         price = swapper.getPriceForRoute(route, 10e6);
         assertGt(price, 90e17);
@@ -149,9 +149,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
     }
 
     function testIsRouteExist() public {
-        bool result = swapper.isRouteExist(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_DAI);
+        bool result = swapper.isRouteExist(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI);
         assertEq(result, true);
-        result = swapper.isRouteExist(PolygonLib.TOKEN_USDC, address(1));
+        result = swapper.isRouteExist(PolygonLib.TOKEN_USDCe, address(1));
         assertEq(result, false);
     }
 
@@ -168,13 +168,13 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         ticks[0] = -60;
         ticks[1] = 60;
         (uint liquidity, uint[] memory amountsConsumed) =
-            uniswapV3Adapter.getLiquidityForAmounts(PolygonLib.POOL_UNISWAPV3_USDC_USDT_100, amounts, ticks);
+            uniswapV3Adapter.getLiquidityForAmounts(PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
         (liquidity, amountsConsumed) =
-            algebraAdapter.getLiquidityForAmounts(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, amounts, ticks);
+            algebraAdapter.getLiquidityForAmounts(PolygonLib.POOL_QUICKSWAPV3_USDCe_USDT, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
@@ -182,7 +182,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         // (uint amount0, uint amount1) = algebraAdapt_getAmountsForLiquidityity(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT, int24 lowerTick, int24 upperTick, uint128 liquidity);
 
         (liquidity, amountsConsumed) =
-            kyberAdapter.getLiquidityForAmounts(PolygonLib.POOL_KYBER_USDC_USDT, amounts, ticks);
+            kyberAdapter.getLiquidityForAmounts(PolygonLib.POOL_KYBER_USDCe_USDT, amounts, ticks);
         assertGt(liquidity, 0);
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
@@ -191,24 +191,24 @@ contract SwapperPolygonTest is Test, PolygonSetup {
     function testAdaptersPoolTokens() public {
         address[] memory tokens;
 
-        tokens = uniswapV3Adapter.poolTokens(PolygonLib.POOL_UNISWAPV3_USDC_USDT_100);
-        assertEq(tokens[0], PolygonLib.TOKEN_USDC);
+        tokens = uniswapV3Adapter.poolTokens(PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100);
+        assertEq(tokens[0], PolygonLib.TOKEN_USDCe);
         assertEq(tokens[1], PolygonLib.TOKEN_USDT);
 
-        tokens = algebraAdapter.poolTokens(PolygonLib.POOL_QUICKSWAPV3_USDC_USDT);
-        assertEq(tokens[0], PolygonLib.TOKEN_USDC);
+        tokens = algebraAdapter.poolTokens(PolygonLib.POOL_QUICKSWAPV3_USDCe_USDT);
+        assertEq(tokens[0], PolygonLib.TOKEN_USDCe);
         assertEq(tokens[1], PolygonLib.TOKEN_USDT);
 
-        tokens = kyberAdapter.poolTokens(PolygonLib.POOL_KYBER_USDC_USDT);
-        assertEq(tokens[0], PolygonLib.TOKEN_USDC);
+        tokens = kyberAdapter.poolTokens(PolygonLib.POOL_KYBER_USDCe_USDT);
+        assertEq(tokens[0], PolygonLib.TOKEN_USDCe);
         assertEq(tokens[1], PolygonLib.TOKEN_USDT);
     }
 
     function testSwap1Pool() public {
         // uniswap v3
         vm.expectRevert();
-        swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, 100000e6, 1); // 0.001%
-        swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, 1e6, 1_000); // 1%
+        swapper.swap(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_USDT, 100000e6, 1); // 0.001%
+        swapper.swap(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_USDT, 1e6, 1_000); // 1%
     }
 
     function testSwap2Pools() public {
@@ -231,7 +231,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         swapper.swap(address(1), address(2), 1e6, 1_000); // 1%
         // trying to swap less then threshold
         address[] memory tokenIn = new address[](1);
-        tokenIn[0] = PolygonLib.TOKEN_USDC;
+        tokenIn[0] = PolygonLib.TOKEN_USDCe;
         uint[] memory thresholdAmount = new uint[](1);
         thresholdAmount[0] = 10;
         swapper.setThresholds(tokenIn, thresholdAmount);
@@ -240,9 +240,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         newThresholdAmount[1] = 5;
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
         swapper.setThresholds(tokenIn, newThresholdAmount);
-        uint threshold = swapper.threshold(PolygonLib.TOKEN_USDC);
+        uint threshold = swapper.threshold(PolygonLib.TOKEN_USDCe);
         vm.expectRevert(abi.encodeWithSelector(ISwapper.LessThenThreshold.selector, threshold));
-        swapper.swap(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT, threshold - 1, 1_000); // 1%
+        swapper.swap(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_USDT, threshold - 1, 1_000); // 1%
     }
 
     function testSwapByRoute4Pools() public {
@@ -283,21 +283,21 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         // add routes
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapter: address(uniswapV3Adapter),
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
         swapper.addPools(pools, false);
-        swapper.removePool(PolygonLib.TOKEN_USDC);
+        swapper.removePool(PolygonLib.TOKEN_USDCe);
     }
 
     function testRequireAddPools() public {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapter: address(uniswapV3Adapter),
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -306,9 +306,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapterId: "123",
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -316,9 +316,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         swapper.addPools(pools_, false);
 
         pools_[0] = ISwapper.AddPoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -329,9 +329,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
     function testAddRemoveBlueChipsPools() public {
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapter: address(uniswapV3Adapter),
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -341,9 +341,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
 
         ISwapper.AddPoolData[] memory pools_ = new ISwapper.AddPoolData[](1);
         pools_[0] = ISwapper.AddPoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapterId: "123",
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -351,9 +351,9 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         swapper.addBlueChipsPools(pools_, false);
 
         pools_[0] = ISwapper.AddPoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: PolygonLib.TOKEN_USDC,
+            tokenIn: PolygonLib.TOKEN_USDCe,
             tokenOut: PolygonLib.TOKEN_USDT
         });
 
@@ -363,8 +363,8 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         swapper.removeBlueChipPool(address(1), address(2));
 
-        swapper.removeBlueChipPool(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT);
-        address pool = swapper.blueChipsPools(PolygonLib.TOKEN_USDC, PolygonLib.TOKEN_USDT).pool;
+        swapper.removeBlueChipPool(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_USDT);
+        address pool = swapper.blueChipsPools(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_USDT).pool;
         assertEq(pool, address(0));
     }
 }

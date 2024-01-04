@@ -32,8 +32,8 @@ contract PlatformPolygonTest is PolygonSetup {
         deal(platform.allowedBBTokens()[0], address(this), 5e24);
         IERC20(platform.allowedBBTokens()[0]).approve(address(factory), 5e24);
 
-        deal(PolygonLib.TOKEN_USDC, address(this), 1e12);
-        IERC20(PolygonLib.TOKEN_USDC).approve(address(factory), 1e12);
+        deal(PolygonLib.TOKEN_USDCe, address(this), 1e12);
+        IERC20(PolygonLib.TOKEN_USDCe).approve(address(factory), 1e12);
     }
 
     bool canReceive;
@@ -57,7 +57,7 @@ contract PlatformPolygonTest is PolygonSetup {
         for (uint i; i < len; ++i) {
             assertNotEq(token[i], address(0));
             assertGt(tokenPrice[i], 0);
-            if (token[i] == PolygonLib.TOKEN_USDC) {
+            if (token[i] == PolygonLib.TOKEN_USDCe) {
                 assertEq(tokenUserBalance[i], 1e12);
             } else if (token[i] == platform.allowedBBTokens()[0]) {
                 assertEq(tokenUserBalance[i], 5e24);
@@ -446,7 +446,7 @@ contract PlatformPolygonTest is PolygonSetup {
         vaultInitAddresses = new address[](3);
         vaultInitAddresses[0] = bbToken;
         vaultInitAddresses[1] = bbToken;
-        vaultInitAddresses[2] = PolygonLib.TOKEN_USDC;
+        vaultInitAddresses[2] = PolygonLib.TOKEN_USDCe;
         vaultInitNums = new uint[](3 * 2);
         vaultInitNums[0] = 86_400 * 7;
         vaultInitNums[1] = 86_400 * 30;

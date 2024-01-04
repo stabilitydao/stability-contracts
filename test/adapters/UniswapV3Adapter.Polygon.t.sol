@@ -21,7 +21,7 @@ contract UniswapV3AdapterTest is PolygonSetup {
         vm.expectRevert(IAmmAdapter.NotSupportedByCAMM.selector);
         adapter.getLiquidityForAmounts(address(0), new uint[](2));
 
-        address pool = PolygonLib.POOL_UNISWAPV3_USDC_USDT_100;
+        address pool = PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e6;
         amounts[1] = 2e6;
@@ -55,17 +55,17 @@ contract UniswapV3AdapterTest is PolygonSetup {
 
         uint price;
 
-        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_USDC, 276240);
+        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_USDCe, 276240);
         assertEq(price, 991632976171952929);
         // console.log(price);
-        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_DAI, 276240);
+        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);
         // console.log(price);
 
-        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_USDC, 276420);
+        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_USDCe, 276420);
         assertEq(price, 1009643073886184998);
         // console.log(price);
-        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDC_DAI_100, PolygonLib.TOKEN_DAI, 276420);
+        price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_DAI, 276420);
         assertEq(price, 990449);
         // console.log(price);
 
