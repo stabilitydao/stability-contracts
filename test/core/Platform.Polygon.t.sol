@@ -382,6 +382,33 @@ contract PlatformPolygonTest is PolygonSetup {
         }
     }
 
+    function testLibs() public {
+        assertEq(CommonLib.formatUsdAmount(1001 * 1e18), "$1.00k");
+        assertEq(CommonLib.formatUsdAmount(101 * 1e18), "$101");
+        assertEq(CommonLib.formatUsdAmount(991 * 1e17), "$99.1000");
+        assertEq(CommonLib.formatUsdAmount(9901 * 1e16), "$99.0100");
+        assertEq(CommonLib.formatUsdAmount(99001 * 1e15), "$99.0010");
+
+        string[] memory strings = new string[](1);
+        strings[0] = 'a';
+        assertEq(CommonLib.implode(strings, ','), 'a');
+        
+        strings = new string[](2);
+        strings[0] = 'a';
+        strings[1] = 'b';
+        assertEq(CommonLib.implode(strings, ','), 'a,b');
+        assertEq(CommonLib.implode(strings, ''), 'ab');
+
+        strings = new string[](0);
+        assertEq(CommonLib.implode(strings, ','), '');
+
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.NARROW)), "Narrow");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.WIDE)), "Wide");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.DYNAMIC)), "Pegged");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.STABLE)), "Stable");
+        assertEq(GammaLib.getPresetName(100), "");
+    }
+
     function _depositToVault(address vault, uint assetAmountUsd) internal {
         IStrategy strategy = IVault(vault).strategy();
         address[] memory assets = strategy.assets();

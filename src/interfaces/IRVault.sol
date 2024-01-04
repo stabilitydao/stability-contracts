@@ -21,6 +21,8 @@ interface IRVault is IVault {
     error ZeroToken();
     error ZeroVestingDuration();
     error TooHighCompoundRation();
+    error RewardIsTooSmall();
+    // error RewardIsTooBig();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */

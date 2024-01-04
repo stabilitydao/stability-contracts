@@ -16,6 +16,8 @@ contract MockStrategy is LPStrategyBase {
     uint private _fee0;
     uint private _fee1;
 
+    bool private _depositReturnZero;
+
     /// @inheritdoc IStrategy
     function description() external pure returns (string memory) {
         return "";
@@ -42,6 +44,10 @@ contract MockStrategy is LPStrategyBase {
                 underlying: addresses[3]
             })
         );
+    }
+
+    function toggleDepositReturnZero() external {
+        _depositReturnZero = !_depositReturnZero;
     }
 
     function initVariants(address)
@@ -122,11 +128,14 @@ contract MockStrategy is LPStrategyBase {
         _depositedToken1 += amountsConsumed[1];
         $.total += value;
         IMockERC20($._underlying).mint(value);
+        if (_depositReturnZero) {
+            value = 0;
+        }
     }
 
     function depositUnderlying(uint amount) external override returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
-        require(_depositedToken0 > 0, "Mock: deposit assets first");
+        // require(_depositedToken0 > 0, "Mock: deposit assets first");
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         uint addedToken0 = _depositedToken0 * amount / $.total;
         uint addedToken1 = _depositedToken1 * amount / $.total;
@@ -212,7 +221,5 @@ contract MockStrategy is LPStrategyBase {
         address, /*exchangeAsset*/
         address[] memory, /*rewardAssets_*/
         uint[] memory /*rewardAmounts_*/
-    ) internal pure override returns (uint earnedExchangeAsset) {
-        return 0;
-    }
+    ) internal pure override returns (uint earnedExchangeAsset) {}
 }

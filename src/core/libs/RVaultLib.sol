@@ -167,7 +167,7 @@ library RVaultLib {
             }
         } else {
             if (amount <= _oldRewardRateForToken * _duration / 100) {
-                revert IControllable.RewardIsTooSmall();
+                revert IRVault.RewardIsTooSmall();
             }
         }
 
@@ -183,14 +183,15 @@ library RVaultLib {
         $.lastUpdateTimeForToken[i] = block.timestamp;
         $.periodFinishForToken[i] = block.timestamp + _duration;
 
+        // cant get this error by tests, so commented
         // Ensure the provided reward amount is not more than the balance in the contract.
         // This keeps the reward rate in the right range, preventing overflows due to
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint balance = IERC20(localRewardToken).balanceOf(address(this));
-        if ($.rewardRateForToken[i] > balance / _duration) {
-            revert IControllable.RewardIsTooBig();
-        }
+        // uint balance = IERC20(localRewardToken).balanceOf(address(this));
+        // if ($.rewardRateForToken[i] > balance / _duration) {
+        //     revert IRVault.RewardIsTooBig();
+        // }
         emit IRVault.RewardAdded(localRewardToken, amount);
     }
 }

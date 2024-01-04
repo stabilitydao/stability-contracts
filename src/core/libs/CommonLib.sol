@@ -83,18 +83,13 @@ library CommonLib {
 
     function implode(string[] memory strings, string memory delimiter) public pure returns (string memory outString) {
         uint len = strings.length;
-        bool hasDelimiter = bytes(delimiter).length > 0;
+        if (len == 0) {
+            return "";
+        }
+        outString = strings[0];
         // nosemgrep
-        for (uint i; i < len; ++i) {
-            if (i == 0) {
-                outString = strings[0];
-            } else {
-                if (hasDelimiter) {
-                    outString = string.concat(outString, delimiter, strings[i]);
-                } else {
-                    outString = string.concat(outString, strings[i]);
-                }
-            }
+        for (uint i = 1; i < len; ++i) {
+            outString = string.concat(outString, delimiter, strings[i]);
         }
         return outString;
     }
@@ -113,7 +108,7 @@ library CommonLib {
         for (uint i; i < b.length; ++i) {
             out |= bytes32(b[i] & 0xFF) >> (i * 8);
         }
-        return out;
+        // return out;
     }
 
     function bToHex(bytes memory buffer) external pure returns (string memory) {

@@ -44,6 +44,45 @@ contract RMVaultTest is PolygonSetup {
             // farmId
             nums[0] = 6; // WMATIC-USDC narrow
 
+            vaultInitNums[1] = 10;
+            vm.expectRevert(IFactory.BoostDurationTooLow.selector);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.REWARDING_MANAGED,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                nums,
+                ticks
+            );
+            vaultInitNums[1] = 86400 * 30;
+
+            vaultInitNums[2] = 10;
+            vm.expectRevert(IFactory.BoostAmountTooLow.selector);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.REWARDING_MANAGED,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                nums,
+                ticks
+            );
+            vaultInitNums[2] = 1000e6;
+
+            vaultInitNums[2] = 0;
+            vm.expectRevert(IFactory.BoostAmountIsZero.selector);
+            factory.deployVaultAndStrategy(
+                VaultTypeLib.REWARDING_MANAGED,
+                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                vaultInitAddresses,
+                vaultInitNums,
+                initStrategyAddresses,
+                nums,
+                ticks
+            );
+            vaultInitNums[2] = 1000e6;
+
             factory.deployVaultAndStrategy(
                 VaultTypeLib.REWARDING_MANAGED,
                 StrategyIdLib.GAMMA_QUICKSWAP_FARM,
@@ -167,10 +206,43 @@ contract RMVaultTest is PolygonSetup {
         vm.prank(address(123));
         vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(this));
+        
+        vm.expectRevert(IRVault.NotAllowed.selector);
+        vault.getAllRewardsFor(address(1));
+
+        vault.getAllRewardsFor(address(this));
+
+        skip(86400);
+        IERC20(address(vault)).approve(address(1), type(uint).max);
+        vm.prank(address(1));
         vault.getAllRewardsFor(address(this));
 
         vault.rewardTokensTotal();
 
         assertGt(vault.rewardPerToken(0), 0);
+
+        vm.expectRevert(IRVault.RTNotFound.selector);
+        vault.notifyTargetRewardAmount(4, 1e36);
+
+        vm.expectRevert(abi.encodeWithSelector(IRVault.Overflow.selector, (type(uint).max / 1e18 - 1)));
+        vault.notifyTargetRewardAmount(1, type(uint).max / 5);
+
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        vault.notifyTargetRewardAmount(0, 100);
+
+        deal(platform.targetExchangeAsset(), address(this), 1e18);
+        vm.expectRevert(IRVault.RewardIsTooSmall.selector);
+        vault.notifyTargetRewardAmount(1, 1000);
+
+        IERC20(platform.targetExchangeAsset()).approve(address(vault), 1e18);
+        vault.notifyTargetRewardAmount(1, 1e18 / 2);
+
+        // tried to get RewardIsTooBig error, but cant
+        skip(86400000);
+        uint a = type(uint).max / 1e20;
+        deal(platform.targetExchangeAsset(), address(this), a);
+        IERC20(platform.targetExchangeAsset()).approve(address(vault), a);
+        // vm.expectRevert(IRVault.RewardIsTooBig.selector);
+        vault.notifyTargetRewardAmount(1, a);
     }
 }

@@ -21,6 +21,7 @@ interface IVault is IERC165 {
     error ExceedMaxSupply(uint maxSupply);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error WaitAFewBlocks();
+    error StrategyZeroDeposit();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
@@ -73,20 +74,6 @@ interface IVault is IERC165 {
         uint tokenId;
         address[] vaultInitAddresses;
         uint[] vaultInitNums;
-    }
-
-    /// @title Deposit Assets Data
-    /// @notice Data structure containing parameters for function depositAssets to avoid stack too deep.
-    /// @notice This structure use local variables.
-    struct DepositAssetsData {
-        uint _totalSupply;
-        uint totalValue;
-        uint len;
-        address[] assets;
-        address underlying;
-        uint[] amountsConsumed;
-        uint value;
-        uint mintAmount;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -18,10 +18,14 @@ contract VaultTest is Test, FullMockSetup {
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
     MockAmmAdapter public mockAmmAdapter;
+    bool public canReceive;
 
-    receive() external payable {}
+    receive() external payable {
+        require(canReceive);
+    }
 
     function setUp() public {
+        canReceive = true;
         strategyImplementation = new MockStrategy();
 
         Proxy vaultProxy = new Proxy();
@@ -112,6 +116,11 @@ contract VaultTest is Test, FullMockSetup {
         amounts[0] = 10e18;
         amounts[1] = 10e6;
 
+        strategy.toggleDepositReturnZero();
+        vm.expectRevert(abi.encodeWithSelector(IVault.StrategyZeroDeposit.selector));
+        vault.depositAssets(assets, amounts, 0, address(0));
+        strategy.toggleDepositReturnZero();
+
         vault.depositAssets(assets, amounts, 0, address(0));
 
         vm.roll(block.number + 5);
@@ -146,6 +155,11 @@ contract VaultTest is Test, FullMockSetup {
 
         (bool success,) = payable(address(vault)).call{value: 5e17}("");
         assertEq(success, true);
+
+        canReceive = false;
+        vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
+        vault.doHardWork();
+        canReceive = true;
 
         vault.doHardWork();
 
