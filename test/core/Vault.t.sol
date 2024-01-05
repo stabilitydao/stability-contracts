@@ -260,6 +260,9 @@ contract VaultTest is Test, FullMockSetup {
 
         strategy.triggerFuse();
 
+        vm.expectRevert(IVault.FuseTrigger.selector);
+        vault.depositAssets(assets, amounts, 0, address(0));
+
         otherAmounts[0] = 0;
         vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
 
@@ -290,6 +293,18 @@ contract VaultTest is Test, FullMockSetup {
                 vaultInitNums: new uint[](0)
             })
         );
+    }
+
+    function testChageNameSymbol() public {
+        _initAll();
+
+        string memory newName = "New vault name";
+        string memory newSymbol = "New vault symbol";
+        vault.setName(newName);
+        assertEq(vault.name(), newName);
+
+        vault.setSymbol(newSymbol);
+        assertEq(vault.symbol(), newSymbol);
     }
 
     function _initAll() internal {

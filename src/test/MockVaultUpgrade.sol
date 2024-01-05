@@ -46,6 +46,10 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function setMaxSupply(uint maxShares) external {}
 
+    function setName(string calldata newName) external {}
+
+    function setSymbol(string calldata newSymbol) external {}
+
     function doHardWorkOnDeposit() external view returns (bool) {}
 
     function previewDepositAssets(

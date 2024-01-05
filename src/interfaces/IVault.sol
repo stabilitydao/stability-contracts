@@ -34,6 +34,8 @@ interface IVault is IERC165 {
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
     event MaxSupply(uint maxShares);
+    event VaultName(string newName);
+    event VaultSymbol(string newSymbol);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -54,6 +56,10 @@ interface IVault is IERC165 {
         bool doHardWorkOnDeposit;
         /// @dev Immutable vault type ID
         string _type;
+        /// @dev Changed ERC20 name
+        string changedName;
+        /// @dev Changed ERC20 symbol
+        string changedSymbol;
     }
 
     /// @title Vault Initialization Data
@@ -200,4 +206,10 @@ interface IVault is IERC165 {
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
+
+    /// @dev Changing ERC20 name of vault
+    function setName(string calldata newName) external;
+
+    /// @dev Changing ERC20 symbol of vault
+    function setSymbol(string calldata newSymbol) external;
 }

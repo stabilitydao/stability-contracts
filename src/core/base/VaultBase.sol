@@ -29,7 +29,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "1.0.2";
+    string public constant VERSION_VAULT_BASE = "1.1.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -103,20 +103,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IVault
-    function setMaxSupply(uint maxShares) public virtual onlyGovernanceOrMultisig {
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        $.maxSupply = maxShares;
-        emit MaxSupply(maxShares);
-    }
-
-    /// @inheritdoc IVault
-    function setDoHardWorkOnDeposit(bool value) external onlyGovernanceOrMultisig {
-        VaultBaseStorage storage $ = _getVaultBaseStorage();
-        $.doHardWorkOnDeposit = value;
-        emit DoHardWorkOnDepositChanged($.doHardWorkOnDeposit, value);
-    }
-
-    /// @inheritdoc IVault
     //slither-disable-next-line reentrancy-events
     function doHardWork() external {
         IPlatform _platform = IPlatform(platform());
@@ -151,6 +137,34 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
 
         emit HardWorkGas(gasUsed, gasCost, compensated);
+    }
+
+    /// @inheritdoc IVault
+    function setDoHardWorkOnDeposit(bool value) external onlyGovernanceOrMultisig {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.doHardWorkOnDeposit = value;
+        emit DoHardWorkOnDepositChanged($.doHardWorkOnDeposit, value);
+    }
+
+    /// @inheritdoc IVault
+    function setMaxSupply(uint maxShares) public virtual onlyGovernanceOrMultisig {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.maxSupply = maxShares;
+        emit MaxSupply(maxShares);
+    }
+
+    /// @inheritdoc IVault
+    function setName(string calldata newName) external onlyOperator {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.changedName = newName;
+        emit VaultName(newName);
+    }
+
+    /// @inheritdoc IVault
+    function setSymbol(string calldata newSymbol) external onlyOperator {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.changedSymbol = newSymbol;
+        emit VaultSymbol(newSymbol);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -245,6 +259,24 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function name() public view override returns (string memory) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        string memory changedName = $.changedName;
+        if (bytes(changedName).length > 0) {
+            return changedName;
+        }
+        return super.name();
+    }
+
+    function symbol() public view override returns (string memory) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        string memory changedSymbol = $.changedSymbol;
+        if (bytes(changedSymbol).length > 0) {
+            return changedSymbol;
+        }
+        return super.symbol();
+    }
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(Controllable, IERC165) returns (bool) {
