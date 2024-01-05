@@ -25,6 +25,7 @@ contract ZapTest is PolygonSetup {
     }
 
     constructor() {
+        vm.rollFork(48098000); // Sep-01-2023 03:23:25 PM +UTC
         _init();
 
         priceReader = IPriceReader(platform.priceReader());

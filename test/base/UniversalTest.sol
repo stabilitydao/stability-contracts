@@ -249,7 +249,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                     require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
-                    deal(assets[j], address(this), depositAmounts[j]);
+                    _deal(assets[j], address(this), depositAmounts[j]);
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
                 }
 
@@ -271,13 +271,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     poolData[0].tokenIn = assets[0];
                     poolData[0].tokenOut = assets[1];
                     IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
-                    deal(assets[0], address(this), depositAmounts[0]);
+                    _deal(assets[0], address(this), depositAmounts[0]);
                     swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
 
                     poolData[0].tokenIn = assets[1];
                     poolData[0].tokenOut = assets[0];
                     IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
-                    deal(assets[1], address(this), depositAmounts[1]);
+                    _deal(assets[1], address(this), depositAmounts[1]);
                     swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
                 }
 
@@ -291,6 +291,27 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 IVault(vars.vault).withdrawAssets(
                     assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2)
                 );
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       MAKE POOL VOLUME                     */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                {
+                    ISwapper swapper = ISwapper(platform.swapper());
+                    ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
+                    poolData[0].pool = vars.pool;
+                    poolData[0].ammAdapter = vars.ammAdapter;
+                    poolData[0].tokenIn = assets[0];
+                    poolData[0].tokenOut = assets[1];
+                    IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
+                    _deal(assets[0], address(this), depositAmounts[0] * 2);
+                    swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 1_000);
+
+                    poolData[0].tokenIn = assets[1];
+                    poolData[0].tokenOut = assets[0];
+                    IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
+                    _deal(assets[1], address(this), depositAmounts[1] * 2);
+                    swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 1_000);
+                }
 
                 skip(3 hours);
                 vm.roll(block.number + 6);
@@ -493,7 +514,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 for (uint j; j < assets.length; ++j) {
                     (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
-                    deal(assets[j], address(this), depositAmounts[j]);
+                    _deal(assets[j], address(this), depositAmounts[j]);
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
                     vars.depositUsdValue += depositAmounts[j] * price / 1e18;
                 }

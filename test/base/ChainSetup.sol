@@ -12,4 +12,6 @@ abstract contract ChainSetup is Test {
     function testChainSetupStub() public {}
 
     function _init() internal virtual;
+
+    function _deal(address token, address to, uint amount) internal virtual;
 }

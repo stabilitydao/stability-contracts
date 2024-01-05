@@ -418,7 +418,8 @@ contract PlatformPolygonTest is PolygonSetup {
         for (uint j; j < assets.length; ++j) {
             (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
             depositAmounts[j] = assetAmountUsd * 10 ** IERC20Metadata(assets[j]).decimals() / price;
-            deal(assets[j], address(this), depositAmounts[j]);
+            // deal(assets[j], address(this), depositAmounts[j]);
+            _deal(assets[j], address(this), depositAmounts[j]);
             IERC20(assets[j]).approve(vault, depositAmounts[j]);
         }
 

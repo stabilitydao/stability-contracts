@@ -30,6 +30,7 @@ library PolygonLib {
     address public constant TOKEN_QUICK = 0xB5C064F955D8e7F38fE0460C556a72987494eE17;
     address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
     address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
+    address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -60,6 +61,7 @@ library PolygonLib {
     address public constant POOL_QUICKSWAPV3_WMATIC_USDT = 0x5b41EEDCfC8e0AE47493d4945Aa1AE4fe05430ff;
     address public constant POOL_QUICKSWAPV3_WETH_USDT = 0x9CEff2F5138fC59eB925d270b8A7A9C02a1810f2;
     address public constant POOL_QUICKSWAPV3_dQUICK_QUICK = 0x194257104FabFd9f48bD01bd71A719637B4bbfA9;
+    address public constant POOL_QUICKSWAPV3_USDCe_USDC = 0xEecB5Db986c20a8C88D8332E7e252A9671565751;
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
@@ -150,33 +152,41 @@ library PolygonLib {
         //endregion -- Deploy AMM adapters ----
 
         //region ----- SetupSwapper -----
-        (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
-        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        swapper.addBlueChipsPools(bcPools, false);
-        swapper.addPools(pools, false);
-        // todo auto thresholds
-        address[] memory tokenIn = new address[](6);
-        tokenIn[0] = TOKEN_USDCe;
-        tokenIn[1] = TOKEN_USDT;
-        tokenIn[2] = TOKEN_DAI;
-        tokenIn[3] = TOKEN_WMATIC;
-        tokenIn[4] = TOKEN_WETH;
-        tokenIn[5] = TOKEN_dQUICK;
-        uint[] memory thresholdAmount = new uint[](6);
-        thresholdAmount[0] = 1e3;
-        thresholdAmount[1] = 1e3;
-        thresholdAmount[2] = 1e15;
-        thresholdAmount[3] = 1e15;
-        thresholdAmount[4] = 1e12;
-        thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
-        swapper.setThresholds(tokenIn, thresholdAmount);
-        DeployLib.logSetupSwapper(platform, showLog);
+        {
+            (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
+            ISwapper.AddPoolData[] memory pools2 = routes2();
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            swapper.addBlueChipsPools(bcPools, false);
+            swapper.addPools(pools, false);
+            swapper.addPools(pools2, false);
+            // todo auto thresholds
+            address[] memory tokenIn = new address[](7);
+            tokenIn[0] = TOKEN_USDCe;
+            tokenIn[1] = TOKEN_USDT;
+            tokenIn[2] = TOKEN_DAI;
+            tokenIn[3] = TOKEN_WMATIC;
+            tokenIn[4] = TOKEN_WETH;
+            tokenIn[5] = TOKEN_dQUICK;
+            tokenIn[6] = TOKEN_USDC;
+            uint[] memory thresholdAmount = new uint[](7);
+            thresholdAmount[0] = 1e3;
+            thresholdAmount[1] = 1e3;
+            thresholdAmount[2] = 1e15;
+            thresholdAmount[3] = 1e15;
+            thresholdAmount[4] = 1e12;
+            thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
+            thresholdAmount[6] = 1e3;
+            swapper.setThresholds(tokenIn, thresholdAmount);
+            DeployLib.logSetupSwapper(platform, showLog);
+        }
         //endregion -- SetupSwapper -----
 
         //region ----- Add farms -----
         IFactory.Farm[] memory _farms = farms();
+        IFactory.Farm[] memory _farms2 = farms2();
         IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(_farms);
+        factory.addFarms(_farms2);
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -315,6 +325,23 @@ library PolygonLib {
         //endregion -- Pools ----
     }
 
+    /// @notice New routes jan-2024
+    function routes2()
+        public
+        pure
+        returns (ISwapper.AddPoolData[] memory pools)
+    {
+        pools = new ISwapper.AddPoolData[](1);
+        uint i;
+        // QuickSwapV3
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_QUICKSWAPV3_USDCe_USDC,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
+            tokenIn: TOKEN_USDC,
+            tokenOut: TOKEN_USDCe
+        });
+    }
+
     function farms() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](17);
         address[] memory rewardAssets;
@@ -397,6 +424,39 @@ library PolygonLib {
             TOKEN_dQUICK, address(0), GAMMA_POS_WMATIC_USDT_WIDE, GAMMA_UNIPROXY_2, 17, uint(GammaLib.Presets.WIDE)
         );
         //endregion --  Gamma QuickSwap farms -----
+    }
+
+    function farms2() public pure returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](1);
+        address[] memory rewardAssets;
+        address[] memory addresses;
+        uint[] memory nums;
+        int24[] memory ticks;
+
+        //region ----- QuickSwap V3 farms -----
+        // [17] Earn dQUICK, WMATIC by static position in USDCe/USDC pool on QuickSwap V3
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_WMATIC;
+        addresses = new address[](2);
+        addresses[0] = QUICKSWAP_POSITION_MANAGER;
+        addresses[1] = QUICKSWAP_FARMING_CENTER;
+        nums = new uint[](2);
+        nums[0] = 1700454552;
+        nums[1] = 4104559500;
+        ticks = new int24[](2);
+        ticks[0] = -60;
+        ticks[1] = 60;
+        _farms[0] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_USDCe_USDC,
+            strategyLogicId: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+        //endregion -- QuickSwap V3 farms -----
     }
 
     function _makeGammaQuickSwapFarm(
