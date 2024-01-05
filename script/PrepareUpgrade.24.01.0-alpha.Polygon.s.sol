@@ -33,50 +33,50 @@ contract PrepareUpgrade3Polygon is Script {
         new Factory();
 
         // QSF 1.0.2: getRevenue fixed
-        address impl = address(new QuickSwapV3StaticFarmStrategy());
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: QUICKSWAPV3_STATIC_FARM,
-                implementation: impl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(0)
-        );
+        new QuickSwapV3StaticFarmStrategy();
+        // factory.setStrategyLogicConfig(
+        //     IFactory.StrategyLogicConfig({
+        //         id: QUICKSWAPV3_STATIC_FARM,
+        //         implementation: impl,
+        //         deployAllowed: true,
+        //         upgradeAllowed: true,
+        //         farming: true,
+        //         tokenId: 0
+        //     }),
+        //     address(0)
+        // );
 
         // Vaults 1.1.0: setName, setSymbol, gas optimization
-        impl = address(new CVault());
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: COMPOUNDING,
-                implementation: impl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 50_000e18
-            })
-        );
-        impl = address(new RVault());
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: REWARDING,
-                implementation: impl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 50_000e18
-            })
-        );
-        impl = address(new RMVault());
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: REWARDING_MANAGED,
-                implementation: impl,
-                deployAllowed: false,
-                upgradeAllowed: false,
-                buildingPrice: 100_000e18
-            })
-        );
+        new CVault();
+        // factory.setVaultConfig(
+        //     IFactory.VaultConfig({
+        //         vaultType: COMPOUNDING,
+        //         implementation: impl,
+        //         deployAllowed: true,
+        //         upgradeAllowed: true,
+        //         buildingPrice: 50_000e18
+        //     })
+        // );
+        new RVault();
+        // factory.setVaultConfig(
+        //     IFactory.VaultConfig({
+        //         vaultType: REWARDING,
+        //         implementation: impl,
+        //         deployAllowed: true,
+        //         upgradeAllowed: true,
+        //         buildingPrice: 50_000e18
+        //     })
+        // );
+        new RMVault();
+        // factory.setVaultConfig(
+        //     IFactory.VaultConfig({
+        //         vaultType: REWARDING_MANAGED,
+        //         implementation: impl,
+        //         deployAllowed: false,
+        //         upgradeAllowed: false,
+        //         buildingPrice: 100_000e18
+        //     })
+        // );
 
         // route for native USDC
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
@@ -88,9 +88,9 @@ contract PrepareUpgrade3Polygon is Script {
         });
         ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
         swapper.addPools(pools, false);
-        address[] memory tokenIn = new address[](0);
+        address[] memory tokenIn = new address[](1);
         tokenIn[0] = TOKEN_USDC;
-        uint[] memory thresholdAmount = new uint[](7);
+        uint[] memory thresholdAmount = new uint[](1);
         thresholdAmount[0] = 1e3;
         swapper.setThresholds(tokenIn, thresholdAmount);
 
