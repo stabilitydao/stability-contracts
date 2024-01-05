@@ -18,10 +18,14 @@ contract VaultTest is Test, FullMockSetup {
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
     MockAmmAdapter public mockAmmAdapter;
+    bool public canReceive;
 
-    receive() external payable {}
+    receive() external payable {
+        require(canReceive);
+    }
 
     function setUp() public {
+        canReceive = true;
         strategyImplementation = new MockStrategy();
 
         Proxy vaultProxy = new Proxy();
@@ -98,7 +102,11 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
         vault.depositAssets(assets, amounts, 0, address(0));
 
-        factory.setVaultStatus(address(vault), 1);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(vault);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
 
         amounts = new uint[](3);
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
@@ -111,6 +119,11 @@ contract VaultTest is Test, FullMockSetup {
         vault.depositAssets(assets, amounts, 0, address(0));
         amounts[0] = 10e18;
         amounts[1] = 10e6;
+
+        strategy.toggleDepositReturnZero();
+        vm.expectRevert(abi.encodeWithSelector(IVault.StrategyZeroDeposit.selector));
+        vault.depositAssets(assets, amounts, 0, address(0));
+        strategy.toggleDepositReturnZero();
 
         vault.depositAssets(assets, amounts, 0, address(0));
 
@@ -146,6 +159,11 @@ contract VaultTest is Test, FullMockSetup {
 
         (bool success,) = payable(address(vault)).call{value: 5e17}("");
         assertEq(success, true);
+
+        canReceive = false;
+        vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
+        vault.doHardWork();
+        canReceive = true;
 
         vault.doHardWork();
 
@@ -233,7 +251,11 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
         vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
 
-        factory.setVaultStatus(address(vault), 1);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(vault);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
         vault.depositAssets(assets, amounts, 0, address(0));
         vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
         uint shares = vault.balanceOf(address(this));
@@ -245,6 +267,9 @@ contract VaultTest is Test, FullMockSetup {
         assertLt(shares, vault.totalSupply());
 
         strategy.triggerFuse();
+
+        vm.expectRevert(IVault.FuseTrigger.selector);
+        vault.depositAssets(assets, amounts, 0, address(0));
 
         otherAmounts[0] = 0;
         vault.withdrawAssets(underlyingAssets, 1e16, otherAmounts);
@@ -276,6 +301,18 @@ contract VaultTest is Test, FullMockSetup {
                 vaultInitNums: new uint[](0)
             })
         );
+    }
+
+    function testChageNameSymbol() public {
+        _initAll();
+
+        string memory newName = "New vault name";
+        string memory newSymbol = "New vault symbol";
+        vault.setName(newName);
+        assertEq(vault.name(), newName);
+
+        vault.setSymbol(newSymbol);
+        assertEq(vault.symbol(), newSymbol);
     }
 
     function _initAll() internal {

@@ -317,10 +317,15 @@ contract FactoryTest is Test, MockSetup {
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, vaultTypeHash));
         factory.upgradeVaultProxy(vault);
 
-        factory.setVaultStatus(vault, 0);
+        address[] memory vaults = new address[](1);
+        vaults[0] = vault;
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 0;
+        factory.setVaultStatus(vaults, statuses);
         vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
         factory.upgradeVaultProxy(vault);
-        factory.setVaultStatus(vault, 1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
 
         factory.setVaultConfig(
             IFactory.VaultConfig({
@@ -498,7 +503,11 @@ contract FactoryTest is Test, MockSetup {
     }
 
     function testSetVaultStatus() public {
-        factory.setVaultStatus(address(1), 1);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(1);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
         assertEq(factory.vaultStatus(address(1)), 1);
     }
 

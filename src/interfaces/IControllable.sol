@@ -23,8 +23,6 @@ interface IControllable {
     error NotTheOwner();
     error ETHTransferFailed();
     error IncorrectInitParams();
-    error RewardIsTooSmall();
-    error RewardIsTooBig();
     //endregion -- Custom Errors -----
 
     event ContractInitialized(address platform, uint ts, uint block);

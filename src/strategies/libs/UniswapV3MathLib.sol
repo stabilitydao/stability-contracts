@@ -15,7 +15,6 @@ library UniswapV3MathLib {
         int24 lowerTick;
         int24 upperTick;
         uint128 liquidity;
-        uint feeGrowthGlobal;
     }
 
     function calcPriceOut(
@@ -52,6 +51,7 @@ library UniswapV3MathLib {
     /// @dev Working only for Uniswap V3 native fee calculations. Not usable for Kyber's auto compounding fees and other specific implementations.
     function computeFeesEarned(
         ComputeFeesEarnedCommonParams memory params,
+        uint feeGrowthGlobal,
         uint feeGrowthOutsideLower,
         uint feeGrowthOutsideUpper,
         uint feeGrowthInsideLast
@@ -62,17 +62,17 @@ library UniswapV3MathLib {
             if (params.tick >= params.lowerTick) {
                 feeGrowthBelow = feeGrowthOutsideLower;
             } else {
-                feeGrowthBelow = params.feeGrowthGlobal - feeGrowthOutsideLower;
+                feeGrowthBelow = feeGrowthGlobal - feeGrowthOutsideLower;
             }
             // calculate fee growth above
             uint feeGrowthAbove;
             if (params.tick < params.upperTick) {
                 feeGrowthAbove = feeGrowthOutsideUpper;
             } else {
-                feeGrowthAbove = params.feeGrowthGlobal - feeGrowthOutsideUpper;
+                feeGrowthAbove = feeGrowthGlobal - feeGrowthOutsideUpper;
             }
 
-            uint feeGrowthInside = params.feeGrowthGlobal - feeGrowthBelow - feeGrowthAbove;
+            uint feeGrowthInside = feeGrowthGlobal - feeGrowthBelow - feeGrowthAbove;
             fee = mulDiv(params.liquidity, feeGrowthInside - feeGrowthInsideLast, 0x100000000000000000000000000000000);
         }
     }

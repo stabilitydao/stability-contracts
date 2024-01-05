@@ -32,8 +32,8 @@ contract PlatformPolygonTest is PolygonSetup {
         deal(platform.allowedBBTokens()[0], address(this), 5e24);
         IERC20(platform.allowedBBTokens()[0]).approve(address(factory), 5e24);
 
-        deal(PolygonLib.TOKEN_USDC, address(this), 1e12);
-        IERC20(PolygonLib.TOKEN_USDC).approve(address(factory), 1e12);
+        deal(PolygonLib.TOKEN_USDCe, address(this), 1e12);
+        IERC20(PolygonLib.TOKEN_USDCe).approve(address(factory), 1e12);
     }
 
     bool canReceive;
@@ -57,7 +57,7 @@ contract PlatformPolygonTest is PolygonSetup {
         for (uint i; i < len; ++i) {
             assertNotEq(token[i], address(0));
             assertGt(tokenPrice[i], 0);
-            if (token[i] == PolygonLib.TOKEN_USDC) {
+            if (token[i] == PolygonLib.TOKEN_USDCe) {
                 assertEq(tokenUserBalance[i], 1e12);
             } else if (token[i] == platform.allowedBBTokens()[0]) {
                 assertEq(tokenUserBalance[i], 5e24);
@@ -382,6 +382,33 @@ contract PlatformPolygonTest is PolygonSetup {
         }
     }
 
+    function testLibs() public {
+        assertEq(CommonLib.formatUsdAmount(1001 * 1e18), "$1.00k");
+        assertEq(CommonLib.formatUsdAmount(101 * 1e18), "$101");
+        assertEq(CommonLib.formatUsdAmount(991 * 1e17), "$99.1000");
+        assertEq(CommonLib.formatUsdAmount(9901 * 1e16), "$99.0100");
+        assertEq(CommonLib.formatUsdAmount(99001 * 1e15), "$99.0010");
+
+        string[] memory strings = new string[](1);
+        strings[0] = "a";
+        assertEq(CommonLib.implode(strings, ","), "a");
+
+        strings = new string[](2);
+        strings[0] = "a";
+        strings[1] = "b";
+        assertEq(CommonLib.implode(strings, ","), "a,b");
+        assertEq(CommonLib.implode(strings, ""), "ab");
+
+        strings = new string[](0);
+        assertEq(CommonLib.implode(strings, ","), "");
+
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.NARROW)), "Narrow");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.WIDE)), "Wide");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.DYNAMIC)), "Pegged");
+        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.STABLE)), "Stable");
+        assertEq(GammaLib.getPresetName(100), "");
+    }
+
     function _depositToVault(address vault, uint assetAmountUsd) internal {
         IStrategy strategy = IVault(vault).strategy();
         address[] memory assets = strategy.assets();
@@ -391,7 +418,8 @@ contract PlatformPolygonTest is PolygonSetup {
         for (uint j; j < assets.length; ++j) {
             (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
             depositAmounts[j] = assetAmountUsd * 10 ** IERC20Metadata(assets[j]).decimals() / price;
-            deal(assets[j], address(this), depositAmounts[j]);
+            // deal(assets[j], address(this), depositAmounts[j]);
+            _deal(assets[j], address(this), depositAmounts[j]);
             IERC20(assets[j]).approve(vault, depositAmounts[j]);
         }
 
@@ -419,7 +447,7 @@ contract PlatformPolygonTest is PolygonSetup {
         vaultInitAddresses = new address[](3);
         vaultInitAddresses[0] = bbToken;
         vaultInitAddresses[1] = bbToken;
-        vaultInitAddresses[2] = PolygonLib.TOKEN_USDC;
+        vaultInitAddresses[2] = PolygonLib.TOKEN_USDCe;
         vaultInitNums = new uint[](3 * 2);
         vaultInitNums[0] = 86_400 * 7;
         vaultInitNums[1] = 86_400 * 30;

@@ -95,7 +95,7 @@ contract PriceReaderTest is Test, MockSetup {
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDC_USDT_100,
+            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
             ammAdapter: address(dexAdapter),
             tokenIn: address(tokenE),
             tokenOut: address(tokenD)

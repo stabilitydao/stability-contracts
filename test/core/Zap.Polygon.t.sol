@@ -25,6 +25,7 @@ contract ZapTest is PolygonSetup {
     }
 
     constructor() {
+        vm.rollFork(48098000); // Sep-01-2023 03:23:25 PM +UTC
         _init();
 
         priceReader = IPriceReader(platform.priceReader());
@@ -119,7 +120,7 @@ contract ZapTest is PolygonSetup {
         IZap zap = IZap(platform.zap());
 
         ZapTestVars memory v;
-        v.depositToken = PolygonLib.TOKEN_USDC;
+        v.depositToken = PolygonLib.TOKEN_USDCe;
         v.depositAmount = 1000e6;
         (, uint[] memory swapAmounts) = zap.getDepositSwapAmounts(vault, v.depositToken, v.depositAmount);
         assertEq(swapAmounts.length, 2);
@@ -134,7 +135,7 @@ contract ZapTest is PolygonSetup {
 
         _testZapGetDepositAmounts(vault2, PolygonLib.TOKEN_WMATIC, 3000e18);
 
-        (, swapAmounts) = zap.getDepositSwapAmounts(vault1, PolygonLib.TOKEN_USDC, v.depositAmount);
+        (, swapAmounts) = zap.getDepositSwapAmounts(vault1, PolygonLib.TOKEN_USDCe, v.depositAmount);
         assertGt(swapAmounts[0], 0); // 20806874719093983
         assertGt(swapAmounts[1], 0); // 979193125280906017
 

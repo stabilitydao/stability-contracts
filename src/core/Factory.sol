@@ -31,7 +31,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -138,10 +138,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function setVaultStatus(address vault, uint status) external onlyGovernanceOrMultisig {
+    function setVaultStatus(address[] memory vaults, uint[] memory statuses) external onlyGovernanceOrMultisig {
         FactoryStorage storage $ = _getStorage();
-        $.vaultStatus[vault] = status;
-        emit VaultStatus(vault, status);
+        uint len = vaults.length;
+        for (uint i; i < len; ++i) {
+            $.vaultStatus[vaults[i]] = statuses[i];
+            emit VaultStatus(vaults[i], statuses[i]);
+        }
     }
 
     /// @inheritdoc IFactory

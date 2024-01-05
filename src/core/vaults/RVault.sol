@@ -20,7 +20,7 @@ contract RVault is RVaultBase {
     //region ----- Constants -----
 
     /// @dev Version of RVault implementation
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 
