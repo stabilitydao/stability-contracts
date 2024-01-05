@@ -102,7 +102,11 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
         vault.depositAssets(assets, amounts, 0, address(0));
 
-        factory.setVaultStatus(address(vault), 1);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(vault);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
 
         amounts = new uint[](3);
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
@@ -247,7 +251,11 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert(abi.encodeWithSelector(IFactory.NotActiveVault.selector));
         vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
 
-        factory.setVaultStatus(address(vault), 1);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(vault);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
         vault.depositAssets(assets, amounts, 0, address(0));
         vault.depositAssets(underlyingAssets, otherAmounts, 0, address(0));
         uint shares = vault.balanceOf(address(this));

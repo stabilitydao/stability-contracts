@@ -329,9 +329,9 @@ interface IFactory {
     function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
 
     /// @notice Governance and multisig can set a vault status other than Active - the default status.
-    /// @param vault Address of vault proxy
-    /// @param status New vault status. Constant from VaultStatusLib
-    function setVaultStatus(address vault, uint status) external;
+    /// @param vaults Addresses of vault proxy
+    /// @param statuses New vault statuses. Constant from VaultStatusLib
+    function setVaultStatus(address[] memory vaults, uint[] memory statuses) external;
 
     //endregion -- Write functions -----
 }

@@ -7,4 +7,5 @@ library VaultStatusLib {
     uint internal constant DEPRECATED = 2;
     uint internal constant EMERGENCY_EXIT = 3;
     uint internal constant DISABLED = 4;
+    uint internal constant DEPOSITS_UNAVAILABLE = 5;
 }
