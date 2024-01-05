@@ -124,8 +124,8 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             IAlgebraPool _pool = IAlgebraPool(pool());
             uint __tokenId = $._tokenId;
             // get fees
-            UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params = UniswapV3MathLib
-                .ComputeFeesEarnedCommonParams({tick: 0, lowerTick: 0, upperTick: 0, liquidity: 0});
+            UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params =
+                UniswapV3MathLib.ComputeFeesEarnedCommonParams({tick: 0, lowerTick: 0, upperTick: 0, liquidity: 0});
             (, params.tick,,,,,) = _pool.globalState();
             //slither-disable-next-line similar-names
             uint feeGrowthInside0Last;
@@ -150,12 +150,28 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
             //slither-disable-next-line similar-names
             (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
-            amounts[0] = uint(uint128(UniswapV3MathLib.computeFeesEarned(
-                params, _pool.totalFeeGrowth0Token(), feeGrowthOutsideLower0to1, feeGrowthOutsideUpper0to1, feeGrowthInside0Last
-            )) + tokensOwed0);
-            amounts[1] = uint(uint128(UniswapV3MathLib.computeFeesEarned(
-                params, _pool.totalFeeGrowth1Token(), feeGrowthOutsideLower1to0, feeGrowthOutsideUpper1to0, feeGrowthInside1Last
-            )) + tokensOwed1);
+            amounts[0] = uint(
+                uint128(
+                    UniswapV3MathLib.computeFeesEarned(
+                        params,
+                        _pool.totalFeeGrowth0Token(),
+                        feeGrowthOutsideLower0to1,
+                        feeGrowthOutsideUpper0to1,
+                        feeGrowthInside0Last
+                    )
+                ) + tokensOwed0
+            );
+            amounts[1] = uint(
+                uint128(
+                    UniswapV3MathLib.computeFeesEarned(
+                        params,
+                        _pool.totalFeeGrowth1Token(),
+                        feeGrowthOutsideLower1to0,
+                        feeGrowthOutsideUpper1to0,
+                        feeGrowthInside1Last
+                    )
+                ) + tokensOwed1
+            );
         }
         // get rewards
         uint[] memory rewards = _getRewards();

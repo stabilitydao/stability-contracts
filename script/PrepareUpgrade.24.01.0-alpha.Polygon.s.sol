@@ -22,7 +22,7 @@ contract PrepareUpgrade3Polygon is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        
+
         // Factory 1.0.2: setVaultStatus updated
         new Factory();
 

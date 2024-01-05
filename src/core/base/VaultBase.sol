@@ -227,9 +227,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             revert StrategyZeroDeposit();
         }
 
-        v.mintAmount = _mintShares(
-            $, v._totalSupply, v.value, v.totalValue, v.amountsConsumed, minSharesOut, v.assets, receiver
-        );
+        v.mintAmount =
+            _mintShares($, v._totalSupply, v.value, v.totalValue, v.amountsConsumed, minSharesOut, v.assets, receiver);
 
         $.withdrawRequests[receiver] = block.number;
 
@@ -320,8 +319,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         IStrategy _strategy = $.strategy;
         (amountsConsumed, valueOut) = _strategy.previewDepositAssets(assets_, amountsMax);
         //slither-disable-next-line unused-return
-        (sharesOut,) =
-            _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
+        (sharesOut,) = _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
     }
 
     /// @inheritdoc IVault

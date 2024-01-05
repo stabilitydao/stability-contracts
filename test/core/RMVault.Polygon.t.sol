@@ -206,7 +206,7 @@ contract RMVaultTest is PolygonSetup {
         vm.prank(address(123));
         vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(this));
-        
+
         vm.expectRevert(IRVault.NotAllowed.selector);
         vault.getAllRewardsFor(address(1));
 
