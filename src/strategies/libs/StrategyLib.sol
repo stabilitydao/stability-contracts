@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../../core/libs/ConstantsLib.sol";
 import "../../core/libs/VaultTypeLib.sol";
 import "../../core/libs/CommonLib.sol";
@@ -104,6 +105,7 @@ library StrategyLib {
         amountsRemaining = new uint[](len);
         // nosemgrep
         for (uint i; i < len; ++i) {
+            amounts_[i] = Math.min(amounts_[i], balance(assets_[i]));
             if (amounts_[i] > 0) {
                 // revenue fee amount of assets_[i]
                 vars.amountPlatform = amounts_[i] * vars.feePlatform / ConstantsLib.DENOMINATOR;
