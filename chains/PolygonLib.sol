@@ -31,6 +31,7 @@ library PolygonLib {
     address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
     address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
     address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
+    address public constant TOKEN_COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -49,6 +50,7 @@ library PolygonLib {
     address public constant POOL_UNISWAPV3_WBTC_WETH_500 = 0x50eaEDB835021E4A108B7290636d62E9765cc6d7;
     address public constant POOL_UNISWAPV3_USDCe_WETH_500 = 0x45dDa9cb7c25131DF268515131f647d726f50608;
     address public constant POOL_UNISWAPV3_PROFIT_WETH_100 = 0xE5e70cb76446BEE0053b1EdF22CaDa861c80D51F;
+    address public constant POOL_UNISWAPV3_WETH_COMP_3000 = 0x2260E0081A2A042DC55A07D379eb3c18bE28A1F2;
     address public constant POOL_QUICKSWAPV3_USDCe_USDT = 0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710;
     address public constant POOL_QUICKSWAPV3_USDCe_DAI = 0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2;
     address public constant POOL_QUICKSWAPV3_USDCe_WETH = 0x55CAaBB0d2b704FD0eF8192A7E35D8837e678207;
@@ -93,6 +95,10 @@ library PolygonLib {
     address public constant GAMMA_POS_USDCe_WETH_NARROW = 0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
     address public constant GAMMA_POS_WMATIC_USDCe_NARROW = 0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
     address public constant GAMMA_POS_WMATIC_USDCe_WIDE = 0x4A83253e88e77E8d518638974530d0cBbbF3b675;
+
+    // Compound
+    address public constant COMPOUND_COMET = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
+    address public constant COMPOUND_COMET_REWARDS = 0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
 
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
@@ -155,12 +161,14 @@ library PolygonLib {
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper.AddPoolData[] memory pools2 = routes2();
+            ISwapper.AddPoolData[] memory pools3 = routes3();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
             swapper.addPools(pools2, false);
+            swapper.addPools(pools3, false);
             // todo auto thresholds
-            address[] memory tokenIn = new address[](7);
+            address[] memory tokenIn = new address[](8);
             tokenIn[0] = TOKEN_USDCe;
             tokenIn[1] = TOKEN_USDT;
             tokenIn[2] = TOKEN_DAI;
@@ -168,7 +176,8 @@ library PolygonLib {
             tokenIn[4] = TOKEN_WETH;
             tokenIn[5] = TOKEN_dQUICK;
             tokenIn[6] = TOKEN_USDC;
-            uint[] memory thresholdAmount = new uint[](7);
+            tokenIn[7] = TOKEN_COMP;
+            uint[] memory thresholdAmount = new uint[](8);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e15;
@@ -176,6 +185,7 @@ library PolygonLib {
             thresholdAmount[4] = 1e12;
             thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
             thresholdAmount[6] = 1e3;
+            thresholdAmount[7] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             DeployLib.logSetupSwapper(platform, showLog);
         }
@@ -184,9 +194,11 @@ library PolygonLib {
         //region ----- Add farms -----
         IFactory.Farm[] memory _farms = farms();
         IFactory.Farm[] memory _farms2 = farms2();
+        IFactory.Farm[] memory _farms3 = farms3();
         IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(_farms);
         factory.addFarms(_farms2);
+        factory.addFarms(_farms3);
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -205,6 +217,7 @@ library PolygonLib {
         //region ----- Deploy strategy logics -----
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_QUICKSWAP_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -333,12 +346,27 @@ library PolygonLib {
     {
         pools = new ISwapper.AddPoolData[](1);
         uint i;
-        // QuickSwapV3
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDCe_USDC,
             ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDCe
+        });
+    }
+
+    /// @notice New routes jan-2024
+    function routes3()
+        public
+        pure
+        returns (ISwapper.AddPoolData[] memory pools)
+    {
+        pools = new ISwapper.AddPoolData[](1);
+        uint i;
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_UNISWAPV3_WETH_COMP_3000,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
+            tokenIn: TOKEN_COMP,
+            tokenOut: TOKEN_WETH
         });
     }
 
@@ -457,6 +485,31 @@ library PolygonLib {
             ticks: ticks
         });
         //endregion -- QuickSwap V3 farms -----
+    }
+
+    function farms3() public pure returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](1);
+        address[] memory rewardAssets;
+        address[] memory addresses;
+        uint[] memory nums;
+        int24[] memory ticks;
+        // [18]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_COMP;
+        addresses = new address[](2);
+        addresses[0] = COMPOUND_COMET;
+        addresses[1] = COMPOUND_COMET_REWARDS;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[0] = IFactory.Farm({
+            status: 0,
+            pool: address(0),
+            strategyLogicId: StrategyIdLib.COMPOUND_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
     }
 
     function _makeGammaQuickSwapFarm(

@@ -7,6 +7,7 @@ import "../../src/interfaces/IFactory.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 import "../../src/strategies/GammaQuickSwapFarmStrategy.sol";
+import "../../src/strategies/CompoundFarmStrategy.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 library DeployStrategyLib {
@@ -27,6 +28,10 @@ library DeployStrategyLib {
 
         if (CommonLib.eq(id, StrategyIdLib.GAMMA_QUICKSWAP_FARM)) {
             implementation = address(new GammaQuickSwapFarmStrategy());
+        }
+
+        if (CommonLib.eq(id, StrategyIdLib.COMPOUND_FARM)) {
+            implementation = address(new CompoundFarmStrategy());
         }
 
         // nosemgrep

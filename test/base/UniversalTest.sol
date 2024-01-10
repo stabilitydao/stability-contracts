@@ -38,6 +38,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     }
 
     struct TestStrategiesVars {
+        bool isLPStrategy;
         address[] allowedBBTokens;
         address strategyLogic;
         address strategyImplementation;
@@ -100,6 +101,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             // (,vars.strategyImplementation,,,vars.farming, vars.tokenId) = factory.strategyLogicConfig(keccak256(bytes(strategies[i].id)));
             (vars.strategyImplementation, vars.farming, vars.tokenId) =
                 (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
+            assertNotEq(
+                vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib."
+            );
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
             );
@@ -208,9 +212,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 strategy.getSpecificName();
                 strategy.lastAprCompound();
                 address[] memory assets = strategy.assets();
-                vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
-                assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
-                vars.pool = ILPStrategy(address(strategy)).pool();
+                assertGt(assets.length, 0, "UniversalTest: assets length is zero");
+                vars.isLPStrategy = IERC165(address(strategy)).supportsInterface(type(ILPStrategy).interfaceId);
+                if (vars.isLPStrategy) {
+                    vars.ammAdapter = address(ILPStrategy(address(strategy)).ammAdapter());
+                    assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
+                    vars.pool = ILPStrategy(address(strategy)).pool();
+                }
 
                 console.log(
                     string.concat(
@@ -260,25 +268,27 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 skip(6 hours);
 
-                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-                /*                       MAKE POOL VOLUME                     */
-                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                {
-                    ISwapper swapper = ISwapper(platform.swapper());
-                    ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
-                    poolData[0].pool = vars.pool;
-                    poolData[0].ammAdapter = vars.ammAdapter;
-                    poolData[0].tokenIn = assets[0];
-                    poolData[0].tokenOut = assets[1];
-                    IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
-                    _deal(assets[0], address(this), depositAmounts[0]);
-                    swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
+                if (vars.isLPStrategy) {
+                    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                    /*                       MAKE POOL VOLUME                     */
+                    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                    {
+                        ISwapper swapper = ISwapper(platform.swapper());
+                        ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
+                        poolData[0].pool = vars.pool;
+                        poolData[0].ammAdapter = vars.ammAdapter;
+                        poolData[0].tokenIn = assets[0];
+                        poolData[0].tokenOut = assets[1];
+                        IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
+                        _deal(assets[0], address(this), depositAmounts[0]);
+                        swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
 
-                    poolData[0].tokenIn = assets[1];
-                    poolData[0].tokenOut = assets[0];
-                    IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
-                    _deal(assets[1], address(this), depositAmounts[1]);
-                    swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
+                        poolData[0].tokenIn = assets[1];
+                        poolData[0].tokenOut = assets[0];
+                        IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
+                        _deal(assets[1], address(this), depositAmounts[1]);
+                        swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
+                    }
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -288,29 +298,37 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 skip(3 hours);
                 vm.roll(block.number + 6);
 
-                IVault(vars.vault).withdrawAssets(
-                    assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](2)
-                );
-
-                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-                /*                       MAKE POOL VOLUME                     */
-                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
-                    ISwapper swapper = ISwapper(platform.swapper());
-                    ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
-                    poolData[0].pool = vars.pool;
-                    poolData[0].ammAdapter = vars.ammAdapter;
-                    poolData[0].tokenIn = assets[0];
-                    poolData[0].tokenOut = assets[1];
-                    IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
-                    _deal(assets[0], address(this), depositAmounts[0] * 2);
-                    swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 1_000);
+                    uint[] memory withdrewAssets = IVault(vars.vault).withdrawAssets(
+                        assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
+                    );
+                    assertEq(withdrewAssets.length, assets.length, "Withdraw assets length mismatch");
+                    for (uint j; j < assets.length; ++j) {
+                        assertGt(withdrewAssets[j], 0, "Withdraw assets zero amount");
+                    }
+                }
 
-                    poolData[0].tokenIn = assets[1];
-                    poolData[0].tokenOut = assets[0];
-                    IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
-                    _deal(assets[1], address(this), depositAmounts[1] * 2);
-                    swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 1_000);
+                if (vars.isLPStrategy) {
+                    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                    /*                       MAKE POOL VOLUME                     */
+                    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                    {
+                        ISwapper swapper = ISwapper(platform.swapper());
+                        ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
+                        poolData[0].pool = vars.pool;
+                        poolData[0].ammAdapter = vars.ammAdapter;
+                        poolData[0].tokenIn = assets[0];
+                        poolData[0].tokenOut = assets[1];
+                        IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
+                        _deal(assets[0], address(this), depositAmounts[0] * 2);
+                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 1_000);
+
+                        poolData[0].tokenIn = assets[1];
+                        poolData[0].tokenOut = assets[0];
+                        IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
+                        _deal(assets[1], address(this), depositAmounts[1] * 2);
+                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 1_000);
+                    }
                 }
 
                 skip(3 hours);
@@ -320,6 +338,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();
                     (uint totalRevenueUSD,,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
                     assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
+                    assertGt(__assets.length, 0, "Universal test: getRevenue assets length is zero");
                     if (totalRevenueUSD == 0) {
                         for (uint x; x < __assets.length; ++x) {
                             console.log(
@@ -414,7 +433,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 uint totalWas = strategy.total();
                 vm.roll(block.number + 6);
-                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](2));
+                IVault(vars.vault).withdrawAssets(
+                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
+                );
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
@@ -472,23 +493,25 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IZap zap = IZap(platform.zap());
                     (, uint[] memory swapAmounts) =
                         zap.getDepositSwapAmounts(vars.vault, platform.targetExchangeAsset(), 1000e6);
-                    assertEq(swapAmounts.length, 2);
+                    assertEq(swapAmounts.length, assets.length);
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                      TEST BASE CONTRACTS                   */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                // check LPStrategyBase reverts
-                {
-                    address[] memory wrongAssets = new address[](10);
-                    vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
-                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
-                    wrongAssets = new address[](assets.length);
-                    wrongAssets[0] = address(1);
-                    vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
-                    strategy.previewDepositAssets(wrongAssets, depositAmounts);
-                    vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
-                    strategy.previewDepositAssets(assets, new uint[](5));
+                if (vars.isLPStrategy) {
+                    // check LPStrategyBase reverts
+                    {
+                        address[] memory wrongAssets = new address[](10);
+                        vm.expectRevert(ILPStrategy.IncorrectAssetsLength.selector);
+                        strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                        wrongAssets = new address[](assets.length);
+                        wrongAssets[0] = address(1);
+                        vm.expectRevert(ILPStrategy.IncorrectAssets.selector);
+                        strategy.previewDepositAssets(wrongAssets, depositAmounts);
+                        vm.expectRevert(ILPStrategy.IncorrectAmountsLength.selector);
+                        strategy.previewDepositAssets(assets, new uint[](5));
+                    }
                 }
 
                 // check ERC165
@@ -526,7 +549,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 strategy.emergencyStopInvesting();
                 assertEq(strategy.total(), 0);
 
-                IVault(vars.vault).withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](2));
+                IVault(vars.vault).withdrawAssets(
+                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
+                );
 
                 vars.withdrawnUsdValue = 0;
                 for (uint j; j < assets.length; ++j) {
