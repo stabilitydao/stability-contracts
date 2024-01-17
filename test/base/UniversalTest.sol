@@ -29,6 +29,7 @@ import "../../src/interfaces/IZap.sol";
 abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
     string public strategyId;
+    address internal currentStrategy;
 
     struct Strategy {
         string id;
@@ -102,7 +103,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             (vars.strategyImplementation, vars.farming, vars.tokenId) =
                 (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
             assertNotEq(
-                vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib."
+                vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib and DeployStrategyLib."
             );
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
@@ -209,6 +210,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 );
                 vars.vaultsForHardWork[0] = vars.vault;
                 IStrategy strategy = IVault(vars.vault).strategy();
+                currentStrategy = address(strategy);
                 strategy.getSpecificName();
                 strategy.lastAprCompound();
                 address[] memory assets = strategy.assets();
@@ -334,6 +336,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 skip(3 hours);
                 vm.roll(block.number + 6);
 
+                _preHardWork();
+
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();
                     (uint totalRevenueUSD,,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
@@ -353,7 +357,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                _preHardWork();
                 vm.txGasPrice(15e10); // 150gwei
                 {
                     vars.apr = 0;
@@ -445,7 +448,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     skip(7200);
                     address tempVault = vars.vault;
                     deal(underlying, address(this), totalWas);
-                    assertEq(IERC20(underlying).balanceOf(address(this)), totalWas);
+                    assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                     IERC20(underlying).approve(tempVault, totalWas);
                     address[] memory underlyingAssets = new address[](1);
                     underlyingAssets[0] = underlying;
@@ -453,14 +456,14 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     underlyingAmounts[0] = totalWas;
                     (, uint sharesOut, uint valueOut) =
                         IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
-                    assertEq(valueOut, totalWas);
+                    assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
                     uint lastHw = strategy.lastHardWork();
                     IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
                     assertGt(strategy.lastHardWork(), lastHw);
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
                     assertGt(strategy.total(), totalWas);
                     uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
-                    assertEq(vaultBalance, sharesOut);
+                    assertEq(vaultBalance, sharesOut, "previewDepositAssets by underlying sharesOut and real shares after deposit mismatch");
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
                     vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));

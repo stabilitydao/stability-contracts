@@ -6,6 +6,7 @@ import "../base/chains/PolygonSetup.sol";
 import "../../src/core/libs/VaultTypeLib.sol";
 import "../../src/interfaces/IVaultManager.sol";
 import "../../src/interfaces/IHardWorker.sol";
+import "../../src/strategies/libs/ALMPositionNameLib.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -25,6 +26,8 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     constructor() {
+        vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
+
         _init();
         deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
         IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
@@ -82,7 +85,21 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     function testAll() public {
-        // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.HardWorker")) - 1)) & ~bytes32(uint256(0xff)));
+        // disable deprecated strategies
+        vm.startPrank(platform.multisig());
+        platform.addOperator(platform.multisig());
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                implementation: address(0),
+                deployAllowed: false,
+                upgradeAllowed: false,
+                farming: true,
+                tokenId: type(uint).max
+            }),
+            address(this)
+        );
+        vm.stopPrank();
 
         platform.setAllowedBBTokenVaults(platform.allowedBBTokens()[0], 1e4);
         BuildingVars memory vars;
@@ -407,6 +424,12 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.DYNAMIC)), "Pegged");
         assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.STABLE)), "Stable");
         assertEq(GammaLib.getPresetName(100), "");
+
+        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.NARROW), "Narrow");
+        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.WIDE), "Wide");
+        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.DYNAMIC), "Pegged");
+        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.STABLE), "Stable");
+        assertEq(ALMPositionNameLib.getName(100), "");
     }
 
     function _depositToVault(address vault, uint assetAmountUsd) internal {
