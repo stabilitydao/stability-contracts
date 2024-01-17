@@ -97,7 +97,7 @@ library LPStrategyLib {
         vars.vaultYpe = IVault(vault).vaultType();
         if (
             CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
-            || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
+                || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
         ) {
             IRVault rVault = IRVault(vault);
             vars.compoundRatio = rVault.compoundRatio();
@@ -195,13 +195,13 @@ library LPStrategyLib {
                     vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
                 if (prop0Balances > prop0Pool) {
                     // extra assets[0]
-                    
+
                     uint correctAsset0Balance = (vars.balance0 + balance1PricedInAsset0) * prop0Pool / 1e18;
                     uint toSwapAsset0 = vars.balance0 - correctAsset0Balance;
 
                     // this is correct too, but difficult to understand..
                     // uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18
-                        // * vars.price / 10 ** vars.asset1decimals;
+                    // * vars.price / 10 ** vars.asset1decimals;
                     // uint extraBalance = vars.balance0 - correctAsset0Balance;
                     // uint toSwapAsset0 = extraBalance - extraBalance * prop0Pool / 1e18;
 

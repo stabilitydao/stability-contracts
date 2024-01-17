@@ -163,14 +163,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
         string memory shortAddr = _shortAddress(farm.addresses[0]);
-        return (
-            string.concat(
-                ALMPositionNameLib.getName(farm.nums[0]),
-                " ",
-                shortAddr
-            ),
-            true
-        );
+        return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
     }
 
     /// @inheritdoc IStrategy
@@ -195,7 +188,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/) internal override returns (uint value) {
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (,, value) = IDefiEdgeStrategy(__$__._underlying).mint(amounts[0], amounts[1], 0, 0, 0);
         __$__.total += value;
@@ -332,7 +325,8 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         uint len = ticks.length;
         for (uint i; i < len; ++i) {
             IDefiEdgeStrategy.Tick memory tick = ticks[i];
-            (uint128 currentLiquidity, , , , , ) = _pool.positions(_computePositionKey(address(_underlying), tick.tickLower, tick.tickUpper));
+            (uint128 currentLiquidity,,,,,) =
+                _pool.positions(_computePositionKey(address(_underlying), tick.tickLower, tick.tickUpper));
             if (currentLiquidity > 0) {
                 int24[] memory _ticks = new int24[](2);
                 _ticks[0] = tick.tickLower;
@@ -433,7 +427,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         address _quote,
         uint _validPeriod
     ) internal view returns (uint price) {
-        (, int256 _price, , uint updatedAt, ) = _registry.latestRoundData(_base, _quote);
+        (, int _price,, uint updatedAt,) = _registry.latestRoundData(_base, _quote);
 
         require(block.timestamp - updatedAt < _validPeriod, "OLD_PRICE");
 
@@ -473,23 +467,12 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
             price = _getChainlinkPrice(_registry, _token, ETH, _factory.getHeartBeat(_token, ETH));
 
             price = UniswapV3MathLib.mulDiv(
-                price,
-                _getChainlinkPrice(
-                    _registry,
-                    ETH,
-                    USD,
-                    _factory.getHeartBeat(ETH, USD)
-                ),
-                1e18
+                price, _getChainlinkPrice(_registry, ETH, USD, _factory.getHeartBeat(ETH, USD)), 1e18
             );
         }
     }
 
-    function _computePositionKey(
-        address owner,
-        int24 bottomTick,
-        int24 topTick
-    ) internal pure returns (bytes32 key) {
+    function _computePositionKey(address owner, int24 bottomTick, int24 topTick) internal pure returns (bytes32 key) {
         assembly {
             key := or(shl(24, or(shl(24, owner), and(bottomTick, 0xFFFFFF))), and(topTick, 0xFFFFFF))
         }
@@ -498,14 +481,14 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     function _shortAddress(address addr) internal pure returns (string memory) {
         bytes memory s = bytes(Strings.toHexString(addr));
         bytes memory shortAddr = new bytes(12);
-        shortAddr[0] = '0';
-        shortAddr[1] = 'x';
+        shortAddr[0] = "0";
+        shortAddr[1] = "x";
         shortAddr[2] = s[2];
         shortAddr[3] = s[3];
         shortAddr[4] = s[4];
         shortAddr[5] = s[5];
-        shortAddr[6] = '.';
-        shortAddr[7] = '.';
+        shortAddr[6] = ".";
+        shortAddr[7] = ".";
         shortAddr[8] = s[38];
         shortAddr[9] = s[39];
         shortAddr[10] = s[40];

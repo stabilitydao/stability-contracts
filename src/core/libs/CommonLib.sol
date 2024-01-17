@@ -140,9 +140,7 @@ library CommonLib {
         // nosemgrep
         for (uint i = 1; i < idBytesLength; ++i) {
             if (keccak256(bytes(abi.encodePacked(idBytes[i]))) == keccak256(bytes(" "))) {
-                if (
-                    keccak256(bytes(abi.encodePacked(idBytes[i + 1]))) == keccak256(bytes("0"))
-                ) {
+                if (keccak256(bytes(abi.encodePacked(idBytes[i + 1]))) == keccak256(bytes("0"))) {
                     _shortId[k] = idBytes[i + 3];
                 } else {
                     _shortId[k] = idBytes[i + 1];

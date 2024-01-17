@@ -8,14 +8,12 @@ import "../src/adapters/UniswapV3Adapter.sol";
 import "../src/adapters/KyberAdapter.sol";
 import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 
-
 contract PrepareUpgrade4Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
     address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 = 0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB;
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6;
     address public constant POOL_QUICKSWAPV3_WMATIC_WETH = 0x479e1B71A702a595e19b6d5932CD5c863ab57ee0;
-
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -67,6 +65,10 @@ contract PrepareUpgrade4Polygon is Script {
             nums: nums,
             ticks: ticks
         });
+
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+        factory.addFarms(_farms);
+
         vm.stopBroadcast();
     }
 

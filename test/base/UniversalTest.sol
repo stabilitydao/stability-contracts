@@ -103,7 +103,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             (vars.strategyImplementation, vars.farming, vars.tokenId) =
                 (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
             assertNotEq(
-                vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib and DeployStrategyLib."
+                vars.strategyImplementation,
+                address(0),
+                "Strategy implementation not found. Put it to chain lib and DeployStrategyLib."
             );
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")
@@ -463,7 +465,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
                     assertGt(strategy.total(), totalWas);
                     uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
-                    assertEq(vaultBalance, sharesOut, "previewDepositAssets by underlying sharesOut and real shares after deposit mismatch");
+                    assertEq(
+                        vaultBalance,
+                        sharesOut,
+                        "previewDepositAssets by underlying sharesOut and real shares after deposit mismatch"
+                    );
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
                     vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
