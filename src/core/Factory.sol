@@ -31,7 +31,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.0.3";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
