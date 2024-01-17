@@ -24,7 +24,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -232,7 +232,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         //slither-disable-next-line divide-before-multiply
         uint consumed1Priced = amount1Consumed * token1Price / token1Desired;
         //slither-disable-next-line divide-before-multiply
-        return consumed1Priced * 1e18 / (amount0Consumed + consumed1Priced);
+        return amount0Consumed * 1e18 / (amount0Consumed + consumed1Priced);
     }
 
     function _getLiquidityForAmounts(

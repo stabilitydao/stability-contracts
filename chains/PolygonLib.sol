@@ -100,6 +100,10 @@ library PolygonLib {
     address public constant COMPOUND_COMET = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
     address public constant COMPOUND_COMET_REWARDS = 0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
 
+    // DefiEdge
+    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 = 0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB;
+    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6;
+
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
@@ -110,7 +114,7 @@ library PolygonLib {
         buildingPrice[1] = 50_000e18;
         buildingPrice[2] = 100_000e18;
         platform = DeployLib.deployPlatform(
-            "23.12.2-alpha",
+            "24.01.1-alpha",
             MULTISIG,
             TOKEN_PM,
             TOKEN_SDIV,
@@ -218,6 +222,7 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_QUICKSWAP_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -455,7 +460,7 @@ library PolygonLib {
     }
 
     function farms2() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](1);
+        _farms = new IFactory.Farm[](2);
         address[] memory rewardAssets;
         address[] memory addresses;
         uint[] memory nums;
@@ -485,14 +490,7 @@ library PolygonLib {
             ticks: ticks
         });
         //endregion -- QuickSwap V3 farms -----
-    }
 
-    function farms3() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](1);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
         // [18]
         rewardAssets = new address[](1);
         rewardAssets[0] = TOKEN_COMP;
@@ -501,10 +499,54 @@ library PolygonLib {
         addresses[1] = COMPOUND_COMET_REWARDS;
         nums = new uint[](0);
         ticks = new int24[](0);
-        _farms[0] = IFactory.Farm({
+        _farms[1] = IFactory.Farm({
             status: 0,
             pool: address(0),
             strategyLogicId: StrategyIdLib.COMPOUND_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+    }
+
+    function farms3() public pure returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](2);
+        address[] memory rewardAssets;
+        address[] memory addresses;
+        uint[] memory nums;
+        int24[] memory ticks;
+        
+        // [19]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_dQUICK;
+        addresses = new address[](1);
+        addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1;
+        nums = new uint[](1);
+        nums[0] = 0; // NARROW
+        ticks = new int24[](0);
+        _farms[0] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WMATIC_WETH,
+            strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [20]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_dQUICK;
+        addresses = new address[](1);
+        addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2;
+        nums = new uint[](1);
+        nums[0] = 0; // NARROW
+        ticks = new int24[](0);
+        _farms[1] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WMATIC_WETH,
+            strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
             nums: nums,

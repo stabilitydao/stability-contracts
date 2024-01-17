@@ -8,6 +8,7 @@ import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 import "../../src/strategies/GammaQuickSwapFarmStrategy.sol";
 import "../../src/strategies/CompoundFarmStrategy.sol";
+import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 library DeployStrategyLib {
@@ -32,6 +33,10 @@ library DeployStrategyLib {
 
         if (CommonLib.eq(id, StrategyIdLib.COMPOUND_FARM)) {
             implementation = address(new CompoundFarmStrategy());
+        }
+
+        if (CommonLib.eq(id, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
+            implementation = address(new DefiEdgeQuickSwapMerklFarmStrategy());
         }
 
         // nosemgrep

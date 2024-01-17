@@ -459,12 +459,6 @@ library FactoryLib {
         if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
             prefix = "RM";
         }
-        if (CommonLib.eq(vaultType, VaultTypeLib.SPLITTER_MANAGED)) {
-            prefix = "SM";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.SPLITTER_AUTO)) {
-            prefix = "SA";
-        }
         string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
         return string.concat(
             prefix,
