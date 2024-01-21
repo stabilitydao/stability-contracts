@@ -24,7 +24,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -319,6 +319,9 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         IAlgebraPool _pool = IAlgebraPool(pool());
         ICAmmAdapter _adapter = ICAmmAdapter(address(ammAdapter()));
         amounts_ = new uint[](2);
+
+        amounts_[0] = _underlying.reserve0();
+        amounts_[1] = _underlying.reserve1();
 
         // assets amounts without claimed fees..
         IDefiEdgeStrategy.Tick[] memory ticks = _underlying.getTicks();

@@ -17,6 +17,10 @@ interface IDefiEdgeStrategy {
 
     function totalSupply() external view returns (uint);
 
+    function reserve0() external view returns (uint);
+
+    function reserve1() external view returns (uint);
+
     /**
      * @notice Get's assets under management with realtime fees
      * @param _includeFee Whether to include pool fees in AUM or not. (passing true will also collect fees from pool)
