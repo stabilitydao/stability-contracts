@@ -20,6 +20,7 @@ Contributions can be made in the form of developing strategies, developing the c
 * **[Contributing](./CONTRIBUTING.md)**
 * **[Strategy Developer's Guide](./src/strategies/README.md)**
 * **[Core Developer's Guide](./src/core/README.md)**
+* **[Platform Administration Guide](./ADM.md)**
 
 ## Coverage
 

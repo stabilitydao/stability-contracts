@@ -22,6 +22,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         vm.startPrank(gov);
         factory.setMinHeartbeat(PolygonLib.TOKEN_WETH, USD, 86400 * 365);
         factory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, USD, 86400 * 365);
+        factory.setMinHeartbeat(PolygonLib.TOKEN_USDCe, USD, 86400 * 365);
         factory.setMinHeartbeat(PolygonLib.TOKEN_WETH, ETH, 86400 * 365);
         factory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, ETH, 86400 * 365);
         vm.stopPrank();
@@ -29,6 +30,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         // add farms for testing
         _addStrategy(19);
         _addStrategy(20);
+        _addStrategy(21);
     }
 
     function _addStrategy(uint farmId) internal {

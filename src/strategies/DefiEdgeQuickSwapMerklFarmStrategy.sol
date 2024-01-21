@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
+import "./libs/DQMFLib.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/ALMPositionNameLib.sol";
 import "./libs/UniswapV3MathLib.sol";
@@ -24,7 +24,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -136,7 +136,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
-                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
+                variants[localTtotal] = DQMFLib.generateDescription(farm, _ammAdapter);
                 ++localTtotal;
             }
         }
@@ -156,13 +156,13 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xde43ff), bytes3(0x140414)));
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x3477ff), bytes3(0x000000)));
     }
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = _shortAddress(farm.addresses[0]);
+        string memory shortAddr = DQMFLib.shortAddress(farm.addresses[0]);
         return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
     }
 
@@ -171,7 +171,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return _generateDescription(farm, $lp.ammAdapter);
+        return DQMFLib.generateDescription(farm, $lp.ammAdapter);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -273,10 +273,8 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         ticks[1] = ticks_.tickUpper;
         (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
 
-        // calculating of underlying shares out...
-        // get total amounts WITHOUT fees, its bad..
+        // get total amounts WITHOUT fees, its not very good, but ok..
         uint[] memory totalAmounts = _getUnderlyingAssetsAmounts();
-        // (uint totalAmount0, uint totalAmount1, , ) = _underlying.getAUMWithFees(true);
 
         IDefiEdgeStrategyFactory factory = IDefiEdgeStrategyFactory(_underlying.factory());
         IFeedRegistryInterface chainlinkRegistry = IFeedRegistryInterface(factory.chainlinkRegistry());
@@ -320,6 +318,9 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         ICAmmAdapter _adapter = ICAmmAdapter(address(ammAdapter()));
         amounts_ = new uint[](2);
 
+        amounts_[0] = _underlying.reserve0();
+        amounts_[1] = _underlying.reserve1();
+
         // assets amounts without claimed fees..
         IDefiEdgeStrategy.Tick[] memory ticks = _underlying.getTicks();
         uint len = ticks.length;
@@ -345,26 +346,6 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         ticks[0] = ticks_.tickLower;
         ticks[1] = ticks_.tickUpper;
         return ICAmmAdapter(address(ammAdapter())).getProportions(pool_, ticks)[0];
-    }
-
-    function _generateDescription(
-        IFactory.Farm memory farm,
-        IAmmAdapter _ammAdapter
-    ) internal view returns (string memory) {
-        //slither-disable-next-line calls-loop
-        return string.concat(
-            "Earn ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on QuickSwap by ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-            " DefiEdge ",
-            //slither-disable-next-line calls-loop
-            ALMPositionNameLib.getName(farm.nums[0]),
-            " strategy ",
-            _shortAddress(farm.addresses[0])
-        );
     }
 
     /// @dev Calculates the shares to be given for specific position for DefiEdge strategy
@@ -476,23 +457,5 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         assembly {
             key := or(shl(24, or(shl(24, owner), and(bottomTick, 0xFFFFFF))), and(topTick, 0xFFFFFF))
         }
-    }
-
-    function _shortAddress(address addr) internal pure returns (string memory) {
-        bytes memory s = bytes(Strings.toHexString(addr));
-        bytes memory shortAddr = new bytes(12);
-        shortAddr[0] = "0";
-        shortAddr[1] = "x";
-        shortAddr[2] = s[2];
-        shortAddr[3] = s[3];
-        shortAddr[4] = s[4];
-        shortAddr[5] = s[5];
-        shortAddr[6] = ".";
-        shortAddr[7] = ".";
-        shortAddr[8] = s[38];
-        shortAddr[9] = s[39];
-        shortAddr[10] = s[40];
-        shortAddr[11] = s[41];
-        return string(shortAddr);
     }
 }
