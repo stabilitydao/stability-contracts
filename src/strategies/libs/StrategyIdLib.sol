@@ -7,4 +7,5 @@ library StrategyIdLib {
     string public constant GAMMA_QUICKSWAP_FARM = "Gamma QuickSwap Farm";
     string public constant COMPOUND_FARM = "Compound Farm";
     string public constant DEFIEDGE_QUICKSWAP_MERKL_FARM = "DefiEdge QuickSwap Merkl Farm";
+    string public constant ICHI_QUICKSWAP_MERKL_FARM = "Ichi QuickSwap Merkl Farm";
 }
