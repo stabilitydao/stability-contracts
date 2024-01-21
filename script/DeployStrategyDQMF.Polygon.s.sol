@@ -11,6 +11,6 @@ contract DeployStrategyDQMFPolygon is Script {
         new DefiEdgeQuickSwapMerklFarmStrategy();
         vm.stopBroadcast();
     }
-    
+
     function testDeployPolygon() external {}
 }
