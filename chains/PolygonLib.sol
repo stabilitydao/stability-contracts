@@ -105,6 +105,9 @@ library PolygonLib {
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6;
     address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW = 0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D;
 
+    // Ichi
+    address public constant ICHI_STRATEGY_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
+
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
@@ -224,6 +227,7 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -512,7 +516,7 @@ library PolygonLib {
     }
 
     function farms3() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
+        _farms = new IFactory.Farm[](4);
         address[] memory rewardAssets;
         address[] memory addresses;
         uint[] memory nums;
@@ -566,6 +570,23 @@ library PolygonLib {
             status: 0,
             pool: POOL_QUICKSWAPV3_WMATIC_USDCe,
             strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [22]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_dQUICK;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WMATIC_USDT;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[3] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WMATIC_USDT,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
             nums: nums,

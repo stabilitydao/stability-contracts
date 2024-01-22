@@ -16,7 +16,7 @@ import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
-contract IchiQuickSwapMerklFarm is LPStrategyBase, FarmingStrategyBase {
+contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -30,7 +30,7 @@ contract IchiQuickSwapMerklFarm is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 1 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
