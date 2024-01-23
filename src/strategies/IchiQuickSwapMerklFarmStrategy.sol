@@ -3,16 +3,17 @@ pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
-import "./libs/DQMFLib.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/DataStorageLibrary.sol";
 import "./libs/ALMPositionNameLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
-import "../integrations/defiedge/IDefiEdgeStrategy.sol";
-import "../integrations/defiedge/IDefiEdgeStrategyFactory.sol";
+import "../integrations/ichi/IICHIVault.sol";
+import "../integrations/ichi/IICHIVaultFactory.sol";
 import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
+import {SafeCast} from "../../lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -114,6 +115,46 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {}
+
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssets(uint[] memory amountsMax)
+        internal
+        view
+        override(StrategyBase, LPStrategyBase)
+        returns (uint[] memory amountsConsumed, uint value)
+    {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IICHIVault _underlying = IICHIVault(__$__._underlying);
+        amountsConsumed = new uint[](2);
+        uint32 twapPeriod = 600;
+        value = _fetchTwap(pool(), _underlying.token0(), _underlying.token1(), twapPeriod, 1);
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
+     *  @param _pool Pool address to be used for price checking
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _twapPeriod the averaging time period
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchTwap(
+        address _pool,
+        address _tokenIn,
+        address _tokenOut,
+        uint32 _twapPeriod,
+        uint _amountIn
+    ) internal view returns (uint amountOut) {
+        // Leave twapTick as a int256 to avoid solidity casting
+        int twapTick = DataStorageLibrary.consult(_pool, _twapPeriod);
+        return DataStorageLibrary.getQuoteAtTick(
+            int24(twapTick), // can assume safe being result from consult()
+            SafeCast.toUint128(_amountIn),
+            _tokenIn,
+            _tokenOut
+        );
+    }
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
