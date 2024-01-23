@@ -6,11 +6,13 @@ import "../libs/UniswapV3MathLib.sol";
 
 /// @title DataStorage library
 /// @notice Provides functions to integrate with pool dataStorage
-library DataStorageLibrary {
+library IQMFLib {
+    error PoolIsLocked();
     /// @notice Fetches time-weighted average tick using Algebra dataStorage
     /// @param pool Address of Algebra pool that we want to getTimepoints
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
+
     function consult(address pool, uint32 period) internal view returns (int24 timeWeightedAverageTick) {
         require(period != 0, "BP");
 
@@ -53,5 +55,15 @@ library DataStorageLibrary {
                 ? UniswapV3MathLib.mulDiv(ratioX128, baseAmount, 1 << 128)
                 : UniswapV3MathLib.mulDiv(1 << 128, baseAmount, ratioX128);
         }
+    }
+
+    /**
+     * @notice Returns current price tick
+     *  @return tick Uniswap pool's current price tick
+     */
+    function currentTick(address pool) public view returns (int24 tick) {
+        (, int24 tick_,,,,, bool unlocked_) = IAlgebraPool(pool).globalState();
+        if (!unlocked_) revert PoolIsLocked();
+        tick = tick_;
     }
 }

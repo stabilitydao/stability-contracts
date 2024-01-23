@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
-import "./libs/DataStorageLibrary.sol";
+import "./libs/IQMFLib.sol";
 import "./libs/ALMPositionNameLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
@@ -19,6 +19,8 @@ import {SafeCast} from "../../lib/openzeppelin-contracts/contracts/utils/math/Sa
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
+
+    uint public constant PRECISION = 10 ** 18;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -126,8 +128,51 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IICHIVault _underlying = IICHIVault(__$__._underlying);
         amountsConsumed = new uint[](2);
+        if (_underlying.allowToken0()) {
+            amountsConsumed[0] = amountsMax[0];
+        }
+        if (_underlying.allowToken1()) {
+            amountsConsumed[1] = amountsMax[1];
+        }
         uint32 twapPeriod = 600;
-        value = _fetchTwap(pool(), _underlying.token0(), _underlying.token1(), twapPeriod, 1);
+        uint price;
+        /**
+         * = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(pool()), PRECISION);
+         */
+        uint twap = _fetchTwap(pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
+        // if difference between spot and twap is too big, check if the price may have been manipulated in this block
+        uint delta = (price > twap) ? ((price - twap) * PRECISION) - price : ((twap - price) * PRECISION) - twap;
+
+        // TODO checkHysteresis
+
+        (uint pool0, uint pool1) = _underlying.getTotalAmounts();
+
+        // aggregated deposit
+        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
+
+        value = amountsConsumed[1] + deposit0PricedInToken1;
+        uint totalSupply = _underlying.totalSupply();
+        if (totalSupply != 0) {
+            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
+            value = (value * totalSupply) / (pool0PricedInToken1 + pool1);
+        }
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _tick tick for the spot price
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchSpot(
+        address _tokenIn,
+        address _tokenOut,
+        int _tick,
+        uint _amountIn
+    ) internal pure returns (uint amountOut) {
+        return IQMFLib.getQuoteAtTick(int24(_tick), SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
     }
 
     /**
@@ -147,8 +192,8 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint _amountIn
     ) internal view returns (uint amountOut) {
         // Leave twapTick as a int256 to avoid solidity casting
-        int twapTick = DataStorageLibrary.consult(_pool, _twapPeriod);
-        return DataStorageLibrary.getQuoteAtTick(
+        int twapTick = IQMFLib.consult(_pool, _twapPeriod);
+        return IQMFLib.getQuoteAtTick(
             int24(twapTick), // can assume safe being result from consult()
             SafeCast.toUint128(_amountIn),
             _tokenIn,
