@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "forge-std/console.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
@@ -13,7 +15,6 @@ import "../integrations/ichi/IICHIVault.sol";
 import "../integrations/ichi/IICHIVaultFactory.sol";
 import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
-import {SafeCast} from "../../lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -94,7 +95,17 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {}
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        assets_ = __$__._assets;
+        uint value = __$__.total;
+        IICHIVault _underlying = IICHIVault(__$__._underlying);
+        (uint amount0, uint amount1) = _underlying.getTotalAmounts();
+        uint totalSupply = _underlying.totalSupply();
+        amounts_ = new uint[](2);
+        amounts_[0] = amount0 * value / totalSupply;
+        amounts_[1] = amount1 * value / totalSupply;
+    }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {}
@@ -113,10 +124,45 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     {}
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {}
+    function _depositAssets(
+        uint[] memory amounts,
+        bool
+    )
+        /**
+         * claimRevenue
+         */
+        internal
+        override
+        returns (uint value)
+    {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        value = IICHIVault(__$__._underlying).deposit(amounts[0], amounts[1], address(this));
+        __$__.total += value;
+    }
 
     /// @inheritdoc StrategyBase
-    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {}
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        amountsConsumed = _previewDepositUnderlying(amount);
+        __$__.total += amount;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __$__.total -= value;
+        amountsOut = new uint[](2);
+        if (receiver != address(this)) {
+            (amountsOut[0], amountsOut[1]) = IICHIVault(__$__._underlying).withdraw(value, receiver);
+        }
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawUnderlying(uint amount, address receiver) internal override {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC20(__$__._underlying).safeTransfer(receiver, amount);
+        __$__.total -= amount;
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
@@ -135,18 +181,9 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             amountsConsumed[1] = amountsMax[1];
         }
         uint32 twapPeriod = 600;
-        uint price;
-        /**
-         * = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(pool()), PRECISION);
-         */
+        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
         uint twap = _fetchTwap(pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
-        // if difference between spot and twap is too big, check if the price may have been manipulated in this block
-        uint delta = (price > twap) ? ((price - twap) * PRECISION) - price : ((twap - price) * PRECISION) - twap;
-
-        // TODO checkHysteresis
-
         (uint pool0, uint pool1) = _underlying.getTotalAmounts();
-
         // aggregated deposit
         uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
 
@@ -154,7 +191,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint totalSupply = _underlying.totalSupply();
         if (totalSupply != 0) {
             uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
-            value = (value * totalSupply) / (pool0PricedInToken1 + pool1);
+            value = ((value * totalSupply) / pool0PricedInToken1) + pool1;
         }
     }
 
@@ -222,7 +259,16 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function getAssetsProportions() external view returns (uint[] memory proportions) {}
 
     /// @inheritdoc IStrategy
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
+    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
+        uint len = __assets.length;
+        amounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(__assets[i]);
+        }
+        // just for covergage
+        _getRewards();
+    }
 
     /// @inheritdoc IStrategy
     function initVariants(address platform_)

@@ -24,7 +24,7 @@ interface IICHIVault{
     function maxTotalSupply() external view returns(uint256);
     function totalSupply() external view returns(uint256);
     function hysteresis() external view returns(uint256);
-    function currentTick(address) external view returns(uint256);
+    function currentTick() external view returns(int256);
 
     function getTotalAmounts() external view returns (uint256, uint256);
 

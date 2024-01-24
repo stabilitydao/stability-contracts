@@ -56,14 +56,4 @@ library IQMFLib {
                 : UniswapV3MathLib.mulDiv(1 << 128, baseAmount, ratioX128);
         }
     }
-
-    /**
-     * @notice Returns current price tick
-     *  @return tick Uniswap pool's current price tick
-     */
-    function currentTick(address pool) public view returns (int24 tick) {
-        (, int24 tick_,,,,, bool unlocked_) = IAlgebraPool(pool).globalState();
-        if (!unlocked_) revert PoolIsLocked();
-        tick = tick_;
-    }
 }
