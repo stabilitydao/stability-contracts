@@ -108,7 +108,18 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {}
+    function _compound() internal override {
+        uint[] memory proportions = getAssetsProportions();
+        uint[] memory amountsToDeposit = _swapForDepositProportion(proportions[0]);
+        // nosemgrep
+        if (amountsToDeposit[0] > 1 || amountsToDeposit[1] > 1) {
+            uint valueToReceive;
+            (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
+            if (valueToReceive > 10) {
+                _depositAssets(amountsToDeposit, false);
+            }
+        }
+    }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
@@ -121,7 +132,18 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             address[] memory __rewardAssets,
             uint[] memory __rewardAmounts
         )
-    {}
+    {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        __assets = __$__._assets;
+        __rewardAssets = _$_._rewardAssets;
+        __amounts = new uint[](2);
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+    }
 
     /// @inheritdoc StrategyBase
     function _depositAssets(
@@ -256,7 +278,13 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getAssetsProportions() external view returns (uint[] memory proportions) {}
+    function getAssetsProportions() public view returns (uint[] memory proportions) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IICHIVault _underlying = IICHIVault(__$__._underlying);
+        proportions = new uint[](2);
+        if (_underlying.allowToken0()) proportions[0] = 1e18;
+        if (_underlying.allowToken1()) proportions[1] = 1e18;
+    }
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
@@ -275,7 +303,41 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         public
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
-    {}
+    {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        addresses = new address[](0);
+        ticks = new int24[](0);
+
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint localTtotal;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
+                ++localTtotal;
+            }
+        }
+
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
+                nums[localTtotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTtotal] = IQMFLib.generateDescription(farm, _ammAdapter);
+                ++localTtotal;
+            }
+        }
+    }
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {

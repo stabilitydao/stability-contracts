@@ -245,9 +245,14 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 {
                     uint[] memory assetsProportions = IStrategy(address(strategy)).getAssetsProportions();
+                    bool isZero;
                     for (uint x; x < assetsProportions.length; x++) {
-                        assertGt(assetsProportions[x], 0);
+                        if (assetsProportions[x] != 0) {
+                            isZero = false;
+                            break;
+                        }
                     }
+                    assertEq(isZero, false, "Assets proportions are zero");
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -307,9 +312,15 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
                     );
                     assertEq(withdrewAssets.length, assets.length, "Withdraw assets length mismatch");
+
+                    bool isEmpty = true;
                     for (uint j; j < assets.length; ++j) {
-                        assertGt(withdrewAssets[j], 0, "Withdraw assets zero amount");
+                        if (withdrewAssets[j] != 0) {
+                            isEmpty = false;
+                            break;
+                        }
                     }
+                    assertEq(isEmpty, false, "Withdraw assets zero amount");
                 }
 
                 if (vars.isLPStrategy) {

@@ -39,13 +39,5 @@ interface IICHIVault{
         address
     ) external returns (uint256, uint256);
 
-    function rebalance(
-        int24 _baseLower,
-        int24 _baseUpper,
-        int24 _limitLower,
-        int24 _limitUpper,
-        int256 swapQuantity
-    ) external;
-
     function collectFees() external returns(uint256 fees0, uint256 fees1);
 }
