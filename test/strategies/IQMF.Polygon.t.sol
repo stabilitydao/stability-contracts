@@ -6,11 +6,17 @@ import "../base/UniversalTest.sol";
 
 contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testIQMF() public universalTest {
+        _addStrategy(22);
+        _addStrategy(23);
+        _addStrategy(24);
+    }
+
+    function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
                 id: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
                 pool: address(0),
-                farmId: 22, // chains/PolygonLib.sol
+                farmId: farmId,
                 underlying: address(0)
             })
         );

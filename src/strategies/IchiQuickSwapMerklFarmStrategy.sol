@@ -174,9 +174,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         __$__.total -= value;
         amountsOut = new uint[](2);
-        if (receiver != address(this)) {
-            (amountsOut[0], amountsOut[1]) = IICHIVault(__$__._underlying).withdraw(value, receiver);
-        }
+        (amountsOut[0], amountsOut[1]) = IICHIVault(__$__._underlying).withdraw(value, receiver);
     }
 
     /// @inheritdoc StrategyBase
@@ -204,7 +202,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
         uint32 twapPeriod = 600;
         uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
-        uint twap = _fetchTwap(pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
+        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
         (uint pool0, uint pool1) = _underlying.getTotalAmounts();
         // aggregated deposit
         uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
@@ -213,7 +211,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint totalSupply = _underlying.totalSupply();
         if (totalSupply != 0) {
             uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
-            value = ((value * totalSupply) / pool0PricedInToken1) + pool1;
+            value = value * totalSupply / (pool0PricedInToken1 + pool1);
         }
     }
 
@@ -266,15 +264,17 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return farm.status == 0;
     }
 
-    /// @inheritdoc IStrategy
+     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
-        // TODO generateDescription library should be generated
-        // return IQMFLib.generateDescription(farm, $lp.ammAdapter);
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        return IQMFLib.generateDescription(farm, $lp.ammAdapter);
     }
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
-        // return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x3477ff), bytes3(0x000000)));
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x965fff), bytes3(0x000000)));
     }
 
     /// @inheritdoc IStrategy
@@ -345,5 +345,9 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external view override returns (string memory, bool) {}
+    function getSpecificName() external view override returns (string memory, bool) {
+        IFactory.Farm memory farm = _getFarm();
+        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
+        return (shortAddr, true);
+    }
 }

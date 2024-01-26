@@ -106,7 +106,10 @@ library PolygonLib {
     address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW = 0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D;
 
     // Ichi
+    address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
     address public constant ICHI_STRATEGY_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
+    address public constant ICHI_STRATEGY_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3;
+    address public constant ICHI_STRATEGY_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473;
 
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
@@ -516,7 +519,7 @@ library PolygonLib {
     }
 
     function farms3() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](4);
+        _farms = new IFactory.Farm[](6);
         address[] memory rewardAssets;
         address[] memory addresses;
         uint[] memory nums;
@@ -577,8 +580,9 @@ library PolygonLib {
         });
 
         // [22]
-        rewardAssets = new address[](1);
+        rewardAssets = new address[](2);
         rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
         addresses = new address[](1);
         addresses[0] = ICHI_STRATEGY_WMATIC_USDT;
         nums = new uint[](0);
@@ -586,6 +590,42 @@ library PolygonLib {
         _farms[3] = IFactory.Farm({
             status: 0,
             pool: POOL_QUICKSWAPV3_WMATIC_USDT,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [23]
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WBTC_WETH;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[4] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WBTC_WETH,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [24]
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WETH_USDT;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[5] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WETH_USDT,
             strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,

@@ -73,10 +73,7 @@ library IQMFLib {
             " on QuickSwap by ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(ammAdapter.poolTokens(farm.pool)), "-"),
-            " DefiEdge ",
-            //slither-disable-next-line calls-loop
-            ALMPositionNameLib.getName(farm.nums[0]),
-            " strategy ",
+            " ICHI strategy",
             shortAddress(farm.addresses[0])
         );
     }

@@ -559,7 +559,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
                     _deal(assets[j], address(this), depositAmounts[j]);
                     IERC20(assets[j]).approve(vars.vault, depositAmounts[j]);
-                    vars.depositUsdValue += depositAmounts[j] * price / 1e18;
+                    vars.depositUsdValue += depositAmounts[j] * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
                 vm.roll(block.number + 6);
@@ -577,7 +577,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 for (uint j; j < assets.length; ++j) {
                     (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
                     uint balNow = IERC20(assets[j]).balanceOf(address(this));
-                    vars.withdrawnUsdValue += balNow * price / 1e18;
+                    vars.withdrawnUsdValue += balNow * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
                 assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
             }
