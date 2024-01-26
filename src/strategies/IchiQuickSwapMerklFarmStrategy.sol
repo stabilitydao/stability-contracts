@@ -264,7 +264,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return farm.status == 0;
     }
 
-     /// @inheritdoc IStrategy
+    /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
