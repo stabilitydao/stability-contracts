@@ -6,11 +6,8 @@ import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/IQMFLib.sol";
-import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../interfaces/ICAmmAdapter.sol";
 import "../integrations/ichi/IICHIVault.sol";
-import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)

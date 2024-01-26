@@ -68,6 +68,7 @@ library PolygonLib {
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
+    address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 = 0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -373,13 +374,20 @@ library PolygonLib {
         pure
         returns (ISwapper.AddPoolData[] memory pools)
     {
-        pools = new ISwapper.AddPoolData[](1);
+        pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WETH_COMP_3000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_COMP,
             tokenOut: TOKEN_WETH
+        });
+
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_UNISWAPV3_ICHI_WMATIC_100,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
+            tokenIn: TOKEN_ICHI,
+            tokenOut: TOKEN_WMATIC
         });
     }
 
