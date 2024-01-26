@@ -2,18 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "forge-std/console.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/IQMFLib.sol";
-import "./libs/ALMPositionNameLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
 import "../integrations/ichi/IICHIVault.sol";
-import "../integrations/ichi/IICHIVaultFactory.sol";
-import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
@@ -90,6 +86,12 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         // calculated in getRevenue()
     }
 
+    /// @inheritdoc IFarmingStrategy
+    function canFarm() external view override returns (bool) {
+        IFactory.Farm memory farm = _getFarm();
+        return farm.status == 0;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -146,17 +148,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(
-        uint[] memory amounts,
-        bool
-    )
-        /**
-         * claimRevenue
-         */
-        internal
-        override
-        returns (uint value)
-    {
+    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         value = IICHIVault(__$__._underlying).deposit(amounts[0], amounts[1], address(this));
         __$__.total += value;
@@ -213,55 +205,6 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
             value = value * totalSupply / (pool0PricedInToken1 + pool1);
         }
-    }
-
-    /**
-     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
-     *  @param _tokenIn token the input amount is in
-     *  @param _tokenOut token for the output amount
-     *  @param _tick tick for the spot price
-     *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
-     */
-    function _fetchSpot(
-        address _tokenIn,
-        address _tokenOut,
-        int _tick,
-        uint _amountIn
-    ) internal pure returns (uint amountOut) {
-        return IQMFLib.getQuoteAtTick(int24(_tick), SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
-    }
-
-    /**
-     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
-     *  @param _pool Pool address to be used for price checking
-     *  @param _tokenIn token the input amount is in
-     *  @param _tokenOut token for the output amount
-     *  @param _twapPeriod the averaging time period
-     *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
-     */
-    function _fetchTwap(
-        address _pool,
-        address _tokenIn,
-        address _tokenOut,
-        uint32 _twapPeriod,
-        uint _amountIn
-    ) internal view returns (uint amountOut) {
-        // Leave twapTick as a int256 to avoid solidity casting
-        int twapTick = IQMFLib.consult(_pool, _twapPeriod);
-        return IQMFLib.getQuoteAtTick(
-            int24(twapTick), // can assume safe being result from consult()
-            SafeCast.toUint128(_amountIn),
-            _tokenIn,
-            _tokenOut
-        );
-    }
-
-    /// @inheritdoc IFarmingStrategy
-    function canFarm() external view override returns (bool) {
-        IFactory.Farm memory farm = _getFarm();
-        return farm.status == 0;
     }
 
     /// @inheritdoc IStrategy
@@ -349,5 +292,52 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm memory farm = _getFarm();
         string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
         return (shortAddr, true);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _tick tick for the spot price
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchSpot(
+        address _tokenIn,
+        address _tokenOut,
+        int _tick,
+        uint _amountIn
+    ) internal pure returns (uint amountOut) {
+        return IQMFLib.getQuoteAtTick(int24(_tick), SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
+     *  @param _pool Pool address to be used for price checking
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _twapPeriod the averaging time period
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchTwap(
+        address _pool,
+        address _tokenIn,
+        address _tokenOut,
+        uint32 _twapPeriod,
+        uint _amountIn
+    ) internal view returns (uint amountOut) {
+        // Leave twapTick as a int256 to avoid solidity casting
+        int twapTick = IQMFLib.consult(_pool, _twapPeriod);
+        return IQMFLib.getQuoteAtTick(
+            int24(twapTick), // can assume safe being result from consult()
+            SafeCast.toUint128(_amountIn),
+            _tokenIn,
+            _tokenOut
+        );
     }
 }

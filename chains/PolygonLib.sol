@@ -32,6 +32,7 @@ library PolygonLib {
     address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
     address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant TOKEN_COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
+    address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -106,7 +107,6 @@ library PolygonLib {
     address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW = 0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D;
 
     // Ichi
-    address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
     address public constant ICHI_STRATEGY_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
     address public constant ICHI_STRATEGY_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3;
     address public constant ICHI_STRATEGY_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473;
