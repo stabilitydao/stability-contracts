@@ -20,6 +20,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM)) {
+            return 0x4f86e6d7FE4D7cd2C1E08f4108C8E5f0Ca2553a3;
+        }
 
         return address(0);
     }

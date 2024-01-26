@@ -32,6 +32,7 @@ library PolygonLib {
     address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
     address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant TOKEN_COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
+    address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -67,6 +68,7 @@ library PolygonLib {
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
+    address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 = 0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -104,6 +106,11 @@ library PolygonLib {
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 = 0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB;
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6;
     address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW = 0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D;
+
+    // Ichi
+    address public constant ICHI_STRATEGY_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
+    address public constant ICHI_STRATEGY_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3;
+    address public constant ICHI_STRATEGY_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473;
 
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
@@ -224,6 +231,7 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -366,13 +374,20 @@ library PolygonLib {
         pure
         returns (ISwapper.AddPoolData[] memory pools)
     {
-        pools = new ISwapper.AddPoolData[](1);
+        pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WETH_COMP_3000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_COMP,
             tokenOut: TOKEN_WETH
+        });
+
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_UNISWAPV3_ICHI_WMATIC_100,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
+            tokenIn: TOKEN_ICHI,
+            tokenOut: TOKEN_WMATIC
         });
     }
 
@@ -512,7 +527,7 @@ library PolygonLib {
     }
 
     function farms3() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
+        _farms = new IFactory.Farm[](6);
         address[] memory rewardAssets;
         address[] memory addresses;
         uint[] memory nums;
@@ -566,6 +581,60 @@ library PolygonLib {
             status: 0,
             pool: POOL_QUICKSWAPV3_WMATIC_USDCe,
             strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [22]
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WMATIC_USDT;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[3] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WMATIC_USDT,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [23]
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WBTC_WETH;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[4] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WBTC_WETH,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [24]
+        rewardAssets = new address[](2);
+        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[1] = TOKEN_ICHI;
+        addresses = new address[](1);
+        addresses[0] = ICHI_STRATEGY_WETH_USDT;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[5] = IFactory.Farm({
+            status: 0,
+            pool: POOL_QUICKSWAPV3_WETH_USDT,
+            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
             nums: nums,
