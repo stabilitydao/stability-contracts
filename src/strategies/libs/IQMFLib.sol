@@ -1,23 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../integrations/algebra/IAlgebraPool.sol";
-import "./ALMPositionNameLib.sol";
-import "../../core/libs/CommonLib.sol";
 import "../libs/UniswapV3MathLib.sol";
+import "../../core/libs/CommonLib.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IAmmAdapter.sol";
+import "../../integrations/algebra/IAlgebraPool.sol";
 
 /// @title DataStorage library
 /// @notice Provides functions to integrate with pool dataStorage
 library IQMFLib {
-    error PoolIsLocked();
     /// @notice Fetches time-weighted average tick using Algebra dataStorage
     /// @param pool Address of Algebra pool that we want to getTimepoints
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
-
-    function consult(address pool, uint32 period) internal view returns (int24 timeWeightedAverageTick) {
+    function consult(address pool, uint32 period) external view returns (int24 timeWeightedAverageTick) {
         require(period != 0, "BP");
 
         uint32[] memory secondAgos = new uint32[](2);
@@ -44,9 +41,8 @@ library IQMFLib {
         uint128 baseAmount,
         address baseToken,
         address quoteToken
-    ) internal pure returns (uint quoteAmount) {
+    ) external pure returns (uint quoteAmount) {
         uint160 sqrtRatioX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
-
         // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
         if (sqrtRatioX96 <= type(uint128).max) {
             uint ratioX192 = uint(sqrtRatioX96) * sqrtRatioX96;
@@ -73,7 +69,7 @@ library IQMFLib {
             " on QuickSwap by ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(ammAdapter.poolTokens(farm.pool)), "-"),
-            " ICHI strategy",
+            " Ichi Yield IQ strategy ",
             shortAddress(farm.addresses[0])
         );
     }
