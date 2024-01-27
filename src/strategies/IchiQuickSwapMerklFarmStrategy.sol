@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
@@ -14,7 +14,14 @@ import "../integrations/ichi/IICHIVault.sol";
 contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
-    uint public constant PRECISION = 10 ** 18;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IControllable
+    string public constant VERSION = "1.0.1";
+
+    uint internal constant PRECISION = 10 ** 18;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -49,13 +56,6 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         CONSTANTS                          */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -69,9 +69,102 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return super.supportsInterface(interfaceId);
     }
 
+    /// @inheritdoc IFarmingStrategy
+    function canFarm() external view override returns (bool) {
+        IFactory.Farm memory farm = _getFarm();
+        return farm.status == 0;
+    }
+
     /// @inheritdoc ILPStrategy
     function ammAdapterId() public pure override returns (string memory) {
         return AmmAdapterIdLib.ALGEBRA;
+    }
+
+    /// @inheritdoc IStrategy
+    function description() external view returns (string memory) {
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        return IQMFLib.generateDescription(farm, $lp.ammAdapter);
+    }
+
+    /// @inheritdoc IStrategy
+    function extra() external pure returns (bytes32) {
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x965fff), bytes3(0x000000)));
+    }
+
+    /// @inheritdoc IStrategy
+    function getAssetsProportions() public view returns (uint[] memory proportions) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IICHIVault _underlying = IICHIVault(__$__._underlying);
+        proportions = new uint[](2);
+        if (_underlying.allowToken0()) proportions[0] = 1e18;
+        if (_underlying.allowToken1()) proportions[1] = 1e18;
+    }
+
+    /// @inheritdoc IStrategy
+    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
+        uint len = __assets.length;
+        amounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(__assets[i]);
+        }
+        // just for covergage
+        _getRewards();
+    }
+
+    /// @inheritdoc IStrategy
+    function initVariants(address platform_)
+        public
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        addresses = new address[](0);
+        ticks = new int24[](0);
+
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint localTtotal;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
+                ++localTtotal;
+            }
+        }
+
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
+                nums[localTtotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTtotal] = IQMFLib.generateDescription(farm, _ammAdapter);
+                ++localTtotal;
+            }
+        }
+    }
+
+    /// @inheritdoc IStrategy
+    function strategyLogicId() public pure override returns (string memory) {
+        return StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM;
+    }
+
+    /// @inheritdoc IStrategy
+    function getSpecificName() external view override returns (string memory, bool) {
+        IFactory.Farm memory farm = _getFarm();
+        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
+        return (shortAddr, true);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -81,12 +174,6 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
         // calculated in getRevenue()
-    }
-
-    /// @inheritdoc IFarmingStrategy
-    function canFarm() external view override returns (bool) {
-        IFactory.Farm memory farm = _getFarm();
-        return farm.status == 0;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -204,104 +291,17 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
     }
 
-    /// @inheritdoc IStrategy
-    function description() external view returns (string memory) {
-        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
-        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return IQMFLib.generateDescription(farm, $lp.ammAdapter);
-    }
-
-    /// @inheritdoc IStrategy
-    function extra() external pure returns (bytes32) {
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x965fff), bytes3(0x000000)));
-    }
-
-    /// @inheritdoc IStrategy
-    function getAssetsProportions() public view returns (uint[] memory proportions) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IICHIVault _underlying = IICHIVault(__$__._underlying);
-        proportions = new uint[](2);
-        if (_underlying.allowToken0()) proportions[0] = 1e18;
-        if (_underlying.allowToken1()) proportions[1] = 1e18;
-    }
-
-    /// @inheritdoc IStrategy
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
-        uint len = __assets.length;
-        amounts = new uint[](len);
-        for (uint i; i < len; ++i) {
-            amounts[i] = StrategyLib.balance(__assets[i]);
-        }
-        // just for covergage
-        _getRewards();
-    }
-
-    /// @inheritdoc IStrategy
-    function initVariants(address platform_)
-        public
-        view
-        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
-    {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = IQMFLib.generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
-    }
-
-    /// @inheritdoc IStrategy
-    function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM;
-    }
-
-    /// @inheritdoc IStrategy
-    function getSpecificName() external view override returns (string memory, bool) {
-        IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
-        return (shortAddr, true);
-    }
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
      * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
-     *  @param _tokenIn token the input amount is in
-     *  @param _tokenOut token for the output amount
-     *  @param _tick tick for the spot price
-     *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
+     * @param _tokenIn token the input amount is in
+     * @param _tokenOut token for the output amount
+     * @param _tick tick for the spot price
+     * @param _amountIn amount in _tokenIn
+     * @return amountOut equivalent anount in _tokenOut
      */
     function _fetchSpot(
         address _tokenIn,
@@ -314,12 +314,12 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /**
      * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
-     *  @param _pool Pool address to be used for price checking
-     *  @param _tokenIn token the input amount is in
-     *  @param _tokenOut token for the output amount
-     *  @param _twapPeriod the averaging time period
-     *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
+     * @param _pool Pool address to be used for price checking
+     * @param _tokenIn token the input amount is in
+     * @param _tokenOut token for the output amount
+     * @param _twapPeriod the averaging time period
+     * @param _amountIn amount in _tokenIn
+     * @return amountOut equivalent anount in _tokenOut
      */
     function _fetchTwap(
         address _pool,

@@ -245,7 +245,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 {
                     uint[] memory assetsProportions = IStrategy(address(strategy)).getAssetsProportions();
-                    bool isZero;
+                    bool isZero = true;
                     for (uint x; x < assetsProportions.length; x++) {
                         if (assetsProportions[x] != 0) {
                             isZero = false;
