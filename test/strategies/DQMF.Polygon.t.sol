@@ -28,9 +28,9 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         vm.stopPrank();
 
         // add farms for testing
+        _addStrategy(18);
         _addStrategy(19);
         _addStrategy(20);
-        _addStrategy(21);
     }
 
     function _addStrategy(uint farmId) internal {

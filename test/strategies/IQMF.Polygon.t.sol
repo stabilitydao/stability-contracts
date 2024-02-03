@@ -6,9 +6,9 @@ import "../base/UniversalTest.sol";
 
 contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testIQMF() public universalTest {
+        _addStrategy(21);
         _addStrategy(22);
         _addStrategy(23);
-        _addStrategy(24);
     }
 
     function _addStrategy(uint farmId) internal {

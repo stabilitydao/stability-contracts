@@ -75,11 +75,11 @@ contract ZapTest is PolygonSetup {
             uint[] memory initStrategyNums = new uint[](1);
             int24[] memory initStrategyTicks = new int24[](0);
             // farmId
-            initStrategyNums[0] = 6; // WMATIC-USDC narrow
+            initStrategyNums[0] = 5; // WMATIC-USDC narrow
 
             factory.deployVaultAndStrategy(
                 VaultTypeLib.COMPOUNDING,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,
@@ -87,10 +87,10 @@ contract ZapTest is PolygonSetup {
                 initStrategyTicks
             );
 
-            initStrategyNums[0] = 7; // WMATIC-WETH wide
+            initStrategyNums[0] = 6; // WMATIC-WETH wide
             factory.deployVaultAndStrategy(
                 VaultTypeLib.COMPOUNDING,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,

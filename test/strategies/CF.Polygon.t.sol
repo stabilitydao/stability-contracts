@@ -10,7 +10,7 @@ contract CompoundFarmStrategyTest is PolygonSetup, UniversalTest {
             Strategy({
                 id: StrategyIdLib.COMPOUND_FARM,
                 pool: address(0),
-                farmId: 18, // chains/PolygonLib.sol
+                farmId: 17, // chains/PolygonLib.sol
                 underlying: address(0)
             })
         );

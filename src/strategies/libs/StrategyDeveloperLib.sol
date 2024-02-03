@@ -8,7 +8,7 @@ import "../../core/libs/CommonLib.sol";
 ///      StrategyLogic NFT is minted to the address of a strategy developer.
 library StrategyDeveloperLib {
     function getDeveloper(string memory strategyId) external pure returns (address) {
-        if (CommonLib.eq(strategyId, StrategyIdLib.GAMMA_QUICKSWAP_FARM)) {
+        if (CommonLib.eq(strategyId, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
         if (CommonLib.eq(strategyId, StrategyIdLib.QUICKSWAPV3_STATIC_FARM)) {

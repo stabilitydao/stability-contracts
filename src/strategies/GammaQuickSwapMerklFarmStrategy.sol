@@ -5,19 +5,17 @@ import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/UniswapV3MathLib.sol";
-import "./libs/GammaLib.sol";
+import "./libs/ALMPositionNameLib.sol";
 import "../integrations/gamma/IUniProxy.sol";
 import "../integrations/gamma/IHypervisor.sol";
-import "../integrations/quickswap/IMasterChef.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
-import "../integrations/quickswap/IRewarder.sol";
 import "../core/libs/CommonLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 
-/// @title Earning Gamma QuickSwap farm rewards by underlying Gamma Hypervisor
+/// @title Earning Merkl rewards on QuickSwap V3 by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
-contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -40,8 +38,6 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @custom:storage-location erc7201:stability.GammaQuickSwapFarmStrategy
     struct GammaQuickSwapFarmStrategyStorage {
         IUniProxy uniProxy;
-        IMasterChef masterChef;
-        uint pid;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -55,30 +51,27 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 3 || farm.nums.length != 2 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 2 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         $.uniProxy = IUniProxy(farm.addresses[0]);
-        $.masterChef = IMasterChef(farm.addresses[1]);
-        $.pid = farm.nums[0];
 
         __LPStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
-                underlying: farm.addresses[2]
+                underlying: farm.addresses[1]
             })
         );
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         address[] memory _assets = assets();
-        IERC20(_assets[0]).forceApprove(farm.addresses[2], type(uint).max);
-        IERC20(_assets[1]).forceApprove(farm.addresses[2], type(uint).max);
-        IERC20(farm.addresses[2]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -97,9 +90,8 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
-        IMasterChef.PoolInfo memory poolInfo = $.masterChef.poolInfo($.pid);
-        return poolInfo.allocPoint > 0;
+        IFactory.Farm memory farm = _getFarm();
+        return farm.status == 0;
     }
 
     /// @inheritdoc ILPStrategy
@@ -110,7 +102,13 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
         __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
-        amounts = _getRewards();
+        uint len = __assets.length;
+        amounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(__assets[i]);
+        }
+        // just for covergage
+        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -156,7 +154,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.GAMMA_QUICKSWAP_FARM;
+        return StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM;
     }
 
     /// @inheritdoc IStrategy
@@ -174,7 +172,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        return (GammaLib.getPresetName(farm.nums[1]), true);
+        return (ALMPositionNameLib.getName(farm.nums[0]), true);
     }
 
     /// @inheritdoc IStrategy
@@ -191,15 +189,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc FarmingStrategyBase
     function _getRewards() internal view override returns (uint[] memory amounts) {
-        uint len = _getFarmingStrategyBaseStorage()._rewardAssets.length;
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
-        amounts = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IRewarder rewarder = IRewarder($.masterChef.getRewarder($.pid, i));
-            amounts[i] = rewarder.pendingToken($.pid, address(this));
-        }
+        // empty
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -224,23 +214,19 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint[4] memory minIn;
         value = $.uniProxy.deposit(amounts[0], amounts[1], address(this), __$._underlying, minIn);
         __$.total += value;
-        $.masterChef.deposit($.pid, value, address(this));
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
-        $.masterChef.deposit($.pid, amount, address(this));
         amountsConsumed = _previewDepositUnderlying(amount);
         _$.total += amount;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
+        // GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
-        $.masterChef.withdraw($.pid, value, address(this));
         amountsOut = new uint[](2);
         _$.total -= value;
         //slither-disable-next-line uninitialized-local
@@ -251,9 +237,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
-        $.masterChef.withdraw($.pid, amount, address(this));
         IERC20(_$._underlying).safeTransfer(receiver, amount);
         _$.total -= amount;
     }
@@ -261,6 +245,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _claimRevenue()
         internal
+        view
         override
         returns (
             address[] memory __assets,
@@ -269,33 +254,15 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
-        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
-        __assets = new address[](2);
-        __assets[0] = _$._assets[0];
-        __assets[1] = _$._assets[1];
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        __assets = __$__._assets;
+        __rewardAssets = _$_._rewardAssets;
         __amounts = new uint[](2);
-
-        __rewardAssets = _getFarmingStrategyBaseStorage()._rewardAssets;
-        uint len = __rewardAssets.length;
-        __rewardAmounts = new uint[](len);
-        uint[] memory rewardBalanceBefore = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            rewardBalanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
-        }
-        $.masterChef.harvest($.pid, address(this));
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - rewardBalanceBefore[i];
-        }
-
-        // special for farms with first 2 duplicate tokens
-        // nosemgrep
-        if (len > 1 && __rewardAssets[0] == __rewardAssets[1]) {
-            __rewardAmounts[0] = 0;
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
         }
     }
 
@@ -409,7 +376,7 @@ contract GammaQuickSwapFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
             " Gamma ",
             //slither-disable-next-line calls-loop
-            GammaLib.getPresetName(farm.nums[1]),
+            ALMPositionNameLib.getName(farm.nums[0]),
             " LP"
         );
     }

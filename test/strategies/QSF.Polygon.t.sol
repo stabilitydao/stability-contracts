@@ -18,7 +18,7 @@ contract QuickSwapV3StaticFarmStrategyTest is PolygonSetup, UniversalTest {
             Strategy({
                 id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
                 pool: address(0),
-                farmId: 17, // chains/PolygonLib.sol
+                farmId: 16, // chains/PolygonLib.sol
                 underlying: address(0)
             })
         );
