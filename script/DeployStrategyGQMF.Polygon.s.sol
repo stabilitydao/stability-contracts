@@ -6,20 +6,22 @@ import "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
 import "../src/strategies/libs/ALMPositionNameLib.sol";
 import "../chains/PolygonLib.sol";
 
-
 contract DeployStrategyGQMFPolygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
-    
+
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         new GammaQuickSwapMerklFarmStrategy();
-        
+
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
         IFactory.Farm[] memory _farms = new IFactory.Farm[](1);
         _farms[0] = _makeGammaQuickSwapMerklFarm(
-            PolygonLib.TOKEN_dQUICK, PolygonLib.GAMMA_POS_USDCe_USDT, PolygonLib.GAMMA_UNIPROXY_2, ALMPositionNameLib.STABLE
+            PolygonLib.TOKEN_dQUICK,
+            PolygonLib.GAMMA_POS_USDCe_USDT,
+            PolygonLib.GAMMA_UNIPROXY_2,
+            ALMPositionNameLib.STABLE
         );
         factory.addFarms(_farms);
 

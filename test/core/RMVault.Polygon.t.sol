@@ -187,7 +187,7 @@ contract RMVaultTest is PolygonSetup {
         assertEq(vault.earned(0, address(this)), 0);
         skip(86400);
         assertGt(vault.earned(0, address(this)), 0, "Eearned zero");
-        assertGt(vault.earned(1, address(this)), 0,  "Eearned zero");
+        assertGt(vault.earned(1, address(this)), 0, "Eearned zero");
         assertEq(vault.duration(0), 86400 * 10);
 
         vm.prank(address(0));

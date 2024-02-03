@@ -26,7 +26,12 @@ contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({
+                id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
+                pool: address(0),
+                farmId: farmId,
+                underlying: address(0)
+            })
         );
     }
 
