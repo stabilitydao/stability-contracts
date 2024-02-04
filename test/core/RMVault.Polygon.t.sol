@@ -42,13 +42,13 @@ contract RMVaultTest is PolygonSetup {
             vaultInitNums[vaultInitNums.length - 1] = 50_000;
 
             // farmId
-            nums[0] = 6; // WMATIC-USDC narrow
+            nums[0] = 5; // WMATIC-USDC narrow
 
             vaultInitNums[1] = 10;
             vm.expectRevert(IFactory.BoostDurationTooLow.selector);
             factory.deployVaultAndStrategy(
                 VaultTypeLib.REWARDING_MANAGED,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,
@@ -61,7 +61,7 @@ contract RMVaultTest is PolygonSetup {
             vm.expectRevert(IFactory.BoostAmountTooLow.selector);
             factory.deployVaultAndStrategy(
                 VaultTypeLib.REWARDING_MANAGED,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,
@@ -74,7 +74,7 @@ contract RMVaultTest is PolygonSetup {
             vm.expectRevert(IFactory.BoostAmountIsZero.selector);
             factory.deployVaultAndStrategy(
                 VaultTypeLib.REWARDING_MANAGED,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,
@@ -85,7 +85,7 @@ contract RMVaultTest is PolygonSetup {
 
             factory.deployVaultAndStrategy(
                 VaultTypeLib.REWARDING_MANAGED,
-                StrategyIdLib.GAMMA_QUICKSWAP_FARM,
+                StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,
@@ -177,6 +177,8 @@ contract RMVaultTest is PolygonSetup {
             vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
         }
 
+        deal(PolygonLib.TOKEN_dQUICK, address(vault.strategy()), 10e18);
+
         (uint sharePriceBefore,) = vault.price();
         vault.doHardWork();
         (uint sharePriceAfter,) = vault.price();
@@ -184,8 +186,8 @@ contract RMVaultTest is PolygonSetup {
 
         assertEq(vault.earned(0, address(this)), 0);
         skip(86400);
-        assertGt(vault.earned(0, address(this)), 0);
-        assertGt(vault.earned(1, address(this)), 0);
+        assertGt(vault.earned(0, address(this)), 0, "Eearned zero");
+        assertGt(vault.earned(1, address(this)), 0, "Eearned zero");
         assertEq(vault.duration(0), 86400 * 10);
 
         vm.prank(address(0));

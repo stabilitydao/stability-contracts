@@ -6,7 +6,7 @@ import "../../src/interfaces/IPlatform.sol";
 import "../../src/interfaces/IFactory.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
-import "../../src/strategies/GammaQuickSwapFarmStrategy.sol";
+import "../../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/CompoundFarmStrategy.sol";
 import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
@@ -28,8 +28,8 @@ library DeployStrategyLib {
             implementation = address(new QuickSwapV3StaticFarmStrategy());
         }
 
-        if (CommonLib.eq(id, StrategyIdLib.GAMMA_QUICKSWAP_FARM)) {
-            implementation = address(new GammaQuickSwapFarmStrategy());
+        if (CommonLib.eq(id, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM)) {
+            implementation = address(new GammaQuickSwapMerklFarmStrategy());
         }
 
         if (CommonLib.eq(id, StrategyIdLib.COMPOUND_FARM)) {

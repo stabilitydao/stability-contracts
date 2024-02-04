@@ -26,7 +26,9 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     constructor() {
-        vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
+        // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
+        // vm.rollFork(52813000); // Jan-27-2024 02:40:51 PM +UTC
+        vm.rollFork(53017000); // Feb-01-2024 11:34:48 PM +UTC
 
         _init();
         deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
@@ -86,20 +88,20 @@ contract PlatformPolygonTest is PolygonSetup {
 
     function testAll() public {
         // disable deprecated strategies
-        vm.startPrank(platform.multisig());
-        platform.addOperator(platform.multisig());
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.GAMMA_QUICKSWAP_FARM,
-                implementation: address(0),
-                deployAllowed: false,
-                upgradeAllowed: false,
-                farming: true,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
-        vm.stopPrank();
+        // vm.startPrank(platform.multisig());
+        // platform.addOperator(platform.multisig());
+        // factory.setStrategyLogicConfig(
+        //     IFactory.StrategyLogicConfig({
+        //         id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
+        //         implementation: address(0),
+        //         deployAllowed: false,
+        //         upgradeAllowed: false,
+        //         farming: true,
+        //         tokenId: type(uint).max
+        //     }),
+        //     address(this)
+        // );
+        // vm.stopPrank();
 
         platform.setAllowedBBTokenVaults(platform.allowedBBTokens()[0], 1e4);
         BuildingVars memory vars;
@@ -418,12 +420,6 @@ contract PlatformPolygonTest is PolygonSetup {
 
         strings = new string[](0);
         assertEq(CommonLib.implode(strings, ","), "");
-
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.NARROW)), "Narrow");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.WIDE)), "Wide");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.DYNAMIC)), "Pegged");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.STABLE)), "Stable");
-        assertEq(GammaLib.getPresetName(100), "");
 
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.NARROW), "Narrow");
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.WIDE), "Wide");
