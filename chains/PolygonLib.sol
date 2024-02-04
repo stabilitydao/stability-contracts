@@ -5,7 +5,7 @@ import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
-import "../src/strategies/libs/GammaLib.sol";
+import "../src/strategies/libs/ALMPositionNameLib.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
@@ -353,11 +353,7 @@ library PolygonLib {
     }
 
     /// @notice New routes jan-2024
-    function routes2()
-        public
-        pure
-        returns (ISwapper.AddPoolData[] memory pools)
-    {
+    function routes2() public pure returns (ISwapper.AddPoolData[] memory pools) {
         pools = new ISwapper.AddPoolData[](1);
         uint i;
         pools[i++] = ISwapper.AddPoolData({
@@ -369,11 +365,7 @@ library PolygonLib {
     }
 
     /// @notice New routes jan-2024
-    function routes3()
-        public
-        pure
-        returns (ISwapper.AddPoolData[] memory pools)
-    {
+    function routes3() public pure returns (ISwapper.AddPoolData[] memory pools) {
         pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = ISwapper.AddPoolData({
@@ -398,7 +390,7 @@ library PolygonLib {
         uint[] memory nums;
         int24[] memory ticks;
         uint i;
-        
+
         //region ----- QuickSwap V3 farms -----
         // [0] Earn dQUICK, WMATIC by static position in USDC/DAI pool on QuickSwap V3
         rewardAssets = new address[](2);
@@ -413,7 +405,7 @@ library PolygonLib {
         ticks = new int24[](2);
         ticks[0] = 276240;
         ticks[1] = 276420;
-        
+
         _farms[i++] = IFactory.Farm({
             status: 0,
             pool: POOL_QUICKSWAPV3_USDCe_DAI,
@@ -427,52 +419,52 @@ library PolygonLib {
 
         //region ----- Gamma QuickSwap Merkl farms -----
         // _farms[i++] = _makeGammaQuickSwapMerklFarm(
-        //     TOKEN_dQUICK, GAMMA_POS_DAI_USDT, GAMMA_UNIPROXY, uint(GammaLib.Presets.STABLE)
+        //     TOKEN_dQUICK, GAMMA_POS_DAI_USDT, GAMMA_UNIPROXY, ALMPositionNameLib.STABLE
         // );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_USDT, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.STABLE)
+            TOKEN_dQUICK, GAMMA_POS_USDCe_USDT, GAMMA_UNIPROXY_2, ALMPositionNameLib.STABLE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_NARROW, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.NARROW)
+            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_WIDE, GAMMA_UNIPROXY_2, uint(GammaLib.Presets.WIDE)
+            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
         );
         //endregion --  Gamma QuickSwap farms -----
     }
@@ -534,7 +526,7 @@ library PolygonLib {
         address[] memory addresses;
         uint[] memory nums;
         int24[] memory ticks;
-        
+
         // [19]
         rewardAssets = new address[](1);
         rewardAssets[0] = TOKEN_dQUICK;

@@ -421,12 +421,6 @@ contract PlatformPolygonTest is PolygonSetup {
         strings = new string[](0);
         assertEq(CommonLib.implode(strings, ","), "");
 
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.NARROW)), "Narrow");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.WIDE)), "Wide");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.DYNAMIC)), "Pegged");
-        assertEq(GammaLib.getPresetName(uint(GammaLib.Presets.STABLE)), "Stable");
-        assertEq(GammaLib.getPresetName(100), "");
-
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.NARROW), "Narrow");
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.WIDE), "Wide");
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.DYNAMIC), "Pegged");
