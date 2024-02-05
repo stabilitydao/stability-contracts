@@ -23,7 +23,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -297,7 +297,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             amountsConsumed[0] = amountsMax[0];
             // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
-        } else if (amountsMax[1] < amount1Start) {
+        } else if (amountsMax[1] <= amount1Start) {
             //slither-disable-next-line similar-names
             (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;

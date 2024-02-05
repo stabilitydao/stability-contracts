@@ -30,6 +30,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
     string public strategyId;
     address internal currentStrategy;
+    uint[] public specialDepositAmounts;
 
     struct Strategy {
         string id;
@@ -297,6 +298,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
                         _deal(assets[1], address(this), depositAmounts[1]);
                         swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
+                    }
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       SPECIAL DEPOSIT                      */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                {
+                    if (specialDepositAmounts.length > 0) {
+                        require(
+                            specialDepositAmounts.length == assets.length, "UT: specialDepositAmounts length mismatch"
+                        );
+                        for (uint j; j < assets.length; ++j) {
+                            IERC20(assets[j]).approve(vars.vault, specialDepositAmounts[j]);
+                            _deal(assets[j], address(this), specialDepositAmounts[j]);
+                        }
+                        IVault(vars.vault).depositAssets(assets, specialDepositAmounts, 0, address(0));
                     }
                 }
 
