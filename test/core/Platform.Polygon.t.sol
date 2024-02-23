@@ -31,8 +31,8 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.rollFork(53017000); // Feb-01-2024 11:34:48 PM +UTC
 
         _init();
-        deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
+        deal(platform.buildingPayPerVaultToken(), address(this), 5e25);
+        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e25);
 
         deal(platform.allowedBBTokens()[0], address(this), 5e24);
         IERC20(platform.allowedBBTokens()[0]).approve(address(factory), 5e24);

@@ -17,7 +17,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_FARMING_STRATEGY_BASE = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION =
