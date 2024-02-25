@@ -8,6 +8,9 @@ contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testIRMF() public universalTest {
         _addStrategy(24);
         _addStrategy(25);
+        _addStrategy(26);
+        _addStrategy(27);
+        _addStrategy(28);
     }
 
     function _addStrategy(uint farmId) internal {
