@@ -14,7 +14,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of LPStrategyBase implementation
-    string public constant VERSION_LP_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_LP_STRATEGY_BASE = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.LPStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LPSTRATEGYBASE_STORAGE_LOCATION =
