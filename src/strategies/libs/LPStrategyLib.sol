@@ -189,6 +189,7 @@ library LPStrategyLib {
         vars.threshold1 = vars.swapper.threshold(assets[1]);
         if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {
             uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
+
             // nosemgrep
             if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
                 uint prop0Balances =
@@ -211,7 +212,7 @@ library LPStrategyLib {
                             assets[0], assets[1], toSwapAsset0, ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
                         );
                     }
-                } else {
+                } else if (prop0Pool > 0) {
                     // extra assets[1]
                     uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18
                         * 10 ** vars.asset1decimals / vars.price;

@@ -76,6 +76,7 @@ library PolygonLib {
     address public constant POOL_RETRO_WETH_RETRO_1000 = 0x35394eED0Be676ec6470fE6531daD809265310ff;
     address public constant POOL_RETRO_USDCe_RETRO_1000 = 0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
     address public constant POOL_RETRO_WMATIC_USDCe_500 = 0xEC15624FBB314eb05BaaD4cA49b7904C0Cb6b645;
+    address public constant POOL_RETRO_WBTC_WETH_500 = 0xb694E3bdd4BCdF843510983D257679D1E627C474;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -118,8 +119,11 @@ library PolygonLib {
     address public constant ICHI_QUICKSWAP_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
     address public constant ICHI_QUICKSWAP_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3;
     address public constant ICHI_QUICKSWAP_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473;
-    address public constant ICHI_RETRO_WMATIC_WETH = 0x38F41FDe5cABC569E808537FdaF390cD7f0dC0f6;
-    address public constant ICHI_RETRO_WMATIC_USDCe = 0x91f935892355C8CA4468C44D2c4bAE1A23c60c14;
+    address public constant ICHI_RETRO_WMATIC_WETH_MATIC = 0x38F41FDe5cABC569E808537FdaF390cD7f0dC0f6;
+    address public constant ICHI_RETRO_WMATIC_WETH_ETH = 0xE9BD439259DE0347DC26B86b3E73437E93858283;
+    address public constant ICHI_RETRO_WMATIC_USDCe_MATIC = 0x91f935892355C8CA4468C44D2c4bAE1A23c60c14;
+    address public constant ICHI_RETRO_WMATIC_USDCe_USDC = 0x5Ef5630195164956d394fF8093C1B6964cb5814B;
+    address public constant ICHI_RETRO_WBTC_WETH_ETH = 0x0B0302014DD4FB6A77da03bF9034db5FEcB68eA8;
 
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
@@ -220,6 +224,7 @@ library PolygonLib {
         factory.addFarms(farms2());
         factory.addFarms(farms3());
         factory.addFarms(farms4());
+        factory.addFarms(farms5());
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -665,6 +670,7 @@ library PolygonLib {
         });
     }
 
+    // retro part 1
     function farms4() public pure returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](2);
         address[] memory rewardAssets;
@@ -676,7 +682,7 @@ library PolygonLib {
         rewardAssets = new address[](1);
         rewardAssets[0] = TOKEN_oRETRO;
         addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_WETH;
+        addresses[0] = ICHI_RETRO_WMATIC_WETH_MATIC;
         nums = new uint[](0);
         ticks = new int24[](0);
         _farms[0] = IFactory.Farm({
@@ -693,12 +699,72 @@ library PolygonLib {
         rewardAssets = new address[](1);
         rewardAssets[0] = TOKEN_oRETRO;
         addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_USDCe;
+        addresses[0] = ICHI_RETRO_WMATIC_USDCe_MATIC;
         nums = new uint[](0);
         ticks = new int24[](0);
         _farms[1] = IFactory.Farm({
             status: 0,
             pool: POOL_RETRO_WMATIC_USDCe_500,
+            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+    }
+
+    // retro part 2
+    function farms5() public pure returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](3);
+        address[] memory rewardAssets;
+        address[] memory addresses;
+        uint[] memory nums;
+        int24[] memory ticks;
+
+        // [26]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_oRETRO;
+        addresses = new address[](1);
+        addresses[0] = ICHI_RETRO_WMATIC_WETH_ETH;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[0] = IFactory.Farm({
+            status: 0,
+            pool: POOL_RETRO_WMATIC_WETH_500,
+            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [27]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_oRETRO;
+        addresses = new address[](1);
+        addresses[0] = ICHI_RETRO_WMATIC_USDCe_USDC;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[1] = IFactory.Farm({
+            status: 0,
+            pool: POOL_RETRO_WMATIC_USDCe_500,
+            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
+            rewardAssets: rewardAssets,
+            addresses: addresses,
+            nums: nums,
+            ticks: ticks
+        });
+
+        // [28]
+        rewardAssets = new address[](1);
+        rewardAssets[0] = TOKEN_oRETRO;
+        addresses = new address[](1);
+        addresses[0] = ICHI_RETRO_WBTC_WETH_ETH;
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        _farms[2] = IFactory.Farm({
+            status: 0,
+            pool: POOL_RETRO_WBTC_WETH_500,
             strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
