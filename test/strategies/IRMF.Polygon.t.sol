@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
+import "../base/chains/PolygonSetup.sol";
+
+interface IIRMF {
+    function t() external view returns (bool);
+}
 
 contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
-    function testIRMF() public universalTest {
+    function testIchiRetroMerklFarmStrategy() public universalTest {
         _addStrategy(24);
         _addStrategy(25);
         _addStrategy(26);
@@ -21,5 +25,8 @@ contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
     function _preHardWork() internal override {
         deal(PolygonLib.TOKEN_oRETRO, currentStrategy, 10e18);
+
+        // cover special uniqualizing method
+        IIRMF(currentStrategy).t();
     }
 }

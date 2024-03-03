@@ -5,6 +5,10 @@ import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract QuickSwapV3StaticFarmStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(51800000); // Jan-01-2024 02:33:32 AM +UTC
+    }
+
     function testStrategyUniversal() public universalTest {
         strategies.push(
             Strategy({

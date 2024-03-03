@@ -15,6 +15,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
 
 /// @title Earning QuickSwapV3 farm rewards and swap fees by static liquidity position
+/// @dev DEPRECATED - strategy outdated in jan 2024
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
@@ -25,7 +26,7 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickswapV3StaticFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICFARMSTRATEGY_STORAGE_LOCATION =
@@ -214,14 +215,9 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return QuickswapLib.generateDescription(farm, $lp.ammAdapter);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   FARMING STRATEGY BASE                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
-        return QuickswapLib.getRewards($._tokenId, $._farmingCenter, _getIncentiveKey());
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {
+        return false;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -456,4 +452,10 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
         QuickswapLib.collectRewardsToState($, _$, tokenId, key);
     }
+
+    function _getRewards() internal view returns (uint[] memory amounts) {
+        QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        return QuickswapLib.getRewards($._tokenId, $._farmingCenter, _getIncentiveKey());
+    }
+
 }

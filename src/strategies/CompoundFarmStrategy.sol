@@ -16,7 +16,7 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant COMPOUNDFARMSTRATEGY_STORAGE_LOCATION =
@@ -97,8 +97,6 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
         __assets[0] = _$_._assets[0];
         amounts = new uint[](1);
         amounts[0] = $.comet.balanceOf(address(this)) - _$_.total;
-        // just for coverage
-        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -152,12 +150,14 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
         }
     }
 
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {
+        return true;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {}
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external pure override returns (bool) {

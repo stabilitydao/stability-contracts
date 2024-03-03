@@ -66,6 +66,7 @@ contract VaultTest is Test, FullMockSetup {
         strategy.getRevenue();
         strategy.description();
         strategy.initVariants(address(0));
+        strategy.isHardWorkOnDepositAllowed();
     }
 
     function testDepositWithdrawHardWork() public {

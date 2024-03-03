@@ -23,7 +23,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -107,8 +107,6 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(__assets[i]);
         }
-        // just for covergage
-        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -183,13 +181,9 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         return _generateDescription(farm, $lp.ammAdapter);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   FARMING STRATEGY BASE                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        // empty
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {
+        return false;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -597,6 +597,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.withdrawnUsdValue += balNow * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
                 assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                         COVERAGE                           */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                strategy.isHardWorkOnDepositAllowed();
             }
         }
     }

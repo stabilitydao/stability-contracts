@@ -19,7 +19,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -110,8 +110,6 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(__assets[i]);
         }
-        // just for covergage
-        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -167,13 +165,14 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return (shortAddr, true);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   FARMING STRATEGY BASE                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {
+        return false;
+    }
 
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        // calculated in getRevenue()
+    /// @dev this special method used to fix forge coverage issue
+    function t() external pure returns (bool) {
+        return true;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

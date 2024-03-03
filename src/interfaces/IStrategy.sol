@@ -135,6 +135,9 @@ interface IStrategy is IERC165 {
     /// @return Description in free form
     function description() external view returns (string memory);
 
+    /// @notice Is HardWork on vault deposits can be enabled
+    function isHardWorkOnDepositAllowed() external view returns (bool);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
