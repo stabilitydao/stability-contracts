@@ -457,5 +457,4 @@ contract QuickSwapV3StaticFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         QuickswapLib.QuickSwapV3StaticFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         return QuickswapLib.getRewards($._tokenId, $._farmingCenter, _getIncentiveKey());
     }
-
 }

@@ -210,9 +210,7 @@ library LPStrategyLib {
 
                     // swap assets[0] to assets[1]
                     if (toSwapAsset0 > vars.threshold0) {
-                        vars.swapper.swap(
-                            assets[0], assets[1], toSwapAsset0, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-                        );
+                        vars.swapper.swap(assets[0], assets[1], toSwapAsset0, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
                     }
                 } else if (prop0Pool > 0) {
                     // extra assets[1]
@@ -222,9 +220,7 @@ library LPStrategyLib {
                     uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
                     // swap assets[1] to assets[0]
                     if (toSwapAsset1 > vars.threshold1) {
-                        vars.swapper.swap(
-                            assets[1], assets[0], toSwapAsset1, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-                        );
+                        vars.swapper.swap(assets[1], assets[0], toSwapAsset1, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
                     }
                 }
 
