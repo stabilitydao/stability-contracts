@@ -166,9 +166,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return false;
-    }
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */

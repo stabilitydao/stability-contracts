@@ -166,9 +166,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return false;
-    }
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
 
     /// @dev this special method used to fix forge coverage issue
     function t() external pure returns (bool) {

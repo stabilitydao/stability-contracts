@@ -173,9 +173,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return false;
-    }
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
