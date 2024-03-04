@@ -155,6 +155,11 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
         return true;
     }
 
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external pure returns (bool isReady) {
+        isReady = true;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

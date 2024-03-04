@@ -387,6 +387,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                assertEq(strategy.isReadyForHardWork(), true);
                 vm.txGasPrice(15e10); // 150gwei
                 {
                     vars.apr = 0;

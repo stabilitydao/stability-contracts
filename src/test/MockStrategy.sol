@@ -55,6 +55,11 @@ contract MockStrategy is LPStrategyBase {
         return true;
     }
 
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external pure returns (bool isReady) {
+        isReady = true;
+    }
+
     function initVariants(address)
         public
         pure

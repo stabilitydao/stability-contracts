@@ -213,6 +213,16 @@ library StrategyLib {
         }
     }
 
+    function assetsAreOnBalance(address[] memory assets) external view returns (bool isReady) {
+        uint rwLen = assets.length;
+        for (uint i; i < rwLen; ++i) {
+            if (IERC20(assets[i]).balanceOf(address(this)) > 0) {
+                isReady = true;
+                break;
+            }
+        }
+    }
+
     // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
     //     uint total;
     //     IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
