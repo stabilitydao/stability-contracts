@@ -5,15 +5,18 @@ import {Test, console} from "forge-std/Test.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/test/MockVaultUpgrade.sol";
+import "../../src/test/BadUpgrade.sol";
 import "../base/MockSetup.sol";
 
 contract ProxyTest is Test, MockSetup {
     Proxy public proxy;
     MockVaultUpgrade public vaultImplementationUpgrade;
+    BadUpgrade public badUpgrade;
 
     function setUp() public {
         proxy = new Proxy();
         vaultImplementationUpgrade = new MockVaultUpgrade();
+        badUpgrade = new BadUpgrade();
     }
 
     function testInitProxy() public {
@@ -54,5 +57,9 @@ contract ProxyTest is Test, MockSetup {
         assertEq(proxy.implementation(), address(vaultImplementationUpgrade));
         assertGt(vault.createdBlock(), 0);
         assertEq(IControllable(address(vault)).platform(), address(platform));
+
+        vm.prank(address(platform));
+        vm.expectRevert(IControllable.NotPlatform.selector);
+        proxy.upgrade(address(badUpgrade));
     }
 }
