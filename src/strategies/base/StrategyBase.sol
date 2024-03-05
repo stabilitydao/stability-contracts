@@ -244,7 +244,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     function _beforeTransferAssets() internal virtual {}
 
     /// @dev Can be overrided by derived base strategies for custom logic
-    function _beforeDoHardWork() internal virtual {}
+    function _beforeDoHardWork() internal virtual {
+        if (!IStrategy(this).isReadyForHardWork()) {
+            revert NotReadyForHardWork();
+        }
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */

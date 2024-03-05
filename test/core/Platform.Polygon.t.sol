@@ -10,6 +10,7 @@ import "../../src/strategies/libs/ALMPositionNameLib.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant USD = address(840);
 
     struct BuildingVars {
         uint len;
@@ -87,6 +88,17 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     function testAll() public {
+        // change heartbeat to prevent "OLD_PRICE revert" for DefiEdge underlings
+        IDefiEdgeStrategyFactory defiEdgeFactory = IDefiEdgeStrategyFactory(0x730d158D29165C55aBF368e9608Af160DD21Bd80);
+        address gov = defiEdgeFactory.governance();
+        vm.startPrank(gov);
+        defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WETH, USD, 86400 * 365);
+        defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, USD, 86400 * 365);
+        defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_USDCe, USD, 86400 * 365);
+        defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WETH, ETH, 86400 * 365);
+        defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, ETH, 86400 * 365);
+        vm.stopPrank();
+
         // disable deprecated strategies
         // vm.startPrank(platform.multisig());
         // platform.addOperator(platform.multisig());
@@ -215,6 +227,8 @@ contract PlatformPolygonTest is PolygonSetup {
         (string[] memory descEmpty,,,,,,,,) = factory.whatToBuild();
         assertEq(descEmpty.length, 0);
 
+        address[] memory stategyRevenueAssets;
+
         IVaultManager vaultManager = IVaultManager(platform.vaultManager());
         // deposit to all vaults
         {
@@ -238,6 +252,9 @@ contract PlatformPolygonTest is PolygonSetup {
                 console.log(string.concat(" ", symbol[i]));
 
                 _depositToVault(vaultAddress[i], 1e21);
+
+                IStrategy strategy = IVault(vaultAddress[i]).strategy();
+                _fillStrategyRewards(strategy);
             }
         }
 
@@ -245,17 +262,17 @@ contract PlatformPolygonTest is PolygonSetup {
         bool canExec;
         bytes memory execPayload;
         (canExec, execPayload) = hw.checkerServer();
-        assertEq(canExec, false);
+        assertEq(canExec, false, "Must cant exec");
 
         skip(1 days);
 
         (canExec, execPayload) = hw.checkerServer();
-        assertEq(canExec, true);
+        assertEq(canExec, true, "Must exec");
         vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotServerOrGelato.selector));
         vm.prank(address(666));
         (bool success,) = address(hw).call(execPayload);
         (success,) = address(hw).call(execPayload);
-        assertEq(success, false);
+        assertEq(success, false, "Must be not success");
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         hw.setDedicatedServerMsgSender(address(this), true);
         assertEq(hw.maxHwPerCall(), 5);
@@ -308,31 +325,38 @@ contract PlatformPolygonTest is PolygonSetup {
         hw.setMaxHwPerCall(5);
 
         (success,) = address(hw).call(execPayload);
-        assertEq(success, true);
+        assertEq(success, true, "HardWorker call not success");
 
         skip(1 days);
 
         (canExec, execPayload) = hw.checkerGelato();
-        assertEq(canExec, true);
+        assertEq(canExec, true, "HardWorker call not success 2");
         vm.startPrank(hw.dedicatedGelatoMsgSender());
 
         vm.deal(address(hw), 0);
         vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         (success,) = address(hw).call(execPayload);
 
-        vm.deal(address(hw), 2e18);
+        _fillAllStrategiesRewards(vaultManager);
+        vm.deal(address(hw), 2000e18);
         (success,) = address(hw).call(execPayload);
-        assertEq(success, true);
+        assertEq(success, true, "HardWorker call not success 3");
         assertGt(hw.gelatoBalance(), 0);
         vm.stopPrank();
 
-        for (uint i; i < len; ++i) {
-            (canExec, execPayload) = hw.checkerServer();
-            if (canExec) {
-                (success,) = address(hw).call(execPayload);
-                assertEq(success, true);
-            } else {
-                break;
+        skip(1 days);
+        {
+            _fillAllStrategiesRewards(vaultManager);
+
+            for (uint i; i < len; ++i) {
+                (canExec, execPayload) = hw.checkerServer();
+                if (canExec) {
+                    bytes memory str;
+                    (success,str) = address(hw).call(execPayload);
+                    assertEq(success, true, "Not success");
+                } else {
+                    break;
+                }
             }
         }
 
@@ -350,8 +374,11 @@ contract PlatformPolygonTest is PolygonSetup {
         address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
         vaultsForHardWork[0] = vault_;
 
+        (stategyRevenueAssets, ) = IVault(vault_).strategy().getRevenue();
+        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
+
         vm.txGasPrice(15e10);
-        deal(address(hw), type(uint).max);
+        vm.deal(address(hw), 2000e18);
         vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
         hw.call(vaultsForHardWork);
         canReceive = true;
@@ -362,16 +389,21 @@ contract PlatformPolygonTest is PolygonSetup {
 
         //lower
         deal(address(hw), 0);
+        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
         assertGt(hw.gelatoMinBalance(), address(hw).balance);
+        // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         hw.call(vaultsForHardWork);
 
         //equal
         deal(address(hw), hw.gelatoMinBalance());
+        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
         assertEq(address(hw).balance, hw.gelatoMinBalance());
+        // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         hw.call(vaultsForHardWork);
 
         //higher
         deal(address(hw), type(uint).max);
+        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
         assertGt(address(hw).balance, hw.gelatoMinBalance());
         hw.call(vaultsForHardWork);
 
@@ -380,7 +412,7 @@ contract PlatformPolygonTest is PolygonSetup {
         skip(1 hours);
         skip(100);
         (canExec,) = hw.checkerGelato();
-        assertEq(canExec, false);
+        assertEq(canExec, false, "Must not exec");
         (canExec,) = hw.checkerServer();
         assertEq(canExec, true);
     }
@@ -474,5 +506,22 @@ contract PlatformPolygonTest is PolygonSetup {
         vaultInitNums[3] = 0;
         vaultInitNums[4] = 1000e6;
         vaultInitNums[5] = 50_000;
+    }
+
+    function _fillAllStrategiesRewards(IVaultManager vaultManager) internal {
+        (address[] memory vaultAddress,,,,,,,,,) = vaultManager.vaults();
+        for (uint i; i < vaultAddress.length; ++i) {
+            IStrategy strategy = IVault(vaultAddress[i]).strategy();
+            _fillStrategyRewards(strategy);
+        }
+    }
+
+    function _fillStrategyRewards(IStrategy strategy) internal {
+        (address[] memory stategyRevenueAssets, ) = strategy.getRevenue();
+        if (CommonLib.eq("QuickSwap Static Merkl Farm", strategy.strategyLogicId())) {
+            deal(stategyRevenueAssets[2], address(strategy), 1e18);
+        } else {
+            deal(stategyRevenueAssets[0], address(strategy), 1e18);
+        }
     }
 }

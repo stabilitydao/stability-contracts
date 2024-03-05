@@ -387,7 +387,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                assertEq(strategy.isReadyForHardWork(), true);
+                assertEq(strategy.isReadyForHardWork(), true, "Not ready for HardWork");
                 vm.txGasPrice(15e10); // 150gwei
                 {
                     vars.apr = 0;
@@ -431,13 +431,23 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                             StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
 
-                            assertGt(tempApr, 0);
-                            assertGt(tempEarned, 0);
-                            assertGt(tempTvl, 0);
-                            assertGt(tempDuration, 0);
+                            assertGt(tempApr, 0, "HardWork APR");
+                            assertGt(tempEarned, 0, "HardWork Earned");
+                            assertGt(tempTvl, 0, "HardWork TVL");
+                            assertGt(tempDuration, 0, "HardWork duration");
                         }
                     }
                     require(vars.hwEventFound, "UniversalTest: HardWork event not emited");
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                  NO EMPTY HARDWORKS                        */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
+                    vm.startPrank(address(vars.hardWorker));
+                    vm.expectRevert(abi.encodeWithSelector(IStrategy.NotReadyForHardWork.selector));
+                    IVault(vars.vault).doHardWork();
+                    vm.stopPrank();
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -452,11 +462,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     address rewardToken = vars.isRVault ? vars.allowedBBTokens[0] : platform.targetExchangeAsset();
                     uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
-                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
+                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed");
                     skip(3600);
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
-                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
+                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed after skip time");
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getReward(0);
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
@@ -490,9 +500,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
                     uint lastHw = strategy.lastHardWork();
                     IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
-                    assertGt(strategy.lastHardWork(), lastHw);
+                    if (strategy.isHardWorkOnDepositAllowed()) {
+                        assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
+                        assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
+                    }
+                    
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
-                    assertGt(strategy.total(), totalWas);
+                    
                     uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
                     assertEq(
                         vaultBalance,
