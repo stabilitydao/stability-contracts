@@ -352,7 +352,7 @@ contract PlatformPolygonTest is PolygonSetup {
                 (canExec, execPayload) = hw.checkerServer();
                 if (canExec) {
                     bytes memory str;
-                    (success,str) = address(hw).call(execPayload);
+                    (success, str) = address(hw).call(execPayload);
                     assertEq(success, true, "Not success");
                 } else {
                     break;
@@ -374,7 +374,7 @@ contract PlatformPolygonTest is PolygonSetup {
         address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
         vaultsForHardWork[0] = vault_;
 
-        (stategyRevenueAssets, ) = IVault(vault_).strategy().getRevenue();
+        (stategyRevenueAssets,) = IVault(vault_).strategy().getRevenue();
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
 
         vm.txGasPrice(15e10);
@@ -517,7 +517,7 @@ contract PlatformPolygonTest is PolygonSetup {
     }
 
     function _fillStrategyRewards(IStrategy strategy) internal {
-        (address[] memory stategyRevenueAssets, ) = strategy.getRevenue();
+        (address[] memory stategyRevenueAssets,) = strategy.getRevenue();
         if (CommonLib.eq("QuickSwap Static Merkl Farm", strategy.strategyLogicId())) {
             deal(stategyRevenueAssets[2], address(strategy), 1e18);
         } else {

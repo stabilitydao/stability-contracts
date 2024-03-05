@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/FarmMechanicsLib.sol";
 import "../integrations/compound/IComet.sol";
 import "../integrations/compound/ICometRewards.sol";
 
@@ -158,6 +159,11 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external pure returns (bool isReady) {
         isReady = true;
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.CLASSIC;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

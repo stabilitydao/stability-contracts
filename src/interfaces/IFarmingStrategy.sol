@@ -39,4 +39,7 @@ interface IFarmingStrategy {
     /// @notice Strategy can earn money on farm now
     /// Some strategies can continue work and earn pool fees after ending of farm rewards.
     function canFarm() external view returns (bool);
+
+    /// @notice Mechanics of receiving farming rewards
+    function farmMechanics() external view returns (string memory);
 }

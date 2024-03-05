@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/FarmMechanicsLib.sol";
 import "./libs/IRMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
@@ -172,6 +173,11 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function isReadyForHardWork() external view returns (bool) {
         FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
         return StrategyLib.assetsAreOnBalance(_$_._rewardAssets);
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.MERKL;
     }
 
     /// @dev this special method used to fix forge coverage issue

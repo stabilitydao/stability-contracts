@@ -466,7 +466,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     skip(3600);
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
-                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed after skip time");
+                    assertGt(
+                        IERC20(rewardToken).balanceOf(address(this)),
+                        balanceBefore,
+                        "Rewards was not claimed after skip time"
+                    );
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getReward(0);
                     assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
@@ -504,9 +508,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
                         assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
                     }
-                    
+
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
-                    
+
                     uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
                     assertEq(
                         vaultBalance,
@@ -617,6 +621,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                         COVERAGE                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 strategy.isHardWorkOnDepositAllowed();
+                IFarmingStrategy(address(strategy)).farmMechanics();
             }
         }
     }

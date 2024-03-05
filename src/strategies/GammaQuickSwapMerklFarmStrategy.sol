@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/FarmMechanicsLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "./libs/ALMPositionNameLib.sol";
 import "../integrations/gamma/IUniProxy.sol";
@@ -188,6 +189,11 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     function isReadyForHardWork() external view returns (bool) {
         FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
         return StrategyLib.assetsAreOnBalance(_$_._rewardAssets);
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.MERKL;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

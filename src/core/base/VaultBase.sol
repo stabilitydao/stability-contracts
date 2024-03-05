@@ -190,9 +190,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         // slither-disable-start timestamp
         // nosemgrep
         if (
-            $.doHardWorkOnDeposit
-            && block.timestamp > v.strategy.lastHardWork() + _MIN_HARDWORK_DELAY
-            && v.strategy.isReadyForHardWork()
+            $.doHardWorkOnDeposit && block.timestamp > v.strategy.lastHardWork() + _MIN_HARDWORK_DELAY
+                && v.strategy.isReadyForHardWork()
         ) {
             // slither-disable-end timestamp
             v.strategy.doHardWork();
