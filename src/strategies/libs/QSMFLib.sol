@@ -69,5 +69,4 @@ library QSMFLib {
             " pool on QuickSwapV3"
         );
     }
-
 }
