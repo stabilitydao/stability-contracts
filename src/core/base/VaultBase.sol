@@ -29,7 +29,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "1.1.0";
+    string public constant VERSION_VAULT_BASE = "1.2.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -88,7 +88,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.strategy = IStrategy(strategy_);
         $.tokenId = tokenId_;
         __ReentrancyGuard_init();
-        $.doHardWorkOnDeposit = true;
+        $.doHardWorkOnDeposit = IStrategy(strategy_).isHardWorkOnDepositAllowed();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -189,7 +189,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         // slither-disable-start timestamp
         // nosemgrep
-        if ($.doHardWorkOnDeposit && block.timestamp > v.strategy.lastHardWork() + _MIN_HARDWORK_DELAY) {
+        if (
+            $.doHardWorkOnDeposit && block.timestamp > v.strategy.lastHardWork() + _MIN_HARDWORK_DELAY
+                && v.strategy.isReadyForHardWork()
+        ) {
             // slither-disable-end timestamp
             v.strategy.doHardWork();
         }

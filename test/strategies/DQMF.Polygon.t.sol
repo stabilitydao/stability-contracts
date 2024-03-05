@@ -10,7 +10,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     address internal constant USD = address(840);
 
     constructor() {
-        vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
+        // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
     }
 
     function testDQMF() public universalTest {

@@ -21,6 +21,9 @@ import "../../interfaces/IFarmingStrategy.sol";
 library StrategyLib {
     using SafeERC20 for IERC20;
 
+    /// @dev Reward pools may have low liquidity and 1% fees
+    uint internal constant SWAP_REWARDS_PRICE_IMPACT_TOLERANCE = 7_000;
+
     struct ExtractFeesVars {
         IPlatform platform;
         uint feePlatform;
@@ -156,9 +159,7 @@ library StrategyLib {
         // nosemgrep
         for (uint i; i < len; ++i) {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
-                swapper.swap(
-                    rewardAssets_[i], exchangeAsset, rewardAmounts_[i], ConstantsLib.SWAP_REVENUE_PRICE_IMPACT_TOLERANCE
-                );
+                swapper.swap(rewardAssets_[i], exchangeAsset, rewardAmounts_[i], SWAP_REWARDS_PRICE_IMPACT_TOLERANCE);
             }
         }
         uint exchangeAssetBalanceAfter = balance(exchangeAsset);
@@ -209,6 +210,16 @@ library StrategyLib {
         // nosemgrep
         for (uint i; i < len; ++i) {
             amounts[i] += balance(assets_[i]);
+        }
+    }
+
+    function assetsAreOnBalance(address[] memory assets) external view returns (bool isReady) {
+        uint rwLen = assets.length;
+        for (uint i; i < rwLen; ++i) {
+            if (IERC20(assets[i]).balanceOf(address(this)) > 0) {
+                isReady = true;
+                break;
+            }
         }
     }
 

@@ -2,11 +2,12 @@
 pragma solidity ^0.8.23;
 
 library StrategyIdLib {
-    string public constant DEV = "Dev Alpha DeepSpaceSwap Farm";
-    string public constant QUICKSWAPV3_STATIC_FARM = "QuickSwapV3 Static Farm";
-    string public constant GAMMA_QUICKSWAP_MERKL_FARM = "Gamma QuickSwap Merkl Farm";
-    string public constant COMPOUND_FARM = "Compound Farm";
-    string public constant DEFIEDGE_QUICKSWAP_MERKL_FARM = "DefiEdge QuickSwap Merkl Farm";
-    string public constant ICHI_QUICKSWAP_MERKL_FARM = "Ichi QuickSwap Merkl Farm";
-    string public constant ICHI_RETRO_MERKL_FARM = "Ichi Retro Merkl Farm";
+    string internal constant DEV = "Dev Alpha DeepSpaceSwap Farm";
+    string internal constant QUICKSWAPV3_STATIC_FARM = "QuickSwapV3 Static Farm";
+    string internal constant GAMMA_QUICKSWAP_MERKL_FARM = "Gamma QuickSwap Merkl Farm";
+    string internal constant COMPOUND_FARM = "Compound Farm";
+    string internal constant DEFIEDGE_QUICKSWAP_MERKL_FARM = "DefiEdge QuickSwap Merkl Farm";
+    string internal constant ICHI_QUICKSWAP_MERKL_FARM = "Ichi QuickSwap Merkl Farm";
+    string internal constant ICHI_RETRO_MERKL_FARM = "Ichi Retro Merkl Farm";
+    string internal constant QUICKSWAP_STATIC_MERKL_FARM = "QuickSwap Static Merkl Farm";
 }

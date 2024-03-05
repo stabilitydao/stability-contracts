@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/FarmMechanicsLib.sol";
 import "./libs/IQMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
@@ -19,7 +20,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -110,8 +111,6 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(__assets[i]);
         }
-        // just for covergage
-        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -167,13 +166,18 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return (shortAddr, true);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   FARMING STRATEGY BASE                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
 
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        // calculated in getRevenue()
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external view returns (bool) {
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        return StrategyLib.assetsAreOnBalance(_$_._rewardAssets);
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.MERKL;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

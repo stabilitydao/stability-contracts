@@ -50,6 +50,16 @@ contract MockStrategy is LPStrategyBase {
         _depositReturnZero = !_depositReturnZero;
     }
 
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {
+        return true;
+    }
+
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external pure returns (bool isReady) {
+        isReady = true;
+    }
+
     function initVariants(address)
         public
         pure

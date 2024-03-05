@@ -6,6 +6,7 @@ import {Platform} from "../../src/core/Platform.sol";
 import "../../src/core/proxy/Proxy.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/test/MockVaultUpgrade.sol";
+import "../../src/test/MockStrategy.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/Swapper.sol";
 import "../../src/core/StrategyLogic.sol";
@@ -16,11 +17,17 @@ import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 contract PlatformTest is Test {
     Platform public platform;
     StrategyLogic public strategyLogic;
+    MockStrategy public strategyImplementation;
+    MockStrategy public strategy;
 
     function setUp() public {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new Platform()));
         platform = Platform(address(proxy));
+        strategyImplementation = new MockStrategy();
+        Proxy strategyProxy = new Proxy();
+        strategyProxy.initProxy(address(strategyImplementation));
+        strategy = MockStrategy(address(strategyProxy));
     }
 
     function testSetMinTvlForFreeHardWork() public {
@@ -171,7 +178,7 @@ contract PlatformTest is Test {
             vault.initialize(
                 IVault.VaultInitializationData({
                     platform: address(platform),
-                    strategy: address(0),
+                    strategy: address(strategy),
                     name: "V",
                     symbol: "V",
                     tokenId: 0,

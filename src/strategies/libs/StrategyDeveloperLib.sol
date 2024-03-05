@@ -11,7 +11,7 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
-        if (CommonLib.eq(strategyId, StrategyIdLib.QUICKSWAPV3_STATIC_FARM)) {
+        if (CommonLib.eq(strategyId, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
         if (CommonLib.eq(strategyId, StrategyIdLib.COMPOUND_FARM)) {

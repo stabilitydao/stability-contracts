@@ -12,7 +12,6 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
     using SafeERC20 for IERC20;
 
     string public constant VERSION = "10.99.99";
-    address internal constant DEAD_ADDRESS = 0xdEad000000000000000000000000000000000000;
 
     IStrategy public strategy;
     uint public maxSupply;

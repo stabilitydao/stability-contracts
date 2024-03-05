@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
+import "./libs/FarmMechanicsLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "./libs/ALMPositionNameLib.sol";
 import "../integrations/gamma/IUniProxy.sol";
@@ -23,7 +24,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -107,8 +108,6 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(__assets[i]);
         }
-        // just for covergage
-        _getRewards();
     }
 
     /// @inheritdoc IStrategy
@@ -183,13 +182,18 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         return _generateDescription(farm, $lp.ammAdapter);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                   FARMING STRATEGY BASE                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @inheritdoc IStrategy
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
 
-    /// @inheritdoc FarmingStrategyBase
-    function _getRewards() internal view override returns (uint[] memory amounts) {
-        // empty
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external view returns (bool) {
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        return StrategyLib.assetsAreOnBalance(_$_._rewardAssets);
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.MERKL;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

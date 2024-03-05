@@ -20,6 +20,12 @@ interface IStrategy is IERC165 {
     );
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    error NotReadyForHardWork();
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -134,6 +140,12 @@ interface IStrategy is IERC165 {
     /// @notice How strategy earns money
     /// @return Description in free form
     function description() external view returns (string memory);
+
+    /// @notice Is HardWork on vault deposits can be enabled
+    function isHardWorkOnDepositAllowed() external view returns (bool);
+
+    /// @notice Is HardWork can be executed
+    function isReadyForHardWork() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
