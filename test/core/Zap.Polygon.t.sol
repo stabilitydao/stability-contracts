@@ -102,7 +102,7 @@ contract ZapTest is PolygonSetup {
 
             factory.deployVaultAndStrategy(
                 VaultTypeLib.COMPOUNDING,
-                StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+                StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
                 vaultInitAddresses,
                 vaultInitNums,
                 initStrategyAddresses,

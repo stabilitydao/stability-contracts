@@ -4,15 +4,11 @@ pragma solidity ^0.8.23;
 import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
 
-contract QuickSwapV3StaticFarmStrategyTest is PolygonSetup, UniversalTest {
-    constructor() {
-        vm.rollFork(51800000); // Jan-01-2024 02:33:32 AM +UTC
-    }
-
-    function testStrategyUniversal() public universalTest {
+contract QuickswapStaticMerklFarmStrategyTest is PolygonSetup, UniversalTest {
+    function testQSMF() public universalTest {
         strategies.push(
             Strategy({
-                id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+                id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
                 pool: address(0),
                 farmId: 0, // chains/PolygonLib.sol
                 underlying: address(0)
@@ -20,11 +16,15 @@ contract QuickSwapV3StaticFarmStrategyTest is PolygonSetup, UniversalTest {
         );
         strategies.push(
             Strategy({
-                id: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+                id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
                 pool: address(0),
                 farmId: 16, // chains/PolygonLib.sol
                 underlying: address(0)
             })
         );
+    }
+
+    function _preHardWork() internal override {
+        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
     }
 }

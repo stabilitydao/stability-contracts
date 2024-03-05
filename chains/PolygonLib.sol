@@ -83,7 +83,6 @@ library PolygonLib {
 
     // QuickSwap V3
     address public constant QUICKSWAP_POSITION_MANAGER = 0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
-    address public constant QUICKSWAP_FARMING_CENTER = 0x7F281A8cdF66eF5e9db8434Ec6D97acc1bc01E78;
 
     // Gamma
     address public constant GAMMA_QUICKSWAP_MASTERCHEF = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D;
@@ -242,7 +241,7 @@ library PolygonLib {
 
         //region ----- Deploy strategy logics -----
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAPV3_STATIC_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
@@ -430,12 +429,9 @@ library PolygonLib {
         rewardAssets = new address[](2);
         rewardAssets[0] = TOKEN_dQUICK;
         rewardAssets[1] = TOKEN_WMATIC;
-        addresses = new address[](2);
+        addresses = new address[](1);
         addresses[0] = QUICKSWAP_POSITION_MANAGER;
-        addresses[1] = QUICKSWAP_FARMING_CENTER;
-        nums = new uint[](2);
-        nums[0] = 1665192929;
-        nums[1] = 4104559500;
+        nums = new uint[](0);
         ticks = new int24[](2);
         ticks[0] = 276240;
         ticks[1] = 276420;
@@ -443,7 +439,7 @@ library PolygonLib {
         _farms[i++] = IFactory.Farm({
             status: 0,
             pool: POOL_QUICKSWAPV3_USDCe_DAI,
-            strategyLogicId: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+            strategyLogicId: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
             nums: nums,
@@ -515,19 +511,16 @@ library PolygonLib {
         rewardAssets = new address[](2);
         rewardAssets[0] = TOKEN_dQUICK;
         rewardAssets[1] = TOKEN_WMATIC;
-        addresses = new address[](2);
+        addresses = new address[](1);
         addresses[0] = QUICKSWAP_POSITION_MANAGER;
-        addresses[1] = QUICKSWAP_FARMING_CENTER;
-        nums = new uint[](2);
-        nums[0] = 1700454552;
-        nums[1] = 4104559500;
+        nums = new uint[](0);
         ticks = new int24[](2);
         ticks[0] = -60;
         ticks[1] = 60;
         _farms[0] = IFactory.Farm({
             status: 0,
             pool: POOL_QUICKSWAPV3_USDCe_USDC,
-            strategyLogicId: StrategyIdLib.QUICKSWAPV3_STATIC_FARM,
+            strategyLogicId: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
             rewardAssets: rewardAssets,
             addresses: addresses,
             nums: nums,
