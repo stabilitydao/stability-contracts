@@ -10,4 +10,5 @@ library StrategyIdLib {
     string internal constant ICHI_QUICKSWAP_MERKL_FARM = "Ichi QuickSwap Merkl Farm";
     string internal constant ICHI_RETRO_MERKL_FARM = "Ichi Retro Merkl Farm";
     string internal constant QUICKSWAP_STATIC_MERKL_FARM = "QuickSwap Static Merkl Farm";
+    string internal constant GAMMA_RETRO_MERKL_FARM = "Gamma Retro Merkl Farm";
 }

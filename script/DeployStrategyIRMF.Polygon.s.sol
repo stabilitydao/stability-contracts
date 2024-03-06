@@ -6,6 +6,7 @@ import "../chains/PolygonLib.sol";
 import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
 
 /// @dev Deploy script for operator
+/// WARNING! This is bad practise because PolygonLib will be deployed too
 contract DeployStrategyIRMFPolygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
 
