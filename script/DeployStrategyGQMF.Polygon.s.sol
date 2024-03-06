@@ -19,8 +19,8 @@ contract DeployStrategyGQMFPolygon is Script {
         IFactory.Farm[] memory _farms = new IFactory.Farm[](1);
         _farms[0] = _makeGammaQuickSwapMerklFarm(
             PolygonLib.TOKEN_dQUICK,
-            PolygonLib.GAMMA_POS_USDCe_USDT,
-            PolygonLib.GAMMA_UNIPROXY_2,
+            PolygonLib.GAMMA_QUICKSWAP_USDCe_USDT,
+            PolygonLib.GAMMA_QUICKSWAP_UNIPROXY,
             ALMPositionNameLib.STABLE
         );
         factory.addFarms(_farms);

@@ -85,25 +85,26 @@ library PolygonLib {
     address public constant QUICKSWAP_POSITION_MANAGER = 0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
 
     // Gamma
-    address public constant GAMMA_QUICKSWAP_MASTERCHEF = 0x20ec0d06F447d550fC6edee42121bc8C1817b97D;
-    address public constant GAMMA_UNIPROXY = 0xe0A61107E250f8B5B24bf272baBFCf638569830C;
-    address public constant GAMMA_UNIPROXY_2 = 0xA42d55074869491D60Ac05490376B74cF19B00e6;
-    address public constant GAMMA_POS_DAI_USDT = 0x45A3A657b834699f5cC902e796c547F826703b79;
-    address public constant GAMMA_POS_USDCe_USDT = 0x795f8c9B0A0Da9Cd8dea65Fc10f9B57AbC532E58;
-    address public constant GAMMA_POS_USDCe_WETH_WIDE = 0x6077177d4c41E114780D9901C9b5c784841C523f;
-    address public constant GAMMA_POS_WMATIC_WETH_NARROW = 0x02203f2351E7aC6aB5051205172D3f772db7D814;
-    address public constant GAMMA_POS_WMATIC_WETH_WIDE = 0x81Cec323BF8C4164c66ec066F53cc053A535f03D;
-    address public constant GAMMA_POS_WMATIC_USDT_NARROW = 0x598cA33b7F5FAB560ddC8E76D94A4b4AA52566d7;
-    address public constant GAMMA_POS_WMATIC_USDT_WIDE = 0x9134f456D33d1288de26271730047AE0c5CB6F71;
-    address public constant GAMMA_POS_WETH_USDT_NARROW = 0x5928f9f61902b139e1c40cBa59077516734ff09f;
-    address public constant GAMMA_POS_WETH_USDT_WIDE = 0x3672d301778750C41a7864980A5ddbC2aF99476E;
-    address public constant GAMMA_POS_WBTC_WETH_NARROW = 0x4B9e26a02121a1C541403a611b542965Bd4b68Ce;
-    address public constant GAMMA_POS_WBTC_WETH_WIDE = 0xadc7B4096C3059Ec578585Df36E6E1286d345367;
-    address public constant GAMMA_POS_WBTC_USDCe_NARROW = 0x3f35705479d9d77c619b2aAC9dd7a64e57151506;
-    address public constant GAMMA_POS_WBTC_USDCe_WIDE = 0xE40a5aa22CBCcc8165aedd86f6d03fC5F551c3C6;
-    address public constant GAMMA_POS_USDCe_WETH_NARROW = 0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
-    address public constant GAMMA_POS_WMATIC_USDCe_NARROW = 0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
-    address public constant GAMMA_POS_WMATIC_USDCe_WIDE = 0x4A83253e88e77E8d518638974530d0cBbbF3b675;
+    address public constant GAMMA_QUICKSWAP_UNIPROXY = 0xA42d55074869491D60Ac05490376B74cF19B00e6;
+    address public constant GAMMA_QUICKSWAP_USDCe_USDT = 0x795f8c9B0A0Da9Cd8dea65Fc10f9B57AbC532E58;
+    address public constant GAMMA_QUICKSWAP_USDCe_WETH_WIDE = 0x6077177d4c41E114780D9901C9b5c784841C523f;
+    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_NARROW = 0x02203f2351E7aC6aB5051205172D3f772db7D814;
+    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_WIDE = 0x81Cec323BF8C4164c66ec066F53cc053A535f03D;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_NARROW = 0x598cA33b7F5FAB560ddC8E76D94A4b4AA52566d7;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_WIDE = 0x9134f456D33d1288de26271730047AE0c5CB6F71;
+    address public constant GAMMA_QUICKSWAP_WETH_USDT_NARROW = 0x5928f9f61902b139e1c40cBa59077516734ff09f;
+    address public constant GAMMA_QUICKSWAP_WETH_USDT_WIDE = 0x3672d301778750C41a7864980A5ddbC2aF99476E;
+    address public constant GAMMA_QUICKSWAP_WBTC_WETH_NARROW = 0x4B9e26a02121a1C541403a611b542965Bd4b68Ce;
+    address public constant GAMMA_QUICKSWAP_WBTC_WETH_WIDE = 0xadc7B4096C3059Ec578585Df36E6E1286d345367;
+    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_NARROW = 0x3f35705479d9d77c619b2aAC9dd7a64e57151506;
+    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_WIDE = 0xE40a5aa22CBCcc8165aedd86f6d03fC5F551c3C6;
+    address public constant GAMMA_QUICKSWAP_USDCe_WETH_NARROW = 0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW = 0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE = 0x4A83253e88e77E8d518638974530d0cBbbF3b675;
+    address public constant GAMMA_RETRO_UNIPROXY = 0xDC8eE75f52FABF057ae43Bb4B85C55315b57186c;
+    address public constant GAMMA_RETRO_WMATIC_USDCe_NARROW = 0xBE4E30b74b558E41f5837dC86562DF44aF57A013;
+    address public constant GAMMA_RETRO_WMATIC_WETH_NARROW = 0xe7806B5ba13d4B2Ab3EaB3061cB31d4a4F3390Aa;
+    address public constant GAMMA_RETRO_WBTC_WETH_WIDE = 0x336536F5bB478D8624dDcE0942fdeF5C92bC4662;
 
     // Compound
     address public constant COMPOUND_COMET = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
@@ -224,6 +225,7 @@ library PolygonLib {
         factory.addFarms(farms3());
         factory.addFarms(farms4());
         factory.addFarms(farms5());
+        factory.addFarms(farms6());
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -246,6 +248,7 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_RETRO_MERKL_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -448,53 +451,50 @@ library PolygonLib {
         //endregion -- QuickSwap V3 farms -----
 
         //region ----- Gamma QuickSwap Merkl farms -----
-        // _farms[i++] = _makeGammaQuickSwapMerklFarm(
-        //     TOKEN_dQUICK, GAMMA_POS_DAI_USDT, GAMMA_UNIPROXY, ALMPositionNameLib.STABLE
-        // );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_USDT, GAMMA_UNIPROXY_2, ALMPositionNameLib.STABLE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_USDT, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.STABLE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_USDCe_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDT_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_USDCe_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_WETH_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_NARROW, GAMMA_UNIPROXY_2, ALMPositionNameLib.NARROW
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WETH_USDT_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDCe_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WBTC_USDCe_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_USDCe_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WETH_USDT_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WETH_USDT_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_POS_WMATIC_USDT_WIDE, GAMMA_UNIPROXY_2, ALMPositionNameLib.WIDE
+            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDT_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
         );
         //endregion --  Gamma QuickSwap farms -----
     }
@@ -663,7 +663,7 @@ library PolygonLib {
         });
     }
 
-    // retro part 1
+    // ichi retro part 1
     function farms4() public pure returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](2);
         address[] memory rewardAssets;
@@ -706,7 +706,7 @@ library PolygonLib {
         });
     }
 
-    // retro part 2
+    // ichi retro part 2
     function farms5() public pure returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](3);
         address[] memory rewardAssets;
@@ -766,6 +766,27 @@ library PolygonLib {
         });
     }
 
+    // gamma retro
+    function farms6() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](3);
+        uint i;
+
+        // [29]
+        _farms[i++] = _makeGammaRetroMerklFarm(
+            TOKEN_oRETRO, GAMMA_RETRO_WMATIC_USDCe_NARROW, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.NARROW
+        );
+
+        // [30]
+        _farms[i++] = _makeGammaRetroMerklFarm(
+            TOKEN_oRETRO, GAMMA_RETRO_WMATIC_WETH_NARROW, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.NARROW
+        );
+
+        // [31]
+        _farms[i++] = _makeGammaRetroMerklFarm(
+            TOKEN_oRETRO, GAMMA_RETRO_WBTC_WETH_WIDE, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.WIDE
+        );
+    }
+
     function _makeGammaQuickSwapMerklFarm(
         address rewardAsset0,
         address hypervisor,
@@ -776,6 +797,27 @@ library PolygonLib {
         farm.status = 0;
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardAsset0;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = uniProxy;
+        farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeGammaRetroMerklFarm(
+        address rewardAsset0,
+        address hypervisor,
+        address uniProxy,
+        uint preset
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_RETRO_MERKL_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = rewardAsset0;
         farm.addresses = new address[](2);
