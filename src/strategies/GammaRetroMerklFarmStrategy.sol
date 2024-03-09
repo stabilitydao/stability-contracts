@@ -110,6 +110,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint paymentTokenAmount = IERC20(paymentToken).balanceOf(address(this));
         uint oTokenAmt = IERC20(oToken).balanceOf(address(this));
 
+        //slither-disable-next-line unused-return
         IOToken(oToken).exercise(oTokenAmt, paymentTokenAmount, address(this));
 
         // Swap underlying to payment token

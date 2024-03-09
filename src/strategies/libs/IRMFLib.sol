@@ -129,7 +129,9 @@ library IRMFLib {
         uint oTokenAmount = balance(oToken);
         address oPool = $.oPool;
 
+        // todo remove in 2.0.1+
         if (oPool == address(0)) {
+            // nosemgrep
             revert("Init upgraded strategy first!");
         }
 
