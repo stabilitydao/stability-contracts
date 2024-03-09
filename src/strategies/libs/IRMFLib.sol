@@ -22,7 +22,7 @@ library IRMFLib {
         address quoter;
         bool flashOn;
     }
-    
+
     /// @notice Fetches time-weighted average tick using UniswapV3 dataStorage
     /// @param pool Address of UniswapV3 pool that we want to getTimepoints
     /// @param period Number of seconds in the past to start calculating time-weighted average
@@ -109,12 +109,15 @@ library IRMFLib {
         IStrategy.StrategyBaseStorage storage __$__,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _$_,
         IchiRetroMerklFarmStrategyStorage storage $
-    ) external returns(
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    ) {
+    )
+        external
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
+    {
         __assets = __$__._assets;
         __amounts = new uint[](2);
         __rewardAssets = _$_._rewardAssets;
@@ -147,12 +150,18 @@ library IRMFLib {
         }
     }
 
-    function _shouldWeSwap(address oToken, address uToken, uint amount, address pool, address quoter) internal returns(bool should) {
+    function _shouldWeSwap(
+        address oToken,
+        address uToken,
+        uint amount,
+        address pool,
+        address quoter
+    ) internal returns (bool should) {
         // Whats the amount of underlying we get for flashSwapping.
         uint discount = IOToken(oToken).discount();
         uint flashAmount = amount * (100 - discount) / 100;
 
-        // How much we get for just swapping through LP. 
+        // How much we get for just swapping through LP.
         uint24 fee = IUniswapV3Pool(pool).fee();
         uint swapAmount = IQuoter(quoter).quoteExactInputSingle(oToken, uToken, fee, amount, 0);
 
@@ -161,7 +170,7 @@ library IRMFLib {
         }
     }
 
-    function getOtherTokenFromPool(address pool, address token) public view returns(address) {
+    function getOtherTokenFromPool(address pool, address token) public view returns (address) {
         address token0 = IUniswapV3Pool(pool).token0();
         address token1 = IUniswapV3Pool(pool).token1();
         return token == token0 ? token1 : token0;

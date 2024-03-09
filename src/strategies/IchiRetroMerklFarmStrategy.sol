@@ -23,7 +23,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IControllable
     string public constant VERSION = "2.0.0";
 
-    uint internal constant PRECISION = 10 ** 18;
+    uint internal constant _PRECISION = 10 ** 18;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.IchiRetroMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ICHIRETROFARMSTRATEGY_STORAGE_LOCATION =
@@ -69,7 +69,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         $.oPool = farm.addresses[3];
         $.uToPaymentTokenPool = farm.addresses[4];
         $.quoter = farm.addresses[5];
-        
+
         address[] memory _assets = assets();
         address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
         address uToken = IRMFLib.getOtherTokenFromPool(farm.addresses[3], oToken);
@@ -103,7 +103,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         // Exercise the oToken
         uint paymentTokenAmount = IERC20(paymentToken).balanceOf(address(this));
-        uint256 oTokenAmt = IERC20(oToken).balanceOf(address(this));
+        uint oTokenAmt = IERC20(oToken).balanceOf(address(this));
 
         IOToken(oToken).exercise(oTokenAmt, paymentTokenAmount, address(this));
 
@@ -115,7 +115,9 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         route[0].ammAdapter = IPlatform(_platform).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy;
         route[0].tokenIn = uToken;
         route[0].tokenOut = paymentToken;
-        ISwapper(swapper).swapWithRoute(route, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
+        ISwapper(swapper).swapWithRoute(
+            route, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
+        );
         // ISwapper(swapper).swap(uToken, paymentToken, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
 
         // Pay off our loan
@@ -328,11 +330,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        return IRMFLib.claimRevenue(
-            _getStrategyBaseStorage(),
-            _getFarmingStrategyBaseStorage(),
-            _getStorage()
-        );
+        return IRMFLib.claimRevenue(_getStrategyBaseStorage(), _getFarmingStrategyBaseStorage(), _getStorage());
     }
 
     /// @inheritdoc StrategyBase
@@ -381,16 +379,16 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             amountsConsumed[1] = amountsMax[1];
         }
         uint32 twapPeriod = 600;
-        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
-        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
+        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), _PRECISION);
+        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, _PRECISION);
         (uint pool0, uint pool1) = _underlying.getTotalAmounts();
         // aggregated deposit
-        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
+        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / _PRECISION;
 
         value = amountsConsumed[1] + deposit0PricedInToken1;
         uint totalSupply = _underlying.totalSupply();
         if (totalSupply != 0) {
-            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
+            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / _PRECISION;
             value = value * totalSupply / (pool0PricedInToken1 + pool1);
         }
     }
@@ -445,7 +443,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _getStorage() private pure returns (IRMFLib.IchiRetroMerklFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := ICHIRETROFARMSTRATEGY_STORAGE_LOCATION            
+            $.slot := ICHIRETROFARMSTRATEGY_STORAGE_LOCATION
         }
     }
 }

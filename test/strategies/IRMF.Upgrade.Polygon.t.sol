@@ -19,7 +19,7 @@ contract IRMFUpgradeTest is Test {
         address operator = IPlatform(PLATFORM).multisig();
         IVault vault = IVault(IStrategy(STRATEGY).vault());
         ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        
+
         // add new swapper route
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
         pools[0] = ISwapper.AddPoolData({
@@ -63,6 +63,5 @@ contract IRMFUpgradeTest is Test {
 
         vm.prank(operator);
         vault.doHardWork();
-
     }
 }
