@@ -7,6 +7,7 @@ import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "./libs/ALMPositionNameLib.sol";
+import "./libs/GRMFLib.sol";
 import "../integrations/gamma/IUniProxy.sol";
 import "../integrations/gamma/IHypervisor.sol";
 import "../integrations/uniswapv3/IUniswapV3Pool.sol";
@@ -14,6 +15,7 @@ import "../core/libs/CommonLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
+/// @dev 2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
 contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -23,7 +25,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "2.0.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -32,13 +34,11 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         0x46595ab865e543d547ad8669c6b3d688cf90b51012c63b16ac16869cad017f00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                          STORAGE                           */
+    /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:storage-location erc7201:stability.GammaRetroFarmStrategy
-    struct GammaRetroFarmStrategyStorage {
-        IUniProxy uniProxy;
-    }
+    error NotFlashPool();
+    error PairReentered();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -51,10 +51,10 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 2 || farm.nums.length != 1 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 7 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
-        GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
+        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
         $.uniProxy = IUniProxy(farm.addresses[0]);
 
         __LPStrategyBase_init(
@@ -69,9 +69,104 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
+        $.paymentToken = farm.addresses[2];
+        $.flashPool = farm.addresses[3];
+        $.oPool = farm.addresses[4];
+        $.uToPaymentTokenPool = farm.addresses[5];
+        $.quoter = farm.addresses[6];
+
         address[] memory _assets = assets();
+        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
+        address uToken = GRMFLib.getOtherTokenFromPool(farm.addresses[4], oToken);
+        address swapper = IPlatform(addresses[0]).swapper();
         IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(farm.addresses[2]).forceApprove(oToken, type(uint).max);
+        IERC20(uToken).forceApprove(swapper, type(uint).max);
+        IERC20(farm.addresses[2]).forceApprove(swapper, type(uint).max);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CALLBACKS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    // Call back function, called by the pair during our flashloan.
+    function uniswapV3FlashCallback(uint, uint fee1, bytes calldata) external {
+        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
+        address flashPool = $.flashPool;
+        address paymentToken = $.paymentToken;
+        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
+        address uToken = GRMFLib.getOtherTokenFromPool($.oPool, oToken);
+        address _platform = platform();
+
+        if (msg.sender != flashPool) {
+            revert NotFlashPool();
+        }
+        if (!$.flashOn) {
+            revert PairReentered();
+        }
+
+        // Exercise the oToken
+        uint paymentTokenAmount = IERC20(paymentToken).balanceOf(address(this));
+        uint oTokenAmt = IERC20(oToken).balanceOf(address(this));
+
+        IOToken(oToken).exercise(oTokenAmt, paymentTokenAmount, address(this));
+
+        // Swap underlying to payment token
+        address swapper = IPlatform(_platform).swapper();
+
+        ISwapper.PoolData[] memory route = new ISwapper.PoolData[](1);
+        route[0].pool = $.uToPaymentTokenPool;
+        route[0].ammAdapter = IPlatform(_platform).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy;
+        route[0].tokenIn = uToken;
+        route[0].tokenOut = paymentToken;
+        ISwapper(swapper).swapWithRoute(
+            route, GRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
+        );
+
+        // Pay off our loan
+        uint pairDebt = paymentTokenAmount + fee1;
+        IERC20(paymentToken).safeTransfer(flashPool, pairDebt);
+
+        $.flashOn = false;
+    }
+
+    /// @dev Temporary actions
+    function upgradeStorageToVersion2(
+        address paymentToken,
+        address flashPool,
+        address oPool,
+        address uToPaymentTokenPool,
+        address quoter
+    ) external onlyOperator {
+        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
+
+        if ($.paymentToken != address(0)) {
+            revert AlreadyExist();
+        }
+
+        // CASH
+        $.paymentToken = paymentToken;
+
+        // USDCe-CASH 0.01%
+        $.flashPool = flashPool;
+
+        // RETRO-oRETRO 1%
+        $.oPool = oPool;
+
+        // CASH-RETRO 1%
+        $.uToPaymentTokenPool = uToPaymentTokenPool;
+
+        // UniswapV3 Quoter
+        $.quoter = quoter;
+
+        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
+        address uToken = GRMFLib.getOtherTokenFromPool(oPool, oToken);
+        address swapper = IPlatform(platform()).swapper();
+
+        IERC20(paymentToken).forceApprove(oToken, type(uint).max);
+        IERC20(uToken).forceApprove(swapper, type(uint).max);
+        IERC20(paymentToken).forceApprove(swapper, type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -200,19 +295,9 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
-        GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
-        FarmingStrategyBaseStorage storage _$ = _getFarmingStrategyBaseStorage();
+    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
+        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
         StrategyBaseStorage storage __$ = _getStrategyBaseStorage();
-        if (claimRevenue) {
-            (,,, uint[] memory rewardAmounts) = _claimRevenue();
-            uint len = rewardAmounts.length;
-            // nosemgrep
-            for (uint i; i < len; ++i) {
-                // nosemgrep
-                _$._rewardsOnBalance[i] += rewardAmounts[i];
-            }
-        }
         //slither-disable-next-line uninitialized-local
         uint[4] memory minIn;
         value = $.uniProxy.deposit(amounts[0], amounts[1], address(this), __$._underlying, minIn);
@@ -247,7 +332,6 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _claimRevenue()
         internal
-        view
         override
         returns (
             address[] memory __assets,
@@ -256,16 +340,8 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
-        __assets = __$__._assets;
-        __rewardAssets = _$_._rewardAssets;
-        __amounts = new uint[](2);
-        uint rwLen = __rewardAssets.length;
-        __rewardAmounts = new uint[](rwLen);
-        for (uint i; i < rwLen; ++i) {
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
-        }
+        return
+            GRMFLib.claimRevenue(_getStrategyBaseStorage(), _getFarmingStrategyBaseStorage(), _getGammaRetroStorage());
     }
 
     /// @inheritdoc StrategyBase
@@ -289,7 +365,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         returns (uint[] memory amountsConsumed, uint value)
     {
         // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
-        GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
+        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         amountsConsumed = new uint[](2);
         address[] memory _assets = assets();
@@ -383,7 +459,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         );
     }
 
-    function _getGammaRetroStorage() private pure returns (GammaRetroFarmStrategyStorage storage $) {
+    function _getGammaRetroStorage() private pure returns (GRMFLib.GammaRetroFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := GAMMARETROFARMSTRATEGY_STORAGE_LOCATION

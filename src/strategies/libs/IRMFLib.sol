@@ -128,21 +128,25 @@ library IRMFLib {
         address oToken = __rewardAssets[0];
         uint oTokenAmount = balance(oToken);
         address oPool = $.oPool;
+
         if (oPool == address(0)) {
             revert("Init upgraded strategy first!");
         }
-        address uToken = getOtherTokenFromPool(oPool, oToken);
 
-        bool needSwap = _shouldWeSwap(oToken, uToken, oTokenAmount, oPool, $.quoter);
+        if (oTokenAmount > 0) {
+            address uToken = getOtherTokenFromPool(oPool, oToken);
 
-        if (!needSwap) {
-            // Get payment token amount needed to exercise oTokens.
-            uint amountNeeded = IOToken(oToken).getDiscountedPrice(oTokenAmount);
+            bool needSwap = _shouldWeSwap(oToken, uToken, oTokenAmount, oPool, $.quoter);
 
-            // Enter flash loan.
-            $.flashOn = true;
-            IUniswapV3Pool($.flashPool).flash(address(this), 0, amountNeeded, "");
-            __rewardAssets[0] = $.paymentToken;
+            if (!needSwap) {
+                // Get payment token amount needed to exercise oTokens.
+                uint amountNeeded = IOToken(oToken).getDiscountedPrice(oTokenAmount);
+
+                // Enter flash loan.
+                $.flashOn = true;
+                IUniswapV3Pool($.flashPool).flash(address(this), 0, amountNeeded, "");
+                __rewardAssets[0] = $.paymentToken;
+            }
         }
 
         for (uint i; i < rwLen; ++i) {

@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "../base/UniversalTest.sol";
 import "../base/chains/PolygonSetup.sol";
+import "../../src/strategies/IchiRetroMerklFarmStrategy.sol";
 
 contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testIchiRetroMerklFarmStrategy() public universalTest {
@@ -21,5 +22,13 @@ contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
     function _preHardWork() internal override {
         deal(PolygonLib.TOKEN_oRETRO, currentStrategy, 10e18);
+
+        // cover flash swap callback reverts
+        vm.expectRevert(IchiRetroMerklFarmStrategy.NotFlashPool.selector);
+        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
+
+        vm.expectRevert(IchiRetroMerklFarmStrategy.PairReentered.selector);
+        vm.prank(PolygonLib.POOL_RETRO_USDCe_CASH_100);
+        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
     }
 }

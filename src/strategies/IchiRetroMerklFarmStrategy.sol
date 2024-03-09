@@ -118,7 +118,6 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         ISwapper(swapper).swapWithRoute(
             route, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
         );
-        // ISwapper(swapper).swap(uToken, paymentToken, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
 
         // Pay off our loan
         uint pairDebt = paymentTokenAmount + fee1;
