@@ -35,6 +35,7 @@ library PolygonLib {
     address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
     address public constant TOKEN_RETRO = 0xBFA35599c7AEbb0dAcE9b5aa3ca5f2a79624D8Eb;
     address public constant TOKEN_oRETRO = 0x3A29CAb2E124919d14a6F735b6033a3AaD2B260F;
+    address public constant TOKEN_CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -72,11 +73,13 @@ library PolygonLib {
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
     address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 = 0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
     address public constant POOL_RETRO_WMATIC_WETH_500 = 0x1a34EaBbe928Bf431B679959379b2225d60D9cdA;
-    address public constant POOL_RETRO_oRETRO_RETRO_1000 = 0x387FBcE5E2933Bd3a7243D0be2aAC8fD9Ab3D55d;
-    address public constant POOL_RETRO_WETH_RETRO_1000 = 0x35394eED0Be676ec6470fE6531daD809265310ff;
-    address public constant POOL_RETRO_USDCe_RETRO_1000 = 0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
+    address public constant POOL_RETRO_oRETRO_RETRO_10000 = 0x387FBcE5E2933Bd3a7243D0be2aAC8fD9Ab3D55d;
+    // address public constant POOL_RETRO_WETH_RETRO_10000 = 0x35394eED0Be676ec6470fE6531daD809265310ff;
+    address public constant POOL_RETRO_USDCe_RETRO_10000 = 0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
     address public constant POOL_RETRO_WMATIC_USDCe_500 = 0xEC15624FBB314eb05BaaD4cA49b7904C0Cb6b645;
     address public constant POOL_RETRO_WBTC_WETH_500 = 0xb694E3bdd4BCdF843510983D257679D1E627C474;
+    address public constant POOL_RETRO_USDCe_CASH_100 = 0x619259F699839dD1498FFC22297044462483bD27;
+    address public constant POOL_RETRO_CASH_RETRO_10000 = 0xb47A07966cE6812702C0567d03725F1b37E27877;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -127,6 +130,9 @@ library PolygonLib {
 
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
+    // Retro
+    address public constant RETRO_QUOTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
 
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
@@ -402,20 +408,27 @@ library PolygonLib {
 
     // routes for RETRO strategies
     function routes4() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](2);
+        pools = new ISwapper.AddPoolData[](3);
         uint i;
         pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_RETRO_USDCe_RETRO_1000,
+            pool: POOL_RETRO_USDCe_RETRO_10000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_RETRO,
             tokenOut: TOKEN_USDCe
         });
 
         pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_RETRO_oRETRO_RETRO_1000,
+            pool: POOL_RETRO_oRETRO_RETRO_10000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_oRETRO,
             tokenOut: TOKEN_RETRO
+        });
+
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_RETRO_USDCe_CASH_100,
+            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
+            tokenIn: TOKEN_CASH,
+            tokenOut: TOKEN_USDCe
         });
     }
 
@@ -451,51 +464,21 @@ library PolygonLib {
         //endregion -- QuickSwap V3 farms -----
 
         //region ----- Gamma QuickSwap Merkl farms -----
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_USDT, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.STABLE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_WETH_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_USDCe_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDT_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_USDCe_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_WETH_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WETH_USDT_NARROW, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WBTC_USDCe_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WETH_USDT_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            TOKEN_dQUICK, GAMMA_QUICKSWAP_WMATIC_USDT_WIDE, GAMMA_QUICKSWAP_UNIPROXY, ALMPositionNameLib.WIDE
-        );
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_USDT, ALMPositionNameLib.STABLE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_USDCe_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDT_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WETH_USDT_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_USDCe_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WETH_USDT_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDT_WIDE, ALMPositionNameLib.WIDE);
         //endregion --  Gamma QuickSwap farms -----
     }
 
@@ -664,106 +647,27 @@ library PolygonLib {
     }
 
     // ichi retro part 1
-    function farms4() public pure returns (IFactory.Farm[] memory _farms) {
+    function farms4() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](2);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
+        uint i;
 
         // [24]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_oRETRO;
-        addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_WETH_MATIC;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[0] = IFactory.Farm({
-            status: 0,
-            pool: POOL_RETRO_WMATIC_WETH_500,
-            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
+        _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_WETH_MATIC);
         // [25]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_oRETRO;
-        addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_USDCe_MATIC;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[1] = IFactory.Farm({
-            status: 0,
-            pool: POOL_RETRO_WMATIC_USDCe_500,
-            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
+        _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_USDCe_MATIC);
     }
 
     // ichi retro part 2
-    function farms5() public pure returns (IFactory.Farm[] memory _farms) {
+    function farms5() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](3);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
+        uint i;
 
         // [26]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_oRETRO;
-        addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_WETH_ETH;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[0] = IFactory.Farm({
-            status: 0,
-            pool: POOL_RETRO_WMATIC_WETH_500,
-            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
+        _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_WETH_ETH);
         // [27]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_oRETRO;
-        addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WMATIC_USDCe_USDC;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[1] = IFactory.Farm({
-            status: 0,
-            pool: POOL_RETRO_WMATIC_USDCe_500,
-            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
+        _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_USDCe_USDC);
         // [28]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_oRETRO;
-        addresses = new address[](1);
-        addresses[0] = ICHI_RETRO_WBTC_WETH_ETH;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[2] = IFactory.Farm({
-            status: 0,
-            pool: POOL_RETRO_WBTC_WETH_500,
-            strategyLogicId: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
+        _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WBTC_WETH_ETH);
     }
 
     // gamma retro
@@ -772,25 +676,17 @@ library PolygonLib {
         uint i;
 
         // [29]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            TOKEN_oRETRO, GAMMA_RETRO_WMATIC_USDCe_NARROW, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.NARROW
-        );
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WMATIC_USDCe_NARROW, ALMPositionNameLib.NARROW);
 
         // [30]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            TOKEN_oRETRO, GAMMA_RETRO_WMATIC_WETH_NARROW, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.NARROW
-        );
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WMATIC_WETH_NARROW, ALMPositionNameLib.NARROW);
 
         // [31]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            TOKEN_oRETRO, GAMMA_RETRO_WBTC_WETH_WIDE, GAMMA_RETRO_UNIPROXY, ALMPositionNameLib.WIDE
-        );
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WBTC_WETH_WIDE, ALMPositionNameLib.WIDE);
     }
 
     function _makeGammaQuickSwapMerklFarm(
-        address rewardAsset0,
         address hypervisor,
-        address uniProxy,
         uint preset
     ) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
@@ -798,9 +694,9 @@ library PolygonLib {
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = rewardAsset0;
+        farm.rewardAssets[0] = TOKEN_dQUICK;
         farm.addresses = new address[](2);
-        farm.addresses[0] = uniProxy;
+        farm.addresses[0] = GAMMA_QUICKSWAP_UNIPROXY;
         farm.addresses[1] = hypervisor;
         farm.nums = new uint[](1);
         farm.nums[0] = preset;
@@ -808,23 +704,42 @@ library PolygonLib {
         return farm;
     }
 
-    function _makeGammaRetroMerklFarm(
-        address rewardAsset0,
-        address hypervisor,
-        address uniProxy,
-        uint preset
-    ) internal view returns (IFactory.Farm memory) {
+    function _makeGammaRetroMerklFarm(address hypervisor, uint preset) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.GAMMA_RETRO_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = rewardAsset0;
-        farm.addresses = new address[](2);
-        farm.addresses[0] = uniProxy;
+        farm.rewardAssets[0] = TOKEN_oRETRO;
+        farm.addresses = new address[](7);
+        farm.addresses[0] = GAMMA_RETRO_UNIPROXY;
         farm.addresses[1] = hypervisor;
+        farm.addresses[2] = TOKEN_CASH;
+        farm.addresses[3] = POOL_RETRO_USDCe_CASH_100;
+        farm.addresses[4] = POOL_RETRO_oRETRO_RETRO_10000;
+        farm.addresses[5] = POOL_RETRO_CASH_RETRO_10000;
+        farm.addresses[6] = RETRO_QUOTER;
         farm.nums = new uint[](1);
         farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeIchiRetroMerklFarm(address underlyingIchi) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IICHIVault(underlyingIchi).pool();
+        farm.strategyLogicId = StrategyIdLib.ICHI_RETRO_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_oRETRO;
+        farm.addresses = new address[](6);
+        farm.addresses[0] = underlyingIchi;
+        farm.addresses[1] = TOKEN_CASH;
+        farm.addresses[2] = POOL_RETRO_USDCe_CASH_100;
+        farm.addresses[3] = POOL_RETRO_oRETRO_RETRO_10000;
+        farm.addresses[4] = POOL_RETRO_CASH_RETRO_10000;
+        farm.addresses[5] = RETRO_QUOTER;
+        farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
     }
