@@ -2,6 +2,10 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./ALMPositionNameLib.sol";
+import "../../core/libs/CommonLib.sol";
+import "../../interfaces/IFactory.sol";
+import "../../interfaces/IAmmAdapter.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IFarmingStrategy.sol";
 import "../../integrations/gamma/IUniProxy.sol";
@@ -98,5 +102,24 @@ library GRMFLib {
 
     function balance(address token) public view returns (uint) {
         return IERC20(token).balanceOf(address(this));
+    }
+
+    function generateDescription(
+        IFactory.Farm memory farm,
+        IAmmAdapter _ammAdapter
+    ) external view returns (string memory) {
+        //slither-disable-next-line calls-loop
+        return string.concat(
+            "Earn ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+            " on Retro by ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+            " Gamma ",
+            //slither-disable-next-line calls-loop
+            ALMPositionNameLib.getName(farm.nums[0]),
+            " LP"
+        );
     }
 }

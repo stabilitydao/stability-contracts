@@ -444,19 +444,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm memory farm,
         IAmmAdapter _ammAdapter
     ) internal view returns (string memory) {
-        //slither-disable-next-line calls-loop
-        return string.concat(
-            "Earn ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on Retro by ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-            " Gamma ",
-            //slither-disable-next-line calls-loop
-            ALMPositionNameLib.getName(farm.nums[0]),
-            " LP"
-        );
+        return GRMFLib.generateDescription(farm, _ammAdapter);
     }
 
     function _getGammaRetroStorage() private pure returns (GRMFLib.GammaRetroFarmStrategyStorage storage $) {

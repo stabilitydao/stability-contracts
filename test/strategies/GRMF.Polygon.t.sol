@@ -28,10 +28,10 @@ contract GammaRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
         // cover flash swap callback reverts
         vm.expectRevert(GammaRetroMerklFarmStrategy.NotFlashPool.selector);
-        GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
+        GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
 
         vm.expectRevert(GammaRetroMerklFarmStrategy.PairReentered.selector);
         vm.prank(PolygonLib.POOL_RETRO_USDCe_CASH_100);
-        GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
+        GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
     }
 }

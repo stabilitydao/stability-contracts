@@ -25,10 +25,10 @@ contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
         // cover flash swap callback reverts
         vm.expectRevert(IchiRetroMerklFarmStrategy.NotFlashPool.selector);
-        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
+        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
 
         vm.expectRevert(IchiRetroMerklFarmStrategy.PairReentered.selector);
         vm.prank(PolygonLib.POOL_RETRO_USDCe_CASH_100);
-        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0,0,"");
+        IchiRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
     }
 }
