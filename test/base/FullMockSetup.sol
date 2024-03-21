@@ -9,6 +9,7 @@ import "../../src/core/Factory.sol";
 import "../../src/test/MockAggregatorV3Interface.sol";
 import "../../src/adapters/ChainlinkAdapter.sol";
 import "../../src/test/MockStrategy.sol";
+import "../../src/test/MockActiveStrategy.sol";
 import "../../src/test/MockAmmAdapter.sol";
 import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/core/Swapper.sol";

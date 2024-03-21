@@ -77,7 +77,7 @@ contract MockStrategy is LPStrategyBase {
         ticks = new int24[](0);
     }
 
-    function getSpecificName() external pure override returns (string memory, bool) {
+    function getSpecificName() public view virtual override returns (string memory, bool) {
         return ("Good Params", true);
     }
 
@@ -143,7 +143,7 @@ contract MockStrategy is LPStrategyBase {
         }
     }
 
-    function depositUnderlying(uint amount) external override returns (uint[] memory amountsConsumed) {
+    function depositUnderlying(uint amount) public virtual override returns (uint[] memory amountsConsumed) {
         // no msg.sender checks
         // require(_depositedToken0 > 0, "Mock: deposit assets first");
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
@@ -177,7 +177,7 @@ contract MockStrategy is LPStrategyBase {
         _depositedToken1 -= amountsOut[1];
     }
 
-    function withdrawUnderlying(uint amount, address receiver) external override {
+    function withdrawUnderlying(uint amount, address receiver) public virtual override {
         // no msg.sender checks
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         bool fuseTriggered = $.total == 0;
