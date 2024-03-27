@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./base/Controllable.sol";
-import "../interfaces/IAprOracle.sol";
+import "../core/base/Controllable.sol";
+import "../interfaces/IInterChainAdapter.sol";
 
-/// @dev This oracle is needed to obtain auto compound APR of underlying assets in an on-chain environment.
-///      These APRs are usually accessible from the protocol APIs.
-///      Such data is needed on-chain for the operation of automatic vaults,
-///      which can themselves select assets to work with, and to show the overall APR of the strategy in VaultManager NFT.
-/// @author Alien Deployer (https://github.com/a17)
+/// @notice MockInterChainAdapter
 /// @author Jude (https://github.com/iammrjude)
-contract AprOracle is Controllable, IAprOracle {
+contract MockInterChainAdapter is Controllable, IInterChainAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -18,17 +14,17 @@ contract AprOracle is Controllable, IAprOracle {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AprOracle")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant APRORACLE_STORAGE_LOCATION =
-        0x0dc0ce6c496f1b862d4b48237a101bb40130a02088e33738cbe0a34f7cf84300;
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MockInterChainAdapter")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant MOCKINTERCHAINADAPTER_STORAGE_LOCATION =
+        0xa492c7d2d223ce0209e3a8bf27e08adbd6a4fb2f0f9877443a85c8ca7ead6e00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         STORAGE                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:storage-location erc7201:stability.AprOracle
-    struct AprOracleStorage {
-        mapping(address asset => uint apr) assetApr;
+    /// @custom:storage-location erc7201:stability.MockInterChainAdapter
+    struct LayerZeroAdapterStorage {
+        address parent;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -43,43 +39,27 @@ contract AprOracle is Controllable, IAprOracle {
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IAprOracle
-    function setAprs(address[] memory assets, uint[] memory aprs) external onlyOperator {
-        AprOracleStorage storage $ = _getStorage();
-        uint len = assets.length;
-        if (len != aprs.length) {
-            revert IControllable.IncorrectArrayLength();
-        }
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            $.assetApr[assets[i]] = aprs[i];
-        }
-        emit SetAprs(assets, aprs);
-    }
+    /// @inheritdoc IInterChainAdapter
+    function sendMessage(Message memory message) external {}
+
+    /// @inheritdoc IInterChainAdapter
+    function interChainAdapterId() external returns (string memory) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IAprOracle
-    function getAprs(address[] memory assets) external view returns (uint[] memory aprs) {
-        AprOracleStorage storage $ = _getStorage();
-        uint len = assets.length;
-        aprs = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            aprs[i] = $.assetApr[assets[i]];
-        }
-    }
+    /// @inheritdoc IInterChainAdapter
+    function endpoint() external view returns (address) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getStorage() private pure returns (AprOracleStorage storage $) {
+    function _getStorage() private pure returns (LayerZeroAdapterStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := APRORACLE_STORAGE_LOCATION
+            $.slot := MOCKINTERCHAINADAPTER_STORAGE_LOCATION
         }
     }
 }
