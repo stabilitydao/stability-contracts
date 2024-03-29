@@ -10,7 +10,6 @@ contract KyberAdapterTest is PolygonSetup {
     ICAmmAdapter adapter;
 
     constructor() {
-        vm.rollFork(48098000); // Sep-01-2023 03:23:25 PM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.KYBER));
         adapter = ICAmmAdapter(platform.ammAdapter(_hash).proxy);
@@ -27,8 +26,8 @@ contract KyberAdapterTest is PolygonSetup {
         amounts[0] = 1e6;
         amounts[1] = 2e6;
         int24[] memory ticks = new int24[](2);
-        ticks[0] = -120;
-        ticks[1] = 120;
+        ticks[0] = -120 * 1000;
+        ticks[1] = 120 * 1000;
 
         (uint liquidity, uint[] memory amountsConsumed) = adapter.getLiquidityForAmounts(pool, amounts, ticks);
         assertGt(liquidity, 0, "liquidity");
@@ -38,10 +37,6 @@ contract KyberAdapterTest is PolygonSetup {
         uint[] memory liquidityAmounts = adapter.getAmountsForLiquidity(pool, ticks, uint128(liquidity));
         assertGt(liquidityAmounts[0], 0);
         assertGt(liquidityAmounts[1], 0);
-
-        // (uint amount0, uint amount1) = UniswapV3Adapter(address(adapter)).getAmountsForLiquidity(pool, ticks[0], ticks[1], uint128(liquidity));
-        // assertEq(liquidityAmounts[0], amount0);
-        // assertEq(liquidityAmounts[1], amount1);
 
         uint[] memory proportions = adapter.getProportions(pool);
         assertGt(proportions[0], 0, "props0");
