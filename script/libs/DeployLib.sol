@@ -182,8 +182,13 @@ library DeployLib {
             assets_ = swapper.assets();
             assetsStr = new string[](assets_.length);
             for (uint i; i < assets_.length; ++i) {
-                (uint price,) = priceReader.getPrice(assets_[i]);
-                assetsStr[i] = string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(price));
+                // using try..catch because on old forking blocks assets and pools can be not available
+                try priceReader.getPrice(assets_[i]) returns (uint price, bool) {
+                    assetsStr[i] =
+                        string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(price));
+                    assetsStr[i] =
+                        string.concat(IERC20Metadata(assets_[i]).symbol(), " ", CommonLib.formatUsdAmount(price));
+                } catch {}
             }
             console.log("Added pools to swapper with assets:", CommonLib.implode(assetsStr, ", "));
         }

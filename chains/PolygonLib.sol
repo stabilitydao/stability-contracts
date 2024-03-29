@@ -68,13 +68,15 @@ library PolygonLib {
     address public constant POOL_QUICKSWAPV3_WETH_USDT = 0x9CEff2F5138fC59eB925d270b8A7A9C02a1810f2;
     address public constant POOL_QUICKSWAPV3_dQUICK_QUICK = 0x194257104FabFd9f48bD01bd71A719637B4bbfA9;
     address public constant POOL_QUICKSWAPV3_USDCe_USDC = 0xEecB5Db986c20a8C88D8332E7e252A9671565751;
+    address public constant POOL_QUICKSWAPV3_USDC_WETH = 0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
+    address public constant POOL_QUICKSWAPV3_WMATIC_USDC = 0x6669B4706cC152F359e947BCa68E263A87c52634;
+    address public constant POOL_QUICKSWAPV3_USDC_DAI = 0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
     address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 = 0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
     address public constant POOL_RETRO_WMATIC_WETH_500 = 0x1a34EaBbe928Bf431B679959379b2225d60D9cdA;
     address public constant POOL_RETRO_oRETRO_RETRO_10000 = 0x387FBcE5E2933Bd3a7243D0be2aAC8fD9Ab3D55d;
-    // address public constant POOL_RETRO_WETH_RETRO_10000 = 0x35394eED0Be676ec6470fE6531daD809265310ff;
     address public constant POOL_RETRO_USDCe_RETRO_10000 = 0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
     address public constant POOL_RETRO_WMATIC_USDCe_500 = 0xEC15624FBB314eb05BaaD4cA49b7904C0Cb6b645;
     address public constant POOL_RETRO_WBTC_WETH_500 = 0xb694E3bdd4BCdF843510983D257679D1E627C474;
@@ -104,6 +106,8 @@ library PolygonLib {
     address public constant GAMMA_QUICKSWAP_USDCe_WETH_NARROW = 0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
     address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW = 0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
     address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE = 0x4A83253e88e77E8d518638974530d0cBbbF3b675;
+    address public constant GAMMA_QUICKSWAP_USDC_WETH_NARROW = 0x3974FbDC22741A1632E024192111107b202F214f;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDC_NARROW = 0x1cf4293125913cB3Dea4aD7f2bb4795B9e896CE9;
     address public constant GAMMA_RETRO_UNIPROXY = 0xDC8eE75f52FABF057ae43Bb4B85C55315b57186c;
     address public constant GAMMA_RETRO_WMATIC_USDCe_NARROW = 0xBE4E30b74b558E41f5837dC86562DF44aF57A013;
     address public constant GAMMA_RETRO_WMATIC_WETH_NARROW = 0xe7806B5ba13d4B2Ab3EaB3061cB31d4a4F3390Aa;
@@ -232,6 +236,10 @@ library PolygonLib {
         factory.addFarms(farms4());
         factory.addFarms(farms5());
         factory.addFarms(farms6());
+        if (block.number > 54573098) {
+            // Mar-12-2024 02:41:42 PM +UTC
+            factory.addFarms(farms7());
+        }
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -683,6 +691,18 @@ library PolygonLib {
 
         // [31]
         _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WBTC_WETH_WIDE, ALMPositionNameLib.WIDE);
+    }
+
+    // quickswap USDC native gamma
+    function farms7() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](2);
+        uint i;
+
+        // [32]
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDC_WETH_NARROW, ALMPositionNameLib.NARROW);
+
+        // [33]
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDC_NARROW, ALMPositionNameLib.NARROW);
     }
 
     function _makeGammaQuickSwapMerklFarm(
