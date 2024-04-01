@@ -38,3 +38,7 @@ Contributions can be made in the form of developing strategies, developing the c
 ### Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
+
+## Audits
+
+* [Initial vault audit v24.01.1-alpha](audit/initial-audit-stability-platform-v24.01.1-alpha.md)
