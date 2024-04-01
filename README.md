@@ -4,7 +4,7 @@
 > Users invest funds to vaults that are created by other users.
 > Vaults use tokenized developed asset management strategy logics.
 >
-> -- [Stability Book](https://book.stabilitydao.org)
+> -- [Stability Book](https://stabilitydao.gitbook.io/)
 
 ## Contributing
 
