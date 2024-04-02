@@ -4,7 +4,7 @@
 > Users invest funds to vaults that are created by other users.
 > Vaults use tokenized developed asset management strategy logics.
 >
-> -- [Stability Book](https://book.stabilitydao.org)
+> -- [Stability Book](https://stabilitydao.gitbook.io/)
 
 ## Contributing
 
@@ -38,3 +38,7 @@ Contributions can be made in the form of developing strategies, developing the c
 ### Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
+
+## Audits
+
+* [Initial vault audit v24.01.1-alpha](audit/initial-audit-stability-platform-v24.01.1-alpha.md)
