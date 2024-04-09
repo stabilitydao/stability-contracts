@@ -46,9 +46,6 @@ contract UniswapV3AdapterTest is PolygonSetup {
         assertGt(proportions[0], 0);
         assertGt(proportions[1], 0);
 
-        uint prop0 = adapter.getProportion0(pool);
-        assertEq(prop0, proportions[0]);
-
         uint[] memory props = adapter.getProportions(pool, ticks);
         assertGt(props[0], 0);
         assertGt(props[1], 0);

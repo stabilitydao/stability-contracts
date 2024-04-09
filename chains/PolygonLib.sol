@@ -36,6 +36,7 @@ library PolygonLib {
     address public constant TOKEN_RETRO = 0xBFA35599c7AEbb0dAcE9b5aa3ca5f2a79624D8Eb;
     address public constant TOKEN_oRETRO = 0x3A29CAb2E124919d14a6F735b6033a3AaD2B260F;
     address public constant TOKEN_CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
+    address public constant TOKEN_crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -82,6 +83,7 @@ library PolygonLib {
     address public constant POOL_RETRO_WBTC_WETH_500 = 0xb694E3bdd4BCdF843510983D257679D1E627C474;
     address public constant POOL_RETRO_USDCe_CASH_100 = 0x619259F699839dD1498FFC22297044462483bD27;
     address public constant POOL_RETRO_CASH_RETRO_10000 = 0xb47A07966cE6812702C0567d03725F1b37E27877;
+    address public constant POOL_CURVE_crvUSD_USDCe = 0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -189,6 +191,7 @@ library PolygonLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.KYBER);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
         DeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 

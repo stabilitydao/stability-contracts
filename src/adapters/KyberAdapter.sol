@@ -23,7 +23,7 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.0.3";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -157,18 +157,13 @@ contract KyberAdapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getProportion0(address pool) public view returns (uint) {
+    function getProportions(address pool) external view returns (uint[] memory) {
+        uint[] memory p = new uint[](2);
         //slither-disable-next-line unused-return
         (, int24 tick,,) = IPool(pool).getPoolState();
         int24 tickSpacing = IPool(pool).tickDistance();
         (int24 lowerTick, int24 upperTick) = UniswapV3MathLib.getTicksInSpacing(tick, tickSpacing);
-        return _getProportion0(pool, lowerTick, upperTick);
-    }
-
-    /// @inheritdoc IAmmAdapter
-    function getProportions(address pool) external view returns (uint[] memory) {
-        uint[] memory p = new uint[](2);
-        p[0] = getProportion0(pool);
+        p[0] = _getProportion0(pool, lowerTick, upperTick);
         p[1] = 1e18 - p[0];
         return p;
     }

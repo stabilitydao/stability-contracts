@@ -4,6 +4,9 @@ out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 
+[profile.lite]
+optimizer = false
+
 [doc]
 title = "Stability Platform Contracts"
 ignore = ["./src/test/**/*.sol"]

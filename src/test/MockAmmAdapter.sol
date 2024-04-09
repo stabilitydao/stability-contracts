@@ -70,14 +70,10 @@ contract MockAmmAdapter is IAmmAdapter {
         revert("unavailable");
     }
 
-    function getProportion0(address /*pool*/ ) public pure returns (uint) {
-        return 5e17;
-    }
-
     /// @inheritdoc IAmmAdapter
-    function getProportions(address pool) external pure returns (uint[] memory) {
+    function getProportions(address) external pure returns (uint[] memory) {
         uint[] memory p = new uint[](2);
-        p[0] = getProportion0(pool);
+        p[0] = 5e17;
         p[1] = 1e18 - p[0];
         return p;
     }

@@ -60,12 +60,6 @@ interface IAmmAdapter is IERC165 {
         uint[] memory amounts
     ) external view returns (uint liquidity, uint[] memory amountsConsumed);
 
-    /// @notice Priced proportion of first pool asset.
-    /// Helper method for pools with two tokens.
-    /// @param pool Address of a pool supported by the adapter
-    /// @return Proportion with 5 decimals precision. Max is 100_000, min is 0.
-    function getProportion0(address pool) external view returns (uint);
-
     /// @notice Priced proportions of pool assets
     /// @param pool Address of a pool supported by the adapter
     /// @return Proportions with 5 decimals precision. Max is 100_000, min is 0.

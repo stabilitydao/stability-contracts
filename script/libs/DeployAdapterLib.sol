@@ -7,6 +7,7 @@ import "../../src/adapters/ChainlinkAdapter.sol";
 import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/adapters/AlgebraAdapter.sol";
 import "../../src/adapters/KyberAdapter.sol";
+import "../../src/adapters/CurveAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -27,6 +28,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.KYBER)) {
             proxy.initProxy(address(new KyberAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.CURVE)) {
+            proxy.initProxy(address(new CurveAdapter()));
         }
 
         require(proxy.implementation() != address(0), "Unknown AmmAdapter");
