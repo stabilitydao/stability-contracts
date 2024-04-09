@@ -46,9 +46,6 @@ contract AlgebraAdapterTest is PolygonSetup {
         assertGt(proportions[0], 0);
         assertGt(proportions[1], 0);
 
-        uint prop0 = adapter.getProportion0(pool);
-        assertGt(prop0, 0);
-
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDCe_DAI, PolygonLib.TOKEN_USDCe, 276240);

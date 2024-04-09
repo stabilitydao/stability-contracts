@@ -54,6 +54,7 @@ contract CurveAdapter is Controllable, IAmmAdapter {
             uint amount1 = 10 ** IERC20Metadata(tokenIn).decimals();
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount1);
             _approveIfNeeded(tokenIn, amount, pool);
+            // slither-disable-next-line unused-return
             IStableSwapNGPool(pool).exchange(tokenInIndex, tokenOutIndex, amount, 0, recipient);
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount1);
             uint priceImpact = (priceBefore - priceAfter) * ConstantsLib.DENOMINATOR / priceBefore;
@@ -87,6 +88,7 @@ contract CurveAdapter is Controllable, IAmmAdapter {
         uint nCoins = IStableSwapNG(pool).N_COINS();
         tokens = new address[](nCoins);
         for (uint i; i < nCoins; ++i) {
+            // slither-disable-next-line calls-loop
             tokens[i] = IStableSwapNGPool(pool).coins(i);
         }
     }
@@ -101,9 +103,6 @@ contract CurveAdapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getProportion0(address pool) public view returns (uint) {}
-
-    /// @inheritdoc IAmmAdapter
     function getProportions(address pool) external view returns (uint[] memory props) {
         uint[] memory balances = IStableSwapNG(pool).get_balances();
         uint len = balances.length;
@@ -111,8 +110,11 @@ contract CurveAdapter is Controllable, IAmmAdapter {
         valuedBalances[0] = balances[0];
         uint total = valuedBalances[0];
         for (uint i = 1; i < len; ++i) {
+            // slither-disable-next-line calls-loop
             address tokenI = IStableSwapNGPool(pool).coins(i);
+            // slither-disable-next-line calls-loop
             uint decimalsI = IERC20Metadata(tokenI).decimals();
+            // slither-disable-next-line calls-loop
             uint priceI = IStableSwapNG(pool).get_dy(int128(uint128(i)), 0, 10 ** decimalsI);
             valuedBalances[i] = balances[i] * priceI / 10 ** decimalsI;
             total += valuedBalances[i];

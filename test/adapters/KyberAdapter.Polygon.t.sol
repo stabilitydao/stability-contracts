@@ -42,9 +42,6 @@ contract KyberAdapterTest is PolygonSetup {
         assertGt(proportions[0], 0, "props0");
         assertGt(proportions[1], 0, "props1");
 
-        uint prop0 = adapter.getProportion0(pool);
-        assertEq(prop0, proportions[0]);
-
         uint[] memory props = adapter.getProportions(pool, ticks);
         assertGt(props[0], 0, "props0 ticks");
         assertGt(props[1], 0, "props1 ticks");
