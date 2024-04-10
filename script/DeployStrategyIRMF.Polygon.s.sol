@@ -12,7 +12,7 @@ contract DeployStrategyIRMFPolygon is Script {
 
     function run() external {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-        ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+        // ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -23,7 +23,7 @@ contract DeployStrategyIRMFPolygon is Script {
         factory.addFarms(PolygonLib.farms4());
 
         // swapper routes
-        swapper.addPools(PolygonLib.routes4(), false);
+        // swapper.addPools(PolygonLib.routes4(), false);
 
         vm.stopBroadcast();
     }

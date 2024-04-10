@@ -37,6 +37,7 @@ library PolygonLib {
     address public constant TOKEN_oRETRO = 0x3A29CAb2E124919d14a6F735b6033a3AaD2B260F;
     address public constant TOKEN_CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
     address public constant TOKEN_crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
+    address public constant TOKEN_CRV = 0x172370d5Cd63279eFa6d502DAB29171933a610AF;
 
     // ERC21
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -72,6 +73,7 @@ library PolygonLib {
     address public constant POOL_QUICKSWAPV3_USDC_WETH = 0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
     address public constant POOL_QUICKSWAPV3_WMATIC_USDC = 0x6669B4706cC152F359e947BCa68E263A87c52634;
     address public constant POOL_QUICKSWAPV3_USDC_DAI = 0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
+    address public constant POOL_QUICKSWAPV3_CRV_WMATIC = 0x00A6177C6455A29B8dAa7144B2bEfc9F2147BB7E;
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
@@ -84,6 +86,9 @@ library PolygonLib {
     address public constant POOL_RETRO_USDCe_CASH_100 = 0x619259F699839dD1498FFC22297044462483bD27;
     address public constant POOL_RETRO_CASH_RETRO_10000 = 0xb47A07966cE6812702C0567d03725F1b37E27877;
     address public constant POOL_CURVE_crvUSD_USDCe = 0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
+    address public constant POOL_CURVE_crvUSD_USDT = 0xA70Af99bFF6b168327f9D1480e29173e757c7904;
+    address public constant POOL_CURVE_crvUSD_DAI = 0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
+    address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
 
     // Gelato
     address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
@@ -139,6 +144,13 @@ library PolygonLib {
 
     // Retro
     address public constant RETRO_QUOTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
+
+    // Convex
+    address public constant CONEXT_BOOSTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
+    address public constant CONEXT_REWARD_POOL_crvUSD_USDCe = 0xBFEE9F3E015adC754066424AEd535313dc764116;
+    address public constant CONEXT_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
+    address public constant CONEXT_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
+    address public constant CONEXT_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
 
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
@@ -199,14 +211,10 @@ library PolygonLib {
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper.AddPoolData[] memory pools2 = routes2();
-            ISwapper.AddPoolData[] memory pools3 = routes3();
-            ISwapper.AddPoolData[] memory pools4 = routes4();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
             swapper.addPools(pools2, false);
-            swapper.addPools(pools3, false);
-            swapper.addPools(pools4, false);
             // todo auto thresholds
             address[] memory tokenIn = new address[](8);
             tokenIn[0] = TOKEN_USDCe;
@@ -386,59 +394,52 @@ library PolygonLib {
         //endregion -- Pools ----
     }
 
-    /// @notice New routes jan-2024
     function routes2() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](1);
+        pools = new ISwapper.AddPoolData[](7);
         uint i;
+        // New routes jan-2024
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_QUICKSWAPV3_USDCe_USDC,
             ammAdapterId: AmmAdapterIdLib.ALGEBRA,
             tokenIn: TOKEN_USDC,
             tokenOut: TOKEN_USDCe
         });
-    }
-
-    /// @notice New routes jan-2024
-    function routes3() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](2);
-        uint i;
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_WETH_COMP_3000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_COMP,
             tokenOut: TOKEN_WETH
         });
-
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_UNISWAPV3_ICHI_WMATIC_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_ICHI,
             tokenOut: TOKEN_WMATIC
         });
-    }
-
-    // routes for RETRO strategies
-    function routes4() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](3);
-        uint i;
+        // routes for RETRO strategies
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_RETRO_USDCe_RETRO_10000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_RETRO,
             tokenOut: TOKEN_USDCe
         });
-
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_RETRO_oRETRO_RETRO_10000,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_oRETRO,
             tokenOut: TOKEN_RETRO
         });
-
         pools[i++] = ISwapper.AddPoolData({
             pool: POOL_RETRO_USDCe_CASH_100,
             ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
             tokenIn: TOKEN_CASH,
+            tokenOut: TOKEN_USDCe
+        });
+        // crvUSD
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_CURVE_crvUSD_USDCe,
+            ammAdapterId: AmmAdapterIdLib.CURVE,
+            tokenIn: TOKEN_crvUSD,
             tokenOut: TOKEN_USDCe
         });
     }
