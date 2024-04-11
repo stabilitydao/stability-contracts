@@ -9,6 +9,7 @@ import "../src/strategies/libs/ALMPositionNameLib.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
+import "../src/integrations/convex/IConvexRewardPool.sol";
 import "../script/libs/DeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
 import "../script/libs/DeployStrategyLib.sol";
@@ -146,11 +147,11 @@ library PolygonLib {
     address public constant RETRO_QUOTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
 
     // Convex
-    address public constant CONEXT_BOOSTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
-    address public constant CONEXT_REWARD_POOL_crvUSD_USDCe = 0xBFEE9F3E015adC754066424AEd535313dc764116;
-    address public constant CONEXT_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
-    address public constant CONEXT_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
-    address public constant CONEXT_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
+    address public constant CONVEX_BOOSTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDCe = 0xBFEE9F3E015adC754066424AEd535313dc764116;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
+    address public constant CONVEX_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
 
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
@@ -216,7 +217,7 @@ library PolygonLib {
             swapper.addPools(pools, false);
             swapper.addPools(pools2, false);
             // todo auto thresholds
-            address[] memory tokenIn = new address[](8);
+            address[] memory tokenIn = new address[](10);
             tokenIn[0] = TOKEN_USDCe;
             tokenIn[1] = TOKEN_USDT;
             tokenIn[2] = TOKEN_DAI;
@@ -225,7 +226,9 @@ library PolygonLib {
             tokenIn[5] = TOKEN_dQUICK;
             tokenIn[6] = TOKEN_USDC;
             tokenIn[7] = TOKEN_COMP;
-            uint[] memory thresholdAmount = new uint[](8);
+            tokenIn[8] = TOKEN_CRV;
+            tokenIn[9] = TOKEN_crvUSD;
+            uint[] memory thresholdAmount = new uint[](10);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e15;
@@ -234,6 +237,8 @@ library PolygonLib {
             thresholdAmount[5] = 1e16; // 1 dQuick ~= $0.05
             thresholdAmount[6] = 1e3;
             thresholdAmount[7] = 1e15;
+            thresholdAmount[8] = 1e15;
+            thresholdAmount[9] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             DeployLib.logSetupSwapper(platform, showLog);
         }
@@ -250,6 +255,7 @@ library PolygonLib {
         if (block.number > 54573098) {
             // Mar-12-2024 02:41:42 PM +UTC
             factory.addFarms(farms7());
+            factory.addFarms(farms8());
         }
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
@@ -395,7 +401,7 @@ library PolygonLib {
     }
 
     function routes2() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](7);
+        pools = new ISwapper.AddPoolData[](8);
         uint i;
         // New routes jan-2024
         pools[i++] = ISwapper.AddPoolData({
@@ -441,6 +447,12 @@ library PolygonLib {
             ammAdapterId: AmmAdapterIdLib.CURVE,
             tokenIn: TOKEN_crvUSD,
             tokenOut: TOKEN_USDCe
+        });
+        pools[i++] = ISwapper.AddPoolData({
+            pool: POOL_QUICKSWAPV3_CRV_WMATIC,
+            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
+            tokenIn: TOKEN_CRV,
+            tokenOut: TOKEN_WMATIC
         });
     }
 
@@ -707,6 +719,39 @@ library PolygonLib {
 
         // [33]
         _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDC_NARROW, ALMPositionNameLib.NARROW);
+    }
+
+    function farms8() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](4);
+        uint i;
+
+        // [34]
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDCe, CONVEX_REWARD_POOL_crvUSD_USDCe);
+        // [35]
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDT, CONVEX_REWARD_POOL_crvUSD_USDT);
+        // [36]
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_DAI, CONVEX_REWARD_POOL_crvUSD_DAI);
+        // [37]
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);
+    }
+
+    function _makeCurveConvexFarm(address curvePool, address convexRewardPool) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        uint rewardTokensLength = IConvexRewardPool(convexRewardPool).rewardLength();
+        farm.status = 0;
+        // pool address can be extracted from convexRewardPool here: curveGauge() -> lp_token()
+        farm.pool = curvePool;
+        farm.strategyLogicId = StrategyIdLib.CURVE_CONVEX_FARM;
+        farm.rewardAssets = new address[](rewardTokensLength);
+        for (uint i; i < rewardTokensLength; ++i) {
+            IConvexRewardPool.RewardType memory r = IConvexRewardPool(convexRewardPool).rewards(i);
+            farm.rewardAssets[i] = r.reward_token;
+        }
+        farm.addresses = new address[](1);
+        farm.addresses[0] = convexRewardPool;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makeGammaQuickSwapMerklFarm(
