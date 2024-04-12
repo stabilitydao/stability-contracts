@@ -160,7 +160,9 @@ library StrategyLib {
         for (uint i; i < len; ++i) {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
                 if (rewardAssets_[i] != exchangeAsset) {
-                    swapper.swap(rewardAssets_[i], exchangeAsset, rewardAmounts_[i], SWAP_REWARDS_PRICE_IMPACT_TOLERANCE);
+                    swapper.swap(
+                        rewardAssets_[i], exchangeAsset, rewardAmounts_[i], SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
+                    );
                 } else {
                     exchangeAssetBalanceBefore = 0;
                 }

@@ -124,11 +124,11 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
         uint localTtotal;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
+            //nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
+            //nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 ++localTtotal;
             }
@@ -137,11 +137,11 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         variants = new string[](localTtotal);
         nums = new uint[](localTtotal);
         localTtotal = 0;
-        // nosemgrep
+        //nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
+            //nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
+            //nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
@@ -164,6 +164,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xeeeeee), bytes3(0x000000)));
     }
 
@@ -216,6 +217,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
         value = IStableSwapNGPool($base._underlying).add_liquidity(amounts, 0, address(this));
         $base.total += value;
+        //slither-disable-next-line unused-return
         IBooster($.booster).deposit($.pid, value);
     }
 
@@ -224,10 +226,11 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total += amount;
         CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
+        //slither-disable-next-line unused-return
         IBooster($.booster).deposit($.pid, amount);
-        address pool = $base._underlying;
-        amountsConsumed = IStableSwapNG(pool).get_balances();
-        uint totalLp = IStableSwapNG(pool).totalSupply();
+        address _pool = $base._underlying;
+        amountsConsumed = IStableSwapNG(_pool).get_balances();
+        uint totalLp = IStableSwapNG(_pool).totalSupply();
         uint len = amountsConsumed.length;
         for (uint i; i < len; ++i) {
             amountsConsumed[i] = amount * amountsConsumed[i] / totalLp;
@@ -238,6 +241,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
+        //slither-disable-next-line unused-return
         IConvexRewardPool($.rewardPool).withdraw(value, false);
         amountsOut = IStableSwapNGPool($base._underlying).remove_liquidity(value, new uint[](assets().length), receiver);
         $base.total -= value;
@@ -248,8 +252,9 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
         $base.total -= amount;
+        //slither-disable-next-line unused-return
         IConvexRewardPool($.rewardPool).withdraw(amount, false);
-        IERC20($base._underlying).transfer(receiver, amount);
+        IERC20($base._underlying).safeTransfer(receiver, amount);
     }
 
     /// @inheritdoc StrategyBase
@@ -287,6 +292,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory _assets = assets();
         uint len = _assets.length;
         uint[] memory amounts = new uint[](len);
+        //slither-disable-next-line uninitialized-local
         bool notZero;
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(_assets[i]);
@@ -297,6 +303,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         if (notZero) {
             uint value = IStableSwapNGPool($base._underlying).add_liquidity(amounts, 0, address(this));
             $base.total += value;
+            //slither-disable-next-line unused-return
             IBooster($.booster).deposit($.pid, value);
         }
     }
@@ -315,10 +322,9 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        address pool = $base._underlying;
-        amountsConsumed = IStableSwapNG(pool).get_balances();
-        uint totalLp = IStableSwapNG(pool).totalSupply();
+        address _pool = pool();
+        amountsConsumed = IStableSwapNG(_pool).get_balances();
+        uint totalLp = IStableSwapNG(_pool).totalSupply();
         uint len = amountsConsumed.length;
         for (uint i; i < len; ++i) {
             amountsConsumed[i] = amount * amountsConsumed[i] / totalLp;
@@ -327,11 +333,10 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
-        address pool = $lp.pool;
+        address _pool = pool();
         assets_ = assets();
-        amounts_ = IStableSwapNG(pool).get_balances();
-        uint totalLp = IStableSwapNG(pool).totalSupply();
+        amounts_ = IStableSwapNG(_pool).get_balances();
+        uint totalLp = IStableSwapNG(_pool).totalSupply();
         uint value = total();
         uint len = assets_.length;
         for (uint i; i < len; ++i) {
