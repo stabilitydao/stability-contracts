@@ -280,6 +280,7 @@ library PolygonLib {
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_RETRO_MERKL_FARM, true);
         DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, true);
+        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.CURVE_CONVEX_FARM, true);
         DeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
