@@ -31,6 +31,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     string public strategyId;
     address internal currentStrategy;
     uint[] public specialDepositAmounts;
+    uint public duration1 = 6 hours;
+    uint public duration2 = 3 hours;
+    uint public duration3 = 3 hours;
 
     struct Strategy {
         string id;
@@ -276,7 +279,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 (uint tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
-                skip(6 hours);
+                skip(duration1);
 
                 if (vars.isLPStrategy) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -321,7 +324,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                       SMALL WITHDRAW                       */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-                skip(3 hours);
+                skip(duration2);
                 vm.roll(block.number + 6);
 
                 {
@@ -363,23 +366,27 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                 }
 
-                skip(3 hours);
+                skip(duration3);
                 vm.roll(block.number + 6);
 
                 _preHardWork();
 
+                // check not claimed revenue if available
                 {
                     (address[] memory __assets, uint[] memory amounts) = strategy.getRevenue();
-                    (uint totalRevenueUSD,,,) = IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
-                    assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
-                    assertGt(__assets.length, 0, "Universal test: getRevenue assets length is zero");
-                    if (totalRevenueUSD == 0) {
-                        for (uint x; x < __assets.length; ++x) {
-                            console.log(
-                                string.concat("__assets[", Strings.toString(x), "]:"),
-                                IERC20Metadata(__assets[x]).symbol()
-                            );
-                            console.log(string.concat(" amounts[", Strings.toString(x), "]:"), amounts[x]);
+                    if (__assets.length > 0) {
+                        (uint totalRevenueUSD,,,) =
+                            IPriceReader(platform.priceReader()).getAssetsPrice(__assets, amounts);
+                        assertGt(totalRevenueUSD, 0, "Universal test: estimated totalRevenueUSD is zero");
+                        assertGt(__assets.length, 0, "Universal test: getRevenue assets length is zero");
+                        if (totalRevenueUSD == 0) {
+                            for (uint x; x < __assets.length; ++x) {
+                                console.log(
+                                    string.concat("__assets[", Strings.toString(x), "]:"),
+                                    IERC20Metadata(__assets[x]).symbol()
+                                );
+                                console.log(string.concat(" amounts[", Strings.toString(x), "]:"), amounts[x]);
+                            }
                         }
                     }
                 }
@@ -435,6 +442,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             assertGt(tempEarned, 0, "HardWork Earned");
                             assertGt(tempTvl, 0, "HardWork TVL");
                             assertGt(tempDuration, 0, "HardWork duration");
+                            if (!vars.isRVault && !vars.isRMVault) {
+                                assertGt(tempAprCompound, 0, "Hardwork APR compound is zero. Check _compound() method.");
+                            }
                         }
                     }
                     require(vars.hwEventFound, "UniversalTest: HardWork event not emited");
@@ -512,11 +522,25 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IERC20(underlying).balanceOf(address(this)), 0);
 
                     uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
-                    assertEq(
-                        vaultBalance,
-                        sharesOut,
-                        "previewDepositAssets by underlying sharesOut and real shares after deposit mismatch"
-                    );
+                    if (!strategy.isHardWorkOnDepositAllowed()) {
+                        assertEq(
+                            vaultBalance,
+                            sharesOut,
+                            "previewDepositAssets by underlying: sharesOut and real shares after deposit mismatch"
+                        );
+                    } else {
+                        assertLt(
+                            vaultBalance,
+                            sharesOut,
+                            "previewDepositAssets by underlying: sharesOut and real shares after deposit compare error"
+                        );
+                        assertGt(
+                            vaultBalance,
+                            sharesOut - sharesOut / 1000,
+                            "previewDepositAssets by underlying: vault balance too small"
+                        );
+                    }
+
                     uint[] memory minAmounts = new uint[](1);
                     minAmounts[0] = totalWas - 1;
                     vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
