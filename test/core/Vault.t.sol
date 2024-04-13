@@ -68,6 +68,13 @@ contract VaultTest is Test, FullMockSetup {
         strategy.initVariants(address(0));
         strategy.isHardWorkOnDepositAllowed();
         strategy.isReadyForHardWork();
+
+        // cover StrategyBase
+        address[] memory assets_ = new address[](1);
+        assets_[0] = strategy.underlying();
+        uint[] memory amountsMax = new uint[](2);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        strategy.previewDepositAssets(assets_, amountsMax);
     }
 
     function testDepositWithdrawHardWork() public {

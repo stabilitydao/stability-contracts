@@ -12,6 +12,7 @@ import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/IchiRetroMerklFarmStrategy.sol";
 import "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
+import "../../src/strategies/CurveConvexFarmStrategy.sol";
 import "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 library DeployStrategyLib {
@@ -52,6 +53,10 @@ library DeployStrategyLib {
 
         if (CommonLib.eq(id, StrategyIdLib.GAMMA_RETRO_MERKL_FARM)) {
             implementation = address(new GammaRetroMerklFarmStrategy());
+        }
+
+        if (CommonLib.eq(id, StrategyIdLib.CURVE_CONVEX_FARM)) {
+            implementation = address(new CurveConvexFarmStrategy());
         }
 
         // nosemgrep

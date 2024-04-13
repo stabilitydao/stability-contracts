@@ -29,7 +29,8 @@ contract PlatformPolygonTest is PolygonSetup {
     constructor() {
         // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
         // vm.rollFork(52813000); // Jan-27-2024 02:40:51 PM +UTC
-        vm.rollFork(53017000); // Feb-01-2024 11:34:48 PM +UTC
+        // vm.rollFork(53017000); // Feb-01-2024 11:34:48 PM +UTC
+        vm.rollFork(55628000); // Apr-09-2024 01:21:45 PM +UTC
 
         _init();
         deal(platform.buildingPayPerVaultToken(), address(this), 5e25);
@@ -371,7 +372,7 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(delayGelato, 2 hours);
 
         address[] memory vaultsForHardWork = new address[](1);
-        address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 1);
+        address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 10);
         vaultsForHardWork[0] = vault_;
 
         (stategyRevenueAssets,) = IVault(vault_).strategy().getRevenue();
@@ -518,10 +519,12 @@ contract PlatformPolygonTest is PolygonSetup {
 
     function _fillStrategyRewards(IStrategy strategy) internal {
         (address[] memory stategyRevenueAssets,) = strategy.getRevenue();
-        if (CommonLib.eq("QuickSwap Static Merkl Farm", strategy.strategyLogicId())) {
-            deal(stategyRevenueAssets[2], address(strategy), 1e18);
-        } else {
-            deal(stategyRevenueAssets[0], address(strategy), 1e18);
+        if (stategyRevenueAssets.length > 0) {
+            if (CommonLib.eq("QuickSwap Static Merkl Farm", strategy.strategyLogicId())) {
+                deal(stategyRevenueAssets[2], address(strategy), 1e18);
+            } else {
+                deal(stategyRevenueAssets[0], address(strategy), 1e18);
+            }
         }
     }
 }
