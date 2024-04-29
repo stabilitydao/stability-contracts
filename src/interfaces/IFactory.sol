@@ -306,7 +306,7 @@ interface IFactory {
         );
 
     /// @notice Initialization strategy params store
-    function strategyAvailableInitParams(bytes32 idHash) external view returns(StrategyAvailableInitParams memory);
+    function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
     //endregion -- View functions -----
 

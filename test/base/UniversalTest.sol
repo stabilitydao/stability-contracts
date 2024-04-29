@@ -652,6 +652,12 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 if (vars.farming) {
                     IFarmingStrategy(address(strategy)).farmMechanics();
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       INIT VARIANTS                        */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                (string[] memory variants,,,) = strategy.initVariants(address(platform));
+                assertGt(variants.length, 0, "initVariants returns empty arrays");
             }
         }
     }

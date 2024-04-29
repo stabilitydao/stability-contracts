@@ -168,7 +168,7 @@ library PolygonLib {
         buildingPrice[1] = 50_000e18;
         buildingPrice[2] = 100_000e18;
         platform = DeployLib.deployPlatform(
-            "24.01.1-alpha",
+            "24.05.0-alpha",
             MULTISIG,
             TOKEN_PM,
             TOKEN_SDIV,
@@ -267,6 +267,19 @@ library PolygonLib {
         }
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
+
+        //region ----- Add strategy available init params -----
+        IFactory.StrategyAvailableInitParams memory p;
+        p.initAddresses = new address[](5);
+        p.initAddresses[0] = YEARN_USDCe;
+        p.initAddresses[1] = YEARN_USDT;
+        p.initAddresses[2] = YEARN_DAI;
+        p.initAddresses[3] = YEARN_WETH;
+        p.initAddresses[4] = YEARN_WMATIC;
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.YEARN, p);
+        //endregion -- Add strategy available init params -----
 
         //region ----- Reward tokens -----
         IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);

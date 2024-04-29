@@ -32,9 +32,9 @@ contract YearnStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IStrategy
-    function description() external pure returns (string memory) {
-        // todo protocols
-        return "todo";
+    function description() external view returns (string memory) {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        return _generateDescription($base._underlying);
     }
 
     /// @inheritdoc IStrategy
@@ -55,7 +55,16 @@ contract YearnStrategy is ERC4626StrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        // todo construct storage for allowed yaern v3 vaults
+        IFactory.StrategyAvailableInitParams memory params = IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        uint len = params.initAddresses.length;
+        variants = new string[](len);
+        addresses = new address[](len);
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        for (uint i; i < len; ++i) {
+            variants[i] = _generateDescription(params.initAddresses[i]);
+            addresses[i] = params.initAddresses[i];
+        }
     }
 
     /// @inheritdoc IStrategy
@@ -72,5 +81,17 @@ contract YearnStrategy is ERC4626StrategyBase {
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
         return StrategyIdLib.YEARN;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _generateDescription(address u) internal view returns (string memory) {
+        return string.concat(
+            "Hodl ",
+            //slither-disable-next-line calls-loop
+            IERC20Metadata(u).symbol()
+        );
     }
 }
