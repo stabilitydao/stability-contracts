@@ -119,6 +119,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 uint[] memory __rewardAmounts
             ) = _claimRevenue();
 
+            //slither-disable-next-line uninitialized-local
             uint totalBefore;
             if (!autoCompoundingByUnderlyingProtocol()) {
                 __amounts[exchangeAssetIndex] +=

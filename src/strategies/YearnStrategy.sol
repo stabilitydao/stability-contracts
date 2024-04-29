@@ -39,6 +39,7 @@ contract YearnStrategy is ERC4626StrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xdc568a), bytes3(0x000000)));
     }
 

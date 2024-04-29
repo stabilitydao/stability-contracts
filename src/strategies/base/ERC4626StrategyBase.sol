@@ -21,14 +21,14 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     //slither-disable-next-line naming-convention
     function __ERC4626StrategyBase_init(
         string memory id,
-        address platform,
-        address vault,
-        address underlying
+        address platform_,
+        address vault_,
+        address underlying_
     ) internal onlyInitializing {
         address[] memory _assets = new address[](1);
-        _assets[0] = IERC4626(underlying).asset();
+        _assets[0] = IERC4626(underlying_).asset();
         //slither-disable-next-line reentrancy-events
-        __StrategyBase_init(platform, id, vault, _assets, underlying, type(uint).max);
+        __StrategyBase_init(platform_, id, vault_, _assets, underlying_, type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
