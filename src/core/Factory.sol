@@ -45,31 +45,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     //endregion -- Constants -----
 
-    //region ----- Storage -----
-
-    /// @custom:storage-location erc7201:stability.Factory
-    struct FactoryStorage {
-        /// @inheritdoc IFactory
-        mapping(bytes32 typeHash => VaultConfig) vaultConfig;
-        /// @inheritdoc IFactory
-        mapping(bytes32 idHash => StrategyLogicConfig) strategyLogicConfig;
-        /// @inheritdoc IFactory
-        mapping(bytes32 deploymentKey => address vaultProxy) deploymentKey;
-        /// @inheritdoc IFactory
-        mapping(address vault => uint status) vaultStatus;
-        /// @inheritdoc IFactory
-        mapping(address address_ => bool isStrategy_) isStrategy;
-        EnumerableSet.Bytes32Set vaultTypeHashes;
-        EnumerableSet.Bytes32Set strategyLogicIdHashes;
-        mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
-        address[] deployedVaults;
-        Farm[] farms;
-        /// @inheritdoc IFactory
-        mapping(bytes32 idHash => StrategyAvailableInitParams) strategyAvailableInitParams;
-    }
-
-    //endregion -- Storage -----
-
     //region ----- Data types -----
 
     struct DeployVaultAndStrategyVars {
@@ -104,16 +79,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
-        string memory type_ = vaultConfig_.vaultType;
-        bytes32 typeHash = keccak256(abi.encodePacked(type_));
-        $.vaultConfig[typeHash] = vaultConfig_;
-        bool newVaultType = $.vaultTypeHashes.add(typeHash);
-        if (!newVaultType) {
+        if (FactoryLib.setVaultConfig($, vaultConfig_)) {
             _requireGovernanceOrMultisig();
         }
-        emit VaultConfigChanged(
-            type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
-        );
     }
 
     /// @inheritdoc IFactory
@@ -170,7 +138,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external onlyOperator {
+    function setStrategyAvailableInitParams(
+        string memory id,
+        StrategyAvailableInitParams memory initParams
+    ) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         bytes32 idHash = keccak256(abi.encodePacked(id));
         $.strategyAvailableInitParams[idHash] = initParams;
@@ -606,7 +577,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function strategyAvailableInitParams(bytes32 idHash) external view returns(StrategyAvailableInitParams memory) {
+    function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory) {
         FactoryStorage storage $ = _getStorage();
         return $.strategyAvailableInitParams[idHash];
     }
