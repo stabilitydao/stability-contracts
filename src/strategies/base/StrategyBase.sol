@@ -136,6 +136,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 }
             } else {
                 (, uint value) = _previewDepositAssets(__assets, __amounts);
+                // todo mint vault shares for fee recievers
             }
 
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);

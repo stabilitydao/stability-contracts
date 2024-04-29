@@ -182,7 +182,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1, 0, 0, 1, 0]
+                            [1, 0, 1, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {
@@ -293,7 +293,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1, 0, 0, 1, 0]
+                            [1, 0, 1, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {

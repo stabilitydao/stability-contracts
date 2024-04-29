@@ -7,12 +7,27 @@ import "./StrategyBase.sol";
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// @author Alien Deployer (https://github.com/a17)
 abstract contract ERC4626StrategyBase is StrategyBase {
+    using SafeERC20 for IERC20;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
     string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.0";
+
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
+        0x5b77806ff180dee2d0be2cd23be20d60541fe5fbef60bd0f3013af3027492200;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.ERC4626StrategyBase
+    struct ERC4626StrategyBaseStorage {
+        uint lastSharePrice;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -29,6 +44,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         _assets[0] = IERC4626(underlying_).asset();
         //slither-disable-next-line reentrancy-events
         __StrategyBase_init(platform_, id, vault_, _assets, underlying_, type(uint).max);
+        IERC20(_assets[0]).forceApprove(underlying_, type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -71,7 +87,25 @@ abstract contract ERC4626StrategyBase is StrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
-        // StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        address u = $base._underlying;
+        value = IERC4626(u).deposit(amounts[0], address(this));
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
+        if ($.lastSharePrice == 0) {
+            $.lastSharePrice = _getSharePrice(u);
+        }
+    }
+
+    /// @inheritdoc StrategyBase
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        amountsConsumed = new uint[](1);
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        address u = $base._underlying;
+        amountsConsumed[0] = IERC4626(u).convertToAssets(amount);
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
+        if ($.lastSharePrice == 0) {
+            $.lastSharePrice = _getSharePrice(u);
+        }
     }
 
     /// @inheritdoc StrategyBase
@@ -122,12 +156,19 @@ abstract contract ERC4626StrategyBase is StrategyBase {
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(
-        address[] memory assets_,
+        address[] memory,
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
-        // amountsOut = new uint[](1);
-        // amountsOut[0] = value;
+        amountsOut = new uint[](1);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawUnderlying(uint amount, address receiver) internal override {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC20(__$__._underlying).transfer(receiver, amount);
     }
 
     /// @inheritdoc StrategyBase
@@ -142,7 +183,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /// @inheritdoc StrategyBase
     function _claimRevenue()
         internal
-        pure
         override
         returns (
             address[] memory __assets,
@@ -151,9 +191,37 @@ abstract contract ERC4626StrategyBase is StrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        __assets = new address[](0);
-        __amounts = new uint[](0);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        address u = __$__._underlying;
+        __assets = __$__._assets;
+
+        __amounts = new uint[](1);
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
+        uint oldSharePrice = $.lastSharePrice;
+        uint newSharePrice = _getSharePrice(u);
+        if (newSharePrice > oldSharePrice) {
+            __amounts[0] =
+                StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
+        }
+        $.lastSharePrice = newSharePrice;
+
         __rewardAssets = new address[](0);
         __rewardAmounts = new uint[](0);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _getERC4626StrategyBaseStorage() internal pure returns (ERC4626StrategyBaseStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := ERC4626_STRATEGY_BASE_STORAGE_LOCATION
+        }
+    }
+
+    function _getSharePrice(address u) internal view returns (uint) {
+        // totalSupply cant be zero in our integrations
+        return IERC4626(u).totalAssets() * 1e18 / IERC4626(u).totalSupply();
     }
 }

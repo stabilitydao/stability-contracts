@@ -24,7 +24,7 @@ contract YearnStrategy is ERC4626StrategyBase {
             revert IControllable.IncorrectInitParams();
         }
 
-        __ERC4626StrategyBase_init(StrategyIdLib.YEARN, addresses[0], addresses[1], addresses[3]);
+        __ERC4626StrategyBase_init(StrategyIdLib.YEARN, addresses[0], addresses[1], addresses[2]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

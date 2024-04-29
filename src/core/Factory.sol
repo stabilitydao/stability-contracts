@@ -21,6 +21,8 @@ import "../interfaces/IStrategyLogic.sol";
 
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
+/// Changelog:
+///   1.1.0: getDeploymentKey fix for not farming strategies
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -31,7 +33,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -536,7 +538,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             initStrategyAddresses,
             initStrategyNums,
             initStrategyTicks,
-            [1, 0, 0, 1, 0]
+            [1, 0, 1, 1, 0]
         );
     }
 
