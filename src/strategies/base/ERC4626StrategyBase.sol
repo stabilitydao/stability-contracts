@@ -168,7 +168,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IERC20(__$__._underlying).transfer(receiver, amount);
+        IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }
 
     /// @inheritdoc StrategyBase
