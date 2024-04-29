@@ -12,4 +12,5 @@ library StrategyIdLib {
     string internal constant QUICKSWAP_STATIC_MERKL_FARM = "QuickSwap Static Merkl Farm";
     string internal constant GAMMA_RETRO_MERKL_FARM = "Gamma Retro Merkl Farm";
     string internal constant CURVE_CONVEX_FARM = "Curve Convex Farm";
+    string internal constant YEARN = "Yearn";
 }

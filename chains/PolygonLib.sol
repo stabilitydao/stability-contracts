@@ -58,6 +58,7 @@ library PolygonLib {
     address public constant POOL_UNISWAPV3_USDCe_WETH_500 = 0x45dDa9cb7c25131DF268515131f647d726f50608;
     address public constant POOL_UNISWAPV3_PROFIT_WETH_100 = 0xE5e70cb76446BEE0053b1EdF22CaDa861c80D51F;
     address public constant POOL_UNISWAPV3_WETH_COMP_3000 = 0x2260E0081A2A042DC55A07D379eb3c18bE28A1F2;
+    address public constant POOL_UNISWAPV3_WMATIC_COMP_3000 = 0x495b3576e2f67fa870e14d0996433FbdB4015794;
     address public constant POOL_QUICKSWAPV3_USDCe_USDT = 0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710;
     address public constant POOL_QUICKSWAPV3_USDCe_DAI = 0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2;
     address public constant POOL_QUICKSWAPV3_USDCe_WETH = 0x55CAaBB0d2b704FD0eF8192A7E35D8837e678207;
@@ -152,6 +153,13 @@ library PolygonLib {
     address public constant CONVEX_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
     address public constant CONVEX_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
     address public constant CONVEX_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
+
+    // Yearn V3
+    address public constant YEARN_DAI = 0x90b2f54C6aDDAD41b8f6c4fCCd555197BC0F773B;
+    address public constant YEARN_USDT = 0xBb287E6017d3DEb0e2E65061e8684eab21060123;
+    address public constant YEARN_USDCe = 0xA013Fbd4b711f9ded6fB09C1c0d358E2FbC2EAA0;
+    address public constant YEARN_WMATIC = 0x28F53bA70E5c8ce8D03b1FaD41E9dF11Bb646c36;
+    address public constant YEARN_WETH = 0x305F25377d0a39091e99B975558b1bdfC3975654;
 
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
@@ -736,7 +744,10 @@ library PolygonLib {
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);
     }
 
-    function _makeCurveConvexFarm(address curvePool, address convexRewardPool) internal view returns (IFactory.Farm memory) {
+    function _makeCurveConvexFarm(
+        address curvePool,
+        address convexRewardPool
+    ) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         uint rewardTokensLength = IConvexRewardPool(convexRewardPool).rewardLength();
         farm.status = 0;

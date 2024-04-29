@@ -137,7 +137,7 @@ interface IStrategy is IERC165 {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks);
 
-    /// @notice How strategy earns money
+    /// @notice How does the strategy make money?
     /// @return Description in free form
     function description() external view returns (string memory);
 
@@ -146,6 +146,9 @@ interface IStrategy is IERC165 {
 
     /// @notice Is HardWork can be executed
     function isReadyForHardWork() external view returns (bool);
+
+    /// @notice Strategy not need to compound revenue on HardWorks
+    function autoCompoundingByUnderlyingProtocol() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
