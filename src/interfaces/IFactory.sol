@@ -49,6 +49,7 @@ interface IFactory {
     event VaultStatus(address indexed vault, uint newStatus);
     event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
+    event SetStrategyAvailableInitParams(string id, address[] initAddresses, uint[] initNums, int24[] initTicks);
 
     //endregion -- Events -----
 
@@ -79,6 +80,12 @@ interface IFactory {
         address[] addresses;
         uint[] nums;
         int24[] ticks;
+    }
+
+    struct StrategyAvailableInitParams {
+        address[] initAddresses;
+        uint[] initNums;
+        int24[] initTicks;
     }
 
     //endregion -- Data types -----
@@ -275,6 +282,9 @@ interface IFactory {
             bytes32[] memory extra
         );
 
+    /// @notice Initialization strategy params store
+    function strategyAvailableInitParams(bytes32 idHash) external view returns(StrategyAvailableInitParams memory);
+
     //endregion -- View functions -----
 
     //region ----- Write functions -----
@@ -332,6 +342,11 @@ interface IFactory {
     /// @param vaults Addresses of vault proxy
     /// @param statuses New vault statuses. Constant from VaultStatusLib
     function setVaultStatus(address[] memory vaults, uint[] memory statuses) external;
+
+    /// @notice Initial addition or change of strategy available init params
+    /// @param id Strategy ID string
+    /// @param initParams Init params variations that will be parsed by strategy
+    function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
     //endregion -- Write functions -----
 }

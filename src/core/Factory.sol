@@ -22,7 +22,7 @@ import "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
-///   1.1.0: getDeploymentKey fix for not farming strategies
+///   1.1.0: getDeploymentKey fix for not farming strategies, strategyAvailableInitParams
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -64,6 +64,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
         address[] deployedVaults;
         Farm[] farms;
+        /// @inheritdoc IFactory
+        mapping(bytes32 idHash => StrategyAvailableInitParams) strategyAvailableInitParams;
     }
 
     //endregion -- Storage -----
@@ -167,12 +169,19 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit UpdateFarm(id, farm_);
     }
 
+    /// @inheritdoc IFactory
+    function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external onlyOperator {
+        FactoryStorage storage $ = _getStorage();
+        bytes32 idHash = keccak256(abi.encodePacked(id));
+        $.strategyAvailableInitParams[idHash] = initParams;
+        emit SetStrategyAvailableInitParams(id, initParams.initAddresses, initParams.initNums, initParams.initTicks);
+    }
+
     //endregion -- Restricted actions ----
 
     //region ----- User actions -----
 
     /// @inheritdoc IFactory
-
     //slither-disable-next-line cyclomatic-complexity reentrancy-benign
     function deployVaultAndStrategy(
         string memory vaultType,
@@ -594,6 +603,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint builderPermitTokenId
     ) external view returns (uint vaultsBuilt) {
         return _getStorage().vaultsBuiltByPermitTokenId[week][builderPermitTokenId];
+    }
+
+    /// @inheritdoc IFactory
+    function strategyAvailableInitParams(bytes32 idHash) external view returns(StrategyAvailableInitParams memory) {
+        FactoryStorage storage $ = _getStorage();
+        return $.strategyAvailableInitParams[idHash];
     }
 
     //endregion -- View functions -----
