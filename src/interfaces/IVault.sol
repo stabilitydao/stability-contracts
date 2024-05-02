@@ -36,6 +36,12 @@ interface IVault is IERC165 {
     event MaxSupply(uint maxShares);
     event VaultName(string newName);
     event VaultSymbol(string newSymbol);
+    event MintFees(
+        uint vaultManagerReceiverFee,
+        uint strategyLogicReceiverFee,
+        uint ecosystemRevenueReceiverFee,
+        uint multisigReceiverFee
+    );
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -150,6 +156,12 @@ interface IVault is IERC165 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev Mint fee shares callback
+    /// @param revenueAssets Assets returned by _claimRevenue function that was earned during HardWork
+    /// @param revenueAmounts Assets amounts returned from _claimRevenue function that was earned during HardWork
+    /// Only strategy can call this
+    function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external;
 
     /// @dev Deposit final assets (pool assets) to the strategy and minting of vault shares.
     ///      If the strategy interacts with a pool or farms through an underlying token, then it will be minted.

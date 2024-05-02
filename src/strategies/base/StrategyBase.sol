@@ -135,8 +135,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
                     _compound();
                 }
             } else {
-                (, uint value) = _previewDepositAssets(__assets, __amounts);
-                // todo mint vault shares for fee recievers
+                // maybe this is not final logic
+                // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
+                // but for many strategies linked to CVault if this feature will be implemented
+                IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
             }
 
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);

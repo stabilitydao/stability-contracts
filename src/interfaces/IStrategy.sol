@@ -147,7 +147,7 @@ interface IStrategy is IERC165 {
     /// @notice Is HardWork can be executed
     function isReadyForHardWork() external view returns (bool);
 
-    /// @notice Strategy not need to compound revenue on HardWorks
+    /// @notice Strategy not need to process revenue on HardWorks
     function autoCompoundingByUnderlyingProtocol() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

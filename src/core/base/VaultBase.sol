@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "./Controllable.sol";
 import "../libs/ConstantsLib.sol";
 import "../libs/VaultStatusLib.sol";
+import "../libs/VaultBaseLib.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IPriceReader.sol";
@@ -29,7 +30,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "1.2.0";
+    string public constant VERSION_VAULT_BASE = "1.3.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -41,7 +42,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     uint internal constant _MIN_HARDWORK_DELAY = 3600;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultBase")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant VAULTBASE_STORAGE_LOCATION =
+    bytes32 private constant _VAULTBASE_STORAGE_LOCATION =
         0xd602ae9af1fed726d4890dcf3c81a074ed87a6343646550e5de293c5a9330a00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -97,6 +98,22 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @dev Need to receive ETH for HardWork and re-balance gas compensation
     receive() external payable {}
+
+    /// @inheritdoc IVault
+    function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external virtual {
+        (address[] memory feeReceivers, uint[] memory feeShares) = VaultBaseLib.hardWorkMintFeeCallback(
+            IPlatform(platform()),
+            revenueAssets,
+            revenueAmounts,
+            _getVaultBaseStorage()
+        );
+        uint len = feeReceivers.length;
+        for (uint i; i < len; ++i) {
+            if (feeShares[i] != 0) {
+                _mint(feeReceivers[i], feeShares[i]);
+            }
+        }
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
@@ -415,7 +432,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function _getVaultBaseStorage() internal pure returns (VaultBaseStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
-            $.slot := VAULTBASE_STORAGE_LOCATION
+            $.slot := _VAULTBASE_STORAGE_LOCATION
         }
     }
 

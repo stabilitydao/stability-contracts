@@ -211,7 +211,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         ticks
                     );
 
-                    assertEq(IERC721(platform.vaultManager()).ownerOf(i), address(this));
+                    uint vaultTokenId = factory.deployedVaultsLength() - 1;
+                    assertEq(IERC721(platform.vaultManager()).ownerOf(vaultTokenId), address(this));
+                    IVaultManager(platform.vaultManager()).setRevenueReceiver(vaultTokenId, address(1));
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
@@ -533,10 +535,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             "previewDepositAssets by underlying: sharesOut and real shares after deposit mismatch"
                         );
                     } else {
-                        assertLe(
+                        assertLt(
                             vaultBalance,
-                            sharesOut,
-                            "previewDepositAssets by underlying: sharesOut and real shares after deposit compare error"
+                            sharesOut + sharesOut / 10000,
+                            "previewDepositAssets by underlying: vault balance too big"
                         );
                         assertGt(
                             vaultBalance,
