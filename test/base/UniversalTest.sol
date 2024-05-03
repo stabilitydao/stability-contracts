@@ -76,6 +76,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     function _addRewards(uint farmId) internal virtual {}
 
     function _preHardWork() internal virtual {}
+    
+    function _preDeposit() internal virtual {}
 
     function testNull() public {}
 
@@ -196,6 +198,18 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         factory.updateFarm(nums[0], f);
                         ///
                     } else {
+                        initStrategyAddresses = new address[](2);
+                        vm.expectRevert(IControllable.IncorrectInitParams.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+
                         initStrategyAddresses = new address[](1);
                         initStrategyAddresses[0] = strategies[i].underlying;
                         nums = new uint[](0);
@@ -268,6 +282,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+                _preDeposit();
 
                 // get amounts for deposit
                 uint[] memory depositAmounts = new uint[](assets.length);
@@ -654,6 +670,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 if (vars.farming) {
                     IFarmingStrategy(address(strategy)).farmMechanics();
                 }
+                strategy.autoCompoundingByUnderlyingProtocol();
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                       INIT VARIANTS                        */

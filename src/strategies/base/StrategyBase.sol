@@ -139,6 +139,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
                 // but for many strategies linked to CVault if this feature will be implemented
                 IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
+                // call empty method only for coverage or them can be overriden
+                _liquidateRewards(__assets[0], __rewardAssets, __rewardAmounts);
+                _processRevenue(__assets, __amounts);
+                _compound();
             }
 
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);

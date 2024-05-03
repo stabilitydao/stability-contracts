@@ -18,4 +18,18 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
             Strategy({id: StrategyIdLib.YEARN, pool: address(0), farmId: type(uint).max, underlying: yaernV3Vault})
         );
     }
+
+    function _preDeposit() internal override {
+        // for some vault we need to cover deposit by underlying as first vault deposit
+        if (IStrategy(currentStrategy).underlying() == PolygonLib.YEARN_USDT) {
+            address vault = IStrategy(currentStrategy).vault();
+            address[] memory underlyingAssets = new address[](1);
+            underlyingAssets[0] = PolygonLib.YEARN_USDT;
+            uint[] memory underlyingAmounts = new uint[](1);
+            underlyingAmounts[0] = 100e6;
+            _deal(underlyingAssets[0], address(this), 100e6);
+            IERC20(underlyingAssets[0]).approve(vault, type(uint).max);
+            IVault(vault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
+        }
+    }
 }

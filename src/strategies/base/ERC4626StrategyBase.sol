@@ -108,16 +108,24 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         }
     }
 
-    /// @inheritdoc StrategyBase
-    function _compound() internal override {
-        //
-    }
-
     function _liquidateRewards(
         address, /*exchangeAsset*/
         address[] memory, /*rewardAssets_*/
         uint[] memory /*rewardAmounts_*/
     ) internal pure override returns (uint earnedExchangeAsset) {
+        // do nothing
+    }
+
+    /// @inheritdoc StrategyBase
+    function _processRevenue(
+        address[] memory, /*assets_*/
+        uint[] memory /*amountsRemaining*/
+    ) internal pure override returns (bool needCompound) {
+        // do nothing
+    }
+
+    /// @inheritdoc StrategyBase
+    function _compound() internal override {
         // do nothing
     }
 
@@ -141,12 +149,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     ) internal view override(StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
         return _previewDepositAssets(amountsMax);
     }
-
-    /// @inheritdoc StrategyBase
-    function _processRevenue(
-        address[] memory, /*assets_*/
-        uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {}
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
