@@ -48,7 +48,7 @@ library VaultBaseLib {
         v.vaultSharesForStrategyLogic = v.vaultSharesForPlatform * v.feeShareStrategyLogic / ConstantsLib.DENOMINATOR;
         if (v.feeShareEcosystem != 0) {
             v.vaultSharesForEcosystem = v.vaultSharesForPlatform * v.feeShareEcosystem / ConstantsLib.DENOMINATOR;
-            returnArraysLength++;
+            ++returnArraysLength;
         }
         uint multisigShare =
             ConstantsLib.DENOMINATOR - v.feeShareVaultManager - v.feeShareStrategyLogic - v.feeShareEcosystem;
@@ -56,7 +56,7 @@ library VaultBaseLib {
         if (multisigShare > 0) {
             vaultSharesForMultisig = v.vaultSharesForPlatform - v.vaultSharesForVaultManager
                 - v.vaultSharesForStrategyLogic - v.vaultSharesForEcosystem;
-            returnArraysLength++;
+            ++returnArraysLength;
         }
         feeReceivers = new address[](returnArraysLength);
         feeShares = new uint[](returnArraysLength);
@@ -72,7 +72,7 @@ library VaultBaseLib {
         if (v.vaultSharesForEcosystem != 0) {
             feeReceivers[k] = platform.ecosystemRevenueReceiver();
             feeShares[k] = v.vaultSharesForEcosystem;
-            k++;
+            ++k;
         }
         if (vaultSharesForMultisig != 0) {
             feeReceivers[k] = platform.multisig();

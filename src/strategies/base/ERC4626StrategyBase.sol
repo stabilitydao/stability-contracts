@@ -235,6 +235,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         __assets = __$__._assets;
         amounts = new uint[](1);
         uint oldSharePrice = $.lastSharePrice;
+        // nosemgrep
         if (newSharePrice > oldSharePrice && oldSharePrice != 0) {
             amounts[0] = StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
         }
