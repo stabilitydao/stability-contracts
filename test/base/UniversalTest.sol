@@ -76,7 +76,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     function _addRewards(uint farmId) internal virtual {}
 
     function _preHardWork() internal virtual {}
-    
+
     function _preDeposit() internal virtual {}
 
     function testNull() public {}

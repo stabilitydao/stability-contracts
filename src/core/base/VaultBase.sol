@@ -102,10 +102,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @inheritdoc IVault
     function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external virtual {
         (address[] memory feeReceivers, uint[] memory feeShares) = VaultBaseLib.hardWorkMintFeeCallback(
-            IPlatform(platform()),
-            revenueAssets,
-            revenueAmounts,
-            _getVaultBaseStorage()
+            IPlatform(platform()), revenueAssets, revenueAmounts, _getVaultBaseStorage()
         );
         uint len = feeReceivers.length;
         for (uint i; i < len; ++i) {
