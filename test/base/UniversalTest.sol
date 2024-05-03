@@ -523,6 +523,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 address underlying = strategy.underlying();
                 if (underlying != address(0)) {
                     skip(7200);
+                    bool wasReadyForHardWork = strategy.isReadyForHardWork();
                     address tempVault = vars.vault;
                     deal(underlying, address(this), totalWas);
                     assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
@@ -536,7 +537,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
                     uint lastHw = strategy.lastHardWork();
                     IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
-                    if (strategy.isHardWorkOnDepositAllowed()) {
+                    if (strategy.isHardWorkOnDepositAllowed() && wasReadyForHardWork) {
                         assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
                         assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
                     }

@@ -70,15 +70,22 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() external pure returns (address[] memory __assets, uint[] memory amounts) {
-        // todo
-        __assets = new address[](0);
-        amounts = new uint[](0);
+    function getRevenue() public view returns (address[] memory __assets, uint[] memory amounts) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        address u = __$__._underlying;
+        uint newSharePrice = _getSharePrice(u);
+        (__assets, amounts) = _getRevenue(newSharePrice, u);
     }
 
     /// @inheritdoc IStrategy
     function autoCompoundingByUnderlyingProtocol() public view virtual override returns (bool) {
         return true;
+    }
+
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external view virtual returns (bool isReady) {
+        (address[] memory __assets, uint[] memory amounts) = getRevenue();
+        isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -193,20 +200,12 @@ abstract contract ERC4626StrategyBase is StrategyBase {
             uint[] memory __rewardAmounts
         )
     {
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         address u = __$__._underlying;
-        __assets = __$__._assets;
-
-        __amounts = new uint[](1);
-        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
-        uint oldSharePrice = $.lastSharePrice;
         uint newSharePrice = _getSharePrice(u);
-        if (newSharePrice > oldSharePrice) {
-            __amounts[0] =
-                StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
-        }
+        (__assets, __amounts) = _getRevenue(newSharePrice, u);
         $.lastSharePrice = newSharePrice;
-
         __rewardAssets = new address[](0);
         __rewardAmounts = new uint[](0);
     }
@@ -225,5 +224,19 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     function _getSharePrice(address u) internal view returns (uint) {
         // totalSupply cant be zero in our integrations
         return IERC4626(u).totalAssets() * 1e18 / IERC4626(u).totalSupply();
+    }
+
+    function _getRevenue(
+        uint newSharePrice,
+        address u
+    ) internal view returns (address[] memory __assets, uint[] memory amounts) {
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __assets = __$__._assets;
+        amounts = new uint[](1);
+        uint oldSharePrice = $.lastSharePrice;
+        if (newSharePrice > oldSharePrice && oldSharePrice != 0) {
+            amounts[0] = StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
+        }
     }
 }

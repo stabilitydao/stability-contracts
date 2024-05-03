@@ -74,12 +74,6 @@ contract YearnStrategy is ERC4626StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external pure returns (bool isReady) {
-        // todo ready if share price of yaern vault increased
-        isReady = true;
-    }
-
-    /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
         return StrategyIdLib.YEARN;
     }
@@ -89,6 +83,7 @@ contract YearnStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _generateDescription(address u) internal view returns (string memory) {
+        //slither-disable-next-line calls-loop
         return string.concat(
             "Hodl ",
             //slither-disable-next-line calls-loop
