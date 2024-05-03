@@ -20,8 +20,8 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
-        // for some vault we need to cover deposit by underlying as first vault deposit
         if (IStrategy(currentStrategy).underlying() == PolygonLib.YEARN_USDT) {
+            // for some vault we need to cover deposit by underlying as first vault deposit
             address vault = IStrategy(currentStrategy).vault();
             address[] memory underlyingAssets = new address[](1);
             underlyingAssets[0] = PolygonLib.YEARN_USDT;
@@ -30,6 +30,12 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
             _deal(underlyingAssets[0], address(this), 100e6);
             IERC20(underlyingAssets[0]).approve(vault, type(uint).max);
             IVault(vault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
+
+            // for some vault we setup ecosystem fee
+            vm.startPrank(address(0));
+            platform.setEcosystemRevenueReceiver(address(10));
+            platform.setFees(6_000, 30_000, 30_000, 40_000);
+            vm.stopPrank();
         }
     }
 }

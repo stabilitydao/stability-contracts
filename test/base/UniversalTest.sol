@@ -671,6 +671,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IFarmingStrategy(address(strategy)).farmMechanics();
                 }
                 strategy.autoCompoundingByUnderlyingProtocol();
+                if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.YEARN)) {
+                    vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectMsgSender.selector));
+                    IVault(vars.vault).hardWorkMintFeeCallback(new address[](0), new uint[](0));
+                }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                       INIT VARIANTS                        */
