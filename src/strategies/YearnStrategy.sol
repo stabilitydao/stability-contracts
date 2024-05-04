@@ -95,16 +95,18 @@ contract YearnStrategy is ERC4626StrategyBase {
     }
 
     function _getQueueNames(address u) internal view returns (string memory) {
+        //slither-disable-next-line calls-loop
         address[] memory subVaults = IYearnVault(u).get_default_queue();
         return CommonLib.implode(_getNames(subVaults), ", ");
     }
 
-    function _getNames(address[] memory assets) internal view returns (string[] memory names) {
-        uint len = assets.length;
+    function _getNames(address[] memory assets_) internal view returns (string[] memory names) {
+        uint len = assets_.length;
         names = new string[](len);
         // nosemgrep
         for (uint i; i < len; ++i) {
-            names[i] = IERC20Metadata(assets[i]).name();
+            //slither-disable-next-line calls-loop
+            names[i] = IERC20Metadata(assets_[i]).name();
         }
     }
 }
