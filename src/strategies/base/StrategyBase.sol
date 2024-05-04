@@ -8,6 +8,8 @@ import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
+/// Changelog:
+///   1.1.0: autoCompoundingByUnderlyingProtocol(), virtual total()
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract StrategyBase is Controllable, IStrategy {
@@ -18,7 +20,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_STRATEGY_BASE = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -117,16 +119,29 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 uint[] memory __rewardAmounts
             ) = _claimRevenue();
 
-            __amounts[exchangeAssetIndex] +=
-                _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
+            //slither-disable-next-line uninitialized-local
+            uint totalBefore;
+            if (!autoCompoundingByUnderlyingProtocol()) {
+                __amounts[exchangeAssetIndex] +=
+                    _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
-            uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, $._id, __assets, __amounts);
+                uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, $._id, __assets, __amounts);
 
-            bool needCompound = _processRevenue(__assets, amountsRemaining);
+                bool needCompound = _processRevenue(__assets, amountsRemaining);
 
-            uint totalBefore = $.total;
+                totalBefore = $.total;
 
-            if (needCompound) {
+                if (needCompound) {
+                    _compound();
+                }
+            } else {
+                // maybe this is not final logic
+                // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
+                // but for many strategies linked to CVault if this feature will be implemented
+                IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
+                // call empty method only for coverage or them can be overriden
+                _liquidateRewards(__assets[0], __rewardAssets, __rewardAmounts);
+                _processRevenue(__assets, __amounts);
                 _compound();
             }
 
@@ -136,9 +151,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function emergencyStopInvesting() external onlyGovernanceOrMultisig {
-        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         // slither-disable-next-line unused-return
-        _withdrawAssets($.total, address(this));
+        _withdrawAssets(total(), address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -168,7 +182,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @inheritdoc IStrategy
-    function total() public view override returns (uint) {
+    function total() public view virtual override returns (uint) {
         return _getStrategyBaseStorage().total;
     }
 
@@ -209,6 +223,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
         } else {
             return _previewDepositAssets(assets_, amountsMax);
         }
+    }
+
+    /// @inheritdoc IStrategy
+    function autoCompoundingByUnderlyingProtocol() public view virtual returns (bool) {
+        return false;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

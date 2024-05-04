@@ -66,4 +66,6 @@ abstract contract MockSetup {
         builderPayPerVaultToken = tokenC;
         builderPayPerVaultPrice = 10e6;
     }
+
+    function testMockSetup() public {}
 }

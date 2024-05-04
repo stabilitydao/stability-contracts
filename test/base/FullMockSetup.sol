@@ -146,4 +146,6 @@ abstract contract FullMockSetup is MockSetup {
             address(this)
         );
     }
+
+    function testFullMockSetup() public {}
 }

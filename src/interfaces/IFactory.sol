@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 /// @notice Creating vaults, upgrading vaults and strategies, vault list, farms and strategy logics management
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
@@ -49,10 +51,32 @@ interface IFactory {
     event VaultStatus(address indexed vault, uint newStatus);
     event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
+    event SetStrategyAvailableInitParams(string id, address[] initAddresses, uint[] initNums, int24[] initTicks);
 
     //endregion -- Events -----
 
     //region ----- Data types -----
+
+    /// @custom:storage-location erc7201:stability.Factory
+    struct FactoryStorage {
+        /// @inheritdoc IFactory
+        mapping(bytes32 typeHash => VaultConfig) vaultConfig;
+        /// @inheritdoc IFactory
+        mapping(bytes32 idHash => StrategyLogicConfig) strategyLogicConfig;
+        /// @inheritdoc IFactory
+        mapping(bytes32 deploymentKey => address vaultProxy) deploymentKey;
+        /// @inheritdoc IFactory
+        mapping(address vault => uint status) vaultStatus;
+        /// @inheritdoc IFactory
+        mapping(address address_ => bool isStrategy_) isStrategy;
+        EnumerableSet.Bytes32Set vaultTypeHashes;
+        EnumerableSet.Bytes32Set strategyLogicIdHashes;
+        mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
+        address[] deployedVaults;
+        Farm[] farms;
+        /// @inheritdoc IFactory
+        mapping(bytes32 idHash => StrategyAvailableInitParams) strategyAvailableInitParams;
+    }
 
     struct VaultConfig {
         string vaultType;
@@ -79,6 +103,12 @@ interface IFactory {
         address[] addresses;
         uint[] nums;
         int24[] ticks;
+    }
+
+    struct StrategyAvailableInitParams {
+        address[] initAddresses;
+        uint[] initNums;
+        int24[] initTicks;
     }
 
     //endregion -- Data types -----
@@ -275,6 +305,9 @@ interface IFactory {
             bytes32[] memory extra
         );
 
+    /// @notice Initialization strategy params store
+    function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
+
     //endregion -- View functions -----
 
     //region ----- Write functions -----
@@ -332,6 +365,11 @@ interface IFactory {
     /// @param vaults Addresses of vault proxy
     /// @param statuses New vault statuses. Constant from VaultStatusLib
     function setVaultStatus(address[] memory vaults, uint[] memory statuses) external;
+
+    /// @notice Initial addition or change of strategy available init params
+    /// @param id Strategy ID string
+    /// @param initParams Init params variations that will be parsed by strategy
+    function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
     //endregion -- Write functions -----
 }

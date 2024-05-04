@@ -15,6 +15,7 @@ import "../../interfaces/IRVault.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     uint public constant BOOST_REWARD_DURATION = 86400 * 30;
 
@@ -182,7 +183,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1, 0, 0, 1, 0]
+                            [1, 0, 1, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {
@@ -293,7 +294,7 @@ library FactoryLib {
                             vars.strategyInitAddresses,
                             vars.strategyInitNums,
                             vars.strategyInitTicks,
-                            [1, 0, 0, 1, 0]
+                            [1, 0, 1, 1, 0]
                         );
 
                         if (factory.deploymentKey(_deploymentKey) == address(0)) {
@@ -636,5 +637,21 @@ library FactoryLib {
                 revert IFactory.BoostAmountTooLow();
             }
         }
+    }
+
+    function setVaultConfig(
+        IFactory.FactoryStorage storage $,
+        IFactory.VaultConfig memory vaultConfig_
+    ) external returns (bool needGovOrMultisigAccess) {
+        string memory type_ = vaultConfig_.vaultType;
+        bytes32 typeHash = keccak256(abi.encodePacked(type_));
+        $.vaultConfig[typeHash] = vaultConfig_;
+        bool newVaultType = $.vaultTypeHashes.add(typeHash);
+        if (!newVaultType) {
+            needGovOrMultisigAccess = true;
+        }
+        emit IFactory.VaultConfigChanged(
+            type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
+        );
     }
 }

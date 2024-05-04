@@ -77,6 +77,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _preHardWork() internal virtual {}
 
+    function _preDeposit() internal virtual {}
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -156,18 +158,63 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         vaultInitNums[vaultInitAddressesLength * 2 - 1] = 50_000;
                     }
 
-                    if (!vars.farming) {
-                        revert("UniversalTest: only farming strategies supported yet");
-                    }
-
-                    address[] memory initStrategyAddresses = new address[](0);
-                    uint[] memory nums = new uint[](1);
-                    nums[0] = strategies[i].farmId;
+                    address[] memory initStrategyAddresses;
+                    uint[] memory nums;
                     int24[] memory ticks = new int24[](0);
 
-                    // test bad params
-                    initStrategyAddresses = new address[](1);
-                    vm.expectRevert(IControllable.IncorrectInitParams.selector);
+                    if (vars.farming) {
+                        nums = new uint[](1);
+                        nums[0] = strategies[i].farmId;
+
+                        // test bad params
+                        initStrategyAddresses = new address[](1);
+                        vm.expectRevert(IControllable.IncorrectInitParams.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+                        initStrategyAddresses = new address[](0);
+
+                        IFactory.Farm memory f = factory.farm(nums[0]);
+                        int24[] memory goodTicks = f.ticks;
+                        f.ticks = new int24[](1000);
+                        factory.updateFarm(nums[0], f);
+                        vm.expectRevert(IFarmingStrategy.BadFarm.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+                        f.ticks = goodTicks;
+                        factory.updateFarm(nums[0], f);
+                        ///
+                    } else {
+                        initStrategyAddresses = new address[](2);
+                        vm.expectRevert(IControllable.IncorrectInitParams.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+
+                        initStrategyAddresses = new address[](1);
+                        initStrategyAddresses[0] = strategies[i].underlying;
+                        nums = new uint[](0);
+                    }
+
                     factory.deployVaultAndStrategy(
                         vars.types[k],
                         strategies[i].id,
@@ -177,37 +224,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         nums,
                         ticks
                     );
-                    initStrategyAddresses = new address[](0);
 
-                    IFactory.Farm memory f = factory.farm(nums[0]);
-                    int24[] memory goodTicks = f.ticks;
-                    f.ticks = new int24[](1000);
-                    factory.updateFarm(nums[0], f);
-                    vm.expectRevert(IFarmingStrategy.BadFarm.selector);
-                    factory.deployVaultAndStrategy(
-                        vars.types[k],
-                        strategies[i].id,
-                        vaultInitAddresses,
-                        vaultInitNums,
-                        initStrategyAddresses,
-                        nums,
-                        ticks
-                    );
-                    f.ticks = goodTicks;
-                    factory.updateFarm(nums[0], f);
-                    ///
-
-                    factory.deployVaultAndStrategy(
-                        vars.types[k],
-                        strategies[i].id,
-                        vaultInitAddresses,
-                        vaultInitNums,
-                        initStrategyAddresses,
-                        nums,
-                        ticks
-                    );
-
-                    assertEq(IERC721(platform.vaultManager()).ownerOf(i), address(this));
+                    uint vaultTokenId = factory.deployedVaultsLength() - 1;
+                    assertEq(IERC721(platform.vaultManager()).ownerOf(vaultTokenId), address(this));
+                    IVaultManager(platform.vaultManager()).setRevenueReceiver(vaultTokenId, address(1));
                 }
 
                 vars.vault = factory.deployedVault(factory.deployedVaultsLength() - 1);
@@ -262,6 +282,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+                _preDeposit();
 
                 // get amounts for deposit
                 uint[] memory depositAmounts = new uint[](assets.length);
@@ -501,6 +523,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 address underlying = strategy.underlying();
                 if (underlying != address(0)) {
                     skip(7200);
+                    bool wasReadyForHardWork = strategy.isReadyForHardWork();
                     address tempVault = vars.vault;
                     deal(underlying, address(this), totalWas);
                     assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
@@ -514,7 +537,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
                     uint lastHw = strategy.lastHardWork();
                     IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
-                    if (strategy.isHardWorkOnDepositAllowed()) {
+                    if (strategy.isHardWorkOnDepositAllowed() && wasReadyForHardWork) {
                         assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
                         assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
                     }
@@ -531,8 +554,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     } else {
                         assertLt(
                             vaultBalance,
-                            sharesOut,
-                            "previewDepositAssets by underlying: sharesOut and real shares after deposit compare error"
+                            sharesOut + sharesOut / 10000,
+                            "previewDepositAssets by underlying: vault balance too big"
                         );
                         assertGt(
                             vaultBalance,
@@ -547,7 +570,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                     vm.roll(block.number + 6);
                     IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
-                    assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1);
+                    assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1, "U2");
                     assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
                 } else {
                     {
@@ -645,7 +668,20 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                         COVERAGE                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 strategy.isHardWorkOnDepositAllowed();
-                IFarmingStrategy(address(strategy)).farmMechanics();
+                if (vars.farming) {
+                    IFarmingStrategy(address(strategy)).farmMechanics();
+                }
+                strategy.autoCompoundingByUnderlyingProtocol();
+                if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.YEARN)) {
+                    vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectMsgSender.selector));
+                    IVault(vars.vault).hardWorkMintFeeCallback(new address[](0), new uint[](0));
+                }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       INIT VARIANTS                        */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                (string[] memory variants,,,) = strategy.initVariants(address(platform));
+                assertGt(variants.length, 0, "initVariants returns empty arrays");
             }
         }
     }

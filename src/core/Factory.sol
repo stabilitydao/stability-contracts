@@ -21,6 +21,8 @@ import "../interfaces/IStrategyLogic.sol";
 
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
+/// Changelog:
+///   1.1.0: getDeploymentKey fix for not farming strategies, strategyAvailableInitParams
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -31,7 +33,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -42,29 +44,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         0x94b53192a2415b53b438d03f0efa946204c0118192627e3d5ed4ba034c9a0300;
 
     //endregion -- Constants -----
-
-    //region ----- Storage -----
-
-    /// @custom:storage-location erc7201:stability.Factory
-    struct FactoryStorage {
-        /// @inheritdoc IFactory
-        mapping(bytes32 typeHash => VaultConfig) vaultConfig;
-        /// @inheritdoc IFactory
-        mapping(bytes32 idHash => StrategyLogicConfig) strategyLogicConfig;
-        /// @inheritdoc IFactory
-        mapping(bytes32 deploymentKey => address vaultProxy) deploymentKey;
-        /// @inheritdoc IFactory
-        mapping(address vault => uint status) vaultStatus;
-        /// @inheritdoc IFactory
-        mapping(address address_ => bool isStrategy_) isStrategy;
-        EnumerableSet.Bytes32Set vaultTypeHashes;
-        EnumerableSet.Bytes32Set strategyLogicIdHashes;
-        mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
-        address[] deployedVaults;
-        Farm[] farms;
-    }
-
-    //endregion -- Storage -----
 
     //region ----- Data types -----
 
@@ -100,16 +79,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
-        string memory type_ = vaultConfig_.vaultType;
-        bytes32 typeHash = keccak256(abi.encodePacked(type_));
-        $.vaultConfig[typeHash] = vaultConfig_;
-        bool newVaultType = $.vaultTypeHashes.add(typeHash);
-        if (!newVaultType) {
+        if (FactoryLib.setVaultConfig($, vaultConfig_)) {
             _requireGovernanceOrMultisig();
         }
-        emit VaultConfigChanged(
-            type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
-        );
     }
 
     /// @inheritdoc IFactory
@@ -165,12 +137,22 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit UpdateFarm(id, farm_);
     }
 
+    /// @inheritdoc IFactory
+    function setStrategyAvailableInitParams(
+        string memory id,
+        StrategyAvailableInitParams memory initParams
+    ) external onlyOperator {
+        FactoryStorage storage $ = _getStorage();
+        bytes32 idHash = keccak256(abi.encodePacked(id));
+        $.strategyAvailableInitParams[idHash] = initParams;
+        emit SetStrategyAvailableInitParams(id, initParams.initAddresses, initParams.initNums, initParams.initTicks);
+    }
+
     //endregion -- Restricted actions ----
 
     //region ----- User actions -----
 
     /// @inheritdoc IFactory
-
     //slither-disable-next-line cyclomatic-complexity reentrancy-benign
     function deployVaultAndStrategy(
         string memory vaultType,
@@ -536,7 +518,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             initStrategyAddresses,
             initStrategyNums,
             initStrategyTicks,
-            [1, 0, 0, 1, 0]
+            [1, 0, 1, 1, 0]
         );
     }
 
@@ -592,6 +574,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint builderPermitTokenId
     ) external view returns (uint vaultsBuilt) {
         return _getStorage().vaultsBuiltByPermitTokenId[week][builderPermitTokenId];
+    }
+
+    /// @inheritdoc IFactory
+    function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory) {
+        FactoryStorage storage $ = _getStorage();
+        return $.strategyAvailableInitParams[idHash];
     }
 
     //endregion -- View functions -----

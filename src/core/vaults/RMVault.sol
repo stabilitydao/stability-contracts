@@ -21,7 +21,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Constants -----
 
     /// @dev Version of RMVault implementation
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 
@@ -46,6 +46,15 @@ contract RMVault is RVaultBase, IManagedVault {
     }
 
     //endregion -- Init -----
+
+    //region ----- Callbacks -----
+
+    /// @inheritdoc IVault
+    function hardWorkMintFeeCallback(address[] memory, uint[] memory) external pure override(VaultBase, IVault) {
+        revert NotSupported();
+    }
+
+    //endregion -- Callbacks -----
 
     //region ----- User actions -----
 

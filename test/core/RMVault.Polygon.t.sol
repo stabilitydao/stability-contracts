@@ -246,5 +246,8 @@ contract RMVaultTest is PolygonSetup {
         IERC20(platform.targetExchangeAsset()).approve(address(vault), a);
         // vm.expectRevert(IRVault.RewardIsTooBig.selector);
         vault.notifyTargetRewardAmount(1, a);
+
+        vm.expectRevert(IVault.NotSupported.selector);
+        vault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 }
