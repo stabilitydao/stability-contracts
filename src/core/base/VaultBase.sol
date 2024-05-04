@@ -20,6 +20,11 @@ import "../../interfaces/IFactory.sol";
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc)
+/// Changelog:
+///   1.3.0: hardWorkMintFeeCallback
+///   1.2.0: isHardWorkOnDepositAllowed
+///   1.1.0: setName, setSymbol, gas optimization
+///   1.0.1: add receiver and owner args to withdrawAssets method
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {

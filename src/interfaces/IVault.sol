@@ -22,6 +22,7 @@ interface IVault is IERC165 {
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error WaitAFewBlocks();
     error StrategyZeroDeposit();
+    error NotSupported();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */

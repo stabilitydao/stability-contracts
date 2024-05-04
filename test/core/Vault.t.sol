@@ -310,6 +310,9 @@ contract VaultTest is Test, FullMockSetup {
                 vaultInitNums: new uint[](0)
             })
         );
+
+        vm.expectRevert(IVault.NotSupported.selector);
+        rVault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 
     function testChageNameSymbol() public {
