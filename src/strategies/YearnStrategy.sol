@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./libs/StrategyIdLib.sol";
 import "./base/ERC4626StrategyBase.sol";
+import "../integrations/yearn/IYearnVault.sol";
 
 /// @title Hodl Yearn V3 multi ERC4626 vault, emit revenue, collect fees and show underlying protocols
 /// @author Alien Deployer (https://github.com/a17)
@@ -44,9 +45,8 @@ contract YearnStrategy is ERC4626StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        // todo concat protocols
-        return ("", false);
+    function getSpecificName() external view override returns (string memory, bool) {
+        return (_getQueueNames(underlying()), false);
     }
 
     /// @inheritdoc IStrategy
@@ -87,7 +87,24 @@ contract YearnStrategy is ERC4626StrategyBase {
         return string.concat(
             "Hodl ",
             //slither-disable-next-line calls-loop
-            IERC20Metadata(u).symbol()
+            IERC20Metadata(u).symbol(),
+            " (",
+            _getQueueNames(u),
+            ")"
         );
+    }
+
+    function _getQueueNames(address u) internal view returns (string memory) {
+        address[] memory subVaults = IYearnVault(u).get_default_queue();
+        return CommonLib.implode(_getNames(subVaults), ", ");
+    }
+
+    function _getNames(address[] memory assets) internal view returns (string[] memory names) {
+        uint len = assets.length;
+        names = new string[](len);
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            names[i] = IERC20Metadata(assets[i]).name();
+        }
     }
 }
