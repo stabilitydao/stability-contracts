@@ -27,3 +27,6 @@ report/
 
 # OS files
 .DS_Store
+
+# VSCodeCounter extension
+.VSCodeCounter
