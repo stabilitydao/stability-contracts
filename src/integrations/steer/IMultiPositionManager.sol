@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 pragma abicoder v2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { IAlgebraPool } from "@cryptoalgebra/core/contracts/interfaces/IAlgebraPool.sol";
+import { IUniswapV3Pool } from "../uniswapv3/IUniswapV3Pool.sol";
+import { IAlgebraPool } from "../algebra/IAlgebraPool.sol";
 
 interface IMultiPositionManager is IERC20 {
     struct VaultDetails {
