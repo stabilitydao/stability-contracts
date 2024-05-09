@@ -1091,14 +1091,14 @@ library PolygonLib {
         farm.strategyLogicId = StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = TOKEN_USDC;
-        farm.addresses = new address[](2);
-        farm.addresses[0] = GAMMA_QUICKSWAP_UNIPROXY;
-        farm.addresses[1] = hypervisor;
+        farm.addresses = new address[](1);
+        farm.addresses[0] = hypervisor;
         farm.nums = new uint[](1);
         farm.nums[0] = preset;
         farm.ticks = new int24[](0);
         return farm;
     }
+    
     function _makeGammaRetroMerklFarm(
         address hypervisor,
         uint preset
