@@ -274,7 +274,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         }
     }
 
-        /// @inheritdoc StrategyBase
+    /// @inheritdoc StrategyBase
     function _compound() internal override {
         (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
         // nosemgrep
