@@ -16,7 +16,7 @@ import "../integrations/steer/IMultiPositionManager.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// @author Only Forward (https://github.com/OnlyForward0613)
-abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -31,6 +31,8 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
     address internal constant USD = address(840);
 
     uint internal constant DIVISOR = 100e18;
+
+    uint internal constant _PRECISION = 1e36;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -146,6 +148,13 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
     }
 
     /// @inheritdoc IStrategy
+    function getAssetsProportions() external view returns (uint[] memory proportions) {
+        proportions = new uint[](2);
+        proportions[0] = _getProportion0(pool());
+        proportions[1] = 1e18 - proportions[0];
+    }
+
+    /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x3477ff), bytes3(0x000000)));
     }
@@ -183,13 +192,20 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _depositAssets(
+    function depositAssets(
         uint[] memory amounts,
         bool, /*claimRevenue*/
         address receiver
     ) internal returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, receiver);
+        __$__.total += value;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(0));
         __$__.total += value;
     }
 
@@ -243,9 +259,51 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
         }
     }
 
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        assets_ = $._assets;
+        amounts_ = new uint[](2);
+        uint _total = $.total;
+        if (_total > 0) {
+            IMultiPositionManager multiPositionManager = IMultiPositionManager($._underlying);
+            (amounts_[0], amounts_[1]) = multiPositionManager.getTotalAmounts();
+            uint totalInMultiPositionManager = multiPositionManager.totalSupply();
+            (amounts_[0], amounts_[1]) =
+                (amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager);
+        }
+    }
+
+        /// @inheritdoc StrategyBase
+    function _compound() internal override {
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
+        // nosemgrep
+        if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
+            uint valueToReceive;
+            (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
+            if (valueToReceive > 10) {
+                _depositAssets(amountsToDeposit, false);
+            }
+        }
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev proportion of 1e18
+    function _getProportion0(address pool_) internal view returns (uint) {
+        IMultiPositionManager hypervisor = IMultiPositionManager(_getStrategyBaseStorage()._underlying);
+        //slither-disable-next-line unused-return
+        (, int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
+        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
+        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
+        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
+        //slither-disable-next-line divide-before-multiply
+        uint pool0PricedInToken1 = pool0 * price / _PRECISION;
+        //slither-disable-next-line divide-before-multiply
+        return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
+    }
 
     function _normalise(address _token, uint _amount) internal view returns (uint normalised) {
         normalised = _amount;
@@ -257,40 +315,6 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
             uint extraDecimals = _decimals - 18;
             normalised = _amount / 10 ** extraDecimals;
         }
-    }
-
-    /**
-     * @notice Returns latest Chainlink price, and normalise it
-     * @param _registry registry
-     * @param _base Base Asset
-     * @param _quote Quote Asset
-     */
-    function _getChainlinkPrice(
-        IFeedRegistryInterface _registry,
-        address _base,
-        address _quote,
-        uint _validPeriod
-    ) internal view returns (uint price) {
-        (, int _price,, uint updatedAt,) = _registry.latestRoundData(_base, _quote);
-
-        require(block.timestamp - updatedAt < _validPeriod, "OLD_PRICE");
-
-        if (_price <= 0) {
-            return 0;
-        }
-
-        // normalise the price to 18 decimals
-        uint _decimals = _registry.decimals(_base, _quote);
-
-        if (_decimals < 18) {
-            uint missingDecimals = 18 - _decimals;
-            price = uint(_price) * 10 ** missingDecimals;
-        } else if (_decimals > 18) {
-            uint extraDecimals = _decimals - 18;
-            price = uint(_price) / (10 ** extraDecimals);
-        }
-
-        return price;
     }
 
     function _computePositionKey(address owner, int24 bottomTick, int24 topTick) internal pure returns (bytes32 key) {
