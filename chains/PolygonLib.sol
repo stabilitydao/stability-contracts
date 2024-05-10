@@ -661,13 +661,6 @@ library PolygonLib {
             tokenIn: TOKEN_CRV,
             tokenOut: TOKEN_WMATIC
         });
-        // Steer WMATIC/USDC
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_WMATIC_USDC,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_WMATIC,
-            tokenOut: TOKEN_USDC
-        });
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
