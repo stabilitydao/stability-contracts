@@ -162,7 +162,7 @@ interface IMultiPositionManager is IERC20 {
 
     function maxTotalSupply() external view returns (uint256);
 
-    function pool() external view returns (IUniswapV3Pool);
+    function pool() external view returns (address);
 
     /**
      * @dev Used to collect accumulated protocol fees.

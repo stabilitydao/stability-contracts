@@ -1022,7 +1022,7 @@ library PolygonLib {
     }
 
     // steer quickswap
-    function farms9() public pure returns (IFactory.Farm[] memory _farms) {
+    function farms9() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](2);
         uint i;
 
