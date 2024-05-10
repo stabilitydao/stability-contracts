@@ -145,7 +145,6 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
         return StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM;
     }
 
-
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x3477ff), bytes3(0x000000)));
@@ -184,7 +183,11 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/, address receiver ) internal returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool, /*claimRevenue*/
+        address receiver
+    ) internal returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, receiver);
         __$__.total += value;
@@ -240,11 +243,9 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
         }
     }
 
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
 
     function _normalise(address _token, uint _amount) internal view returns (uint normalised) {
         normalised = _amount;
@@ -291,7 +292,6 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
 
         return price;
     }
-
 
     function _computePositionKey(address owner, int24 bottomTick, int24 topTick) internal pure returns (bytes32 key) {
         assembly {
