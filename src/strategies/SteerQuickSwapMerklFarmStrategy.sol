@@ -12,9 +12,10 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
 import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
+import "../integrations/steer/IMultiPositionManager.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
-/// @author Alien Deployer (https://github.com/a17)
+/// @author Only Forward (https://github.com/OnlyForward0613)
 abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -183,11 +184,29 @@ abstract contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStra
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/, address receiver ) internal returns (uint value) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, receiver);
+        __$__.total += value;
+    }
+
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         amountsConsumed = _previewDepositUnderlying(amount);
         __$__.total += amount;
+    }
+
+    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __$__.total -= value;
+        amountsOut = new uint[](2);
+        (amountsOut[0], amountsOut[1]) = IMultiPositionManager(__$__._underlying).withdraw(value, 0, 0, receiver);
+        if (receiver != address(this)) {
+            address[] memory _assets = __$__._assets;
+            IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
+            IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
+        }
     }
 
     /// @inheritdoc StrategyBase
