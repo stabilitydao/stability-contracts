@@ -186,20 +186,10 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function depositAssets(
-        uint[] memory amounts,
-        bool, /*claimRevenue*/
-        address receiver
-    ) internal returns (uint value) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, receiver);
-        __$__.total += value;
-    }
-
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(0));
+        (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
         __$__.total += value;
     }
 
@@ -297,17 +287,5 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         //slither-disable-next-line divide-before-multiply
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
-    }
-
-    function _normalise(address _token, uint _amount) internal view returns (uint normalised) {
-        normalised = _amount;
-        uint _decimals = IERC20Metadata(_token).decimals();
-        if (_decimals < 18) {
-            uint missingDecimals = 18 - _decimals;
-            normalised = _amount * 10 ** missingDecimals;
-        } else if (_decimals > 18) {
-            uint extraDecimals = _decimals - 18;
-            normalised = _amount / 10 ** extraDecimals;
-        }
     }
 }
