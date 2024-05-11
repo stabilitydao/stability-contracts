@@ -7,6 +7,8 @@ interface IDefiEdgeStrategy {
         int24 tickUpper;
     }
 
+    function pool() external view returns(address);
+    
     function ticks(uint i) external view returns(Tick memory);
 
     function getTicks() external view returns (Tick[] memory);
