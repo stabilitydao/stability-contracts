@@ -26,12 +26,6 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.1.0";
 
-    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    address internal constant USD = address(840);
-
-    uint internal constant DIVISOR = 100e18;
-
     uint internal constant _PRECISION = 1e36;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
