@@ -23,6 +23,7 @@ library PolygonLib {
     address public constant TOKEN_PROFIT = 0x48469a0481254d5945E7E56c1Eb9861429c02f44;
     address public constant TOKEN_SDIV = 0x9844a1c30462B55cd383A2C06f90BB4171f9D4bB;
     address public constant TOKEN_USDCe = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant TOKEN_WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
     address public constant TOKEN_WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
     address public constant TOKEN_USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
@@ -31,7 +32,6 @@ library PolygonLib {
     address public constant TOKEN_QUICK = 0xB5C064F955D8e7F38fE0460C556a72987494eE17;
     address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
     address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
-    address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public constant TOKEN_COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
     address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
     address public constant TOKEN_RETRO = 0xBFA35599c7AEbb0dAcE9b5aa3ca5f2a79624D8Eb;
@@ -61,20 +61,21 @@ library PolygonLib {
     address public constant POOL_UNISWAPV3_WMATIC_COMP_3000 = 0x495b3576e2f67fa870e14d0996433FbdB4015794;
     address public constant POOL_QUICKSWAPV3_USDCe_USDT = 0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710;
     address public constant POOL_QUICKSWAPV3_USDCe_DAI = 0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2;
+    address public constant POOL_QUICKSWAPV3_USDCe_USDC = 0xEecB5Db986c20a8C88D8332E7e252A9671565751;
+    address public constant POOL_QUICKSWAPV3_USDC_USDT = 0x0e3Eb2C75Bd7dD0e12249d96b1321d9570764D77;
+    address public constant POOL_QUICKSWAPV3_USDC_DAI = 0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
+    address public constant POOL_QUICKSWAPV3_USDT_DAI = 0xefFA9E5e63ba18160Ee26BdA56b42F3368719615;
     address public constant POOL_QUICKSWAPV3_USDCe_WETH = 0x55CAaBB0d2b704FD0eF8192A7E35D8837e678207;
     address public constant POOL_QUICKSWAPV3_WMATIC_USDCe = 0xAE81FAc689A1b4b1e06e7ef4a2ab4CD8aC0A087D;
     address public constant POOL_QUICKSWAPV3_USDCe_QUICK = 0x022df0b3341B3A0157EEA97dD024A93f7496D631;
-    address public constant POOL_QUICKSWAPV3_USDT_DAI = 0xefFA9E5e63ba18160Ee26BdA56b42F3368719615;
     address public constant POOL_QUICKSWAPV3_WBTC_WETH = 0xAC4494e30a85369e332BDB5230d6d694d4259DbC;
     address public constant POOL_QUICKSWAPV3_WBTC_USDCe = 0xA5CD8351Cbf30B531C7b11B0D9d3Ff38eA2E280f;
     address public constant POOL_QUICKSWAPV3_WMATIC_WETH = 0x479e1B71A702a595e19b6d5932CD5c863ab57ee0;
     address public constant POOL_QUICKSWAPV3_WMATIC_USDT = 0x5b41EEDCfC8e0AE47493d4945Aa1AE4fe05430ff;
     address public constant POOL_QUICKSWAPV3_WETH_USDT = 0x9CEff2F5138fC59eB925d270b8A7A9C02a1810f2;
     address public constant POOL_QUICKSWAPV3_dQUICK_QUICK = 0x194257104FabFd9f48bD01bd71A719637B4bbfA9;
-    address public constant POOL_QUICKSWAPV3_USDCe_USDC = 0xEecB5Db986c20a8C88D8332E7e252A9671565751;
     address public constant POOL_QUICKSWAPV3_USDC_WETH = 0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
     address public constant POOL_QUICKSWAPV3_WMATIC_USDC = 0x6669B4706cC152F359e947BCa68E263A87c52634;
-    address public constant POOL_QUICKSWAPV3_USDC_DAI = 0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
     address public constant POOL_QUICKSWAPV3_CRV_WMATIC = 0x00A6177C6455A29B8dAa7144B2bEfc9F2147BB7E;
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
@@ -430,7 +431,7 @@ library PolygonLib {
 
     // quickswap USDC native gamma
     function farms3() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](6);
+        _farms = new IFactory.Farm[](8);
         uint i;
 
         // [32] - [33]
@@ -442,6 +443,10 @@ library PolygonLib {
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDT, CONVEX_REWARD_POOL_crvUSD_USDT);
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_DAI, CONVEX_REWARD_POOL_crvUSD_DAI);
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);
+
+        // [38] - [39]
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_DAI, 276300, 276360);
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_USDT, -60, 60);
     }
 
     function _makeCurveConvexFarm(
