@@ -6,20 +6,18 @@ import "../base/UniversalTest.sol";
 
 contract QuickswapStaticMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testQSMF() public universalTest {
-        // starategy push
+        _addStrategy(0);
+        _addStrategy(16);
+        _addStrategy(38);
+        _addStrategy(39);
+    }
+
+    function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
                 id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
                 pool: address(0),
-                farmId: 0, // chains/PolygonLib.sol
-                underlying: address(0)
-            })
-        );
-        strategies.push(
-            Strategy({
-                id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
-                pool: address(0),
-                farmId: 16, // chains/PolygonLib.sol
+                farmId: farmId,
                 underlying: address(0)
             })
         );
