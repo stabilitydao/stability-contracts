@@ -6,6 +6,7 @@ import "../base/UniversalTest.sol";
 
 contract QuickswapStaticMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     function testQSMF() public universalTest {
+        // starategy push
         strategies.push(
             Strategy({
                 id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
