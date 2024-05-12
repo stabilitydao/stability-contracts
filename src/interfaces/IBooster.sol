@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 interface IBooster {
-
     /// @notice Token that represents ownership shares of Booster
     function token() external view returns (address);
 

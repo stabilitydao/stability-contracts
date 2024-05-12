@@ -10,7 +10,6 @@ import "../integrations/retro/IVotingEscrow.sol";
 /// @notice veRETRO holder
 /// @author Alien Deployer (https://github.com/a17)
 contract RetroBooster is Controllable, IBooster, IERC721Receiver {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -45,7 +44,12 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, address token_, address veToken_, address veUnderlying_) public initializer {
+    function initialize(
+        address platform_,
+        address token_,
+        address veToken_,
+        address veUnderlying_
+    ) public initializer {
         __Controllable_init(platform_);
         RetroBoosterStorage storage $ = _getStorage();
         $.token = token_;
@@ -59,12 +63,7 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC721Receiver
-    function onERC721Received(
-        address,
-        address from,
-        uint tokenId,
-        bytes calldata
-    ) external returns (bytes4) {
+    function onERC721Received(address, address from, uint tokenId, bytes calldata) external returns (bytes4) {
         RetroBoosterStorage storage $ = _getStorage();
         address ve = $.veToken;
         if (ve == msg.sender) {
@@ -77,7 +76,7 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
             }
             ILiquidToken($.token).mint(locked, from);
         }
-        
+
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -122,7 +121,7 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
     /// @inheritdoc IBooster
     function veUnderlyingAmount() external view returns (uint) {
         RetroBoosterStorage storage $ = _getStorage();
-        return uint(int256(IVotingEscrow($.veToken).locked($.veTokenId).amount));
+        return uint(int(IVotingEscrow($.veToken).locked($.veTokenId).amount));
     }
 
     /// @inheritdoc IBooster
@@ -139,7 +138,6 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
             return false;
         }
 
-
         // todo
 
         return false;
@@ -155,5 +153,4 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
             $.slot := RETRO_BOOSTER_STORAGE_LOCATION
         }
     }
-
 }
