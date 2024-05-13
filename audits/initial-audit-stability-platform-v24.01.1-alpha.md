@@ -4,7 +4,8 @@ Most sensitive scope on Stability Platform v24.01.1-alpha version. The audit was
 
 ## Hunters🕵🏻‍♂️
 
-https://t.me/oyiiyo 
+https://t.me/oyiiyo
+
 https://t.me/pontifex73
 
 ## Tools Used
