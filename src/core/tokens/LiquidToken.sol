@@ -69,7 +69,7 @@ contract LiquidToken is Controllable, ERC20Upgradeable, ILiquidToken {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc ILiquidToken
-    function booster() external view returns(address) {
+    function booster() external view returns (address) {
         return _getStorage().booster;
     }
 
