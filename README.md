@@ -18,9 +18,9 @@ Contributions can be made in the form of developing strategies, developing the c
 ### Guides
 
 * **[Contributing](./CONTRIBUTING.md)**
-* **[Strategy Developer's Guide](./src/strategies/README.md)**
+* **[Strategy Developer's Guide V2](./src/strategies/README.md)**
 * **[Core Developer's Guide](./src/core/README.md)**
-* **[Platform Administration Guide](./ADM.md)**
+* **[Platform Administration Guide V2](./ADM.md)**
 
 ## Coverage
 
@@ -41,4 +41,4 @@ Contributions can be made in the form of developing strategies, developing the c
 
 ## Audits
 
-* [Initial vault audit v24.01.1-alpha](audit/initial-audit-stability-platform-v24.01.1-alpha.md)
+* [Initial vault audit v24.01.1-alpha](audits/initial-audit-stability-platform-v24.01.1-alpha.md) | [critical scope](audits/scopes.md)
