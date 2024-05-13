@@ -1,6 +1,15 @@
 # Stability initial Vault audit (11.03.24)
 
-Most sensitive scope on Stability Platform v24.01.1-alpha version.
+Most sensitive scope on Stability Platform v24.01.1-alpha version. The audit was conducted as part of a closed contest among students of technical universities and security enthusiasts.
+
+## Hunters🕵🏻‍♂️
+
+https://t.me/oyiiyo 
+https://t.me/pontifex73
+
+## Tools Used
+
+Manual review
 
 ## Audited Commit
 
@@ -174,7 +183,3 @@ The following scenario is possible:
 ### Recommended Mitigation Steps
 
 Add `doHardWorkOnWithdraw` option to `VaultBase`, Add a doHardWork call to beginning of withdrawAssets.
-
-## Tools Used
-
-Manual review
