@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "./libs/BoosterIdLib.sol";
 import "../core/base/Controllable.sol";
 import "../interfaces/IBooster.sol";
 import "../interfaces/ILiquidToken.sol";
@@ -74,7 +75,7 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
             } else {
                 IVotingEscrow(ve).merge(tokenId, _tokenId);
             }
-            ILiquidToken($.token).mint(locked, from);
+            ILiquidToken($.token).mint(from, locked);
         }
 
         return IERC721Receiver.onERC721Received.selector;
@@ -92,6 +93,11 @@ contract RetroBooster is Controllable, IBooster, IERC721Receiver {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IBooster
+    function boosterId() external pure returns (string memory) {
+        return BoosterIdLib.RETRO;
+    }
 
     /// @inheritdoc IBooster
     function token() external view returns (address) {

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.23;
 
 interface IBooster {
+    /// @notice Immutable booster ID
+    function boosterId() external view returns (string memory);
+
     /// @notice Token that represents ownership shares of Booster
     function token() external view returns (address);
 
