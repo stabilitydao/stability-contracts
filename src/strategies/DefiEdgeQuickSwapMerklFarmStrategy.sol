@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/DQMFLib.sol";
 import "./libs/StrategyIdLib.sol";
@@ -17,7 +18,7 @@ import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// @author Alien Deployer (https://github.com/a17)
-contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,7 +26,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -73,7 +74,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

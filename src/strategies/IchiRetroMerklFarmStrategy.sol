@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -13,7 +14,7 @@ import "../integrations/ichi/IICHIVault.sol";
 /// @title Earning MERKL rewards by Ichi strategy on Retro
 /// @dev 2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
-contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -21,7 +22,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "2.1.0";
 
     uint internal constant _PRECISION = 10 ** 18;
 
@@ -172,7 +173,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

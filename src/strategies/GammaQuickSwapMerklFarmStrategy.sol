@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -16,7 +17,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 /// @title Earning Merkl rewards on QuickSwap V3 by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
-contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -24,7 +25,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -83,7 +84,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

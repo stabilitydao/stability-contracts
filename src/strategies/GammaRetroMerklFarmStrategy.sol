@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -17,7 +18,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
 /// @dev 2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
-contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,7 +26,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "2.1.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -178,7 +179,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

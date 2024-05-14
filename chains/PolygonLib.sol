@@ -162,6 +162,9 @@ library PolygonLib {
     address public constant YEARN_WMATIC = 0x28F53bA70E5c8ce8D03b1FaD41E9dF11Bb646c36;
     address public constant YEARN_WETH = 0x305F25377d0a39091e99B975558b1bdfC3975654;
 
+    // Merkl
+    address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
         uint[] memory buildingPrice = new uint[](3);

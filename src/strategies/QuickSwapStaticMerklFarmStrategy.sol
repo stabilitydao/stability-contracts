@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -15,7 +16,7 @@ import "../interfaces/ICAmmAdapter.sol";
 
 /// @title Earning Merkl rewards and swap fees by QuickSwap V3 static liquidity position
 /// @author Alien Deployer (https://github.com/a17)
-contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -23,7 +24,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickSwapV3StaticMerkFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION =
@@ -85,7 +86,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
