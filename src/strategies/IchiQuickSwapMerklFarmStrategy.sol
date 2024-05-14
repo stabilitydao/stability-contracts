@@ -10,7 +10,6 @@ import "./libs/IQMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
 
-
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
