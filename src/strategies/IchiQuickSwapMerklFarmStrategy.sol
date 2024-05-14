@@ -9,6 +9,8 @@ import "./libs/FarmMechanicsLib.sol";
 import "./libs/IQMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -20,7 +22,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -162,8 +164,8 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
-        return (shortAddr, true);
+        string memory symbol = IERC20Metadata(farm.addresses[0]).symbol();
+        return (symbol, false);
     }
 
     /// @inheritdoc IStrategy
