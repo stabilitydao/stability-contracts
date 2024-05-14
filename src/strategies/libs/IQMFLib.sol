@@ -6,6 +6,7 @@ import "../../core/libs/CommonLib.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IAmmAdapter.sol";
 import "../../integrations/algebra/IAlgebraPool.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title DataStorage library
 /// @notice Provides functions to integrate with pool dataStorage
@@ -90,5 +91,10 @@ library IQMFLib {
         shortAddr[10] = s[40];
         shortAddr[11] = s[41];
         return string(shortAddr);
+    }
+
+    function getSymbol(address addr) public view returns (string memory) {
+        string memory symbol = CommonLib.getSymbol(addr);
+        return symbol;
     }
 }

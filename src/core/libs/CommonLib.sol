@@ -103,6 +103,10 @@ library CommonLib {
         }
     }
 
+    function getSymbol(address asset) public view returns (string memory symbol) {
+        symbol = IERC20Metadata(asset).symbol();
+    }
+
     function bytesToBytes32(bytes memory b) external pure returns (bytes32 out) {
         // nosemgrep
         for (uint i; i < b.length; ++i) {

@@ -162,8 +162,8 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
-        return (shortAddr, true);
+        string memory symbol = IQMFLib.getSymbol(farm.addresses[0]);
+        return (symbol, true);
     }
 
     /// @inheritdoc IStrategy
