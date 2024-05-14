@@ -20,7 +20,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.1.1";
 
     uint internal constant PRECISION = 10 ** 18;
 
