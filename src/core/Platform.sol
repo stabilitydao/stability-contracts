@@ -33,7 +33,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -121,6 +121,7 @@ contract Platform is Controllable, IPlatform {
         uint feeShareVaultManager;
         uint feeShareStrategyLogic;
         uint feeShareEcosystem;
+        EnumerableSet.AddressSet boosters;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -350,6 +351,23 @@ contract Platform is Controllable, IPlatform {
             revert AggregatorNotExists(dexAggRouter);
         }
         emit RemoveDexAggregator(dexAggRouter);
+    }
+
+    /// @inheritdoc IPlatform
+    function addBooster(address booster) external onlyOperator {
+        PlatformStorage storage $ = _getStorage();
+        if ($.boosters.add(booster)) {
+            emit AddBooster(booster);
+        }
+    }
+
+    /// @inheritdoc IPlatform
+    function removeBooster(address booster) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        if (!$.boosters.remove(booster)) {
+            revert BoosterNotExists(booster);
+        }
+        emit RemoveBooster(booster);
     }
 
     /// @inheritdoc IPlatform
@@ -611,6 +629,18 @@ contract Platform is Controllable, IPlatform {
     function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns (bool) {
         PlatformStorage storage $ = _getStorage();
         return $.dexAggregators.contains(dexAggRouter);
+    }
+
+    /// @inheritdoc IPlatform
+    function boosters() external view returns (address[] memory) {
+        PlatformStorage storage $ = _getStorage();
+        return $.boosters.values();
+    }
+
+    /// @inheritdoc IPlatform
+    function isBooster(address booster) external view returns (bool) {
+        PlatformStorage storage $ = _getStorage();
+        return $.boosters.contains(booster);
     }
 
     /// @inheritdoc IPlatform

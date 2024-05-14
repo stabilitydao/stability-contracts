@@ -18,6 +18,7 @@ interface IPlatform {
     error NotEnoughAllowedBBToken();
     error TokenAlreadyExistsInSet(address token);
     error AggregatorNotExists(address dexAggRouter);
+    error BoosterNotExists(address booster);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
@@ -61,6 +62,8 @@ interface IPlatform {
     event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
+    event AddBooster(address booster);
+    event RemoveBooster(address booster);
     event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
     event Rebalancer(address rebalancer_);
     event Bridge(address bridge_);
@@ -271,6 +274,15 @@ interface IPlatform {
     /// @return Can be used
     function isAllowedDexAggregatorRouter(address dexAggRouter) external view returns (bool);
 
+    /// @notice Our boosters
+    /// @return Addresses of booster proxies
+    function boosters() external view returns (address[] memory);
+
+    /// @notice Booster address is real our booster
+    /// @param booster Address of Booster
+    /// @return Yes
+    function isBooster(address booster) external view returns (bool);
+
     /// @notice Show minimum TVL for compensate if vault has not enough ETH
     /// @return Minimum TVL for compensate.
     function minTvlForFreeHardWork() external view returns (uint);
@@ -428,6 +440,14 @@ interface IPlatform {
     /// @notice Remove allowed DeX aggregator router from the platform
     /// @param dexAggRouter Address of DeX aggreagator router
     function removeDexAggregator(address dexAggRouter) external;
+
+    /// @notice Add Booster to platform
+    /// @param booster Address of Booster proxy
+    function addBooster(address booster) external;
+
+    /// @notice Remove Booster from the platform
+    /// @param booster Address of Booster proxy
+    function removeBooster(address booster) external;
 
     /// @notice Change initial boost rewards settings
     /// @param minInitialBoostPerDay_ Minimal initial boost rewards per day USD amount which needs to create rewarding vault
