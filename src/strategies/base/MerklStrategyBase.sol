@@ -31,5 +31,4 @@ abstract contract MerklStrategyBase is StrategyBase, IMerklStrategy {
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IMerklStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
-
 }

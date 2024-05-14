@@ -8,5 +8,4 @@ interface IMerklStrategy {
     /// @param distributor Address of Merkl Distributor contract
     /// @param operator Address of Merkl rewards claimer that can be HardWorker.dedicatedServerMsgSender
     function toggleDistributorUserOperator(address distributor, address operator) external;
-
 }

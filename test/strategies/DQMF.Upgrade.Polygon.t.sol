@@ -69,5 +69,4 @@ contract DQMFUpgradeTest is Test {
 
         IMerklDistributor(PolygonLib.MERKL_DISTRIBUTOR).claim(users, tokens, amounts, proofs);
     }
-
 }
