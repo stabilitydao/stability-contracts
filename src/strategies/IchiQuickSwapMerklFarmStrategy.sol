@@ -9,7 +9,6 @@ import "./libs/FarmMechanicsLib.sol";
 import "./libs/IQMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
