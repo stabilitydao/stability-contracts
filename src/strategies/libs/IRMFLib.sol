@@ -105,11 +105,6 @@ library IRMFLib {
         return string(shortAddr);
     }
 
-    function getSymbol(address addr) public view returns (string memory) {
-        string memory symbol = CommonLib.getSymbol(addr);
-        return symbol;
-    }
-
     function claimRevenue(
         IStrategy.StrategyBaseStorage storage __$__,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _$_,
