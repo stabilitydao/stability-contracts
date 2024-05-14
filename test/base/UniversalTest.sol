@@ -265,6 +265,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 if (vars.farming) {
                     assertEq(IFarmingStrategy(address(strategy)).canFarm(), true);
                     IFarmingStrategy(address(strategy)).farmId();
+                    IFarmingStrategy(address(strategy)).stakingPool();
                 }
 
                 {
@@ -670,6 +671,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 strategy.isHardWorkOnDepositAllowed();
                 if (vars.farming) {
                     IFarmingStrategy(address(strategy)).farmMechanics();
+                    IFarmingStrategy(address(strategy)).stakingPool();
                 }
                 strategy.autoCompoundingByUnderlyingProtocol();
                 if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.YEARN)) {
