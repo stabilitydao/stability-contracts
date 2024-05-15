@@ -217,9 +217,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return false;
-    }
+    function isHardWorkOnDepositAllowed() external pure returns (bool) {}
 
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external view returns (bool isReady) {
