@@ -21,48 +21,28 @@ library PolygonLib {
         0x36780E69D38c8b175761c6C5F8eD42E61ee490E9; // team
 
     // ERC20
-    address public constant TOKEN_PROFIT =
-        0x48469a0481254d5945E7E56c1Eb9861429c02f44;
-    address public constant TOKEN_SDIV =
-        0x9844a1c30462B55cd383A2C06f90BB4171f9D4bB;
-    address public constant TOKEN_USDCe =
-        0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address public constant TOKEN_WETH =
-        0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
-    address public constant TOKEN_WMATIC =
-        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-    address public constant TOKEN_USDT =
-        0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
-    address public constant TOKEN_DAI =
-        0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
-    address public constant TOKEN_WBTC =
-        0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
-    address public constant TOKEN_QUICK =
-        0xB5C064F955D8e7F38fE0460C556a72987494eE17;
-    address public constant TOKEN_dQUICK =
-        0x958d208Cdf087843e9AD98d23823d32E17d723A1;
-    address public constant TOKEN_KNC =
-        0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
-    address public constant TOKEN_USDC =
-        0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
-    address public constant TOKEN_COMP =
-        0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
-    address public constant TOKEN_ICHI =
-        0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
-    address public constant TOKEN_RETRO =
-        0xBFA35599c7AEbb0dAcE9b5aa3ca5f2a79624D8Eb;
-    address public constant TOKEN_oRETRO =
-        0x3A29CAb2E124919d14a6F735b6033a3AaD2B260F;
-    address public constant TOKEN_CASH =
-        0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
-    address public constant TOKEN_crvUSD =
-        0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
-    address public constant TOKEN_CRV =
-        0x172370d5Cd63279eFa6d502DAB29171933a610AF;
+    address public constant TOKEN_PROFIT = 0x48469a0481254d5945E7E56c1Eb9861429c02f44;
+    address public constant TOKEN_SDIV = 0x9844a1c30462B55cd383A2C06f90BB4171f9D4bB;
+    address public constant TOKEN_USDCe = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    address public constant TOKEN_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
+    address public constant TOKEN_WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
+    address public constant TOKEN_WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    address public constant TOKEN_USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
+    address public constant TOKEN_DAI = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
+    address public constant TOKEN_WBTC = 0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
+    address public constant TOKEN_QUICK = 0xB5C064F955D8e7F38fE0460C556a72987494eE17;
+    address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
+    address public constant TOKEN_KNC = 0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C;
+    address public constant TOKEN_COMP = 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c;
+    address public constant TOKEN_ICHI = 0x111111517e4929D3dcbdfa7CCe55d30d4B6BC4d6;
+    address public constant TOKEN_RETRO = 0xBFA35599c7AEbb0dAcE9b5aa3ca5f2a79624D8Eb;
+    address public constant TOKEN_oRETRO = 0x3A29CAb2E124919d14a6F735b6033a3AaD2B260F;
+    address public constant TOKEN_CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
+    address public constant TOKEN_crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
+    address public constant TOKEN_CRV = 0x172370d5Cd63279eFa6d502DAB29171933a610AF;
 
-    // ERC21
-    address public constant TOKEN_PM =
-        0xAA3e3709C79a133e56C17a7ded87802adF23083B;
+    // ERC721
+    address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDCe_USD =
@@ -73,90 +53,49 @@ library PolygonLib {
         0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
 
     // AMMs
-    address public constant POOL_UNISWAPV3_USDCe_USDT_100 =
-        0xDaC8A8E6DBf8c690ec6815e0fF03491B2770255D;
-    address public constant POOL_UNISWAPV3_USDCe_DAI_100 =
-        0x5645dCB64c059aa11212707fbf4E7F984440a8Cf;
-    address public constant POOL_UNISWAPV3_WMATIC_WETH_3000 =
-        0x167384319B41F7094e62f7506409Eb38079AbfF8;
-    address public constant POOL_UNISWAPV3_WMATIC_WETH_500 =
-        0x86f1d8390222A3691C28938eC7404A1661E618e0;
-    address public constant POOL_UNISWAPV3_WMATIC_USDCe_500 =
-        0xA374094527e1673A86dE625aa59517c5dE346d32;
-    address public constant POOL_UNISWAPV3_WBTC_WETH_500 =
-        0x50eaEDB835021E4A108B7290636d62E9765cc6d7;
-    address public constant POOL_UNISWAPV3_USDCe_WETH_500 =
-        0x45dDa9cb7c25131DF268515131f647d726f50608;
-    address public constant POOL_UNISWAPV3_PROFIT_WETH_100 =
-        0xE5e70cb76446BEE0053b1EdF22CaDa861c80D51F;
-    address public constant POOL_UNISWAPV3_WETH_COMP_3000 =
-        0x2260E0081A2A042DC55A07D379eb3c18bE28A1F2;
-    address public constant POOL_UNISWAPV3_WMATIC_COMP_3000 =
-        0x495b3576e2f67fa870e14d0996433FbdB4015794;
-    address public constant POOL_QUICKSWAPV3_USDCe_USDT =
-        0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710;
-    address public constant POOL_QUICKSWAPV3_USDCe_DAI =
-        0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2;
-    address public constant POOL_QUICKSWAPV3_USDCe_WETH =
-        0x55CAaBB0d2b704FD0eF8192A7E35D8837e678207;
-    address public constant POOL_QUICKSWAPV3_WMATIC_USDCe =
-        0xAE81FAc689A1b4b1e06e7ef4a2ab4CD8aC0A087D;
-    address public constant POOL_QUICKSWAPV3_USDCe_QUICK =
-        0x022df0b3341B3A0157EEA97dD024A93f7496D631;
-    address public constant POOL_QUICKSWAPV3_USDT_DAI =
-        0xefFA9E5e63ba18160Ee26BdA56b42F3368719615;
-    address public constant POOL_QUICKSWAPV3_WBTC_WETH =
-        0xAC4494e30a85369e332BDB5230d6d694d4259DbC;
-    address public constant POOL_QUICKSWAPV3_WBTC_USDCe =
-        0xA5CD8351Cbf30B531C7b11B0D9d3Ff38eA2E280f;
-    address public constant POOL_QUICKSWAPV3_WMATIC_WETH =
-        0x479e1B71A702a595e19b6d5932CD5c863ab57ee0;
-    address public constant POOL_QUICKSWAPV3_WMATIC_USDT =
-        0x5b41EEDCfC8e0AE47493d4945Aa1AE4fe05430ff;
-    address public constant POOL_QUICKSWAPV3_WETH_USDT =
-        0x9CEff2F5138fC59eB925d270b8A7A9C02a1810f2;
-    address public constant POOL_QUICKSWAPV3_dQUICK_QUICK =
-        0x194257104FabFd9f48bD01bd71A719637B4bbfA9;
-    address public constant POOL_QUICKSWAPV3_USDCe_USDC =
-        0xEecB5Db986c20a8C88D8332E7e252A9671565751;
-    address public constant POOL_QUICKSWAPV3_USDC_WETH =
-        0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
-    address public constant POOL_QUICKSWAPV3_WMATIC_USDC =
-        0x6669B4706cC152F359e947BCa68E263A87c52634;
-    address public constant POOL_QUICKSWAPV3_USDC_DAI =
-        0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
-    address public constant POOL_QUICKSWAPV3_CRV_WMATIC =
-        0x00A6177C6455A29B8dAa7144B2bEfc9F2147BB7E;
-    address public constant POOL_KYBER_USDCe_USDT =
-        0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
-    address public constant POOL_KYBER_USDCe_DAI =
-        0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
-    address public constant POOL_KYBER_KNC_USDCe =
-        0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
-    address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 =
-        0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
-    address public constant POOL_RETRO_WMATIC_WETH_500 =
-        0x1a34EaBbe928Bf431B679959379b2225d60D9cdA;
-    address public constant POOL_RETRO_oRETRO_RETRO_10000 =
-        0x387FBcE5E2933Bd3a7243D0be2aAC8fD9Ab3D55d;
-    address public constant POOL_RETRO_USDCe_RETRO_10000 =
-        0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
-    address public constant POOL_RETRO_WMATIC_USDCe_500 =
-        0xEC15624FBB314eb05BaaD4cA49b7904C0Cb6b645;
-    address public constant POOL_RETRO_WBTC_WETH_500 =
-        0xb694E3bdd4BCdF843510983D257679D1E627C474;
-    address public constant POOL_RETRO_USDCe_CASH_100 =
-        0x619259F699839dD1498FFC22297044462483bD27;
-    address public constant POOL_RETRO_CASH_RETRO_10000 =
-        0xb47A07966cE6812702C0567d03725F1b37E27877;
-    address public constant POOL_CURVE_crvUSD_USDCe =
-        0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
-    address public constant POOL_CURVE_crvUSD_USDT =
-        0xA70Af99bFF6b168327f9D1480e29173e757c7904;
-    address public constant POOL_CURVE_crvUSD_DAI =
-        0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
-    address public constant POOL_CURVE_crvUSD_USDC =
-        0x5225010A0AE133B357861782B0B865a48471b2C5;
+    address public constant POOL_UNISWAPV3_USDCe_USDT_100 = 0xDaC8A8E6DBf8c690ec6815e0fF03491B2770255D;
+    address public constant POOL_UNISWAPV3_USDCe_DAI_100 = 0x5645dCB64c059aa11212707fbf4E7F984440a8Cf;
+    address public constant POOL_UNISWAPV3_WMATIC_WETH_3000 = 0x167384319B41F7094e62f7506409Eb38079AbfF8;
+    address public constant POOL_UNISWAPV3_WMATIC_WETH_500 = 0x86f1d8390222A3691C28938eC7404A1661E618e0;
+    address public constant POOL_UNISWAPV3_WMATIC_USDCe_500 = 0xA374094527e1673A86dE625aa59517c5dE346d32;
+    address public constant POOL_UNISWAPV3_WBTC_WETH_500 = 0x50eaEDB835021E4A108B7290636d62E9765cc6d7;
+    address public constant POOL_UNISWAPV3_USDCe_WETH_500 = 0x45dDa9cb7c25131DF268515131f647d726f50608;
+    address public constant POOL_UNISWAPV3_PROFIT_WETH_100 = 0xE5e70cb76446BEE0053b1EdF22CaDa861c80D51F;
+    address public constant POOL_UNISWAPV3_WETH_COMP_3000 = 0x2260E0081A2A042DC55A07D379eb3c18bE28A1F2;
+    address public constant POOL_UNISWAPV3_WMATIC_COMP_3000 = 0x495b3576e2f67fa870e14d0996433FbdB4015794;
+    address public constant POOL_QUICKSWAPV3_USDCe_USDT = 0x7B925e617aefd7FB3a93Abe3a701135D7a1Ba710;
+    address public constant POOL_QUICKSWAPV3_USDCe_DAI = 0xe7E0eB9F6bCcCfe847fDf62a3628319a092F11a2;
+    address public constant POOL_QUICKSWAPV3_USDCe_USDC = 0xEecB5Db986c20a8C88D8332E7e252A9671565751;
+    address public constant POOL_QUICKSWAPV3_USDC_USDT = 0x0e3Eb2C75Bd7dD0e12249d96b1321d9570764D77;
+    address public constant POOL_QUICKSWAPV3_USDC_DAI = 0xBC8f3da0bd42E1F2509cd8671Ce7c7E5f7fd39c8;
+    address public constant POOL_QUICKSWAPV3_USDT_DAI = 0xefFA9E5e63ba18160Ee26BdA56b42F3368719615;
+    address public constant POOL_QUICKSWAPV3_USDCe_WETH = 0x55CAaBB0d2b704FD0eF8192A7E35D8837e678207;
+    address public constant POOL_QUICKSWAPV3_WMATIC_USDCe = 0xAE81FAc689A1b4b1e06e7ef4a2ab4CD8aC0A087D;
+    address public constant POOL_QUICKSWAPV3_USDCe_QUICK = 0x022df0b3341B3A0157EEA97dD024A93f7496D631;
+    address public constant POOL_QUICKSWAPV3_WBTC_WETH = 0xAC4494e30a85369e332BDB5230d6d694d4259DbC;
+    address public constant POOL_QUICKSWAPV3_WBTC_USDCe = 0xA5CD8351Cbf30B531C7b11B0D9d3Ff38eA2E280f;
+    address public constant POOL_QUICKSWAPV3_WMATIC_WETH = 0x479e1B71A702a595e19b6d5932CD5c863ab57ee0;
+    address public constant POOL_QUICKSWAPV3_WMATIC_USDT = 0x5b41EEDCfC8e0AE47493d4945Aa1AE4fe05430ff;
+    address public constant POOL_QUICKSWAPV3_WETH_USDT = 0x9CEff2F5138fC59eB925d270b8A7A9C02a1810f2;
+    address public constant POOL_QUICKSWAPV3_dQUICK_QUICK = 0x194257104FabFd9f48bD01bd71A719637B4bbfA9;
+    address public constant POOL_QUICKSWAPV3_USDC_WETH = 0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
+    address public constant POOL_QUICKSWAPV3_WMATIC_USDC = 0x6669B4706cC152F359e947BCa68E263A87c52634;
+    address public constant POOL_QUICKSWAPV3_CRV_WMATIC = 0x00A6177C6455A29B8dAa7144B2bEfc9F2147BB7E;
+    address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
+    address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
+    address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
+    address public constant POOL_UNISWAPV3_ICHI_WMATIC_100 = 0x3D86A4B8C1b55509792d57e0C038128cC9C14fE7;
+    address public constant POOL_RETRO_WMATIC_WETH_500 = 0x1a34EaBbe928Bf431B679959379b2225d60D9cdA;
+    address public constant POOL_RETRO_oRETRO_RETRO_10000 = 0x387FBcE5E2933Bd3a7243D0be2aAC8fD9Ab3D55d;
+    address public constant POOL_RETRO_USDCe_RETRO_10000 = 0xc7d8B9c270D0E31A6a0Cf4496fe019766Be42E15;
+    address public constant POOL_RETRO_WMATIC_USDCe_500 = 0xEC15624FBB314eb05BaaD4cA49b7904C0Cb6b645;
+    address public constant POOL_RETRO_WBTC_WETH_500 = 0xb694E3bdd4BCdF843510983D257679D1E627C474;
+    address public constant POOL_RETRO_USDCe_CASH_100 = 0x619259F699839dD1498FFC22297044462483bD27;
+    address public constant POOL_RETRO_CASH_RETRO_10000 = 0xb47A07966cE6812702C0567d03725F1b37E27877;
+    address public constant POOL_CURVE_crvUSD_USDCe = 0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
+    address public constant POOL_CURVE_crvUSD_USDT = 0xA70Af99bFF6b168327f9D1480e29173e757c7904;
+    address public constant POOL_CURVE_crvUSD_DAI = 0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
+    address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
 
     // Gelato
     address public constant GELATO_AUTOMATE =
@@ -233,22 +172,14 @@ library PolygonLib {
         0x12a7b5510f8f5E13F75aFF4d00b2F88CC99d22DB;
 
     // Ichi
-    address public constant ICHI_QUICKSWAP_WMATIC_USDT =
-        0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B;
-    address public constant ICHI_QUICKSWAP_WBTC_WETH =
-        0x5D1b077212b624fe580a84384Ffea44da752ccb3;
-    address public constant ICHI_QUICKSWAP_WETH_USDT =
-        0xc46FAb3Af8aA7A56feDa351a22B56749dA313473;
-    address public constant ICHI_RETRO_WMATIC_WETH_MATIC =
-        0x38F41FDe5cABC569E808537FdaF390cD7f0dC0f6;
-    address public constant ICHI_RETRO_WMATIC_WETH_ETH =
-        0xE9BD439259DE0347DC26B86b3E73437E93858283;
-    address public constant ICHI_RETRO_WMATIC_USDCe_MATIC =
-        0x91f935892355C8CA4468C44D2c4bAE1A23c60c14;
-    address public constant ICHI_RETRO_WMATIC_USDCe_USDC =
-        0x5Ef5630195164956d394fF8093C1B6964cb5814B;
-    address public constant ICHI_RETRO_WBTC_WETH_ETH =
-        0x0B0302014DD4FB6A77da03bF9034db5FEcB68eA8;
+    address public constant ICHI_QUICKSWAP_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B; // Nov-13-2023
+    address public constant ICHI_QUICKSWAP_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3; // Nov-13-2023
+    address public constant ICHI_QUICKSWAP_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473; // Nov-13-2023
+    address public constant ICHI_RETRO_WMATIC_WETH_MATIC = 0x38F41FDe5cABC569E808537FdaF390cD7f0dC0f6; // Jul-12-2023
+    address public constant ICHI_RETRO_WMATIC_WETH_ETH = 0xE9BD439259DE0347DC26B86b3E73437E93858283;
+    address public constant ICHI_RETRO_WMATIC_USDCe_MATIC = 0x91f935892355C8CA4468C44D2c4bAE1A23c60c14;
+    address public constant ICHI_RETRO_WMATIC_USDCe_USDC = 0x5Ef5630195164956d394fF8093C1B6964cb5814B;
+    address public constant ICHI_RETRO_WBTC_WETH_ETH = 0x0B0302014DD4FB6A77da03bF9034db5FEcB68eA8;
 
     // DeX aggregators
     address public constant ONE_INCH =
@@ -352,15 +283,10 @@ library PolygonLib {
 
         //region ----- SetupSwapper -----
         {
-            (
-                ISwapper.AddPoolData[] memory bcPools,
-                ISwapper.AddPoolData[] memory pools
-            ) = routes();
-            ISwapper.AddPoolData[] memory pools2 = routes2();
+            (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            swapper.addPools(pools2, false);
             // todo auto thresholds
             address[] memory tokenIn = new address[](10);
             tokenIn[0] = TOKEN_USDCe;
@@ -392,15 +318,13 @@ library PolygonLib {
         //region ----- Add farms -----
         IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(farms());
-        factory.addFarms(farms2());
-        factory.addFarms(farms3());
-        factory.addFarms(farms4());
-        factory.addFarms(farms5());
-        factory.addFarms(farms6());
+        // Jan-09-2024
+        if (block.number > 52122638) {
+            factory.addFarms(farms2());
+        }
+        // Mar-12-2024 02:41:42 PM +UTC
         if (block.number > 54573098) {
-            // Mar-12-2024 02:41:42 PM +UTC
-            factory.addFarms(farms7());
-            factory.addFarms(farms8());
+            factory.addFarms(farms3());
         }
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
@@ -500,198 +424,57 @@ library PolygonLib {
     {
         //region ----- BC pools ----
         bcPools = new ISwapper.AddPoolData[](5);
-        bcPools[0] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_USDT_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_USDCe,
-            tokenOut: TOKEN_USDT
-        });
-        bcPools[1] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_DAI_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_DAI,
-            tokenOut: TOKEN_USDCe
-        });
-        bcPools[2] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_WMATIC_USDCe_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WMATIC,
-            tokenOut: TOKEN_USDCe
-        });
-        bcPools[3] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_WETH_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WETH,
-            tokenOut: TOKEN_USDCe
-        });
-        bcPools[4] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WBTC,
-            tokenOut: TOKEN_WETH
-        });
+        bcPools[0] = _makePoolData(POOL_UNISWAPV3_USDCe_USDT_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDCe, TOKEN_USDT);
+        bcPools[1] = _makePoolData(POOL_UNISWAPV3_USDCe_DAI_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_DAI, TOKEN_USDCe);
+        bcPools[2] =
+            _makePoolData(POOL_UNISWAPV3_WMATIC_USDCe_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WMATIC, TOKEN_USDCe);
+        bcPools[3] = _makePoolData(POOL_UNISWAPV3_USDCe_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WETH, TOKEN_USDCe);
+        bcPools[4] = _makePoolData(POOL_UNISWAPV3_WBTC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WBTC, TOKEN_WETH);
         //endregion -- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](10);
+        pools = new ISwapper.AddPoolData[](18);
         uint i;
         // UniswapV3
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_USDT_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_USDCe,
-            tokenOut: TOKEN_USDT
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_DAI_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_DAI,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_WMATIC_USDCe_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WMATIC,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_USDCe_WETH_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WETH,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_WBTC_WETH_500,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_WBTC,
-            tokenOut: TOKEN_WETH
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_PROFIT_WETH_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_PROFIT,
-            tokenOut: TOKEN_WETH
-        });
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_USDCe_USDT_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDCe, TOKEN_USDT);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_USDCe_DAI_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_DAI, TOKEN_USDCe);
+        pools[i++] =
+            _makePoolData(POOL_UNISWAPV3_WMATIC_USDCe_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WMATIC, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_USDCe_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WETH, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_WBTC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WBTC, TOKEN_WETH);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_PROFIT_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_PROFIT, TOKEN_WETH);
 
         // QuickSwapV3
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_USDT_DAI,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_USDT,
-            tokenOut: TOKEN_DAI
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_USDCe_QUICK,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_QUICK,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_dQUICK_QUICK,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_dQUICK,
-            tokenOut: TOKEN_QUICK
-        });
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_USDT_DAI, AmmAdapterIdLib.ALGEBRA, TOKEN_USDT, TOKEN_DAI);
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_USDCe_QUICK, AmmAdapterIdLib.ALGEBRA, TOKEN_QUICK, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_dQUICK_QUICK, AmmAdapterIdLib.ALGEBRA, TOKEN_dQUICK, TOKEN_QUICK);
 
         // KyberSwap
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_KYBER_KNC_USDCe,
-            ammAdapterId: AmmAdapterIdLib.KYBER,
-            tokenIn: TOKEN_KNC,
-            tokenOut: TOKEN_USDCe
-        });
+        pools[i++] = _makePoolData(POOL_KYBER_KNC_USDCe, AmmAdapterIdLib.KYBER, TOKEN_KNC, TOKEN_USDCe);
+
+        // New routes jan-2024
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_USDCe_USDC, AmmAdapterIdLib.ALGEBRA, TOKEN_USDC, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_WETH_COMP_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_COMP, TOKEN_WETH);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_ICHI_WMATIC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_ICHI, TOKEN_WMATIC);
+
+        // routes for RETRO strategies
+        pools[i++] = _makePoolData(POOL_RETRO_USDCe_RETRO_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_RETRO, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_RETRO_oRETRO_RETRO_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_oRETRO, TOKEN_RETRO);
+        pools[i++] = _makePoolData(POOL_RETRO_USDCe_CASH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_CASH, TOKEN_USDCe);
+
+        // crvUSD
+        pools[i++] = _makePoolData(POOL_CURVE_crvUSD_USDCe, AmmAdapterIdLib.CURVE, TOKEN_crvUSD, TOKEN_USDCe);
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_CRV_WMATIC, AmmAdapterIdLib.ALGEBRA, TOKEN_CRV, TOKEN_WMATIC);
         //endregion -- Pools ----
     }
 
-    function routes2()
-        public
-        pure
-        returns (ISwapper.AddPoolData[] memory pools)
-    {
-        pools = new ISwapper.AddPoolData[](8);
-        uint i;
-        // New routes jan-2024
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_USDCe_USDC,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_USDC,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_WETH_COMP_3000,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_COMP,
-            tokenOut: TOKEN_WETH
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_UNISWAPV3_ICHI_WMATIC_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_ICHI,
-            tokenOut: TOKEN_WMATIC
-        });
-        // routes for RETRO strategies
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_RETRO_USDCe_RETRO_10000,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_RETRO,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_RETRO_oRETRO_RETRO_10000,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_oRETRO,
-            tokenOut: TOKEN_RETRO
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_RETRO_USDCe_CASH_100,
-            ammAdapterId: AmmAdapterIdLib.UNISWAPV3,
-            tokenIn: TOKEN_CASH,
-            tokenOut: TOKEN_USDCe
-        });
-        // crvUSD
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_CURVE_crvUSD_USDCe,
-            ammAdapterId: AmmAdapterIdLib.CURVE,
-            tokenIn: TOKEN_crvUSD,
-            tokenOut: TOKEN_USDCe
-        });
-        pools[i++] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_CRV_WMATIC,
-            ammAdapterId: AmmAdapterIdLib.ALGEBRA,
-            tokenIn: TOKEN_CRV,
-            tokenOut: TOKEN_WMATIC
-        });
-    }
-
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](16);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
+        _farms = new IFactory.Farm[](18);
         uint i;
 
         //region ----- QuickSwap V3 farms -----
         // [0] Earn dQUICK, WMATIC by static position in USDC/DAI pool on QuickSwap V3
-        rewardAssets = new address[](2);
-        rewardAssets[0] = TOKEN_dQUICK;
-        rewardAssets[1] = TOKEN_WMATIC;
-        addresses = new address[](1);
-        addresses[0] = QUICKSWAP_POSITION_MANAGER;
-        nums = new uint[](0);
-        ticks = new int24[](2);
-        ticks[0] = 276240;
-        ticks[1] = 276420;
-
-        _farms[i++] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_USDCe_DAI,
-            strategyLogicId: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDCe_DAI, 276300, 276360);
         //endregion -- QuickSwap V3 farms -----
 
         //region ----- Gamma QuickSwap Merkl farms -----
@@ -756,262 +539,66 @@ library PolygonLib {
             ALMPositionNameLib.WIDE
         );
         //endregion --  Gamma QuickSwap farms -----
-    }
-
-    function farms2() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](2);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
 
         //region ----- QuickSwap V3 farms -----
-        // [17] Earn dQUICK, WMATIC by static position in USDCe/USDC pool on QuickSwap V3
-        rewardAssets = new address[](2);
-        rewardAssets[0] = TOKEN_dQUICK;
-        rewardAssets[1] = TOKEN_WMATIC;
-        addresses = new address[](1);
-        addresses[0] = QUICKSWAP_POSITION_MANAGER;
-        nums = new uint[](0);
-        ticks = new int24[](2);
-        ticks[0] = -60;
-        ticks[1] = 60;
-        _farms[0] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_USDCe_USDC,
-            strategyLogicId: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
+        // [16] Earn dQUICK, WMATIC by static position in USDCe/USDC pool on QuickSwap V3
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDCe_USDC, -60, 60);
         //endregion -- QuickSwap V3 farms -----
 
-        // [18]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_COMP;
-        addresses = new address[](2);
-        addresses[0] = COMPOUND_COMET;
-        addresses[1] = COMPOUND_COMET_REWARDS;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[1] = IFactory.Farm({
-            status: 0,
-            pool: address(0),
-            strategyLogicId: StrategyIdLib.COMPOUND_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
+        // [17]
+        _farms[i++] = _makeCompoundFarm();
     }
 
-    function farms3() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](6);
-        address[] memory rewardAssets;
-        address[] memory addresses;
-        uint[] memory nums;
-        int24[] memory ticks;
-
-        // [18]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_dQUICK;
-        addresses = new address[](1);
-        addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1;
-        nums = new uint[](1);
-        nums[0] = 0; // NARROW
-        ticks = new int24[](0);
-        _farms[0] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WMATIC_WETH,
-            strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
-        // [19]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_dQUICK;
-        addresses = new address[](1);
-        addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2;
-        nums = new uint[](1);
-        nums[0] = 0; // NARROW
-        ticks = new int24[](0);
-        _farms[1] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WMATIC_WETH,
-            strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
-        // [20]
-        rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_dQUICK;
-        addresses = new address[](1);
-        addresses[0] = DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW;
-        nums = new uint[](1);
-        nums[0] = 0; // NARROW
-        ticks = new int24[](0);
-        _farms[2] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WMATIC_USDCe,
-            strategyLogicId: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
-        // [21]
-        rewardAssets = new address[](2);
-        rewardAssets[0] = TOKEN_dQUICK;
-        rewardAssets[1] = TOKEN_ICHI;
-        addresses = new address[](1);
-        addresses[0] = ICHI_QUICKSWAP_WMATIC_USDT;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[3] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WMATIC_USDT,
-            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
-        // [22]
-        rewardAssets = new address[](2);
-        rewardAssets[0] = TOKEN_dQUICK;
-        rewardAssets[1] = TOKEN_ICHI;
-        addresses = new address[](1);
-        addresses[0] = ICHI_QUICKSWAP_WBTC_WETH;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[4] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WBTC_WETH,
-            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-
-        // [23]
-        rewardAssets = new address[](2);
-        rewardAssets[0] = TOKEN_dQUICK;
-        rewardAssets[1] = TOKEN_ICHI;
-        addresses = new address[](1);
-        addresses[0] = ICHI_QUICKSWAP_WETH_USDT;
-        nums = new uint[](0);
-        ticks = new int24[](0);
-        _farms[5] = IFactory.Farm({
-            status: 0,
-            pool: POOL_QUICKSWAPV3_WETH_USDT,
-            strategyLogicId: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
-            rewardAssets: rewardAssets,
-            addresses: addresses,
-            nums: nums,
-            ticks: ticks
-        });
-    }
-
-    // ichi retro part 1
-    function farms4() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](2);
+    function farms2() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](14);
         uint i;
 
-        // [24]
+        // [18] - [21]
+        _farms[i++] = _makeDefiEdgeQuickSwapMerklFarm(DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeDefiEdgeQuickSwapMerklFarm(DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeDefiEdgeQuickSwapMerklFarm(DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeIchiQuickSwapMerklFarm(ICHI_QUICKSWAP_WMATIC_USDT);
+
+        // [22] - [23]
+        _farms[i++] = _makeIchiQuickSwapMerklFarm(ICHI_QUICKSWAP_WBTC_WETH);
+        _farms[i++] = _makeIchiQuickSwapMerklFarm(ICHI_QUICKSWAP_WETH_USDT);
+
+        // ichi retro part 1
+        // [24] - [25]
         _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_WETH_MATIC);
-        // [25]
         _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_USDCe_MATIC);
-    }
 
-    // ichi retro part 2
-    function farms5() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
-        uint i;
-
-        // [26]
+        // ichi retro part 2
+        // [26] - [28]
         _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_WETH_ETH);
-        // [27]
         _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WMATIC_USDCe_USDC);
-        // [28]
         _farms[i++] = _makeIchiRetroMerklFarm(ICHI_RETRO_WBTC_WETH_ETH);
-    }
 
-    // gamma retro
-    function farms6() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
-        uint i;
-
-        // [29]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            GAMMA_RETRO_WMATIC_USDCe_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-
-        // [30]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            GAMMA_RETRO_WMATIC_WETH_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-
-        // [31]
-        _farms[i++] = _makeGammaRetroMerklFarm(
-            GAMMA_RETRO_WBTC_WETH_WIDE,
-            ALMPositionNameLib.WIDE
-        );
+        // gamma retro
+        // [29] - [31]
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WMATIC_USDCe_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WMATIC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaRetroMerklFarm(GAMMA_RETRO_WBTC_WETH_WIDE, ALMPositionNameLib.WIDE);
     }
 
     // quickswap USDC native gamma
-    function farms7() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](2);
+    function farms3() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](8);
         uint i;
 
-        // [32]
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_USDC_WETH_NARROW,
-            ALMPositionNameLib.NARROW
-        );
+        // [32] - [33]
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDC_NARROW, ALMPositionNameLib.NARROW);
 
-        // [33]
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_USDC_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-    }
+        // [34] - [37]
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDCe, CONVEX_REWARD_POOL_crvUSD_USDCe);
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDT, CONVEX_REWARD_POOL_crvUSD_USDT);
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_DAI, CONVEX_REWARD_POOL_crvUSD_DAI);
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);
 
-    function farms8() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](4);
-        uint i;
-
-        // [34]
-        _farms[i++] = _makeCurveConvexFarm(
-            POOL_CURVE_crvUSD_USDCe,
-            CONVEX_REWARD_POOL_crvUSD_USDCe
-        );
-        // [35]
-        _farms[i++] = _makeCurveConvexFarm(
-            POOL_CURVE_crvUSD_USDT,
-            CONVEX_REWARD_POOL_crvUSD_USDT
-        );
-        // [36]
-        _farms[i++] = _makeCurveConvexFarm(
-            POOL_CURVE_crvUSD_DAI,
-            CONVEX_REWARD_POOL_crvUSD_DAI
-        );
-        // [37]
-        _farms[i++] = _makeCurveConvexFarm(
-            POOL_CURVE_crvUSD_USDC,
-            CONVEX_REWARD_POOL_crvUSD_USDC
-        );
+        // [38] - [39]
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_DAI, 276300, 276360);
+        _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_USDT, -60, 60);
     }
 
     // steer quickswap
@@ -1116,6 +703,39 @@ library PolygonLib {
         return farm;
     }
 
+    function _makeDefiEdgeQuickSwapMerklFarm(
+        address underlyingDefiEdge,
+        uint preset
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IDefiEdgeStrategy(underlyingDefiEdge).pool();
+        farm.strategyLogicId = StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.addresses = new address[](1);
+        farm.addresses[0] = underlyingDefiEdge;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeIchiQuickSwapMerklFarm(address underlyingIchi) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IICHIVault(underlyingIchi).pool();
+        farm.strategyLogicId = StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM;
+        farm.rewardAssets = new address[](2);
+        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[1] = TOKEN_ICHI;
+        farm.addresses = new address[](1);
+        farm.addresses[0] = underlyingIchi;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
     function _makeIchiRetroMerklFarm(
         address underlyingIchi
     ) internal view returns (IFactory.Farm memory) {
@@ -1135,6 +755,49 @@ library PolygonLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
+    }
+
+    function _makeQuickSwapStaticMerklFarm(
+        address pool,
+        int24 lowerTick,
+        int24 upperTick
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = pool;
+        farm.strategyLogicId = StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.addresses = new address[](1);
+        farm.addresses[0] = QUICKSWAP_POSITION_MANAGER;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](2);
+        farm.ticks[0] = lowerTick;
+        farm.ticks[1] = upperTick;
+        return farm;
+    }
+
+    function _makeCompoundFarm() internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.COMPOUND_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_COMP;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = COMPOUND_COMET;
+        farm.addresses[1] = COMPOUND_COMET_REWARDS;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makePoolData(
+        address pool,
+        string memory ammAdapterId,
+        address tokenIn,
+        address tokenOut
+    ) internal pure returns (ISwapper.AddPoolData memory) {
+        return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
     }
 
     function testPolygonLib() external {}

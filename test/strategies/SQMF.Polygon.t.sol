@@ -8,7 +8,6 @@ import "../../src/integrations/steer/IMultiPositionManager.sol";
 contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
     constructor() {
-        // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
     }
 
     function testSQMF() public universalTest {

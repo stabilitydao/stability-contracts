@@ -14,6 +14,7 @@
 * [ERC-165: Standard Interface Detection](https://eips.ethereum.org/EIPS/eip-165)
 * [ERC-721: Non-Fungible Token Standard](https://eips.ethereum.org/EIPS/eip-721)
 * [ERC-1967: Proxy Storage Slots](https://eips.ethereum.org/EIPS/eip-1967)
+* [ERC-4626: Tokenized Vaults](https://eips.ethereum.org/EIPS/eip-4626)
 * [ERC-7201: Namespaced Storage Layout](https://eips.ethereum.org/EIPS/eip-7201)
 
 ### Used fresh Solidity language features
