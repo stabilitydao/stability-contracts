@@ -49,9 +49,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     }
 
     /// @inheritdoc IFarmingStrategy
-    function stakingPool() external view virtual returns (address) {
-        return address(0);
-    }
+    function stakingPool() external view virtual returns (address) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Providing farm data to derived contracts           */
