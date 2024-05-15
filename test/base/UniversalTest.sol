@@ -283,6 +283,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+                (uint tvl,) = IVault(vars.vault).tvl();
+
                 _preDeposit();
 
                 // get amounts for deposit
@@ -298,7 +300,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
-                (uint tvl,) = IVault(vars.vault).tvl();
+                (tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
                 skip(duration1);
