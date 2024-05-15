@@ -341,8 +341,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         amountsConsumed = new uint[](2);
         if (_underlying.allowToken0()) {
             amountsConsumed[0] = amountsMax[0];
-        }
-        if (_underlying.allowToken1()) {
+        } else {
             amountsConsumed[1] = amountsMax[1];
         }
         uint32 twapPeriod = 600;

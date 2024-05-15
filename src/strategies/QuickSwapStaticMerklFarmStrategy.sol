@@ -347,16 +347,10 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
             );
         }
 
-        uint fee = __$._feesOnBalance[0];
-        if (fee > 0) {
-            __amounts[0] += fee;
-            __$._feesOnBalance[0] = 0;
-        }
-        fee = __$._feesOnBalance[1];
-        if (fee > 0) {
-            __amounts[1] += fee;
-            __$._feesOnBalance[1] = 0;
-        }
+        __amounts[0] += __$._feesOnBalance[0];
+        __$._feesOnBalance[0] = 0;
+        __amounts[1] += __$._feesOnBalance[1];
+        __$._feesOnBalance[1] = 0;
 
         uint rwLen = __rewardAssets.length;
         __rewardAmounts = new uint[](rwLen);
