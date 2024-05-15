@@ -1083,7 +1083,7 @@ library PolygonLib {
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = TOKEN_USDC;
+        farm.rewardAssets[0] = TOKEN_dQUICK;
         farm.addresses = new address[](1);
         farm.addresses[0] = hypervisor;
         farm.nums = new uint[](1);
