@@ -100,8 +100,11 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IICHIVault _underlying = IICHIVault(__$__._underlying);
         proportions = new uint[](2);
-        if (_underlying.allowToken0()) proportions[0] = 1e18;
-        if (_underlying.allowToken1()) proportions[1] = 1e18;
+        if (_underlying.allowToken0()) {
+            proportions[0] = 1e18;
+        } else {
+            proportions[1] = 1e18;
+        }
     }
 
     /// @inheritdoc IStrategy
@@ -277,8 +280,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
         amountsConsumed = new uint[](2);
         if (_underlying.allowToken0()) {
             amountsConsumed[0] = amountsMax[0];
-        }
-        if (_underlying.allowToken1()) {
+        } else {
             amountsConsumed[1] = amountsMax[1];
         }
         uint32 twapPeriod = 600;

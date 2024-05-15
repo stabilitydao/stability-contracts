@@ -171,8 +171,11 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IICHIVault _underlying = IICHIVault(__$__._underlying);
         proportions = new uint[](2);
-        if (_underlying.allowToken0()) proportions[0] = 1e18;
-        if (_underlying.allowToken1()) proportions[1] = 1e18;
+        if (_underlying.allowToken0()) {
+            proportions[0] = 1e18;
+        } else {
+            proportions[1] = 1e18;
+        }
     }
 
     /// @inheritdoc IStrategy
