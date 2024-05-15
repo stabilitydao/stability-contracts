@@ -284,6 +284,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
                 (uint tvl,) = IVault(vars.vault).tvl();
+                strategy.assetsAmounts();
 
                 _preDeposit();
 

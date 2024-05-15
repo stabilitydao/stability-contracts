@@ -9,6 +9,7 @@ contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         _addStrategy(21);
         _addStrategy(22);
         _addStrategy(23);
+        _addStrategy(40);
     }
 
     function _addStrategy(uint farmId) internal {
