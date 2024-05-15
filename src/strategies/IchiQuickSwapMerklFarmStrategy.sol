@@ -165,7 +165,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IICHIVault _underlying = IICHIVault(farm.addresses[0]);
         address allowedToken;
         if (_underlying.allowToken0()) allowedToken = _underlying.token0();
-        else if (_underlying.allowToken1()) allowedToken = _underlying.token1();    
+        else if (_underlying.allowToken1()) allowedToken = _underlying.token1();  
         string memory symbol = IERC20Metadata(allowedToken).symbol();
         return (symbol, false);
     }
