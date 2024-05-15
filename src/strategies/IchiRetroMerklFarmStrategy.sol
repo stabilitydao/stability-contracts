@@ -270,10 +270,10 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        IICHIVault _underlying = IICHIVault(farm.addresses[0]);
+        IICHIVault _ivault = IICHIVault(farm.addresses[0]);
         address allowedToken;
-        if (_underlying.allowToken0()) allowedToken = _underlying.token0();
-        else if (_underlying.allowToken1()) allowedToken = _underlying.token1();
+        if (_ivault.allowToken0()) allowedToken = _ivault.token0();
+        else if (_ivault.allowToken1()) allowedToken = _ivault.token1();
         string memory symbol = IERC20Metadata(allowedToken).symbol();
         return (symbol, false);
     }
