@@ -133,44 +133,6 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
         $.flashOn = false;
     }
 
-    /// @dev Temporary actions
-    function upgradeStorageToVersion2(
-        address paymentToken,
-        address flashPool,
-        address oPool,
-        address uToPaymentTokenPool,
-        address quoter
-    ) external onlyOperator {
-        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
-
-        if ($.paymentToken != address(0)) {
-            revert AlreadyExist();
-        }
-
-        // CASH
-        $.paymentToken = paymentToken;
-
-        // USDCe-CASH 0.01%
-        $.flashPool = flashPool;
-
-        // RETRO-oRETRO 1%
-        $.oPool = oPool;
-
-        // CASH-RETRO 1%
-        $.uToPaymentTokenPool = uToPaymentTokenPool;
-
-        // UniswapV3 Quoter
-        $.quoter = quoter;
-
-        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
-        address uToken = GRMFLib.getOtherTokenFromPool(oPool, oToken);
-        address swapper = IPlatform(platform()).swapper();
-
-        IERC20(paymentToken).forceApprove(oToken, type(uint).max);
-        IERC20(uToken).forceApprove(swapper, type(uint).max);
-        IERC20(paymentToken).forceApprove(swapper, type(uint).max);
-    }
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
