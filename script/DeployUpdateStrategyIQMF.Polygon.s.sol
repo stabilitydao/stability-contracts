@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 import "../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
 
 contract DeployUpdateStrategyIQMFPolygon is Script {
     function run() external {
@@ -10,6 +11,7 @@ contract DeployUpdateStrategyIQMFPolygon is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         new IchiQuickSwapMerklFarmStrategy();
+        new IchiRetroMerklFarmStrategy();
 
         vm.stopBroadcast();
     }
