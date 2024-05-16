@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -12,7 +13,7 @@ import "../integrations/ichi/IICHIVault.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
 /// @author 0xhokugava (https://github.com/0xhokugava)
-contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -21,6 +22,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.1.1";
+
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -64,7 +66,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -99,8 +101,11 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IICHIVault _underlying = IICHIVault(__$__._underlying);
         proportions = new uint[](2);
-        if (_underlying.allowToken0()) proportions[0] = 1e18;
-        if (_underlying.allowToken1()) proportions[1] = 1e18;
+        if (_underlying.allowToken0()) {
+            proportions[0] = 1e18;
+        } else {
+            proportions[1] = 1e18;
+        }
     }
 
     /// @inheritdoc IStrategy
@@ -280,8 +285,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         amountsConsumed = new uint[](2);
         if (_underlying.allowToken0()) {
             amountsConsumed[0] = amountsMax[0];
-        }
-        if (_underlying.allowToken1()) {
+        } else {
             amountsConsumed[1] = amountsMax[1];
         }
         uint32 twapPeriod = 600;
