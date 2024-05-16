@@ -24,7 +24,6 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /// @inheritdoc IControllable
     string public constant VERSION = "2.0.1";
 
-
     uint internal constant _PRECISION = 10 ** 18;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.IchiRetroMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
