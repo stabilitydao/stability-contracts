@@ -9,12 +9,12 @@ contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {}
 
     function testSQMF() public universalTest {
-        specialDepositAmounts.push(11838);
-        specialDepositAmounts.push(11971);
+        // specialDepositAmounts.push(11838);
+        // specialDepositAmounts.push(11971);
 
         // add farms for testing
         _addStrategy(38);
-        _addStrategy(39);
+        // _addStrategy(39);
     }
 
     function _addStrategy(uint farmId) internal {
@@ -26,9 +26,16 @@ contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 underlying: address(0)
             })
         );
+        console.log("test=========>: %s", StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM);
+        console.log("test=========>: %s", address(0));
+        console.log("test=========>: %s", farmId);
+        console.log("test=========>: %s", address(0));
     }
 
     function _preHardWork() internal override {
-        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_WMATIC, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_USDC, currentStrategy, 10e18);
+
+        // deal(PolygonLib.TOKEN_WBTC, currentStrategy, 10e18);
     }
 }

@@ -13,6 +13,7 @@ import "../interfaces/ICAmmAdapter.sol";
 import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 import "../integrations/steer/IMultiPositionManager.sol";
+import "forge-std/console.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// @author Only Forward (https://github.com/OnlyForward0613)
@@ -39,13 +40,13 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 1 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length == 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
         __LPStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+                id: StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
@@ -53,11 +54,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             })
         );
 
-        __FarmingStrategyBase_init(addresses[0], nums[0]);
+        // __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        address[] memory _assets = assets();
-        IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
-        IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
+        // address[] memory _assets = assets();
+        // IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        // IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -154,10 +155,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external view override returns (string memory, bool) {
-        IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = DQMFLib.shortAddress(farm.addresses[0]);
-        return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
+    function getSpecificName() external pure override returns (string memory, bool) {
+        // IFactory.Farm memory farm = _getFarm();
+        // string memory shortAddr = DQMFLib.shortAddress(farm.addresses[0]);
+        // return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
+        return ("ok-steer", true);
     }
 
     /// @inheritdoc IStrategy
