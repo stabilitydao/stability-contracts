@@ -17,7 +17,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = "1.1.1";
+    string public constant VERSION_FARMING_STRATEGY_BASE = "1.1.2";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION =
@@ -47,6 +47,9 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     function farmId() public view returns (uint) {
         return _getFarmingStrategyBaseStorage().farmId;
     }
+
+    /// @inheritdoc IFarmingStrategy
+    function stakingPool() external view virtual returns (address) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Providing farm data to derived contracts           */
