@@ -195,6 +195,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             ticks
                         );
                         f.ticks = goodTicks;
+
+                        string memory goodStrategyId = f.strategyLogicId;
+                        f.strategyLogicId = "INCORRECT ID";
+                        factory.updateFarm(nums[0], f);
+                        vm.expectRevert(IFarmingStrategy.IncorrectStrategyId.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+                        f.strategyLogicId = goodStrategyId;
+
                         factory.updateFarm(nums[0], f);
                         ///
                     } else {
