@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/DQMFLib.sol";
 import "./libs/StrategyIdLib.sol";
@@ -17,7 +18,7 @@ import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// @author Alien Deployer (https://github.com/a17)
-contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,7 +26,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -73,7 +74,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -379,13 +380,10 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBa
         _totalAmount1 = _normalise(_poolTokens[1], _totalAmount1);
         uint token0Price = _getPriceInUSD(_factory, _registry, _poolTokens[0], _isBase[0]);
         uint token1Price = _getPriceInUSD(_factory, _registry, _poolTokens[1], _isBase[1]);
-        if (_totalShares > 0) {
-            uint numerator = token0Price * __amount0 + token1Price * __amount1;
-            uint denominator = token0Price * _totalAmount0 + token1Price * _totalAmount1;
-            share = UniswapV3MathLib.mulDiv(numerator, _totalShares, denominator);
-        } else {
-            share = (token0Price * __amount0 + token1Price * __amount1) / DIVISOR;
-        }
+        // here we assume that _totalShares always > 0, because defiedge strategy is already inited
+        uint numerator = token0Price * __amount0 + token1Price * __amount1;
+        uint denominator = token0Price * _totalAmount0 + token1Price * _totalAmount1;
+        share = UniswapV3MathLib.mulDiv(numerator, _totalShares, denominator);
     }
 
     function _normalise(address _token, uint _amount) internal view returns (uint normalised) {

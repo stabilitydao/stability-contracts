@@ -195,6 +195,22 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             ticks
                         );
                         f.ticks = goodTicks;
+
+                        string memory goodStrategyId = f.strategyLogicId;
+                        f.strategyLogicId = "INCORRECT ID";
+                        factory.updateFarm(nums[0], f);
+                        vm.expectRevert(IFarmingStrategy.IncorrectStrategyId.selector);
+                        factory.deployVaultAndStrategy(
+                            vars.types[k],
+                            strategies[i].id,
+                            vaultInitAddresses,
+                            vaultInitNums,
+                            initStrategyAddresses,
+                            nums,
+                            ticks
+                        );
+                        f.strategyLogicId = goodStrategyId;
+
                         factory.updateFarm(nums[0], f);
                         ///
                     } else {
@@ -284,6 +300,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                          DEPOSIT                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+                (uint tvl,) = IVault(vars.vault).tvl();
+                strategy.assetsAmounts();
+
                 _preDeposit();
 
                 // get amounts for deposit
@@ -299,7 +318,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 // deposit
                 IVault(vars.vault).depositAssets(assets, depositAmounts, 0, address(0));
-                (uint tvl,) = IVault(vars.vault).tvl();
+                (tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
                 skip(duration1);

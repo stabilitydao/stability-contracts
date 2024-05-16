@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
+import "./base/MerklStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
@@ -17,7 +18,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
 /// @dev 2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
-contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,7 +26,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.1";
+    string public constant VERSION = "2.1.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -132,44 +133,6 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         $.flashOn = false;
     }
 
-    /// @dev Temporary actions
-    function upgradeStorageToVersion2(
-        address paymentToken,
-        address flashPool,
-        address oPool,
-        address uToPaymentTokenPool,
-        address quoter
-    ) external onlyOperator {
-        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
-
-        if ($.paymentToken != address(0)) {
-            revert AlreadyExist();
-        }
-
-        // CASH
-        $.paymentToken = paymentToken;
-
-        // USDCe-CASH 0.01%
-        $.flashPool = flashPool;
-
-        // RETRO-oRETRO 1%
-        $.oPool = oPool;
-
-        // CASH-RETRO 1%
-        $.uToPaymentTokenPool = uToPaymentTokenPool;
-
-        // UniswapV3 Quoter
-        $.quoter = quoter;
-
-        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
-        address uToken = GRMFLib.getOtherTokenFromPool(oPool, oToken);
-        address swapper = IPlatform(platform()).swapper();
-
-        IERC20(paymentToken).forceApprove(oToken, type(uint).max);
-        IERC20(uToken).forceApprove(swapper, type(uint).max);
-        IERC20(paymentToken).forceApprove(swapper, type(uint).max);
-    }
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -178,7 +141,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, MerklStrategyBase, FarmingStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
