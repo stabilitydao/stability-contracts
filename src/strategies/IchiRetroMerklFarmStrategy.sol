@@ -239,7 +239,6 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
         IICHIVault _ivault = IICHIVault(farm.addresses[0]);
-        address allowedToken;
         address allowedToken = _ivault.allowToken0() ? _ivault.token0() : _ivault.token1();
         string memory symbol = IERC20Metadata(allowedToken).symbol();
         return (symbol, false);
