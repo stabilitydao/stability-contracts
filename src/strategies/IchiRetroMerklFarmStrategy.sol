@@ -22,7 +22,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.1.0";
+    string public constant VERSION = "2.1.1";
 
     uint internal constant _PRECISION = 10 ** 18;
 
@@ -237,8 +237,10 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = IRMFLib.shortAddress(farm.addresses[0]);
-        return (shortAddr, true);
+        IICHIVault _ivault = IICHIVault(farm.addresses[0]);
+        address allowedToken = _ivault.allowToken0() ? _ivault.token0() : _ivault.token1();
+        string memory symbol = IERC20Metadata(allowedToken).symbol();
+        return (symbol, false);
     }
 
     /// @inheritdoc IStrategy

@@ -21,7 +21,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -166,8 +166,10 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        string memory shortAddr = IQMFLib.shortAddress(farm.addresses[0]);
-        return (shortAddr, true);
+        IICHIVault _ivault = IICHIVault(farm.addresses[0]);
+        address allowedToken = _ivault.allowToken0() ? _ivault.token0() : _ivault.token1();
+        string memory symbol = IERC20Metadata(allowedToken).symbol();
+        return (symbol, false);
     }
 
     /// @inheritdoc IStrategy
