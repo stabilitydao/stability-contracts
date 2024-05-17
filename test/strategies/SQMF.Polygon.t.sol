@@ -33,9 +33,6 @@ contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _preHardWork() internal override {
-        deal(PolygonLib.TOKEN_WMATIC, currentStrategy, 10e18);
-        deal(PolygonLib.TOKEN_USDC, currentStrategy, 10e18);
-
-        // deal(PolygonLib.TOKEN_WBTC, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
     }
 }
