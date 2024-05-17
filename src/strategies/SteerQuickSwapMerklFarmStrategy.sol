@@ -25,7 +25,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.0.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -40,7 +40,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length == 0) {
+        if (farm.addresses.length != 1 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 

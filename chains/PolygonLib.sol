@@ -485,7 +485,7 @@ library PolygonLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](20);
+        _farms = new IFactory.Farm[](18);
         uint i;
 
         //region ----- QuickSwap V3 farms -----

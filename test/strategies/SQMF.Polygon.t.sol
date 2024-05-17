@@ -26,10 +26,6 @@ contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 underlying: address(0)
             })
         );
-        console.log("test=========>: %s", StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM);
-        console.log("test=========>: %s", address(0));
-        console.log("test=========>: %s", farmId);
-        console.log("test=========>: %s", address(0));
     }
 
     function _preHardWork() internal override {
