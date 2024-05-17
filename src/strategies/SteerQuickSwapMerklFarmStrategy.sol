@@ -139,7 +139,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM;
+        return StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM;
     }
 
     /// @inheritdoc IStrategy

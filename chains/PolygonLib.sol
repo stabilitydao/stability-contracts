@@ -625,12 +625,12 @@ library PolygonLib {
         _farms = new IFactory.Farm[](2);
         uint i;
 
-        // [40]
+        // [41]
         _farms[i++] = _makeSteerQuickSwapMerklFarm(
             STEER_STRATEGY_WMATIC_USDC,
             ALMPositionNameLib.NARROW
         );
-        // [41]
+        // [42]
         _farms[i++] = _makeSteerQuickSwapMerklFarm(
             STEER_STRATEGY_WBTC_WETH,
             ALMPositionNameLib.NARROW
