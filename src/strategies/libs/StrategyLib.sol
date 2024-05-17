@@ -17,6 +17,7 @@ import "../../interfaces/ISwapper.sol";
 import "../../interfaces/ILPStrategy.sol";
 import "../../interfaces/IRVault.sol";
 import "../../interfaces/IFarmingStrategy.sol";
+import "forge-std/console.sol";
 
 library StrategyLib {
     using SafeERC20 for IERC20;
@@ -45,6 +46,7 @@ library StrategyLib {
         $.farmId = farmId;
 
         IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm(farmId);
+        console.log("test=========>: %s: %s", id, farm.strategyLogicId);
         if (keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))) {
             revert IFarmingStrategy.IncorrectStrategyId();
         }

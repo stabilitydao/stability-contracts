@@ -13,6 +13,7 @@ import "../src/integrations/convex/IConvexRewardPool.sol";
 import "../script/libs/DeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
 import "../script/libs/DeployStrategyLib.sol";
+import "forge-std/console.sol";
 
 /// @dev Addresses, routes, farms, strategy logics, reward tokens, deploy function and other data for Polygon network
 library PolygonLib {
@@ -326,6 +327,11 @@ library PolygonLib {
         if (block.number > 54573098) {
             factory.addFarms(farms3());
         }
+
+        if (block.number >  54673098) {
+            factory.addFarms(farms9());
+            console.log("Added new farms");
+        }
         DeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -469,7 +475,7 @@ library PolygonLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](18);
+        _farms = new IFactory.Farm[](20);
         uint i;
 
         //region ----- QuickSwap V3 farms -----
@@ -606,12 +612,12 @@ library PolygonLib {
         _farms = new IFactory.Farm[](2);
         uint i;
 
-        // [38]
+        // [40]
         _farms[i++] = _makeSteerQuickSwapMerklFarm(
             STEER_STRATEGY_WMATIC_USDC,
             ALMPositionNameLib.NARROW
         );
-        // [39]
+        // [41]
         _farms[i++] = _makeSteerQuickSwapMerklFarm(
             STEER_STRATEGY_WBTC_WETH,
             ALMPositionNameLib.NARROW

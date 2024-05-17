@@ -54,11 +54,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             })
         );
 
-        // __FarmingStrategyBase_init(addresses[0], nums[0]);
+        __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        // address[] memory _assets = assets();
-        // IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
-        // IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
+        address[] memory _assets = assets();
+        IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
