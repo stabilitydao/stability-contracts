@@ -41,6 +41,7 @@ library PolygonLib {
     address public constant TOKEN_CASH = 0x5D066D022EDE10eFa2717eD3D79f22F949F8C175;
     address public constant TOKEN_crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
     address public constant TOKEN_CRV = 0x172370d5Cd63279eFa6d502DAB29171933a610AF;
+    address public constant TOKEN_MaticX = 0xfa68FB4628DFF1028CFEc22b4162FCcd0d45efb6;
 
     // ERC721
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
@@ -82,6 +83,7 @@ library PolygonLib {
     address public constant POOL_QUICKSWAPV3_USDC_WETH = 0xa6AeDF7c4Ed6e821E67a6BfD56FD1702aD9a9719;
     address public constant POOL_QUICKSWAPV3_WMATIC_USDC = 0x6669B4706cC152F359e947BCa68E263A87c52634;
     address public constant POOL_QUICKSWAPV3_CRV_WMATIC = 0x00A6177C6455A29B8dAa7144B2bEfc9F2147BB7E;
+    address public constant POOL_QUICKSWAPV3_MaticX_WMATIC = 0x05BFE97Bf794a4DB69d3059091F064eA0a5E538E;
     address public constant POOL_KYBER_USDCe_USDT = 0x879664ce5A919727b3Ed4035Cf12F7F740E8dF00;
     address public constant POOL_KYBER_USDCe_DAI = 0x02A3E4184b145eE64A6Df3c561A3C0c6e2f23DFa;
     address public constant POOL_KYBER_KNC_USDCe = 0x4B440a7DE0Ab7041934d0c171849A76CC33234Fa;
@@ -176,6 +178,10 @@ library PolygonLib {
     address public constant ICHI_QUICKSWAP_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B; // Nov-13-2023
     address public constant ICHI_QUICKSWAP_WBTC_WETH = 0x5D1b077212b624fe580a84384Ffea44da752ccb3; // Nov-13-2023
     address public constant ICHI_QUICKSWAP_WETH_USDT = 0xc46FAb3Af8aA7A56feDa351a22B56749dA313473; // Nov-13-2023
+    address public constant ICHI_QUICKSWAP_WMATIC_WETH = 0xCBD1f4Bc3E6d05b10fEb5dc454d27364767e76B5; // Oct-30-2023
+    address public constant ICHI_QUICKSWAP_WBTC_USDC = 0x5403e11D5Edf6564C27b47757d62A515a81D9781; // Nov-13-2023
+    address public constant ICHI_QUICKSWAP_WMATIC_MaticX = 0x5eFe299401dD907b1b01950c9CdC6136f4205Ce7; // Jan-25-2024
+    address public constant ICHI_QUICKSWAP_WMATIC_QUICK = 0x74B706767F18A360c0083854AB42C1b96E076229; // Oct-30-2023
     address public constant ICHI_RETRO_WMATIC_WETH_MATIC = 0x38F41FDe5cABC569E808537FdaF390cD7f0dC0f6; // Jul-12-2023
     address public constant ICHI_RETRO_WMATIC_WETH_ETH = 0xE9BD439259DE0347DC26B86b3E73437E93858283;
     address public constant ICHI_RETRO_WMATIC_USDCe_MATIC = 0x91f935892355C8CA4468C44D2c4bAE1A23c60c14;
@@ -213,6 +219,9 @@ library PolygonLib {
         0x28F53bA70E5c8ce8D03b1FaD41E9dF11Bb646c36;
     address public constant YEARN_WETH =
         0x305F25377d0a39091e99B975558b1bdfC3975654;
+
+    // Merkl
+    address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     function runDeploy(bool showLog) internal returns (address platform) {
         //region ----- DeployPlatform -----
@@ -439,7 +448,7 @@ library PolygonLib {
         //endregion -- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](18);
+        pools = new ISwapper.AddPoolData[](19);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDCe_USDT_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDCe, TOKEN_USDT);
@@ -454,6 +463,7 @@ library PolygonLib {
         pools[i++] = _makePoolData(POOL_QUICKSWAPV3_USDT_DAI, AmmAdapterIdLib.ALGEBRA, TOKEN_USDT, TOKEN_DAI);
         pools[i++] = _makePoolData(POOL_QUICKSWAPV3_USDCe_QUICK, AmmAdapterIdLib.ALGEBRA, TOKEN_QUICK, TOKEN_USDCe);
         pools[i++] = _makePoolData(POOL_QUICKSWAPV3_dQUICK_QUICK, AmmAdapterIdLib.ALGEBRA, TOKEN_dQUICK, TOKEN_QUICK);
+        pools[i++] = _makePoolData(POOL_QUICKSWAPV3_MaticX_WMATIC, AmmAdapterIdLib.ALGEBRA, TOKEN_MaticX, TOKEN_WMATIC);
 
         // KyberSwap
         pools[i++] = _makePoolData(POOL_KYBER_KNC_USDCe, AmmAdapterIdLib.KYBER, TOKEN_KNC, TOKEN_USDCe);
@@ -589,7 +599,7 @@ library PolygonLib {
 
     // quickswap USDC native gamma
     function farms3() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](8);
+        _farms = new IFactory.Farm[](9);
         uint i;
 
         // [32] - [33]
@@ -605,6 +615,9 @@ library PolygonLib {
         // [38] - [39]
         _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_DAI, 276300, 276360);
         _farms[i++] = _makeQuickSwapStaticMerklFarm(POOL_QUICKSWAPV3_USDC_USDT, -60, 60);
+
+        // [40]
+        _farms[i++] = _makeIchiQuickSwapMerklFarm(ICHI_QUICKSWAP_WMATIC_MaticX);
     }
 
     // steer quickswap

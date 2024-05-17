@@ -50,12 +50,6 @@ library GRMFLib {
         uint oTokenAmount = balance(oToken);
         address oPool = $.oPool;
 
-        // todo remove in 2.0.1+
-        if (oPool == address(0)) {
-            // nosemgrep
-            revert("Init upgraded strategy first!");
-        }
-
         if (oTokenAmount > 0) {
             address uToken = getOtherTokenFromPool(oPool, oToken);
             bool needSwap = _shouldWeSwap(oToken, uToken, oTokenAmount, oPool, $.quoter);

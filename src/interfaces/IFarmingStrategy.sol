@@ -42,4 +42,6 @@ interface IFarmingStrategy {
 
     /// @notice Mechanics of receiving farming rewards
     function farmMechanics() external view returns (string memory);
+
+    function stakingPool() external view returns (address);
 }
