@@ -209,4 +209,6 @@ interface IMultiPositionManager is IERC20 {
         int24 tickUpper,
         uint128 liquidity
     ) external returns (uint256 amount0, uint256 amount1);
+
+    function getPositions() external view returns (int24[] memory lowerTick, int24[] memory upperTick, uint16[] memory relativeWeight);
 }
