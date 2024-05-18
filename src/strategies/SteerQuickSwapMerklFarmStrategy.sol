@@ -287,7 +287,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
         IMultiPositionManager.LiquidityPositions memory ticks_;
-        (ticks_.lowerTick, ticks_.upperTick, )  = _underlying.getPositions();
+        (ticks_.lowerTick, ticks_.upperTick,) = _underlying.getPositions();
         int24[] memory ticks = new int24[](2);
         ticks[0] = ticks_.lowerTick[0];
         ticks[1] = ticks_.upperTick[0];
@@ -420,9 +420,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         } else {
             price = _getChainlinkPrice(_registry, _token, ETH, 86400);
 
-            price = UniswapV3MathLib.mulDiv(
-                price, _getChainlinkPrice(_registry, ETH, USD, 86400), 1e18
-            );
+            price = UniswapV3MathLib.mulDiv(price, _getChainlinkPrice(_registry, ETH, USD, 86400), 1e18);
         }
     }
 
