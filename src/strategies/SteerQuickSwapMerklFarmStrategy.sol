@@ -293,16 +293,13 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         ticks[1] = ticks_.upperTick[0];
         (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
 
-        uint[] memory totalAmounts;
+        uint[] memory totalAmounts = new uint[](2);
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
-
-        IMultiPositionManagerFactory factory = IMultiPositionManagerFactory(_underlying.vaultRegistry());
-        IFeedRegistryInterface chainlinkRegistry = IFeedRegistryInterface(factory.chainlinkRegistry());
+        IFeedRegistryInterface chainlinkRegistry = IFeedRegistryInterface(_underlying.vaultRegistry());
         bool[2] memory usdAsBase;
         usdAsBase[0] = false;
         usdAsBase[1] = false;
         value = _calculateShares(
-            factory,
             chainlinkRegistry,
             ammAdapter().poolTokens(pool()),
             usdAsBase,
@@ -359,7 +356,6 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     }
 
     /// @dev Calculates the shares to be given for specific position for Steer strategy
-    /// @param _factory Steer strategy factory
     /// @param _registry Chainlink registry interface
     /// @param _poolTokens Algebra pool tokens
     /// @param _isBase Is USD used as base
@@ -369,7 +365,6 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /// @param _totalAmount1 Total amount of token1
     /// @param _totalShares Total Number of shares
     function _calculateShares(
-        IMultiPositionManagerFactory _factory,
         IFeedRegistryInterface _registry,
         address[] memory _poolTokens,
         bool[2] memory _isBase,
@@ -383,8 +378,8 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         uint __amount1 = _normalise(_poolTokens[1], _amount1);
         _totalAmount0 = _normalise(_poolTokens[0], _totalAmount0);
         _totalAmount1 = _normalise(_poolTokens[1], _totalAmount1);
-        uint token0Price = _getPriceInUSD(_factory, _registry, _poolTokens[0], _isBase[0]);
-        uint token1Price = _getPriceInUSD(_factory, _registry, _poolTokens[1], _isBase[1]);
+        uint token0Price = _getPriceInUSD(_registry, _poolTokens[0], _isBase[0]);
+        uint token1Price = _getPriceInUSD(_registry, _poolTokens[1], _isBase[1]);
         // here we assume that _totalShares always > 0, because steer strategy is already inited
         uint numerator = token0Price * __amount0 + token1Price * __amount1;
         uint denominator = token0Price * _totalAmount0 + token1Price * _totalAmount1;
@@ -416,18 +411,17 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
      * @param _isBase if the token supports base as USD or requires conversion from ETH
      */
     function _getPriceInUSD(
-        IMultiPositionManagerFactory _factory,
         IFeedRegistryInterface _registry,
         address _token,
         bool _isBase
     ) internal view returns (uint price) {
         if (_isBase) {
-            price = _getChainlinkPrice(_registry, _token, USD, _factory.getHeartBeat(_token, USD));
+            price = _getChainlinkPrice(_registry, _token, USD, 86400);
         } else {
-            price = _getChainlinkPrice(_registry, _token, ETH, _factory.getHeartBeat(_token, ETH));
+            price = _getChainlinkPrice(_registry, _token, ETH, 86400);
 
             price = UniswapV3MathLib.mulDiv(
-                price, _getChainlinkPrice(_registry, ETH, USD, _factory.getHeartBeat(ETH, USD)), 1e18
+                price, _getChainlinkPrice(_registry, ETH, USD, 86400), 1e18
             );
         }
     }
