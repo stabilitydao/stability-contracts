@@ -266,15 +266,15 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        // (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
-        // // nosemgrep
-        // if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
-        //     uint valueToReceive;
-        //     (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
-        //     if (valueToReceive > 10) {
-        //         _depositAssets(amountsToDeposit, false);
-        //     }
-        // }
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
+        // nosemgrep
+        if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
+            uint valueToReceive;
+            (amountsToDeposit, valueToReceive) = _previewDepositAssets(amountsToDeposit);
+            if (valueToReceive > 10) {
+                _depositAssets(amountsToDeposit, false);
+            }
+        }
     }
 
     /// @inheritdoc StrategyBase
@@ -293,7 +293,8 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         ticks[1] = ticks_.upperTick[0];
         (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
 
-        uint[] memory totalAmounts = _getUnderlyingAssetsAmounts();
+        uint[] memory totalAmounts;
+        (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
 
         IMultiPositionManagerFactory factory = IMultiPositionManagerFactory(_underlying.vaultRegistry());
         IFeedRegistryInterface chainlinkRegistry = IFeedRegistryInterface(factory.chainlinkRegistry());
@@ -316,33 +317,33 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getUnderlyingAssetsAmounts() internal view returns (uint[] memory amounts_) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
-        IAlgebraPool _pool = IAlgebraPool(pool());
-        ICAmmAdapter _adapter = ICAmmAdapter(address(ammAdapter()));
-        amounts_ = new uint[](2);
+    // function _getUnderlyingAssetsAmounts() internal view returns (uint[] memory amounts_) {
+    //     StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+    //     IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
+    //     IAlgebraPool _pool = IAlgebraPool(pool());
+    //     ICAmmAdapter _adapter = ICAmmAdapter(address(ammAdapter()));
+    //     amounts_ = new uint[](2);
 
-        amounts_[0] = _underlying.reserve0();
-        amounts_[1] = _underlying.reserve1();
+    //     amounts_[0] = _underlying.reserve0();
+    //     amounts_[1] = _underlying.reserve1();
 
-        // assets amounts without claimed fees..
-        IMultiPositionManager.LiquidityPositions memory ticks;
-        (ticks.lowerTick, ticks.upperTick, )  = _underlying.getPositions();
-        uint len = ticks.lowerTick.length;
-        for (uint i; i < len; ++i) {
-            (uint128 currentLiquidity,,,,,) =
-                _pool.positions(_computePositionKey(address(_underlying), ticks.lowerTick[i], ticks.upperTick[i]));
-            if (currentLiquidity > 0) {
-                int24[] memory _ticks = new int24[](2);
-                _ticks[0] = ticks.lowerTick[i];
-                _ticks[1] = ticks.upperTick[i];
-                uint[] memory amounts = _adapter.getAmountsForLiquidity(address(_pool), _ticks, currentLiquidity);
-                amounts_[0] += amounts[0];
-                amounts_[1] += amounts[1];
-            }
-        }
-    }
+    //     // assets amounts without claimed fees..
+    //     IMultiPositionManager.LiquidityPositions memory ticks;
+    //     (ticks.lowerTick, ticks.upperTick, )  = _underlying.getPositions();
+    //     uint len = ticks.lowerTick.length;
+    //     for (uint i; i < len; ++i) {
+    //         (uint128 currentLiquidity,,,,,) =
+    //             _pool.positions(_computePositionKey(address(_underlying), ticks.lowerTick[i], ticks.upperTick[i]));
+    //         if (currentLiquidity > 0) {
+    //             int24[] memory _ticks = new int24[](2);
+    //             _ticks[0] = ticks.lowerTick[i];
+    //             _ticks[1] = ticks.upperTick[i];
+    //             uint[] memory amounts = _adapter.getAmountsForLiquidity(address(_pool), _ticks, currentLiquidity);
+    //             amounts_[0] += amounts[0];
+    //             amounts_[1] += amounts[1];
+    //         }
+    //     }
+    // }
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
         IMultiPositionManager hypervisor = IMultiPositionManager(_getStrategyBaseStorage()._underlying);
