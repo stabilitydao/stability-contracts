@@ -535,13 +535,6 @@ library FactoryLib {
         );
     }
 
-    function _getAliasName(string memory _specificName) public view returns (string memory) {
-        string memory alias;
-        // to do
-
-        return alias;
-    }
-
     function getDeploymentKey(
         string memory vaultType,
         string memory strategyId,
