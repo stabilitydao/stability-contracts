@@ -82,13 +82,13 @@ library FactoryLib {
 
     // Function to set the alias name for a token
     function setAliasName(address _tokenAddress, string memory _aliasName) public {
-        emit AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
-        aliasNames[_tokenAddress] = _aliasName;
+        emit IFactory.AliasNameChanged(msg.sender, _tokenAddress, factory.aliasNames[_tokenAddress]);
+        factory.aliasNames[_tokenAddress] = _aliasName;
     }
 
     // Function to get the alias name for a token
     function getAliasName(address _tokenAddress) public view returns (string memory) {
-        return aliasNames[_tokenAddress];
+        return factory.aliasNames[_tokenAddress];
     }
 
     function whatToBuild(address platform)
