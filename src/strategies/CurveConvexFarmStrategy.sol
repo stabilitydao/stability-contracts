@@ -22,7 +22,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CurveConvexFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION =
@@ -97,6 +97,12 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function canFarm() external view override returns (bool) {
         IFactory.Farm memory farm = _getFarm();
         return farm.status == 0;
+    }
+
+    /// @inheritdoc FarmingStrategyBase
+    function stakingPool() external view override returns (address) {
+        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
+        return $.booster;
     }
 
     /// @inheritdoc ILPStrategy
