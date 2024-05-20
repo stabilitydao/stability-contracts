@@ -309,6 +309,8 @@ interface IFactory {
     /// @notice Initialization strategy params store
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
+    function getAliasName(address _tokenAddress) external view returns (string memory);
+
     //endregion -- View functions -----
 
     //region ----- Write functions -----
@@ -371,6 +373,8 @@ interface IFactory {
     /// @param id Strategy ID string
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
+
+    function setAliasName(address _tokenAddress, string memory _aliasName) external;
 
     //endregion -- Write functions -----
 }

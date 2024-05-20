@@ -335,6 +335,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }
 
+    /// @inheritdoc IFactory
+    function setAliasName(address _tokenAddress, string memory _aliasName) external {
+        aliasNames[_tokenAddress] = _aliasName;
+        emit IFactory.AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
+    }
+
+
     //endregion -- User actions ----
 
     //region ----- View functions -----
@@ -582,6 +589,11 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory) {
         FactoryStorage storage $ = _getStorage();
         return $.strategyAvailableInitParams[idHash];
+    }
+
+    /// @inheritdoc IFactory
+    function getAliasName(address _tokenAddress) public view returns (string memory) {
+        return aliasNames[_tokenAddress];
     }
 
     //endregion -- View functions -----
