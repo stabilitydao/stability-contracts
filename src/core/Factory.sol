@@ -341,7 +341,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit IFactory.AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
     }
 
-
     //endregion -- User actions ----
 
     //region ----- View functions -----
