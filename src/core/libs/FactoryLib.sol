@@ -86,7 +86,6 @@ library FactoryLib {
     // Event to log changes in the alias name
     event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
 
-
     // Function to set the alias name for a token
     function setAliasName(address _tokenAddress, string memory _aliasName) public onlyOwner {
         emit AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
