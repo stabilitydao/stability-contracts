@@ -80,8 +80,6 @@ library FactoryLib {
         uint len;
     }
 
-
-
     // Function to set the alias name for a token
     function setAliasName(address _tokenAddress, string memory _aliasName) public {
         emit AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);

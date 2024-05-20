@@ -52,7 +52,6 @@ interface IFactory {
     event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
     event SetStrategyAvailableInitParams(string id, address[] initAddresses, uint[] initNums, int24[] initTicks);
-
     event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
 
     //endregion -- Events -----
