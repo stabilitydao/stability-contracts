@@ -63,6 +63,8 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint vaultManagerTokenId;
     }
 
+    mapping(address => string) public aliasNames;
+
     //endregion -- Data types -----
 
     //region ----- Init -----
