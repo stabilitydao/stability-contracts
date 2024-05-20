@@ -80,6 +80,24 @@ library FactoryLib {
         uint len;
     }
 
+    // Mapping from address to alias name
+    mapping(address => string) public aliasNames;
+
+    // Event to log changes in the alias name
+    event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
+
+
+    // Function to set the alias name for a token
+    function setAliasName(address _tokenAddress, string memory _aliasName) public onlyOwner {
+        emit AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
+        aliasNames[_tokenAddress] = _aliasName;
+    }
+
+    // Function to get the alias name for a token
+    function getAliasName(address _tokenAddress) public view returns (string memory) {
+        return aliasNames[_tokenAddress];
+    }
+
     function whatToBuild(address platform)
         external
         view
@@ -516,6 +534,13 @@ library FactoryLib {
             showSpecificInSymbol ? specificName : "",
             bbAssetSymbol
         );
+    }
+
+    function _getAliasName(string memory _specificName) public view returns (string memory) {
+        string memory alias;
+        // to do
+
+        return alias;
     }
 
     function getDeploymentKey(
