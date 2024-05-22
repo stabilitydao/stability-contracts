@@ -63,8 +63,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint vaultManagerTokenId;
     }
 
-    mapping(address => string) public aliasNames;
-
     //endregion -- Data types -----
 
     //region ----- Init -----
@@ -336,9 +334,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function setAliasName(address _tokenAddress, string memory _aliasName) external {
-        aliasNames[_tokenAddress] = _aliasName;
-        emit IFactory.AliasNameChanged(msg.sender, _tokenAddress, aliasNames[_tokenAddress]);
+    function setAliasName(address tokenAddress_, string memory aliasName_) external {
+        FactoryStorage storage $ = _getStorage();
+        $.aliasNames[tokenAddress_] = aliasName_;
+        emit IFactory.AliasNameChanged(msg.sender, tokenAddress_, $.aliasNames[tokenAddress_]);
     }
 
     //endregion -- User actions ----
@@ -591,8 +590,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function getAliasName(address _tokenAddress) public view returns (string memory) {
-        return aliasNames[_tokenAddress];
+    function getAliasName(address tokenAddress_) public view returns (string memory) {
+        FactoryStorage storage $ = _getStorage();
+        return $.aliasNames[tokenAddress_];
     }
 
     //endregion -- View functions -----

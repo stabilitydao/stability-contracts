@@ -77,6 +77,7 @@ interface IFactory {
         Farm[] farms;
         /// @inheritdoc IFactory
         mapping(bytes32 idHash => StrategyAvailableInitParams) strategyAvailableInitParams;
+        mapping(address => string) aliasNames;
     }
 
     struct VaultConfig {
@@ -309,7 +310,7 @@ interface IFactory {
     /// @notice Initialization strategy params store
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
-    function getAliasName(address _tokenAddress) external view returns (string memory);
+    function getAliasName(address tokenAddress_) external view returns (string memory);
 
     //endregion -- View functions -----
 
@@ -374,7 +375,7 @@ interface IFactory {
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
-    function setAliasName(address _tokenAddress, string memory _aliasName) external;
+    function setAliasName(address tokenAddress_, string memory aliasName_) external;
 
     //endregion -- Write functions -----
 }
