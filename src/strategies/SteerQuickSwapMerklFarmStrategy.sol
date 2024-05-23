@@ -10,11 +10,13 @@ import "./libs/ALMPositionNameLib.sol";
 import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
+import "../interfaces/IPlatform.sol";
 import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 import "../integrations/steer/IMultiPositionManager.sol";
 import "../integrations/steer/IMultiPositionManagerFactory.sol";
 import "forge-std/console.sol";
+import "../../src/core/PriceReader.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// @author Only Forward (https://github.com/OnlyForward0613)
@@ -39,11 +41,13 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
+        // console.log("IncorrectInitTest: %d: %d: %d", addresses.length, nums.length, ticks.length);
         if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
+        // console.log("badfarmtest: %d: %d: %d", farm.addresses.length, farm.nums.length, farm.ticks.length);
         if (farm.addresses.length != 1 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
@@ -194,9 +198,9 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
-        // StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        // (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
-        // __$__.total += value;
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
+        __$__.total += value;
     }
 
     /// @inheritdoc StrategyBase
@@ -295,20 +299,13 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
         uint[] memory totalAmounts = new uint[](2);
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
-        IFeedRegistryInterface chainlinkRegistry = IFeedRegistryInterface(_underlying.vaultRegistry());
-        bool[2] memory usdAsBase;
-        usdAsBase[0] = false;
-        usdAsBase[1] = false;
-        value = _calculateShares(
-            chainlinkRegistry,
-            ammAdapter().poolTokens(pool()),
-            usdAsBase,
-            amountsConsumed[0],
-            amountsConsumed[1],
-            totalAmounts[0],
-            totalAmounts[1],
-            _underlying.maxTotalSupply()
-        );
+        PriceReader priceReader;
+        priceReader = PriceReader(IPlatform(platform()).priceReader());
+        (uint token0Price, bool trustedA) = priceReader.getPrice(_underlying.token0());
+        (uint token1Price, bool trustedB) = priceReader.getPrice(_underlying.token1());
+        uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
+        uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
+        value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
     }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
@@ -416,11 +413,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         bool _isBase
     ) internal view returns (uint price) {
         if (_isBase) {
-            price = _getChainlinkPrice(_registry, _token, USD, 86400);
+            price = _getChainlinkPrice(_registry, _token, USD, 31536000);
         } else {
-            price = _getChainlinkPrice(_registry, _token, ETH, 86400);
+            price = _getChainlinkPrice(_registry, _token, ETH, 31536000);
 
-            price = UniswapV3MathLib.mulDiv(price, _getChainlinkPrice(_registry, ETH, USD, 86400), 1e18);
+            price = UniswapV3MathLib.mulDiv(price, _getChainlinkPrice(_registry, ETH, USD, 31536000), 1e18);
         }
     }
 
@@ -436,6 +433,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         address _quote,
         uint _validPeriod
     ) internal view returns (uint price) {
+        console.log("=========>: %s: %s: %d", _base, _quote, _validPeriod);
         (, int _price,, uint updatedAt,) = _registry.latestRoundData(_base, _quote);
 
         require(block.timestamp - updatedAt < _validPeriod, "OLD_PRICE");
