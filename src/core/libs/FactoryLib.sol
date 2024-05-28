@@ -442,6 +442,36 @@ library FactoryLib {
         if (exchangeAssetIndex > type(uint).max) revert ISwapper.NoRoutesForAssets();
     }
 
+    function _getShortSymbol(
+        string memory vaultType,
+        string memory strategyLogicId,
+        string memory symbols,
+        string memory specificName,
+        string memory bbAssetSymbol
+    ) internal pure returns (string memory) {
+        bytes memory vaultTypeBytes = bytes(vaultType);
+        string memory prefix = "v";
+        if (vaultTypeBytes[0] == "C") {
+            prefix = "C";
+        }
+        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
+            prefix = "R";
+        }
+        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
+            prefix = "M";
+        }
+        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
+        return string.concat(
+            prefix,
+            "-",
+            symbols,
+            bbAssetStr,
+            "-",
+            CommonLib.shortId(strategyLogicId),
+            bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : ""
+        );
+    }
+
     function _getSymbol(
         string memory vaultType,
         string memory strategyLogicId,
