@@ -9,6 +9,7 @@ import "../../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
 import "../../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/CompoundFarmStrategy.sol";
 import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
 import "../../src/strategies/IchiRetroMerklFarmStrategy.sol";
 import "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
@@ -42,6 +43,10 @@ library DeployStrategyLib {
 
         if (CommonLib.eq(id, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
             implementation = address(new DefiEdgeQuickSwapMerklFarmStrategy());
+        }
+
+        if (CommonLib.eq(id, StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM)) {
+            implementation = address(new SteerQuickSwapMerklFarmStrategy());
         }
 
         if (CommonLib.eq(id, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM)) {
