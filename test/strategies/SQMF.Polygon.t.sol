@@ -9,12 +9,10 @@ contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {}
 
     function testSQMF() public universalTest {
-        specialDepositAmounts.push(11838);
-        specialDepositAmounts.push(11971);
 
         // add farms for testing
         _addStrategy(41);
-        // _addStrategy(41);
+        _addStrategy(42);
     }
 
     function _addStrategy(uint farmId) internal {

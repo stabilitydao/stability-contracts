@@ -201,6 +201,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
         __$__.total += value;
+        value = value;
     }
 
     /// @inheritdoc StrategyBase
@@ -211,22 +212,22 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     // }
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        // StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        // __$__.total -= value;
-        // amountsOut = new uint[](2);
-        // (amountsOut[0], amountsOut[1]) = IMultiPositionManager(__$__._underlying).withdraw(value, 0, 0, receiver);
-        // if (receiver != address(this)) {
-        //     address[] memory _assets = __$__._assets;
-        //     IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
-        //     IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
-        // }
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __$__.total -= value;
+        amountsOut = new uint[](2);
+        (amountsOut[0], amountsOut[1]) = IMultiPositionManager(__$__._underlying).withdraw(value, 0, 0, receiver);
+        if (receiver != address(this)) {
+            address[] memory _assets = __$__._assets;
+            IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
+            IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
+        }
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        // StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        // IERC20(__$__._underlying).safeTransfer(receiver, amount);
-        // __$__.total -= amount;
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC20(__$__._underlying).safeTransfer(receiver, amount);
+        __$__.total -= amount;
     }
 
     /// @inheritdoc StrategyBase
@@ -255,17 +256,17 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        // StrategyBaseStorage storage $ = _getStrategyBaseStorage();
-        // assets_ = $._assets;
-        // amounts_ = new uint[](2);
-        // uint _total = $.total;
-        // if (_total > 0) {
-        //     IMultiPositionManager multiPositionManager = IMultiPositionManager($._underlying);
-        //     (amounts_[0], amounts_[1]) = multiPositionManager.getTotalAmounts();
-        //     uint totalInMultiPositionManager = multiPositionManager.totalSupply();
-        //     (amounts_[0], amounts_[1]) =
-        //         (amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager);
-        // }
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        assets_ = $._assets;
+        amounts_ = new uint[](2);
+        uint _total = $.total;
+        if (_total > 0) {
+            IMultiPositionManager multiPositionManager = IMultiPositionManager($._underlying);
+            (amounts_[0], amounts_[1]) = multiPositionManager.getTotalAmounts();
+            uint totalInMultiPositionManager = multiPositionManager.totalSupply();
+            (amounts_[0], amounts_[1]) =
+                (amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager);
+        }
     }
 
     /// @inheritdoc StrategyBase
@@ -301,10 +302,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
         PriceReader priceReader;
         priceReader = PriceReader(IPlatform(platform()).priceReader());
-        (uint token0Price, bool trustedA) = priceReader.getPrice(_underlying.token0());
-        (uint token1Price, bool trustedB) = priceReader.getPrice(_underlying.token1());
+        (uint token0Price, ) = priceReader.getPrice(_underlying.token0());
+        (uint token1Price, ) = priceReader.getPrice(_underlying.token1());
         uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
         uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
+        amountsConsumed = amountsConsumed;
         value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
     }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -352,107 +354,9 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 
-    /// @dev Calculates the shares to be given for specific position for Steer strategy
-    /// @param _registry Chainlink registry interface
-    /// @param _poolTokens Algebra pool tokens
-    /// @param _isBase Is USD used as base
-    /// @param _amount0 Amount of token0
-    /// @param _amount1 Amount of token1
-    /// @param _totalAmount0 Total amount of token0
-    /// @param _totalAmount1 Total amount of token1
-    /// @param _totalShares Total Number of shares
-    function _calculateShares(
-        IFeedRegistryInterface _registry,
-        address[] memory _poolTokens,
-        bool[2] memory _isBase,
-        uint _amount0,
-        uint _amount1,
-        uint _totalAmount0,
-        uint _totalAmount1,
-        uint _totalShares
-    ) internal view returns (uint share) {
-        uint __amount0 = _normalise(_poolTokens[0], _amount0);
-        uint __amount1 = _normalise(_poolTokens[1], _amount1);
-        _totalAmount0 = _normalise(_poolTokens[0], _totalAmount0);
-        _totalAmount1 = _normalise(_poolTokens[1], _totalAmount1);
-        uint token0Price = _getPriceInUSD(_registry, _poolTokens[0], _isBase[0]);
-        uint token1Price = _getPriceInUSD(_registry, _poolTokens[1], _isBase[1]);
-        // here we assume that _totalShares always > 0, because steer strategy is already inited
-        uint numerator = token0Price * __amount0 + token1Price * __amount1;
-        uint denominator = token0Price * _totalAmount0 + token1Price * _totalAmount1;
-        share = UniswapV3MathLib.mulDiv(numerator, _totalShares, denominator);
-    }
-
     function _computePositionKey(address owner, int24 bottomTick, int24 topTick) internal pure returns (bytes32 key) {
         assembly {
             key := or(shl(24, or(shl(24, owner), and(bottomTick, 0xFFFFFF))), and(topTick, 0xFFFFFF))
         }
-    }
-
-    function _normalise(address _token, uint _amount) internal view returns (uint normalised) {
-        normalised = _amount;
-        uint _decimals = IERC20Metadata(_token).decimals();
-        if (_decimals < 18) {
-            uint missingDecimals = 18 - _decimals;
-            normalised = _amount * 10 ** missingDecimals;
-        } else if (_decimals > 18) {
-            uint extraDecimals = _decimals - 18;
-            normalised = _amount / 10 ** extraDecimals;
-        }
-    }
-
-    /**
-     * @notice Gets price in USD, if USD feed is not available use ETH feed
-     * @param _registry Interface of the Chainlink registry
-     * @param _token the token we want to convert into USD
-     * @param _isBase if the token supports base as USD or requires conversion from ETH
-     */
-    function _getPriceInUSD(
-        IFeedRegistryInterface _registry,
-        address _token,
-        bool _isBase
-    ) internal view returns (uint price) {
-        if (_isBase) {
-            price = _getChainlinkPrice(_registry, _token, USD, 31536000);
-        } else {
-            price = _getChainlinkPrice(_registry, _token, ETH, 31536000);
-
-            price = UniswapV3MathLib.mulDiv(price, _getChainlinkPrice(_registry, ETH, USD, 31536000), 1e18);
-        }
-    }
-
-    /**
-     * @notice Returns latest Chainlink price, and normalise it
-     * @param _registry registry
-     * @param _base Base Asset
-     * @param _quote Quote Asset
-     */
-    function _getChainlinkPrice(
-        IFeedRegistryInterface _registry,
-        address _base,
-        address _quote,
-        uint _validPeriod
-    ) internal view returns (uint price) {
-        console.log("=========>: %s: %s: %d", _base, _quote, _validPeriod);
-        (, int _price,, uint updatedAt,) = _registry.latestRoundData(_base, _quote);
-
-        require(block.timestamp - updatedAt < _validPeriod, "OLD_PRICE");
-
-        if (_price <= 0) {
-            return 0;
-        }
-
-        // normalise the price to 18 decimals
-        uint _decimals = _registry.decimals(_base, _quote);
-
-        if (_decimals < 18) {
-            uint missingDecimals = 18 - _decimals;
-            price = uint(_price) * 10 ** missingDecimals;
-        } else if (_decimals > 18) {
-            uint extraDecimals = _decimals - 18;
-            price = uint(_price) / (10 ** extraDecimals);
-        }
-
-        return price;
     }
 }
