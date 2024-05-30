@@ -201,7 +201,6 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
         __$__.total += value;
-        value = value;
     }
 
     /// @inheritdoc StrategyBase
@@ -306,7 +305,6 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         (uint token1Price, ) = priceReader.getPrice(_underlying.token1());
         uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
         uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
-        amountsConsumed = amountsConsumed;
         value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
     }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
