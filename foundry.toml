@@ -19,6 +19,7 @@ multiline_func_header = "params_first"
 
 [rpc_endpoints]
 polygon = "${POLYGON_RPC_URL}"
+base = "${BASE_RPC_URL}"
 
 [etherscan]
 polygon = { key = "${ETHERSCAN_API_KEY}", chain = 137  }

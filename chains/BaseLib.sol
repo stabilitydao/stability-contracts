@@ -60,7 +60,7 @@ library BaseLib {
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
     function runDeploy(bool showLog) internal returns (address platform) {
-        //region ----- DeployPlatform -----
+        //region ----- Deploy Platform -----
         uint[] memory buildingPrice = new uint[](1);
         buildingPrice[0] = 100e6;
         platform = DeployLib.deployPlatform(
@@ -80,9 +80,9 @@ library BaseLib {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- DeployPlatform ----
+        //endregion -- Deploy Platform ----
 
-        //region ----- DeployAndSetupOracleAdapters -----
+        //region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
         // Chainlink
         {
@@ -102,7 +102,7 @@ library BaseLib {
             priceReader.addAdapter(address(chainlinkAdapter));
             DeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
-        //endregion -- DeployAndSetupOracleAdapters -----
+        //endregion -- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
@@ -110,7 +110,7 @@ library BaseLib {
         DeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 
-        //region ----- SetupSwapper -----
+        //region ----- Setup Swapper -----
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
@@ -137,7 +137,7 @@ library BaseLib {
             swapper.setThresholds(tokenIn, thresholdAmount);
             DeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion -- SetupSwapper -----
+        //endregion -- Setup Swapper -----
 
         //region ----- Add farms -----
         IFactory factory = IFactory(IPlatform(platform).factory());
@@ -218,4 +218,6 @@ library BaseLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    function testChainLib() external {}
 }
