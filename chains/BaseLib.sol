@@ -64,7 +64,7 @@ library BaseLib {
         uint[] memory buildingPrice = new uint[](1);
         buildingPrice[0] = 100e6;
         platform = DeployLib.deployPlatform(
-            "24.05.0-alpha",
+            "24.06.0-alpha",
             MULTISIG,
             address(0),
             TOKEN_USDC,

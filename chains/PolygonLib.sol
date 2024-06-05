@@ -172,13 +172,13 @@ library PolygonLib {
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     function runDeploy(bool showLog) internal returns (address platform) {
-        //region ----- DeployPlatform -----
+        //region ----- Deploy Platform -----
         uint[] memory buildingPrice = new uint[](3);
         buildingPrice[0] = 50_000e18;
         buildingPrice[1] = 50_000e18;
         buildingPrice[2] = 100_000e18;
         platform = DeployLib.deployPlatform(
-            "24.05.0-alpha",
+            "24.06.0-alpha",
             MULTISIG,
             TOKEN_PM,
             TOKEN_SDIV,
@@ -194,9 +194,9 @@ library PolygonLib {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- DeployPlatform ----
+        //endregion -- Deploy Platform ----
 
-        //region ----- DeployAndSetupOracleAdapters -----
+        //region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
         // Chainlink
         {
@@ -216,7 +216,7 @@ library PolygonLib {
             priceReader.addAdapter(address(chainlinkAdapter));
             DeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
-        //endregion -- DeployAndSetupOracleAdapters -----
+        //endregion -- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
@@ -226,7 +226,7 @@ library PolygonLib {
         DeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 
-        //region ----- SetupSwapper -----
+        //region ----- Setup Swapper -----
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
@@ -258,7 +258,7 @@ library PolygonLib {
             swapper.setThresholds(tokenIn, thresholdAmount);
             DeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion -- SetupSwapper -----
+        //endregion -- Setup Swapper -----
 
         //region ----- Add farms -----
         IFactory factory = IFactory(IPlatform(platform).factory());
