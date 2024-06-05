@@ -47,6 +47,7 @@ assignees: ''
 * [ ] `test/base/chains/NetworkNameSetup.sol`
 * [ ] `.env.example`
 * [ ] `foundry.toml`
+* [ ] `.github/workflows/test.yml`
 
 ### Strategies
 
