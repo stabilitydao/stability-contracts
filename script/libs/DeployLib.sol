@@ -127,8 +127,11 @@ library DeployLib {
             })
         );
 
-        // set all vault configs
-        require(buildingPayPerVaultPrice.length == 3, "DeployLib: incorrect buildingPrice length");
+        // set add1vault configs
+        require(
+            buildingPayPerVaultPrice.length <= 3 && buildingPayPerVaultPrice.length > 0,
+            "DeployLib: incorrect buildingPrice length"
+        );
         vars.factory.setVaultConfig(
             IFactory.VaultConfig({
                 vaultType: VaultTypeLib.COMPOUNDING,
@@ -138,24 +141,28 @@ library DeployLib {
                 buildingPrice: buildingPayPerVaultPrice[0]
             })
         );
-        vars.factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING,
-                implementation: address(new RVault()),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice[1]
-            })
-        );
-        vars.factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING_MANAGED,
-                implementation: address(new RMVault()),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice[2]
-            })
-        );
+        if (buildingPayPerVaultPrice.length >= 2) {
+            vars.factory.setVaultConfig(
+                IFactory.VaultConfig({
+                    vaultType: VaultTypeLib.REWARDING,
+                    implementation: address(new RVault()),
+                    deployAllowed: true,
+                    upgradeAllowed: true,
+                    buildingPrice: buildingPayPerVaultPrice[1]
+                })
+            );
+        }
+        if (buildingPayPerVaultPrice.length >= 3) {
+            vars.factory.setVaultConfig(
+                IFactory.VaultConfig({
+                    vaultType: VaultTypeLib.REWARDING_MANAGED,
+                    implementation: address(new RMVault()),
+                    deployAllowed: true,
+                    upgradeAllowed: true,
+                    buildingPrice: buildingPayPerVaultPrice[2]
+                })
+            );
+        }
 
         return address(vars.platform);
     }
