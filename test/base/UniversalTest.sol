@@ -34,6 +34,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration1 = 6 hours;
     uint public duration2 = 3 hours;
     uint public duration3 = 3 hours;
+    uint public buildingPayPerVaultTokenAmount = 5e24;
 
     struct Strategy {
         string id;
@@ -83,9 +84,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _testStrategies() internal {
         console.log(string.concat("Universal test of strategy logic", strategyId));
-
-        deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
+        _deal(platform.buildingPayPerVaultToken(), address(this), buildingPayPerVaultTokenAmount);
+        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), buildingPayPerVaultTokenAmount);
         TestStrategiesVars memory vars;
         vars.hardWorker = IHardWorker(platform.hardWorker());
         vm.startPrank(platform.governance());
@@ -95,7 +95,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         vm.stopPrank();
         vars.vaultsForHardWork = new address[](1);
         vars.allowedBBTokens = platform.allowedBBTokens();
-        platform.setAllowedBBTokenVaults(vars.allowedBBTokens[0], 1e6);
+        if (vars.allowedBBTokens.length > 0) {
+            platform.setAllowedBBTokenVaults(vars.allowedBBTokens[0], 1e6);
+        }
         vars.strategyLogic = platform.strategyLogic();
         for (uint i; i < strategies.length; ++i) {
             assertNotEq(
