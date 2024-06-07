@@ -14,6 +14,4 @@ interface IPlatformDeployer {
         uint gelatoMinBalance;
         uint gelatoDepositAmount;
     }
-
-
 }
