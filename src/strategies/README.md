@@ -10,7 +10,7 @@ See [open STRATEGY issues](https://github.com/stabilitydao/stability-platform-co
 
 Study the protocols used in the strategy. Conduct all interactions with protocols manually, or find links to such transactions in an explorer.
 
-If you are stabilitydao org member then Create branch from issue by Create a branch link, or just fork repo if not.
+If you are stabilitydao org member then Create branch from issue by Create a branch link, or just fork repo if not (but you need to setup github secrets in your forked repo for CI in this case).
 
 ## 1. Create integration interfaces
 
