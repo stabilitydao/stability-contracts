@@ -7,7 +7,7 @@ library ALMPositionNameLib {
     uint internal constant DYNAMIC = 2;
     uint internal constant STABLE = 3;
 
-    function getName(uint preset) external pure returns (string memory) {
+    function getName(uint preset) internal pure returns (string memory) {
         if (preset == NARROW) {
             return "Narrow";
         }

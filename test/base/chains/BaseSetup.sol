@@ -5,8 +5,9 @@ import "../../../chains/BaseLib.sol";
 import "../ChainSetup.sol";
 import "../../../src/core/Platform.sol";
 import "../../../src/core/Factory.sol";
+import {DeployCore} from "../../../script/base/DeployCore.sol";
 
-abstract contract BaseSetup is ChainSetup {
+abstract contract BaseSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
     constructor() {
@@ -17,10 +18,11 @@ abstract contract BaseSetup is ChainSetup {
     function testSetupStub() external {}
 
     function _init() internal override {
-        //region ----- DeployPlatform -----
-        platform = Platform(BaseLib.runDeploy(showDeployLog));
+        //region ----- DeployCore.sol -----
+        platform = Platform(_deployCore(BaseLib.platformDeployParams()));
+        BaseLib.deployAndSetupInfrastructure(address(platform), showDeployLog);
         factory = Factory(address(platform.factory()));
-        //endregion -- DeployPlatform ----
+        //endregion -- DeployCore.sol ----
     }
 
     function _deal(address token, address to, uint amount) internal override {

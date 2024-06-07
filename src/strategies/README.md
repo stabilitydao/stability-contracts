@@ -46,7 +46,7 @@ Depending on the purpose of the logic, the strategy is inherited from a set of b
 
 Put your strategy to `src/strategies/<YourStrategyContractName>.sol` and implement all functions that need for compiling.
 
-Add your strategy logic deployment to `script/libs/DeployStrategyLib.sol` and to `runDeploy` method in `chains/<ChainName>Lib.sol`.
+Add your strategy logic deployment to `chains/<ChainName>Lib.sol`.
 
 ## 6. Add universal test
 

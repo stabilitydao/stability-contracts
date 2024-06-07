@@ -10,11 +10,17 @@ import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
 import "../src/integrations/convex/IConvexRewardPool.sol";
-import "../script/libs/DeployLib.sol";
+import "../script/libs/LogDeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
-import "../script/libs/DeployStrategyLib.sol";
+import "../src/interfaces/IPlatformDeployer.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
 
-/// @dev Addresses, routes, farms, strategy logics, reward tokens, deploy function and other data for Base network
+/// @dev Base network [chainId: 8453] data library
+///      ┳┓
+///      ┣┫┏┓┏┏┓
+///      ┻┛┗┻┛┗
+/// @author Alien Deployer (https://github.com/a17)
 library BaseLib {
     // initial addresses
     address public constant MULTISIG = 0x626Bd898ca994c11c9014377f4c50d30f2B0006c; // team
@@ -59,28 +65,32 @@ library BaseLib {
     // DeX aggregators
     address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
-    function runDeploy(bool showLog) internal returns (address platform) {
-        //region ----- Deploy Platform -----
-        uint[] memory buildingPrice = new uint[](1);
-        buildingPrice[0] = 100e6;
-        platform = DeployLib.deployPlatform(
-            "24.06.0-alpha",
-            MULTISIG,
-            address(0),
-            TOKEN_USDC,
-            buildingPrice,
-            "Base",
-            CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x2356f0), bytes3(0x000000))),
-            TOKEN_USDC,
-            address(0),
-            1e16,
-            2e16
-        );
+    function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
+        p.multisig = MULTISIG;
+        p.version = "24.06.0-alpha";
+        p.buildingPermitToken = address(0);
+        p.buildingPayPerVaultToken = TOKEN_USDC;
+        p.networkName = "Base";
+        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x2356f0), bytes3(0x000000)));
+        p.targetExchangeAsset = TOKEN_USDC;
+        p.gelatoAutomate = address(0);
+        p.gelatoMinBalance = 1e16;
+        p.gelatoDepositAmount = 2e16;
+    }
+
+    function deployAndSetupInfrastructure(address platform, bool showLog) internal {
+        IFactory factory = IFactory(IPlatform(platform).factory());
+
+        //region ----- Deployed Platform -----
         if (showLog) {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- Deploy Platform ----
+        //endregion -- Deployed Platform ----
+
+        //region ----- Deploy and setup vault types -----
+        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 100e6);
+        //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
@@ -100,14 +110,14 @@ library BaseLib {
             priceFeeds[2] = ORACLE_CHAINLINK_cbETH_USD;
             chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
             priceReader.addAdapter(address(chainlinkAdapter));
-            DeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
+            LogDeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
         //endregion -- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
-        DeployLib.logDeployAmmAdapters(platform, showLog);
+        LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 
         //region ----- Setup Swapper -----
@@ -135,19 +145,18 @@ library BaseLib {
             thresholdAmount[6] = 1e15;
             thresholdAmount[7] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
-            DeployLib.logSetupSwapper(platform, showLog);
+            LogDeployLib.logSetupSwapper(platform, showLog);
         }
         //endregion -- Setup Swapper -----
 
         //region ----- Add farms -----
-        IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(farms());
-        DeployLib.logAddedFarms(address(factory), showLog);
+        LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
         //region ----- Deploy strategy logics -----
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
-        DeployLib.logDeployStrategies(platform, showLog);
+        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
         //region ----- Add DeX aggregators -----
@@ -217,6 +226,32 @@ library BaseLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
+    }
+
+    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: id,
+                implementation: implementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPrice
+            })
+        );
+    }
+
+    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: id,
+                implementation: address(implementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: farming,
+                tokenId: type(uint).max
+            }),
+            StrategyDeveloperLib.getDeveloper(id)
+        );
     }
 
     function testChainLib() external {}
