@@ -111,9 +111,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
             (vars.strategyImplementation, vars.farming, vars.tokenId) =
                 (strategyConfig.implementation, strategyConfig.farming, strategyConfig.tokenId);
             assertNotEq(
-                vars.strategyImplementation,
-                address(0),
-                "Strategy implementation not found. Put it to chain lib and DeployStrategyLib."
+                vars.strategyImplementation, address(0), "Strategy implementation not found. Put it to chain lib."
             );
             writeNftSvgToFile(
                 vars.strategyLogic, vars.tokenId, string.concat("out/StrategyLogic_", strategies[i].id, ".svg")

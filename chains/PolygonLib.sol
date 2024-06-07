@@ -4,17 +4,32 @@ pragma solidity ^0.8.23;
 import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
-import "../src/strategies/libs/StrategyIdLib.sol";
-import "../src/strategies/libs/ALMPositionNameLib.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
+import "../src/interfaces/IPlatformDeployer.sol";
 import "../src/integrations/convex/IConvexRewardPool.sol";
-import "../script/libs/DeployLib.sol";
+import "../script/libs/LogDeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
-import "../script/libs/DeployStrategyLib.sol";
+import "../src/strategies/libs/StrategyIdLib.sol";
+import "../src/strategies/libs/ALMPositionNameLib.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
+import "../src/strategies/GammaRetroMerklFarmStrategy.sol";
+import "../src/strategies/CurveConvexFarmStrategy.sol";
+import "../src/strategies/YearnStrategy.sol";
 
-/// @dev Addresses, routes, farms, strategy logics, reward tokens, deploy function and other data for Polygon network
+/// @dev Polygon network [chainId: 137] data library
+///      ┏┓  ┓
+///      ┃┃┏┓┃┓┏┏┓┏┓┏┓
+///      ┣┛┗┛┗┗┫┗┫┗┛┛┗
+///            ┛ ┛
+/// @author Alien Deployer (https://github.com/a17)
 library PolygonLib {
     // initial addresses
     address public constant MULTISIG = 0x36780E69D38c8b175761c6C5F8eD42E61ee490E9; // team
@@ -171,30 +186,34 @@ library PolygonLib {
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
-    function runDeploy(bool showLog) internal returns (address platform) {
-        //region ----- Deploy Platform -----
-        uint[] memory buildingPrice = new uint[](3);
-        buildingPrice[0] = 50_000e18;
-        buildingPrice[1] = 50_000e18;
-        buildingPrice[2] = 100_000e18;
-        platform = DeployLib.deployPlatform(
-            "24.06.0-alpha",
-            MULTISIG,
-            TOKEN_PM,
-            TOKEN_SDIV,
-            buildingPrice,
-            "Polygon",
-            CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-            TOKEN_USDCe,
-            GELATO_AUTOMATE,
-            1e18,
-            2e18
-        );
+    function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
+        p.multisig = MULTISIG;
+        p.version = "24.06.0-alpha";
+        p.buildingPermitToken = TOKEN_PM;
+        p.buildingPayPerVaultToken = TOKEN_SDIV;
+        p.networkName = "Polygon";
+        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)));
+        p.targetExchangeAsset = TOKEN_USDCe;
+        p.gelatoAutomate = GELATO_AUTOMATE;
+        p.gelatoMinBalance = 1e18;
+        p.gelatoDepositAmount = 2e18;
+    }
+
+    function deployAndSetupInfrastructure(address platform, bool showLog) internal {
+        IFactory factory = IFactory(IPlatform(platform).factory());
+
+        //region ----- Deployed Platform -----
         if (showLog) {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- Deploy Platform ----
+        //endregion -- Deployed Platform ----
+
+        //region ----- Deploy and setup vault types -----
+        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 50_000e18);
+        _addVaultType(factory, VaultTypeLib.REWARDING, address(new RVault()), 50_000e18);
+        _addVaultType(factory, VaultTypeLib.REWARDING_MANAGED, address(new RMVault()), 100_000e18);
+        //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
@@ -214,7 +233,7 @@ library PolygonLib {
             priceFeeds[2] = ORACLE_CHAINLINK_DAI_USD;
             chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
             priceReader.addAdapter(address(chainlinkAdapter));
-            DeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
+            LogDeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
         //endregion -- Deploy and setup oracle adapters -----
 
@@ -223,7 +242,7 @@ library PolygonLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.KYBER);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
-        DeployLib.logDeployAmmAdapters(platform, showLog);
+        LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 
         //region ----- Setup Swapper -----
@@ -256,12 +275,11 @@ library PolygonLib {
             thresholdAmount[8] = 1e15;
             thresholdAmount[9] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
-            DeployLib.logSetupSwapper(platform, showLog);
+            LogDeployLib.logSetupSwapper(platform, showLog);
         }
         //endregion -- Setup Swapper -----
 
         //region ----- Add farms -----
-        IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(farms());
         // Jan-09-2024
         if (block.number > 52122638) {
@@ -271,7 +289,7 @@ library PolygonLib {
         if (block.number > 54573098) {
             factory.addFarms(farms3());
         }
-        DeployLib.logAddedFarms(address(factory), showLog);
+        LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
         //region ----- Add strategy available init params -----
@@ -296,20 +314,20 @@ library PolygonLib {
         defaultBoostRewardToken[0] = TOKEN_PROFIT;
         defaultBoostRewardToken[1] = TOKEN_USDCe;
         IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
-        DeployLib.logSetupRewardTokens(platform, showLog);
+        LogDeployLib.logSetupRewardTokens(platform, showLog);
         //endregion -- Reward tokens -----
 
         //region ----- Deploy strategy logics -----
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.COMPOUND_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.ICHI_RETRO_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.CURVE_CONVEX_FARM, true);
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.YEARN, false);
-        DeployLib.logDeployStrategies(platform, showLog);
+        _addStrategyLogic(factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, address(new DefiEdgeQuickSwapMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ICHI_RETRO_MERKL_FARM, address(new IchiRetroMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.CURVE_CONVEX_FARM, address(new CurveConvexFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.YEARN, address(new YearnStrategy()), false);
+        LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
         //region ----- Add DeX aggregators -----
@@ -617,6 +635,32 @@ library PolygonLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
+    }
+
+    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: id,
+                implementation: implementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPrice
+            })
+        );
+    }
+
+    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: id,
+                implementation: address(implementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: farming,
+                tokenId: type(uint).max
+            }),
+            StrategyDeveloperLib.getDeveloper(id)
+        );
     }
 
     function testPolygonLib() external {}
