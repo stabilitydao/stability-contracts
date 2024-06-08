@@ -35,9 +35,10 @@ Contributions can be made in the form of developing strategies, developing the c
 
 ## Deployments
 
-### Polygon [137]
+Platform address.
 
-* **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
+* **Polygon** [137] `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
+* **Base** [8453] `0x7eAeE5CfF17F7765d89F4A46b484256929C62312` [basescan](https://basescan.org/address/0x7eaee5cff17f7765d89f4a46b484256929c62312)
 
 ## Audits
 
