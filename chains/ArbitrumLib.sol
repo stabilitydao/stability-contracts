@@ -7,6 +7,8 @@ import "../src/interfaces/IPlatform.sol";
 import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
 import "../script/libs/LogDeployLib.sol";
+import "../script/libs/DeployAdapterLib.sol";
+import "../src/adapters/libs/AmmAdapterIdLib.sol";
 
 
 /// @dev Arbitrum network [chainId: 42161] data library
@@ -87,7 +89,12 @@ library ArbitrumLib {
             LogDeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
         //endregion -- Deploy and setup oracle adapters -----
-        
+
+        //region ----- Deploy AMM adapters -----
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
+        LogDeployLib.deployAmmAdapter(platform, showLog);
+        //endregion -- Deploy AMM adapters -----
 
     }
 }
