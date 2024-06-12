@@ -13,14 +13,12 @@ import "../src/interfaces/ISwapper.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 
 /// @dev Arbitrum network [chainId: 42161] data library
-
-//   AAAAA  RRRR   BBBB    III TTTTTT RRRR   UU   UU MMMM   MMMM
-//  AA   AA RR  RR BB  BB  III   TT   RR  RR UU   UU MM MM MM MM
-//  AA   AA RRRR   BBBBB   III   TT   RRRR   UU   UU MM  MMM  MM
-//  AAAAAAA RR  RR BB  BB  III   TT   RR  RR UU   UU MM       MM
-//  AA   AA RR   RR BBBB   III   TT   RR   RR UUUUU  MM       MM
-
-/// @author Alien Deployer (https://github.com/a17)
+///   AAAAA  RRRR   BBBB    III TTTTTT RRRR   UU   UU MMMM   MMMM
+///  AA   AA RR  RR BB  BB  III   TT   RR  RR UU   UU MM MM MM MM
+///  AA   AA RRRR   BBBBB   III   TT   RRRR   UU   UU MM  MMM  MM
+///  AAAAAAA RR  RR BB  BB  III   TT   RR  RR UU   UU MM       MM
+///  AA   AA RR   RR BBBB   III   TT   RR   RR UUUUU  MM       MM
+/// @author Interlinker (https://github.com/Interlinker0115)
 library ArbitrumLib {
     // initial addresses
     address public constant MULTISIG =
@@ -29,6 +27,8 @@ library ArbitrumLib {
     // ERC20
     address public constant TOKEN_ARB =
         0x912CE59144191C1204E64559FE8253a0e49E6548;
+    address public constant TOKEN_WETH =
+        0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address public constant TOKEN_USDC =
         0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     address public constant TOKEN_USDT =
@@ -45,8 +45,34 @@ library ArbitrumLib {
         0x178412e79c25968a32e89b11f63B33F733770c2A;
     address public constant TOKEN_FRAX =
         0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F;
+    address public constant TOKEN_wstETH =
+        0x5979D7b546E38E414F7E9822514be443A4800529;
+    address public constant TOKEN_PENDLE =
+        0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8;
+    address public constant TOKEN_LINK =
+        0xf97f4df75117a78c1A5a0DBb814Af92458539FB4;
+    address public constant TOKEN_COMP = 
+        0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
 
     // AMMs
+    address public constant POOL_UNISWAPV3_WBTC_WETH_500 =
+        0x2f5e87C9312fa29aed5c179E456625D79015299c;
+    address public constant POOL_UNISWAPV3_WETH_USDC_500 =
+        0xC6962004f452bE9203591991D15f6b388e09E8D0;
+    address public constant POOL_UNISWAPV3_WETH_ARB_500 =
+        0xC6F780497A95e246EB9449f5e4770916DCd6396A;
+    address public constant POOL_UNISWAPV3_wstETH_WETH_100 =
+        0x35218a1cbaC5Bbc3E57fd9Bd38219D37571b3537;
+    address public constant POOL_UNISWAPV3_PENDLE_WETH_3000 =
+        0xdbaeB7f0DFe3a0AAFD798CCECB5b22E708f7852c;
+    address public constant POOL_UNISWAPV3_WETH_LINK_3000 =
+        0x468b88941e7Cc0B88c1869d68ab6b570bCEF62Ff;
+    address public constant POOL_UNISWAPV3_ARB_USDC_500 =
+        0xcDa53B1F66614552F834cEeF361A8D12a0B8DaD8;
+    address public constant POOL_STRYKE_WETH_USDC_500 =
+        0xC6962004f452bE9203591991D15f6b388e09E8D0;
+    address public constant POOL_STRYKE_WBTC_USDC_500 =
+        0x0E4831319A50228B9e450861297aB92dee15B44F;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -57,8 +83,16 @@ library ArbitrumLib {
         0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
 
     // Compound
+    address public constant COMPOUND_COMET_USDCe =
+        0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA;
+    address public constant COMPOUND_COMET_USDC = 
+        0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
+    address public constant COMPOUND_COMET_REWARDS = 
+        0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae;
 
     // DeX aggregators
+    address public constant ONE_INCH =
+        0x1111111254EEB25477B68fb85Ed929f73A960582;
 
     function platformDeployParams()
         internal
@@ -100,7 +134,7 @@ library ArbitrumLib {
             factory,
             VaultTypeLib.COMPOUNDING,
             address(new CVault()),
-            100e6
+            1e3
         );
         //endregion -- Deploy and setup valut types -----
 
@@ -164,7 +198,7 @@ library ArbitrumLib {
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e15;
             thresholdAmount[3] = 1e3;
-            thresholdAmount[4] = 1e15;
+            thresholdAmount[4] = 1e3;
             thresholdAmount[5] = 1e15;
             thresholdAmount[6] = 1e15;
             thresholdAmount[7] = 1e15;
@@ -186,8 +220,143 @@ library ArbitrumLib {
             true
         );
         LogDeployLib.logDeployStrategies(platform, showLog);
-
         //endregion -- Deploy strategy logics -----
+
+        //region ----- Add Dex aggregators -----
+        address[] memory dexAggRouter = new address[](1);
+        dexAggRouter[0] = ONE_INCH;
+        IPlatform(platform).addDexAggregators(dexAggRouter);
+        //endregion -- Add Dex aggregators -----
+    }
+
+    function routes()
+        public
+        pure
+        returns (
+            ISwapper.AddPoolData[] memory bcPools,
+            ISwapper.AddPoolData[] memory pools
+        )
+    {
+        //region ----- Blue Chip Pools -----
+        bcPools = new ISwapper.AddPoolData[](3);
+        bcPools[0] = _makePoolData(
+            POOL_UNISWAPV3_WBTC_WETH_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WBTC,
+            TOKEN_WETH
+        );
+        bcPools[1] = _makePoolData(
+            POOL_UNISWAPV3_WETH_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_USDC
+        );
+        bcPools[2] = _makePoolData(
+            POOL_UNISWAPV3_WETH_ARB_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_ARB
+        );
+        //endregion -- Blue Chip Pools ----
+
+        //region ----- Pools ----
+        pools = new ISwapper.AddPoolData[](9);
+        uint i;
+        // UniswapV3
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WBTC_WETH_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WBTC,
+            TOKEN_WETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WETH_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_USDC
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WETH_ARB_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_ARB
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_wstETH_WETH_100,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_wstETH,
+            TOKEN_WETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_PENDLE_WETH_3000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_PENDLE,
+            TOKEN_WETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WETH_LINK_3000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_LINK
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_ARB_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_ARB,
+            TOKEN_USDC
+        );
+
+        // StrykeSwap
+        pools[i++] = _makePoolData(
+            POOL_STRYKE_WETH_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_USDC
+        );
+        pools[i++] = _makePoolData(
+            POOL_STRYKE_WBTC_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WBTC,
+            TOKEN_USDC
+        );
+        //endregion -- Pools ----
+    }
+
+    function farms() public pure returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](2);
+        uint i;
+
+        _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDCe);
+        _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
+    }
+
+    function _makePoolData(
+        address pool,
+        string memory ammAdapterId,
+        address tokenIn,
+        address tokenOut
+    ) internal pure returns (ISwapper.AddPoolData memory) {
+        return
+            ISwapper.AddPoolData({
+                pool: pool,
+                ammAdapterId: ammAdapterId,
+                tokenIn: tokenIn,
+                tokenOut: tokenOut
+            });
+    }
+
+    function _makeCompoundFarm(address comet) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.COMPOUND_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_COMP;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = comet;
+        farm.addresses[1] = COMPOUND_COMET_REWARDS;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _addVaultType(
@@ -225,4 +394,5 @@ library ArbitrumLib {
             StrategyDeveloperLib.getDeveloper(id)
         );
     }
+    function testArbitrumLib() external {}
 }
