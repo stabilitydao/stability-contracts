@@ -11,6 +11,8 @@ import "../script/libs/DeployAdapterLib.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/interfaces/ISwapper.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
 
 /// @dev Arbitrum network [chainId: 42161] data library
 ///   AAAAA  RRRR   BBBB    III TTTTTT RRRR   UU   UU MMMM   MMMM
@@ -32,7 +34,7 @@ library ArbitrumLib {
     address public constant TOKEN_USDC =
         0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     address public constant TOKEN_USDT =
-        0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9;
+        0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     address public constant TOKEN_DAI =
         0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
     address public constant TOKEN_USDCe =
@@ -107,8 +109,8 @@ library ArbitrumLib {
         p.networkExtra = CommonLib.bytesToBytes32(
             abi.encodePacked(bytes3(0x2959bc), bytes3(0x000000))
         );
-        p.targetExchangeAsset = address(0);
-        p.gelatoAutomate = GELATO_AUTOMATE;
+        p.targetExchangeAsset = TOKEN_USDC;
+        p.gelatoAutomate = address(0);
         p.gelatoMinBalance = 1e16;
         p.gelatoDepositAmount = 2e16;
     }
@@ -171,7 +173,7 @@ library ArbitrumLib {
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
-        LogDeployLib.deployAmmAdapter(platform, showLog);
+        LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters -----
 
         //region ----- Setup Swapper -----
@@ -202,8 +204,8 @@ library ArbitrumLib {
             thresholdAmount[5] = 1e15;
             thresholdAmount[6] = 1e15;
             thresholdAmount[7] = 1e15;
-            swaper.setThresholds(tokenIn, thresholdAmount);
-            LogDeployLib.logSetupSwapper(showLog);
+            swapper.setThresholds(tokenIn, thresholdAmount);
+            LogDeployLib.logSetupSwapper(platform, showLog);
         }
         //endregion -- Setup Swapper -----
 
@@ -361,7 +363,7 @@ library ArbitrumLib {
 
     function _addVaultType(
         IFactory factory,
-        string id,
+        string memory id,
         address implementation,
         uint buildingPrice
     ) internal {

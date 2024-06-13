@@ -14,7 +14,7 @@ abstract contract ArbitrumSetup is ChainSetup, DeployCore {
         vm.selectFork(vm.createFork(vm.envString("ARBITRUM_RPC_URL")));
     }
 
-    function testSetupStub() external {}
+    function testArbitrumSetupStub() external {}
 
     function _init() internal override {
         //region ----- DeployCore.sol -----
