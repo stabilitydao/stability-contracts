@@ -246,7 +246,7 @@ library ArbitrumLib {
             TOKEN_WBTC,
             TOKEN_WETH
         );
-        bcPools[0] = _makePoolData(
+        bcPools[1] = _makePoolData(
             POOL_UNISWAPV3_WETH_USDC_500,
             AmmAdapterIdLib.UNISWAPV3,
             TOKEN_WETH,
@@ -261,27 +261,27 @@ library ArbitrumLib {
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](6);
+        pools = new ISwapper.AddPoolData[](9);
         uint i;
         // UniswapV3
-        // pools[i++] = _makePoolData(
-        //     POOL_UNISWAPV3_WBTC_WETH_500,
-        //     AmmAdapterIdLib.UNISWAPV3,
-        //     TOKEN_WBTC,
-        //     TOKEN_WETH
-        // );
-        // pools[i++] = _makePoolData(
-        //     POOL_UNISWAPV3_WETH_USDC_500,
-        //     AmmAdapterIdLib.UNISWAPV3,
-        //     TOKEN_WETH,
-        //     TOKEN_USDC
-        // );
-        // pools[i++] = _makePoolData(
-        //     POOL_UNISWAPV3_WETH_ARB_500,
-        //     AmmAdapterIdLib.UNISWAPV3,
-        //     TOKEN_WETH,
-        //     TOKEN_ARB
-        // );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WBTC_WETH_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WBTC,
+            TOKEN_WETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WETH_USDC_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_USDC
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_WETH_ARB_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
+            TOKEN_ARB
+        );
         pools[i++] = _makePoolData(
             POOL_UNISWAPV3_wstETH_WETH_100,
             AmmAdapterIdLib.UNISWAPV3,
