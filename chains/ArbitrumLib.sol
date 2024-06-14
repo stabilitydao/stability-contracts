@@ -53,7 +53,7 @@ library ArbitrumLib {
         0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8;
     address public constant TOKEN_LINK =
         0xf97f4df75117a78c1A5a0DBb814Af92458539FB4;
-    address public constant TOKEN_COMP = 
+    address public constant TOKEN_COMP =
         0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
 
     // AMMs
@@ -71,10 +71,10 @@ library ArbitrumLib {
         0x468b88941e7Cc0B88c1869d68ab6b570bCEF62Ff;
     address public constant POOL_UNISWAPV3_ARB_USDC_500 =
         0xcDa53B1F66614552F834cEeF361A8D12a0B8DaD8;
-    address public constant POOL_STRYKE_WETH_USDC_500 =
-        0xC6962004f452bE9203591991D15f6b388e09E8D0;
     address public constant POOL_STRYKE_WBTC_USDC_500 =
         0x0E4831319A50228B9e450861297aB92dee15B44F;
+    address public constant POOL_CAMELOT_WETH_USDC_560 =
+        0xB1026b8e7276e7AC75410F1fcbbe21796e8f7526;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -87,9 +87,9 @@ library ArbitrumLib {
     // Compound
     address public constant COMPOUND_COMET_USDCe =
         0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA;
-    address public constant COMPOUND_COMET_USDC = 
+    address public constant COMPOUND_COMET_USDC =
         0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
-    address public constant COMPOUND_COMET_REWARDS = 
+    address public constant COMPOUND_COMET_REWARDS =
         0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae;
 
     // DeX aggregators
@@ -172,7 +172,6 @@ library ArbitrumLib {
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
-        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters -----
 
@@ -247,7 +246,7 @@ library ArbitrumLib {
             TOKEN_WBTC,
             TOKEN_WETH
         );
-        bcPools[1] = _makePoolData(
+        bcPools[0] = _makePoolData(
             POOL_UNISWAPV3_WETH_USDC_500,
             AmmAdapterIdLib.UNISWAPV3,
             TOKEN_WETH,
@@ -262,27 +261,27 @@ library ArbitrumLib {
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](9);
+        pools = new ISwapper.AddPoolData[](6);
         uint i;
         // UniswapV3
-        pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_WBTC_WETH_500,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WBTC,
-            TOKEN_WETH
-        );
-        pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_WETH_USDC_500,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_USDC
-        );
-        pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_WETH_ARB_500,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_ARB
-        );
+        // pools[i++] = _makePoolData(
+        //     POOL_UNISWAPV3_WBTC_WETH_500,
+        //     AmmAdapterIdLib.UNISWAPV3,
+        //     TOKEN_WBTC,
+        //     TOKEN_WETH
+        // );
+        // pools[i++] = _makePoolData(
+        //     POOL_UNISWAPV3_WETH_USDC_500,
+        //     AmmAdapterIdLib.UNISWAPV3,
+        //     TOKEN_WETH,
+        //     TOKEN_USDC
+        // );
+        // pools[i++] = _makePoolData(
+        //     POOL_UNISWAPV3_WETH_ARB_500,
+        //     AmmAdapterIdLib.UNISWAPV3,
+        //     TOKEN_WETH,
+        //     TOKEN_ARB
+        // );
         pools[i++] = _makePoolData(
             POOL_UNISWAPV3_wstETH_WETH_100,
             AmmAdapterIdLib.UNISWAPV3,
@@ -310,15 +309,15 @@ library ArbitrumLib {
 
         // StrykeSwap
         pools[i++] = _makePoolData(
-            POOL_STRYKE_WETH_USDC_500,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_USDC
-        );
-        pools[i++] = _makePoolData(
             POOL_STRYKE_WBTC_USDC_500,
             AmmAdapterIdLib.UNISWAPV3,
             TOKEN_WBTC,
+            TOKEN_USDC
+        );
+        pools[i++] = _makePoolData(
+            POOL_CAMELOT_WETH_USDC_560,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_WETH,
             TOKEN_USDC
         );
         //endregion -- Pools ----
@@ -347,7 +346,9 @@ library ArbitrumLib {
             });
     }
 
-    function _makeCompoundFarm(address comet) internal pure returns (IFactory.Farm memory) {
+    function _makeCompoundFarm(
+        address comet
+    ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.strategyLogicId = StrategyIdLib.COMPOUND_FARM;
