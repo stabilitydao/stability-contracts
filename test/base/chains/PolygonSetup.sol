@@ -5,8 +5,9 @@ import "../../../chains/PolygonLib.sol";
 import "../ChainSetup.sol";
 import "../../../src/core/Platform.sol";
 import "../../../src/core/Factory.sol";
+import {DeployCore} from "../../../script/base/DeployCore.sol";
 
-abstract contract PolygonSetup is ChainSetup {
+abstract contract PolygonSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
     constructor() {
@@ -20,10 +21,11 @@ abstract contract PolygonSetup is ChainSetup {
     function testPolygonSetupStub() external {}
 
     function _init() internal override {
-        //region ----- DeployPlatform -----
-        platform = Platform(PolygonLib.runDeploy(showDeployLog));
+        //region ----- DeployCore.sol -----
+        platform = Platform(_deployCore(PolygonLib.platformDeployParams()));
+        PolygonLib.deployAndSetupInfrastructure(address(platform), showDeployLog);
         factory = Factory(address(platform.factory()));
-        //endregion -- DeployPlatform ----
+        //endregion -- DeployCore.sol ----
     }
 
     function _deal(address token, address to, uint amount) internal override {
