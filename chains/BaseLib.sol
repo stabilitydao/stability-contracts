@@ -4,19 +4,19 @@ pragma solidity ^0.8.23;
 import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
+import "../src/integrations/convex/IConvexRewardPool.sol";
+import "../src/integrations/gamma/IHypervisor.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 import "../src/strategies/libs/ALMPositionNameLib.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
-import "../src/integrations/convex/IConvexRewardPool.sol";
+import "../src/interfaces/IPlatformDeployer.sol";
 import "../script/libs/LogDeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
-import "../src/interfaces/IPlatformDeployer.sol";
-import "../src/strategies/CompoundFarmStrategy.sol";
-import "../src/strategies/libs/StrategyDeveloperLib.sol";
-import "../src/integrations/gamma/IHypervisor.sol";
-import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 
 /// @dev Base network [chainId: 8453] data library
 ///      ┳┓

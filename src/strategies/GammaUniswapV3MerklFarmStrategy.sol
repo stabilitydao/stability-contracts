@@ -30,7 +30,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.GammaUniswapV3MerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GAMMA_UNISWAPV3_MERKL_FARM_STRATEGY_STORAGE_LOCATION =
-    0x54e0a6796044fbbedf8a0ca0f0b49138f4aea6a1bbbefa8f8ebd68bc7b577000;
+        0x54e0a6796044fbbedf8a0ca0f0b49138f4aea6a1bbbefa8f8ebd68bc7b577000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -200,10 +200,10 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
 
     /// @inheritdoc IStrategy
     function supportedVaultTypes()
-    external
-    pure
-    override(LPStrategyBase, StrategyBase)
-    returns (string[] memory types)
+        external
+        pure
+        override(LPStrategyBase, StrategyBase)
+        returns (string[] memory types)
     {
         types = new string[](1);
         types[0] = VaultTypeLib.COMPOUNDING;
