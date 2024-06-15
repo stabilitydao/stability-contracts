@@ -15,6 +15,7 @@ import "../script/libs/DeployAdapterLib.sol";
 import "../src/interfaces/IPlatformDeployer.sol";
 import "../src/strategies/CompoundFarmStrategy.sol";
 import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 
 /// @dev Base network [chainId: 8453] data library
 ///      ┳┓
@@ -59,7 +60,7 @@ library BaseLib {
     address public constant GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED = 0xbC73A3247Eb976a0A29b22f19E4EBAfa45EfdC65;
     address public constant GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED = 0xa52ECC4ed16f97c71071A3Bd14309E846647d7F0;
     address public constant GAMMA_UNISWAPV3_WETH_USDT_500_NARROW = 0xCbF2d065b73a2B883C15631C927D93Ee94028a68;
-    address public constant GAMMA_UNISWAPV3_USDC_USDT_100_PEGGED = 0x96034EfF74c0D1ba2eCDBf4C09A6FE8FFd6b71c8;
+    address public constant GAMMA_UNISWAPV3_USDC_USDT_100_STABLE = 0x96034EfF74c0D1ba2eCDBf4C09A6FE8FFd6b71c8;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
@@ -209,14 +210,39 @@ library BaseLib {
         //endregion -- Pools ----
     }
 
-    function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](6);
         uint i;
 
         // [0]-[2]
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDbC);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_ETH);
+
+        // [3]-[6]
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_UNI);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_wstETH);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
+    }
+
+    function _makeGammaUniswapV3MerklFarm(
+        address hypervisor,
+        uint preset,
+        address rewardAsset
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardAsset;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = GAMMA_UNISWAPV3_UNIPROXY;
+        farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makePoolData(
