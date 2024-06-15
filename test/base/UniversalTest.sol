@@ -78,6 +78,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _preHardWork() internal virtual {}
 
+    function _preHardWork(uint farmId) internal virtual {}
+
     function _preDeposit() internal virtual {}
 
     function testNull() public {}
@@ -412,6 +414,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vm.roll(block.number + 6);
 
                 _preHardWork();
+                _preHardWork(strategies[i].farmId);
 
                 // check not claimed revenue if available
                 {
