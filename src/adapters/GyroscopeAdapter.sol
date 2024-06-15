@@ -27,6 +27,8 @@ contract GyroscopeAdapter is Controllable, IAmmAdapter {
 
     address public constant balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
+    uint private constant _LIMIT = 1;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -48,7 +50,45 @@ contract GyroscopeAdapter is Controllable, IAmmAdapter {
         address tokenOut,
         address recipient,
         uint priceImpactTolerance
-    ) external {}
+    ) external {
+        uint amountIn = IERC20(tokenIn).balanceOf(address(this));
+
+        // Initializing each struct field one-by-one uses less gas than setting all at once.
+        IBVault.FundManagement memory funds;
+        funds.sender = address(this);
+        funds.fromInternalBalance = false;
+        funds.recipient = payable(recipient);
+        funds.toInternalBalance = false;
+
+        // Initializing each struct field one-by-one uses less gas than setting all at once.
+        IBVault.SingleSwap memory singleSwap;
+        singleSwap.poolId = IBWeightedPoolMinimal(pool).getPoolId();
+        singleSwap.kind = IBVault.SwapKind.GIVEN_IN;
+        singleSwap.assetIn = IAsset(address(tokenIn));
+        singleSwap.assetOut = IAsset(address(tokenOut));
+        singleSwap.amount = amountIn;
+        singleSwap.userData = "";
+
+        // scope for checking price impact
+        uint amountOutMax;
+        {
+            uint minimalAmount = amountIn / 1000;
+            require(minimalAmount != 0, "Too low amountIn");
+            uint price = getPrice(pool, tokenIn, tokenOut, minimalAmount);
+            amountOutMax = price * amountIn / minimalAmount;
+        }
+
+        IERC20(tokenIn).approve(balancerVault, amountIn);
+        uint amountOut = IBVault(balancerVault).swap(singleSwap, funds, _LIMIT, block.timestamp);
+
+        require(
+            amountOutMax < amountOut
+                || (amountOutMax - amountOut) * ConstantsLib.DENOMINATOR / amountOutMax <= priceImpactTolerance,
+            "!PRICE"
+        );
+
+        emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amountIn, amountOut);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -60,7 +100,15 @@ contract GyroscopeAdapter is Controllable, IAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function poolTokens(address pool) public view returns (address[] memory tokens) {}
+    function poolTokens(address pool) public view returns (address[] memory) {
+        bytes32 poolId = IBWeightedPoolMinimal(pool).getPoolId();
+        (IERC20[] memory tokenContracts,,) = IBVault(balancerVault).getPoolTokens(poolId);
+        address[] memory tokens = new address[](tokenContracts.length);
+        for (uint i; i < tokenContracts.length; ++i) {
+            tokens[i] = address(tokenContracts[i]);
+        }
+        return tokens;
+    }
 
     /// @inheritdoc IAmmAdapter
     function getLiquidityForAmounts(
