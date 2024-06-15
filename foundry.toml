@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
+solc_version = "0.8.23"
 
 [profile.lite]
 optimizer = false
@@ -18,6 +19,8 @@ multiline_func_header = "params_first"
 
 [rpc_endpoints]
 polygon = "${POLYGON_RPC_URL}"
+base = "${BASE_RPC_URL}"
 
 [etherscan]
-polygon = { key = "${ETHERSCAN_API_KEY}", chain = 137  }
+polygon = { key = "${POLYGONSCAN_API_KEY}", chain = 137  }
+base = { key = "${BASESCAN_API_KEY}", chain = 8453  }

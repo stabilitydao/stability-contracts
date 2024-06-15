@@ -38,6 +38,7 @@ jobs:
           forge test -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
+          BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
         id: test
 
       - name: Run Forge coverage
@@ -46,6 +47,7 @@ jobs:
           forge coverage --report lcov
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
+          BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
         id: coverage
 
       - name: Upload coverage lcov report to Codecov
