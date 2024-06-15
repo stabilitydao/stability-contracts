@@ -15,7 +15,8 @@ import "../script/libs/DeployAdapterLib.sol";
 import "../src/interfaces/IPlatformDeployer.sol";
 import "../src/strategies/CompoundFarmStrategy.sol";
 import "../src/strategies/libs/StrategyDeveloperLib.sol";
-import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
+import "../src/integrations/gamma/IHypervisor.sol";
+import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 
 /// @dev Base network [chainId: 8453] data library
 ///      ┳┓
@@ -149,12 +150,12 @@ library BaseLib {
             uint[] memory thresholdAmount = new uint[](8);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
-            thresholdAmount[2] = 1e15;
-            thresholdAmount[3] = 1e15;
-            thresholdAmount[4] = 1e15;
+            thresholdAmount[2] = 1e12;
+            thresholdAmount[3] = 1e12;
+            thresholdAmount[4] = 1e12;
             thresholdAmount[5] = 1e3;
             thresholdAmount[6] = 1e15;
-            thresholdAmount[7] = 1e15;
+            thresholdAmount[7] = 1e12;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -167,6 +168,7 @@ library BaseLib {
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -219,7 +221,7 @@ library BaseLib {
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDbC);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_ETH);
 
-        // [3]-[6]
+        // [3]-[5]
         _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_UNI);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_wstETH);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
