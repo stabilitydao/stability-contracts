@@ -8,6 +8,10 @@ import "../core/libs/ConstantsLib.sol";
 import "../core/base/Controllable.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/IAmmAdapter.sol";
+import "../interfaces/IGyroECLPPool.sol";
+import "../interfaces/IBVault.sol";
+import "../interfaces/IBWeightedPoolMinimal.sol";
+import "./libs/GyroECLPMath.sol";
 
 /// @title AMM adapter for GyroECLP pools
 /// @author Jude (https://github.com/iammrjude)
@@ -20,6 +24,8 @@ contract GyroscopeAdapter is Controllable, IAmmAdapter {
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
+
+    address public constant balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -66,7 +72,26 @@ contract GyroscopeAdapter is Controllable, IAmmAdapter {
     function getProportions(address pool) external view returns (uint[] memory props) {}
 
     /// @inheritdoc IAmmAdapter
-    function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {}
+    function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
+        // return IGyroECLPPool(pool).getPrice();
+
+        bytes32 poolId = IBWeightedPoolMinimal(pool).getPoolId();
+        (IERC20[] memory tokens, uint[] memory balances,) = IBVault(balancerVault).getPoolTokens(poolId);
+
+        bool tokenInIsToken0 = tokenIn == address(tokens[0]);
+        (GyroECLPMath.Params memory eclpParams, GyroECLPMath.DerivedParams memory derivedECLPParams) =
+            IGyroECLPPool(pool).getECLPParams();
+        GyroECLPMath.Vector2 memory invariant;
+        {
+            (int currentInvariant, int invErr) =
+                GyroECLPMath.calculateInvariantWithError(balances, eclpParams, derivedECLPParams);
+            // invariant = overestimate in x-component, underestimate in y-component
+            // No overflow in `+` due to constraints to the different values enforced in GyroECLPMath.
+            invariant = GyroECLPMath.Vector2(currentInvariant + 2 * invErr, currentInvariant);
+        }
+
+        return GyroECLPMath.calcOutGivenIn(balances, amount, tokenInIsToken0, eclpParams, derivedECLPParams, invariant);
+    }
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
