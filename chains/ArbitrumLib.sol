@@ -43,19 +43,19 @@ library ArbitrumLib {
         0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
     address public constant TOKEN_weETH =
         0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
-    address public constant TOKEN_frxETH =
-        0x178412e79c25968a32e89b11f63B33F733770c2A;
     address public constant TOKEN_FRAX =
         0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F;
     address public constant TOKEN_wstETH =
         0x5979D7b546E38E414F7E9822514be443A4800529;
     address public constant TOKEN_PENDLE =
         0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8;
-    address public constant TOKEN_LINK =
-        0xf97f4df75117a78c1A5a0DBb814Af92458539FB4;
+    address public constant TOKEN_rsETH =
+        0x4186BFC76E2E237523CBC30FD220FE055156b41F;
     address public constant TOKEN_COMP =
         0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
-
+    address public constant TOKEN_USDe = 
+        0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
+    
     // AMMs
     address public constant POOL_UNISWAPV3_WBTC_WETH_500 =
         0x2f5e87C9312fa29aed5c179E456625D79015299c;
@@ -65,16 +65,19 @@ library ArbitrumLib {
         0xC6F780497A95e246EB9449f5e4770916DCd6396A;
     address public constant POOL_UNISWAPV3_wstETH_WETH_100 =
         0x35218a1cbaC5Bbc3E57fd9Bd38219D37571b3537;
-    address public constant POOL_UNISWAPV3_PENDLE_WETH_3000 =
-        0xdbaeB7f0DFe3a0AAFD798CCECB5b22E708f7852c;
+    address public constant POOL_UNISWAPV3_rsETH_WETH_100 =
+        0x48b0aB72c2591849e678e7d6f272b75eF9b863F7;
     address public constant POOL_UNISWAPV3_WETH_LINK_3000 =
         0x468b88941e7Cc0B88c1869d68ab6b570bCEF62Ff;
     address public constant POOL_UNISWAPV3_ARB_USDC_500 =
         0xcDa53B1F66614552F834cEeF361A8D12a0B8DaD8;
-    address public constant POOL_STRYKE_WBTC_USDC_500 =
-        0x0E4831319A50228B9e450861297aB92dee15B44F;
-    address public constant POOL_CAMELOT_WETH_USDC_560 =
-        0xB1026b8e7276e7AC75410F1fcbbe21796e8f7526;
+    address public constant POOL_CAMELOT_USDe_USDC_400 =
+        0xc23f308CF1bFA7efFFB592920a619F00990F8D74;
+    address public constant POOL_CAMELOT_weETH_WETH_150 = 
+        0x293DFD996d5cd72Bed712B0EEAb96DBE400c0416;
+    address public constant POOL_UNISWAPV3_PENDLE_WETH_3000 =
+        0xdbaeB7f0DFe3a0AAFD798CCECB5b22E708f7852c;
+
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -184,25 +187,26 @@ library ArbitrumLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](8);
+            address[] memory tokenIn = new address[](9);
             tokenIn[0] = TOKEN_USDC;
             tokenIn[1] = TOKEN_USDT;
-            tokenIn[2] = TOKEN_DAI;
-            tokenIn[3] = TOKEN_USDCe;
+            tokenIn[2] = TOKEN_ARB;
+            tokenIn[3] = TOKEN_PENDLE;
             tokenIn[4] = TOKEN_WBTC;
             tokenIn[5] = TOKEN_weETH;
-            tokenIn[6] = TOKEN_frxETH;
-
-            tokenIn[7] = TOKEN_FRAX;
-            uint[] memory thresholdAmount = new uint[](8);
+            tokenIn[6] = TOKEN_rsETH;
+            tokenIn[7] = TOKEN_USDe;
+            tokenIn[8] = TOKEN_wstETH;
+            uint[] memory thresholdAmount = new uint[](9);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e15;
-            thresholdAmount[3] = 1e3;
+            thresholdAmount[3] = 1e15;
             thresholdAmount[4] = 1e3;
             thresholdAmount[5] = 1e15;
             thresholdAmount[6] = 1e15;
-            thresholdAmount[7] = 1e15;
+            thresholdAmount[7] = 1e3;
+            thresholdAmount[8] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -253,15 +257,16 @@ library ArbitrumLib {
             TOKEN_USDC
         );
         bcPools[2] = _makePoolData(
-            POOL_UNISWAPV3_WETH_ARB_500,
+            POOL_UNISWAPV3_ARB_USDC_500,
             AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_ARB
+            TOKEN_ARB,
+            TOKEN_USDC
         );
+
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](9);
+        pools = new ISwapper.AddPoolData[](8);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(
@@ -277,10 +282,10 @@ library ArbitrumLib {
             TOKEN_USDC
         );
         pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_WETH_ARB_500,
+            POOL_UNISWAPV3_ARB_USDC_500,
             AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_ARB
+            TOKEN_ARB,
+            TOKEN_USDC
         );
         pools[i++] = _makePoolData(
             POOL_UNISWAPV3_wstETH_WETH_100,
@@ -295,30 +300,24 @@ library ArbitrumLib {
             TOKEN_WETH
         );
         pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_WETH_LINK_3000,
+            POOL_UNISWAPV3_rsETH_WETH_100,
             AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_LINK
-        );
-        pools[i++] = _makePoolData(
-            POOL_UNISWAPV3_ARB_USDC_500,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_ARB,
-            TOKEN_USDC
+            TOKEN_rsETH,
+            TOKEN_WETH
         );
 
-        // StrykeSwap
+        // Camelot
         pools[i++] = _makePoolData(
-            POOL_STRYKE_WBTC_USDC_500,
+            POOL_CAMELOT_USDe_USDC_400,
             AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WBTC,
+            TOKEN_USDe,
             TOKEN_USDC
         );
         pools[i++] = _makePoolData(
-            POOL_CAMELOT_WETH_USDC_560,
+            POOL_CAMELOT_weETH_WETH_150,
             AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_WETH,
-            TOKEN_USDC
+            TOKEN_weETH,
+            TOKEN_WETH
         );
         //endregion -- Pools ----
     }
