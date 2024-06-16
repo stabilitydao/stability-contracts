@@ -1,0 +1,8 @@
+- [ ] integration interfaces
+- [ ] constants
+- [ ] routes
+- [ ] farms
+- [ ] skeleton
+- [ ] universal test
+- [ ] implementation
+- [ ] deploy script
