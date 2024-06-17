@@ -52,7 +52,7 @@ interface IFactory {
     event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
     event SetStrategyAvailableInitParams(string id, address[] initAddresses, uint[] initNums, int24[] initTicks);
-    event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
+    // event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
 
     //endregion -- Events -----
 
@@ -310,7 +310,7 @@ interface IFactory {
     /// @notice Initialization strategy params store
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
-    function getAliasName(address tokenAddress_) external view returns (string memory);
+    // function getAliasName(address tokenAddress_) external view returns (string memory);
 
     //endregion -- View functions -----
 
@@ -375,7 +375,7 @@ interface IFactory {
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
-    function setAliasName(address tokenAddress_, string memory aliasName_) external;
+    // function setAliasName(address tokenAddress_, string memory aliasName_) external;
 
     //endregion -- Write functions -----
 }
