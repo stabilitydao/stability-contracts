@@ -333,12 +333,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }
 
-    /// @inheritdoc IFactory
-    function setAliasName(address tokenAddress_, string memory aliasName_) external {
-        FactoryStorage storage $ = _getStorage();
-        $.aliasNames[tokenAddress_] = aliasName_;
-        emit IFactory.AliasNameChanged(msg.sender, tokenAddress_, $.aliasNames[tokenAddress_]);
-    }
+    // /// @inheritdoc IFactory
+    // function setAliasName(address tokenAddress_, string memory aliasName_) external {
+    //     FactoryStorage storage $ = _getStorage();
+    //     $.aliasNames[tokenAddress_] = aliasName_;
+    //     emit IFactory.AliasNameChanged(msg.sender, tokenAddress_, $.aliasNames[tokenAddress_]);
+    // }
 
     //endregion -- User actions ----
 
@@ -589,11 +589,11 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         return $.strategyAvailableInitParams[idHash];
     }
 
-    /// @inheritdoc IFactory
-    function getAliasName(address tokenAddress_) public view returns (string memory) {
-        FactoryStorage storage $ = _getStorage();
-        return $.aliasNames[tokenAddress_];
-    }
+    // /// @inheritdoc IFactory
+    // function getAliasName(address tokenAddress_) public view returns (string memory) {
+    //     FactoryStorage storage $ = _getStorage();
+    //     return $.aliasNames[tokenAddress_];
+    // }
 
     //endregion -- View functions -----
 
