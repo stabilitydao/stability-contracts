@@ -43,8 +43,6 @@ library ArbitrumLib {
         0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
     address public constant TOKEN_weETH =
         0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
-    address public constant TOKEN_FRAX =
-        0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F;
     address public constant TOKEN_wstETH =
         0x5979D7b546E38E414F7E9822514be443A4800529;
     address public constant TOKEN_PENDLE =
@@ -53,9 +51,11 @@ library ArbitrumLib {
         0x4186BFC76E2E237523CBC30FD220FE055156b41F;
     address public constant TOKEN_COMP =
         0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
-    address public constant TOKEN_USDe = 
+    address public constant TOKEN_USDe =
         0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
-    
+    address public constant TOKEN_GNB =
+        0x439C0cF1038F8002A4CAD489b427e217BA4B42AD;
+
     // AMMs
     address public constant POOL_UNISWAPV3_WBTC_WETH_500 =
         0x2f5e87C9312fa29aed5c179E456625D79015299c;
@@ -73,11 +73,16 @@ library ArbitrumLib {
         0xcDa53B1F66614552F834cEeF361A8D12a0B8DaD8;
     address public constant POOL_CAMELOT_USDe_USDC_400 =
         0xc23f308CF1bFA7efFFB592920a619F00990F8D74;
-    address public constant POOL_CAMELOT_weETH_WETH_150 = 
+    address public constant POOL_CAMELOT_weETH_WETH_150 =
         0x293DFD996d5cd72Bed712B0EEAb96DBE400c0416;
     address public constant POOL_UNISWAPV3_PENDLE_WETH_3000 =
         0xdbaeB7f0DFe3a0AAFD798CCECB5b22E708f7852c;
-
+    address public constant POOL_UNISWAPV3_COMP_WETH_3000 =
+        0xDfA19e743421C394d904f5a113121c2227d2364b;
+    address public constant POOL_UNISWAPV3_DAI_USDCe_500 =
+        0xd37Af656Abf91c7f548FfFC0133175b5e4d3d5e6;
+    address public constant POOL_UNISWAPV3_GNB_USDT_10000 =
+        0xc2125a452115FF5a300cc2A6FfAE99637F6e329D;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -187,7 +192,7 @@ library ArbitrumLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](9);
+            address[] memory tokenIn = new address[](10);
             tokenIn[0] = TOKEN_USDC;
             tokenIn[1] = TOKEN_USDT;
             tokenIn[2] = TOKEN_ARB;
@@ -197,7 +202,8 @@ library ArbitrumLib {
             tokenIn[6] = TOKEN_rsETH;
             tokenIn[7] = TOKEN_USDe;
             tokenIn[8] = TOKEN_wstETH;
-            uint[] memory thresholdAmount = new uint[](9);
+            tokenIn[9] = TOKEN_COMP;
+            uint[] memory thresholdAmount = new uint[](10);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e15;
@@ -207,6 +213,7 @@ library ArbitrumLib {
             thresholdAmount[6] = 1e15;
             thresholdAmount[7] = 1e3;
             thresholdAmount[8] = 1e15;
+            thresholdAmount[9] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -266,7 +273,7 @@ library ArbitrumLib {
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](8);
+        pools = new ISwapper.AddPoolData[](11);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(
@@ -305,7 +312,24 @@ library ArbitrumLib {
             TOKEN_rsETH,
             TOKEN_WETH
         );
-
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_COMP_WETH_3000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_COMP,
+            TOKEN_WETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_DAI_USDCe_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_DAI,
+            TOKEN_USDCe
+        );
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_GNB_USDT_10000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_GNB,
+            TOKEN_USDT
+        );
         // Camelot
         pools[i++] = _makePoolData(
             POOL_CAMELOT_USDe_USDC_400,
