@@ -302,12 +302,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         address oldImplementation = proxy.implementation();
         VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
         address newImplementation = tempVaultConfig.implementation;
-        if (!tempVaultConfig.upgradeAllowed) {
-            revert UpgradeDenied(vaultTypeHash);
-        }
-        if (oldImplementation == newImplementation) {
-            revert AlreadyLastVersion(vaultTypeHash);
-        }
+        // if (!tempVaultConfig.upgradeAllowed) {
+        //     revert UpgradeDenied(vaultTypeHash);
+        // }
+        // if (oldImplementation == newImplementation) {
+        //     revert AlreadyLastVersion(vaultTypeHash);
+        // }
         proxy.upgrade();
         emit VaultProxyUpgraded(vault, oldImplementation, newImplementation);
     }
@@ -323,12 +323,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;
-        if (!config.upgradeAllowed) {
-            revert UpgradeDenied(idHash);
-        }
-        if (oldImplementation == newImplementation) {
-            revert AlreadyLastVersion(idHash);
-        }
+        // if (!config.upgradeAllowed) {
+        //     revert UpgradeDenied(idHash);
+        // }
+        // if (oldImplementation == newImplementation) {
+        //     revert AlreadyLastVersion(idHash);
+        // }
         proxy.upgrade();
         emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }
