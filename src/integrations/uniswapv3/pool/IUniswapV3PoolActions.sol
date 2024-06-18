@@ -26,7 +26,7 @@ interface IUniswapV3PoolActions {
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external returns (uint256 amount0, uint256 amount1);
+    ) external returns (uint amount0, uint amount1);
 
     /// @notice Collects tokens owed to a position
     /// @dev Does not recompute fees earned, which must be done either via mint or burn of any amount of liquidity.
@@ -56,11 +56,7 @@ interface IUniswapV3PoolActions {
     /// @param amount How much liquidity to burn
     /// @return amount0 The amount of token0 sent to the recipient
     /// @return amount1 The amount of token1 sent to the recipient
-    function burn(
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external returns (uint256 amount0, uint256 amount1);
+    function burn(int24 tickLower, int24 tickUpper, uint128 amount) external returns (uint amount0, uint amount1);
 
     /// @notice Swap token0 for token1, or token1 for token0
     /// @dev The caller of this method receives a callback in the form of IUniswapV3SwapCallback#uniswapV3SwapCallback
@@ -75,10 +71,10 @@ interface IUniswapV3PoolActions {
     function swap(
         address recipient,
         bool zeroForOne,
-        int256 amountSpecified,
+        int amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external returns (int256 amount0, int256 amount1);
+    ) external returns (int amount0, int amount1);
 
     /// @notice Receive token0 and/or token1 and pay it back, plus a fee, in the callback
     /// @dev The caller of this method receives a callback in the form of IUniswapV3FlashCallback#uniswapV3FlashCallback
@@ -88,12 +84,7 @@ interface IUniswapV3PoolActions {
     /// @param amount0 The amount of token0 to send
     /// @param amount1 The amount of token1 to send
     /// @param data Any data to be passed through to the callback
-    function flash(
-        address recipient,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata data
-    ) external;
+    function flash(address recipient, uint amount0, uint amount1, bytes calldata data) external;
 
     /// @notice Increase the maximum number of price and liquidity observations that this pool will store
     /// @dev This method is no-op if the pool already has an observationCardinalityNext greater than or equal to

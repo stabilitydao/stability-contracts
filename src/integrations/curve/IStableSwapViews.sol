@@ -28,5 +28,5 @@ interface IStableSwapViews {
     /// @param _amounts Amount of each coin being deposited
     /// @param _is_deposit set True for deposits, False for withdrawals
     /// @return Expected amount of LP tokens received
-    function calc_token_amount(uint[] memory _amounts, bool _is_deposit) external view returns(uint);
+    function calc_token_amount(uint[] memory _amounts, bool _is_deposit) external view returns (uint);
 }

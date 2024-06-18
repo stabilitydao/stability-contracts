@@ -33,11 +33,11 @@ interface IUniswapV3PoolState {
 
     /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the pool
     /// @dev This value can overflow the uint256
-    function feeGrowthGlobal0X128() external view returns (uint256);
+    function feeGrowthGlobal0X128() external view returns (uint);
 
     /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the pool
     /// @dev This value can overflow the uint256
-    function feeGrowthGlobal1X128() external view returns (uint256);
+    function feeGrowthGlobal1X128() external view returns (uint);
 
     /// @notice The amounts of token0 and token1 that are owed to the protocol
     /// @dev Protocol fees will never exceed uint128 max in either token
@@ -67,8 +67,8 @@ interface IUniswapV3PoolState {
         returns (
             uint128 liquidityGross,
             int128 liquidityNet,
-            uint256 feeGrowthOutside0X128,
-            uint256 feeGrowthOutside1X128,
+            uint feeGrowthOutside0X128,
+            uint feeGrowthOutside1X128,
             int56 tickCumulativeOutside,
             uint160 secondsPerLiquidityOutsideX128,
             uint32 secondsOutside,
@@ -76,7 +76,7 @@ interface IUniswapV3PoolState {
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
-    function tickBitmap(int16 wordPosition) external view returns (uint256);
+    function tickBitmap(int16 wordPosition) external view returns (uint);
 
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
@@ -90,8 +90,8 @@ interface IUniswapV3PoolState {
         view
         returns (
             uint128 _liquidity,
-            uint256 feeGrowthInside0LastX128,
-            uint256 feeGrowthInside1LastX128,
+            uint feeGrowthInside0LastX128,
+            uint feeGrowthInside1LastX128,
             uint128 tokensOwed0,
             uint128 tokensOwed1
         );
@@ -104,7 +104,7 @@ interface IUniswapV3PoolState {
     /// Returns tickCumulative the tick multiplied by seconds elapsed for the life of the pool as of the observation timestamp,
     /// Returns secondsPerLiquidityCumulativeX128 the seconds per in range liquidity for the life of the pool as of the observation timestamp,
     /// Returns initialized whether the observation has been initialized and the values are safe to use
-    function observations(uint256 index)
+    function observations(uint index)
         external
         view
         returns (
