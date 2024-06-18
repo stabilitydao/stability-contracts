@@ -52,7 +52,7 @@ interface IFactory {
     event NewFarm(Farm[] farms);
     event UpdateFarm(uint id, Farm farm);
     event SetStrategyAvailableInitParams(string id, address[] initAddresses, uint[] initNums, int24[] initTicks);
-    // event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
+    event AliasNameChanged(address indexed operator, address indexed tokenAddress, string newAliasName);
 
     //endregion -- Events -----
 
@@ -77,7 +77,7 @@ interface IFactory {
         Farm[] farms;
         /// @inheritdoc IFactory
         mapping(bytes32 idHash => StrategyAvailableInitParams) strategyAvailableInitParams;
-        mapping(address => string) aliasNames;
+        mapping(address tokenAddress => string aliasName) aliasNames;
     }
 
     struct VaultConfig {
@@ -310,7 +310,10 @@ interface IFactory {
     /// @notice Initialization strategy params store
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
-    // function getAliasName(address tokenAddress_) external view returns (string memory);
+    /// @notice Retrieves the alias name associated with a given address
+    /// @param tokenAddress_ The address to query for its alias name
+    /// @return The alias name associated with the provided address
+    function getAliasName(address tokenAddress_) external view returns (string memory);
 
     //endregion -- View functions -----
 
@@ -375,7 +378,11 @@ interface IFactory {
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
-    // function setAliasName(address tokenAddress_, string memory aliasName_) external;
+    /// @notice Assigns a new alias name to a specific address
+    /// @dev This function may require certain permissions to be called successfully.
+    /// @param tokenAddress_ The address to assign an alias name to
+    /// @param aliasName_ The alias name to assign to the given address
+    function setAliasName(address tokenAddress_, string memory aliasName_) external;
 
     //endregion -- Write functions -----
 }
