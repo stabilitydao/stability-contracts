@@ -558,10 +558,6 @@ library FactoryLib {
             showSpecificInSymbol ? specificName : "",
             bbAssetSymbol
         );
-        console.log("shortSymbol: %s", CommonLib.implode(assetsSymbols, ""));
-        if (bytes(CommonLib.implode(assetsSymbols, "")).length > 5) {
-            console.log("~~~~~~~~~~~~~~~length is too long");
-        }
     }
 
     function getDeploymentKey(
