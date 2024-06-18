@@ -528,7 +528,7 @@ contract FactoryTest is Test, MockSetup {
         factory.setAliasName(PolygonLib.TOKEN_USDC, aliasName_);
     }
 
-    function testGetAliasName() public {
+    function testGetAliasName() public view {
         factory.getAliasName(PolygonLib.TOKEN_USDC);
     }
 }
