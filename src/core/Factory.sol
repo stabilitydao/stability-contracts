@@ -77,9 +77,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Restricted actions -----
 
     /// @inheritdoc IFactory
-    function setVaultConfig(
-        VaultConfig memory vaultConfig_
-    ) external onlyOperator {
+    function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         if (FactoryLib.setVaultConfig($, vaultConfig_)) {
             _requireGovernanceOrMultisig();
@@ -94,12 +92,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     ) external onlyOperator nonReentrant {
         FactoryStorage storage $ = _getStorage();
         bytes32 strategyIdHash = keccak256(bytes(config.id));
-        StrategyLogicConfig storage oldConfig = $.strategyLogicConfig[
-            strategyIdHash
-        ];
+        StrategyLogicConfig storage oldConfig = $.strategyLogicConfig[strategyIdHash];
         if (oldConfig.implementation == address(0)) {
-            uint tokenId = IStrategyLogic(IPlatform(platform()).strategyLogic())
-                .mint(developer, config.id);
+            uint tokenId = IStrategyLogic(IPlatform(platform()).strategyLogic()).mint(developer, config.id);
             config.tokenId = tokenId;
         } else {
             config.tokenId = oldConfig.tokenId;
@@ -110,19 +105,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             _requireGovernanceOrMultisig();
         }
         emit StrategyLogicConfigChanged(
-            config.id,
-            config.implementation,
-            config.deployAllowed,
-            config.upgradeAllowed,
-            newStrategy
+            config.id, config.implementation, config.deployAllowed, config.upgradeAllowed, newStrategy
         );
     }
 
     /// @inheritdoc IFactory
-    function setVaultStatus(
-        address[] memory vaults,
-        uint[] memory statuses
-    ) external onlyGovernanceOrMultisig {
+    function setVaultStatus(address[] memory vaults, uint[] memory statuses) external onlyGovernanceOrMultisig {
         FactoryStorage storage $ = _getStorage();
         uint len = vaults.length;
         for (uint i; i < len; ++i) {
@@ -157,12 +145,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         FactoryStorage storage $ = _getStorage();
         bytes32 idHash = keccak256(abi.encodePacked(id));
         $.strategyAvailableInitParams[idHash] = initParams;
-        emit SetStrategyAvailableInitParams(
-            id,
-            initParams.initAddresses,
-            initParams.initNums,
-            initParams.initTicks
-        );
+        emit SetStrategyAvailableInitParams(id, initParams.initAddresses, initParams.initNums, initParams.initTicks);
     }
 
     //endregion -- Restricted actions ----
@@ -183,9 +166,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         FactoryStorage storage $ = _getStorage();
         //slither-disable-next-line uninitialized-local
         DeployVaultAndStrategyVars memory vars;
-        vars.vaultConfig = $.vaultConfig[
-            keccak256(abi.encodePacked(vaultType))
-        ];
+        vars.vaultConfig = $.vaultConfig[keccak256(abi.encodePacked(vaultType))];
         if (vars.vaultConfig.implementation == address(0)) {
             revert VaultImplementationIsNotAvailable();
         }
@@ -194,14 +175,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
         vars.strategyIdHash = keccak256(bytes(strategyId));
         vars.platform = platform();
-        vars.buildingPermitToken = IPlatform(vars.platform)
-            .buildingPermitToken();
-        vars.buildingPayPerVaultToken = IPlatform(vars.platform)
-            .buildingPayPerVaultToken();
+        vars.buildingPermitToken = IPlatform(vars.platform).buildingPermitToken();
+        vars.buildingPayPerVaultToken = IPlatform(vars.platform).buildingPayPerVaultToken();
 
-        StrategyLogicConfig storage config = $.strategyLogicConfig[
-            vars.strategyIdHash
-        ];
+        StrategyLogicConfig storage config = $.strategyLogicConfig[vars.strategyIdHash];
         if (config.implementation == address(0)) {
             revert StrategyImplementationIsNotAvailable();
         }
@@ -210,21 +187,15 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
 
         if (vars.buildingPermitToken != address(0)) {
-            uint balance = IERC721Enumerable(vars.buildingPermitToken)
-                .balanceOf(msg.sender);
+            uint balance = IERC721Enumerable(vars.buildingPermitToken).balanceOf(msg.sender);
             // nosemgrep
             for (uint i; i < balance; ++i) {
                 //slither-disable-next-line calls-loop
-                uint tokenId = IERC721Enumerable(vars.buildingPermitToken)
-                    .tokenOfOwnerByIndex(msg.sender, i);
+                uint tokenId = IERC721Enumerable(vars.buildingPermitToken).tokenOfOwnerByIndex(msg.sender, i);
                 uint epoch = block.timestamp / _WEEK;
-                uint builtThisWeek = $.vaultsBuiltByPermitTokenId[epoch][
-                    tokenId
-                ];
+                uint builtThisWeek = $.vaultsBuiltByPermitTokenId[epoch][tokenId];
                 if (builtThisWeek < _PERMIT_PER_WEEK) {
-                    $.vaultsBuiltByPermitTokenId[epoch][tokenId] =
-                        builtThisWeek +
-                        1;
+                    $.vaultsBuiltByPermitTokenId[epoch][tokenId] = builtThisWeek + 1;
                     vars.permit = true;
                     break;
                 }
@@ -232,31 +203,21 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
 
         if (!vars.permit) {
-            uint userBalance = IERC20(vars.buildingPayPerVaultToken).balanceOf(
-                msg.sender
-            );
+            uint userBalance = IERC20(vars.buildingPayPerVaultToken).balanceOf(msg.sender);
             if (userBalance < vars.vaultConfig.buildingPrice) {
                 revert YouDontHaveEnoughTokens(
-                    userBalance,
-                    vars.vaultConfig.buildingPrice,
-                    IPlatform(vars.platform).buildingPayPerVaultToken()
+                    userBalance, vars.vaultConfig.buildingPrice, IPlatform(vars.platform).buildingPayPerVaultToken()
                 );
             }
             IERC20(vars.buildingPayPerVaultToken).safeTransferFrom(
-                msg.sender,
-                IPlatform(vars.platform).multisig(),
-                vars.vaultConfig.buildingPrice
+                msg.sender, IPlatform(vars.platform).multisig(), vars.vaultConfig.buildingPrice
             );
         }
 
         {
-            IVaultProxy vaultProxy = IVaultProxy(
-                DeployerLib.deployVaultProxy()
-            );
+            IVaultProxy vaultProxy = IVaultProxy(DeployerLib.deployVaultProxy());
             vaultProxy.initProxy(vaultType);
-            IStrategyProxy strategyProxy = IStrategyProxy(
-                DeployerLib.deployStrategyProxy()
-            );
+            IStrategyProxy strategyProxy = IStrategyProxy(DeployerLib.deployStrategyProxy());
             strategyProxy.initStrategyProxy(strategyId);
             vault = address(vaultProxy);
             strategy = address(strategyProxy);
@@ -264,9 +225,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
         {
             uint addressesLength = strategyInitAddresses.length;
-            address[] memory initStrategyAddresses = new address[](
-                2 + addressesLength
-            );
+            address[] memory initStrategyAddresses = new address[](2 + addressesLength);
             initStrategyAddresses[0] = vars.platform;
             initStrategyAddresses[1] = vault;
             // nosemgrep
@@ -274,11 +233,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
                 initStrategyAddresses[i] = strategyInitAddresses[i - 2];
             }
 
-            IStrategy(strategy).initialize(
-                initStrategyAddresses,
-                strategyInitNums,
-                strategyInitTicks
-            );
+            IStrategy(strategy).initialize(initStrategyAddresses, strategyInitNums, strategyInitTicks);
 
             // 3 addresses for not using exchangeAsset and other addresses in unique deployment key
             vars.deploymentKey = getDeploymentKey(
@@ -295,28 +250,13 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
             }
         }
 
-        (
-            ,
-            vars.assets,
-            vars.assetsSymbols,
-            vars.specificName,
-            vars.symbol
-        ) = getStrategyData(
-            vaultType,
-            strategy,
-            vaultInitAddresses.length > 0 ? vaultInitAddresses[0] : address(0)
-        );
+        (, vars.assets, vars.assetsSymbols, vars.specificName, vars.symbol) =
+            getStrategyData(vaultType, strategy, vaultInitAddresses.length > 0 ? vaultInitAddresses[0] : address(0));
         vars.name = FactoryLib.getName(
-            vaultType,
-            strategyId,
-            CommonLib.implode(vars.assetsSymbols, "-"),
-            vars.specificName,
-            vaultInitAddresses
+            vaultType, strategyId, CommonLib.implode(vars.assetsSymbols, "-"), vars.specificName, vaultInitAddresses
         );
 
-        vars.vaultManagerTokenId = IVaultManager(
-            IPlatform(vars.platform).vaultManager()
-        ).mint(msg.sender, vault);
+        vars.vaultManagerTokenId = IVaultManager(IPlatform(vars.platform).vaultManager()).mint(msg.sender, vault);
 
         IVault(vault).initialize(
             IVault.VaultInitializationData({
@@ -335,13 +275,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         $.isStrategy[strategy] = true;
         $.deploymentKey[vars.deploymentKey] = vault;
 
-        FactoryLib.vaultPostDeploy(
-            vars.platform,
-            vault,
-            vaultType,
-            vaultInitAddresses,
-            vaultInitNums
-        );
+        FactoryLib.vaultPostDeploy(vars.platform, vault, vaultType, vaultInitAddresses, vaultInitNums);
 
         emit VaultAndStrategy(
             msg.sender,
@@ -376,17 +310,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function setAliasName(
-        address tokenAddress_,
-        string memory aliasName_
-    ) external {
+    function setAliasName(address tokenAddress_, string memory aliasName_) external {
         FactoryStorage storage $ = _getStorage();
         $.aliasNames[tokenAddress_] = aliasName_;
-        emit IFactory.AliasNameChanged(
-            msg.sender,
-            tokenAddress_,
-            $.aliasNames[tokenAddress_]
-        );
+        emit IFactory.AliasNameChanged(msg.sender, tokenAddress_, $.aliasNames[tokenAddress_]);
     }
 
     //endregion -- User actions ----
@@ -453,14 +380,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         tokenId = new uint[](len);
         tokenURI = new string[](len);
         extra = new bytes32[](len);
-        IStrategyLogic strategyLogicNft = IStrategyLogic(
-            IPlatform(platform()).strategyLogic()
-        );
+        IStrategyLogic strategyLogicNft = IStrategyLogic(IPlatform(platform()).strategyLogic());
         // nosemgrep
         for (uint i; i < len; ++i) {
-            StrategyLogicConfig memory config = $.strategyLogicConfig[
-                hashes[i]
-            ];
+            StrategyLogicConfig memory config = $.strategyLogicConfig[hashes[i]];
             id[i] = config.id;
             deployAllowed[i] = config.deployAllowed;
             upgradeAllowed[i] = config.upgradeAllowed;
@@ -554,9 +477,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     }
 
     /// @inheritdoc IFactory
-    function getExchangeAssetIndex(
-        address[] memory assets
-    ) external view returns (uint) {
+    function getExchangeAssetIndex(address[] memory assets) external view returns (uint) {
         //slither-disable-next-line unused-return
         return FactoryLib.getExchangeAssetIndex(platform(), assets);
     }
@@ -572,39 +493,32 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         int24[] memory initStrategyTicks
     ) public pure returns (bytes32) {
         //slither-disable-next-line unused-return
-        return
-            FactoryLib.getDeploymentKey(
-                vaultType,
-                strategyId,
-                initVaultAddresses,
-                initVaultNums,
-                initStrategyAddresses,
-                initStrategyNums,
-                initStrategyTicks,
-                [1, 0, 1, 1, 0]
-            );
+        return FactoryLib.getDeploymentKey(
+            vaultType,
+            strategyId,
+            initVaultAddresses,
+            initVaultNums,
+            initStrategyAddresses,
+            initStrategyNums,
+            initStrategyTicks,
+            [1, 0, 1, 1, 0]
+        );
     }
 
     /// @inheritdoc IFactory
-    function deploymentKey(
-        bytes32 deploymentKey_
-    ) external view returns (address) {
+    function deploymentKey(bytes32 deploymentKey_) external view returns (address) {
         FactoryStorage storage $ = _getStorage();
         return $.deploymentKey[deploymentKey_];
     }
 
     /// @inheritdoc IFactory
-    function strategyLogicConfig(
-        bytes32 idHash
-    ) external view returns (StrategyLogicConfig memory config) {
+    function strategyLogicConfig(bytes32 idHash) external view returns (StrategyLogicConfig memory config) {
         FactoryStorage storage $ = _getStorage();
         config = $.strategyLogicConfig[idHash];
     }
 
     /// @inheritdoc IFactory
-    function vaultConfig(
-        bytes32 typeHash
-    )
+    function vaultConfig(bytes32 typeHash)
         external
         view
         returns (
@@ -617,13 +531,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     {
         FactoryStorage storage $ = _getStorage();
         VaultConfig memory vaultConfig_ = $.vaultConfig[typeHash];
-        (
-            vaultType,
-            implementation,
-            deployAllowed,
-            upgradeAllowed,
-            buildingPrice
-        ) = (
+        (vaultType, implementation, deployAllowed, upgradeAllowed, buildingPrice) = (
             vaultConfig_.vaultType,
             vaultConfig_.implementation,
             vaultConfig_.deployAllowed,
@@ -648,24 +556,17 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         uint week,
         uint builderPermitTokenId
     ) external view returns (uint vaultsBuilt) {
-        return
-            _getStorage().vaultsBuiltByPermitTokenId[week][
-                builderPermitTokenId
-            ];
+        return _getStorage().vaultsBuiltByPermitTokenId[week][builderPermitTokenId];
     }
 
     /// @inheritdoc IFactory
-    function strategyAvailableInitParams(
-        bytes32 idHash
-    ) external view returns (StrategyAvailableInitParams memory) {
+    function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory) {
         FactoryStorage storage $ = _getStorage();
         return $.strategyAvailableInitParams[idHash];
     }
 
     /// @inheritdoc IFactory
-    function getAliasName(
-        address tokenAddress_
-    ) public view returns (string memory) {
+    function getAliasName(address tokenAddress_) public view returns (string memory) {
         FactoryStorage storage $ = _getStorage();
         return $.aliasNames[tokenAddress_];
     }
