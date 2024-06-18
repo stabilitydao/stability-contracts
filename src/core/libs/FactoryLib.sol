@@ -82,9 +82,7 @@ library FactoryLib {
         uint len;
     }
 
-    function whatToBuild(
-        address platform
-    )
+    function whatToBuild(address platform)
         external
         view
         returns (
@@ -110,21 +108,11 @@ library FactoryLib {
         for (; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
             //slither-disable-next-line unused-return
-            strategyConfig = factory.strategyLogicConfig(
-                vars.strategyIdHashes[vars.i]
-            );
+            strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
 
             if (strategyConfig.deployAllowed) {
-                (
-                    vars.vaultType,
-                    vars.usedAddresses,
-                    vars.usedNums,
-                    vars.allVaultInitAddresses,
-                    vars.allVaultInitNums
-                ) = _getVaultInitParamsVariants(
-                    platform,
-                    strategyConfig.implementation
-                );
+                (vars.vaultType, vars.usedAddresses, vars.usedNums, vars.allVaultInitAddresses, vars.allVaultInitNums) =
+                    _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 // nosemgrep
                 vars.vaultTypesLen = vars.vaultType.length;
 
@@ -132,22 +120,16 @@ library FactoryLib {
                 vars.allVaultInitNumsIndex = 0;
                 // nosemgrep
                 for (uint k; k < vars.vaultTypesLen; ++k) {
-                    vars.vaultInitAddresses = new address[](
-                        vars.usedAddresses[k]
-                    );
+                    vars.vaultInitAddresses = new address[](vars.usedAddresses[k]);
                     vars.vaultInitNums = new uint[](vars.usedNums[k]);
                     // nosemgrep
                     for (uint j; j < vars.usedAddresses[k]; ++j) {
-                        vars.vaultInitAddresses[j] = vars.allVaultInitAddresses[
-                            vars.allVaultInitAddressesIndex
-                        ];
+                        vars.vaultInitAddresses[j] = vars.allVaultInitAddresses[vars.allVaultInitAddressesIndex];
                         ++vars.allVaultInitAddressesIndex;
                     }
                     // nosemgrep
                     for (uint j; j < vars.usedNums[k]; ++j) {
-                        vars.vaultInitNums[j] = vars.allVaultInitNums[
-                            vars.allVaultInitNumsIndex
-                        ];
+                        vars.vaultInitNums[j] = vars.allVaultInitNums[vars.allVaultInitNumsIndex];
                         ++vars.allVaultInitNumsIndex;
                     }
 
@@ -156,9 +138,7 @@ library FactoryLib {
                         vars.allStrategyInitAddresses,
                         vars.allStrategyInitNums,
                         vars.allStrategyInitTicks
-                    ) = IStrategy(strategyConfig.implementation).initVariants(
-                        platform
-                    );
+                    ) = IStrategy(strategyConfig.implementation).initVariants(platform);
                     vars.allStrategyInitAddressesIndex = 0;
                     vars.allStrategyInitNumsIndex = 0;
                     vars.allStrategyInitTicksIndex = 0;
@@ -173,10 +153,8 @@ library FactoryLib {
                         vars.strategyInitAddresses = new address[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitAddresses[c] = vars
-                                .allStrategyInitAddresses[
-                                    vars.allStrategyInitAddressesIndex
-                                ];
+                            vars.strategyInitAddresses[c] =
+                                vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
                             ++vars.allStrategyInitAddressesIndex;
                             ++vars.usedStrategyInitAddresses;
                         }
@@ -185,9 +163,7 @@ library FactoryLib {
                         vars.strategyInitNums = new uint[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitNums[c] = vars.allStrategyInitNums[
-                                vars.allStrategyInitNumsIndex
-                            ];
+                            vars.strategyInitNums[c] = vars.allStrategyInitNums[vars.allStrategyInitNumsIndex];
                             ++vars.allStrategyInitNumsIndex;
                             ++vars.usedStrategyInitNums;
                         }
@@ -196,10 +172,7 @@ library FactoryLib {
                         vars.strategyInitTicks = new int24[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitTicks[c] = vars
-                                .allStrategyInitTicks[
-                                    vars.allStrategyInitTicksIndex
-                                ];
+                            vars.strategyInitTicks[c] = vars.allStrategyInitTicks[vars.allStrategyInitTicksIndex];
                             ++vars.allStrategyInitTicksIndex;
                             ++vars.usedStrategyInitTicks;
                         }
@@ -215,20 +188,13 @@ library FactoryLib {
                             [1, 0, 1, 1, 0]
                         );
 
-                        if (
-                            factory.deploymentKey(_deploymentKey) == address(0)
-                        ) {
+                        if (factory.deploymentKey(_deploymentKey) == address(0)) {
                             ++vars.total;
-                            vars.totalVaultInitAddresses += vars.usedAddresses[
-                                k
-                            ];
+                            vars.totalVaultInitAddresses += vars.usedAddresses[k];
                             vars.totalVaultInitNums += vars.usedNums[k];
-                            vars.totalStrategyInitAddresses += vars
-                                .usedStrategyInitAddresses;
-                            vars.totalStrategyInitNums += vars
-                                .usedStrategyInitNums;
-                            vars.totalStrategyInitTicks += vars
-                                .usedStrategyInitTicks;
+                            vars.totalStrategyInitAddresses += vars.usedStrategyInitAddresses;
+                            vars.totalStrategyInitNums += vars.usedStrategyInitNums;
+                            vars.totalStrategyInitTicks += vars.usedStrategyInitTicks;
                         }
                     }
                 }
@@ -254,20 +220,10 @@ library FactoryLib {
         for (vars.i = 0; vars.i < vars.strategyIdHashesLen; ++vars.i) {
             IFactory.StrategyLogicConfig memory strategyConfig;
             //slither-disable-next-line unused-return
-            strategyConfig = factory.strategyLogicConfig(
-                vars.strategyIdHashes[vars.i]
-            );
+            strategyConfig = factory.strategyLogicConfig(vars.strategyIdHashes[vars.i]);
             if (strategyConfig.deployAllowed) {
-                (
-                    vars.vaultType,
-                    vars.usedAddresses,
-                    vars.usedNums,
-                    vars.allVaultInitAddresses,
-                    vars.allVaultInitNums
-                ) = _getVaultInitParamsVariants(
-                    platform,
-                    strategyConfig.implementation
-                );
+                (vars.vaultType, vars.usedAddresses, vars.usedNums, vars.allVaultInitAddresses, vars.allVaultInitNums) =
+                    _getVaultInitParamsVariants(platform, strategyConfig.implementation);
                 // nosemgrep
                 vars.vaultTypesLen = vars.vaultType.length;
 
@@ -275,22 +231,16 @@ library FactoryLib {
                 vars.allVaultInitNumsIndex = 0;
                 // nosemgrep
                 for (uint k; k < vars.vaultTypesLen; ++k) {
-                    vars.vaultInitAddresses = new address[](
-                        vars.usedAddresses[k]
-                    );
+                    vars.vaultInitAddresses = new address[](vars.usedAddresses[k]);
                     vars.vaultInitNums = new uint[](vars.usedNums[k]);
                     // nosemgrep
                     for (uint j; j < vars.usedAddresses[k]; ++j) {
-                        vars.vaultInitAddresses[j] = vars.allVaultInitAddresses[
-                            vars.allVaultInitAddressesIndex
-                        ];
+                        vars.vaultInitAddresses[j] = vars.allVaultInitAddresses[vars.allVaultInitAddressesIndex];
                         ++vars.allVaultInitAddressesIndex;
                     }
                     // nosemgrep
                     for (uint j; j < vars.usedNums[k]; ++j) {
-                        vars.vaultInitNums[j] = vars.allVaultInitNums[
-                            vars.allVaultInitNumsIndex
-                        ];
+                        vars.vaultInitNums[j] = vars.allVaultInitNums[vars.allVaultInitNumsIndex];
                         ++vars.allVaultInitNumsIndex;
                     }
 
@@ -299,61 +249,41 @@ library FactoryLib {
                         vars.allStrategyInitAddresses,
                         vars.allStrategyInitNums,
                         vars.allStrategyInitTicks
-                    ) = IStrategy(strategyConfig.implementation).initVariants(
-                        platform
-                    );
+                    ) = IStrategy(strategyConfig.implementation).initVariants(platform);
                     vars.allStrategyInitAddressesIndex = 0;
                     vars.allStrategyInitNumsIndex = 0;
                     vars.allStrategyInitTicksIndex = 0;
                     // nosemgrep
-                    vars.strategyVariantDescLen = vars
-                        .strategyVariantDesc
-                        .length;
-                    for (
-                        vars.j = 0;
-                        vars.j < vars.strategyVariantDescLen;
-                        ++vars.j
-                    ) {
+                    vars.strategyVariantDescLen = vars.strategyVariantDesc.length;
+                    for (vars.j = 0; vars.j < vars.strategyVariantDescLen; ++vars.j) {
                         // nosemgrep
-                        uint size = vars.allStrategyInitAddresses.length /
-                            vars.strategyVariantDescLen;
+                        uint size = vars.allStrategyInitAddresses.length / vars.strategyVariantDescLen;
                         vars.usedStrategyInitAddresses = 0;
                         vars.usedStrategyInitNums = 0;
                         vars.usedStrategyInitTicks = 0;
                         vars.strategyInitAddresses = new address[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitAddresses[c] = vars
-                                .allStrategyInitAddresses[
-                                    vars.allStrategyInitAddressesIndex
-                                ];
+                            vars.strategyInitAddresses[c] =
+                                vars.allStrategyInitAddresses[vars.allStrategyInitAddressesIndex];
                             ++vars.allStrategyInitAddressesIndex;
                             ++vars.usedStrategyInitAddresses;
                         }
                         // nosemgrep
-                        size =
-                            vars.allStrategyInitNums.length /
-                            vars.strategyVariantDescLen;
+                        size = vars.allStrategyInitNums.length / vars.strategyVariantDescLen;
                         vars.strategyInitNums = new uint[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitNums[c] = vars.allStrategyInitNums[
-                                vars.allStrategyInitNumsIndex
-                            ];
+                            vars.strategyInitNums[c] = vars.allStrategyInitNums[vars.allStrategyInitNumsIndex];
                             ++vars.allStrategyInitNumsIndex;
                             ++vars.usedStrategyInitNums;
                         }
                         // nosemgrep
-                        size =
-                            vars.allStrategyInitTicks.length /
-                            vars.strategyVariantDescLen;
+                        size = vars.allStrategyInitTicks.length / vars.strategyVariantDescLen;
                         vars.strategyInitTicks = new int24[](size);
                         // nosemgrep
                         for (uint c; c < size; ++c) {
-                            vars.strategyInitTicks[c] = vars
-                                .allStrategyInitTicks[
-                                    vars.allStrategyInitTicksIndex
-                                ];
+                            vars.strategyInitTicks[c] = vars.allStrategyInitTicks[vars.allStrategyInitTicksIndex];
                             ++vars.allStrategyInitTicksIndex;
                             ++vars.usedStrategyInitTicks;
                         }
@@ -369,84 +299,50 @@ library FactoryLib {
                             [1, 0, 1, 1, 0]
                         );
 
-                        if (
-                            factory.deploymentKey(_deploymentKey) == address(0)
-                        ) {
+                        if (factory.deploymentKey(_deploymentKey) == address(0)) {
                             desc[vars.total] = vars.strategyVariantDesc[vars.j];
                             vaultType[vars.total] = vars.vaultType[k];
                             strategyId[vars.total] = strategyConfig.id;
 
-                            initIndexes[vars.total][0] = vars
-                                .totalVaultInitAddresses;
-                            initIndexes[vars.total][1] =
-                                vars.totalVaultInitAddresses +
-                                vars.usedAddresses[k];
-                            initIndexes[vars.total][2] = vars
-                                .totalVaultInitNums;
-                            initIndexes[vars.total][3] =
-                                vars.totalVaultInitNums +
-                                vars.usedNums[k];
-                            initIndexes[vars.total][4] = vars
-                                .totalStrategyInitAddresses;
+                            initIndexes[vars.total][0] = vars.totalVaultInitAddresses;
+                            initIndexes[vars.total][1] = vars.totalVaultInitAddresses + vars.usedAddresses[k];
+                            initIndexes[vars.total][2] = vars.totalVaultInitNums;
+                            initIndexes[vars.total][3] = vars.totalVaultInitNums + vars.usedNums[k];
+                            initIndexes[vars.total][4] = vars.totalStrategyInitAddresses;
                             initIndexes[vars.total][5] =
-                                vars.totalStrategyInitAddresses +
-                                vars.usedStrategyInitAddresses;
-                            initIndexes[vars.total][6] = vars
-                                .totalStrategyInitNums;
-                            initIndexes[vars.total][7] =
-                                vars.totalStrategyInitNums +
-                                vars.usedStrategyInitNums;
-                            initIndexes[vars.total][8] = vars
-                                .totalStrategyInitTicks;
-                            initIndexes[vars.total][9] =
-                                vars.totalStrategyInitTicks +
-                                vars.usedStrategyInitTicks;
+                                vars.totalStrategyInitAddresses + vars.usedStrategyInitAddresses;
+                            initIndexes[vars.total][6] = vars.totalStrategyInitNums;
+                            initIndexes[vars.total][7] = vars.totalStrategyInitNums + vars.usedStrategyInitNums;
+                            initIndexes[vars.total][8] = vars.totalStrategyInitTicks;
+                            initIndexes[vars.total][9] = vars.totalStrategyInitTicks + vars.usedStrategyInitTicks;
                             // nosemgrep
                             for (uint c; c < vars.usedAddresses[k]; ++c) {
-                                vaultInitAddresses[
-                                    vars.totalVaultInitAddresses + c
-                                ] = vars.vaultInitAddresses[c];
+                                vaultInitAddresses[vars.totalVaultInitAddresses + c] = vars.vaultInitAddresses[c];
                             }
                             // nosemgrep
                             for (uint c; c < vars.usedNums[k]; ++c) {
-                                vaultInitNums[
-                                    vars.totalVaultInitNums + c
-                                ] = vars.vaultInitNums[c];
+                                vaultInitNums[vars.totalVaultInitNums + c] = vars.vaultInitNums[c];
                             }
                             // nosemgrep
-                            for (
-                                uint c;
-                                c < vars.usedStrategyInitAddresses;
-                                ++c
-                            ) {
-                                strategyInitAddresses[
-                                    vars.totalStrategyInitAddresses + c
-                                ] = vars.strategyInitAddresses[c];
+                            for (uint c; c < vars.usedStrategyInitAddresses; ++c) {
+                                strategyInitAddresses[vars.totalStrategyInitAddresses + c] =
+                                    vars.strategyInitAddresses[c];
                             }
                             // nosemgrep
                             for (uint c; c < vars.usedStrategyInitNums; ++c) {
-                                strategyInitNums[
-                                    vars.totalStrategyInitNums + c
-                                ] = vars.strategyInitNums[c];
+                                strategyInitNums[vars.totalStrategyInitNums + c] = vars.strategyInitNums[c];
                             }
                             // nosemgrep
                             for (uint c; c < vars.usedStrategyInitTicks; ++c) {
-                                strategyInitTicks[
-                                    vars.totalStrategyInitTicks + c
-                                ] = vars.strategyInitTicks[c];
+                                strategyInitTicks[vars.totalStrategyInitTicks + c] = vars.strategyInitTicks[c];
                             }
 
                             ++vars.total;
-                            vars.totalVaultInitAddresses += vars.usedAddresses[
-                                k
-                            ];
+                            vars.totalVaultInitAddresses += vars.usedAddresses[k];
                             vars.totalVaultInitNums += vars.usedNums[k];
-                            vars.totalStrategyInitAddresses += vars
-                                .usedStrategyInitAddresses;
-                            vars.totalStrategyInitNums += vars
-                                .usedStrategyInitNums;
-                            vars.totalStrategyInitTicks += vars
-                                .usedStrategyInitTicks;
+                            vars.totalStrategyInitAddresses += vars.usedStrategyInitAddresses;
+                            vars.totalStrategyInitNums += vars.usedStrategyInitNums;
+                            vars.totalStrategyInitTicks += vars.usedStrategyInitTicks;
                         }
                     }
                 }
@@ -469,20 +365,18 @@ library FactoryLib {
         )
     {
         GetVaultInitParamsVariantsVars memory vars;
-        vars.vaultTypes = IStrategy(strategyImplementation)
-            .supportedVaultTypes();
+        vars.vaultTypes = IStrategy(strategyImplementation).supportedVaultTypes();
         vars.len = vars.vaultTypes.length;
         //slither-disable-next-line unused-return
-        (address[] memory allowedBBTokens, ) = IPlatform(platform)
-            .allowedBBTokenVaultsFiltered();
+        (address[] memory allowedBBTokens,) = IPlatform(platform).allowedBBTokenVaultsFiltered();
         uint allowedBBTokensLen = allowedBBTokens.length;
         // nosemgrep
         for (uint i; i < vars.len; ++i) {
             if (CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.COMPOUNDING)) {
                 ++vars.total;
             } else if (
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING) ||
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
+                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
+                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
             ) {
                 vars.total += allowedBBTokensLen;
                 vars.totalVaultInitAddresses += allowedBBTokensLen;
@@ -502,8 +396,8 @@ library FactoryLib {
                 vaultType[indexes[0]] = vars.vaultTypes[i];
                 ++indexes[0];
             } else if (
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING) ||
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
+                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
+                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
             ) {
                 // nosemgrep
                 for (uint k; k < allowedBBTokensLen; ++k) {
@@ -536,10 +430,7 @@ library FactoryLib {
         // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
-            (ISwapper.PoolData[] memory route, ) = swapper.buildRoute(
-                assets[i],
-                targetExchangeAsset
-            );
+            (ISwapper.PoolData[] memory route,) = swapper.buildRoute(assets[i], targetExchangeAsset);
             // nosemgrep
             uint routeLength = route.length;
             if (routeLength < minRoutes) {
@@ -550,8 +441,7 @@ library FactoryLib {
         if (exchangeAssetIndex == type(uint).max) {
             revert ISwapper.NoRouteFound();
         }
-        if (exchangeAssetIndex > type(uint).max)
-            revert ISwapper.NoRoutesForAssets();
+        if (exchangeAssetIndex > type(uint).max) revert ISwapper.NoRoutesForAssets();
     }
 
     function _getShortSymbol(
@@ -572,21 +462,16 @@ library FactoryLib {
         if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
             prefix = "M";
         }
-        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0
-            ? string.concat("-", bbAssetSymbol)
-            : "";
-        return
-            string.concat(
-                prefix,
-                "-",
-                symbols,
-                bbAssetStr,
-                "-",
-                CommonLib.shortId(strategyLogicId),
-                bytes(specificName).length > 0
-                    ? CommonLib.shortId(specificName)
-                    : ""
-            );
+        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
+        return string.concat(
+            prefix,
+            "-",
+            symbols,
+            bbAssetStr,
+            "-",
+            CommonLib.shortId(strategyLogicId),
+            bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : ""
+        );
     }
 
     function getName(
@@ -600,16 +485,8 @@ library FactoryLib {
         if (keccak256(bytes(specificName)) != keccak256(bytes(""))) {
             name = string.concat(name, " ", specificName);
         }
-        if (
-            keccak256(bytes(vaultType)) ==
-            keccak256(bytes(VaultTypeLib.REWARDING))
-        ) {
-            name = string.concat(
-                name,
-                " ",
-                IERC20Metadata(vaultInitAddresses[0]).symbol(),
-                " reward"
-            );
+        if (keccak256(bytes(vaultType)) == keccak256(bytes(VaultTypeLib.REWARDING))) {
+            name = string.concat(name, " ", IERC20Metadata(vaultInitAddresses[0]).symbol(), " reward");
         }
     }
 
@@ -632,12 +509,9 @@ library FactoryLib {
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
         bool showSpecificInSymbol;
-        (specificName, showSpecificInSymbol) = IStrategy(strategyAddress)
-            .getSpecificName();
+        (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
 
-        string memory bbAssetSymbol = bbAsset == address(0)
-            ? ""
-            : IERC20Metadata(bbAsset).symbol();
+        string memory bbAssetSymbol = bbAsset == address(0) ? "" : IERC20Metadata(bbAsset).symbol();
 
         vaultSymbol = _getShortSymbol(
             vaultType,
@@ -717,9 +591,7 @@ library FactoryLib {
         }
         for (i = 0; i < len; ++i) {
             unchecked {
-                key += initStrategyTicks[i] >= 0
-                    ? uint(int(initStrategyTicks[i]))
-                    : uint(-int(initStrategyTicks[i]));
+                key += initStrategyTicks[i] >= 0 ? uint(int(initStrategyTicks[i])) : uint(-int(initStrategyTicks[i]));
             }
         }
 
@@ -734,55 +606,33 @@ library FactoryLib {
         uint[] memory vaultInitNums
     ) external {
         VaultPostDeployVars memory vars;
-        vars.isRewardingVaultType = CommonLib.eq(
-            vaultType,
-            VaultTypeLib.REWARDING
-        );
-        if (
-            vars.isRewardingVaultType ||
-            CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)
-        ) {
+        vars.isRewardingVaultType = CommonLib.eq(vaultType, VaultTypeLib.REWARDING);
+        if (vars.isRewardingVaultType || CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
             IPlatform(platform).useAllowedBBTokenVault(vaultInitAddresses[0]);
-            IPriceReader priceReader = IPriceReader(
-                IPlatform(platform).priceReader()
-            );
-            vars.minInitialBoostDuration = IPlatform(platform)
-                .minInitialBoostDuration();
-            vars.minInitialBoostPerDay = IPlatform(platform)
-                .minInitialBoostPerDay();
+            IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+            vars.minInitialBoostDuration = IPlatform(platform).minInitialBoostDuration();
+            vars.minInitialBoostPerDay = IPlatform(platform).minInitialBoostPerDay();
             vaultInitAddresses = IRVault(vault).rewardTokens();
             uint boostTokensLen = vaultInitAddresses.length - 1;
             uint totalInitialBoostUsdPerDay;
             // nosemgrep
             for (uint i; i < boostTokensLen; ++i) {
                 address token = vaultInitAddresses[1 + i];
-                uint durationSeconds = vars.isRewardingVaultType
-                    ? BOOST_REWARD_DURATION
-                    : vaultInitNums[1 + i];
+                uint durationSeconds = vars.isRewardingVaultType ? BOOST_REWARD_DURATION : vaultInitNums[1 + i];
                 if (durationSeconds < vars.minInitialBoostDuration) {
                     revert IFactory.BoostDurationTooLow();
                 }
-                uint initialNotifyAmount = vars.isRewardingVaultType
-                    ? vaultInitNums[i]
-                    : vaultInitNums[1 + boostTokensLen + i];
+                uint initialNotifyAmount =
+                    vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
                 //slither-disable-next-line unused-return
-                (uint price, ) = priceReader.getPrice(token);
-                totalInitialBoostUsdPerDay +=
-                    (((((initialNotifyAmount * 1e18) /
-                        10 ** IERC20Metadata(token).decimals()) * price) /
-                        1e18) * 86400) /
-                    durationSeconds;
+                (uint price,) = priceReader.getPrice(token);
+                totalInitialBoostUsdPerDay += (
+                    ((((initialNotifyAmount * 1e18) / 10 ** IERC20Metadata(token).decimals()) * price) / 1e18) * 86400
+                ) / durationSeconds;
                 if (initialNotifyAmount > 0) {
-                    IERC20(token).safeTransferFrom(
-                        msg.sender,
-                        address(this),
-                        initialNotifyAmount
-                    );
+                    IERC20(token).safeTransferFrom(msg.sender, address(this), initialNotifyAmount);
                     IERC20(token).forceApprove(vault, initialNotifyAmount);
-                    IRVault(vault).notifyTargetRewardAmount(
-                        1 + i,
-                        initialNotifyAmount
-                    );
+                    IRVault(vault).notifyTargetRewardAmount(1 + i, initialNotifyAmount);
                 }
             }
             if (totalInitialBoostUsdPerDay == 0) {
@@ -806,24 +656,15 @@ library FactoryLib {
             needGovOrMultisigAccess = true;
         }
         emit IFactory.VaultConfigChanged(
-            type_,
-            vaultConfig_.implementation,
-            vaultConfig_.deployAllowed,
-            vaultConfig_.upgradeAllowed,
-            newVaultType
+            type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
         );
     }
 
-    function upgradeVaultProxy(
-        IFactory.FactoryStorage storage $,
-        address vault
-    ) external {
+    function upgradeVaultProxy(IFactory.FactoryStorage storage $, address vault) external {
         IVaultProxy proxy = IVaultProxy(vault);
         bytes32 vaultTypeHash = proxy.vaultTypeHash();
         address oldImplementation = proxy.implementation();
-        IFactory.VaultConfig memory tempVaultConfig = $.vaultConfig[
-            vaultTypeHash
-        ];
+        IFactory.VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
         address newImplementation = tempVaultConfig.implementation;
         if (!tempVaultConfig.upgradeAllowed) {
             revert IFactory.UpgradeDenied(vaultTypeHash);
@@ -832,22 +673,13 @@ library FactoryLib {
             revert IFactory.AlreadyLastVersion(vaultTypeHash);
         }
         proxy.upgrade();
-        emit IFactory.VaultProxyUpgraded(
-            vault,
-            oldImplementation,
-            newImplementation
-        );
+        emit IFactory.VaultProxyUpgraded(vault, oldImplementation, newImplementation);
     }
 
-    function upgradeStrategyProxy(
-        IFactory.FactoryStorage storage $,
-        address strategyProxy
-    ) external {
+    function upgradeStrategyProxy(IFactory.FactoryStorage storage $, address strategyProxy) external {
         IStrategyProxy proxy = IStrategyProxy(strategyProxy);
         bytes32 idHash = proxy.strategyImplementationLogicIdHash();
-        IFactory.StrategyLogicConfig storage config = $.strategyLogicConfig[
-            idHash
-        ];
+        IFactory.StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
         address oldImplementation = proxy.implementation();
         address newImplementation = config.implementation;
         if (!config.upgradeAllowed) {
@@ -857,10 +689,6 @@ library FactoryLib {
             revert IFactory.AlreadyLastVersion(idHash);
         }
         proxy.upgrade();
-        emit IFactory.StrategyProxyUpgraded(
-            strategyProxy,
-            oldImplementation,
-            newImplementation
-        );
+        emit IFactory.StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }
 }
