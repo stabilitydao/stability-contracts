@@ -14,6 +14,7 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IRVault.sol";
 import "../../interfaces/IVaultProxy.sol";
 import "../../interfaces/IStrategyProxy.sol";
+import "forge-std/console.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;
@@ -476,35 +477,40 @@ library FactoryLib {
         );
     }
 
-    function _getSymbol(
-        string memory vaultType,
-        string memory strategyLogicId,
-        string memory symbols,
-        string memory specificName,
-        string memory bbAssetSymbol
-    ) internal pure returns (string memory) {
-        bytes memory vaultTypeBytes = bytes(vaultType);
-        string memory prefix = "v";
-        if (vaultTypeBytes[0] == "C") {
-            prefix = "C";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
-            prefix = "R";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
-            prefix = "RM";
-        }
-        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
-        return string.concat(
-            prefix,
-            "-",
-            symbols,
-            bbAssetStr,
-            "-",
-            CommonLib.shortId(strategyLogicId),
-            bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : ""
-        );
-    }
+    // function _getSymbol(
+    //     string memory vaultType,
+    //     string memory strategyLogicId,
+    //     string memory symbols,
+    //     string memory specificName,
+    //     string memory bbAssetSymbol
+    // ) internal pure returns (string memory) {
+    //     bytes memory vaultTypeBytes = bytes(vaultType);
+    //     string memory prefix = "v";
+    //     if (vaultTypeBytes[0] == "C") {
+    //         prefix = "C";
+    //     }
+    //     if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
+    //         prefix = "R";
+    //     }
+    //     if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
+    //         prefix = "RM";
+    //     }
+    //     string memory bbAssetStr = bytes(bbAssetSymbol).length > 0
+    //         ? string.concat("-", bbAssetSymbol)
+    //         : "";
+    //     return
+    //         string.concat(
+    //             prefix,
+    //             "-",
+    //             symbols,
+    //             bbAssetStr,
+    //             "-",
+    //             CommonLib.shortId(strategyLogicId),
+    //             bytes(specificName).length > 0
+    //                 ? CommonLib.shortId(specificName)
+    //                 : ""
+    //         );
+    // }
 
     function getName(
         string memory vaultType,
@@ -542,14 +548,20 @@ library FactoryLib {
         assetsSymbols = CommonLib.getSymbols(assets);
         bool showSpecificInSymbol;
         (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
+
         string memory bbAssetSymbol = bbAsset == address(0) ? "" : IERC20Metadata(bbAsset).symbol();
-        vaultSymbol = _getSymbol(
+
+        vaultSymbol = _getShortSymbol(
             vaultType,
             strategyId,
             CommonLib.implode(assetsSymbols, ""),
             showSpecificInSymbol ? specificName : "",
             bbAssetSymbol
         );
+        console.log("shortSymbol: %s", CommonLib.implode(assetsSymbols, ""));
+        if (bytes(CommonLib.implode(assetsSymbols, "")).length > 5) {
+            console.log("~~~~~~~~~~~~~~~length is too long");
+        }
     }
 
     function getDeploymentKey(

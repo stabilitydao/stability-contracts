@@ -77,6 +77,7 @@ contract FactoryTest is Test, MockSetup {
         int24[] memory ticks = new int24[](0);
 
         vm.expectRevert(abi.encodeWithSelector(IFactory.VaultImplementationIsNotAvailable.selector));
+
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
@@ -277,6 +278,8 @@ contract FactoryTest is Test, MockSetup {
     }
 
     function testUpgradeVault() public {
+        factory.setAliasName(address(tokenA), "TA");
+
         MockVaultUpgrade newVaultImplementation = new MockVaultUpgrade();
 
         address[] memory addresses = new address[](3);
