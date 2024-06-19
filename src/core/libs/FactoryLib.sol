@@ -14,7 +14,6 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IRVault.sol";
 import "../../interfaces/IVaultProxy.sol";
 import "../../interfaces/IStrategyProxy.sol";
-import "forge-std/console.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;
@@ -464,7 +463,6 @@ library FactoryLib {
             prefix = "M";
         }
         string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
-        console.log("symbols: %s, bbAssetssymbol: %s:", symbols, bbAssetStr);
         return string.concat(
             prefix,
             "-",
@@ -524,7 +522,7 @@ library FactoryLib {
                 aliasNames[i] = factory.getAliasName(assets[i]);
             }
             string memory aliasNameStr = CommonLib.implode(aliasNames, "");
-            if (bytes(aliasNameStr).length != 0) assetNames = CommonLib.implode(aliasNames, "");
+            if (bytes(aliasNameStr).length != 0) assetNames = aliasNameStr;
         }
 
         vaultSymbol =
