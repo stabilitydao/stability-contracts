@@ -14,6 +14,7 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IRVault.sol";
 import "../../interfaces/IVaultProxy.sol";
 import "../../interfaces/IStrategyProxy.sol";
+import "forge-std/console.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;
@@ -450,7 +451,7 @@ library FactoryLib {
         string memory symbols,
         string memory specificName,
         string memory bbAssetSymbol
-    ) internal pure returns (string memory) {
+    ) internal view returns (string memory) {
         bytes memory vaultTypeBytes = bytes(vaultType);
         string memory prefix = "v";
         if (vaultTypeBytes[0] == "C") {
@@ -463,6 +464,7 @@ library FactoryLib {
             prefix = "M";
         }
         string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
+        console.log("symbols: %s, bbAssetssymbol: %s:", symbols, bbAssetStr);
         return string.concat(
             prefix,
             "-",
@@ -493,7 +495,8 @@ library FactoryLib {
     function getStrategyData(
         string memory vaultType,
         address strategyAddress,
-        address bbAsset
+        address bbAsset,
+        address platform
     )
         public
         view
@@ -505,6 +508,7 @@ library FactoryLib {
             string memory vaultSymbol
         )
     {
+        IFactory factory = IFactory(IPlatform(platform).factory());
         strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
         assetsSymbols = CommonLib.getSymbols(assets);
@@ -513,13 +517,18 @@ library FactoryLib {
 
         string memory bbAssetSymbol = bbAsset == address(0) ? "" : IERC20Metadata(bbAsset).symbol();
 
-        vaultSymbol = _getShortSymbol(
-            vaultType,
-            strategyId,
-            CommonLib.implode(assetsSymbols, ""),
-            showSpecificInSymbol ? specificName : "",
-            bbAssetSymbol
-        );
+        string memory assetNames = CommonLib.implode(assetsSymbols, "");
+        if (bytes(assetNames).length > 5) {
+            string[] memory aliasNames = new string[](assets.length);
+            for (uint i = 0; i < assets.length; i++) {
+                aliasNames[i] = factory.getAliasName(assets[i]);
+            }
+            string memory aliasNameStr = CommonLib.implode(aliasNames, "");
+            if (bytes(aliasNameStr).length != 0) assetNames = CommonLib.implode(aliasNames, "");
+        }
+
+        vaultSymbol =
+            _getShortSymbol(vaultType, strategyId, assetNames, showSpecificInSymbol ? specificName : "", bbAssetSymbol);
     }
 
     function getDeploymentKey(

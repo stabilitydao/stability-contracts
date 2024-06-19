@@ -473,7 +473,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         )
     {
         //slither-disable-next-line unused-return
-        return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset);
+        return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset, platform());
     }
 
     /// @inheritdoc IFactory

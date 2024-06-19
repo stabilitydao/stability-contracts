@@ -279,6 +279,7 @@ contract FactoryTest is Test, MockSetup {
 
     function testUpgradeVault() public {
         factory.setAliasName(address(tokenA), "TA");
+        factory.setAliasName(address(tokenB), "TB");
 
         MockVaultUpgrade newVaultImplementation = new MockVaultUpgrade();
 
