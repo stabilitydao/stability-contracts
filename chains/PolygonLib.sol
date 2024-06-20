@@ -335,6 +335,13 @@ library PolygonLib {
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion -- Add DeX aggregators -----
+
+        //region ----- Set AliasName of Token -----
+            factory.setAliasName(TOKEN_WMATIC, "WM");
+            factory.setAliasName(TOKEN_USDT, "UT");
+            factory.setAliasName(TOKEN_WETH, "WE");
+            factory.setAliasName(TOKEN_USDC, "UC");
+        //endregion ----- Set AliasName of Token -----
     }
 
     function routes()
