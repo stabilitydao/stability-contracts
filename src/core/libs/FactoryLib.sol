@@ -450,7 +450,7 @@ library FactoryLib {
         string memory symbols,
         string memory specificName,
         string memory bbAssetSymbol
-    ) internal view returns (string memory) {
+    ) internal pure returns (string memory) {
         bytes memory vaultTypeBytes = bytes(vaultType);
         string memory prefix = "v";
         if (vaultTypeBytes[0] == "C") {
