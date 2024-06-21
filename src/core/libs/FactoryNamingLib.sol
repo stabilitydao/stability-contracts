@@ -41,7 +41,9 @@ library FactoryNamingLib {
             assetsSymbols = new string[](assets.length);
             for (uint i = 0; i < assets.length; i++) {
                 string memory aliasName = factory.getAliasName(assets[i]);
-                if (bytes(aliasName).length == 0) aliasName = IERC20Metadata(assets[i]).symbol();
+                if (bytes(aliasName).length == 0) {
+                    aliasName = IERC20Metadata(assets[i]).symbol();
+                }
                 assetsSymbols[i] = aliasName;
             }
         }

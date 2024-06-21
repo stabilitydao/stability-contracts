@@ -219,6 +219,8 @@ contract FactoryTest is Test, MockSetup {
             address(this)
         );
 
+        addresses[1] = address(tokenA);
+
         vm.expectRevert(bytes("Strategy: underlying token cant be zero for this strategy"));
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
@@ -278,9 +280,6 @@ contract FactoryTest is Test, MockSetup {
     }
 
     function testUpgradeVault() public {
-        factory.setAliasName(address(tokenA), "TA");
-        factory.setAliasName(address(tokenB), "TB");
-
         MockVaultUpgrade newVaultImplementation = new MockVaultUpgrade();
 
         address[] memory addresses = new address[](3);
