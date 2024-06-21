@@ -9,7 +9,6 @@ import "./base/Controllable.sol";
 import "./libs/CommonLib.sol";
 import "./libs/VaultTypeLib.sol";
 import "./libs/FactoryLib.sol";
-import "./libs/FactoryNamingLib.sol";
 import "./libs/DeployerLib.sol";
 import "./libs/VaultStatusLib.sol";
 import "../interfaces/IFactory.sol";
@@ -474,7 +473,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         )
     {
         //slither-disable-next-line unused-return
-        return FactoryNamingLib.getStrategyData(vaultType, strategyAddress, bbAsset, platform());
+        return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset, platform());
     }
 
     /// @inheritdoc IFactory
