@@ -35,8 +35,9 @@ library FactoryNamingLib {
         IFactory factory = IFactory(IPlatform(platform).factory());
         strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
-        if (assets.length == 1) assetsSymbols = CommonLib.getSymbols(assets);
-        else {
+        if (assets.length == 1) {
+            assetsSymbols = CommonLib.getSymbols(assets);
+        } else {
             assetsSymbols = new string[](assets.length);
             for (uint i = 0; i < assets.length; i++) {
                 string memory aliasName = factory.getAliasName(assets[i]);
