@@ -76,8 +76,17 @@ contract FactoryTest is Test, MockSetup {
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
 
-        vm.expectRevert(abi.encodeWithSelector(IFactory.VaultImplementationIsNotAvailable.selector));
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: address(0),
+                deployAllowed: false,
+                upgradeAllowed: true,
+                buildingPrice: builderPayPerVaultPrice
+            })
+        );
 
+        vm.expectRevert(abi.encodeWithSelector(IFactory.VaultImplementationIsNotAvailable.selector));
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
