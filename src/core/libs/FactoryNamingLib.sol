@@ -28,18 +28,23 @@ library FactoryNamingLib {
         IFactory factory = IFactory(IPlatform(platform).factory());
         strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
-        if (assets.length == 1) {
-            assetsSymbols = CommonLib.getSymbols(assets);
-        } else {
-            assetsSymbols = new string[](assets.length);
-            uint assetsLength = assets.length;
-            for (uint i = 0; i < assetsLength; ++i) {
-                string memory aliasName = factory.getAliasName(assets[i]);
-                if (bytes(aliasName).length == 0) {
-                    aliasName = IERC20Metadata(assets[i]).symbol();
-                }
-                assetsSymbols[i] = aliasName;
-            }
+
+        // Determine the length of the assets array
+        uint assetsLength = assets.length;
+
+        // Initialize assetsSymbols based on the length of assets
+        assetsSymbols = new string[](assetsLength);
+
+        for (uint i = 0; i < assetsLength; ++i) {
+            // Use a ternary operator to determine the symbol to use
+            string memory symbol = assets.length == 1
+                ? CommonLib.getSymbols(assets)[0]
+                : (
+                    bytes(factory.getAliasName(assets[i])).length != 0
+                        ? factory.getAliasName(assets[i])
+                        : IERC20Metadata(assets[i]).symbol()
+                );
+            assetsSymbols[i] = symbol;
         }
         bool showSpecificInSymbol;
         (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
