@@ -14,7 +14,6 @@ import "../../src/test/MockERC721.sol";
 import "../base/MockSetup.sol";
 import "../../src/interfaces/IStrategyLogic.sol";
 import "../../chains/PolygonLib.sol";
-import "forge-std/console.sol";
 
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
