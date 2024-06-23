@@ -29,7 +29,6 @@ import "../interfaces/IStrategyLogic.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author HCrypto7 (https://github.com/hcrypto7)
-
 contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
