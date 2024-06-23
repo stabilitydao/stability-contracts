@@ -29,12 +29,8 @@ interface IUniswapV3PoolDerivedState {
     /// @return tickCumulativeInside The snapshot of the tick accumulator for the range
     /// @return secondsPerLiquidityInsideX128 The snapshot of seconds per liquidity for the range
     /// @return secondsInside The snapshot of seconds per liquidity for the range
-    function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
-        external
-        view
-        returns (
-            int56 tickCumulativeInside,
-            uint160 secondsPerLiquidityInsideX128,
-            uint32 secondsInside
-        );
+    function snapshotCumulativesInside(
+        int24 tickLower,
+        int24 tickUpper
+    ) external view returns (int56 tickCumulativeInside, uint160 secondsPerLiquidityInsideX128, uint32 secondsInside);
 }

@@ -10,17 +10,9 @@ interface IHypervisor is IERC20 {
 
     function token1() external view returns (address);
 
-    function getBasePosition() external view returns (
-        uint128 liquidity,
-        uint amount0,
-        uint amount1
-    );
+    function getBasePosition() external view returns (uint128 liquidity, uint amount0, uint amount1);
 
-    function getLimitPosition() external view returns (
-        uint128 liquidity,
-        uint amount0,
-        uint amount1
-    );
+    function getLimitPosition() external view returns (uint128 liquidity, uint amount0, uint amount1);
 
     function getTotalAmounts() external view returns (uint total0, uint total1);
 

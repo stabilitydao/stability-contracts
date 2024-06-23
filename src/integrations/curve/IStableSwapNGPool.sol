@@ -19,7 +19,7 @@ interface IStableSwapNGPool {
     /// @param _min_mint_amount Minimum amount of LP tokens to mint from the deposit
     /// @param _receiver Address that owns the minted LP tokens
     /// @return Amount of LP tokens received by depositing
-    function add_liquidity(uint[] memory _amounts, uint _min_mint_amount, address _receiver) external returns(uint);
+    function add_liquidity(uint[] memory _amounts, uint _min_mint_amount, address _receiver) external returns (uint);
 
     /// @notice Withdraw coins from the pool
     /// @dev Withdrawal amounts are based on current deposit ratios
@@ -27,6 +27,9 @@ interface IStableSwapNGPool {
     /// @param _min_amounts Minimum amounts of underlying coins to receive
     /// @param _receiver Address that receives the withdrawn coins
     /// @return List of amounts of coins that were withdrawn
-    function remove_liquidity(uint _burn_amount, uint[] memory _min_amounts, address _receiver) external returns(uint[] memory);
-
+    function remove_liquidity(
+        uint _burn_amount,
+        uint[] memory _min_amounts,
+        address _receiver
+    ) external returns (uint[] memory);
 }

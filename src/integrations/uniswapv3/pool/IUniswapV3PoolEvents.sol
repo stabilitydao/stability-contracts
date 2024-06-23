@@ -24,8 +24,8 @@ interface IUniswapV3PoolEvents {
         int24 indexed tickLower,
         int24 indexed tickUpper,
         uint128 amount,
-        uint256 amount0,
-        uint256 amount1
+        uint amount0,
+        uint amount1
     );
 
     /// @notice Emitted when fees are collected by the owner of a position
@@ -57,8 +57,8 @@ interface IUniswapV3PoolEvents {
         int24 indexed tickLower,
         int24 indexed tickUpper,
         uint128 amount,
-        uint256 amount0,
-        uint256 amount1
+        uint amount0,
+        uint amount1
     );
 
     /// @notice Emitted by the pool for any swaps between token0 and token1
@@ -72,8 +72,8 @@ interface IUniswapV3PoolEvents {
     event Swap(
         address indexed sender,
         address indexed recipient,
-        int256 amount0,
-        int256 amount1,
+        int amount0,
+        int amount1,
         uint160 sqrtPriceX96,
         uint128 liquidity,
         int24 tick
@@ -86,14 +86,7 @@ interface IUniswapV3PoolEvents {
     /// @param amount1 The amount of token1 that was flashed
     /// @param paid0 The amount of token0 paid for the flash, which can exceed the amount0 plus the fee
     /// @param paid1 The amount of token1 paid for the flash, which can exceed the amount1 plus the fee
-    event Flash(
-        address indexed sender,
-        address indexed recipient,
-        uint256 amount0,
-        uint256 amount1,
-        uint256 paid0,
-        uint256 paid1
-    );
+    event Flash(address indexed sender, address indexed recipient, uint amount0, uint amount1, uint paid0, uint paid1);
 
     /// @notice Emitted by the pool for increases to the number of observations that can be stored
     /// @dev observationCardinalityNext is not the observation cardinality until an observation is written at the index
@@ -101,8 +94,7 @@ interface IUniswapV3PoolEvents {
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
     event IncreaseObservationCardinalityNext(
-        uint16 observationCardinalityNextOld,
-        uint16 observationCardinalityNextNew
+        uint16 observationCardinalityNextOld, uint16 observationCardinalityNextNew
     );
 
     /// @notice Emitted when the protocol fee is changed by the pool

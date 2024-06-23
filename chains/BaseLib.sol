@@ -168,7 +168,9 @@ library BaseLib {
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
+        );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -222,9 +224,13 @@ library BaseLib {
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_ETH);
 
         // [3]-[5]
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_UNI);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_wstETH);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_UNI);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(
+            GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_wstETH
+        );
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
     }
 
     function _makeGammaUniswapV3MerklFarm(

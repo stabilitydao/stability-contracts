@@ -12,6 +12,8 @@ import "../../interfaces/IFactory.sol";
 import "../../interfaces/IPriceReader.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IRVault.sol";
+import "../../interfaces/IVaultProxy.sol";
+import "../../interfaces/IStrategyProxy.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;
@@ -442,36 +444,6 @@ library FactoryLib {
         if (exchangeAssetIndex > type(uint).max) revert ISwapper.NoRoutesForAssets();
     }
 
-    function _getSymbol(
-        string memory vaultType,
-        string memory strategyLogicId,
-        string memory symbols,
-        string memory specificName,
-        string memory bbAssetSymbol
-    ) internal pure returns (string memory) {
-        bytes memory vaultTypeBytes = bytes(vaultType);
-        string memory prefix = "v";
-        if (vaultTypeBytes[0] == "C") {
-            prefix = "C";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
-            prefix = "R";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
-            prefix = "RM";
-        }
-        string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
-        return string.concat(
-            prefix,
-            "-",
-            symbols,
-            bbAssetStr,
-            "-",
-            CommonLib.shortId(strategyLogicId),
-            bytes(specificName).length > 0 ? CommonLib.shortId(specificName) : ""
-        );
-    }
-
     function getName(
         string memory vaultType,
         string memory id,
@@ -486,36 +458,6 @@ library FactoryLib {
         if (keccak256(bytes(vaultType)) == keccak256(bytes(VaultTypeLib.REWARDING))) {
             name = string.concat(name, " ", IERC20Metadata(vaultInitAddresses[0]).symbol(), " reward");
         }
-    }
-
-    function getStrategyData(
-        string memory vaultType,
-        address strategyAddress,
-        address bbAsset
-    )
-        public
-        view
-        returns (
-            string memory strategyId,
-            address[] memory assets,
-            string[] memory assetsSymbols,
-            string memory specificName,
-            string memory vaultSymbol
-        )
-    {
-        strategyId = IStrategy(strategyAddress).strategyLogicId();
-        assets = IStrategy(strategyAddress).assets();
-        assetsSymbols = CommonLib.getSymbols(assets);
-        bool showSpecificInSymbol;
-        (specificName, showSpecificInSymbol) = IStrategy(strategyAddress).getSpecificName();
-        string memory bbAssetSymbol = bbAsset == address(0) ? "" : IERC20Metadata(bbAsset).symbol();
-        vaultSymbol = _getSymbol(
-            vaultType,
-            strategyId,
-            CommonLib.implode(assetsSymbols, ""),
-            showSpecificInSymbol ? specificName : "",
-            bbAssetSymbol
-        );
     }
 
     function getDeploymentKey(
@@ -622,8 +564,9 @@ library FactoryLib {
                     vars.isRewardingVaultType ? vaultInitNums[i] : vaultInitNums[1 + boostTokensLen + i];
                 //slither-disable-next-line unused-return
                 (uint price,) = priceReader.getPrice(token);
-                totalInitialBoostUsdPerDay += initialNotifyAmount * 1e18 / 10 ** IERC20Metadata(token).decimals()
-                    * price / 1e18 * 86400 / durationSeconds;
+                totalInitialBoostUsdPerDay += (
+                    ((((initialNotifyAmount * 1e18) / 10 ** IERC20Metadata(token).decimals()) * price) / 1e18) * 86400
+                ) / durationSeconds;
                 if (initialNotifyAmount > 0) {
                     IERC20(token).safeTransferFrom(msg.sender, address(this), initialNotifyAmount);
                     IERC20(token).forceApprove(vault, initialNotifyAmount);
@@ -653,5 +596,37 @@ library FactoryLib {
         emit IFactory.VaultConfigChanged(
             type_, vaultConfig_.implementation, vaultConfig_.deployAllowed, vaultConfig_.upgradeAllowed, newVaultType
         );
+    }
+
+    function upgradeVaultProxy(IFactory.FactoryStorage storage $, address vault) external {
+        IVaultProxy proxy = IVaultProxy(vault);
+        bytes32 vaultTypeHash = proxy.vaultTypeHash();
+        address oldImplementation = proxy.implementation();
+        IFactory.VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
+        address newImplementation = tempVaultConfig.implementation;
+        if (!tempVaultConfig.upgradeAllowed) {
+            revert IFactory.UpgradeDenied(vaultTypeHash);
+        }
+        if (oldImplementation == newImplementation) {
+            revert IFactory.AlreadyLastVersion(vaultTypeHash);
+        }
+        proxy.upgrade();
+        emit IFactory.VaultProxyUpgraded(vault, oldImplementation, newImplementation);
+    }
+
+    function upgradeStrategyProxy(IFactory.FactoryStorage storage $, address strategyProxy) external {
+        IStrategyProxy proxy = IStrategyProxy(strategyProxy);
+        bytes32 idHash = proxy.strategyImplementationLogicIdHash();
+        IFactory.StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
+        address oldImplementation = proxy.implementation();
+        address newImplementation = config.implementation;
+        if (!config.upgradeAllowed) {
+            revert IFactory.UpgradeDenied(idHash);
+        }
+        if (oldImplementation == newImplementation) {
+            revert IFactory.AlreadyLastVersion(idHash);
+        }
+        proxy.upgrade();
+        emit IFactory.StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
     }
 }
