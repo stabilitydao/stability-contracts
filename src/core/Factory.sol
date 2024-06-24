@@ -9,6 +9,7 @@ import "./base/Controllable.sol";
 import "./libs/CommonLib.sol";
 import "./libs/VaultTypeLib.sol";
 import "./libs/FactoryLib.sol";
+import "./libs/FactoryNamingLib.sol";
 import "./libs/DeployerLib.sol";
 import "./libs/VaultStatusLib.sol";
 import "../interfaces/IFactory.sol";
@@ -23,9 +24,11 @@ import "../interfaces/IStrategyLogic.sol";
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
 ///   1.1.0: getDeploymentKey fix for not farming strategies, strategyAvailableInitParams
+///   1.1.1: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author HCrypto7 (https://github.com/hcrypto7)
 contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -33,7 +36,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -297,19 +300,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         if ($.vaultStatus[vault] != VaultStatusLib.ACTIVE) {
             revert NotActiveVault();
         }
-        IVaultProxy proxy = IVaultProxy(vault);
-        bytes32 vaultTypeHash = proxy.vaultTypeHash();
-        address oldImplementation = proxy.implementation();
-        VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
-        address newImplementation = tempVaultConfig.implementation;
-        if (!tempVaultConfig.upgradeAllowed) {
-            revert UpgradeDenied(vaultTypeHash);
-        }
-        if (oldImplementation == newImplementation) {
-            revert AlreadyLastVersion(vaultTypeHash);
-        }
-        proxy.upgrade();
-        emit VaultProxyUpgraded(vault, oldImplementation, newImplementation);
+        FactoryLib.upgradeVaultProxy($, vault);
     }
 
     /// @inheritdoc IFactory
@@ -318,19 +309,14 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         if (!$.isStrategy[strategyProxy]) {
             revert NotStrategy();
         }
-        IStrategyProxy proxy = IStrategyProxy(strategyProxy);
-        bytes32 idHash = proxy.strategyImplementationLogicIdHash();
-        StrategyLogicConfig storage config = $.strategyLogicConfig[idHash];
-        address oldImplementation = proxy.implementation();
-        address newImplementation = config.implementation;
-        if (!config.upgradeAllowed) {
-            revert UpgradeDenied(idHash);
-        }
-        if (oldImplementation == newImplementation) {
-            revert AlreadyLastVersion(idHash);
-        }
-        proxy.upgrade();
-        emit StrategyProxyUpgraded(strategyProxy, oldImplementation, newImplementation);
+        FactoryLib.upgradeStrategyProxy($, strategyProxy);
+    }
+
+    /// @inheritdoc IFactory
+    function setAliasName(address tokenAddress_, string memory aliasName_) external {
+        FactoryStorage storage $ = _getStorage();
+        $.aliasNames[tokenAddress_] = aliasName_;
+        emit IFactory.AliasNameChanged(msg.sender, tokenAddress_, $.aliasNames[tokenAddress_]);
     }
 
     //endregion -- User actions ----
@@ -490,7 +476,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         )
     {
         //slither-disable-next-line unused-return
-        return FactoryLib.getStrategyData(vaultType, strategyAddress, bbAsset);
+        return FactoryNamingLib.getStrategyData(vaultType, strategyAddress, bbAsset, platform());
     }
 
     /// @inheritdoc IFactory
@@ -580,6 +566,12 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory) {
         FactoryStorage storage $ = _getStorage();
         return $.strategyAvailableInitParams[idHash];
+    }
+
+    /// @inheritdoc IFactory
+    function getAliasName(address tokenAddress_) public view returns (string memory) {
+        FactoryStorage storage $ = _getStorage();
+        return $.aliasNames[tokenAddress_];
     }
 
     //endregion -- View functions -----
