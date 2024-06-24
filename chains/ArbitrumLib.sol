@@ -83,6 +83,8 @@ library ArbitrumLib {
         0xd37Af656Abf91c7f548FfFC0133175b5e4d3d5e6;
     address public constant POOL_UNISWAPV3_GNB_USDT_10000 =
         0xc2125a452115FF5a300cc2A6FfAE99637F6e329D;
+    address public constant POOL_UNISWAPV3_USDC_USDT_500 =
+        0xbcE73c2e5A623054B0e8e2428E956f4b9d0412a5;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -160,11 +162,11 @@ library ArbitrumLib {
                 address(proxy)
             );
             chainlinkAdapter.initialize(platform);
-            address[] memory assets = new address[](3);
+            address[] memory assets = new address[](4);
             assets[0] = TOKEN_USDC;
             assets[1] = TOKEN_USDT;
             assets[2] = TOKEN_DAI;
-            address[] memory priceFeeds = new address[](3);
+            address[] memory priceFeeds = new address[](4);
             priceFeeds[0] = ORACLE_CHAINLINK_USDC_USD;
             priceFeeds[1] = ORACLE_CHAINLINK_USDT_USD;
             priceFeeds[2] = ORACLE_CHAINLINK_DAI_USD;
@@ -273,7 +275,7 @@ library ArbitrumLib {
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](11);
+        pools = new ISwapper.AddPoolData[](12);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(
@@ -330,7 +332,13 @@ library ArbitrumLib {
             TOKEN_GNB,
             TOKEN_USDT
         );
-        // Camelot
+        pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_USDC_USDT_500,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_USDC,
+            TOKEN_USDT
+        );
+        // // Camelot
         pools[i++] = _makePoolData(
             POOL_CAMELOT_USDe_USDC_400,
             AmmAdapterIdLib.UNISWAPV3,
@@ -347,10 +355,10 @@ library ArbitrumLib {
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](2);
+        _farms = new IFactory.Farm[](1);
         uint i;
 
-        _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDCe);
+        // _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDCe);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
     }
 

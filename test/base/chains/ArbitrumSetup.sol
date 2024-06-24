@@ -26,7 +26,7 @@ abstract contract ArbitrumSetup is ChainSetup, DeployCore {
 
     function _deal(address token, address to, uint amount) internal override {
         if (token == ArbitrumLib.TOKEN_USDC) {
-            vm.prank(0x6B4895dcC44924Ad263E24bf7b5bb2425399F4e8);
+            vm.prank(0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7);
             IERC20(token).transfer(to, amount);
         } else {
             deal(token, to, amount);

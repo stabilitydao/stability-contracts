@@ -7,13 +7,13 @@ interface IDefiEdgeStrategy {
         int24 tickUpper;
     }
 
-    function pool() external view returns(address);
-    
-    function ticks(uint i) external view returns(Tick memory);
+    function pool() external view returns (address);
+
+    function ticks(uint i) external view returns (Tick memory);
 
     function getTicks() external view returns (Tick[] memory);
 
-    function usdAsBase(uint i) external view returns(bool);
+    function usdAsBase(uint i) external view returns (bool);
 
     function factory() external view returns (address);
 
@@ -31,7 +31,9 @@ interface IDefiEdgeStrategy {
      * @param totalFee0 Total fee of token0 including the fees  ( if _includeFee is passed true)
      * @param totalFee1 Total fee of token1 including the fees  ( if _includeFee is passed true)
      */
-    function getAUMWithFees(bool _includeFee) external returns (uint amount0, uint amount1, uint totalFee0, uint totalFee1);
+    function getAUMWithFees(bool _includeFee)
+        external
+        returns (uint amount0, uint amount1, uint totalFee0, uint totalFee1);
 
     /**
      * @notice Adds liquidity to the primary range
@@ -60,10 +62,5 @@ interface IDefiEdgeStrategy {
      * @return collect0 The amount of token0 returned to the user
      * @return collect1 The amount of token1 returned to the user
      */
-    function burn(
-        uint _shares,
-        uint _amount0Min,
-        uint _amount1Min
-    ) external returns (uint collect0, uint collect1);
-
+    function burn(uint _shares, uint _amount0Min, uint _amount1Min) external returns (uint collect0, uint collect1);
 }

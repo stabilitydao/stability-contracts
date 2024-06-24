@@ -8,4 +8,3 @@ interface IRewarder {
     /// @return pending SUSHI reward for a given user.
     function pendingToken(uint _pid, address _user) external view returns (uint pending);
 }
-

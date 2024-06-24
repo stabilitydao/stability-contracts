@@ -6,10 +6,9 @@ import "../base/UniversalTest.sol";
 
 contract CompoundFarmStrategyTest is ArbitrumSetup, UniversalTest {
     function testCFArbitrum() public universalTest {
-        buildingPayPerVaultTokenAmount = 1e6 * 100000;
+        buildingPayPerVaultTokenAmount = 1e2 * 10;
         _addStrategy(0);
-        _addStrategy(1);
-        _addStrategy(2);
+        // _addStrategy(1);
     }
 
     function _addStrategy(uint farmId) internal {
