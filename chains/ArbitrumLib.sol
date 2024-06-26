@@ -13,6 +13,10 @@ import "../src/interfaces/ISwapper.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 import "../src/strategies/CompoundFarmStrategy.sol";
 import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import "../src/strategies/libs/ALMPositionNameLib.sol";
+import "../src/integrations/gamma/IHypervisor.sol";
+
 
 /// @dev Arbitrum network [chainId: 42161] data library
 ///   AAAAA  RRRR   BBBB    III TTTTTT RRRR   UU   UU MMMM   MMMM
@@ -55,6 +59,9 @@ library ArbitrumLib {
         0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
     address public constant TOKEN_GNB =
         0x439C0cF1038F8002A4CAD489b427e217BA4B42AD;
+    address public constant TOKEN_UNI = 
+        0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0;
+    
 
     // AMMs
     address public constant POOL_UNISWAPV3_WBTC_WETH_500 =
@@ -85,6 +92,13 @@ library ArbitrumLib {
         0xc2125a452115FF5a300cc2A6FfAE99637F6e329D;
     address public constant POOL_UNISWAPV3_USDC_USDT_500 =
         0xbcE73c2e5A623054B0e8e2428E956f4b9d0412a5;
+    address public constant POOL_UNISWAPV3_UNI_USDT_3000 =
+        0xD97c8EE1C1e47f50A66E69d5aD155f882E38b0e5;
+
+    // ALMs
+    address public constant GAMMA_UNISWAPV3_UNIPROXY = 0x82FcEB07a4D01051519663f6c1c919aF21C27845;
+    address public constant GAMMA_UNISWAPV3_wstETH_WETH_100_PEGGED = 0x998C07827578C83949a6b755Dd3416fDFD98a75E;
+    address public constant GAMMA_UNISWAPV3_USDC_USDT_100_STABLE = 0x91Ed9458359d0C7Bc03cFE21a58C905fD64402b3;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD =
@@ -233,6 +247,9 @@ library ArbitrumLib {
             address(new CompoundFarmStrategy()),
             true
         );
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
+        );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -275,7 +292,7 @@ library ArbitrumLib {
         //endregion -- Blue Chip Pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](12);
+        pools = new ISwapper.AddPoolData[](13);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(
@@ -338,7 +355,7 @@ library ArbitrumLib {
             TOKEN_USDC,
             TOKEN_USDT
         );
-        // // Camelot
+
         pools[i++] = _makePoolData(
             POOL_CAMELOT_USDe_USDC_400,
             AmmAdapterIdLib.UNISWAPV3,
@@ -351,15 +368,39 @@ library ArbitrumLib {
             TOKEN_weETH,
             TOKEN_WETH
         );
+         pools[i++] = _makePoolData(
+            POOL_UNISWAPV3_UNI_USDT_3000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_UNI,
+            TOKEN_USDT
+        );
         //endregion -- Pools ----
     }
 
-    function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](1);
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](3);
         uint i;
 
-        // _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDCe);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
+
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_wstETH_WETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_WETH);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
+    }
+
+    function _makeGammaUniswapV3MerklFarm(address hypervisor, uint preset, address rewardAsset) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardAsset;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = GAMMA_UNISWAPV3_UNIPROXY;
+        farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makePoolData(
