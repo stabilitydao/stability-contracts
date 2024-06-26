@@ -224,9 +224,9 @@ library ArbitrumLib {
     function farms() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](3);
         uint i;
-
+        //Compound Farm
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
-
+        //Gamma Merkl Farm
         _farms[i++] =
             _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_wstETH_WETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_WETH);
         _farms[i++] =
