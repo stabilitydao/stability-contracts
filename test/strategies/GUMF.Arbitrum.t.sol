@@ -5,7 +5,7 @@ import "../base/chains/ArbitrumSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract GammaUniswapV3MerklFarmStrategyTest is ArbitrumSetup, UniversalTest {
-    function testGUMF() public universalTest {
+    function testGUMFArbitrum() public universalTest {
         buildingPayPerVaultTokenAmount = 1000e6;
         _addStrategy(1);
         _addStrategy(2);
