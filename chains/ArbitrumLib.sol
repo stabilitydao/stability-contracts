@@ -66,7 +66,7 @@ library ArbitrumLib {
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0x82FcEB07a4D01051519663f6c1c919aF21C27845;
     address public constant GAMMA_UNISWAPV3_wstETH_WETH_100_PEGGED = 0x998C07827578C83949a6b755Dd3416fDFD98a75E;
     address public constant GAMMA_UNISWAPV3_USDC_USDT_100_STABLE = 0x91Ed9458359d0C7Bc03cFE21a58C905fD64402b3;
-
+    
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
     address public constant ORACLE_CHAINLINK_USDT_USD = 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7;
@@ -98,13 +98,13 @@ library ArbitrumLib {
 
         //region ----- Deployed Platform -----
         if (showLog) {
-            console.log("Deployed Statbility platform", IPlatform(platform).platformVersion());
-            console.log("Platform addres:", platform);
+            console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
+            console.log("Platform address:", platform);
         }
         //endregion -- Deployed Platform ----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 1e3);
+        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 100e18);
         //endregion -- Deploy and setup valut types -----
 
         //region -----Deploy and setup oracle adapters -----

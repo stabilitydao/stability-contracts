@@ -6,7 +6,6 @@ import "../base/UniversalTest.sol";
 
 contract GammaUniswapV3MerklFarmStrategyTest is ArbitrumSetup, UniversalTest {
     function testGUMFArbitrum() public universalTest {
-        buildingPayPerVaultTokenAmount = 1000e6;
         _addStrategy(1);
         _addStrategy(2);
     }
@@ -24,6 +23,6 @@ contract GammaUniswapV3MerklFarmStrategyTest is ArbitrumSetup, UniversalTest {
 
     function _preHardWork(uint farmId) internal override {
         IFactory.Farm memory f = factory.farm(farmId);
-        deal(f.rewardAssets[0], currentStrategy, 1e17);
+        deal(f.rewardAssets[0], currentStrategy, 1e18);
     }
 }
