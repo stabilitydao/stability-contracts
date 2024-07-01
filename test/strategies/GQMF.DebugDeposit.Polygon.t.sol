@@ -6,29 +6,34 @@ import "../base/UniversalTest.sol";
 
 contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {
-        vm.rollFork(53133804); // FAIL. Reason: revert: Improper ratio catched at this block with special amounts
+        // vm.rollFork(53_133_804); // FAIL. Reason: revert: Improper ratio catched at this block with special amounts
+        // assertEq(block.number, 53_133_804);
     }
 
-    function testGQMFDebugDeposit() public universalTest {
-        specialDepositAmounts.push(11838);
-        specialDepositAmounts.push(11971);
+    function testGQMFDebugDeposit(uint256 tokenA, uint256 tokenB) public universalTest {
+        vm.assume(tokenA < 200000);
+        vm.assume(tokenB < 200000);
+        // specialDepositAmounts.push(11838);
+        specialDepositAmounts.push(tokenA);
+        // specialDepositAmounts.push(11971);
+        specialDepositAmounts.push(tokenB);
 
         _addStrategy(1);
-        // _addStrategy(2);
-        // _addStrategy(3);
-        // _addStrategy(4);
-        // _addStrategy(5);
-        // _addStrategy(6);
-        // _addStrategy(7);
-        // _addStrategy(8);
-        // _addStrategy(9);
-        // _addStrategy(10);
-        // _addStrategy(11);
-        // _addStrategy(12);
-        // _addStrategy(13);
-        // _addStrategy(14);
-        // _addStrategy(15);
-        // _addStrategy(16);
+        _addStrategy(2);
+        _addStrategy(3);
+        _addStrategy(4);
+        _addStrategy(5);
+        _addStrategy(6);
+        _addStrategy(7);
+        _addStrategy(8);
+        _addStrategy(9);
+        _addStrategy(10);
+        _addStrategy(11);
+        _addStrategy(12);
+        _addStrategy(13);
+        _addStrategy(14);
+        _addStrategy(15);
+        _addStrategy(16);
     }
 
     function _addStrategy(uint farmId) internal {
