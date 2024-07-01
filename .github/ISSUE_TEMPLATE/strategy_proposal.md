@@ -1,5 +1,5 @@
 ---
-name: [PROPOSAL] Strategy
+name: Strategy PROPOSAL
 about: A free-form proposal to develop a DeFi strategy.
 title: "[PROPOSAL] Strategy Name"
 labels: STRATEGY
