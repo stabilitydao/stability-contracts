@@ -1,7 +1,7 @@
 ---
-name: Strategy
-about: Strategy proposed for implementation
-title: "[PROPOSED] Strategy Name"
+name: [AWAITING] Strategy
+about: The formulated task of developing a strategy awaits the performer.
+title: "[AWAITING] Strategy Name"
 labels: STRATEGY
 assignees: ''
 
@@ -9,9 +9,9 @@ assignees: ''
 
 # ProtocolStrategyNameStrategy
 
-## Status: PROPOSED
+## Status: AWAITING
 
-*Status will be changed soon.*
+*The task of developing a strategy is formulated, the base contracts are indicated and the logic is described. We are waiting for the implementer to appear..*
 
 ## Description
 
