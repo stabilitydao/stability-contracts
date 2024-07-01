@@ -21,7 +21,9 @@ multiline_func_header = "params_first"
 [rpc_endpoints]
 polygon = "${POLYGON_RPC_URL}"
 base = "${BASE_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
 
 [etherscan]
 polygon = { key = "${POLYGONSCAN_API_KEY}", chain = 137  }
 base = { key = "${BASESCAN_API_KEY}", chain = 8453  }
+arbitrum = { key = "${ARBITRUMSCAN_API_KEY}", chain = 42161  }
