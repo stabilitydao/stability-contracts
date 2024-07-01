@@ -10,7 +10,7 @@ contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         // assertEq(block.number, 53_133_804);
     }
 
-    function testGQMFDebugDeposit(uint256 tokenA, uint256 tokenB) public universalTest {
+    function testGQMFDebugDeposit(uint tokenA, uint tokenB) public universalTest {
         vm.assume(tokenA < 200000);
         vm.assume(tokenB < 200000);
         // specialDepositAmounts.push(11838);
