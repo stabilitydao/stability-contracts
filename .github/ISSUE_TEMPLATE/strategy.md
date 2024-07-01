@@ -1,5 +1,5 @@
 ---
-name: [AWAITING] Strategy
+name: Strategy ready for implementation
 about: The formulated task of developing a strategy awaits the performer.
 title: "[AWAITING] Strategy Name"
 labels: STRATEGY
