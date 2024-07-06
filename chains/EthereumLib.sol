@@ -39,6 +39,7 @@ library EthereumLib {
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640;
     address public constant POOL_UNISWAPV3_WETH_weETH_500 = 0x7A415B19932c0105c82FDB6b720bb01B0CC2CAe3;
     address public constant POOL_UNISWAPV3_wstETH_WETH_100 = 0x109830a1AAaD605BbF02a9dFA7B0B92EC2FB7dAa;
+    address public constant POOL_UNISWAPV3_COMP_WETH_3000 = 0xea4Ba4CE14fdd287f380b55419B1C5b6c3f22ab6;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
@@ -133,9 +134,9 @@ library EthereumLib {
 
         //region ---- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
-        _addStrategyLogic(
-            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
-        );
+        // _addStrategyLogic(
+        //     factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
+        // );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -158,11 +159,12 @@ library EthereumLib {
         //endregion -- Blue Chip Pools -----
 
         //region ---- Pools -----
-        pools = new ISwapper.AddPoolData[](2);
+        pools = new ISwapper.AddPoolData[](4);
         uint i;
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_WETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_WETH_weETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WETH, TOKEN_weETH);
-        pools[i++] = _makePoolData(POOL_UNISWAPV3_wstETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_wstETH, TOKEN_WETH);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_wstETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_wstETH, TOKEN_WETH);
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_COMP_WETH_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_COMP, TOKEN_WETH);
         //endregion -- Pools -----
     }
 

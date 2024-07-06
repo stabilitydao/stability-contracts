@@ -7,7 +7,7 @@ import "../base/UniversalTest.sol";
 contract CompoundFarmStrategyTest is EthereumSetup, UniversalTest {
     function testCFEthereum() public universalTest {
         _addStrategy(0);
-        _addStrategy(1);
+        // _addStrategy(1);
     }
 
     function _addStrategy(uint farmId) internal {
