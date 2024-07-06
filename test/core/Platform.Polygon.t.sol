@@ -456,7 +456,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.NARROW), "Narrow");
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.WIDE), "Wide");
-        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.DYNAMIC), "Pegged");
+        assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.PEGGED), "Pegged");
         assertEq(ALMPositionNameLib.getName(ALMPositionNameLib.STABLE), "Stable");
         assertEq(ALMPositionNameLib.getName(100), "");
     }

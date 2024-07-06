@@ -4,17 +4,19 @@ pragma solidity ^0.8.23;
 import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
+import "../src/integrations/convex/IConvexRewardPool.sol";
+import "../src/integrations/gamma/IHypervisor.sol";
 import "../src/strategies/libs/StrategyIdLib.sol";
 import "../src/strategies/libs/ALMPositionNameLib.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
-import "../src/integrations/convex/IConvexRewardPool.sol";
+import "../src/interfaces/IPlatformDeployer.sol";
 import "../script/libs/LogDeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
-import "../src/interfaces/IPlatformDeployer.sol";
-import "../src/strategies/CompoundFarmStrategy.sol";
-import "../src/strategies/libs/StrategyDeveloperLib.sol";
 
 /// @dev Base network [chainId: 8453] data library
 ///      ┳┓
@@ -35,6 +37,7 @@ library BaseLib {
     address public constant TOKEN_USDbC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
     address public constant TOKEN_sFRAX = 0xe4796cCB6bB5DE2290C417Ac337F2b66CA2E770E;
     address public constant TOKEN_COMP = 0x9e1028F5F1D5eDE59748FFceE5532509976840E0;
+    address public constant TOKEN_UNI = 0xc3De830EA07524a0761646a6a4e4be0e114a3C83;
 
     // AMMs
     address public constant POOL_UNISWAPV3_WETH_USDT_500 = 0xd92E0767473D1E3FF11Ac036f2b1DB90aD0aE55F;
@@ -44,12 +47,21 @@ library BaseLib {
     address public constant POOL_UNISWAPV3_USDC_USDT_100 = 0xD56da2B74bA826f19015E6B7Dd9Dae1903E85DA1;
     address public constant POOL_UNISWAPV3_USDC_wstETH_500 = 0x45837e65E4c44cA260aB40E6dc30fF1B466a00cA;
     address public constant POOL_UNISWAPV3_WETH_COMP_10000 = 0x3367fEDd8Ad5a8Cf01cFE89Df3c697D3A59A1cAD;
+    address public constant POOL_UNISWAPV3_USDC_UNI_10000 = 0x35d84AE687f0D3bF8548d5470fd04D2abe74f074;
     address public constant POOL_BASESWAP_WETH_USDC_450 = 0x883e4AE0A817f2901500971B353b5dD89Aa52184;
     address public constant POOL_BASESWAP_USDC_USDbC_80 = 0x88492051E18a65FE00241A93699A6082aE95c828;
     address public constant POOL_BASESWAP_sfrxETH_WETH_80 = 0x19F5828aA11e12Eed05Bfb435857115bd098823a;
     address public constant POOL_BASESWAP_WETH_USDbC_450 = 0xEf3C164b0feE8Eb073513E88EcEa280A58cC9945;
     address public constant POOL_BASESWAP_USDC_sFRAX_80 = 0x74E65d5E7f820771aa86fc99e5d67578Dc77517a;
     address public constant POOL_BASESWAP_sfrxETH_sFRAX_450 = 0xee8092F8Da8342a07076b820d8bB553E962c182b;
+
+    // ALMs
+    address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xbd8fD52BE2EC689dac9155FAd51774F63a965D99;
+    address public constant GAMMA_UNISWAPV3_WETH_USDC_500_NARROW = 0x8089f11dadBabf175Aea2415194A6a3a0575539d;
+    address public constant GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED = 0xbC73A3247Eb976a0A29b22f19E4EBAfa45EfdC65;
+    address public constant GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED = 0xa52ECC4ed16f97c71071A3Bd14309E846647d7F0;
+    address public constant GAMMA_UNISWAPV3_WETH_USDT_500_NARROW = 0xCbF2d065b73a2B883C15631C927D93Ee94028a68;
+    address public constant GAMMA_UNISWAPV3_USDC_USDT_100_STABLE = 0x96034EfF74c0D1ba2eCDBf4C09A6FE8FFd6b71c8;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
@@ -138,12 +150,12 @@ library BaseLib {
             uint[] memory thresholdAmount = new uint[](8);
             thresholdAmount[0] = 1e3;
             thresholdAmount[1] = 1e3;
-            thresholdAmount[2] = 1e15;
-            thresholdAmount[3] = 1e15;
-            thresholdAmount[4] = 1e15;
+            thresholdAmount[2] = 1e12;
+            thresholdAmount[3] = 1e12;
+            thresholdAmount[4] = 1e12;
             thresholdAmount[5] = 1e3;
             thresholdAmount[6] = 1e15;
-            thresholdAmount[7] = 1e15;
+            thresholdAmount[7] = 1e12;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -156,6 +168,9 @@ library BaseLib {
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
+        );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -178,7 +193,7 @@ library BaseLib {
         //endregion -- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](9);
+        pools = new ISwapper.AddPoolData[](10);
         uint i;
         // UniswapV3
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_USDT_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_USDT);
@@ -192,17 +207,50 @@ library BaseLib {
         pools[i++] = _makePoolData(POOL_BASESWAP_USDC_USDbC_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDbC, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_BASESWAP_USDC_sFRAX_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_sFRAX, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_BASESWAP_sfrxETH_WETH_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_sfrxETH, TOKEN_WETH);
+
+        // update 15.06.2024
+        pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_UNI_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_UNI, TOKEN_USDC);
+
         //endregion -- Pools ----
     }
 
-    function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](3);
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](6);
         uint i;
 
         // [0]-[2]
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDC);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_USDbC);
         _farms[i++] = _makeCompoundFarm(COMPOUND_COMET_ETH);
+
+        // [3]-[5]
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_cbETH_WETH_500_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_UNI);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(
+            GAMMA_UNISWAPV3_WETH_wstETH_100_PEGGED, ALMPositionNameLib.PEGGED, TOKEN_wstETH
+        );
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(GAMMA_UNISWAPV3_USDC_USDT_100_STABLE, ALMPositionNameLib.STABLE, TOKEN_UNI);
+    }
+
+    function _makeGammaUniswapV3MerklFarm(
+        address hypervisor,
+        uint preset,
+        address rewardAsset
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardAsset;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = GAMMA_UNISWAPV3_UNIPROXY;
+        farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makePoolData(

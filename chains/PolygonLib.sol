@@ -318,13 +318,26 @@ library PolygonLib {
         //endregion -- Reward tokens -----
 
         //region ----- Deploy strategy logics -----
-        _addStrategyLogic(factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true
+        );
+        _addStrategyLogic(
+            factory, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()), true
+        );
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, address(new DefiEdgeQuickSwapMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory,
+            StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+            address(new DefiEdgeQuickSwapMerklFarmStrategy()),
+            true
+        );
+        _addStrategyLogic(
+            factory, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()), true
+        );
         _addStrategyLogic(factory, StrategyIdLib.ICHI_RETRO_MERKL_FARM, address(new IchiRetroMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()), true
+        );
         _addStrategyLogic(factory, StrategyIdLib.CURVE_CONVEX_FARM, address(new CurveConvexFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.YEARN, address(new YearnStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
@@ -335,6 +348,15 @@ library PolygonLib {
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion -- Add DeX aggregators -----
+
+        //region ----- Set AliasName of Token -----
+        factory.setAliasName(TOKEN_WETH, "E");
+        factory.setAliasName(TOKEN_WMATIC, "M");
+        factory.setAliasName(TOKEN_WBTC, "B");
+        factory.setAliasName(TOKEN_USDT, "UT");
+        factory.setAliasName(TOKEN_USDC, "UC");
+        factory.setAliasName(TOKEN_USDCe, "UCe");
+        //endregion ----- Set AliasName of Token -----
     }
 
     function routes()

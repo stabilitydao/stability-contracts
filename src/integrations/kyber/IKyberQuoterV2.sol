@@ -6,59 +6,60 @@ interface IKyberQuoterV2 {
     struct QuoteExactInputSingleParams {
         address tokenIn;
         address tokenOut;
-        uint256 amountIn;
+        uint amountIn;
         uint24 feeUnits;
         uint160 limitSqrtP;
     }
 
     struct QuoteOutput {
-        uint256 usedAmount;
-        uint256 returnedAmount;
+        uint usedAmount;
+        uint returnedAmount;
         uint160 afterSqrtP;
         uint32 initializedTicksCrossed;
-        uint256 gasEstimate;
+        uint gasEstimate;
     }
 
     struct QuoteExactOutputSingleParams {
         address tokenIn;
         address tokenOut;
-        uint256 amount;
+        uint amount;
         uint24 feeUnits;
         uint160 limitSqrtP;
     }
 
-
     function factory() external view returns (address);
 
-    function quoteExactInput(bytes memory path, uint256 amountIn)
-    external
-    returns (
-        uint256 amountOut,
-        uint160[] memory afterSqrtPList,
-        uint32[] memory initializedTicksCrossedList,
-        uint256 gasEstimate
-    );
+    function quoteExactInput(
+        bytes memory path,
+        uint amountIn
+    )
+        external
+        returns (
+            uint amountOut,
+            uint160[] memory afterSqrtPList,
+            uint32[] memory initializedTicksCrossedList,
+            uint gasEstimate
+        );
 
-    function quoteExactInputSingle(
-        QuoteExactInputSingleParams memory params
-    ) external returns (QuoteOutput memory output);
+    function quoteExactInputSingle(QuoteExactInputSingleParams memory params)
+        external
+        returns (QuoteOutput memory output);
 
-    function quoteExactOutput(bytes memory path, uint256 amountOut)
-    external
-    returns (
-        uint256 amountIn,
-        uint160[] memory afterSqrtPList,
-        uint32[] memory initializedTicksCrossedList,
-        uint256 gasEstimate
-    );
+    function quoteExactOutput(
+        bytes memory path,
+        uint amountOut
+    )
+        external
+        returns (
+            uint amountIn,
+            uint160[] memory afterSqrtPList,
+            uint32[] memory initializedTicksCrossedList,
+            uint gasEstimate
+        );
 
-    function quoteExactOutputSingle(
-        QuoteExactOutputSingleParams memory params
-    ) external returns (QuoteOutput memory output);
+    function quoteExactOutputSingle(QuoteExactOutputSingleParams memory params)
+        external
+        returns (QuoteOutput memory output);
 
-    function swapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes memory path
-    ) external view;
+    function swapCallback(int amount0Delta, int amount1Delta, bytes memory path) external view;
 }

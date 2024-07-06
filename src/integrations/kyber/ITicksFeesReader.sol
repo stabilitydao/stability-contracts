@@ -2,9 +2,9 @@
 pragma solidity ^0.8.23;
 
 interface ITicksFeesReader {
-  function getTotalFeesOwedToPosition(
-    address posManager,
-    address pool,
-    uint256 tokenId
-  ) external view returns (uint256 token0Owed, uint256 token1Owed);
+    function getTotalFeesOwedToPosition(
+        address posManager,
+        address pool,
+        uint tokenId
+    ) external view returns (uint token0Owed, uint token1Owed);
 }

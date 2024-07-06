@@ -15,27 +15,24 @@ interface INonfungiblePositionManager {
         uint deadline;
     }
 
-    function mint(
-        MintParams calldata params
-    ) external payable returns (uint tokenId, uint128 liquidity, uint amount0, uint amount1);
+    function mint(MintParams calldata params)
+        external
+        payable
+        returns (uint tokenId, uint128 liquidity, uint amount0, uint amount1);
 
     struct IncreaseLiquidityParams {
-        uint256 tokenId;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
+        uint tokenId;
+        uint amount0Desired;
+        uint amount1Desired;
+        uint amount0Min;
+        uint amount1Min;
+        uint deadline;
     }
 
     function increaseLiquidity(IncreaseLiquidityParams calldata params)
-    external
-    payable
-    returns (
-        uint128 liquidity,
-        uint256 amount0,
-        uint256 amount1
-    );
+        external
+        payable
+        returns (uint128 liquidity, uint amount0, uint amount1);
 
     struct DecreaseLiquidityParams {
         uint tokenId;
@@ -45,9 +42,10 @@ interface INonfungiblePositionManager {
         uint deadline;
     }
 
-    function decreaseLiquidity(
-        DecreaseLiquidityParams calldata params
-    ) external payable returns (uint amount0, uint amount1);
+    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
+        external
+        payable
+        returns (uint amount0, uint amount1);
 
     struct CollectParams {
         uint tokenId;
@@ -60,26 +58,22 @@ interface INonfungiblePositionManager {
 
     function burn(uint tokenId) external payable;
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external;
+    function safeTransferFrom(address from, address to, uint tokenId) external;
 
-    function positions(uint256 tokenId)
-    external
-    view
-    returns (
-        uint96 nonce,
-        address operator,
-        address token0,
-        address token1,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity,
-        uint256 feeGrowthInside0LastX128,
-        uint256 feeGrowthInside1LastX128,
-        uint128 tokensOwed0,
-        uint128 tokensOwed1
-    );
+    function positions(uint tokenId)
+        external
+        view
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint feeGrowthInside0LastX128,
+            uint feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
+        );
 }

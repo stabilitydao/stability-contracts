@@ -25,7 +25,7 @@ interface IAutomate {
 
     function cancelTask(bytes32 taskId) external;
 
-    function getFeeDetails() external view returns (uint256, address);
+    function getFeeDetails() external view returns (uint, address);
 
     function gelato() external view returns (address payable);
 
