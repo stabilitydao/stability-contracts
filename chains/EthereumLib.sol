@@ -12,7 +12,6 @@ import "../src/adapters/ChainlinkAdapter.sol";
 import "../script/libs/DeployAdapterLib.sol";
 import "../src/strategies/CompoundFarmStrategy.sol";
 import "../src/strategies/libs/StrategyDeveloperLib.sol";
-import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 
 /// @dev Ethereum network [chainId: 1] data library
 ///   EEEEEEEEEE   TTTTTTTTTT  HHH    HHH   EEEEEEEEEE   RRRRRRRR    EEEEEEEEEE   UU     UU   M       M
@@ -141,9 +140,6 @@ library EthereumLib {
 
         //region ---- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
-        // _addStrategyLogic(
-        //     factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
-        // );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
