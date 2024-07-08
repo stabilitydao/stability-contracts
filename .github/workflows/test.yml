@@ -40,6 +40,7 @@ jobs:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
           ARBITRUM_RPC_URL: ${{secrets.ARBITRUM_RPC_URL}}
+          ETHEREUM_RPC_URL: ${{secrets.ETHEREUM_RPC_URL}}
         id: test
 
       - name: Run Forge coverage
@@ -50,6 +51,7 @@ jobs:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
           ARBITRUM_RPC_URL: ${{secrets.ARBITRUM_RPC_URL}}
+          ETHEREUM_RPC_URL: ${{secrets.ETHEREUM_RPC_URL}}
         id: coverage
 
       - name: Upload coverage lcov report to Codecov
