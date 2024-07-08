@@ -28,4 +28,4 @@ ethereum = "${ETHEREUM_RPC_URL}"
 polygon = { key = "${POLYGONSCAN_API_KEY}", chain = 137  }
 base = { key = "${BASESCAN_API_KEY}", chain = 8453  }
 arbitrum = { key = "${ARBITRUMSCAN_API_KEY}", chain = 42161  }
-ethereum = { key = "${ETHEREUMSCAN_API_KEY}", chain = 1  }
+ethereum = { key = "${ETHERSCAN_API_KEY}", chain = 1  }
