@@ -291,19 +291,62 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         GammaQuickSwapFarmStrategyStorage storage $ = _getGammaQuickStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         amountsConsumed = new uint[](2);
         address[] memory _assets = assets();
         address underlying_ = _$._underlying;
+
         (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(underlying_, _assets[0], amountsMax[0]);
+        IFactory.Farm memory farm = _getFarm();
+
+        if (farm.nums[0] == ALMPositionNameLib.STABLE) {
+            handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+        } else {
+            handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+        }
+
+        // calculate shares
+        value = calculateShares(amountsConsumed, underlying_);
+    }
+
+    function handleStableAmounts(
+        uint[] memory amountsMax,
+        GammaQuickSwapFarmStrategyStorage storage $,
+        address underlying_,
+        address[] memory _assets,
+        uint amount1Start,
+        uint amount1End,
+        uint[] memory amountsConsumed
+    ) internal view {
+        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
+
+        if (amountsMax[1] > amount1End) {
+            amountsConsumed[1] = amount1End;
+            amountsConsumed[0] = amountsMax[0];
+        } else if (amountsMax[1] <= amount1Start) {
+            (, amountsConsumed[0]) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
+            amountsConsumed[1] = amountsMax[1];
+        }
+
+        if (amountsMax[0] > amount0End) {
+            amountsConsumed[0] = amount0End;
+        }
+    }
+
+    function handleNonStableAmounts(
+        uint[] memory amountsMax,
+        GammaQuickSwapFarmStrategyStorage storage $,
+        address underlying_,
+        address[] memory _assets,
+        uint amount1Start,
+        uint amount1End,
+        uint[] memory amountsConsumed
+    ) internal view {
         if (amountsMax[1] > amount1End) {
             amountsConsumed[0] = amountsMax[0];
-            // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] <= amount1Start) {
-            //slither-disable-next-line similar-names
             (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
@@ -311,15 +354,16 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[0] = amountsMax[0];
             amountsConsumed[1] = amountsMax[1];
         }
+    }
 
-        // calculate shares
+    function calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
-        //slither-disable-next-line unused-return
         (, int24 tick,,,,,) = IAlgebraPool(pool()).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        value = amountsConsumed[1] + amountsConsumed[0] * price / _PRECISION;
+
+        value = amountsConsumed[1] + (amountsConsumed[0] * price / _PRECISION);
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         value = value * hypervisor.totalSupply() / (pool0PricedInToken1 + pool1);
     }
