@@ -331,17 +331,17 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint amount1End,
         uint[] memory amountsConsumed
     ) internal view {
+        amountsConsumed[1] = amountsMax[1];
+        amountsConsumed[0] = amountsMax[0];
         (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
-
         if (amountsMax[1] > amount1End) {
             amountsConsumed[1] = amount1End;
-            amountsConsumed[0] = amountsMax[0];
         } else if (amountsMax[1] <= amount1Start) {
             (, amountsConsumed[0]) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
             amountsConsumed[1] = amountsMax[1];
         }
 
-        if (amountsMax[0] > amount0End) {
+        if (amountsConsumed[0] > amount0End) {
             amountsConsumed[0] = amount0End;
         }
     }
