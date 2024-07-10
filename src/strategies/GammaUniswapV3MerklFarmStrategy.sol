@@ -341,9 +341,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[1] = amountsMax[1];
         }
 
-        if (amountsConsumed[0] > amount0End) {
-            amountsConsumed[0] = amount0End;
-        }
+        if (amountsConsumed[0] > amount0End) amountsConsumed[0] = amount0End;
     }
 
     function handleNonStableAmounts(

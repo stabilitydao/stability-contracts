@@ -300,11 +300,9 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(underlying_, _assets[0], amountsMax[0]);
         IFactory.Farm memory farm = _getFarm();
 
-        if (farm.nums[0] == ALMPositionNameLib.STABLE) {
-            handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
-        } else {
-            handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
-        }
+        farm.nums[0] == ALMPositionNameLib.STABLE
+            ? handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed)
+            : handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
 
         // calculate shares
         value = calculateShares(amountsConsumed, underlying_);
@@ -329,9 +327,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[1] = amountsMax[1];
         }
 
-        if (amountsConsumed[0] > amount0End) {
-            amountsConsumed[0] = amount0End;
-        }
+        if (amountsConsumed[0] > amount0End) amountsConsumed[0] = amount0End;
     }
 
     function handleNonStableAmounts(
