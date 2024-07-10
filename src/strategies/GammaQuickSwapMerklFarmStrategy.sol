@@ -17,6 +17,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 /// @title Earning Merkl rewards on QuickSwap V3 by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author Hcrypto7 (https://github.com/Hcrypto7)
 contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -25,7 +26,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     uint internal constant _PRECISION = 1e36;
 
