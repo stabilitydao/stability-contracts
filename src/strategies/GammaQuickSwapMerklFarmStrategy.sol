@@ -320,19 +320,17 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         amountsConsumed[1] = amountsMax[1];
         amountsConsumed[0] = amountsMax[0];
         (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
-        uint amount1InUse = amountsMax[1] > amount1End ? amount1End : amountsMax[1];
+        // Inline the assignment and condition with a ternary operator
+        amountsConsumed[1] = (amountsMax[1] > amount1End) ? amount1End : amountsMax[1];
 
-        if (amount1InUse <= amount1Start) {
-            (, amountsConsumed[0]) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
-        } else {
-            amountsConsumed[1] = amount1InUse;
-        }
+        // Check the second condition within another ternary operation
+        (amountsMax[1] <= amount1Start) ? amountsConsumed[0] = amount0End : amountsConsumed[0];
 
-        if (amountsMax[0] > amount0End) {
-            amountsConsumed[0] = amount0End;
-        } else {
-            amountsConsumed[0] = amountsMax[0];
-        }
+        // Set amountsConsumed[1] to amountsMax[1] only if the second condition holds true
+        amountsConsumed[1] = (amountsMax[1] <= amount1Start) ? amountsMax[1] : amountsConsumed[1];
+
+        // Ensure amountsConsumed[0] does not exceed amount0End
+        amountsConsumed[0] = (amountsConsumed[0] > amount0End) ? amount0End : amountsConsumed[0];
     }
 
     function handleNonStableAmounts(
