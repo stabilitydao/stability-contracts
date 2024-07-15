@@ -6,12 +6,17 @@ import "../base/UniversalTest.sol";
 import "../../src/integrations/steer/IMultiPositionManager.sol";
 
 contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
-    constructor() {}
+    constructor() {
+        vm.rollFork(55600000); // Apr-08-2024
+    }
 
     function testSQMF() public universalTest {
-        // add farms for testing
         _addStrategy(41);
         _addStrategy(42);
+        _addStrategy(43);
+        _addStrategy(45);
+        _addStrategy(44);
+        _addStrategy(46);
     }
 
     function _addStrategy(uint farmId) internal {

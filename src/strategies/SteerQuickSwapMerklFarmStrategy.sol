@@ -276,32 +276,37 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
+        amountsConsumed = new uint[](2);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         //slither-disable-next-line similar-names
         IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
-        //slither-disable-next-line uninitialized-local
-        IMultiPositionManager.LiquidityPositions memory ticks_;
-        //slither-disable-next-line unused-return
-        (ticks_.lowerTick, ticks_.upperTick,) = _underlying.getPositions();
 
-        // if deposit goes only to first position, then its ok
-        //slither-disable-next-line uninitialized-local
-        int24[] memory ticks = new int24[](2);
-        ticks[0] = ticks_.lowerTick[0];
-        ticks[1] = ticks_.upperTick[0];
-        //slither-disable-next-line unused-return
-        (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
+        /// @dev See QuickSwapMultiPositionLiquidityManager https://polygonscan.com/address/0xFe09835e788A0d68416247ef45708cd85ef373f9#code
+        uint _totalSupply = _underlying.totalSupply();
+        (uint total0, uint total1) = _underlying.getTotalAmounts();
+        if (total0 == 0) {
+            value = UniswapV3MathLib.mulDiv(amountsMax[1], _totalSupply, total1);
+            amountsConsumed[1] = UniswapV3MathLib._mulDivRoundingUp(value, total1, _totalSupply);
+        } else if (total1 == 0) {
+            value = UniswapV3MathLib.mulDiv(amountsMax[0], _totalSupply, total0);
+            amountsConsumed[0] = UniswapV3MathLib._mulDivRoundingUp(value, total0, _totalSupply);
+        } else {
+            uint cross = Math.min(amountsMax[0] * total1, amountsMax[1] * total0);
 
-        uint[] memory totalAmounts = new uint[](2);
-        (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-        //slither-disable-next-line similar-names unused-return
-        (uint token0Price,) = priceReader.getPrice(_underlying.token0());
-        //slither-disable-next-line similar-names unused-return
-        (uint token1Price,) = priceReader.getPrice(_underlying.token1());
-        uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
-        uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
-        value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
+            // If cross is zero, this means that the inputted ratio is totally wrong
+            // and must be adjusted to better match the vault's held ratio.
+            // This pretty much only happens if all of the vault's holdings are in one token,
+            // and the user wants to exclusively deposit the other token.
+            require(cross > 0);
+
+            // Round up amounts
+            // cross - 1 can be unchecked since above we require cross != 0
+            // total1 and total0 are also both > 0
+            amountsConsumed[0] = ((cross - 1) / total1) + 1;
+            amountsConsumed[1] = ((cross - 1) / total0) + 1;
+
+            value = UniswapV3MathLib.mulDiv(cross, _totalSupply, total0) / total1;
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
