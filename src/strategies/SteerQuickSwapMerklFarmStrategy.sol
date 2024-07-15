@@ -156,6 +156,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x3477ff), bytes3(0x000000)));
     }
 
@@ -281,24 +282,32 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         returns (uint[] memory amountsConsumed, uint value)
     {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        //slither-disable-next-line similar-names
         IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
         IMultiPositionManager.LiquidityPositions memory ticks_;
+        //slither-disable-next-line unused-return
         (ticks_.lowerTick, ticks_.upperTick,) = _underlying.getPositions();
+
+        // if deposit goes only to first position, then its ok
         int24[] memory ticks = new int24[](2);
         ticks[0] = ticks_.lowerTick[0];
         ticks[1] = ticks_.upperTick[0];
+        //slither-disable-next-line unused-return
         (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
 
         uint[] memory totalAmounts = new uint[](2);
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
         PriceReader priceReader;
         priceReader = PriceReader(IPlatform(platform()).priceReader());
+        //slither-disable-next-line similar-names
         (uint token0Price,) = priceReader.getPrice(_underlying.token0());
+        //slither-disable-next-line similar-names
         (uint token1Price,) = priceReader.getPrice(_underlying.token1());
         uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
         uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
         value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
     }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -315,11 +324,5 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         //slither-disable-next-line divide-before-multiply
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
-    }
-
-    function _computePositionKey(address owner, int24 bottomTick, int24 topTick) internal pure returns (bytes32 key) {
-        assembly {
-            key := or(shl(24, or(shl(24, owner), and(bottomTick, 0xFFFFFF))), and(topTick, 0xFFFFFF))
-        }
     }
 }
