@@ -23,7 +23,7 @@ import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
 import "../src/strategies/GammaRetroMerklFarmStrategy.sol";
 import "../src/strategies/CurveConvexFarmStrategy.sol";
 import "../src/strategies/YearnStrategy.sol";
-import {SteerQuickSwapMerklFarmStrategy} from "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 
 /// @dev Polygon network [chainId: 137] data library
 ///      ┏┓  ┓
@@ -293,10 +293,7 @@ library PolygonLib {
         // Mar-12-2024 02:41:42 PM +UTC
         if (block.number > 54573098) {
             factory.addFarms(farms3());
-        }
-        if (block.number >  54673098) {
-            factory.addFarms(farms9());
-            console.log("Added new farms");
+            factory.addFarms(farms4());
         }
         LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
@@ -513,7 +510,7 @@ library PolygonLib {
     }
 
     // steer quickswap
-    function farms9() public view returns (IFactory.Farm[] memory _farms) {
+    function farms4() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](2);
         uint i;
 
@@ -528,6 +525,7 @@ library PolygonLib {
             ALMPositionNameLib.NARROW
         );
     }
+
     function _makeCurveConvexFarm(
         address curvePool,
         address convexRewardPool

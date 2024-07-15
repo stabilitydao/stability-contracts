@@ -279,6 +279,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         //slither-disable-next-line similar-names
         IMultiPositionManager _underlying = IMultiPositionManager(__$__._underlying);
+        //slither-disable-next-line uninitialized-local
         IMultiPositionManager.LiquidityPositions memory ticks_;
         //slither-disable-next-line unused-return
         (ticks_.lowerTick, ticks_.upperTick,) = _underlying.getPositions();
@@ -294,9 +295,9 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         uint[] memory totalAmounts = new uint[](2);
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-        //slither-disable-next-line similar-names
+        //slither-disable-next-line similar-names unused-return
         (uint token0Price,) = priceReader.getPrice(_underlying.token0());
-        //slither-disable-next-line similar-names
+        //slither-disable-next-line similar-names unused-return
         (uint token1Price,) = priceReader.getPrice(_underlying.token1());
         uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
         uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
