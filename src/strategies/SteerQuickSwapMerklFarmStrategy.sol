@@ -11,12 +11,9 @@ import "./libs/UniswapV3MathLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../interfaces/ICAmmAdapter.sol";
 import "../interfaces/IPlatform.sol";
-import "../integrations/chainlink/IFeedRegistryInterface.sol";
+import "../interfaces/IPriceReader.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 import "../integrations/steer/IMultiPositionManager.sol";
-import "../integrations/steer/IMultiPositionManagerFactory.sol";
-import "forge-std/console.sol";
-import "../../src/core/PriceReader.sol";
 
 /// @title Earning MERKL rewards by Steer ALM on QuickSwapV3
 /// @author Only Forward (https://github.com/OnlyForward0613)
@@ -39,13 +36,11 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
-        // console.log("IncorrectInitTest: %d: %d: %d", addresses.length, nums.length, ticks.length);
         if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        // console.log("badfarmtest: %d: %d: %d", farm.addresses.length, farm.nums.length, farm.ticks.length);
         if (farm.addresses.length != 1 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
@@ -151,7 +146,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /// @inheritdoc IStrategy
     function getAssetsProportions() external view returns (uint[] memory proportions) {
         proportions = new uint[](2);
-        proportions[0] = _getProportion0(pool());
+        proportions[0] = _getDepositProportion0(pool());
         proportions[1] = 1e18 - proportions[0];
     }
 
@@ -263,7 +258,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getProportion0(pool()));
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(_getDepositProportion0(pool()));
         // nosemgrep
         if (amountsToDeposit[0] > 1 && amountsToDeposit[1] > 1) {
             uint valueToReceive;
@@ -289,6 +284,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         (ticks_.lowerTick, ticks_.upperTick,) = _underlying.getPositions();
 
         // if deposit goes only to first position, then its ok
+        //slither-disable-next-line uninitialized-local
         int24[] memory ticks = new int24[](2);
         ticks[0] = ticks_.lowerTick[0];
         ticks[1] = ticks_.upperTick[0];
@@ -297,8 +293,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
 
         uint[] memory totalAmounts = new uint[](2);
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
-        PriceReader priceReader;
-        priceReader = PriceReader(IPlatform(platform()).priceReader());
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         //slither-disable-next-line similar-names
         (uint token0Price,) = priceReader.getPrice(_underlying.token0());
         //slither-disable-next-line similar-names
@@ -312,8 +307,8 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @dev proportion of 1e18
-    function _getProportion0(address pool_) internal view returns (uint) {
+    /// @dev Deposit proportion of token0. 1e18 == 100%
+    function _getDepositProportion0(address pool_) internal view returns (uint) {
         IMultiPositionManager hypervisor = IMultiPositionManager(_getStrategyBaseStorage()._underlying);
         //slither-disable-next-line unused-return
         (, int24 tick,,,,,) = IAlgebraPool(pool_).globalState();
