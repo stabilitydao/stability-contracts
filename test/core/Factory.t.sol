@@ -13,6 +13,7 @@ import "../../src/test/MockVaultUpgrade.sol";
 import "../../src/test/MockERC721.sol";
 import "../base/MockSetup.sol";
 import "../../src/interfaces/IStrategyLogic.sol";
+import "../../chains/PolygonLib.sol";
 
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
@@ -73,6 +74,16 @@ contract FactoryTest is Test, MockSetup {
         address[] memory addresses = new address[](3);
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
+
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: address(0),
+                deployAllowed: false,
+                upgradeAllowed: true,
+                buildingPrice: builderPayPerVaultPrice
+            })
+        );
 
         vm.expectRevert(abi.encodeWithSelector(IFactory.VaultImplementationIsNotAvailable.selector));
         factory.deployVaultAndStrategy(
@@ -520,5 +531,17 @@ contract FactoryTest is Test, MockSetup {
     function testGetExchangeAssetIndexRequire() public {
         vm.expectRevert(ISwapper.NoRouteFound.selector);
         factory.getExchangeAssetIndex(new address[](0));
+    }
+
+    function testSetAliasName() public {
+        string memory aliasName_ = "USDC";
+        factory.setAliasName(PolygonLib.TOKEN_USDC, aliasName_);
+    }
+
+    function testGetAliasName() public {
+        string memory aliasName_ = "USDC";
+        factory.setAliasName(PolygonLib.TOKEN_USDC, aliasName_);
+        string memory aliasName = factory.getAliasName(PolygonLib.TOKEN_USDC);
+        console.log("alias: %s", aliasName);
     }
 }

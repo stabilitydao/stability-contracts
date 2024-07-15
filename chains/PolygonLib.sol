@@ -4,22 +4,36 @@ pragma solidity ^0.8.23;
 import "../src/core/proxy/Proxy.sol";
 import "../src/adapters/libs/AmmAdapterIdLib.sol";
 import "../src/adapters/ChainlinkAdapter.sol";
-import "../src/strategies/libs/StrategyIdLib.sol";
-import "../src/strategies/libs/ALMPositionNameLib.sol";
 import "../src/interfaces/IFactory.sol";
 import "../src/interfaces/IPlatform.sol";
 import "../src/interfaces/ISwapper.sol";
+import "../src/interfaces/IPlatformDeployer.sol";
 import "../src/integrations/convex/IConvexRewardPool.sol";
-import "../script/libs/DeployLib.sol";
+import "../script/libs/LogDeployLib.sol";
 import "../script/libs/DeployAdapterLib.sol";
-import "../script/libs/DeployStrategyLib.sol";
-import "forge-std/console.sol";
+import "../src/strategies/libs/StrategyIdLib.sol";
+import "../src/strategies/libs/ALMPositionNameLib.sol";
+import "../src/strategies/libs/StrategyDeveloperLib.sol";
+import "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
+import "../src/strategies/CompoundFarmStrategy.sol";
+import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
+import "../src/strategies/GammaRetroMerklFarmStrategy.sol";
+import "../src/strategies/CurveConvexFarmStrategy.sol";
+import "../src/strategies/YearnStrategy.sol";
+import {SteerQuickSwapMerklFarmStrategy} from "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 
-/// @dev Addresses, routes, farms, strategy logics, reward tokens, deploy function and other data for Polygon network
+/// @dev Polygon network [chainId: 137] data library
+///      ┏┓  ┓
+///      ┃┃┏┓┃┓┏┏┓┏┓┏┓
+///      ┣┛┗┛┗┗┫┗┫┗┛┛┗
+///            ┛ ┛
+/// @author Alien Deployer (https://github.com/a17)
 library PolygonLib {
     // initial addresses
-    address public constant MULTISIG =
-        0x36780E69D38c8b175761c6C5F8eD42E61ee490E9; // team
+    address public constant MULTISIG = 0x36780E69D38c8b175761c6C5F8eD42E61ee490E9; // team
 
     // ERC20
     address public constant TOKEN_PROFIT = 0x48469a0481254d5945E7E56c1Eb9861429c02f44;
@@ -47,12 +61,9 @@ library PolygonLib {
     address public constant TOKEN_PM = 0xAA3e3709C79a133e56C17a7ded87802adF23083B;
 
     // Oracles
-    address public constant ORACLE_CHAINLINK_USDCe_USD =
-        0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
-    address public constant ORACLE_CHAINLINK_USDT_USD =
-        0x0A6513e40db6EB1b165753AD52E80663aeA50545;
-    address public constant ORACLE_CHAINLINK_DAI_USD =
-        0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
+    address public constant ORACLE_CHAINLINK_USDCe_USD = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+    address public constant ORACLE_CHAINLINK_USDT_USD = 0x0A6513e40db6EB1b165753AD52E80663aeA50545;
+    address public constant ORACLE_CHAINLINK_DAI_USD = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
 
     // AMMs
     address public constant POOL_UNISWAPV3_USDCe_USDT_100 = 0xDaC8A8E6DBf8c690ec6815e0fF03491B2770255D;
@@ -101,78 +112,47 @@ library PolygonLib {
     address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
 
     // Gelato
-    address public constant GELATO_AUTOMATE =
-        0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
+    address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
 
     // QuickSwap V3
-    address public constant QUICKSWAP_POSITION_MANAGER =
-        0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
+    address public constant QUICKSWAP_POSITION_MANAGER = 0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
 
     // Gamma
-    address public constant GAMMA_QUICKSWAP_UNIPROXY =
-        0xA42d55074869491D60Ac05490376B74cF19B00e6;
-    address public constant GAMMA_QUICKSWAP_USDCe_USDT =
-        0x795f8c9B0A0Da9Cd8dea65Fc10f9B57AbC532E58;
-    address public constant GAMMA_QUICKSWAP_USDCe_WETH_WIDE =
-        0x6077177d4c41E114780D9901C9b5c784841C523f;
-    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_NARROW =
-        0x02203f2351E7aC6aB5051205172D3f772db7D814;
-    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_WIDE =
-        0x81Cec323BF8C4164c66ec066F53cc053A535f03D;
-    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_NARROW =
-        0x598cA33b7F5FAB560ddC8E76D94A4b4AA52566d7;
-    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_WIDE =
-        0x9134f456D33d1288de26271730047AE0c5CB6F71;
-    address public constant GAMMA_QUICKSWAP_WETH_USDT_NARROW =
-        0x5928f9f61902b139e1c40cBa59077516734ff09f;
-    address public constant GAMMA_QUICKSWAP_WETH_USDT_WIDE =
-        0x3672d301778750C41a7864980A5ddbC2aF99476E;
-    address public constant GAMMA_QUICKSWAP_WBTC_WETH_NARROW =
-        0x4B9e26a02121a1C541403a611b542965Bd4b68Ce;
-    address public constant GAMMA_QUICKSWAP_WBTC_WETH_WIDE =
-        0xadc7B4096C3059Ec578585Df36E6E1286d345367;
-    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_NARROW =
-        0x3f35705479d9d77c619b2aAC9dd7a64e57151506;
-    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_WIDE =
-        0xE40a5aa22CBCcc8165aedd86f6d03fC5F551c3C6;
-    address public constant GAMMA_QUICKSWAP_USDCe_WETH_NARROW =
-        0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
-    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW =
-        0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
-    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE =
-        0x4A83253e88e77E8d518638974530d0cBbbF3b675;
-    address public constant GAMMA_QUICKSWAP_USDC_WETH_NARROW =
-        0x3974FbDC22741A1632E024192111107b202F214f;
-    address public constant GAMMA_QUICKSWAP_WMATIC_USDC_NARROW =
-        0x1cf4293125913cB3Dea4aD7f2bb4795B9e896CE9;
-    address public constant GAMMA_RETRO_UNIPROXY =
-        0xDC8eE75f52FABF057ae43Bb4B85C55315b57186c;
-    address public constant GAMMA_RETRO_WMATIC_USDCe_NARROW =
-        0xBE4E30b74b558E41f5837dC86562DF44aF57A013;
-    address public constant GAMMA_RETRO_WMATIC_WETH_NARROW =
-        0xe7806B5ba13d4B2Ab3EaB3061cB31d4a4F3390Aa;
-    address public constant GAMMA_RETRO_WBTC_WETH_WIDE =
-        0x336536F5bB478D8624dDcE0942fdeF5C92bC4662;
+    address public constant GAMMA_QUICKSWAP_UNIPROXY = 0xA42d55074869491D60Ac05490376B74cF19B00e6;
+    address public constant GAMMA_QUICKSWAP_USDCe_USDT = 0x795f8c9B0A0Da9Cd8dea65Fc10f9B57AbC532E58;
+    address public constant GAMMA_QUICKSWAP_USDCe_WETH_WIDE = 0x6077177d4c41E114780D9901C9b5c784841C523f;
+    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_NARROW = 0x02203f2351E7aC6aB5051205172D3f772db7D814;
+    address public constant GAMMA_QUICKSWAP_WMATIC_WETH_WIDE = 0x81Cec323BF8C4164c66ec066F53cc053A535f03D;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_NARROW = 0x598cA33b7F5FAB560ddC8E76D94A4b4AA52566d7;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDT_WIDE = 0x9134f456D33d1288de26271730047AE0c5CB6F71;
+    address public constant GAMMA_QUICKSWAP_WETH_USDT_NARROW = 0x5928f9f61902b139e1c40cBa59077516734ff09f;
+    address public constant GAMMA_QUICKSWAP_WETH_USDT_WIDE = 0x3672d301778750C41a7864980A5ddbC2aF99476E;
+    address public constant GAMMA_QUICKSWAP_WBTC_WETH_NARROW = 0x4B9e26a02121a1C541403a611b542965Bd4b68Ce;
+    address public constant GAMMA_QUICKSWAP_WBTC_WETH_WIDE = 0xadc7B4096C3059Ec578585Df36E6E1286d345367;
+    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_NARROW = 0x3f35705479d9d77c619b2aAC9dd7a64e57151506;
+    address public constant GAMMA_QUICKSWAP_WBTC_USDCe_WIDE = 0xE40a5aa22CBCcc8165aedd86f6d03fC5F551c3C6;
+    address public constant GAMMA_QUICKSWAP_USDCe_WETH_NARROW = 0x3Cc20A6795c4b57d9817399F68E83e71C8626580;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW = 0x04d521E2c414E6d898c6F2599FdD863Edf49e247;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE = 0x4A83253e88e77E8d518638974530d0cBbbF3b675;
+    address public constant GAMMA_QUICKSWAP_USDC_WETH_NARROW = 0x3974FbDC22741A1632E024192111107b202F214f;
+    address public constant GAMMA_QUICKSWAP_WMATIC_USDC_NARROW = 0x1cf4293125913cB3Dea4aD7f2bb4795B9e896CE9;
+    address public constant GAMMA_RETRO_UNIPROXY = 0xDC8eE75f52FABF057ae43Bb4B85C55315b57186c;
+    address public constant GAMMA_RETRO_WMATIC_USDCe_NARROW = 0xBE4E30b74b558E41f5837dC86562DF44aF57A013;
+    address public constant GAMMA_RETRO_WMATIC_WETH_NARROW = 0xe7806B5ba13d4B2Ab3EaB3061cB31d4a4F3390Aa;
+    address public constant GAMMA_RETRO_WBTC_WETH_WIDE = 0x336536F5bB478D8624dDcE0942fdeF5C92bC4662;
 
     // Compound
-    address public constant COMPOUND_COMET =
-        0xF25212E676D1F7F89Cd72fFEe66158f541246445;
-    address public constant COMPOUND_COMET_REWARDS =
-        0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
+    address public constant COMPOUND_COMET = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
+    address public constant COMPOUND_COMET_REWARDS = 0x45939657d1CA34A8FA39A924B71D28Fe8431e581;
 
     // DefiEdge
-    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 =
-        0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB;
-    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 =
-        0x07d82761C3527Caf190b946e13d5C11291194aE6;
-    address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW =
-        0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D;
+    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 = 0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB; // Dec-04-2023
+    address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6; // Jan-09-2024
+    address public constant DEFIEDGE_STRATEGY_WMATIC_USDC_NARROW = 0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D; // Jan-09-2024
 
     // Steer
-    address public constant STEER_STRATEGY_WMATIC_USDC =
-        0x280bE4533891E887F55847A773B93d043984Fbd5;
-    address public constant STEER_STRATEGY_WBTC_WETH =
-        0x12a7b5510f8f5E13F75aFF4d00b2F88CC99d22DB;
+    address public constant STEER_STRATEGY_WMATIC_USDC = 0x280bE4533891E887F55847A773B93d043984Fbd5;
+    address public constant STEER_STRATEGY_WBTC_WETH = 0x12a7b5510f8f5E13F75aFF4d00b2F88CC99d22DB;
 
     // Ichi
     address public constant ICHI_QUICKSWAP_WMATIC_USDT = 0x5D73D117Ffb8AD26e6CC9f2621d52f479AAA8C5B; // Nov-13-2023
@@ -189,81 +169,64 @@ library PolygonLib {
     address public constant ICHI_RETRO_WBTC_WETH_ETH = 0x0B0302014DD4FB6A77da03bF9034db5FEcB68eA8;
 
     // DeX aggregators
-    address public constant ONE_INCH =
-        0x1111111254EEB25477B68fb85Ed929f73A960582;
+    address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 
     // Retro
-    address public constant RETRO_QUOTER =
-        0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
+    address public constant RETRO_QUOTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
 
     // Convex
-    address public constant CONVEX_BOOSTER =
-        0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
-    address public constant CONVEX_REWARD_POOL_crvUSD_USDCe =
-        0xBFEE9F3E015adC754066424AEd535313dc764116;
-    address public constant CONVEX_REWARD_POOL_crvUSD_USDT =
-        0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
-    address public constant CONVEX_REWARD_POOL_crvUSD_DAI =
-        0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
-    address public constant CONVEX_REWARD_POOL_crvUSD_USDC =
-        0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
+    address public constant CONVEX_BOOSTER = 0xddc9Ef56c6bf83F7116Fad5Fbc41272B07ac70C1;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDCe = 0xBFEE9F3E015adC754066424AEd535313dc764116;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
+    address public constant CONVEX_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
+    address public constant CONVEX_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
 
     // Yearn V3
-    address public constant YEARN_DAI =
-        0x90b2f54C6aDDAD41b8f6c4fCCd555197BC0F773B;
-    address public constant YEARN_USDT =
-        0xBb287E6017d3DEb0e2E65061e8684eab21060123;
-    address public constant YEARN_USDCe =
-        0xA013Fbd4b711f9ded6fB09C1c0d358E2FbC2EAA0;
-    address public constant YEARN_WMATIC =
-        0x28F53bA70E5c8ce8D03b1FaD41E9dF11Bb646c36;
-    address public constant YEARN_WETH =
-        0x305F25377d0a39091e99B975558b1bdfC3975654;
+    address public constant YEARN_DAI = 0x90b2f54C6aDDAD41b8f6c4fCCd555197BC0F773B;
+    address public constant YEARN_USDT = 0xBb287E6017d3DEb0e2E65061e8684eab21060123;
+    address public constant YEARN_USDCe = 0xA013Fbd4b711f9ded6fB09C1c0d358E2FbC2EAA0;
+    address public constant YEARN_WMATIC = 0x28F53bA70E5c8ce8D03b1FaD41E9dF11Bb646c36;
+    address public constant YEARN_WETH = 0x305F25377d0a39091e99B975558b1bdfC3975654;
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
-    function runDeploy(bool showLog) internal returns (address platform) {
-        //region ----- DeployPlatform -----
-        uint[] memory buildingPrice = new uint[](3);
-        buildingPrice[0] = 50_000e18;
-        buildingPrice[1] = 50_000e18;
-        buildingPrice[2] = 100_000e18;
-        platform = DeployLib.deployPlatform(
-            "24.05.0-alpha",
-            MULTISIG,
-            TOKEN_PM,
-            TOKEN_SDIV,
-            buildingPrice,
-            "Polygon",
-            CommonLib.bytesToBytes32(
-                abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))
-            ),
-            TOKEN_USDCe,
-            GELATO_AUTOMATE,
-            1e18,
-            2e18
-        );
+    function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
+        p.multisig = MULTISIG;
+        p.version = "24.06.0-alpha";
+        p.buildingPermitToken = TOKEN_PM;
+        p.buildingPayPerVaultToken = TOKEN_SDIV;
+        p.networkName = "Polygon";
+        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)));
+        p.targetExchangeAsset = TOKEN_USDCe;
+        p.gelatoAutomate = GELATO_AUTOMATE;
+        p.gelatoMinBalance = 1e18;
+        p.gelatoDepositAmount = 2e18;
+    }
+
+    function deployAndSetupInfrastructure(address platform, bool showLog) internal {
+        IFactory factory = IFactory(IPlatform(platform).factory());
+
+        //region ----- Deployed Platform -----
         if (showLog) {
-            console.log(
-                "Deployed Stability platform",
-                IPlatform(platform).platformVersion()
-            );
+            console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- DeployPlatform ----
+        //endregion -- Deployed Platform ----
 
-        //region ----- DeployAndSetupOracleAdapters -----
-        IPriceReader priceReader = PriceReader(
-            IPlatform(platform).priceReader()
-        );
+        //region ----- Deploy and setup vault types -----
+        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 50_000e18);
+        _addVaultType(factory, VaultTypeLib.REWARDING, address(new RVault()), 50_000e18);
+        _addVaultType(factory, VaultTypeLib.REWARDING_MANAGED, address(new RMVault()), 100_000e18);
+        //endregion -- Deploy and setup vault types -----
+
+        //region ----- Deploy and setup oracle adapters -----
+        IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
         // Chainlink
         {
             Proxy proxy = new Proxy();
             proxy.initProxy(address(new ChainlinkAdapter()));
-            ChainlinkAdapter chainlinkAdapter = ChainlinkAdapter(
-                address(proxy)
-            );
+            ChainlinkAdapter chainlinkAdapter = ChainlinkAdapter(address(proxy));
             chainlinkAdapter.initialize(platform);
             address[] memory assets = new address[](3);
             assets[0] = TOKEN_USDCe;
@@ -275,23 +238,19 @@ library PolygonLib {
             priceFeeds[2] = ORACLE_CHAINLINK_DAI_USD;
             chainlinkAdapter.addPriceFeeds(assets, priceFeeds);
             priceReader.addAdapter(address(chainlinkAdapter));
-            DeployLib.logDeployAndSetupOracleAdapter(
-                "ChainLink",
-                address(chainlinkAdapter),
-                showLog
-            );
+            LogDeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
-        //endregion -- DeployAndSetupOracleAdapters -----
+        //endregion -- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.KYBER);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.CURVE);
-        DeployLib.logDeployAmmAdapters(platform, showLog);
+        LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion -- Deploy AMM adapters ----
 
-        //region ----- SetupSwapper -----
+        //region ----- Setup Swapper -----
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
@@ -321,12 +280,11 @@ library PolygonLib {
             thresholdAmount[8] = 1e15;
             thresholdAmount[9] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
-            DeployLib.logSetupSwapper(platform, showLog);
+            LogDeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion -- SetupSwapper -----
+        //endregion -- Setup Swapper -----
 
         //region ----- Add farms -----
-        IFactory factory = IFactory(IPlatform(platform).factory());
         factory.addFarms(farms());
         // Jan-09-2024
         if (block.number > 52122638) {
@@ -336,12 +294,11 @@ library PolygonLib {
         if (block.number > 54573098) {
             factory.addFarms(farms3());
         }
-
         if (block.number >  54673098) {
             factory.addFarms(farms9());
             console.log("Added new farms");
         }
-        DeployLib.logAddedFarms(address(factory), showLog);
+        LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
         //region ----- Add strategy available init params -----
@@ -365,61 +322,35 @@ library PolygonLib {
         allowedBoostRewardToken[1] = TOKEN_USDCe;
         defaultBoostRewardToken[0] = TOKEN_PROFIT;
         defaultBoostRewardToken[1] = TOKEN_USDCe;
-        IPlatform(platform).addBoostTokens(
-            allowedBoostRewardToken,
-            defaultBoostRewardToken
-        );
-        DeployLib.logSetupRewardTokens(platform, showLog);
+        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
+        LogDeployLib.logSetupRewardTokens(platform, showLog);
         //endregion -- Reward tokens -----
 
         //region ----- Deploy strategy logics -----
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
-            true
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true
         );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
-            true
+        _addStrategyLogic(
+            factory, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()), true
         );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.COMPOUND_FARM,
-            true
-        );
-        DeployStrategyLib.deployStrategy(
-            platform,
+        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        _addStrategyLogic(
+            factory,
             StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
+            address(new DefiEdgeQuickSwapMerklFarmStrategy()),
             true
         );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
-            true
+        _addStrategyLogic(
+            factory, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()), true
         );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.ICHI_RETRO_MERKL_FARM,
-            true
+        _addStrategyLogic(factory, StrategyIdLib.ICHI_RETRO_MERKL_FARM, address(new IchiRetroMerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()), true
         );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.GAMMA_RETRO_MERKL_FARM,
-            true
-        );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM,
-            true
-        );
-        DeployStrategyLib.deployStrategy(
-            platform,
-            StrategyIdLib.CURVE_CONVEX_FARM,
-            true
-        );
-        DeployStrategyLib.deployStrategy(platform, StrategyIdLib.YEARN, false);
-        DeployLib.logDeployStrategies(platform, showLog);
+        _addStrategyLogic(factory, StrategyIdLib.CURVE_CONVEX_FARM, address(new CurveConvexFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.YEARN, address(new YearnStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM, address(new SteerQuickSwapMerklFarmStrategy()), true);
+        LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
         //region ----- Add DeX aggregators -----
@@ -427,15 +358,21 @@ library PolygonLib {
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion -- Add DeX aggregators -----
+
+        //region ----- Set AliasName of Token -----
+        factory.setAliasName(TOKEN_WETH, "E");
+        factory.setAliasName(TOKEN_WMATIC, "M");
+        factory.setAliasName(TOKEN_WBTC, "B");
+        factory.setAliasName(TOKEN_USDT, "UT");
+        factory.setAliasName(TOKEN_USDC, "UC");
+        factory.setAliasName(TOKEN_USDCe, "UCe");
+        //endregion ----- Set AliasName of Token -----
     }
 
     function routes()
         public
         pure
-        returns (
-            ISwapper.AddPoolData[] memory bcPools,
-            ISwapper.AddPoolData[] memory pools
-        )
+        returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
     {
         //region ----- BC pools ----
         bcPools = new ISwapper.AddPoolData[](5);
@@ -494,66 +431,21 @@ library PolygonLib {
         //endregion -- QuickSwap V3 farms -----
 
         //region ----- Gamma QuickSwap Merkl farms -----
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_USDCe_USDT,
-            ALMPositionNameLib.STABLE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_WETH_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WBTC_WETH_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_USDCe_WETH_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_WETH_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WBTC_USDCe_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_USDT_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_USDCe_WETH_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WBTC_WETH_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WETH_USDT_NARROW,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WBTC_USDCe_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WETH_USDT_WIDE,
-            ALMPositionNameLib.WIDE
-        );
-        _farms[i++] = _makeGammaQuickSwapMerklFarm(
-            GAMMA_QUICKSWAP_WMATIC_USDT_WIDE,
-            ALMPositionNameLib.WIDE
-        );
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_USDT, ALMPositionNameLib.STABLE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_WETH_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDCe_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_USDCe_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDT_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_USDCe_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_WETH_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WETH_USDT_NARROW, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDCe_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WBTC_USDCe_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WETH_USDT_WIDE, ALMPositionNameLib.WIDE);
+        _farms[i++] = _makeGammaQuickSwapMerklFarm(GAMMA_QUICKSWAP_WMATIC_USDT_WIDE, ALMPositionNameLib.WIDE);
         //endregion --  Gamma QuickSwap farms -----
 
         //region ----- QuickSwap V3 farms -----
@@ -641,17 +533,14 @@ library PolygonLib {
         address convexRewardPool
     ) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
-        uint rewardTokensLength = IConvexRewardPool(convexRewardPool)
-            .rewardLength();
+        uint rewardTokensLength = IConvexRewardPool(convexRewardPool).rewardLength();
         farm.status = 0;
         // pool address can be extracted from convexRewardPool here: curveGauge() -> lp_token()
         farm.pool = curvePool;
         farm.strategyLogicId = StrategyIdLib.CURVE_CONVEX_FARM;
         farm.rewardAssets = new address[](rewardTokensLength);
         for (uint i; i < rewardTokensLength; ++i) {
-            IConvexRewardPool.RewardType memory r = IConvexRewardPool(
-                convexRewardPool
-            ).rewards(i);
+            IConvexRewardPool.RewardType memory r = IConvexRewardPool(convexRewardPool).rewards(i);
             farm.rewardAssets[i] = r.reward_token;
         }
         farm.addresses = new address[](1);
@@ -697,7 +586,7 @@ library PolygonLib {
         farm.ticks = new int24[](0);
         return farm;
     }
-    
+
     function _makeGammaRetroMerklFarm(
         address hypervisor,
         uint preset
@@ -755,9 +644,7 @@ library PolygonLib {
         return farm;
     }
 
-    function _makeIchiRetroMerklFarm(
-        address underlyingIchi
-    ) internal view returns (IFactory.Farm memory) {
+    function _makeIchiRetroMerklFarm(address underlyingIchi) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IICHIVault(underlyingIchi).pool();
@@ -817,6 +704,32 @@ library PolygonLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
+    }
+
+    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: id,
+                implementation: implementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: buildingPrice
+            })
+        );
+    }
+
+    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: id,
+                implementation: address(implementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: farming,
+                tokenId: type(uint).max
+            }),
+            StrategyDeveloperLib.getDeveloper(id)
+        );
     }
 
     function testPolygonLib() external {}

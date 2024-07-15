@@ -1,4 +1,19 @@
-# Platform Administration Guide V2
+# Platform Administration Guide V3
+
+## Dedicated sender actions
+
+### Manual HardWork
+
+#### Polygon
+
+```shell
+cast send -r polygon --gas-limit 15000000 --account DedicatedServerMsgSender 0x6DBFfd2846d4a556349a3bc53297700d89a94034 'call(address[])' [0x7337bf358b4B2e5d0a1AEbE7BbD65b46D6208ED2,0xa313547075DEd50854C1427b3C82878c010E7e35,]
+```
+
+#### Base
+
+```shell
+cast send -r polygon --gas-limit 15000000 --account DedicatedServerMsgSender 0x2FfeB278BB1Fb9f3B48619AbaBe955526942ac8c 'call(address[])' [0xf6164dE791FDD7028001977bf207e42c59076A48,0x62146825d787EaD9C5bB8ADc8e7EFd3Ec3d7189a,]```
 
 ## Operator actions
 
