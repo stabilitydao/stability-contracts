@@ -38,14 +38,8 @@ contract DeployStrategySQMFPolygon is Script {
         _farms = new IFactory.Farm[](2);
         uint i;
 
-        _farms[i++] = _makeSteerQuickSwapMerklFarm(
-            STEER_STRATEGY_WMATIC_USDC,
-            ALMPositionNameLib.NARROW
-        );
-        _farms[i++] = _makeSteerQuickSwapMerklFarm(
-            STEER_STRATEGY_WBTC_WETH,
-            ALMPositionNameLib.NARROW
-        );
+        _farms[i++] = _makeSteerQuickSwapMerklFarm(STEER_STRATEGY_WMATIC_USDC, ALMPositionNameLib.NARROW);
+        _farms[i++] = _makeSteerQuickSwapMerklFarm(STEER_STRATEGY_WBTC_WETH, ALMPositionNameLib.NARROW);
     }
 
     function _makeSteerQuickSwapMerklFarm(
