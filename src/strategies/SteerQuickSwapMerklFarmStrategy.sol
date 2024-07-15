@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
-import "./libs/DQMFLib.sol";
+import "./libs/SQMFLib.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
 import "./libs/ALMPositionNameLib.sol";
@@ -18,8 +18,9 @@ import "../integrations/steer/IMultiPositionManagerFactory.sol";
 import "forge-std/console.sol";
 import "../../src/core/PriceReader.sol";
 
-/// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
+/// @title Earning MERKL rewards by Steer ALM on QuickSwapV3
 /// @author Only Forward (https://github.com/OnlyForward0613)
+/// @author Alien Deployer (https://github.com/a17)
 contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -136,7 +137,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
-                variants[localTtotal] = DQMFLib.generateDescription(farm, _ammAdapter);
+                variants[localTtotal] = SQMFLib.generateDescription(farm, _ammAdapter);
                 ++localTtotal;
             }
         }
@@ -161,11 +162,10 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        // IFactory.Farm memory farm = _getFarm();
-        // string memory shortAddr = DQMFLib.shortAddress(farm.addresses[0]);
-        // return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
-        return ("ok-steer", true);
+    function getSpecificName() external view override returns (string memory, bool) {
+        IFactory.Farm memory farm = _getFarm();
+        string memory shortAddr = SQMFLib.shortAddress(farm.addresses[0]);
+        return (string.concat(ALMPositionNameLib.getName(farm.nums[0]), " ", shortAddr), true);
     }
 
     /// @inheritdoc IStrategy
@@ -173,7 +173,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return DQMFLib.generateDescription(farm, $lp.ammAdapter);
+        return SQMFLib.generateDescription(farm, $lp.ammAdapter);
     }
 
     /// @inheritdoc IStrategy
