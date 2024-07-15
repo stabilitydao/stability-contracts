@@ -1,43 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-interface IICHIVault{
+interface IICHIVault {
+    function ichiVaultFactory() external view returns (address);
 
-    function ichiVaultFactory() external view returns(address);
+    function pool() external view returns (address);
+    function token0() external view returns (address);
+    function allowToken0() external view returns (bool);
+    function token1() external view returns (address);
+    function allowToken1() external view returns (bool);
+    function fee() external view returns (uint24);
+    function tickSpacing() external view returns (int24);
+    function affiliate() external view returns (address);
 
-    function pool() external view returns(address);
-    function token0() external view returns(address);
-    function allowToken0() external view returns(bool);
-    function token1() external view returns(address);
-    function allowToken1() external view returns(bool);
-    function fee() external view returns(uint24);
-    function tickSpacing() external view returns(int24);
-    function affiliate() external view returns(address);
+    function baseLower() external view returns (int24);
+    function baseUpper() external view returns (int24);
+    function limitLower() external view returns (int24);
+    function limitUpper() external view returns (int24);
 
-    function baseLower() external view returns(int24);
-    function baseUpper() external view returns(int24);
-    function limitLower() external view returns(int24);
-    function limitUpper() external view returns(int24);
+    function deposit0Max() external view returns (uint);
+    function deposit1Max() external view returns (uint);
+    function maxTotalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint);
+    function hysteresis() external view returns (uint);
+    function currentTick() external view returns (int);
 
-    function deposit0Max() external view returns(uint256);
-    function deposit1Max() external view returns(uint256);
-    function maxTotalSupply() external view returns(uint256);
-    function totalSupply() external view returns(uint256);
-    function hysteresis() external view returns(uint256);
-    function currentTick() external view returns(int256);
+    function getTotalAmounts() external view returns (uint, uint);
 
-    function getTotalAmounts() external view returns (uint256, uint256);
+    function deposit(uint, uint, address) external returns (uint);
 
-    function deposit(
-        uint256,
-        uint256,
-        address
-    ) external returns (uint256);
+    function withdraw(uint, address) external returns (uint, uint);
 
-    function withdraw(
-        uint256,
-        address
-    ) external returns (uint256, uint256);
-
-    function collectFees() external returns(uint256 fees0, uint256 fees1);
+    function collectFees() external returns (uint fees0, uint fees1);
 }

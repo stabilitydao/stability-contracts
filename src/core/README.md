@@ -58,19 +58,3 @@ To generate and serve documentation for smart contracts based on [NatSpec](https
 ```shell
 forge doc --serve
 ```
-
-## Local deployment
-
-Deploying platform locally is required for developing deployment scripts, UI development, and other tasks.
-
-### Run Polygon forking anvil node
-
-```shell
-anvil --fork-url <Your Polygon RPC URL> --fork-block-number 48713000
-```
-
-### Deploy Stability Platform on localhost
-
-```shell
-forge script DeployPolygonForking --rpc-url http://127.0.0.1:8545 --broadcast --with-gas-price 200000000000
-```

@@ -2,9 +2,8 @@
 pragma solidity ^0.8.23;
 
 interface IMerklDistributor {
-
     error NotWhitelisted();
-    
+
     /// @notice Toggles whitelisting for a given user and a given operator
     function toggleOperator(address user, address operator) external;
 
@@ -18,7 +17,7 @@ interface IMerklDistributor {
     function claim(
         address[] calldata users,
         address[] calldata tokens,
-        uint256[] calldata amounts,
+        uint[] calldata amounts,
         bytes32[][] calldata proofs
     ) external;
 }

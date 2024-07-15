@@ -1,16 +1,27 @@
-# Strategy Developer's Guide V2
+# Strategy Developer's Guide V3
 
 Development of DeFi strategy logic is not simple, its hard work, and not everyone can do it. You need to understand how it all works.
+
+## Strategy status
+
+| Status      | Description                                                                                                                                                 |
+|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PROPOSAL    | The strategy described in free form is proposed for development                                                                                             |
+| POSSIBLE    | Proposed strategy can be deployed at supported network                                                                                                      |
+| AWAITING    | The task of developing a strategy is formulated, the base contracts are indicated and the logic is described. We are waiting for the implementer to appear. |
+| DEVELOPMENT | The strategy is under development                                                                                                                           |
+| DEPLOYMENT  | The strategy has been developed. Awaiting deployment.                                                                                                       |
+| LIVE        | Vault and the strategy are deployed and working.                                                                                                            |
 
 ## Prepare
 
 Read [Core Developer's guide](../core/README.md) and read source code of existing strategies.
 
-See [open STRATEGY issues](https://github.com/stabilitydao/stability-platform-contracts/issues?q=is%3Aopen+is%3Aissue+label%3ASTRATEGY), ask Stability team to asign you to any PROPOSED strategy and mark that strategy being developed.
+See [open STRATEGY issues](https://github.com/stabilitydao/stability-platform-contracts/issues?q=is%3Aopen+is%3Aissue+label%3ASTRATEGY), ask Stability team in discord or telegram to assign you to any [AWAITING] strategy and mark that strategy being developed.
 
 Study the protocols used in the strategy. Conduct all interactions with protocols manually, or find links to such transactions in an explorer.
 
-If you are stabilitydao org member then Create branch from issue by Create a branch link, or just fork repo if not.
+If you are stabilitydao org member then Create branch from issue by Create a branch link, or just fork repo if not (but you need to setup github secrets in your forked repo for CI in this case).
 
 ## 1. Create integration interfaces
 
@@ -22,7 +33,11 @@ Put third-party interfaces to `src/integrations/<protocol>/`.
 * Put your developer address to `src/strategies/libs/StrategyDeveloperLib.sol`
 * Put the addresses necessary for the strategy to `chains/<ChainName>Lib.sol` constants (tokens, pools, addresses for interactions)
 
-From now on you can already create draft Pull Request for merging to main branch of this repo.
+From now on you need to create draft Pull Request for merging from your branch to main branch of this repo. Use this link for creating PR with changing *your-branch* to your branch name:
+
+```text
+https://github.com/stabilitydao/stability-contracts/compare/main..your-branch.?template=pr_strategy.md&labels=STRATEGY&quick_pull=1
+```
 
 ## 3. Add swapper routes
 
@@ -46,7 +61,7 @@ Depending on the purpose of the logic, the strategy is inherited from a set of b
 
 Put your strategy to `src/strategies/<YourStrategyContractName>.sol` and implement all functions that need for compiling.
 
-Add your strategy logic deployment to `script/libs/DeployStrategyLib.sol` and to `runDeploy` method in `chains/<ChainName>Lib.sol`.
+Add your strategy logic deployment to `chains/<ChainName>Lib.sol`.
 
 ## 6. Add universal test
 

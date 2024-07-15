@@ -33,7 +33,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -709,7 +709,9 @@ contract Platform is Controllable, IPlatform {
         // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line calls-loop
-            nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
+            if (nft[i] != address(0)) {
+                nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
+            }
         }
 
         buildingPayPerVaultTokenBalance = IERC20($.buildingPayPerVaultToken).balanceOf(yourAccount);
