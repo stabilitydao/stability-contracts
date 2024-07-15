@@ -199,27 +199,22 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        (,, value) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
+        (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
         __$__.total += value;
     }
 
     /// @inheritdoc StrategyBase
-    // function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-    //     StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-    //     amountsConsumed = _previewDepositUnderlying(amount);
-    //     __$__.total += amount;
-    // }
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        amountsConsumed = _previewDepositUnderlying(amount);
+        __$__.total += amount;
+    }
 
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         __$__.total -= value;
         amountsOut = new uint[](2);
         (amountsOut[0], amountsOut[1]) = IMultiPositionManager(__$__._underlying).withdraw(value, 0, 0, receiver);
-        if (receiver != address(this)) {
-            address[] memory _assets = __$__._assets;
-            IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
-            IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
-        }
     }
 
     /// @inheritdoc StrategyBase
@@ -241,16 +236,16 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             uint[] memory __rewardAmounts
         )
     {
-        // StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        // FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
-        // __assets = __$__._assets;
-        // __rewardAssets = _$_._rewardAssets;
-        // __amounts = new uint[](2);
-        // uint rwLen = __rewardAssets.length;
-        // __rewardAmounts = new uint[](rwLen);
-        // for (uint i; i < rwLen; ++i) {
-        //     __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
-        // }
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        __assets = __$__._assets;
+        __rewardAssets = _$_._rewardAssets;
+        __amounts = new uint[](2);
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
     }
 
     /// @inheritdoc StrategyBase
@@ -301,8 +296,8 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
         (totalAmounts[0], totalAmounts[1]) = _underlying.getTotalAmounts();
         PriceReader priceReader;
         priceReader = PriceReader(IPlatform(platform()).priceReader());
-        (uint token0Price, ) = priceReader.getPrice(_underlying.token0());
-        (uint token1Price, ) = priceReader.getPrice(_underlying.token1());
+        (uint token0Price,) = priceReader.getPrice(_underlying.token0());
+        (uint token1Price,) = priceReader.getPrice(_underlying.token1());
         uint numerator = token0Price * amountsConsumed[0] + token1Price * amountsConsumed[1];
         uint denominator = token0Price * totalAmounts[0] + token1Price * totalAmounts[1];
         value = UniswapV3MathLib.mulDiv(numerator, _underlying.totalSupply(), denominator);
