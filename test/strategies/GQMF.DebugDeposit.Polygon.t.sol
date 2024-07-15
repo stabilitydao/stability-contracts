@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
-import "forge-std/console.sol";
 
 contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {
