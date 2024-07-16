@@ -15,7 +15,6 @@ import "../../interfaces/IFactory.sol";
 import "../../interfaces/IPriceReader.sol";
 import "../../interfaces/ISwapper.sol";
 import "../../interfaces/ILPStrategy.sol";
-import "../../interfaces/IRVault.sol";
 import "../../interfaces/IFarmingStrategy.sol";
 
 library StrategyLib {
