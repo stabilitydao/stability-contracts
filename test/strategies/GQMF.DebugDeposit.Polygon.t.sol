@@ -6,12 +6,21 @@ import "../base/UniversalTest.sol";
 
 contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {
-        vm.rollFork(53133804); // FAIL. Reason: revert: Improper ratio catched at this block with special amounts
+        // vm.rollFork(53_133_804); // FAIL. Reason: revert: Improper ratio catched at this block with special amounts
+        // assertEq(block.number, 53_133_804);
     }
 
-    function testGQMFDebugDeposit() public universalTest {
-        specialDepositAmounts.push(11838);
-        specialDepositAmounts.push(11971);
+    function testGQMFDebugDeposit(uint256 tokenA, uint256 tokenB) public universalTest {
+    // function testGQMFDebugDeposit() public universalTest {
+        vm.assume(tokenA < 20000);
+        vm.assume(tokenB < 20000);
+        vm.assume(tokenA > 10000);
+        vm.assume(tokenB > 10000);
+        // vm.assume(tokenA - tokenB < 200);
+        specialDepositAmounts.push(tokenA);
+        specialDepositAmounts.push(tokenB);
+        // specialDepositAmounts.push(11838);
+        // specialDepositAmounts.push(11971);
 
         _addStrategy(1);
         // _addStrategy(2);
