@@ -88,6 +88,7 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(nft[2], platform.strategyLogic());
     }
 
+    // todo refactor this test, move HardWorker related to HardWorker.Polygon.t.sol
     function testAll() public {
         // change heartbeat to prevent "OLD_PRICE revert" for DefiEdge underlings
         IDefiEdgeStrategyFactory defiEdgeFactory = IDefiEdgeStrategyFactory(0x730d158D29165C55aBF368e9608Af160DD21Bd80);
@@ -284,6 +285,7 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(hw.dedicatedServerMsgSender(address(this)), true);
 
         // check HardWorker.changeVaultExcludeStatus
+        // todo move to separate HardWorker test
         {
             (address[] memory vaultAddress,,,,,,,,,) = vaultManager.vaults();
             address[] memory vaultAddressesForChangeExcludeStatus = new address[](1);
@@ -313,6 +315,7 @@ contract PlatformPolygonTest is PolygonSetup {
             hw.changeVaultExcludeStatus(vaultAddressesForChangeExcludeStatus, status);
         }
 
+        // todo move to VaultManager tests
         // check vault manager method
         {
             (address[] memory vaultAddress,,,,,,,,,) = vaultManager.vaults();
@@ -321,6 +324,7 @@ contract PlatformPolygonTest is PolygonSetup {
             assertGt(strategyAssets.length, 0);
         }
 
+        // todo move to HardWorker tests
         vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
         hw.setMaxHwPerCall(0);
         hw.setMaxHwPerCall(5);
@@ -372,7 +376,7 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(delayGelato, 2 hours);
 
         address[] memory vaultsForHardWork = new address[](1);
-        address vault_ = factory.deployedVault(factory.deployedVaultsLength() - 10);
+        address vault_ = factory.deployedVault(108);
         vaultsForHardWork[0] = vault_;
 
         (stategyRevenueAssets,) = IVault(vault_).strategy().getRevenue();
