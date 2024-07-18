@@ -314,16 +314,16 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         IFactory.Farm memory farm = _getFarm();
 
         if (farm.nums[0] == ALMPositionNameLib.STABLE) {
-            handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+            _handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
         } else {
-            handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+            _handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
         }
 
         // calculate shares
-        value = calculateShares(amountsConsumed, underlying_);
+        value = _calculateShares(amountsConsumed, underlying_);
     }
 
-    function handleStableAmounts(
+    function _handleStableAmounts(
         uint[] memory amountsMax,
         GammaUniswapV3FarmStrategyStorage storage $,
         address underlying_,
@@ -349,7 +349,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         amountsConsumed[0] = (amountsConsumed[0] > amount0End) ? amount0End : amountsConsumed[0];
     }
 
-    function handleNonStableAmounts(
+    function _handleNonStableAmounts(
         uint[] memory amountsMax,
         GammaUniswapV3FarmStrategyStorage storage $,
         address underlying_,
@@ -371,7 +371,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         }
     }
 
-    function calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
+    function _calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
         (, int24 tick,,,,,) = IUniswapV3Pool(pool()).slot0();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
