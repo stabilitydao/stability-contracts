@@ -25,7 +25,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -327,14 +327,14 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint[] memory amountsMax,
         GammaUniswapV3FarmStrategyStorage storage $,
         address underlying_,
-        address[] memory _assets,
+        address[] memory assets,
         uint amount1Start,
         uint amount1End,
         uint[] memory amountsConsumed
     ) internal view {
         amountsConsumed[1] = amountsMax[1];
         amountsConsumed[0] = amountsMax[0];
-        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
+        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets[1], amountsMax[1]);
 
         // Inline the assignment and condition with a ternary operator
         amountsConsumed[1] = (amountsMax[1] > amount1End) ? amount1End : amountsMax[1];
@@ -353,7 +353,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint[] memory amountsMax,
         GammaUniswapV3FarmStrategyStorage storage $,
         address underlying_,
-        address[] memory _assets,
+        address[] memory assets,
         uint amount1Start,
         uint amount1End,
         uint[] memory amountsConsumed
@@ -362,7 +362,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[0] = amountsMax[0];
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] <= amount1Start) {
-            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
+            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
         } else {
@@ -373,6 +373,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
 
     function _calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
+        //slither-disable-next-line unused-return
         (, int24 tick,,,,,) = IUniswapV3Pool(pool()).slot0();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
