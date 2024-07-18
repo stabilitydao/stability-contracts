@@ -38,7 +38,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.YEARN)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
-
+        if (CommonLib.eq(strategyId, StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM)) {
+            return 0xDa1A2a4A3fE9702b4FB0ddA13F702fc2395E2534;
+        }
         return address(0);
     }
 }
