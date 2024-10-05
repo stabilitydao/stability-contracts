@@ -354,6 +354,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[0] = amountsMax[0];
             amountsConsumed[1] = amountsMax[1];
         }
+    }
 
     function _calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
