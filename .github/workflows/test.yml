@@ -45,7 +45,6 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage
           forge coverage --report lcov
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
