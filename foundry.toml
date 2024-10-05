@@ -5,7 +5,7 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 solc_version = "0.8.23"
 gas_limit = "18446744073709551615"
-optimizer-runs = 250
+optimizer-runs = 200
 
 [profile.lite]
 optimizer = false
