@@ -31,7 +31,7 @@ library BaseLib {
     address public constant TOKEN_WETH = 0x4200000000000000000000000000000000000006;
     address public constant TOKEN_wstETH = 0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452;
     address public constant TOKEN_cbETH = 0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22;
-//    address public constant TOKEN_sfrxETH = 0x1f55a02A049033E3419a8E2975cF3F572F4e6E9A;
+    // address public constant TOKEN_sfrxETH = 0x1f55a02A049033E3419a8E2975cF3F572F4e6E9A;
     address public constant TOKEN_USDT = 0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2;
     address public constant TOKEN_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address public constant TOKEN_USDbC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
@@ -143,7 +143,7 @@ library BaseLib {
             tokenIn[1] = TOKEN_USDT;
             tokenIn[2] = TOKEN_WETH;
             tokenIn[3] = TOKEN_wstETH;
-//            tokenIn[4] = TOKEN_sfrxETH;
+            // tokenIn[4] = TOKEN_sfrxETH;
             tokenIn[4] = TOKEN_USDbC;
             tokenIn[5] = TOKEN_sFRAX;
             tokenIn[6] = TOKEN_cbETH;
@@ -152,7 +152,7 @@ library BaseLib {
             thresholdAmount[1] = 1e3;
             thresholdAmount[2] = 1e12;
             thresholdAmount[3] = 1e12;
-//            thresholdAmount[4] = 1e12;
+            // thresholdAmount[4] = 1e12;
             thresholdAmount[4] = 1e3;
             thresholdAmount[5] = 1e15;
             thresholdAmount[6] = 1e12;
@@ -206,7 +206,7 @@ library BaseLib {
         // BaseSwap
         pools[i++] = _makePoolData(POOL_BASESWAP_USDC_USDbC_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDbC, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_BASESWAP_USDC_sFRAX_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_sFRAX, TOKEN_USDC);
-//        pools[i++] = _makePoolData(POOL_BASESWAP_sfrxETH_WETH_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_sfrxETH, TOKEN_WETH);
+        // pools[i++] = _makePoolData(POOL_BASESWAP_sfrxETH_WETH_80, AmmAdapterIdLib.UNISWAPV3, TOKEN_sfrxETH, TOKEN_WETH);
 
         // update 15.06.2024
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_UNI_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_UNI, TOKEN_USDC);

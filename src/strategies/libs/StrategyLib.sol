@@ -53,10 +53,7 @@ library StrategyLib {
         $._rewardsOnBalance = new uint[](farm.rewardAssets.length);
     }
 
-    function updateFarmingAssets(
-        IFarmingStrategy.FarmingStrategyBaseStorage storage $,
-        address platform
-    ) public {
+    function updateFarmingAssets(IFarmingStrategy.FarmingStrategyBaseStorage storage $, address platform) public {
         IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm($.farmId);
         address swapper = IPlatform(platform).swapper();
         $._rewardAssets = farm.rewardAssets;

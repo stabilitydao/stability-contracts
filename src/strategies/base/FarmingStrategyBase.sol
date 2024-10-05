@@ -58,7 +58,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     }
 
     /// @inheritdoc IFarmingStrategy
-    function farmingAssets() external view returns(address[] memory) {
+    function farmingAssets() external view returns (address[] memory) {
         return _getFarmingStrategyBaseStorage()._rewardAssets;
     }
 

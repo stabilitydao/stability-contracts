@@ -45,7 +45,7 @@ interface IFarmingStrategy {
 
     /// @notice Farming reward assets for claim and liquidate
     /// @return Addresses of farm reward ERC20 tokens
-    function farmingAssets() external view returns(address[] memory);
+    function farmingAssets() external view returns (address[] memory);
 
     /// @notice Address of pool for staking asset/underlying
     function stakingPool() external view returns (address);
