@@ -17,7 +17,7 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant COMPOUNDFARMSTRATEGY_STORAGE_LOCATION =

@@ -47,14 +47,21 @@ library StrategyLib {
         if (keccak256(bytes(farm.strategyLogicId)) != keccak256(bytes(id))) {
             revert IFarmingStrategy.IncorrectStrategyId();
         }
-        uint len = farm.rewardAssets.length;
+
+        updateFarmingAssets($, platform);
+
+        $._rewardsOnBalance = new uint[](farm.rewardAssets.length);
+    }
+
+    function updateFarmingAssets(IFarmingStrategy.FarmingStrategyBaseStorage storage $, address platform) public {
+        IFactory.Farm memory farm = IFactory(IPlatform(platform).factory()).farm($.farmId);
         address swapper = IPlatform(platform).swapper();
+        $._rewardAssets = farm.rewardAssets;
+        uint len = farm.rewardAssets.length;
         // nosemgrep
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
-        $._rewardAssets = farm.rewardAssets;
-        $._rewardsOnBalance = new uint[](farm.rewardAssets.length);
     }
 
     function transferAssets(
