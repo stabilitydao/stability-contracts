@@ -43,5 +43,18 @@ interface IFarmingStrategy {
     /// @notice Mechanics of receiving farming rewards
     function farmMechanics() external view returns (string memory);
 
+    /// @notice Farming reward assets for claim and liquidate
+    /// @return Addresses of farm reward ERC20 tokens
+    function farmingAssets() external view returns(address[] memory);
+
+    /// @notice Address of pool for staking asset/underlying
     function stakingPool() external view returns (address);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Update strategy farming reward assets from Factory
+    /// Only operator can call this
+    function refreshFarmingAssets() external;
 }
