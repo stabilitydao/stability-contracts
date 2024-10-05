@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 interface IMultiPositionManagerFactory {
+
     function getHeartBeat(address _base, address _quote) external view returns (uint);
 
     function chainlinkRegistry() external view returns (address);

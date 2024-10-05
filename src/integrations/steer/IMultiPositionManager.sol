@@ -2,9 +2,9 @@
 pragma solidity ^0.8.23;
 pragma abicoder v2;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IUniswapV3Pool} from "../uniswapv3/IUniswapV3Pool.sol";
-import {IAlgebraPool} from "../algebra/IAlgebraPool.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IUniswapV3Pool } from "../uniswapv3/IUniswapV3Pool.sol";
+import { IAlgebraPool } from "../algebra/IAlgebraPool.sol";
 
 interface IMultiPositionManager is IERC20 {
     struct VaultDetails {
@@ -13,17 +13,17 @@ interface IMultiPositionManager is IERC20 {
         address token1;
         string name;
         string symbol;
-        uint decimals;
+        uint256 decimals;
         string token0Name;
         string token1Name;
         string token0Symbol;
         string token1Symbol;
-        uint token0Decimals;
-        uint token1Decimals;
-        uint feeTier;
-        uint totalLPTokensIssued;
-        uint token0Balance;
-        uint token1Balance;
+        uint256 token0Decimals;
+        uint256 token1Decimals;
+        uint256 feeTier;
+        uint256 totalLPTokensIssued;
+        uint256 token0Balance;
+        uint256 token1Balance;
         address vaultCreator;
     }
 
@@ -33,22 +33,22 @@ interface IMultiPositionManager is IERC20 {
         address token1;
         string name;
         string symbol;
-        uint decimals;
+        uint256 decimals;
         string token0Name;
         string token1Name;
         string token0Symbol;
         string token1Symbol;
-        uint token0Decimals;
-        uint token1Decimals;
-        uint totalLPTokensIssued;
-        uint token0Balance;
-        uint token1Balance;
+        uint256 token0Decimals;
+        uint256 token1Decimals;
+        uint256 totalLPTokensIssued;
+        uint256 token0Balance;
+        uint256 token1Balance;
         address vaultCreator;
     }
 
     struct VaultBalance {
-        uint amountToken0;
-        uint amountToken1;
+        uint256 amountToken0;
+        uint256 amountToken1;
     }
 
     struct LiquidityPositions {
@@ -88,12 +88,12 @@ interface IMultiPositionManager is IERC20 {
     /// @return amount1 Amount of token1 deposited
     ///
     function deposit(
-        uint amount0Desired,
-        uint amount1Desired,
-        uint amount0Min,
-        uint amount1Min,
+        uint256 amount0Desired,
+        uint256 amount1Desired,
+        uint256 amount0Min,
+        uint256 amount1Min,
         address to
-    ) external returns (uint shares, uint amount0, uint amount1);
+    ) external returns (uint256 shares, uint256 amount0, uint256 amount1);
 
     /**
      * @dev burns each vault position which contains liquidity, updating fees owed to that position.
@@ -111,24 +111,28 @@ interface IMultiPositionManager is IERC20 {
      * @return amount1 Amount of token1 sent to recipient
      */
     function withdraw(
-        uint shares,
-        uint amount0Min,
-        uint amount1Min,
+        uint256 shares,
+        uint256 amount0Min,
+        uint256 amount1Min,
         address to
-    ) external returns (uint amount0, uint amount1);
+    ) external returns (uint256 amount0, uint256 amount1);
 
     /**
      * @dev Internal function to pull funds from pool, update positions if necessary, then deposit funds into pool.
      * @dev reverts if it does not have any liquidity.
-     *
+
      * @dev newPositions requirements:
      * Each lowerTick must be lower than its corresponding upperTick
      * Each lowerTick must be greater than or equal to the tick min (-887272)
      * Each upperTick must be less than or equal to the tick max (887272)
      * All lowerTicks and upperTicks must be divisible by the pool tickSpacing--
-     *     A 0.05% fee pool has tick spacing of 10, 0.3% has tick spacing 60. and 1% has tick spacing 200.)
+        A 0.05% fee pool has tick spacing of 10, 0.3% has tick spacing 60. and 1% has tick spacing 200.)
      */
-    function tend(LiquidityPositions memory newPositions, int swapAmount, uint160 sqrtPriceLimitX96) external;
+    function tend(
+        LiquidityPositions memory newPositions,
+        int256 swapAmount,
+        uint160 sqrtPriceLimitX96
+    ) external;
 
     /**
      * @dev Calculates the vault's total holdings of token0 and token1 - in
@@ -136,7 +140,10 @@ interface IMultiPositionManager is IERC20 {
      *      all its liquidity from Uniswap.
      * @dev this function DOES NOT include fees. To include fees, first poke() and then call getTotalAmounts. There's a function inside the periphery to do so.
      */
-    function getTotalAmounts() external view returns (uint total0, uint total1);
+    function getTotalAmounts()
+        external
+        view
+        returns (uint256 total0, uint256 total1);
 
     //Tokens
     function vaultRegistry() external view returns (address);
@@ -145,32 +152,40 @@ interface IMultiPositionManager is IERC20 {
 
     function token1() external view returns (address);
 
-    function accruedSteerFees0() external view returns (uint);
+    function accruedSteerFees0() external view returns (uint256);
 
-    function accruedSteerFees1() external view returns (uint);
+    function accruedSteerFees1() external view returns (uint256);
 
-    function accruedStrategistFees0() external view returns (uint);
+    function accruedStrategistFees0() external view returns (uint256);
 
-    function accruedStrategistFees1() external view returns (uint);
+    function accruedStrategistFees1() external view returns (uint256);
 
-    function maxTotalSupply() external view returns (uint);
+    function maxTotalSupply() external view returns (uint256);
 
     function pool() external view returns (address);
 
     /**
      * @dev Used to collect accumulated protocol fees.
      */
-    function steerCollectFees(uint amount0, uint amount1, address to) external;
+    function steerCollectFees(
+        uint256 amount0,
+        uint256 amount1,
+        address to
+    ) external;
 
     /**
      * @dev Used to collect accumulated protocol fees.
      */
-    function strategistCollectFees(uint amount0, uint amount1, address to) external;
+    function strategistCollectFees(
+        uint256 amount0,
+        uint256 amount1,
+        address to
+    ) external;
 
     /**
      * @dev Removes tokens accidentally sent to this vault.
      */
-    function sweep(address token, uint amount, address to) external;
+    function sweep(address token, uint256 amount, address to) external;
 
     /**
      * @dev Used to change deposit cap for a guarded launch or to ensure
@@ -178,7 +193,7 @@ interface IMultiPositionManager is IERC20 {
      * supply rather than amounts of token0 and token1 as those amounts
      * fluctuate naturally over time.
      */
-    function setMaxTotalSupply(uint _maxTotalSupply) external;
+    function setMaxTotalSupply(uint256 _maxTotalSupply) external;
 
     /**
      * @dev Used to change the MaxTickChange and twapinterval used when checking for flash
@@ -193,10 +208,7 @@ interface IMultiPositionManager is IERC20 {
         int24 tickLower,
         int24 tickUpper,
         uint128 liquidity
-    ) external returns (uint amount0, uint amount1);
+    ) external returns (uint256 amount0, uint256 amount1);
 
-    function getPositions()
-        external
-        view
-        returns (int24[] memory lowerTick, int24[] memory upperTick, uint16[] memory relativeWeight);
+    function getPositions() external view returns (int24[] memory lowerTick, int24[] memory upperTick, uint16[] memory relativeWeight);
 }
