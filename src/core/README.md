@@ -29,10 +29,16 @@
 
 ## Prepare
 
-* [install vscode](https://code.visualstudio.com/) and add extensions
-  * nomicfoundation.hardhat-solidity
-  * ryanluker.vscode-coverage-gutters
-  * davidanson.vscode-markdownlint
+* Setup IDE
+  * [vscode](https://code.visualstudio.com/)
+    * add extensions
+      * nomicfoundation.hardhat-solidity
+      * ryanluker.vscode-coverage-gutters
+      * davidanson.vscode-markdownlint
+  * [WebStorm](https://www.jetbrains.com/webstorm/)
+    * add plugins
+      * [Solidity](https://plugins.jetbrains.com/plugin/9475-solidity)
+    * Windows users: Editor -> Code Style -> Line separator: Unix and macos
 * [install foundry](https://book.getfoundry.sh/getting-started/installation)
 * clone this repo
 * put your Polygon archive RPC node to .env:

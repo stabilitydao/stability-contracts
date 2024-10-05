@@ -17,6 +17,7 @@ ignore = ["./src/test/**/*.sol"]
 int_types = "short"
 ignore = ["./src/integrations/**/*.sol"]
 multiline_func_header = "params_first"
+line_length = 120
 
 [rpc_endpoints]
 polygon = "${POLYGON_RPC_URL}"
