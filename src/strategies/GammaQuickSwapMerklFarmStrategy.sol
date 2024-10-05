@@ -26,7 +26,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.4.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -297,7 +297,6 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         amountsConsumed = new uint[](2);
         address[] memory _assets = assets();
         address underlying_ = _$._underlying;
-
         (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(underlying_, _assets[0], amountsMax[0]);
         IFactory.Farm memory farm = _getFarm();
 
@@ -345,6 +344,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     ) internal view {
         if (amountsMax[1] > amount1End) {
             amountsConsumed[0] = amountsMax[0];
+            // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] <= amount1Start) {
             (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets[1], amountsMax[1]);
@@ -354,16 +354,15 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             amountsConsumed[0] = amountsMax[0];
             amountsConsumed[1] = amountsMax[1];
         }
-    }
 
     function _calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
+        //slither-disable-next-line unused-return
         (, int24 tick,,,,,) = IAlgebraPool(pool()).globalState();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-
-        value = amountsConsumed[1] + (amountsConsumed[0] * price / _PRECISION);
+        value = amountsConsumed[1] + amountsConsumed[0] * price / _PRECISION;
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         value = value * hypervisor.totalSupply() / (pool0PricedInToken1 + pool1);
     }
