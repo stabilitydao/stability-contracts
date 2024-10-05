@@ -14,6 +14,7 @@ cast send -r polygon --gas-limit 15000000 --account DedicatedServerMsgSender 0x6
 
 ```shell
 cast send -r polygon --gas-limit 15000000 --account DedicatedServerMsgSender 0x2FfeB278BB1Fb9f3B48619AbaBe955526942ac8c 'call(address[])' [0xf6164dE791FDD7028001977bf207e42c59076A48,0x62146825d787EaD9C5bB8ADc8e7EFd3Ec3d7189a,]```
+```
 
 ## Operator actions
 
