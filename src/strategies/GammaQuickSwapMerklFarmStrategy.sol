@@ -312,14 +312,14 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint[] memory amountsMax,
         GammaQuickSwapFarmStrategyStorage storage $,
         address underlying_,
-        address[] memory assets,
+        address[] memory assets_,
         uint amount1Start,
         uint amount1End,
         uint[] memory amountsConsumed
     ) internal view {
         amountsConsumed[1] = amountsMax[1];
         amountsConsumed[0] = amountsMax[0];
-        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets[1], amountsMax[1]);
+        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets_[1], amountsMax[1]);
         // Inline the assignment and condition with a ternary operator
         amountsConsumed[1] = (amountsMax[1] > amount1End) ? amount1End : amountsMax[1];
 
@@ -337,7 +337,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint[] memory amountsMax,
         GammaQuickSwapFarmStrategyStorage storage $,
         address underlying_,
-        address[] memory assets,
+        address[] memory assets_,
         uint amount1Start,
         uint amount1End,
         uint[] memory amountsConsumed
@@ -347,7 +347,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
             // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] <= amount1Start) {
-            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets[1], amountsMax[1]);
+            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets_[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
         } else {
