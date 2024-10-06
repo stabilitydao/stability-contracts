@@ -16,6 +16,7 @@ import "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Merkl rewards on Uniswap V3 by underlying Gamma Hypervisor
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Hcrypto7 (https://github.com/Hcrypto7)
 contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
@@ -24,7 +25,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -303,35 +304,82 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        // alternative calculation: beefy-contracts/contracts/BIFI/strategies/Gamma/StrategyQuickGamma.sol
         GammaUniswapV3FarmStrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         amountsConsumed = new uint[](2);
         address[] memory _assets = assets();
         address underlying_ = _$._underlying;
+
         (uint amount1Start, uint amount1End) = $.uniProxy.getDepositAmount(underlying_, _assets[0], amountsMax[0]);
+        IFactory.Farm memory farm = _getFarm();
+
+        if (farm.nums[0] == ALMPositionNameLib.STABLE) {
+            _handleStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+        } else {
+            _handleNonStableAmounts(amountsMax, $, underlying_, _assets, amount1Start, amount1End, amountsConsumed);
+        }
+
+        // calculate shares
+        value = _calculateShares(amountsConsumed, underlying_);
+    }
+
+    function _handleStableAmounts(
+        uint[] memory amountsMax,
+        GammaUniswapV3FarmStrategyStorage storage $,
+        address underlying_,
+        address[] memory assets_,
+        uint amount1Start,
+        uint amount1End,
+        uint[] memory amountsConsumed
+    ) internal view {
+        amountsConsumed[1] = amountsMax[1];
+        amountsConsumed[0] = amountsMax[0];
+        (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets_[1], amountsMax[1]);
+
+        // Inline the assignment and condition with a ternary operator
+        amountsConsumed[1] = (amountsMax[1] > amount1End) ? amount1End : amountsMax[1];
+
+        // Check the second condition within another ternary operation
+        (amountsMax[1] <= amount1Start) ? amountsConsumed[0] = amount0End : amountsConsumed[0];
+
+        // Set amountsConsumed[1] to amountsMax[1] only if the second condition holds true
+        amountsConsumed[1] = (amountsMax[1] <= amount1Start) ? amountsMax[1] : amountsConsumed[1];
+
+        // Ensure amountsConsumed[0] does not exceed amount0End
+        amountsConsumed[0] = (amountsConsumed[0] > amount0End) ? amount0End : amountsConsumed[0];
+    }
+
+    function _handleNonStableAmounts(
+        uint[] memory amountsMax,
+        GammaUniswapV3FarmStrategyStorage storage $,
+        address underlying_,
+        address[] memory assets_,
+        uint amount1Start,
+        uint amount1End,
+        uint[] memory amountsConsumed
+    ) internal view {
         if (amountsMax[1] > amount1End) {
             amountsConsumed[0] = amountsMax[0];
-            // its possible to be (amount1End + amount1Start) / 2, but current amount1End value pass tests with small amounts
             amountsConsumed[1] = amount1End;
         } else if (amountsMax[1] <= amount1Start) {
-            //slither-disable-next-line similar-names
-            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, _assets[1], amountsMax[1]);
+            (uint amount0Start, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets_[1], amountsMax[1]);
             amountsConsumed[0] = (amount0End + amount0Start) / 2;
             amountsConsumed[1] = amountsMax[1];
         } else {
             amountsConsumed[0] = amountsMax[0];
             amountsConsumed[1] = amountsMax[1];
         }
+    }
 
-        // calculate shares
+    function _calculateShares(uint[] memory amountsConsumed, address underlying_) internal view returns (uint value) {
         IHypervisor hypervisor = IHypervisor(underlying_);
         //slither-disable-next-line unused-return
         (, int24 tick,,,,,) = IUniswapV3Pool(pool()).slot0();
         uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
         (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        value = amountsConsumed[1] + amountsConsumed[0] * price / _PRECISION;
+
+        value = amountsConsumed[1] + (amountsConsumed[0] * price / _PRECISION);
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         value = value * hypervisor.totalSupply() / (pool0PricedInToken1 + pool1);
     }
