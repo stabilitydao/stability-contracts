@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 
 contract DeployStrategyDQMFPolygon is Script {
     function run() external {

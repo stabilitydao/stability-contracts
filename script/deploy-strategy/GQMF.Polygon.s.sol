@@ -2,9 +2,9 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
-import "../src/strategies/libs/ALMPositionNameLib.sol";
-import "../chains/PolygonLib.sol";
+import "../../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
+//import "../src/strategies/libs/ALMPositionNameLib.sol";
+//import "../chains/PolygonLib.sol";
 
 contract DeployStrategyGQMFPolygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
@@ -15,7 +15,7 @@ contract DeployStrategyGQMFPolygon is Script {
 
         new GammaQuickSwapMerklFarmStrategy();
 
-        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+        /*IFactory factory = IFactory(IPlatform(PLATFORM).factory());
         IFactory.Farm[] memory _farms = new IFactory.Farm[](1);
         _farms[0] = _makeGammaQuickSwapMerklFarm(
             PolygonLib.TOKEN_dQUICK,
@@ -23,12 +23,12 @@ contract DeployStrategyGQMFPolygon is Script {
             PolygonLib.GAMMA_QUICKSWAP_UNIPROXY,
             ALMPositionNameLib.STABLE
         );
-        factory.addFarms(_farms);
+        factory.addFarms(_farms);*/
 
         vm.stopBroadcast();
     }
 
-    function _makeGammaQuickSwapMerklFarm(
+    /*function _makeGammaQuickSwapMerklFarm(
         address rewardAsset0,
         address hypervisor,
         address uniProxy,
@@ -47,7 +47,7 @@ contract DeployStrategyGQMFPolygon is Script {
         farm.nums[0] = preset;
         farm.ticks = new int24[](0);
         return farm;
-    }
+    }*/
 
     function testDeployPolygon() external {}
 }

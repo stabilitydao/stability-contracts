@@ -2,11 +2,11 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/adapters/AlgebraAdapter.sol";
-import "../src/adapters/UniswapV3Adapter.sol";
-import "../src/adapters/KyberAdapter.sol";
-import "../src/core/Zap.sol";
-// import "../src/strategies/QuickswapV3StaticFarmStrategy.sol";
+import "../../src/adapters/AlgebraAdapter.sol";
+import "../../src/adapters/UniswapV3Adapter.sol";
+import "../../src/adapters/KyberAdapter.sol";
+import "../../src/core/Zap.sol";
+// import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 
 contract PrepareUpgrade2Polygon is Script {
     function run() external {
