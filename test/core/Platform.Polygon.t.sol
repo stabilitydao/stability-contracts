@@ -339,8 +339,12 @@ contract PlatformPolygonTest is PolygonSetup {
 
         // now hardwork must be success, it use only first maxHwPerCall vaults
         bytes memory str;
-        (success,str) = address(hw).call(execPayload);
-        assertEq(success, true, string.concat("HardWorker.call failed 3. execPayload length: ", CommonLib.u2s(execPayload.length)));
+        (success, str) = address(hw).call(execPayload);
+        assertEq(
+            success,
+            true,
+            string.concat("HardWorker.call failed 3. execPayload length: ", CommonLib.u2s(execPayload.length))
+        );
         assertGt(hw.gelatoBalance(), 0);
         vm.stopPrank();
 
@@ -348,7 +352,6 @@ contract PlatformPolygonTest is PolygonSetup {
         {
             _fillAllStrategiesRewards(vaultManager);
             for (uint i; i < 100; ++i) {
-
                 (canExec, execPayload) = hw.checkerServer();
                 if (canExec) {
                     (success, str) = address(hw).call(execPayload);
@@ -529,7 +532,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
     function _disableStrategy(string memory id) internal {
         vm.startPrank(platform.multisig());
-//        platform.addOperator(platform.multisig());
+        // platform.addOperator(platform.multisig());
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: id,
