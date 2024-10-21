@@ -2,11 +2,11 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/core/Factory.sol";
-import "../src/core/vaults/CVault.sol";
-import "../src/core/vaults/RVault.sol";
-import "../src/core/vaults/RMVault.sol";
-// import "../src/strategies/QuickswapV3StaticFarmStrategy.sol";
+import "../../src/core/Factory.sol";
+import "../../src/core/vaults/CVault.sol";
+import "../../src/core/vaults/RVault.sol";
+import "../../src/core/vaults/RMVault.sol";
+// import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 
 contract PrepareUpgrade3Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;

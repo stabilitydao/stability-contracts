@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../chains/EthereumLib.sol";
-import {DeployCore} from "./base/DeployCore.sol";
+import "../../chains/EthereumLib.sol";
+import {DeployCore} from "../base/DeployCore.sol";
 
 contract DeployEthereum is Script, DeployCore {
     function run() external {

@@ -6,6 +6,10 @@ import "../base/chains/PolygonSetup.sol";
 import "../../src/strategies/IchiRetroMerklFarmStrategy.sol";
 
 contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(55000000); // Mar-23-2024 07:56:52 PM +UTC
+    }
+
     function testIchiRetroMerklFarmStrategy() public universalTest {
         _addStrategy(24);
         _addStrategy(25);

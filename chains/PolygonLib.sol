@@ -590,7 +590,7 @@ library PolygonLib {
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[0] = TOKEN_QUICK;
         farm.addresses = new address[](2);
         farm.addresses[0] = GAMMA_QUICKSWAP_UNIPROXY;
         farm.addresses[1] = hypervisor;
@@ -609,7 +609,7 @@ library PolygonLib {
         farm.pool = IHypervisor(hypervisor).pool();
         farm.strategyLogicId = StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](2);
-        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[0] = TOKEN_QUICK;
         farm.rewardAssets[1] = TOKEN_WMATIC;
         farm.addresses = new address[](1);
         farm.addresses[0] = hypervisor;
@@ -652,7 +652,7 @@ library PolygonLib {
         farm.pool = IDefiEdgeStrategy(underlyingDefiEdge).pool();
         farm.strategyLogicId = StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[0] = TOKEN_QUICK;
         farm.addresses = new address[](1);
         farm.addresses[0] = underlyingDefiEdge;
         farm.nums = new uint[](1);
@@ -667,7 +667,7 @@ library PolygonLib {
         farm.pool = IICHIVault(underlyingIchi).pool();
         farm.strategyLogicId = StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM;
         farm.rewardAssets = new address[](2);
-        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[0] = TOKEN_QUICK;
         farm.rewardAssets[1] = TOKEN_ICHI;
         farm.addresses = new address[](1);
         farm.addresses[0] = underlyingIchi;
@@ -705,7 +705,7 @@ library PolygonLib {
         farm.pool = pool;
         farm.strategyLogicId = StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = TOKEN_dQUICK;
+        farm.rewardAssets[0] = TOKEN_QUICK;
         farm.addresses = new address[](1);
         farm.addresses[0] = QUICKSWAP_POSITION_MANAGER;
         farm.nums = new uint[](0);

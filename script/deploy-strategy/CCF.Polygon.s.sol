@@ -2,13 +2,13 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/core/proxy/Proxy.sol";
-import "../src/adapters/CurveAdapter.sol";
-import "../src/strategies/CurveConvexFarmStrategy.sol";
+//import "../src/core/proxy/Proxy.sol";
+//import "../src/adapters/CurveAdapter.sol";
+import "../../src/strategies/CurveConvexFarmStrategy.sol";
 
 contract DeployStrategyCCFPolygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
-    address public constant POOL_CURVE_crvUSD_USDCe = 0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
+    /*address public constant POOL_CURVE_crvUSD_USDCe = 0x864490Cf55dc2Dee3f0ca4D06F5f80b2BB154a03;
     address public constant POOL_CURVE_crvUSD_USDT = 0xA70Af99bFF6b168327f9D1480e29173e757c7904;
     address public constant POOL_CURVE_crvUSD_DAI = 0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
     address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
@@ -21,10 +21,10 @@ contract DeployStrategyCCFPolygon is Script {
     address public constant CONVEX_REWARD_POOL_crvUSD_USDT = 0xd2D8BEB901f90163bE4667A85cDDEbB7177eb3E3;
     address public constant CONVEX_REWARD_POOL_crvUSD_DAI = 0xaCb744c7e7C95586DB83Eda3209e6483Fb1FCbA4;
     address public constant CONVEX_REWARD_POOL_crvUSD_USDC = 0x11F2217fa1D5c44Eae310b9b985E2964FC47D8f9;
-    address public constant DEV = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
+    address public constant DEV = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;*/
 
     function run() external {
-        // prepare pools
+        /*// prepare pools
         ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](2);
         pools[0] = ISwapper.AddPoolData({
@@ -55,21 +55,23 @@ contract DeployStrategyCCFPolygon is Script {
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDCe, CONVEX_REWARD_POOL_crvUSD_USDCe);
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDT, CONVEX_REWARD_POOL_crvUSD_USDT);
         _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_DAI, CONVEX_REWARD_POOL_crvUSD_DAI);
-        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);
+        _farms[i++] = _makeCurveConvexFarm(POOL_CURVE_crvUSD_USDC, CONVEX_REWARD_POOL_crvUSD_USDC);;
+        */
 
         // start deploy
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // add AMM adapter
+        /*// add AMM adapter
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new CurveAdapter()));
-        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.CURVE, address(proxy));
+        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.CURVE, address(proxy));*/
 
         // deploy strategy implementation
-        address implementation = address(new CurveConvexFarmStrategy());
+        /*address implementation = address(*/
+        new CurveConvexFarmStrategy(); /*)*/
 
-        // add routes and thresholds
+        /*// add routes and thresholds
         swapper.addPools(pools, false);
         swapper.setThresholds(tokenIn, thresholdAmount);
 
@@ -87,12 +89,14 @@ contract DeployStrategyCCFPolygon is Script {
                 tokenId: type(uint).max
             }),
             DEV
-        );
+        );*/
 
         vm.stopBroadcast();
     }
 
     function testDeployPolygon() external {}
+
+    /*
 
     function _makeCurveConvexFarm(
         address curvePool,
@@ -114,5 +118,5 @@ contract DeployStrategyCCFPolygon is Script {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
-    }
+    }*/
 }

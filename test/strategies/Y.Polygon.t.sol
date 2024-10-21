@@ -5,6 +5,10 @@ import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract YearnStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(55000000); // Mar-23-2024 07:56:52 PM +UTC
+    }
+
     function testYearnStrategy() public universalTest {
         _addStrategy(PolygonLib.YEARN_USDCe);
         _addStrategy(PolygonLib.YEARN_DAI);

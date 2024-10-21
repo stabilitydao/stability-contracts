@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../chains/ArbitrumLib.sol";
-import {DeployCore} from "./base/DeployCore.sol";
+import "../../chains/ArbitrumLib.sol";
+import {DeployCore} from "../base/DeployCore.sol";
 
 contract DeployArbitrum is Script, DeployCore {
     function run() external {

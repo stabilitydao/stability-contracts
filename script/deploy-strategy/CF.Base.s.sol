@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../chains/PolygonLib.sol";
-import {DeployCore} from "./base/DeployCore.sol";
+import "../../src/strategies/CompoundFarmStrategy.sol";
 
-contract DeployPolygon is Script, DeployCore {
+contract DeployCFBase is Script {
+    address public constant PLATFORM = 0x7eAeE5CfF17F7765d89F4A46b484256929C62312;
+
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        address platform = _deployCore(PolygonLib.platformDeployParams());
-        PolygonLib.deployAndSetupInfrastructure(platform, false);
+        new CompoundFarmStrategy();
         vm.stopBroadcast();
     }
 

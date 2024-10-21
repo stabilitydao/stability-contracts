@@ -2,11 +2,11 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../src/core/Factory.sol";
-import "../src/adapters/AlgebraAdapter.sol";
-import "../src/adapters/UniswapV3Adapter.sol";
-import "../src/adapters/KyberAdapter.sol";
-import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../../src/core/Factory.sol";
+import "../../src/adapters/AlgebraAdapter.sol";
+import "../../src/adapters/UniswapV3Adapter.sol";
+import "../../src/adapters/KyberAdapter.sol";
+import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
 
 contract PrepareUpgrade4Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
