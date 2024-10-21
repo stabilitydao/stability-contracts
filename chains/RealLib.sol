@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import "../script/libs/LogDeployLib.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
 import {IFactory} from "../src/interfaces/IFactory.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
+import {IPlatform} from "../src/interfaces/IPlatform.sol";
+import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _
@@ -79,13 +82,74 @@ library RealLib {
         p.gelatoDepositAmount = 2e16;
     }
 
-    function deployAndSetupInfrastructure(address platform, bool showLog) internal {}
+    function deployAndSetupInfrastructure(address platform, bool showLog) internal {
+        IFactory factory = IFactory(IPlatform(platform).factory());
+
+        //region ----- Deployed Platform -----
+        if (showLog) {
+            console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
+            console.log("Platform address: ", platform);
+        }
+        //endregion -- Deployed Platform ----
+
+        //region ----- Deploy and setup vault types -----
+        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
+        //endregion -- Deploy and setup vault types -----
+
+        //region ----- Deploy and setup oracle adapters -----
+        // todo it
+        //endregion -- Deploy and setup oracle adapters -----
+
+        //region ----- Deploy AMM adapters -----
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
+        LogDeployLib.logDeployAmmAdapters(platform, showLog);
+        //endregion -- Deploy AMM adapters ----
+
+        //region ----- Setup Swapper -----
+        {
+            (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            swapper.addBlueChipsPools(bcPools, false);
+            swapper.addPools(pools, false);
+            address[] memory tokenIn = new address[](1);
+            tokenIn[0] = TOKEN_USDC;
+            // todo thresholds
+            uint[] memory thresholdAmount = new uint[](1);
+            thresholdAmount[0] = 1e3;
+            swapper.setThresholds(tokenIn, thresholdAmount);
+            LogDeployLib.logSetupSwapper(platform, showLog);
+        }
+        //endregion -- Setup Swapper -----
+
+        // ...
+    }
 
     function routes()
         public
         pure
         returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
-    {}
+    {
+        //region ----- BC pools ----
+        bcPools = new ISwapper.AddPoolData[](2);
+        bcPools[0] = _makePoolData(POOL_PEARL_arcUSD_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_arcUSD, TOKEN_USDC);
+        bcPools[1] = _makePoolData(POOL_PEARL_reETH_USDC_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WREETH, TOKEN_USDC);
+        //endregion -- BC pools ----
+
+        //region ----- Pools ----
+        pools = new ISwapper.AddPoolData[](8);
+        uint i;
+        // UniswapV3
+        pools[i++] = _makePoolData(POOL_PEARL_MORE_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_MORE, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_PEARL_UKRE_arcUSD_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_UKRE, TOKEN_arcUSD);
+        pools[i++] = _makePoolData(POOL_PEARL_CVR_PEARL_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_CVR, TOKEN_PEARL);
+        pools[i++] = _makePoolData(POOL_PEARL_USDC_PEARL_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_PEARL, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_PEARL_DAI_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_DAI, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_PEARL_MORE_USTB_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USTB, TOKEN_MORE);
+        pools[i++] = _makePoolData(POOL_PEARL_RWA_reETH_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_RWA, TOKEN_WREETH);
+        pools[i++] = _makePoolData(POOL_PEARL_SACRA_reETH_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_RWA, TOKEN_WREETH);
+
+        //endregion -- Pools ----
+    }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {}
 
