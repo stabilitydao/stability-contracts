@@ -57,3 +57,9 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+
+      - name: Archive rpc cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpc-cache
+          path: .foundry/cache/rpc
