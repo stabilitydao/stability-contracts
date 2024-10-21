@@ -30,7 +30,8 @@ contract PlatformPolygonTest is PolygonSetup {
         // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
         // vm.rollFork(52813000); // Jan-27-2024 02:40:51 PM +UTC
         // vm.rollFork(53017000); // Feb-01-2024 11:34:48 PM +UTC
-        vm.rollFork(55628000); // Apr-09-2024 01:21:45 PM +UTC
+        // vm.rollFork(55628000); // Apr-09-2024 01:21:45 PM +UTC
+        vm.rollFork(63200000); // Oct-18-2024 06:38:45 PM +UTC
 
         _init();
         deal(platform.buildingPayPerVaultToken(), address(this), 5e25);
@@ -101,21 +102,12 @@ contract PlatformPolygonTest is PolygonSetup {
         defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, ETH, 86400 * 365);
         vm.stopPrank();
 
-        // disable deprecated strategies
-        // vm.startPrank(platform.multisig());
-        // platform.addOperator(platform.multisig());
-        // factory.setStrategyLogicConfig(
-        //     IFactory.StrategyLogicConfig({
-        //         id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
-        //         implementation: address(0),
-        //         deployAllowed: false,
-        //         upgradeAllowed: false,
-        //         farming: true,
-        //         tokenId: type(uint).max
-        //     }),
-        //     address(this)
-        // );
-        // vm.stopPrank();
+        // disable some strategies that cant work on this default forking block
+        vm.startPrank(platform.multisig());
+        platform.addOperator(platform.multisig());
+        vm.stopPrank();
+
+        _disableStrategy(StrategyIdLib.COMPOUND_FARM);
 
         platform.setAllowedBBTokenVaults(platform.allowedBBTokens()[0], 1e4);
         BuildingVars memory vars;
@@ -344,19 +336,21 @@ contract PlatformPolygonTest is PolygonSetup {
 
         _fillAllStrategiesRewards(vaultManager);
         vm.deal(address(hw), 2000e18);
-        (success,) = address(hw).call(execPayload);
-        assertEq(success, true, "HardWorker call not success 3");
+
+        // now hardwork must be success, it use only first maxHwPerCall vaults
+        bytes memory str;
+        (success,str) = address(hw).call(execPayload);
+        assertEq(success, true, string.concat("HardWorker.call failed 3. execPayload length: ", CommonLib.u2s(execPayload.length)));
         assertGt(hw.gelatoBalance(), 0);
         vm.stopPrank();
 
         skip(1 days);
         {
             _fillAllStrategiesRewards(vaultManager);
+            for (uint i; i < 100; ++i) {
 
-            for (uint i; i < len; ++i) {
                 (canExec, execPayload) = hw.checkerServer();
                 if (canExec) {
-                    bytes memory str;
                     (success, str) = address(hw).call(execPayload);
                     assertEq(success, true, "Not success");
                 } else {
@@ -376,14 +370,15 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(delayGelato, 2 hours);
 
         address[] memory vaultsForHardWork = new address[](1);
-        address vault_ = factory.deployedVault(108);
+        address vault_ = factory.deployedVault(10);
+        // console.log(IERC20Metadata(vault_).symbol());
         vaultsForHardWork[0] = vault_;
 
         (stategyRevenueAssets,) = IVault(vault_).strategy().getRevenue();
-        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
+        deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e18);
 
         vm.txGasPrice(15e10);
-        vm.deal(address(hw), 2000e18);
+        vm.deal(address(hw), 200e18);
         vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
         hw.call(vaultsForHardWork);
         canReceive = true;
@@ -525,10 +520,55 @@ contract PlatformPolygonTest is PolygonSetup {
         (address[] memory stategyRevenueAssets,) = strategy.getRevenue();
         if (stategyRevenueAssets.length > 0) {
             if (CommonLib.eq("QuickSwap Static Merkl Farm", strategy.strategyLogicId())) {
-                deal(stategyRevenueAssets[2], address(strategy), 1e18);
+                deal(stategyRevenueAssets[2], address(strategy), 10e18);
             } else {
-                deal(stategyRevenueAssets[0], address(strategy), 1e18);
+                deal(stategyRevenueAssets[0], address(strategy), 10e18);
             }
         }
     }
+
+    function _disableStrategy(string memory id) internal {
+        vm.startPrank(platform.multisig());
+//        platform.addOperator(platform.multisig());
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: id,
+                implementation: address(0),
+                deployAllowed: false,
+                upgradeAllowed: false,
+                farming: true,
+                tokenId: type(uint).max
+            }),
+            address(this)
+        );
+        vm.stopPrank();
+    }
+
+    /*function _extractCalldata(bytes memory calldataWithSelector) internal pure returns (bytes memory) {
+        bytes memory calldataWithoutSelector;
+
+        require(calldataWithSelector.length >= 4);
+
+        assembly {
+            let totalLength := mload(calldataWithSelector)
+            let targetLength := sub(totalLength, 4)
+            calldataWithoutSelector := mload(0x40)
+
+        // Set the length of callDataWithoutSelector (initial length - 4)
+            mstore(calldataWithoutSelector, targetLength)
+
+        // Mark the memory space taken for callDataWithoutSelector as allocated
+            mstore(0x40, add(calldataWithoutSelector, add(0x20, targetLength)))
+
+        // Process first 32 bytes (we only take the last 28 bytes)
+            mstore(add(calldataWithoutSelector, 0x20), shl(0x20, mload(add(calldataWithSelector, 0x20))))
+
+        // Process all other data by chunks of 32 bytes
+            for { let i := 0x1C } lt(i, targetLength) { i := add(i, 0x20) } {
+                mstore(add(add(calldataWithoutSelector, 0x20), i), mload(add(add(calldataWithSelector, 0x20), add(i, 0x04))))
+            }
+        }
+
+        return calldataWithoutSelector;
+    }*/
 }

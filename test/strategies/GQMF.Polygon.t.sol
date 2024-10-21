@@ -37,6 +37,6 @@ contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _preHardWork() internal override {
-        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_QUICK, currentStrategy, 10e18);
     }
 }

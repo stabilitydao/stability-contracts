@@ -5,6 +5,10 @@ import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(55000000); // Mar-23-2024 07:56:52 PM +UTC
+    }
+
     function testIQMF() public universalTest {
         _addStrategy(21);
         _addStrategy(22);
@@ -24,7 +28,7 @@ contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _preHardWork() internal override {
-        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_QUICK, currentStrategy, 10e18);
         deal(PolygonLib.TOKEN_ICHI, currentStrategy, 10e18);
     }
 }

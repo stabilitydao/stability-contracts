@@ -6,6 +6,10 @@ import "../base/UniversalTest.sol";
 import "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
 
 contract GammaRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(55000000); // Mar-23-2024 07:56:52 PM +UTC
+    }
+
     function testGRMF() public universalTest {
         _addStrategy(29);
         _addStrategy(30);

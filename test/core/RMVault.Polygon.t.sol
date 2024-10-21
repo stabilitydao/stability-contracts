@@ -177,7 +177,7 @@ contract RMVaultTest is PolygonSetup {
             vaultManager.changeVaultParams(0, vaultChangeAddresses, vaultChangeNums);
         }
 
-        deal(PolygonLib.TOKEN_dQUICK, address(vault.strategy()), 10e18);
+        deal(PolygonLib.TOKEN_QUICK, address(vault.strategy()), 10e18);
 
         (uint sharePriceBefore,) = vault.price();
         vault.doHardWork();

@@ -9,10 +9,6 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal constant USD = address(840);
 
-    constructor() {
-        // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
-    }
-
     function testDQMF() public universalTest {
         // vm.rollFork(52400000); // Jan-16-2024 05:22:08 PM +UTC
 
@@ -45,6 +41,6 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _preHardWork() internal override {
-        deal(PolygonLib.TOKEN_dQUICK, currentStrategy, 10e18);
+        deal(PolygonLib.TOKEN_QUICK, currentStrategy, 10e18);
     }
 }

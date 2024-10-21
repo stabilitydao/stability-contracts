@@ -5,6 +5,10 @@ import "../base/chains/PolygonSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract CurveConvexFarmStrategyTest is PolygonSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(55000000); // Mar-23-2024 07:56:52 PM +UTC
+    }
+
     function testCCF() public universalTest {
         _addStrategy(34);
         _addStrategy(35);
