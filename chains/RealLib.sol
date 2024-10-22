@@ -34,6 +34,7 @@ library RealLib {
     address public constant TOKEN_RWA = 0x4644066f535Ead0cde82D209dF78d94572fCbf14;
     address public constant TOKEN_arcUSD = 0xAEC9e50e3397f9ddC635C6c429C8C7eca418a143;
     address public constant TOKEN_USDC = 0xc518A88c67CECA8B3f24c4562CB71deeB2AF86B7;
+    address public constant TOKEN_SACRA = 0x6B2e0fACD2F2A8f407aC591067Ac06b5d29247E4;
 
     // AMMs
     // 21.10.2024: TVL $3.22M, APR 84.6%
