@@ -28,9 +28,6 @@ jobs:
           version: nightly
 
       - uses: actions/download-artifact@v3
-        with:
-          name: rpc-cache
-          path: ~/.foundry/cache/rpc
       - name: Downloaded rpc cache
         run: ls -R ~/.foundry/cache/rpc
 
