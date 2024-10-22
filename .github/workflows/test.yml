@@ -27,6 +27,13 @@ jobs:
         with:
           version: nightly
 
+      - uses: actions/download-artifact@v3
+        with:
+          name: rpc-cache
+          path: ~/.foundry/cache/rpc
+      - name: Downloaded rpc cache
+        run: ls -R ~/.foundry/cache/rpc
+
       - name: Run forge build
         run: |
           forge --version
@@ -58,7 +65,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
 
-      - name: Archive rpc cache
+      - name: Upload rpc cache
         uses: actions/upload-artifact@v3
         with:
           name: rpc-cache
