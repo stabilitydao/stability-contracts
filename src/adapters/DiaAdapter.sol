@@ -67,9 +67,9 @@ contract DiaAdapter is Controllable, IOracleAdapter {
 
     /// @inheritdoc IOracleAdapter
     function getAllPrices()
-    external
-    view
-    returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps)
+        external
+        view
+        returns (address[] memory assets_, uint[] memory prices, uint[] memory timestamps)
     {
         uint len = _assets.length();
         assets_ = _assets.values();
