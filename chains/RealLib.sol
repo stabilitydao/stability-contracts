@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "../script/libs/LogDeployLib.sol";
+import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -11,6 +12,9 @@ import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.
 import {IPlatform} from "../src/interfaces/IPlatform.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {DiaAdapter} from "../src/adapters/DiaAdapter.sol";
+import {ILiquidBoxFactory} from "../src/integrations/pearl/ILiquidBoxFactory.sol";
+import {ILiquidBox} from "../src/integrations/pearl/ILiquidBox.sol";
+import {IGaugeV2CL} from "../src/integrations/pearl/IGaugeV2CL.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _
@@ -69,7 +73,7 @@ library RealLib {
     address public constant POOL_PEARL_SACRA_reETH_10000 = 0x2EC05Ab55867719f433d8ab0a446C48003B3BE8F;
 
     // ALMs
-    // ...
+    address public constant TRIDENT_LIQUID_BOX_FACTORY = 0xEfeFFa36b9FA787b500b2d18a3829271526023b1;
 
     // Oracles
     address public constant ORACLE_DIA_WREETH_USDC = 0xA2c62937987815A9Bb9d3b2F4580e629F9FA3Bc8;
@@ -141,6 +145,11 @@ library RealLib {
         }
         //endregion -- Setup Swapper -----
 
+        //region ----- Add farms -----
+        factory.addFarms(farms());
+        LogDeployLib.logAddedFarms(address(factory), showLog);
+        //endregion -- Add farms -----
+
         // ...
     }
 
@@ -172,7 +181,43 @@ library RealLib {
         //endregion -- Pools ----
     }
 
-    function farms() public view returns (IFactory.Farm[] memory _farms) {}
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](14);
+        uint i;
+
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_arcUSD_USDC_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_MORE_USDC_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_UKRE_arcUSD_500);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_CVR_PEARL_500);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USDC_PEARL_10000);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_reETH_USDC_500);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_DAI_USDC_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_MORE_USTB_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_arcUSD_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_DAI_USTB_100);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_reETH_3000);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_RWA_reETH_3000);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_PEARL_10000);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_SACRA_reETH_10000);
+    }
+
+    function _makeTridentPearlFarm(address pool) internal view returns (IFactory.Farm memory) {
+        address alm = ILiquidBoxFactory(TRIDENT_LIQUID_BOX_FACTORY).getBoxByPool(pool);
+        address gauge = ILiquidBox(alm).gauge();
+
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = pool;
+        farm.strategyLogicId = StrategyIdLib.TRIDENT_PEARL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = IGaugeV2CL(gauge).rewardToken();
+        farm.addresses = new address[](2);
+        farm.addresses[0] = alm;
+        farm.addresses[1] = gauge;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 
     function _makePoolData(
         address pool,
