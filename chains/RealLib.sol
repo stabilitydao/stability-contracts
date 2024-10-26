@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "../script/libs/LogDeployLib.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
+import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
 import {IFactory} from "../src/interfaces/IFactory.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
@@ -137,9 +138,11 @@ library RealLib {
         //endregion -- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](8);
+        pools = new ISwapper.AddPoolData[](11);
         uint i;
-        // UniswapV3
+        pools[i++] = _makePoolData(POOL_PEARL_arcUSD_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_arcUSD);
+        pools[i++] = _makePoolData(POOL_PEARL_arcUSD_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_arcUSD, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_PEARL_reETH_USDC_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WREETH, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_PEARL_MORE_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_MORE, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_PEARL_UKRE_arcUSD_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_UKRE, TOKEN_arcUSD);
         pools[i++] = _makePoolData(POOL_PEARL_CVR_PEARL_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_CVR, TOKEN_PEARL);
@@ -147,8 +150,7 @@ library RealLib {
         pools[i++] = _makePoolData(POOL_PEARL_DAI_USDC_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_DAI, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_PEARL_MORE_USTB_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_USTB, TOKEN_MORE);
         pools[i++] = _makePoolData(POOL_PEARL_RWA_reETH_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_RWA, TOKEN_WREETH);
-        pools[i++] = _makePoolData(POOL_PEARL_SACRA_reETH_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_RWA, TOKEN_WREETH);
-
+        pools[i++] = _makePoolData(POOL_PEARL_SACRA_reETH_10000, AmmAdapterIdLib.UNISWAPV3, TOKEN_SACRA, TOKEN_WREETH);
         //endregion -- Pools ----
     }
 
