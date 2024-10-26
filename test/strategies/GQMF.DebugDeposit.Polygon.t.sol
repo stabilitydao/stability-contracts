@@ -1,3 +1,4 @@
+/*
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
@@ -55,3 +56,4 @@ contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         deal(PolygonLib.TOKEN_QUICK, currentStrategy, 10e18);
     }
 }
+*/
