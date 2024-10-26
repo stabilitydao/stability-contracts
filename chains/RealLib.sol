@@ -10,6 +10,7 @@ import {IFactory} from "../src/interfaces/IFactory.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 import {IPlatform} from "../src/interfaces/IPlatform.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
+import {DiaAdapter} from "../src/adapters/DiaAdapter.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _
@@ -70,6 +71,9 @@ library RealLib {
     // ALMs
     // ...
 
+    // Oracles
+    address public constant ORACLE_DIA_WREETH_USDC = 0xA2c62937987815A9Bb9d3b2F4580e629F9FA3Bc8;
+
     //noinspection NoReturn
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
@@ -92,20 +96,34 @@ library RealLib {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- Deployed Platform ----
+        //endregion -- Deployed Platform -----
 
         //region ----- Deploy and setup vault types -----
         _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
-        // todo it
+        IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
+        // Dia
+        {
+            Proxy proxy = new Proxy();
+            proxy.initProxy(address(new DiaAdapter()));
+            DiaAdapter adapter = DiaAdapter(address(proxy));
+            adapter.initialize(platform);
+            address[] memory assets = new address[](1);
+            assets[0] = TOKEN_WREETH;
+            address[] memory priceFeeds = new address[](1);
+            priceFeeds[0] = ORACLE_DIA_WREETH_USDC;
+            adapter.addPriceFeeds(assets, priceFeeds);
+            priceReader.addAdapter(address(adapter));
+            LogDeployLib.logDeployAndSetupOracleAdapter("Dia", address(adapter), showLog);
+        }
         //endregion -- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
-        //endregion -- Deploy AMM adapters ----
+        //endregion -- Deploy AMM adapters -----
 
         //region ----- Setup Swapper -----
         {
