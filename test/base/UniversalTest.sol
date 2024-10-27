@@ -545,15 +545,26 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 address underlying = strategy.underlying();
                 if (underlying != address(0)) {
-                    skip(7200);
-                    bool wasReadyForHardWork = strategy.isReadyForHardWork();
                     address tempVault = vars.vault;
-                    deal(underlying, address(this), totalWas);
-                    assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
-                    IERC20(underlying).approve(tempVault, totalWas);
                     address[] memory underlyingAssets = new address[](1);
                     underlyingAssets[0] = underlying;
                     uint[] memory underlyingAmounts = new uint[](1);
+
+                    // first other user need to deposit to not hold vault only with dead shares
+                    underlyingAmounts[0] = totalWas / 100;
+                    deal(underlying, address(100), underlyingAmounts[0]);
+                    vm.startPrank(address(100));
+                    IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
+                    IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
+                    vm.stopPrank();
+
+                    skip(7200);
+                    bool wasReadyForHardWork = strategy.isReadyForHardWork();
+
+                    deal(underlying, address(this), totalWas);
+                    assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
+                    IERC20(underlying).approve(tempVault, totalWas);
+
                     underlyingAmounts[0] = totalWas;
                     (, uint sharesOut, uint valueOut) =
                         IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
