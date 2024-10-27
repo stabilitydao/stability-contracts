@@ -15,6 +15,7 @@ import {DiaAdapter} from "../src/adapters/DiaAdapter.sol";
 import {ILiquidBoxFactory} from "../src/integrations/pearl/ILiquidBoxFactory.sol";
 import {ILiquidBox} from "../src/integrations/pearl/ILiquidBox.sol";
 import {IGaugeV2CL} from "../src/integrations/pearl/IGaugeV2CL.sol";
+import {TridentPearlFarmStrategy} from "../src/strategies/TridentPearlFarmStrategy.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _
@@ -135,20 +136,29 @@ library RealLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](1);
+            address[] memory tokenIn = new address[](3);
             tokenIn[0] = TOKEN_USDC;
+            tokenIn[1] = TOKEN_PEARL;
+            tokenIn[2] = TOKEN_MORE;
             // todo thresholds
-            uint[] memory thresholdAmount = new uint[](1);
-            thresholdAmount[0] = 1e3;
+            uint[] memory thresholdAmount = new uint[](3);
+            thresholdAmount[0] = 1e4;
+            thresholdAmount[1] = 1e15;
+            thresholdAmount[2] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion -- Setup Swapper -----
+        //endregion ----- Setup Swapper -----
 
         //region ----- Add farms -----
         factory.addFarms(farms());
         LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
+
+        //region ----- Deploy strategy logics -----
+        _addStrategyLogic(factory, StrategyIdLib.TRIDENT_PEARL_FARM, address(new TridentPearlFarmStrategy()), true);
+        LogDeployLib.logDeployStrategies(platform, showLog);
+        //endregion -- Deploy strategy logics -----
 
         // ...
     }
@@ -204,6 +214,7 @@ library RealLib {
     function _makeTridentPearlFarm(address pool) internal view returns (IFactory.Farm memory) {
         address alm = ILiquidBoxFactory(TRIDENT_LIQUID_BOX_FACTORY).getBoxByPool(pool);
         address gauge = ILiquidBox(alm).gauge();
+        address boxManager = ILiquidBoxFactory(TRIDENT_LIQUID_BOX_FACTORY).boxManager();
 
         IFactory.Farm memory farm;
         farm.status = 0;
@@ -211,9 +222,10 @@ library RealLib {
         farm.strategyLogicId = StrategyIdLib.TRIDENT_PEARL_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = IGaugeV2CL(gauge).rewardToken();
-        farm.addresses = new address[](2);
+        farm.addresses = new address[](3);
         farm.addresses[0] = alm;
         farm.addresses[1] = gauge;
+        farm.addresses[2] = boxManager;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

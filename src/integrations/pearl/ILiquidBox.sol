@@ -45,7 +45,13 @@ interface ILiquidBox {
      * other words, how much of each token the vault would hold if it withdrew
      * all its liquidity from Uniswap.
      */
-    function getTotalAmounts() external view returns (uint total0, uint total1, uint128 liquidity);
+    function getTotalAmounts() external view returns (
+        uint total0,
+        uint total1,
+        uint pool0,
+        uint pool1,
+        uint128 liquidity
+    );
 
     /**
      * @dev Returns the amount of tokens in existence.
@@ -57,4 +63,9 @@ interface ILiquidBox {
     function token1() external view returns (address);
 
     function gauge() external view returns (address);
+
+    function getRequiredAmountsForInput(
+        uint amount0,
+        uint amount1
+    ) external view returns (uint, uint);
 }

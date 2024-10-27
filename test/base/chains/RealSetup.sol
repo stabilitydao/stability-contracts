@@ -26,6 +26,17 @@ abstract contract RealSetup is ChainSetup, DeployCore {
     }
 
     function _deal(address token, address to, uint amount) internal override {
-        deal(token, to, amount);
+        if (token == RealLib.TOKEN_arcUSD) {
+            vm.prank(0xA3949263535D40d470132Ab6CA76b16D6183FD31); // stack vault
+            IERC20(token).transfer(to, amount + 1); // need for this token
+        } else if (token == RealLib.TOKEN_UKRE) {
+            vm.prank(0x05bB93F3c1905Fc77ee1256E0998ABA75B5C9603); // top2 holder
+            IERC20(token).transfer(to, amount + amount / 10);
+        } else if (token == RealLib.TOKEN_DAI) {
+            vm.prank(0x05bB93F3c1905Fc77ee1256E0998ABA75B5C9603); // top2 holder
+            IERC20(token).transfer(to, amount + amount / 10);
+        } else {
+            deal(token, to, amount);
+        }
     }
 }
