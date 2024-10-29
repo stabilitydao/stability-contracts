@@ -24,7 +24,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickSwapV3StaticMerkFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION =
