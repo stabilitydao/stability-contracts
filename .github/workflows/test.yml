@@ -29,7 +29,7 @@ jobs:
 
 #      - uses: actions/download-artifact@v3
       - name: Show RPC cache
-        run: ls -R ~/.foundry/cache/rpc
+        run: [[ -e ~/.foundry/cache/rpc ]] && ls -R ~/.foundry/cache/rpc
 
       - name: Run forge build
         run: |
