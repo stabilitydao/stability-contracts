@@ -29,7 +29,7 @@ contract TridentPearlFarmStrategyTest is RealSetup, UniversalTest {
 
         if (gauge.periodFinish() < block.timestamp + time) {
             uint rewardsAmount = 10000e18;
-            console.log('_skip: gauge rewards period ended, refilling rewards');
+            console.log("_skip: gauge rewards period ended, refilling rewards");
             _deal(RealLib.TOKEN_PEARL, VOTER, rewardsAmount);
             vm.startPrank(VOTER);
             IERC20(RealLib.TOKEN_PEARL).approve(address(gauge), rewardsAmount);
