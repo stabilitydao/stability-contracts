@@ -192,41 +192,42 @@ library LPStrategyLib {
         if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {
             uint balance1PricedInAsset0 = vars.balance1 * vars.price / 10 ** vars.asset1decimals;
 
-            // nosemgrep
-            if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {
-                uint prop0Balances =
-                    vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
-                if (prop0Balances > prop0Pool) {
-                    // extra assets[0]
+            // here is change LPStrategyBase 1.0.3
+            // removed such code: `if (!(vars.balance1 > 0 && balance1PricedInAsset0 == 0)) {`
+            // because in setup where one of asset if reward asset this condition not work
 
-                    uint correctAsset0Balance = (vars.balance0 + balance1PricedInAsset0) * prop0Pool / 1e18;
-                    uint toSwapAsset0 = vars.balance0 - correctAsset0Balance;
+            uint prop0Balances =
+                vars.balance1 > 0 ? vars.balance0 * 1e18 / (balance1PricedInAsset0 + vars.balance0) : 1e18;
+            if (prop0Balances > prop0Pool) {
+                // extra assets[0]
 
-                    // this is correct too, but difficult to understand..
-                    // uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18
-                    // * vars.price / 10 ** vars.asset1decimals;
-                    // uint extraBalance = vars.balance0 - correctAsset0Balance;
-                    // uint toSwapAsset0 = extraBalance - extraBalance * prop0Pool / 1e18;
+                uint correctAsset0Balance = (vars.balance0 + balance1PricedInAsset0) * prop0Pool / 1e18;
+                uint toSwapAsset0 = vars.balance0 - correctAsset0Balance;
 
-                    // swap assets[0] to assets[1]
-                    if (toSwapAsset0 > vars.threshold0) {
-                        vars.swapper.swap(assets[0], assets[1], toSwapAsset0, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
-                    }
-                } else if (prop0Pool > 0) {
-                    // extra assets[1]
-                    uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18
-                        * 10 ** vars.asset1decimals / vars.price;
-                    uint extraBalance = vars.balance1 - correctAsset1Balance;
-                    uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
-                    // swap assets[1] to assets[0]
-                    if (toSwapAsset1 > vars.threshold1) {
-                        vars.swapper.swap(assets[1], assets[0], toSwapAsset1, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
-                    }
+                // this is correct too, but difficult to understand..
+                // uint correctAsset0Balance = vars.balance1 * 1e18 / (1e18 - prop0Pool) * prop0Pool / 1e18
+                // * vars.price / 10 ** vars.asset1decimals;
+                // uint extraBalance = vars.balance0 - correctAsset0Balance;
+                // uint toSwapAsset0 = extraBalance - extraBalance * prop0Pool / 1e18;
+
+                // swap assets[0] to assets[1]
+                if (toSwapAsset0 > vars.threshold0) {
+                    vars.swapper.swap(assets[0], assets[1], toSwapAsset0, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
                 }
-
-                amountsToDeposit[0] = _balance(assets[0]);
-                amountsToDeposit[1] = _balance(assets[1]);
+            } else if (prop0Pool > 0) {
+                // extra assets[1]
+                uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18
+                    * 10 ** vars.asset1decimals / vars.price;
+                uint extraBalance = vars.balance1 - correctAsset1Balance;
+                uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
+                // swap assets[1] to assets[0]
+                if (toSwapAsset1 > vars.threshold1) {
+                    vars.swapper.swap(assets[1], assets[0], toSwapAsset1, SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
+                }
             }
+
+            amountsToDeposit[0] = _balance(assets[0]);
+            amountsToDeposit[1] = _balance(assets[1]);
         }
     }
 

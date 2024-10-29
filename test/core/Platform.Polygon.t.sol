@@ -50,7 +50,7 @@ contract PlatformPolygonTest is PolygonSetup {
         require(canReceive);
     }
 
-    function testUserBalance() public {
+    function testUserBalance() public view {
         (
             address[] memory token,
             uint[] memory tokenPrice,
@@ -420,7 +420,7 @@ contract PlatformPolygonTest is PolygonSetup {
         assertEq(canExec, true);
     }
 
-    function testErc165() public {
+    function testErc165() public view {
         IFactory factory = IFactory(platform.factory());
         (string[] memory vaultType_, address[] memory implementation,,,,) = factory.vaultTypes();
         for (uint i; i < vaultType_.length; ++i) {
@@ -436,7 +436,7 @@ contract PlatformPolygonTest is PolygonSetup {
         }
     }
 
-    function testLibs() public {
+    function testLibs() public pure {
         assertEq(CommonLib.formatUsdAmount(1001 * 1e18), "$1.00k");
         assertEq(CommonLib.formatUsdAmount(101 * 1e18), "$101");
         assertEq(CommonLib.formatUsdAmount(991 * 1e17), "$99.1000");

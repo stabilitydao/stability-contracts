@@ -4,17 +4,17 @@ pragma solidity ^0.8.23;
 import "./base/LPStrategyBase.sol";
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../integrations/convex/IConvexRewardPool.sol";
-import "../integrations/convex/IBooster.sol";
-import "../integrations/curve/IStableSwapViews.sol";
-import "../integrations/curve/IStableSwapNG.sol";
-import "../integrations/curve/IStableSwapNGPool.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {ILiquidBox} from "../integrations/pearl/ILiquidBox.sol";
+import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
+import {ILiquidBoxManager} from "../integrations/pearl/ILiquidBoxManager.sol";
+import {IGaugeV2CL} from "../integrations/pearl/IGaugeV2CL.sol";
 
-/// @title Staking Curve LP to Convex
+/// @title Earn Pearl emission by staking Trident ALM tokens to gauge
 /// @author Alien Deployer (https://github.com/a17)
-contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -22,22 +22,9 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CurveConvexFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION =
-        0xf917fd8a7d9383d2ce3ff9f03f2a847cf9d0cc44029bc864d5860ca5dfa20300;
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         DATA TYPES                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @custom:storage-location erc7201:stability.CurveConvexFarmStrategy
-    struct CurveConvexFarmStrategyStorage {
-        address booster;
-        address rewardPool;
-        uint pid;
-    }
+    uint internal constant _PRECISION = 10 ** 36;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -50,33 +37,26 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 3 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        $.booster = IConvexRewardPool(farm.addresses[0]).convexBooster();
-        $.rewardPool = farm.addresses[0];
-        $.pid = IConvexRewardPool(farm.addresses[0]).convexPoolId();
 
         __LPStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.CURVE_CONVEX_FARM,
+                id: StrategyIdLib.TRIDENT_PEARL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
-                underlying: farm.pool
+                underlying: farm.addresses[0]
             })
         );
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         address[] memory _assets = assets();
-        uint len = _assets.length;
-        for (uint i; i < len; ++i) {
-            IERC20(_assets[i]).forceApprove(farm.pool, type(uint).max);
-        }
-
-        IERC20(farm.pool).forceApprove($.booster, type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[2], type(uint).max);
+        IERC20(farm.addresses[0]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -99,21 +79,18 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         return farm.status == 0;
     }
 
-    /// @inheritdoc FarmingStrategyBase
-    function stakingPool() external view override returns (address) {
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        return $.booster;
-    }
-
     /// @inheritdoc ILPStrategy
     function ammAdapterId() public pure override returns (string memory) {
-        return AmmAdapterIdLib.CURVE;
+        return AmmAdapterIdLib.UNISWAPV3;
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() external pure returns (address[] memory __assets, uint[] memory amounts) {
-        __assets = new address[](0);
-        amounts = new uint[](0);
+    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        __assets = $f._rewardAssets;
+        amounts = new uint[](1);
+        amounts[0] = IGaugeV2CL(farm.addresses[1]).earnedReward(address(this));
     }
 
     /// @inheritdoc IStrategy
@@ -159,24 +136,24 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.CURVE_CONVEX_FARM;
+        return StrategyIdLib.TRIDENT_PEARL_FARM;
     }
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
-        proportions = $lp.ammAdapter.getProportions($lp.pool);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        proportions = new uint[](2);
+        (uint total0, uint total1,,,) = ILiquidBox(__$__._underlying).getTotalAmounts();
+        uint price = _getPoolPrice($lp.pool);
+        uint pool0PricedInToken1 = UniswapV3MathLib.mulDiv(total0, price, _PRECISION);
+        proportions[0] = pool0PricedInToken1 * 1e18 / (pool0PricedInToken1 + total1);
+        proportions[1] = 1e18 - proportions[0];
     }
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
-        //slither-disable-next-line too-many-digits
-        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xeeeeee), bytes3(0x000000)));
-    }
-
-    /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        return ("", false);
+        return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xffe300), bytes3(0x004e67)));
     }
 
     /// @inheritdoc IStrategy
@@ -185,6 +162,11 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return _generateDescription(farm, $lp.ammAdapter);
+    }
+
+    /// @inheritdoc IStrategy
+    function getSpecificName() external pure override returns (string memory, bool) {
+        return ("", false);
     }
 
     /// @inheritdoc IStrategy
@@ -218,49 +200,54 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        value = IStableSwapNGPool($base._underlying).add_liquidity(amounts, 0, address(this));
-        $base.total += value;
-        //slither-disable-next-line unused-return
-        IBooster($.booster).deposit($.pid, value);
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        IFactory.Farm memory farm = _getFarm();
+        value = ILiquidBoxManager(farm.addresses[2]).deposit(farm.addresses[0], amounts[0], amounts[1], 0, 0);
+        if (value != 0) {
+            IGaugeV2CL(farm.addresses[1]).deposit(value);
+        }
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __$__.total += value;
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        $base.total += amount;
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        //slither-disable-next-line unused-return
-        IBooster($.booster).deposit($.pid, amount);
-        address _pool = $base._underlying;
-        amountsConsumed = IStableSwapNG(_pool).get_balances();
-        uint totalLp = IStableSwapNG(_pool).totalSupply();
-        uint len = amountsConsumed.length;
-        for (uint i; i < len; ++i) {
-            amountsConsumed[i] = amount * amountsConsumed[i] / totalLp;
-        }
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeV2CL(farm.addresses[1]).deposit(amount);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        amountsConsumed = _previewDepositUnderlying(amount);
+        __$__.total += amount;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        //slither-disable-next-line unused-return
-        IConvexRewardPool($.rewardPool).withdraw(value, false);
-        amountsOut = IStableSwapNGPool($base._underlying).remove_liquidity(value, new uint[](assets().length), receiver);
-        $base.total -= value;
+        amountsOut = new uint[](2);
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeV2CL(farm.addresses[1]).withdraw(value);
+        (amountsOut[0], amountsOut[1]) = ILiquidBoxManager(farm.addresses[2]).withdraw(farm.addresses[0], value, 0, 0);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        address[] memory _assets = __$__._assets;
+        // support of tokens with fee on transfer
+        uint bal = StrategyLib.balance(_assets[0]);
+        if (bal < amountsOut[0]) {
+            amountsOut[0] = bal;
+        }
+        bal = StrategyLib.balance(_assets[1]);
+        if (bal < amountsOut[1]) {
+            amountsOut[1] = bal;
+        }
+        IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
+        IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
+        __$__.total -= value;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        $base.total -= amount;
-        //slither-disable-next-line unused-return
-        IConvexRewardPool($.rewardPool).withdraw(amount, false);
-        IERC20($base._underlying).safeTransfer(receiver, amount);
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeV2CL(farm.addresses[1]).withdraw(amount);
+        IERC20(farm.addresses[0]).safeTransfer(receiver, amount);
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        __$__.total -= amount;
     }
 
     /// @inheritdoc StrategyBase
@@ -274,43 +261,24 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        __assets = assets();
-        __amounts = new uint[](__assets.length);
-        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        __rewardAssets = $f._rewardAssets;
-        uint rwLen = __rewardAssets.length;
-        uint[] memory balanceBefore = new uint[](rwLen);
-        __rewardAmounts = new uint[](rwLen);
-        for (uint i; i < rwLen; ++i) {
-            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
-        }
-        IConvexRewardPool($.rewardPool).getReward(address(this));
-        for (uint i; i < rwLen; ++i) {
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
-        }
+        IFactory.Farm memory farm = _getFarm();
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
+        __assets = __$__._assets;
+        __rewardAssets = _$_._rewardAssets;
+        __amounts = new uint[](2);
+        __rewardAmounts = new uint[](1);
+        uint balBefore = IERC20(__rewardAssets[0]).balanceOf(address(this));
+        IGaugeV2CL(farm.addresses[1]).collectReward();
+        uint balAfter = IERC20(__rewardAssets[0]).balanceOf(address(this));
+        __rewardAmounts[0] = balAfter - balBefore;
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        CurveConvexFarmStrategyStorage storage $ = _getCurveConvexFarmStorage();
-        address[] memory _assets = assets();
-        uint len = _assets.length;
-        uint[] memory amounts = new uint[](len);
-        //slither-disable-next-line uninitialized-local
-        bool notZero;
-        for (uint i; i < len; ++i) {
-            amounts[i] = StrategyLib.balance(_assets[i]);
-            if (amounts[i] != 0) {
-                notZero = true;
-            }
-        }
-        if (notZero) {
-            uint value = IStableSwapNGPool($base._underlying).add_liquidity(amounts, 0, address(this));
-            $base.total += value;
-            //slither-disable-next-line unused-return
-            IBooster($.booster).deposit($.pid, value);
+        (uint[] memory amountsToDeposit) = _swapForDepositProportion(getAssetsProportions()[0]);
+        if (amountsToDeposit[0] != 0 || amountsToDeposit[1] != 0) {
+            _depositAssets(amountsToDeposit, true);
         }
     }
 
@@ -321,38 +289,65 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        amountsConsumed = amountsMax;
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
-        value = IStableSwapViews($lp.pool).calc_token_amount(amountsMax, true);
+        amountsConsumed = new uint[](2);
+        IFactory.Farm memory farm = _getFarm();
+        address pool = farm.pool;
+        address alm = farm.addresses[0];
+        (amountsConsumed[0], amountsConsumed[1]) =
+            ILiquidBox(alm).getRequiredAmountsForInput(amountsMax[0], amountsMax[1]);
+        value = _calcShares(pool, alm, amountsConsumed[0], amountsConsumed[1]);
     }
 
     /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {
-        address _pool = pool();
-        amountsConsumed = IStableSwapNG(_pool).get_balances();
-        uint totalLp = IStableSwapNG(_pool).totalSupply();
-        uint len = amountsConsumed.length;
-        for (uint i; i < len; ++i) {
-            amountsConsumed[i] = amount * amountsConsumed[i] / totalLp;
-        }
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        ILiquidBox alm = ILiquidBox($._underlying);
+
+        (uint total0, uint total1,,,) = alm.getTotalAmounts();
+        uint totalInAlm = alm.totalSupply();
+        amountsConsumed = new uint[](2);
+        amountsConsumed[0] = total0 * amount / totalInAlm;
+        amountsConsumed[1] = total1 * amount / totalInAlm;
     }
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        address _pool = pool();
-        assets_ = assets();
-        amounts_ = IStableSwapNG(_pool).get_balances();
-        uint totalLp = IStableSwapNG(_pool).totalSupply();
-        uint value = total();
-        uint len = assets_.length;
-        for (uint i; i < len; ++i) {
-            amounts_[i] = value * amounts_[i] / totalLp;
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        assets_ = $._assets;
+        amounts_ = new uint[](2);
+        uint _total = $.total;
+        if (_total > 0) {
+            ILiquidBox alm = ILiquidBox($._underlying);
+            (amounts_[0], amounts_[1],,,) = alm.getTotalAmounts();
+            uint totalInAlm = alm.totalSupply();
+            (amounts_[0], amounts_[1]) = (amounts_[0] * _total / totalInAlm, amounts_[1] * _total / totalInAlm);
         }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _calcShares(address pool, address alm, uint deposit0, uint deposit1) internal view returns (uint shares) {
+        uint totalSupply = IERC20(alm).totalSupply();
+        (uint total0, uint total1,,,) = ILiquidBox(alm).getTotalAmounts();
+        uint price = _getPoolPrice(pool);
+
+        shares = deposit1 + UniswapV3MathLib.mulDiv(deposit0, price, _PRECISION);
+
+        if (totalSupply != 0) {
+            uint pool0PricedInToken1 = UniswapV3MathLib.mulDiv(total0, price, _PRECISION);
+            shares = UniswapV3MathLib.mulDiv(shares, totalSupply, pool0PricedInToken1 + total1);
+        }
+    }
+
+    function _getPoolPrice(address pool) internal view returns (uint price) {
+        (, int24 tick,,,,,) = IUniswapV3Pool(pool).slot0();
+        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
+        // sqrtPrice < type(uint128).max for maxTick value int24(16777215)
+        uint ratioX192 = uint(sqrtPrice) * sqrtPrice;
+        price = UniswapV3MathLib.mulDiv(ratioX192, _PRECISION, 1 << 192);
+    }
 
     function _generateDescription(
         IFactory.Farm memory farm,
@@ -363,17 +358,10 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             "Earn ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on Convex by ",
+            " on Pearl pool ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-            " Curve LP"
+            " by Trident ALM"
         );
-    }
-
-    function _getCurveConvexFarmStorage() internal pure returns (CurveConvexFarmStrategyStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION
-        }
     }
 }

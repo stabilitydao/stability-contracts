@@ -82,6 +82,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _preDeposit() internal virtual {}
 
+    function _skip(uint time, uint) internal virtual {
+        skip(time);
+    }
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -323,7 +327,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 (tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
-                skip(duration1);
+                _skip(duration1, strategies[i].farmId);
 
                 if (vars.isLPStrategy) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -337,14 +341,16 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenIn = assets[0];
                         poolData[0].tokenOut = assets[1];
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
-                        _deal(assets[0], address(this), depositAmounts[0]);
-                        swapper.swapWithRoute(poolData, depositAmounts[0], 1_000);
+                        // incrementing need for some tokens with custom fee
+                        _deal(assets[0], address(this), depositAmounts[0] + 1);
+                        swapper.swapWithRoute(poolData, depositAmounts[0], 6_000);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
-                        _deal(assets[1], address(this), depositAmounts[1]);
-                        swapper.swapWithRoute(poolData, depositAmounts[1], 1_000);
+                        // incrementing need for some tokens with custom fee
+                        _deal(assets[1], address(this), depositAmounts[1] + 1);
+                        swapper.swapWithRoute(poolData, depositAmounts[1], 6_000);
                     }
                 }
 
@@ -368,7 +374,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                       SMALL WITHDRAW                       */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-                skip(duration2);
+                _skip(duration2, strategies[i].farmId);
+
                 vm.roll(block.number + 6);
 
                 {
@@ -400,17 +407,17 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenOut = assets[1];
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
                         _deal(assets[0], address(this), depositAmounts[0] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 1_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 6_000);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
                         _deal(assets[1], address(this), depositAmounts[1] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 1_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 6_000);
                     }
                 }
 
-                skip(duration3);
+                _skip(duration3, strategies[i].farmId);
                 vm.roll(block.number + 6);
 
                 _preHardWork();
@@ -518,7 +525,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed");
-                    skip(3600);
+                    _skip(3600, strategies[i].farmId);
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(
@@ -543,68 +550,85 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                address underlying = strategy.underlying();
-                if (underlying != address(0)) {
-                    skip(7200);
-                    bool wasReadyForHardWork = strategy.isReadyForHardWork();
-                    address tempVault = vars.vault;
-                    deal(underlying, address(this), totalWas);
-                    assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
-                    IERC20(underlying).approve(tempVault, totalWas);
-                    address[] memory underlyingAssets = new address[](1);
-                    underlyingAssets[0] = underlying;
-                    uint[] memory underlyingAmounts = new uint[](1);
-                    underlyingAmounts[0] = totalWas;
-                    (, uint sharesOut, uint valueOut) =
-                        IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
-                    assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
-                    uint lastHw = strategy.lastHardWork();
-                    IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
-                    if (strategy.isHardWorkOnDepositAllowed() && wasReadyForHardWork) {
-                        assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
-                        assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
-                    }
+                if (
+                    !CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.TRIDENT_PEARL_FARM)
+                        || strategies[i].farmId == 0
+                ) {
+                    address underlying = strategy.underlying();
+                    if (underlying != address(0)) {
+                        address tempVault = vars.vault;
+                        address[] memory underlyingAssets = new address[](1);
+                        underlyingAssets[0] = underlying;
+                        uint[] memory underlyingAmounts = new uint[](1);
 
-                    assertEq(IERC20(underlying).balanceOf(address(this)), 0);
-
-                    uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
-                    if (!strategy.isHardWorkOnDepositAllowed()) {
-                        assertEq(
-                            vaultBalance,
-                            sharesOut,
-                            "previewDepositAssets by underlying: sharesOut and real shares after deposit mismatch"
-                        );
-                    } else {
-                        assertLt(
-                            vaultBalance,
-                            sharesOut + sharesOut / 10000,
-                            "previewDepositAssets by underlying: vault balance too big"
-                        );
-                        assertGt(
-                            vaultBalance,
-                            sharesOut - sharesOut / 1000,
-                            "previewDepositAssets by underlying: vault balance too small"
-                        );
-                    }
-
-                    uint[] memory minAmounts = new uint[](1);
-                    minAmounts[0] = totalWas - 1;
-                    vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
-                    IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
-                    vm.roll(block.number + 6);
-                    IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
-                    assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1, "U2");
-                    assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
-                } else {
-                    {
-                        vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
-                        strategy.depositUnderlying(18);
-                        vm.startPrank(strategy.vault());
-                        vm.expectRevert("no underlying");
-                        strategy.depositUnderlying(18);
-                        vm.expectRevert("no underlying");
-                        strategy.withdrawUnderlying(18, address(123));
+                        // first other user need to deposit to not hold vault only with dead shares
+                        underlyingAmounts[0] = totalWas / 100;
+                        deal(underlying, address(100), underlyingAmounts[0]);
+                        vm.startPrank(address(100));
+                        IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
+                        IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
                         vm.stopPrank();
+
+                        _skip(7200, strategies[i].farmId);
+
+                        bool wasReadyForHardWork = strategy.isReadyForHardWork();
+
+                        deal(underlying, address(this), totalWas);
+                        assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
+                        IERC20(underlying).approve(tempVault, totalWas);
+
+                        underlyingAmounts[0] = totalWas;
+                        (, uint sharesOut, uint valueOut) =
+                            IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
+                        assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
+                        uint lastHw = strategy.lastHardWork();
+                        IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
+                        if (strategy.isHardWorkOnDepositAllowed() && wasReadyForHardWork) {
+                            assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
+                            assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
+                        }
+
+                        assertEq(IERC20(underlying).balanceOf(address(this)), 0);
+
+                        uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
+                        if (!strategy.isHardWorkOnDepositAllowed()) {
+                            assertEq(
+                                vaultBalance,
+                                sharesOut,
+                                "previewDepositAssets by underlying: sharesOut and real shares after deposit mismatch"
+                            );
+                        } else {
+                            assertLt(
+                                vaultBalance,
+                                sharesOut + sharesOut / 10000,
+                                "previewDepositAssets by underlying: vault balance too big"
+                            );
+                            assertGt(
+                                vaultBalance,
+                                sharesOut - sharesOut / 1000,
+                                "previewDepositAssets by underlying: vault balance too small"
+                            );
+                        }
+
+                        uint[] memory minAmounts = new uint[](1);
+                        minAmounts[0] = totalWas - 1;
+                        vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
+                        IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
+                        vm.roll(block.number + 6);
+                        IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
+                        assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1, "U2");
+                        assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
+                    } else {
+                        {
+                            vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
+                            strategy.depositUnderlying(18);
+                            vm.startPrank(strategy.vault());
+                            vm.expectRevert("no underlying");
+                            strategy.depositUnderlying(18);
+                            vm.expectRevert("no underlying");
+                            strategy.withdrawUnderlying(18, address(123));
+                            vm.stopPrank();
+                        }
                     }
                 }
 

@@ -99,7 +99,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         IERC20(PolygonLib.TOKEN_DAI).approve(address(swapper), 1002e18);
     }
 
-    function testGetPrices() public {
+    function testGetPrices() public view {
         uint price = swapper.getPrice(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI, 0);
         assertGt(price, 9e17);
         assertLt(price, 11e17);
@@ -123,7 +123,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertEq(price, 0);
     }
 
-    function testGetPricesForRoute() public {
+    function testGetPricesForRoute() public view {
         (ISwapper.PoolData[] memory route,) = swapper.buildRoute(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI);
         uint price = swapper.getPriceForRoute(route, 0);
         assertGt(price, 9e17);
@@ -148,19 +148,19 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertLt(price, 110e17);
     }
 
-    function testIsRouteExist() public {
+    function testIsRouteExist() public view {
         bool result = swapper.isRouteExist(PolygonLib.TOKEN_USDCe, PolygonLib.TOKEN_DAI);
         assertEq(result, true);
         result = swapper.isRouteExist(PolygonLib.TOKEN_USDCe, address(1));
         assertEq(result, false);
     }
 
-    function testGetAssets() public {
+    function testGetAssets() public view {
         assertEq(swapper.assets().length, 6);
         assertEq(swapper.bcAssets().length, 0);
     }
 
-    function testAdaptersGetLiquidityForAmounts() public {
+    function testAdaptersGetLiquidityForAmounts() public view {
         uint[] memory amounts = new uint[](2);
         amounts[0] = 10e6;
         amounts[1] = 5e6;
@@ -188,7 +188,7 @@ contract SwapperPolygonTest is Test, PolygonSetup {
         assertGt(amountsConsumed[1], 0);
     }
 
-    function testAdaptersPoolTokens() public {
+    function testAdaptersPoolTokens() public view {
         address[] memory tokens;
 
         tokens = uniswapV3Adapter.poolTokens(PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100);

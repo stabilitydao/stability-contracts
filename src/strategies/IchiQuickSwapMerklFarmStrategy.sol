@@ -21,7 +21,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     uint internal constant PRECISION = 10 ** 18;
 

@@ -26,7 +26,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 

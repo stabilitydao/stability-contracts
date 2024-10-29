@@ -37,7 +37,7 @@ contract ZapTest is PolygonSetup {
         IERC20(platform.targetExchangeAsset()).approve(address(factory), 1e9);
     }
 
-    function _testZapGetDepositAmounts(address vault, address depositToken, uint depositAmount) internal {
+    function _testZapGetDepositAmounts(address vault, address depositToken, uint depositAmount) internal view {
         IZap zap = IZap(platform.zap());
         IStrategy strategy = IVault(vault).strategy();
         address[] memory assets = strategy.assets();

@@ -10,7 +10,7 @@ contract PlatformBaseTest is BaseSetup {
         _deal(BaseLib.TOKEN_USDC, address(this), 1e12);
     }
 
-    function testUserBalanceBase() public {
+    function testUserBalanceBase() public view {
         (
             address[] memory token,
             uint[] memory tokenPrice,
