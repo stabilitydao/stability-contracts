@@ -143,7 +143,7 @@ library RealLib {
             // todo thresholds
             uint[] memory thresholdAmount = new uint[](3);
             thresholdAmount[0] = 1e4;
-            thresholdAmount[1] = 1e15;
+            thresholdAmount[1] = 1e12;
             thresholdAmount[2] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
@@ -206,8 +206,8 @@ library RealLib {
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_arcUSD_100);
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_DAI_USTB_100);
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_reETH_3000);
-        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_RWA_reETH_3000);
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_USTB_PEARL_10000);
+        _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_RWA_reETH_3000);
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_SACRA_reETH_10000);
     }
 

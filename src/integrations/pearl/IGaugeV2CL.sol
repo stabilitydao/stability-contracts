@@ -19,4 +19,13 @@ interface IGaugeV2CL {
 
     ///@notice User harvest function
     function collectReward() external;
+
+    function periodFinish() external view returns(uint);
+
+    /**
+     * @notice Notifies the contract of a reward amount.
+     * @param token The address of the reward token.
+     * @param reward The reward amount.
+     */
+    function notifyRewardAmount(address token, uint reward) external;
 }

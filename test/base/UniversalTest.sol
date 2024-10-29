@@ -82,6 +82,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _preDeposit() internal virtual {}
 
+    function _skip(uint time, uint) internal virtual {
+        skip(time);
+    }
+
     function testNull() public {}
 
     function _testStrategies() internal {
@@ -323,7 +327,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 (tvl,) = IVault(vars.vault).tvl();
                 assertGt(tvl, 0, "Universal test: tvl is zero");
 
-                skip(duration1);
+                _skip(duration1, strategies[i].farmId);
 
                 if (vars.isLPStrategy) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -339,14 +343,14 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
                         // incrementing need for some tokens with custom fee
                         _deal(assets[0], address(this), depositAmounts[0] + 1);
-                        swapper.swapWithRoute(poolData, depositAmounts[0], 5_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[0], 6_000);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
                         // incrementing need for some tokens with custom fee
                         _deal(assets[1], address(this), depositAmounts[1] + 1);
-                        swapper.swapWithRoute(poolData, depositAmounts[1], 5_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[1], 6_000);
                     }
                 }
 
@@ -370,7 +374,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                       SMALL WITHDRAW                       */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-                skip(duration2);
+                _skip(duration2, strategies[i].farmId);
+
                 vm.roll(block.number + 6);
 
                 {
@@ -402,17 +407,17 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenOut = assets[1];
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
                         _deal(assets[0], address(this), depositAmounts[0] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 5_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 6_000);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
                         _deal(assets[1], address(this), depositAmounts[1] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 5_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 6_000);
                     }
                 }
 
-                skip(duration3);
+                _skip(duration3, strategies[i].farmId);
                 vm.roll(block.number + 6);
 
                 _preHardWork();
@@ -520,7 +525,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed");
-                    skip(3600);
+                    _skip(3600, strategies[i].farmId);
                     balanceBefore = IERC20(rewardToken).balanceOf(address(this));
                     IRVault(vars.vault).getAllRewards();
                     assertGt(
@@ -545,7 +550,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if (!CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.TRIDENT_PEARL_FARM)) {
+                if (!CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.TRIDENT_PEARL_FARM) || strategies[i].farmId == 0) {
                     address underlying = strategy.underlying();
                     if (underlying != address(0)) {
                         address tempVault = vars.vault;
@@ -561,7 +566,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
                         vm.stopPrank();
 
-                        skip(7200);
+                        _skip(7200, strategies[i].farmId);
+
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
                         deal(underlying, address(this), totalWas);
@@ -570,7 +576,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         underlyingAmounts[0] = totalWas;
                         (, uint sharesOut, uint valueOut) =
-                                                IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
+                            IVault(tempVault).previewDepositAssets(underlyingAssets, underlyingAmounts);
                         assertEq(valueOut, totalWas, "previewDepositAssets by underlying valueOut");
                         uint lastHw = strategy.lastHardWork();
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(0));
