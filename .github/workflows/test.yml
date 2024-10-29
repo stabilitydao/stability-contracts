@@ -29,7 +29,8 @@ jobs:
 
 #      - uses: actions/download-artifact@v3
       - name: Show RPC cache
-        run: [[ -e ~/.foundry/cache/rpc ]] && ls -R ~/.foundry/cache/rpc
+        if: ${{ hashFiles('~/.foundry/cache/rpc/') != '' }}
+        run: ls -R ~/.foundry/cache/rpc
 
       - name: Run forge build
         run: |
