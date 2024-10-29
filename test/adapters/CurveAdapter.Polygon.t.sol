@@ -16,7 +16,7 @@ contract CurveAdapterTest is PolygonSetup {
         adapter = ICAmmAdapter(platform.ammAdapter(_hash).proxy);
     }
 
-    function testViewMethods() public {
+    function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
         address pool = PolygonLib.POOL_CURVE_crvUSD_USDCe;
         address[] memory poolTokens = adapter.poolTokens(pool);

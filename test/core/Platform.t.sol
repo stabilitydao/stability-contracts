@@ -586,7 +586,7 @@ contract PlatformTest is Test {
         assertEq(strategyLogic.supportsInterface(type(IStrategyLogic).interfaceId), true);
     }
 
-    function testOther() public {
+    function testOther() public pure {
         assertEq(StrategyDeveloperLib.getDeveloper("unknown"), address(0));
     }
 }
