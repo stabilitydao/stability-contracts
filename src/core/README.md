@@ -70,6 +70,14 @@ forge doc --serve
 
 It is important to verify during deployment. Otherwise, you will have to manually verify each lib.
 
+### Polygon
+
 ```shell
 forge script --rpc-url polygon script/deploy-strategy/IQMF.Polygon.s.sol -vvvv --broadcast --verify --slow --etherscan-api-key polygon
+```
+
+### Real
+
+```shell
+forge script --rpc-url real script/deploy-core/Deploy.Real.s.sol --verify --verifier blockscout --verifier-url https://explorer.re.al/api? --slow --with-gas-price 30000000 -g 200 --broadcast
 ```
