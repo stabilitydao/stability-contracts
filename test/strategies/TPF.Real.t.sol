@@ -8,12 +8,9 @@ contract TridentPearlFarmStrategyTest is RealSetup, UniversalTest {
     receive() external payable {}
 
     function testTPF() public universalTest {
-        _addStrategy(0);
-        _addStrategy(1);
-        //        _addStrategy(2);
-        //        _addStrategy(3);
-        //        _addStrategy(4);
-        //        _addStrategy(6);
+        for (uint i; i < 5; ++i) {
+            _addStrategy(i);
+        }
     }
 
     function _addStrategy(uint farmId) internal {

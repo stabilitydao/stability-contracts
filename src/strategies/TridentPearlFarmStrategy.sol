@@ -227,6 +227,15 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         (amountsOut[0], amountsOut[1]) = ILiquidBoxManager(farm.addresses[2]).withdraw(farm.addresses[0], value, 0, 0);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         address[] memory _assets = __$__._assets;
+        // support of tokens with fee on transfer
+        uint bal = StrategyLib.balance(_assets[0]);
+        if (bal < amountsOut[0]) {
+            amountsOut[0] = bal;
+        }
+        bal = StrategyLib.balance(_assets[1]);
+        if (bal < amountsOut[1]) {
+            amountsOut[1] = bal;
+        }
         IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
         IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
         __$__.total -= value;
