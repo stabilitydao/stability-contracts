@@ -12,7 +12,7 @@ abstract contract BaseSetup is ChainSetup, DeployCore {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("BASE_RPC_URL")));
-        //        vm.rollFork(55000000);
+        vm.rollFork(21800000); // Oct-31-2024 03:42:27 PM +UTC
     }
 
     function testSetupStub() external {}
