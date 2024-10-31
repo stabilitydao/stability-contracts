@@ -27,11 +27,6 @@ jobs:
         with:
           version: nightly
 
-#      - uses: actions/download-artifact@v3
-      - name: Show RPC cache
-        if: ${{ hashFiles('~/.foundry/cache/rpc/') != '' }}
-        run: ls -R ~/.foundry/cache/rpc
-
       - name: Run forge build
         run: |
           forge --version
