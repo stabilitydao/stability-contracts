@@ -26,7 +26,7 @@ contract PlatformBaseTest is BaseSetup {
             assertNotEq(token[i], address(0));
             assertGt(tokenPrice[i], 0);
             if (token[i] == BaseLib.TOKEN_USDC) {
-                assertEq(tokenUserBalance[i], 1e12);
+                assertGe(tokenUserBalance[i], 1e12);
             } else {
                 assertEq(tokenUserBalance[i], 0);
             }

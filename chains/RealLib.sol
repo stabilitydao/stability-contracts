@@ -160,7 +160,11 @@ library RealLib {
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
-        // ...
+        //region ----- Add DeX aggregators -----
+        address[] memory dexAggRouter = new address[](1);
+        dexAggRouter[0] = IPlatform(platform).swapper();
+        IPlatform(platform).addDexAggregators(dexAggRouter);
+        //endregion -- Add DeX aggregators -----
     }
 
     function routes()
