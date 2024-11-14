@@ -73,8 +73,28 @@ library RealLib {
     // 21.10.2024: TVL $78.34K, APR 0%
     address public constant POOL_PEARL_SACRA_reETH_10000 = 0x2EC05Ab55867719f433d8ab0a446C48003B3BE8F;
 
-    // ALMs
+    // *** ALMs ***
+    // Trident
+    // We extract ALM, Gauge and BoxManager addresses from this factory
     address public constant TRIDENT_LIQUID_BOX_FACTORY = 0xEfeFFa36b9FA787b500b2d18a3829271526023b1;
+
+    // Ichi
+    address public constant ICHI_VAULT_DEPOSIT_GUARD = 0x89FFdaa18b296d9F0CF02fBD88e5c633FEFA5f34;
+    // IchiVaultFactory 0x860F3881aCBbF05D48a324C5b8ca9004D31A146C allVautls(index) 0-9
+    address public constant IV_PEARL_USTB_PEARL_10000 = 0x2ea611fF2Db242Efb65A548e2B2DF6B5d2a02191;
+    address public constant IV_PEARL_WREETH_RWA_3000 = 0xC77531EAEe4b0eCa6B4626197277E12CE29bA672;
+    address public constant IV_PEARL_UKRE_arcUSD_500 = 0x863ca0dED740e8c2111b9e616Fe672278Ba707c6;
+    address public constant IV_PEARL_CVR_PEARL_500 = 0x7F23e2822470EFA9a642f12916AD89549a28A7C7;
+    address public constant IV_PEARL_USTB_MORE_100 = 0x7DA0e0187Ee2fB1B979398787179FF202769a0B6;
+    address public constant IV_PEARL_USDC_PEARL_10000 = 0x04BBef2aa336ff7736eb0994D22170261937A7bF;
+    address public constant IV_PEARL_arcUSD_UKRE_500 = 0xE68Ab89E2E734A3e2A954823BE3bf6361148c0a0;
+    address public constant IV_PEARL_PEARL_CVR_500 = 0x378A179B3E8c558d8c69dfe2B0b220F0F9BfD01d;
+    address public constant IV_PEARL_USDC_MORE_100 = 0x6c357a3E7f92cB048Dc9FB6AB73273efab09feE0;
+    address public constant IV_PEARL_RWA_WREETH_3000 = 0x797bb030438a0BC2F042dCcdf2598eD62F7348Cb;
+    // ************
+
+    // Pearl
+    address public constant MULTI_FEE_DISTRIBUTION_FACTORY = 0xb42D5956cDe4386B65C087CfCD16910aB6114F15;
 
     // Oracles
     address public constant ORACLE_DIA_WREETH_USDC = 0xA2c62937987815A9Bb9d3b2F4580e629F9FA3Bc8;
