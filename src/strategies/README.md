@@ -1,4 +1,4 @@
-# Strategy Developer's Guide V3
+# Strategy Developer's Guide v3.1
 
 Development of DeFi strategy logic is not simple, its hard work, and not everyone can do it. You need to understand how it all works.
 
@@ -33,10 +33,10 @@ Put third-party interfaces to `src/integrations/<protocol>/`.
 * Put your developer address to `src/strategies/libs/StrategyDeveloperLib.sol`
 * Put the addresses necessary for the strategy to `chains/<ChainName>Lib.sol` constants (tokens, pools, addresses for interactions)
 
-From now on you need to create draft Pull Request for merging from your branch to main branch of this repo. Use this link for creating PR with changing *your-branch* to your branch name:
+From now on you need to push changes and create draft Pull Request for merging from your branch to main branch of this repo. Use this link for creating PR with changing *YOUR-BRANCH* to your branch name:
 
 ```text
-https://github.com/stabilitydao/stability-contracts/compare/main..your-branch.?template=pr_strategy.md&labels=STRATEGY&quick_pull=1
+https://github.com/stabilitydao/stability-contracts/compare/main...YOUR-BRANCH?template=pr_strategy.md&labels=STRATEGY&quick_pull=1
 ```
 
 ## 3. Add swapper routes
