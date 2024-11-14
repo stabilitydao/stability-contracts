@@ -16,6 +16,9 @@ import {ILiquidBoxFactory} from "../src/integrations/pearl/ILiquidBoxFactory.sol
 import {ILiquidBox} from "../src/integrations/pearl/ILiquidBox.sol";
 import {IGaugeV2CL} from "../src/integrations/pearl/IGaugeV2CL.sol";
 import {TridentPearlFarmStrategy} from "../src/strategies/TridentPearlFarmStrategy.sol";
+import {IICHIVault} from "../src/integrations/ichi/IICHIVault.sol";
+import {IMultiFeeDistributionFactory} from "../src/integrations/pearl/IMultiFeeDistributionFactory.sol";
+import {IMultiFeeDistribution} from "../src/integrations/pearl/IMultiFeeDistribution.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _
@@ -79,7 +82,7 @@ library RealLib {
     address public constant TRIDENT_LIQUID_BOX_FACTORY = 0xEfeFFa36b9FA787b500b2d18a3829271526023b1;
 
     // Ichi
-    address public constant ICHI_VAULT_DEPOSIT_GUARD = 0x89FFdaa18b296d9F0CF02fBD88e5c633FEFA5f34;
+    // address public constant ICHI_VAULT_DEPOSIT_GUARD = 0x89FFdaa18b296d9F0CF02fBD88e5c633FEFA5f34;
     // IchiVaultFactory 0x860F3881aCBbF05D48a324C5b8ca9004D31A146C allVautls(index) 0-9
     address public constant IV_PEARL_USTB_PEARL_10000 = 0x2ea611fF2Db242Efb65A548e2B2DF6B5d2a02191;
     address public constant IV_PEARL_WREETH_RWA_3000 = 0xC77531EAEe4b0eCa6B4626197277E12CE29bA672;
@@ -171,7 +174,8 @@ library RealLib {
         //endregion ----- Setup Swapper -----
 
         //region ----- Add farms -----
-        factory.addFarms(farms());
+        factory.addFarms(farmsTridentPearl());
+        factory.addFarms(farmsIchiPearl());
         LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion -- Add farms -----
 
@@ -215,7 +219,7 @@ library RealLib {
         //endregion -- Pools ----
     }
 
-    function farms() public view returns (IFactory.Farm[] memory _farms) {
+    function farmsTridentPearl() public view returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](14);
         uint i;
 
@@ -235,6 +239,22 @@ library RealLib {
         _farms[i++] = _makeTridentPearlFarm(POOL_PEARL_SACRA_reETH_10000);
     }
 
+    function farmsIchiPearl() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](10);
+        uint i;
+
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_USTB_PEARL_10000);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_UKRE_arcUSD_500);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_WREETH_RWA_3000);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_CVR_PEARL_500);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_USTB_MORE_100);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_USDC_PEARL_10000);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_arcUSD_UKRE_500);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_PEARL_CVR_500);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_USDC_MORE_100);
+        _farms[i++] = _makeIchiPearlFarm(IV_PEARL_RWA_WREETH_3000);
+    }
+
     function _makeTridentPearlFarm(address pool) internal view returns (IFactory.Farm memory) {
         address alm = ILiquidBoxFactory(TRIDENT_LIQUID_BOX_FACTORY).getBoxByPool(pool);
         address gauge = ILiquidBox(alm).gauge();
@@ -250,6 +270,21 @@ library RealLib {
         farm.addresses[0] = alm;
         farm.addresses[1] = gauge;
         farm.addresses[2] = boxManager;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeIchiPearlFarm(address ichiAlm) internal view returns (IFactory.Farm memory) {
+        address mfd = IMultiFeeDistributionFactory(MULTI_FEE_DISTRIBUTION_FACTORY).vaultToStaker(ichiAlm);
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IICHIVault(ichiAlm).pool();
+        farm.strategyLogicId = StrategyIdLib.TRIDENT_PEARL_FARM;
+        farm.rewardAssets = IMultiFeeDistribution(mfd).rewardTokens();
+        farm.addresses = new address[](2);
+        farm.addresses[0] = ichiAlm;
+        farm.addresses[1] = mfd;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

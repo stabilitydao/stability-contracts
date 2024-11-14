@@ -2,6 +2,9 @@
 pragma solidity ^0.8.23;
 
 interface IMultiFeeDistribution {
+
+    function rewardTokens() external view returns(address[] memory);
+
     /**
      * @notice Total balance of an account, including unlocked, locked and earned tokens.
      * @param user address.
