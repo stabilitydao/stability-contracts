@@ -52,7 +52,7 @@ interface IAmmAdapter is IERC165 {
     /// pool price.
     /// This function signature can be used only for non-concentrated AMMs.
     /// @param pool Address of a pool supported by the adapter
-    /// @param amounts Ampunts of pool assets
+    /// @param amounts Amounts of pool assets
     /// @return liquidity Liquidity out value
     /// @return amountsConsumed Amounts of consumed assets when providing liquidity
     function getLiquidityForAmounts(
@@ -62,7 +62,7 @@ interface IAmmAdapter is IERC165 {
 
     /// @notice Priced proportions of pool assets
     /// @param pool Address of a pool supported by the adapter
-    /// @return Proportions with 5 decimals precision. Max is 100_000, min is 0.
+    /// @return Proportions with 18 decimals precision. Max is 1e18, min is 0.
     function getProportions(address pool) external view returns (uint[] memory);
 
     /// @notice Current price in pool without amount impact
