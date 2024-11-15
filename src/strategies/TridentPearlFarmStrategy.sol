@@ -22,7 +22,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     uint internal constant _PRECISION = 10 ** 36;
 
@@ -147,7 +147,11 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         (uint total0, uint total1,,,) = ILiquidBox(__$__._underlying).getTotalAmounts();
         uint price = _getPoolPrice($lp.pool);
         uint pool0PricedInToken1 = UniswapV3MathLib.mulDiv(total0, price, _PRECISION);
-        proportions[0] = pool0PricedInToken1 * 1e18 / (pool0PricedInToken1 + total1);
+        if (pool0PricedInToken1 + total1 != 0) {
+            proportions[0] = pool0PricedInToken1 * 1e18 / (pool0PricedInToken1 + total1);
+        } else {
+            proportions[0] = 1e18;
+        }
         proportions[1] = 1e18 - proportions[0];
     }
 
