@@ -25,7 +25,6 @@ contract SolidlyAdapterTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("REAL_RPC_URL")));
         vm.rollFork(1225288); // dec 1 2024
-        _addAdapter();
     }
 
     function _addAdapter() internal {
@@ -39,7 +38,9 @@ contract SolidlyAdapterTest is Test {
         IPlatform(PLATFORM).addAmmAdapter(id, address(proxy));
     }
 
-    function testViewMethods() public view {
+    function testViewMethods() public {
+        _addAdapter();
+
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
         uint[] memory amounts = new uint[](2);
@@ -72,6 +73,8 @@ contract SolidlyAdapterTest is Test {
     }
 
     function testSwaps() public {
+        _addAdapter();
+
         deal(RealLib.TOKEN_USDC, address(adapter), 1000e6);
         adapter.swap(RealLib.POOL_PEARL_MORE_USDC, RealLib.TOKEN_USDC, RealLib.TOKEN_MORE, address(this), 10_000);
         uint out = IERC20(RealLib.TOKEN_MORE).balanceOf(address(this));
