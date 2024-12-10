@@ -47,30 +47,5 @@ contract TPFUpgradeTest is Test {
         factory.upgradeStrategyProxy(STRATEGY);
 
         vaultManager.vaults();
-
-        // setup swapper
-        /*ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](3);
-        uint i;
-        pools[i++] = _makePoolData(RealLib.POOL_PEARL_MORE_USTB_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_MORE, RealLib.TOKEN_USTB);
-        pools[i++] = _makePoolData(RealLib.POOL_PEARL_DAI_USTB_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_USTB, RealLib.TOKEN_DAI);
-        pools[i++] = _makePoolData(RealLib.POOL_PEARL_USTB_arcUSD_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_arcUSD, RealLib.TOKEN_USTB);
-        vm.prank(multisig);
-        swapper.addPools(pools, true);
-
-        // also hardwork
-        vm.prank(multisig);
-        hw.setDedicatedServerMsgSender(address(this), true);
-        address[] memory vaultsForHardWork = new address[](1);
-        vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
-        hw.call(vaultsForHardWork);*/
-    }
-
-    function _makePoolData(
-        address pool,
-        string memory ammAdapterId,
-        address tokenIn,
-        address tokenOut
-    ) internal pure returns (ISwapper.AddPoolData memory) {
-        return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
     }
 }
