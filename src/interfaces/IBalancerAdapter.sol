@@ -18,6 +18,4 @@ interface IBalancerAdapter {
         address pool,
         uint[] memory amounts
     ) external returns (uint liquidity, uint[] memory amountsConsumed);
-
-
 }
