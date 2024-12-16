@@ -8,6 +8,7 @@ import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/adapters/AlgebraAdapter.sol";
 import "../../src/adapters/KyberAdapter.sol";
 import "../../src/adapters/CurveAdapter.sol";
+import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -32,6 +33,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.CURVE)) {
             proxy.initProxy(address(new CurveAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE)) {
+            proxy.initProxy(address(new BalancerComposableStableAdapter()));
         }
 
         require(proxy.implementation() != address(0), "Unknown AmmAdapter");
