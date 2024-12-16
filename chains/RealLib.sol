@@ -43,7 +43,7 @@ library RealLib {
     address public constant TOKEN_USDC = 0xc518A88c67CECA8B3f24c4562CB71deeB2AF86B7;
     address public constant TOKEN_SACRA = 0x6B2e0fACD2F2A8f407aC591067Ac06b5d29247E4;
 
-    // AMMs
+    // CL AMMs
     // 21.10.2024: TVL $3.22M, APR 84.6%
     address public constant POOL_PEARL_arcUSD_USDC_100 = 0x22aC4821bBb8d1AC42eA7F0f32ed415F52577Ca1;
     // 21.10.2024: TVL $3.08M, APR 84.77%
@@ -72,6 +72,14 @@ library RealLib {
     address public constant POOL_PEARL_USTB_PEARL_10000 = 0x35BA384F9D30D68028898849ddBf5bda09bbE7EA;
     // 21.10.2024: TVL $78.34K, APR 0%
     address public constant POOL_PEARL_SACRA_reETH_10000 = 0x2EC05Ab55867719f433d8ab0a446C48003B3BE8F;
+
+    // StableSwap AMMs
+    address public constant POOL_PEARL_MORE_USDC = 0x1733720f30EF013539Fa2EcEE00671A60B66243D;
+    address public constant POOL_PEARL_stRWA_RWA = 0xb28d015563c81dd66Ab781853c03B7B66aa46C1b;
+
+    // VolatileV1 AMMs
+    address public constant POOL_PEARL_USDC_PEARL = 0xAFb84DFe257cBA43d2f44B4367aDAc5a82775275;
+    address public constant POOL_PEARL_arcUSD_PEARL = 0xd3Ae2AF8f1Fb00af2e363fe6592C19ABF9105FA9;
 
     // ALMs
     address public constant TRIDENT_LIQUID_BOX_FACTORY = 0xEfeFFa36b9FA787b500b2d18a3829271526023b1;
