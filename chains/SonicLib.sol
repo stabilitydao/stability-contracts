@@ -27,14 +27,15 @@ library SonicLib {
     address public constant TOKEN_wETH = 0x309C92261178fA0CF748A855e90Ae73FDb79EBc7;
     address public constant TOKEN_USDC = 0x391071Fe567d609E4af9d32de726d4C33679C7e2;
     address public constant TOKEN_stS = 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955;
+    address public constant TOKEN_BEETS = 0x2D0E0814E62D80056181F5cd932274405966e4f0;
 
     // Stable AMMs
     // Staked Sonic Symphony
     address public constant POOL_BEETHOVENX_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
-    //bytes32 public constant POOLID_BEETHOVENX_wS_stS = 0x374641076b68371e69d03c417dac3e5f236c32fa000000000000000000000006;
 
     // Beethoven X
     address public constant BEETHOVENX_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
+    address public constant BEETHOVENX_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
 
     //noinspection NoReturn
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
