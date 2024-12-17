@@ -68,12 +68,16 @@ library StableMath {
         for (uint i = 0; i < 255; i++) {
             uint P_D = balances[0] * numTokens;
             for (uint j = 1; j < numTokens; j++) {
-                P_D = LegacyOZMath.div(LegacyOZMath.mul(LegacyOZMath.mul(P_D, balances[j]), numTokens), invariant, roundUp);
+                P_D = LegacyOZMath.div(
+                    LegacyOZMath.mul(LegacyOZMath.mul(P_D, balances[j]), numTokens), invariant, roundUp
+                );
             }
             prevInvariant = invariant;
             invariant = LegacyOZMath.div(
                 LegacyOZMath.mul(LegacyOZMath.mul(numTokens, invariant), invariant).add(
-                    LegacyOZMath.div(LegacyOZMath.mul(LegacyOZMath.mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp)
+                    LegacyOZMath.div(
+                        LegacyOZMath.mul(LegacyOZMath.mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp
+                    )
                 ),
                 LegacyOZMath.mul(numTokens + 1, invariant).add(
                     // No need to use checked arithmetic for the amp precision, the amp is guaranteed to be at least 1
@@ -458,7 +462,10 @@ library StableMath {
 
         uint inv2 = LegacyOZMath.mul(invariant, invariant);
         // We remove the balance from c by multiplying it
-        uint c = LegacyOZMath.mul(LegacyOZMath.mul(LegacyOZMath.divUp(inv2, LegacyOZMath.mul(ampTimesTotal, P_D)), _AMP_PRECISION), balances[tokenIndex]);
+        uint c = LegacyOZMath.mul(
+            LegacyOZMath.mul(LegacyOZMath.divUp(inv2, LegacyOZMath.mul(ampTimesTotal, P_D)), _AMP_PRECISION),
+            balances[tokenIndex]
+        );
         uint b = sum.add(LegacyOZMath.mul(LegacyOZMath.divDown(invariant, ampTimesTotal), _AMP_PRECISION));
 
         // We iterate to find the balance
@@ -470,7 +477,10 @@ library StableMath {
         for (uint i = 0; i < 255; i++) {
             prevTokenBalance = tokenBalance;
 
-            tokenBalance = LegacyOZMath.divUp(LegacyOZMath.mul(tokenBalance, tokenBalance).add(c), LegacyOZMath.mul(tokenBalance, 2).add(b).sub(invariant));
+            tokenBalance = LegacyOZMath.divUp(
+                LegacyOZMath.mul(tokenBalance, tokenBalance).add(c),
+                LegacyOZMath.mul(tokenBalance, 2).add(b).sub(invariant)
+            );
 
             if (tokenBalance > prevTokenBalance) {
                 if (tokenBalance - prevTokenBalance <= 1) {
