@@ -8,4 +8,5 @@ library AmmAdapterIdLib {
     string public constant CURVE = "Curve";
     string public constant SOLIDLY = "Solidly";
     string public constant BALANCER_COMPOSABLE_STABLE = "BalancerComposableStable";
+    string public constant BALANCER_WEIGHTED = "BalancerWeighted";
 }

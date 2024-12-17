@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "./FixedPoint.sol";
+import {LegacyOZMath} from "./LegacyOZMath.sol";
 
 library StableMath {
     using FixedPoint for uint;
@@ -67,16 +68,16 @@ library StableMath {
         for (uint i = 0; i < 255; i++) {
             uint P_D = balances[0] * numTokens;
             for (uint j = 1; j < numTokens; j++) {
-                P_D = _div(_mul(_mul(P_D, balances[j]), numTokens), invariant, roundUp);
+                P_D = LegacyOZMath.div(LegacyOZMath.mul(LegacyOZMath.mul(P_D, balances[j]), numTokens), invariant, roundUp);
             }
             prevInvariant = invariant;
-            invariant = _div(
-                _mul(_mul(numTokens, invariant), invariant).add(
-                    _div(_mul(_mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp)
+            invariant = LegacyOZMath.div(
+                LegacyOZMath.mul(LegacyOZMath.mul(numTokens, invariant), invariant).add(
+                    LegacyOZMath.div(LegacyOZMath.mul(LegacyOZMath.mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp)
                 ),
-                _mul(numTokens + 1, invariant).add(
+                LegacyOZMath.mul(numTokens + 1, invariant).add(
                     // No need to use checked arithmetic for the amp precision, the amp is guaranteed to be at least 1
-                    _div(_mul(ampTimesTotal - _AMP_PRECISION, P_D), _AMP_PRECISION, !roundUp)
+                    LegacyOZMath.div(LegacyOZMath.mul(ampTimesTotal - _AMP_PRECISION, P_D), _AMP_PRECISION, !roundUp)
                 ),
                 roundUp
             );
@@ -449,27 +450,27 @@ library StableMath {
         uint sum = balances[0];
         uint P_D = balances[0] * balances.length;
         for (uint j = 1; j < balances.length; j++) {
-            P_D = _divDown(_mul(_mul(P_D, balances[j]), balances.length), invariant);
+            P_D = LegacyOZMath.divDown(LegacyOZMath.mul(LegacyOZMath.mul(P_D, balances[j]), balances.length), invariant);
             sum = sum.add(balances[j]);
         }
         // No need to use safe math, based on the loop above `sum` is greater than or equal to `balances[tokenIndex]`
         sum = sum - balances[tokenIndex];
 
-        uint inv2 = _mul(invariant, invariant);
+        uint inv2 = LegacyOZMath.mul(invariant, invariant);
         // We remove the balance from c by multiplying it
-        uint c = _mul(_mul(_divUp(inv2, _mul(ampTimesTotal, P_D)), _AMP_PRECISION), balances[tokenIndex]);
-        uint b = sum.add(_mul(_divDown(invariant, ampTimesTotal), _AMP_PRECISION));
+        uint c = LegacyOZMath.mul(LegacyOZMath.mul(LegacyOZMath.divUp(inv2, LegacyOZMath.mul(ampTimesTotal, P_D)), _AMP_PRECISION), balances[tokenIndex]);
+        uint b = sum.add(LegacyOZMath.mul(LegacyOZMath.divDown(invariant, ampTimesTotal), _AMP_PRECISION));
 
         // We iterate to find the balance
         uint prevTokenBalance = 0;
         // We multiply the first iteration outside the loop with the invariant to set the value of the
         // initial approximation.
-        uint tokenBalance = _divUp(inv2.add(c), invariant.add(b));
+        uint tokenBalance = LegacyOZMath.divUp(inv2.add(c), invariant.add(b));
 
         for (uint i = 0; i < 255; i++) {
             prevTokenBalance = tokenBalance;
 
-            tokenBalance = _divUp(_mul(tokenBalance, tokenBalance).add(c), _mul(tokenBalance, 2).add(b).sub(invariant));
+            tokenBalance = LegacyOZMath.divUp(LegacyOZMath.mul(tokenBalance, tokenBalance).add(c), LegacyOZMath.mul(tokenBalance, 2).add(b).sub(invariant));
 
             if (tokenBalance > prevTokenBalance) {
                 if (tokenBalance - prevTokenBalance <= 1) {
@@ -481,25 +482,5 @@ library StableMath {
         }
 
         _revert(Errors.STABLE_GET_BALANCE_DIDNT_CONVERGE);
-    }
-
-    function _mul(uint a, uint b) internal pure returns (uint) {
-        return a * b;
-    }
-
-    function _div(uint a, uint b, bool roundUp) internal pure returns (uint) {
-        return roundUp ? _divUp(a, b) : _divDown(a, b);
-    }
-
-    function _divUp(uint a, uint b) internal pure returns (uint) {
-        if (a == 0) {
-            return 0;
-        } else {
-            return 1 + (a - 1) / b;
-        }
-    }
-
-    function _divDown(uint a, uint b) internal pure returns (uint) {
-        return a / b;
     }
 }

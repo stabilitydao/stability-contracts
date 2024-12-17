@@ -231,11 +231,12 @@ interface IBVault {
      * Total balances include both tokens held by the Vault and those withdrawn by the Pool's Asset Managers. These are
      * the amounts used by joins, exits and swaps. For a detailed breakdown of token balances, use `getPoolTokenInfo`
      * instead.
+     * renamed IERC20[] to address[]
      */
     function getPoolTokens(bytes32 poolId)
         external
         view
-        returns (IERC20[] memory tokens, uint[] memory balances, uint lastChangeBlock);
+        returns (address[] memory tokens, uint[] memory balances, uint lastChangeBlock);
 
     /**
      * @dev Called by users to join a Pool, which transfers tokens from `sender` into the Pool's balance. This will

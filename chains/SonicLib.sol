@@ -32,6 +32,8 @@ library SonicLib {
     // Stable AMMs
     // Staked Sonic Symphony
     address public constant POOL_BEETHOVENX_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
+    // Fresh Beats
+    address public constant POOL_BEETHOVENX_BEETS_stS = 0x10ac2F9DaE6539E77e372aDB14B1BF8fBD16b3e8;
 
     // Beethoven X
     address public constant BEETHOVENX_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -73,6 +75,9 @@ library SonicLib {
         IBalancerAdapter(
             IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))).proxy
         ).setupHelpers(BEETHOVENX_BALANCER_HELPERS);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_WEIGHTED);
+        IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_WEIGHTED))).proxy)
+            .setupHelpers(BEETHOVENX_BALANCER_HELPERS);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion ----- Deploy AMM adapters -----
     }

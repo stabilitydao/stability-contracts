@@ -9,19 +9,17 @@ import {Controllable} from "../core/base/Controllable.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {Errors} from "./libs/balancer/BalancerErrors.sol";
-import {FixedPoint} from "./libs/balancer/FixedPoint.sol";
-import {ScaleLib} from "./libs/balancer/ScaleLib.sol";
-import {StableMath} from "./libs/balancer/StableMath.sol";
-import {IBComposableStablePoolMinimal} from "../integrations/balancer/IBComposableStablePoolMinimal.sol";
+import {WeightedMath} from "./libs/balancer/WeightedMath.sol";
 import {IBVault, IAsset} from "../integrations/balancer/IBVault.sol";
 import {IBalancerHelper, IVault} from "../integrations/balancer/IBalancerHelper.sol";
+import {IBWeightedPoolMinimal} from "../integrations/balancer/IBWeightedPoolMinimal.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
 
-/// @title AMM adapter for Balancer ComposableStable pools
+/// @title AMM adapter for Balancer Weighted pools
 /// @author Alien Deployer (https://github.com/a17)
-contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancerAdapter {
+contract BalancerWeightedAdapter is Controllable, IAmmAdapter, IBalancerAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -29,30 +27,14 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerComposableStableAdapter")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant STORAGE_LOCATION = 0x4235c883b69d0c060f4f9a2c87fa015d10166773b6a97be421a79340d62c1e00;
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         DATA TYPES                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    struct GetLiquidityForAmountsVars {
-        bytes32 poolId;
-        address[] assets;
-        uint bptIndex;
-        uint len;
-    }
-
-    struct GetProportionsVars {
-        uint bptIndex;
-        uint asset0Index;
-    }
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerWeightedAdapter")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant STORAGE_LOCATION = 0xa4f6828e593c072b951693fc34ca2cd3971b69396d7ba6ed5b73febddd360b00;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:storage-location erc7201:stability.BalancerComposableStableAdapter
+    /// @custom:storage-location erc7201:stability.BalancerWeightedAdapter
     struct AdapterStorage {
         address balancerHelpers;
     }
@@ -90,7 +72,7 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
     ) external {
         uint amountIn = IERC20(tokenIn).balanceOf(address(this));
 
-        address balancerVault = IBComposableStablePoolMinimal(pool).getVault();
+        address balancerVault = IBWeightedPoolMinimal(pool).getVault();
 
         // Initializing each struct field one-by-one uses less gas than setting all at once.
         IBVault.FundManagement memory funds;
@@ -101,7 +83,7 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
 
         // Initializing each struct field one-by-one uses less gas than setting all at once.
         IBVault.SingleSwap memory singleSwap;
-        singleSwap.poolId = IBComposableStablePoolMinimal(pool).getPoolId();
+        singleSwap.poolId = IBWeightedPoolMinimal(pool).getPoolId();
         singleSwap.kind = IBVault.SwapKind.GIVEN_IN;
         singleSwap.assetIn = IAsset(address(tokenIn));
         singleSwap.assetOut = IAsset(address(tokenOut));
@@ -135,19 +117,13 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
 
     /// @inheritdoc IAmmAdapter
     function ammAdapterId() external pure returns (string memory) {
-        return AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE;
+        return AmmAdapterIdLib.BALANCER_WEIGHTED;
     }
 
     /// @inheritdoc IAmmAdapter
     function poolTokens(address pool) public view returns (address[] memory tokens) {
-        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool);
-        (address[] memory bTokens,,) = IBVault(_pool.getVault()).getPoolTokens(_pool.getPoolId());
-        uint bptIndex = _pool.getBptIndex();
-        uint len = bTokens.length - 1;
-        tokens = new address[](len);
-        for (uint i; i < len; ++i) {
-            tokens[i] = bTokens[i < bptIndex ? i : i + 1];
-        }
+        IBWeightedPoolMinimal _pool = IBWeightedPoolMinimal(pool);
+        (tokens,,) = IBVault(_pool.getVault()).getPoolTokens(_pool.getPoolId());
     }
 
     /// @inheritdoc IAmmAdapter
@@ -160,73 +136,37 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
         address pool,
         uint[] memory amounts
     ) external returns (uint liquidity, uint[] memory amountsConsumed) {
-        GetLiquidityForAmountsVars memory v;
-        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool);
-        v.poolId = _pool.getPoolId();
-        (v.assets,,) = IBVault(_pool.getVault()).getPoolTokens(v.poolId);
-        v.len = v.assets.length;
-        v.bptIndex = _pool.getBptIndex();
-        uint k;
-        uint[] memory amountsIn;
-        (liquidity, amountsIn) = IBalancerHelper(_getStorage().balancerHelpers).queryJoin(
-            v.poolId,
+        address[] memory assets = poolTokens(pool);
+        (liquidity, amountsConsumed) = IBalancerHelper(_getStorage().balancerHelpers).queryJoin(
+            IBWeightedPoolMinimal(pool).getPoolId(),
             address(this),
             address(this),
             IVault.JoinPoolRequest({
-                assets: v.assets,
+                assets: assets,
                 maxAmountsIn: amounts,
                 userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
                 fromInternalBalance: false
             })
         );
-        k = 0;
-        amountsConsumed = new uint[](v.len - 1);
-        for (uint i; i < v.len; ++i) {
-            if (i != v.bptIndex) {
-                amountsConsumed[k] = amountsIn[i];
-                k++;
-            }
-        }
     }
 
     /// @inheritdoc IAmmAdapter
     function getProportions(address pool) external view returns (uint[] memory props) {
-        GetProportionsVars memory v;
-        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool);
-        v.bptIndex = _pool.getBptIndex();
-        v.asset0Index = v.bptIndex == 0 ? 1 : 0;
-        (address[] memory tokens, uint[] memory balances,) = IBVault(_pool.getVault()).getPoolTokens(_pool.getPoolId());
-        uint totalInAsset0;
-        uint len = tokens.length;
-        uint[] memory pricedBalances = new uint[](len - 1);
-        uint k;
-        for (uint i; i < len; ++i) {
-            if (i != v.bptIndex) {
-                uint tokenDecimals = IERC20Metadata(tokens[i]).decimals();
-                uint price = i == v.asset0Index
-                    ? 10 ** tokenDecimals
-                    : getPrice(pool, address(tokens[i]), address(tokens[v.asset0Index]), 10 ** (tokenDecimals - 3)) * 1000;
-                pricedBalances[k] = balances[i] * price / 10 ** tokenDecimals;
-                totalInAsset0 += pricedBalances[k];
-                k++;
-            }
-        }
-        props = new uint[](len - 1);
-        for (uint i; i < len - 1; ++i) {
-            props[i] = pricedBalances[i] * 1e18 / totalInAsset0;
-        }
+        props = IBWeightedPoolMinimal(pool).getNormalizedWeights();
     }
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool);
         {
             // take pool commission
-            uint swapFeePercentage = _pool.getSwapFeePercentage();
-            amount -= FixedPoint.mulUp(amount, swapFeePercentage);
+            uint swapFeePercentage = IBWeightedPoolMinimal(pool).getSwapFeePercentage();
+            amount -= amount * swapFeePercentage / 10 ** 18;
         }
-        bytes32 poolId = _pool.getPoolId();
-        (address[] memory tokens, uint[] memory balances,) = IBVault(_pool.getVault()).getPoolTokens(poolId);
+        address balancerVault = IBWeightedPoolMinimal(pool).getVault();
+        bytes32 poolId = IBWeightedPoolMinimal(pool).getPoolId();
+        (address[] memory tokens, uint[] memory balances,) = IBVault(balancerVault).getPoolTokens(poolId);
+
+        uint[] memory weights = IBWeightedPoolMinimal(pool).getNormalizedWeights();
 
         uint tokenInIndex = type(uint).max;
         uint tokenOutIndex = type(uint).max;
@@ -250,26 +190,9 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
         // require(tokenInIndex < len, 'Wrong tokenIn');
         // require(tokenOutIndex < len, 'Wrong tokenOut');
 
-        uint[] memory scalingFactors = _pool.getScalingFactors();
-        ScaleLib._upscaleArray(balances, scalingFactors);
-
-        uint bptIndex = _pool.getBptIndex();
-        balances = _dropBptItem(balances, bptIndex);
-
-        uint upscaledAmount = ScaleLib._upscale(amount, scalingFactors[tokenInIndex]);
-
-        tokenInIndex = _skipBptIndex(tokenInIndex, bptIndex);
-        uint tokenOutIndexWoBpt = _skipBptIndex(tokenOutIndex, bptIndex);
-
-        (uint currentAmp,,) = _pool.getAmplificationParameter();
-        {
-            uint invariant = StableMath._calculateInvariant(currentAmp, balances, false);
-
-            uint amountOutUpscaled = StableMath._calcOutGivenIn(
-                currentAmp, balances, tokenInIndex, tokenOutIndexWoBpt, upscaledAmount, invariant
-            );
-            return ScaleLib._downscaleDown(amountOutUpscaled, scalingFactors[tokenOutIndex]);
-        }
+        return WeightedMath._calcOutGivenIn(
+            balances[tokenInIndex], weights[tokenInIndex], balances[tokenOutIndex], weights[tokenOutIndex], amount
+        );
     }
 
     /// @inheritdoc IERC165
@@ -281,20 +204,6 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _dropBptItem(uint[] memory amounts, uint bptIndex) internal pure returns (uint[] memory) {
-        uint len = amounts.length - 1;
-        uint[] memory amountsWithoutBpt = new uint[](len);
-        for (uint i; i < len; ++i) {
-            amountsWithoutBpt[i] = amounts[i < bptIndex ? i : i + 1];
-        }
-
-        return amountsWithoutBpt;
-    }
-
-    function _skipBptIndex(uint index, uint bptIndex) internal pure returns (uint) {
-        return index < bptIndex ? index : index - 1;
-    }
 
     function _getStorage() private pure returns (AdapterStorage storage $) {
         //slither-disable-next-line assembly
