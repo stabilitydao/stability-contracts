@@ -25,9 +25,10 @@ library SonicLib {
     // https://docs.soniclabs.com/technology/contract-addresses
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant TOKEN_wETH = 0x309C92261178fA0CF748A855e90Ae73FDb79EBc7;
-    address public constant TOKEN_USDC = 0x391071Fe567d609E4af9d32de726d4C33679C7e2;
+    address public constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address public constant TOKEN_stS = 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955;
     address public constant TOKEN_BEETS = 0x2D0E0814E62D80056181F5cd932274405966e4f0;
+    address public constant TOKEN_EURC = 0xe715cbA7B5cCb33790ceBFF1436809d36cb17E57;
 
     // Stable AMMs
     // Staked Sonic Symphony
@@ -80,6 +81,56 @@ library SonicLib {
             .setupHelpers(BEETHOVENX_BALANCER_HELPERS);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion ----- Deploy AMM adapters -----
+
+        //region ----- Setup Swapper -----
+        {
+            (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            swapper.addBlueChipsPools(bcPools, false);
+            swapper.addPools(pools, false);
+            address[] memory tokenIn = new address[](3);
+            tokenIn[0] = TOKEN_wS;
+            tokenIn[1] = TOKEN_stS;
+            tokenIn[2] = TOKEN_BEETS;
+            uint[] memory thresholdAmount = new uint[](3);
+            thresholdAmount[0] = 1e10;
+            thresholdAmount[1] = 1e10;
+            thresholdAmount[2] = 1e10;
+            swapper.setThresholds(tokenIn, thresholdAmount);
+            LogDeployLib.logSetupSwapper(platform, showLog);
+        }
+        //endregion ----- Setup Swapper -----
+    }
+
+    function routes()
+        public
+        pure
+        returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
+    {
+        //region ----- BC pools ----
+        bcPools = new ISwapper.AddPoolData[](1);
+        bcPools[0] =
+            _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
+        //endregion ----- BC pools ----
+
+        //region ----- Pools ----
+        pools = new ISwapper.AddPoolData[](3);
+        uint i;
+        pools[i++] =
+            _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
+        pools[i++] =
+            _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_BEETHOVENX_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
+        //endregion ----- Pools ----
+    }
+
+    function _makePoolData(
+        address pool,
+        string memory ammAdapterId,
+        address tokenIn,
+        address tokenOut
+    ) internal pure returns (ISwapper.AddPoolData memory) {
+        return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
     }
 
     function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
