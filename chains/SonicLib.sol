@@ -30,11 +30,10 @@ library SonicLib {
     address public constant TOKEN_BEETS = 0x2D0E0814E62D80056181F5cd932274405966e4f0;
     address public constant TOKEN_EURC = 0xe715cbA7B5cCb33790ceBFF1436809d36cb17E57;
 
-    // Stable AMMs
-    // Staked Sonic Symphony
+    // AMMs
     address public constant POOL_BEETHOVENX_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
-    // Fresh Beats
     address public constant POOL_BEETHOVENX_BEETS_stS = 0x10ac2F9DaE6539E77e372aDB14B1BF8fBD16b3e8;
+    address public constant POOL_BEETHOVENX_wS_USDC = 0xf72883bE3a5D324Cf89DE2a6B22CB87098f1e948;
 
     // Beethoven X
     address public constant BEETHOVENX_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -108,19 +107,22 @@ library SonicLib {
         returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
     {
         //region ----- BC pools ----
-        bcPools = new ISwapper.AddPoolData[](1);
+        bcPools = new ISwapper.AddPoolData[](2);
         bcPools[0] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
+        bcPools[1] =
+                        _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](3);
+        pools = new ISwapper.AddPoolData[](4);
         uint i;
         pools[i++] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         pools[i++] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETHOVENX_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
+        pools[i++] = _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         //endregion ----- Pools ----
     }
 
