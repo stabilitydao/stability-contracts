@@ -7,6 +7,7 @@ import {IBalancerAdapter} from "../src/interfaces/IBalancerAdapter.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
+import {Api3Adapter} from "../src/adapters/Api3Adapter.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -39,6 +40,9 @@ library SonicLib {
     address public constant BEETHOVENX_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
     address public constant BEETHOVENX_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
 
+    // Oracles
+    address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
+
     //noinspection NoReturn
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
@@ -67,7 +71,23 @@ library SonicLib {
         _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
         //endregion ----- Deploy and setup vault types -----
 
-        // todo Deploy and setup oracle adapters
+        //region ----- Deploy and setup oracle adapters -----
+        IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
+        // Api3
+        {
+            Proxy proxy = new Proxy();
+            proxy.initProxy(address(new Api3Adapter()));
+            Api3Adapter adapter = Api3Adapter(address(proxy));
+            adapter.initialize(platform);
+            address[] memory assets = new address[](1);
+            assets[0] = TOKEN_USDC;
+            address[] memory priceFeeds = new address[](1);
+            priceFeeds[0] = ORACLE_API3_USDC_USD;
+            adapter.addPriceFeeds(assets, priceFeeds);
+            priceReader.addAdapter(address(adapter));
+            LogDeployLib.logDeployAndSetupOracleAdapter("Api3", address(adapter), showLog);
+        }
+        //endregion ----- Deploy and setup oracle adapters -----
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
@@ -110,8 +130,7 @@ library SonicLib {
         bcPools = new ISwapper.AddPoolData[](2);
         bcPools[0] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
-        bcPools[1] =
-                        _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
+        bcPools[1] = _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
