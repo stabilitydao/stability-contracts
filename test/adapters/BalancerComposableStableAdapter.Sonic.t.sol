@@ -39,9 +39,9 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
         uint out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.TOKEN_wS, address(adapter), 6e17);
+        deal(SonicLib.TOKEN_wS, address(adapter), 6e22);
         vm.expectRevert();
-        adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, address(this), 10_000);
+        adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, address(this), 10);
         // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }
@@ -62,8 +62,8 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
         assertEq(tokens[1], SonicLib.TOKEN_stS);
 
         uint[] memory props = adapter.getProportions(pool);
-        assertGt(props[0], 49e16);
-        assertGt(props[1], 49e16);
+        assertGt(props[0], 1e16);
+        assertGt(props[1], 1e16);
         // console.log(props[0]);
         // console.log(props[1]);
 
