@@ -8,6 +8,8 @@ import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {Api3Adapter} from "../src/adapters/Api3Adapter.sol";
+import {IBalancerGauge} from "../src/integrations/balancer/IBalancerGauge.sol";
+import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -37,8 +39,8 @@ library SonicLib {
     address public constant POOL_BEETHOVENX_wS_USDC = 0xf72883bE3a5D324Cf89DE2a6B22CB87098f1e948;
 
     // Beethoven X
-    address public constant BEETHOVENX_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
-    address public constant BEETHOVENX_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
+    address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
+    address public constant BEETS_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -94,10 +96,10 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE);
         IBalancerAdapter(
             IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))).proxy
-        ).setupHelpers(BEETHOVENX_BALANCER_HELPERS);
+        ).setupHelpers(BEETS_BALANCER_HELPERS);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_WEIGHTED);
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_WEIGHTED))).proxy)
-            .setupHelpers(BEETHOVENX_BALANCER_HELPERS);
+            .setupHelpers(BEETS_BALANCER_HELPERS);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion ----- Deploy AMM adapters -----
 
@@ -119,6 +121,11 @@ library SonicLib {
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
         //endregion ----- Setup Swapper -----
+
+        //region ----- Add farms -----
+        factory.addFarms(farms());
+        LogDeployLib.logAddedFarms(address(factory), showLog);
+        //endregion ----- Add farms -----
     }
 
     function routes()
@@ -143,6 +150,31 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_BEETHOVENX_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         //endregion ----- Pools ----
+    }
+
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](1);
+        uint i;
+
+        _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
+    }
+
+    function _makeBeetsStableFarm(address gauge) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IBalancerGauge(gauge).lp_token();
+        farm.strategyLogicId = StrategyIdLib.BEETS_STABLE_FARM;
+        uint len = IBalancerGauge(gauge).reward_count();
+        farm.rewardAssets = new address[](len);
+        for (uint i; i < len; ++i) {
+          farm.rewardAssets[i] = IBalancerGauge(gauge).reward_tokens(i);
+        }
+        farm.addresses = new address[](1);
+        farm.addresses[0] = gauge;
+//        farm.addresses[2] = boxManager;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makePoolData(
