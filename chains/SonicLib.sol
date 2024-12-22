@@ -10,6 +10,8 @@ import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {Api3Adapter} from "../src/adapters/Api3Adapter.sol";
 import {IBalancerGauge} from "../src/integrations/balancer/IBalancerGauge.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
+import {BeetsStableFarm} from "../src/strategies/BeetsStableFarm.sol";
+import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -126,6 +128,11 @@ library SonicLib {
         factory.addFarms(farms());
         LogDeployLib.logAddedFarms(address(factory), showLog);
         //endregion ----- Add farms -----
+
+        //region ----- Deploy strategy logics -----
+        _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
+        LogDeployLib.logDeployStrategies(platform, showLog);
+        //endregion ----- Deploy strategy logics -----
     }
 
     function routes()
@@ -195,6 +202,20 @@ library SonicLib {
                 upgradeAllowed: true,
                 buildingPrice: buildingPrice
             })
+        );
+    }
+
+    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: id,
+                implementation: address(implementation),
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: farming,
+                tokenId: type(uint).max
+            }),
+            StrategyDeveloperLib.getDeveloper(id)
         );
     }
 
