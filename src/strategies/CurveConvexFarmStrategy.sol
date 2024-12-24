@@ -22,7 +22,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CurveConvexFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION =

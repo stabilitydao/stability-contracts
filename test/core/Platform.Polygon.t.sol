@@ -102,11 +102,6 @@ contract PlatformPolygonTest is PolygonSetup {
         defiEdgeFactory.setMinHeartbeat(PolygonLib.TOKEN_WMATIC, ETH, 86400 * 365);
         vm.stopPrank();
 
-        // disable some strategies that cant work on this default forking block
-        vm.startPrank(platform.multisig());
-        platform.addOperator(platform.multisig());
-        vm.stopPrank();
-
         _disableStrategy(StrategyIdLib.COMPOUND_FARM);
 
         platform.setAllowedBBTokenVaults(platform.allowedBBTokens()[0], 1e4);

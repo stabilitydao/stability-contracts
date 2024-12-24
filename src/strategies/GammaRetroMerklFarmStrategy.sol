@@ -26,7 +26,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.2.1";
+    string public constant VERSION = "2.3.0";
 
     uint internal constant _PRECISION = 1e36;
 

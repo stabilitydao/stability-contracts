@@ -113,6 +113,16 @@ interface IStrategy is IERC165 {
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint value);
 
+    /// @notice Write version of previewDepositAssets
+    /// @param assets_ Strategy assets or part of them, if necessary
+    /// @param amountsMax Amounts of specified assets available for investing
+    /// @return amountsConsumed Cosumed amounts of assets when investing
+    /// @return value Liquidity value or underlying token amount minted when investing
+    function previewDepositAssetsWrite(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external returns (uint[] memory amountsConsumed, uint value);
+
     /// @notice All strategy revenue (pool fees, farm rewards etc) that not claimed by strategy yet
     /// @return assets_ Revenue assets
     /// @return amounts Amounts. Index of asset same as in previous array.

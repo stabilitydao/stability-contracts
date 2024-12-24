@@ -16,4 +16,5 @@ library StrategyIdLib {
     string internal constant CURVE_CONVEX_FARM = "Curve Convex Farm";
     string internal constant YEARN = "Yearn";
     string internal constant TRIDENT_PEARL_FARM = "Trident Pearl Farm";
+    string internal constant BEETS_STABLE_FARM = "Beets Stable Farm";
 }

@@ -81,3 +81,9 @@ forge script --rpc-url polygon script/deploy-strategy/IQMF.Polygon.s.sol -vvvv -
 ```shell
 forge script --rpc-url real script/deploy-core/Deploy.Real.s.sol --verify --verifier blockscout --verifier-url https://explorer.re.al/api? --slow --with-gas-price 30000000 -g 200 --broadcast
 ```
+
+### Sonic
+
+```shell
+forge script --rpc-url sonic --slow --broadcast --verify --etherscan-api-key sonic script/deploy-core/Deploy.Sonic.s.sol
+```

@@ -144,13 +144,13 @@ contract PriceReaderTest is Test, MockSetup {
             (uint priceD, bool trustedD) = priceReader.getPrice(address(tokenD));
             (uint priceE, bool trustedE) = priceReader.getPrice(address(tokenE));
             (uint _zero, bool _false) = priceReader.getPrice(address(this));
-            assertEq(priceA, 1e18);
+            assertEq(priceA, 1e18, "A0");
             assertEq(trustedA, true);
-            assertEq(priceB, 2 * 1e18);
+            assertEq(priceB, 2 * 1e18, "A1");
             assertEq(trustedB, true);
-            assertEq(priceD, 3 * 1e18);
+            assertEq(priceD, 3 * 1e18, "A2");
             assertEq(trustedD, true);
-            assertEq(priceE, 3 * 2e12);
+            assertEq(priceE, 3 * 2e12, "A3");
             assertEq(trustedE, false);
             assertEq(_zero, 0);
             assertEq(_false, false);
