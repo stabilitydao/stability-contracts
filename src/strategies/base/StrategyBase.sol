@@ -272,10 +272,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
     {}
 
     function _previewDepositUnderlyingWrite(uint amount)
-    internal
-    view
-    virtual
-    returns (uint[] memory amountsConsumed )
+        internal
+        view
+        virtual
+        returns (uint[] memory amountsConsumed)
     {
         return _previewDepositUnderlying(amount);
     }
@@ -402,9 +402,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @return amountsConsumed Consumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
     function _previewDepositAssetsWrite(uint[] memory amountsMax)
-    internal
-    virtual
-    returns (uint[] memory amountsConsumed, uint value) {
+        internal
+        virtual
+        returns (uint[] memory amountsConsumed, uint value)
+    {
         return _previewDepositAssets(amountsMax);
     }
 
