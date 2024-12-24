@@ -135,6 +135,8 @@ contract Platform is Controllable, IPlatform {
         __Controllable_init(address(this));
         //slither-disable-next-line unused-return
         $.operators.add(msg.sender);
+        //slither-disable-next-line unused-return
+        $.operators.add(multisig_);
         $.platformVersion = version;
         emit PlatformVersion(version);
     }
