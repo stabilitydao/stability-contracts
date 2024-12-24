@@ -99,11 +99,15 @@ library StrategyLib {
             feeShareEcosystem: 0,
             amountEcosystem: 0
         });
-        // IPlatform _platform = IPlatform(platform);
-        // uint[] memory fees = new uint[](4);
-        // uint[] memory feeAmounts = new uint[](4);
+
         (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) =
             vars.platform.getFees();
+        try vars.platform.getCustomVaultFee(vault) returns (uint vaultCustomFee) {
+            if (vaultCustomFee != 0) {
+                vars.feePlatform = vaultCustomFee;
+            }
+        } catch {}
+
         address vaultManagerReceiver =
             IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
         //slither-disable-next-line unused-return

@@ -21,7 +21,7 @@ import "../../interfaces/IFactory.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc)
 /// Changelog:
-///   2.0.0: use strategy.previewDepositAssetsWrite
+///   2.0.0: use strategy.previewDepositAssetsWrite; hardWorkMintFeeCallback use platform.getCustomVaultFee
 ///   1.3.0: hardWorkMintFeeCallback
 ///   1.2.0: isHardWorkOnDepositAllowed
 ///   1.1.0: setName, setSymbol, gas optimization

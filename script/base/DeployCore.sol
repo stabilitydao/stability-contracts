@@ -106,12 +106,12 @@ abstract contract DeployCore {
             IPlatform.PlatformSettings({
                 networkName: p.networkName,
                 networkExtra: p.networkExtra,
-                fee: 6_000, // todo pass in args
-                feeShareVaultManager: 30_000, // todo pass in args
-                feeShareStrategyLogic: 30_000, // todo pass in args
-                feeShareEcosystem: 0, // todo pass in args
-                minInitialBoostPerDay: 30e18, // $30 // todo pass in args
-                minInitialBoostDuration: 30 * 86400 // 30 days // todo pass in args
+                fee: p.fee,
+                feeShareVaultManager: p.feeShareVaultManager,
+                feeShareStrategyLogic: p.feeShareStrategyLogic,
+                feeShareEcosystem: 0,
+                minInitialBoostPerDay: 30e18, // $30
+                minInitialBoostDuration: 30 * 86400 // 30 days
             })
         );
 

@@ -51,7 +51,7 @@ library SonicLib {
     //noinspection NoReturn
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
-        p.version = "24.06.0-alpha";
+        p.version = "25.01.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = TOKEN_wS;
         p.networkName = "Sonic";
@@ -60,6 +60,9 @@ library SonicLib {
         p.gelatoAutomate = address(0);
         p.gelatoMinBalance = 1e16;
         p.gelatoDepositAmount = 2e16;
+        p.fee = 30_000;
+        p.feeShareVaultManager = 10_000;
+        p.feeShareStrategyLogic = 40_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

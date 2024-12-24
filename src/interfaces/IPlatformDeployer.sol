@@ -13,5 +13,8 @@ interface IPlatformDeployer {
         address gelatoAutomate;
         uint gelatoMinBalance;
         uint gelatoDepositAmount;
+        uint fee;
+        uint feeShareVaultManager;
+        uint feeShareStrategyLogic;
     }
 }

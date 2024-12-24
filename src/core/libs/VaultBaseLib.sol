@@ -39,6 +39,11 @@ library VaultBaseLib {
         (, uint revenueSharesOut,) = IVault(address(this)).previewDepositAssets(revenueAssets, revenueAmounts);
 
         (v.feePlatform, v.feeShareVaultManager, v.feeShareStrategyLogic, v.feeShareEcosystem) = platform.getFees();
+        try platform.getCustomVaultFee(address(this)) returns (uint vaultCustomFee) {
+            if (vaultCustomFee != 0) {
+                v.feePlatform = vaultCustomFee;
+            }
+        } catch {}
         uint strategyLogicTokenId =
             IFactory(platform.factory()).strategyLogicConfig(keccak256(bytes(s.strategyLogicId()))).tokenId;
 

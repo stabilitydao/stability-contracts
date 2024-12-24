@@ -9,7 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
-///   2.0.0: previewDepositAssetsWrite
+///   2.0.0: previewDepositAssetsWrite; use platform.getCustomVaultFee
 ///   1.1.0: autoCompoundingByUnderlyingProtocol(), virtual total()
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)

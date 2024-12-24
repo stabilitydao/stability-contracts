@@ -22,7 +22,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant _PRECISION = 10 ** 36;
 

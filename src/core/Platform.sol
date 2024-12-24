@@ -33,7 +33,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -42,7 +42,7 @@ contract Platform is Controllable, IPlatform {
     uint public constant MIN_FEE = 5_000; // 5%
 
     /// @dev Maximal revenue fee
-    uint public constant MAX_FEE = 10_000; // 10%
+    uint public constant MAX_FEE = 50_000; // 50%
 
     /// @dev Minimal VaultManager tokenId owner fee share
     uint public constant MIN_FEE_SHARE_VAULT_MANAGER = 10_000; // 10%
@@ -121,6 +121,7 @@ contract Platform is Controllable, IPlatform {
         uint feeShareVaultManager;
         uint feeShareStrategyLogic;
         uint feeShareEcosystem;
+        mapping(address vault => uint platformFee) customVaultFee;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -439,6 +440,13 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
+    function setCustomVaultFee(address vault, uint platformFee) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit CustomVaultFee(vault, platformFee);
+        $.customVaultFee[vault] = platformFee;
+    }
+
+    /// @inheritdoc IPlatform
     function setupRebalancer(address rebalancer_) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
         emit Rebalancer(rebalancer_);
@@ -481,6 +489,12 @@ contract Platform is Controllable, IPlatform {
     {
         PlatformStorage storage $ = _getStorage();
         return ($.fee, $.feeShareVaultManager, $.feeShareStrategyLogic, $.feeShareEcosystem);
+    }
+
+    /// @inheritdoc IPlatform
+    function getCustomVaultFee(address vault) external view returns(uint fee) {
+        PlatformStorage storage $ = _getStorage();
+        return $.customVaultFee[vault];
     }
 
     /// @inheritdoc IPlatform
