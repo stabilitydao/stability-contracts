@@ -7,6 +7,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {LPStrategyBase} from "./base/LPStrategyBase.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
+import {StrategyLib} from "./libs/StrategyLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
@@ -19,6 +20,10 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
+import {IBVault} from "../integrations/balancer/IBVault.sol";
+import {IBComposableStablePoolMinimal} from "../integrations/balancer/IBComposableStablePoolMinimal.sol";
+import {IBalancerGauge} from "../integrations/balancer/IBalancerGauge.sol";
 
 /// @title Earn Beets stable pool LP fees and gauge rewards
 /// @author Alien Deployer (https://github.com/a17)
@@ -31,6 +36,19 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    struct BalancerMethodVars {
+        bytes32 poolId;
+        address[] poolTokens;
+        uint bptIndex;
+        uint len;
+        uint[] allAmounts;
+        uint[] amounts;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -49,7 +67,7 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
         __LPStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.CURVE_CONVEX_FARM,
+                id: StrategyIdLib.BEETS_STABLE_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
@@ -61,8 +79,9 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
         address[] memory _assets = assets();
         uint len = _assets.length;
+        address balancerVault = IBComposableStablePoolMinimal(farm.pool).getVault();
         for (uint i; i < len; ++i) {
-            IERC20(_assets[i]).forceApprove(farm.pool, type(uint).max);
+            IERC20(_assets[i]).forceApprove(balancerVault, type(uint).max);
         }
 
         IERC20(farm.pool).forceApprove(farm.addresses[0], type(uint).max);
@@ -90,8 +109,7 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc FarmingStrategyBase
     function stakingPool() external view override returns (address) {
-        IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
+        IFactory.Farm memory farm = _getFarm();
         return farm.addresses[0];
     }
 
@@ -153,8 +171,8 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external pure returns (bool) {
-        return true;
+    function isReadyForHardWork() external view returns (bool) {
+        return total() != 0;
     }
 
     /// @inheritdoc IFarmingStrategy
@@ -209,22 +227,101 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
-        // todo
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal($lp.pool);
+        BalancerMethodVars memory v;
+
+        v.poolId = _pool.getPoolId();
+        (v.poolTokens,,) = IBVault(_pool.getVault()).getPoolTokens(v.poolId);
+
+        value = IERC20(address(_pool)).balanceOf(address(this));
+
+        v.bptIndex = _pool.getBptIndex();
+        v.len = v.poolTokens.length;
+        v.allAmounts = new uint[](v.len);
+        uint k;
+        for (uint i; i < v.len; ++i) {
+            if (i != v.bptIndex) {
+                v.allAmounts[i] = amounts[k];
+                k++;
+            }
+        }
+
+        IBVault(_pool.getVault()).joinPool(
+            v.poolId,
+            address(this),
+            address(this),
+            IBVault.JoinPoolRequest({
+                assets: v.poolTokens,
+                maxAmountsIn: v.allAmounts,
+                userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
+                fromInternalBalance: false
+            })
+        );
+        value = IERC20(address(_pool)).balanceOf(address(this)) - value;
+        $base.total += value;
+
+        IFactory.Farm memory farm = _getFarm();
+        IBalancerGauge(farm.addresses[0]).deposit(value);
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-        // todo
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total += amount;
+        IFactory.Farm memory farm = _getFarm();
+        IBalancerGauge(farm.addresses[0]).deposit(amount);
+        amountsConsumed = _calcAssetsAmounts(amount);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        // todo
+        IFactory.Farm memory farm = _getFarm();
+        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool());
+        BalancerMethodVars memory v;
+
+        (v.poolTokens,,) = IBVault(_pool.getVault()).getPoolTokens(_pool.getPoolId());
+
+        IBalancerGauge(farm.addresses[0]).withdraw(value);
+
+        address[] memory __assets = assets();
+        v.len = __assets.length;
+        amountsOut = new uint[](v.len);
+        for (uint i; i < v.len; ++i) {
+            amountsOut[i] = IERC20(__assets[i]).balanceOf(receiver);
+        }
+
+        v.amounts = _calcAssetsAmounts(value);
+        v.amounts = _extractFee(address(_pool), v.amounts);
+
+        IBVault(_pool.getVault()).exitPool(
+            _pool.getPoolId(),
+            address(this),
+            payable(receiver),
+            IBVault.ExitPoolRequest({
+                assets: v.poolTokens,
+                minAmountsOut: new uint[](v.poolTokens.length),
+                userData: abi.encode(1, v.amounts, value),
+                toInternalBalance: false
+            })
+        );
+
+        for (uint i; i < v.len; ++i) {
+            amountsOut[i] = IERC20(__assets[i]).balanceOf(receiver) - amountsOut[i];
+        }
+
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total -= value;
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        // todo
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total -= amount;
+        IFactory.Farm memory farm = _getFarm();
+        IBalancerGauge(farm.addresses[0]).withdraw(amount);
+        IERC20($base._underlying).safeTransfer(receiver, amount);
     }
 
     /// @inheritdoc StrategyBase
@@ -238,22 +335,69 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        // todo
+        __assets = assets();
+        __amounts = new uint[](__assets.length);
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        uint[] memory balanceBefore = new uint[](rwLen);
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+        IFactory.Farm memory farm = _getFarm();
+        IBalancerGauge(farm.addresses[0]).claim_rewards();
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
+        }
     }
 
     /// @inheritdoc StrategyBase
     function _compound() internal override {
-        // todo
+        address[] memory _assets = assets();
+        uint len = _assets.length;
+        uint[] memory amounts = new uint[](len);
+        //slither-disable-next-line uninitialized-local
+        bool notZero;
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(_assets[i]);
+            if (amounts[i] != 0) {
+                notZero = true;
+            }
+        }
+        if (notZero) {
+            _depositAssets(amounts, false);
+        }
     }
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax)
+    function _previewDepositAssets(uint[] memory)
         internal
-        view
+        pure
         override(StrategyBase, LPStrategyBase)
+        returns (uint[] memory, uint)
+    {
+        revert("Not supported");
+    }
+
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssetsWrite(uint[] memory amountsMax)
+        internal
+        override(StrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        // todo
+        IBalancerAdapter _ammAdapter =
+            IBalancerAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        (value, amountsConsumed) = _ammAdapter.getLiquidityForAmountsWrite($lp.pool, amountsMax);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _previewDepositAssetsWrite(
+        address[] memory,
+        uint[] memory amountsMax
+    ) internal override(StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+        return _previewDepositAssetsWrite(amountsMax);
     }
 
     /// @inheritdoc StrategyBase
@@ -263,17 +407,48 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        // todo
+        amounts_ = _calcAssetsAmounts(total());
+        assets_ = assets();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function _calcAssetsAmounts(uint shares) internal view returns (uint[] memory amounts_) {
+        IBComposableStablePoolMinimal _pool = IBComposableStablePoolMinimal(pool());
+        uint bptIndex = _pool.getBptIndex();
+        (, uint[] memory balances,) = IBVault(_pool.getVault()).getPoolTokens(_pool.getPoolId());
+        uint supply = IERC20(address(_pool)).totalSupply() - balances[bptIndex];
+        uint len = balances.length - 1;
+        amounts_ = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amounts_[i] = shares * balances[i < bptIndex ? i : i + 1] / supply;
+        }
+    }
+
+    function _extractFee(address _pool, uint[] memory amounts_) internal view returns (uint[] memory __amounts) {
+        __amounts = amounts_;
+        uint len = amounts_.length;
+        uint fee = IBComposableStablePoolMinimal(_pool).getSwapFeePercentage();
+        for (uint i; i < len; ++i) {
+            __amounts[i] -= __amounts[i] * fee / 1e18;
+        }
+    }
+
     function _generateDescription(
         IFactory.Farm memory farm,
         IAmmAdapter _ammAdapter
     ) internal view returns (string memory) {
-        // todo
+        //slither-disable-next-line calls-loop
+        return string.concat(
+            "Earn ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+            " and fees on Beets stable pool by ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+            " LP"
+        );
     }
 }
