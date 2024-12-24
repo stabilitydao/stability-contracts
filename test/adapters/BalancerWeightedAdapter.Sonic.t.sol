@@ -39,9 +39,9 @@ contract BalancerWeightedAdapterTest is SonicSetup {
         uint out = IERC20(SonicLib.TOKEN_BEETS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.TOKEN_stS, address(adapter), 8e15);
+        deal(SonicLib.TOKEN_stS, address(adapter), 8000e18);
         vm.expectRevert();
-        adapter.swap(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, address(this), 10_000);
+        adapter.swap(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, address(this), 10);
         // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }
@@ -62,7 +62,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
         // console.log(props[1]);
 
         uint price;
-        price = adapter.getPrice(pool, SonicLib.TOKEN_BEETS, SonicLib.TOKEN_stS, 1e10);
+        price = adapter.getPrice(pool, SonicLib.TOKEN_BEETS, SonicLib.TOKEN_stS, 1e18);
         assertGt(price, 1e8);
         // console.log(price);
 
