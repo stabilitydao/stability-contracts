@@ -21,6 +21,7 @@ import "../../interfaces/IFactory.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc)
 /// Changelog:
+///   2.0.0: use strategy.previewDepositAssetsWrite
 ///   1.3.0: hardWorkMintFeeCallback
 ///   1.2.0: isHardWorkOnDepositAllowed
 ///   1.1.0: setName, setSymbol, gas optimization
@@ -35,7 +36,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "1.3.0";
+    string public constant VERSION_VAULT_BASE = "2.0.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -237,7 +238,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IERC20(v.underlying).safeTransferFrom(msg.sender, address(v.strategy), v.value);
             (v.amountsConsumed) = v.strategy.depositUnderlying(v.value);
         } else {
-            (v.amountsConsumed, v.value) = v.strategy.previewDepositAssets(assets_, amountsMax);
+            (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
                 IERC20(v.assets[i]).safeTransferFrom(msg.sender, address(v.strategy), v.amountsConsumed[i]);

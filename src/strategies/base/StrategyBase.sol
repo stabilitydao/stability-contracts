@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.0.0: previewDepositAssetsWrite
 ///   1.1.0: autoCompoundingByUnderlyingProtocol(), virtual total()
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -20,7 +21,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "1.1.0";
+    string public constant VERSION_STRATEGY_BASE = "2.0.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -212,7 +213,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     function previewDepositAssets(
         address[] memory assets_,
         uint[] memory amountsMax
-    ) external view virtual returns (uint[] memory amountsConsumed, uint value) {
+    ) public view virtual returns (uint[] memory amountsConsumed, uint value) {
         // nosemgrep
         if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
             if (amountsMax.length != 1) {
@@ -222,6 +223,23 @@ abstract contract StrategyBase is Controllable, IStrategy {
             amountsConsumed = _previewDepositUnderlying(amountsMax[0]);
         } else {
             return _previewDepositAssets(assets_, amountsMax);
+        }
+    }
+
+    /// @inheritdoc IStrategy
+    function previewDepositAssetsWrite(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external virtual returns (uint[] memory amountsConsumed, uint value) {
+        // nosemgrep
+        if (assets_.length == 1 && assets_[0] == _getStrategyBaseStorage()._underlying && assets_[0] != address(0)) {
+            if (amountsMax.length != 1) {
+                revert IControllable.IncorrectArrayLength();
+            }
+            value = amountsMax[0];
+            amountsConsumed = _previewDepositUnderlyingWrite(amountsMax[0]);
+        } else {
+            return _previewDepositAssetsWrite(assets_, amountsMax);
         }
     }
 
@@ -252,6 +270,15 @@ abstract contract StrategyBase is Controllable, IStrategy {
         virtual
         returns (uint[] memory /*amountsConsumed*/ )
     {}
+
+    function _previewDepositUnderlyingWrite(uint amount)
+    internal
+    view
+    virtual
+    returns (uint[] memory amountsConsumed )
+    {
+        return _previewDepositUnderlying(amount);
+    }
 
     /// @dev Can be overrided by derived base strategies for custom logic
     function _beforeDeposit() internal virtual {}
@@ -340,23 +367,46 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev This full form of _previewDepositAssets can be implemented only in inherited base strategy contract
     /// @param assets_ Strategy assets or part of them, if necessary
     /// @param amountsMax Amounts of specified assets available for investing
-    /// @return amountsConsumed Cosumed amounts of assets when investing
+    /// @return amountsConsumed Consumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
     function _previewDepositAssets(
         address[] memory assets_,
         uint[] memory amountsMax
     ) internal view virtual returns (uint[] memory amountsConsumed, uint value);
 
+    /// @dev Write version of _previewDepositAssets
+    /// @param assets_ Strategy assets or part of them, if necessary
+    /// @param amountsMax Amounts of specified assets available for investing
+    /// @return amountsConsumed Consumed amounts of assets when investing
+    /// @return value Liquidity value or underlying token amount minted when investing
+    function _previewDepositAssetsWrite(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal virtual returns (uint[] memory amountsConsumed, uint value) {
+        return _previewDepositAssets(assets_, amountsMax);
+    }
+
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided strategy assets and amounts.
     /// Light form of _previewDepositAssets is suitable for implementation into final strategy contract.
     /// @param amountsMax Amounts of specified assets available for investing
-    /// @return amountsConsumed Cosumed amounts of assets when investing
+    /// @return amountsConsumed Consumed amounts of assets when investing
     /// @return value Liquidity value or underlying token amount minted when investing
     function _previewDepositAssets(uint[] memory amountsMax)
         internal
         view
         virtual
         returns (uint[] memory amountsConsumed, uint value);
+
+    /// @dev Write version of _previewDepositAssets
+    /// @param amountsMax Amounts of specified assets available for investing
+    /// @return amountsConsumed Consumed amounts of assets when investing
+    /// @return value Liquidity value or underlying token amount minted when investing
+    function _previewDepositAssetsWrite(uint[] memory amountsMax)
+    internal
+    virtual
+    returns (uint[] memory amountsConsumed, uint value) {
+        return _previewDepositAssets(amountsMax);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
