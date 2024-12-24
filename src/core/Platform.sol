@@ -492,7 +492,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function getCustomVaultFee(address vault) external view returns(uint fee) {
+    function getCustomVaultFee(address vault) external view returns (uint fee) {
         PlatformStorage storage $ = _getStorage();
         return $.customVaultFee[vault];
     }

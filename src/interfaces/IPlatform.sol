@@ -214,7 +214,7 @@ interface IPlatform {
 
     /// @notice Get custom vault platform fee
     /// @return fee revenue fee % with DENOMINATOR precision
-    function getCustomVaultFee(address vault) external view returns(uint fee);
+    function getCustomVaultFee(address vault) external view returns (uint fee);
 
     /// @notice Platform settings
     function getPlatformSettings() external view returns (PlatformSettings memory);
