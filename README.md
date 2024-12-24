@@ -60,6 +60,7 @@ Platform address.
 * **Polygon** [137] `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
 * **Base** [8453] `0x7eAeE5CfF17F7765d89F4A46b484256929C62312` [basescan](https://basescan.org/address/0x7eaee5cff17f7765d89f4a46b484256929c62312)
 * **Re.al** [111188] `0xB7838d447deece2a9A5794De0f342B47d0c1B9DC` [explorer.re.al](https://explorer.re.al/address/0xB7838d447deece2a9A5794De0f342B47d0c1B9DC)
+* **Sonic** [146] `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
 
 ## Audits
 
