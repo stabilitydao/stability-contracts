@@ -288,8 +288,9 @@ interface IBVault {
         BPT_IN_FOR_EXACT_TOKENS_OUT
     }
 
+    /// @dev modified to address[]
     struct JoinPoolRequest {
-        IAsset[] assets;
+        address[] assets;
         uint[] maxAmountsIn;
         bytes userData;
         bool fromInternalBalance;
@@ -337,8 +338,9 @@ interface IBVault {
         ExitPoolRequest calldata request
     ) external;
 
+    /// @dev modified to address[]
     struct ExitPoolRequest {
-        IAsset[] assets;
+        address[] assets;
         uint[] minAmountsOut;
         bytes userData;
         bool toInternalBalance;

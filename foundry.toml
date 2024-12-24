@@ -6,7 +6,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 solc_version = "0.8.23"
 gas_limit = "18446744073709551615"
 optimizer-runs = 200
-evm_version = "Shanghai"
+evm_version = "Cancun"
 
 [profile.lite]
 optimizer = false

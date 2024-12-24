@@ -13,7 +13,9 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(489000); // Dec-16-2024 06:18:01 PM +UTC
-        vm.rollFork(850000); // Dec 20, 2024, 12:56 PM GMT+3
+        // vm.rollFork(850000); // Dec 20, 2024, 12:56 PM GMT+3
+        // vm.rollFork(1168500); // Dec-22-2024 10:34:43 UTC
+        vm.rollFork(1462000); // Dec-24-2024 12:35:56 PM +UTC
     }
 
     function testSetupStub() external {}

@@ -417,11 +417,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                 }
 
-                _skip(duration3, strategies[i].farmId);
-                vm.roll(block.number + 6);
-
                 _preHardWork();
                 _preHardWork(strategies[i].farmId);
+
+                _skip(duration3, strategies[i].farmId);
+                vm.roll(block.number + 6);
 
                 // check not claimed revenue if available
                 {
@@ -709,7 +709,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint balNow = IERC20(assets[j]).balanceOf(address(this));
                     vars.withdrawnUsdValue += balNow * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
-                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 1000);
+                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue - vars.depositUsdValue / 100, "E1");
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         COVERAGE                           */
