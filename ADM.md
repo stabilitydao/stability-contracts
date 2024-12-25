@@ -1,4 +1,4 @@
-# Platform Administration Guide V3
+# Platform Administration Guide V4
 
 ## Dedicated sender actions
 
@@ -66,6 +66,14 @@ function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitP
 * Connect operator wallet
 * `4. setStrategyAvailableInitParams (0x6c2713a3)`
 * fill params
+
+### Add swapper routes
+
+Use `ISwapper.addPools` method via cast.
+
+```shell
+cast send -i --rpc-url sonic 0xe52fcf607a8328106723804de1ef65da512771be 'addPools((address,address,address,address)[],bool)' '[("0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3","0xaf95468b1a624605bbfb862b0fb6e9c73ad847b8","0x29219dd400f2Bf60E5a23d13Be72B486D4038894","0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38")]' true
+```
 
 ## Multisig actions
 
