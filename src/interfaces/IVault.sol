@@ -158,6 +158,17 @@ interface IVault is IERC165 {
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @notice Write version of previewDepositAssets
+    /// @param assets_ Assets suitable for vault strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
+    /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
+    /// @return amountsConsumed Amounts of strategy assets that can be deposited by providing amountsMax
+    /// @return sharesOut Amount of vault shares that will be minted
+    /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
+    function previewDepositAssetsWrite(
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
+
     /// @dev Mint fee shares callback
     /// @param revenueAssets Assets returned by _claimRevenue function that was earned during HardWork
     /// @param revenueAmounts Assets amounts returned from _claimRevenue function that was earned during HardWork

@@ -14,7 +14,7 @@ contract CVault is VaultBase {
     //region ----- Constants -----
 
     /// @dev Version of CVault implementation
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 
