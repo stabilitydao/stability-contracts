@@ -100,6 +100,10 @@ contract VaultTest is Test, FullMockSetup {
         assertGt(amountsConsumed[0], 0);
         assertGt(amountsConsumed[1], 0);
 
+        (uint[] memory amountsConsumedWrite, uint sharesOutWrite,) = vault.previewDepositAssets(assets, amounts);
+        assertEq(amountsConsumedWrite[0], amountsConsumed[0]);
+        assertEq(amountsConsumedWrite[1], amountsConsumed[1]);
+
         // check with other proportions
         uint[] memory otherAmounts = new uint[](2);
         otherAmounts[0] = 10e18;
