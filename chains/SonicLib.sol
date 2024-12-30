@@ -13,6 +13,7 @@ import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {BeetsStableFarm} from "../src/strategies/BeetsStableFarm.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 import {IGaugeEquivalent} from "../src/integrations/equalizer/IGaugeEquivalent.sol";
+import {EqualizerFarmStrategy} from "../src/strategies/EqualizerFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -117,6 +118,7 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_WEIGHTED);
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_WEIGHTED))).proxy)
             .setupHelpers(BEETS_BALANCER_HELPERS);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.SOLIDLY);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion ----- Deploy AMM adapters -----
 
@@ -146,6 +148,7 @@ library SonicLib {
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
+        _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion ----- Deploy strategy logics -----
 
@@ -170,7 +173,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](5);
+        pools = new ISwapper.AddPoolData[](6);
         uint i;
         pools[i++] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
@@ -178,7 +181,8 @@ library SonicLib {
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETHOVENX_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
-        pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.UNISWAPV3, TOKEN_EQUAL, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_EQUALIZER_USDC_WETH, AmmAdapterIdLib.SOLIDLY, TOKEN_wETH, TOKEN_USDC);
         //endregion ----- Pools ----
     }
 

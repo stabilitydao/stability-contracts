@@ -50,7 +50,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
         __LPStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.BEETS_STABLE_FARM,
+                id: StrategyIdLib.EQUALIZER_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
@@ -232,12 +232,16 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _compound() internal override {}
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory)
+    function _previewDepositAssets(uint[] memory amountsMax)
         internal
-        pure
+        view
         override(StrategyBase, LPStrategyBase)
-        returns (uint[] memory, uint)
-    {}
+        returns (uint[] memory amountsConsumed, uint value)
+    {
+        IAmmAdapter _adapter = IAmmAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        (value, amountsConsumed) = _adapter.getLiquidityForAmounts($lp.pool, amountsMax);
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {

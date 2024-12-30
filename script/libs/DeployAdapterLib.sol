@@ -10,6 +10,7 @@ import "../../src/adapters/KyberAdapter.sol";
 import "../../src/adapters/CurveAdapter.sol";
 import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
 import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
+import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -42,6 +43,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.BALANCER_WEIGHTED)) {
             proxy.initProxy(address(new BalancerWeightedAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.SOLIDLY)) {
+            proxy.initProxy(address(new SolidlyAdapter()));
         }
 
         require(proxy.implementation() != address(0), "Unknown AmmAdapter");
