@@ -20,6 +20,9 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IRouter} from "../integrations/equalizer/IRouter.sol";
+import {ISolidlyPool} from "../integrations/solidly/ISolidlyPool.sol";
+import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 
 /// @title Earn Equalizer gauge rewards by classic LPs
 /// @author Alien Deployer (https://github.com/a17)
@@ -44,7 +47,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -61,9 +64,10 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         address[] memory _assets = assets();
-        IERC20(_assets[0]).forceApprove(farm.pool, type(uint).max);
-        IERC20(_assets[1]).forceApprove(farm.pool, type(uint).max);
+        IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(farm.pool).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(farm.pool).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -205,16 +209,48 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {}
+    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
+        IFactory.Farm memory farm = _getFarm();
+        address[] memory _assets = assets();
+        bool stable = ISolidlyPool(farm.pool).stable();
+        (,, value) = IRouter(farm.addresses[1]).addLiquidity(
+            _assets[0], _assets[1], stable, amounts[0], amounts[1], 0, 0, address(this), block.timestamp
+        );
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total += value;
+    }
 
     /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {}
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeEquivalent(farm.addresses[0]).deposit(amount);
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total += amount;
+        amountsConsumed = _calcAssetsAmounts(amount);
+    }
 
     /// @inheritdoc StrategyBase
-    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {}
+    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeEquivalent(farm.addresses[0]).withdraw(value);
+        amountsOut = new uint[](2);
+        address[] memory _assets = assets();
+        bool stable = ISolidlyPool(farm.pool).stable();
+        (amountsOut[0], amountsOut[1]) = IRouter(farm.addresses[1]).removeLiquidity(
+            _assets[0], _assets[1], stable, value, 0, 0, receiver, block.timestamp
+        );
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total -= value;
+    }
 
     /// @inheritdoc StrategyBase
-    function _withdrawUnderlying(uint amount, address receiver) internal override {}
+    function _withdrawUnderlying(uint amount, address receiver) internal override {
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeEquivalent(farm.addresses[0]).withdraw(amount);
+        IERC20(farm.pool).transfer(receiver, amount);
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total -= amount;
+    }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
@@ -226,10 +262,31 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             address[] memory __rewardAssets,
             uint[] memory __rewardAmounts
         )
-    {}
+    {
+        __assets = assets();
+        __amounts = new uint[](__assets.length);
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        uint[] memory balanceBefore = new uint[](rwLen);
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+        IFactory.Farm memory farm = _getFarm();
+        IGaugeEquivalent(farm.addresses[0]).getReward();
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
+        }
+    }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {}
+    function _compound() internal override {
+        uint[] memory amountsToDeposit = _swapForDepositProportion(getAssetsProportions()[0]);
+        if (amountsToDeposit[0] != 0 && amountsToDeposit[1] != 0) {
+            _depositAssets(amountsToDeposit, true);
+        }
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
@@ -249,7 +306,10 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {}
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        assets_ = assets();
+        amounts_ = _calcAssetsAmounts(total());
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
@@ -264,10 +324,21 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             "Earn ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            "  by ",
+            " by ",
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
             " LP"
         );
+    }
+
+    function _calcAssetsAmounts(uint shares) internal view returns (uint[] memory amounts_) {
+        IFactory.Farm memory farm = _getFarm();
+        address pool = farm.pool;
+        uint reserve0 = ISolidlyPool(pool).reserve0();
+        uint reserve1 = ISolidlyPool(pool).reserve1();
+        uint supply = ISolidlyPool(pool).totalSupply();
+        amounts_ = new uint[](2);
+        amounts_[0] = reserve0 * shares / supply;
+        amounts_[1] = reserve1 * shares / supply;
     }
 }

@@ -56,6 +56,7 @@ library SonicLib {
     address public constant BEETS_GAUGE_USDC_scUSD = 0x33B29bcf17e866A35941e07CbAd54f1807B337f5;
 
     // Equalizer
+    address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;
     address public constant EQUALIZER_GAUGE_USDC_WETH = 0xf8F2462A8Fa08Df933C0d6bbaf34108Fd7af526E;
     address public constant EQUALIZER_GAUGE_wS_stS = 0x0DA2e6e170990dCDd046880fADC17ADF759B869e;
     address public constant EQUALIZER_GAUGE_wS_USDC = 0x9b55Fbd8Cd27B81aCc6adfd42D441858FeDe4326;
@@ -131,14 +132,16 @@ library SonicLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](3);
+            address[] memory tokenIn = new address[](4);
             tokenIn[0] = TOKEN_wS;
             tokenIn[1] = TOKEN_stS;
             tokenIn[2] = TOKEN_BEETS;
-            uint[] memory thresholdAmount = new uint[](3);
-            thresholdAmount[0] = 1e10;
+            tokenIn[3] = TOKEN_EQUAL;
+            uint[] memory thresholdAmount = new uint[](4);
+            thresholdAmount[0] = 1e12;
             thresholdAmount[1] = 1e10;
             thresholdAmount[2] = 1e10;
+            thresholdAmount[3] = 1e12;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -172,7 +175,8 @@ library SonicLib {
         bcPools[0] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
         // bcPools[1] = _makePoolData(POOL_BEETHOVENX_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
-        bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
+        // bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
+        bcPools[1] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
@@ -183,7 +187,7 @@ library SonicLib {
         pools[i++] =
             _makePoolData(POOL_BEETHOVENX_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETHOVENX_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
-        pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETHOVENX_USDC_scUSD, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_scUSD, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_EQUALIZER_USDC_WETH, AmmAdapterIdLib.SOLIDLY, TOKEN_wETH, TOKEN_USDC);
@@ -228,8 +232,9 @@ library SonicLib {
         for (uint i; i < len; ++i) {
             farm.rewardAssets[i] = IGaugeEquivalent(gauge).rewardTokens(i);
         }
-        farm.addresses = new address[](1);
+        farm.addresses = new address[](2);
         farm.addresses[0] = gauge;
+        farm.addresses[1] = EQUALIZER_ROUTER_03;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

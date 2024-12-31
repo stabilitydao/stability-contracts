@@ -9,6 +9,8 @@ import "../base/UniversalTest.sol";
 contract EqualizerFarmStrategyTest is SonicSetup, UniversalTest {
     function testEF() public universalTest {
         _addStrategy(2);
+        _addStrategy(3);
+        _addStrategy(4);
     }
 
     function _addStrategy(uint farmId) internal {
