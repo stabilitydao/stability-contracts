@@ -49,6 +49,7 @@ library SonicLib {
     address public constant POOL_EQUALIZER_wS_stS = 0xB75C9073ea00AbDa9ff420b5Ae46fEe248993380;
     address public constant POOL_EQUALIZER_wS_USDC = 0xdc85F86d5E3189e0d4a776e6Ae3B3911eC7B0133;
     address public constant POOL_EQUALIZER_wS_EQUAL = 0x139f8eCC5fC8Ef11226a83911FEBecC08476cfB1;
+    address public constant POOL_EQUALIZER_USDC_scUSD = 0xB78CdF29F7E563ea447feBB5b48DDe9bC3278Ba4;
 
     // Beets
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -60,6 +61,7 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_USDC_WETH = 0xf8F2462A8Fa08Df933C0d6bbaf34108Fd7af526E;
     address public constant EQUALIZER_GAUGE_wS_stS = 0x0DA2e6e170990dCDd046880fADC17ADF759B869e;
     address public constant EQUALIZER_GAUGE_wS_USDC = 0x9b55Fbd8Cd27B81aCc6adfd42D441858FeDe4326;
+    address public constant EQUALIZER_GAUGE_USDC_scUSD = 0x8c030811a8C5E1890dAd1F5E581D28ac8740c532;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -132,16 +134,18 @@ library SonicLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](4);
+            address[] memory tokenIn = new address[](5);
             tokenIn[0] = TOKEN_wS;
             tokenIn[1] = TOKEN_stS;
             tokenIn[2] = TOKEN_BEETS;
             tokenIn[3] = TOKEN_EQUAL;
-            uint[] memory thresholdAmount = new uint[](4);
+            tokenIn[4] = TOKEN_USDC;
+            uint[] memory thresholdAmount = new uint[](5);
             thresholdAmount[0] = 1e12;
             thresholdAmount[1] = 1e10;
             thresholdAmount[2] = 1e10;
             thresholdAmount[3] = 1e12;
+            thresholdAmount[4] = 1e4;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -195,7 +199,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](5);
+        _farms = new IFactory.Farm[](6);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -203,6 +207,7 @@ library SonicLib {
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_USDC_WETH);
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_wS_stS);
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_wS_USDC);
+        _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_USDC_scUSD);
     }
 
     function _makeBeetsStableFarm(address gauge) internal view returns (IFactory.Farm memory) {
