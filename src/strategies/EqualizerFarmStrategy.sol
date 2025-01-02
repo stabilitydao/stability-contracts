@@ -247,7 +247,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function _withdrawUnderlying(uint amount, address receiver) internal override {
         IFactory.Farm memory farm = _getFarm();
         IGaugeEquivalent(farm.addresses[0]).withdraw(amount);
-        IERC20(farm.pool).transfer(receiver, amount);
+        IERC20(farm.pool).safeTransfer(receiver, amount);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= amount;
     }
