@@ -34,7 +34,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -320,8 +320,6 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IAmmAdapter _ammAdapter
     ) internal view returns (string memory) {
         //slither-disable-next-line calls-loop
-        (string memory specific,) = getSpecificName();
-        //slither-disable-next-line calls-loop
         return string.concat(
             "Earn ",
             //slither-disable-next-line calls-loop
@@ -330,7 +328,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             //slither-disable-next-line calls-loop
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
             " ",
-            specific
+            ISolidlyPool(farm.pool).stable() ? "sLP" : "vLP"
         );
     }
 
