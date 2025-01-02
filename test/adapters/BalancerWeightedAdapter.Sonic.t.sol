@@ -19,7 +19,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
         vm.expectRevert(IControllable.AlreadyExist.selector);
         balancerAdapter.setupHelpers(address(1));
 
-        address pool = SonicLib.POOL_BEETHOVENX_BEETS_stS;
+        address pool = SonicLib.POOL_BEETS_BEETS_stS;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e18;
         amounts[1] = 100e18;
@@ -33,7 +33,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicLib.POOL_BEETHOVENX_BEETS_stS;
+        address pool = SonicLib.POOL_BEETS_BEETS_stS;
         deal(SonicLib.TOKEN_stS, address(adapter), 1e15);
         adapter.swap(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, address(this), 10_000);
         uint out = IERC20(SonicLib.TOKEN_BEETS).balanceOf(address(this));
@@ -49,7 +49,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicLib.POOL_BEETHOVENX_BEETS_stS;
+        address pool = SonicLib.POOL_BEETS_BEETS_stS;
         address[] memory tokens = adapter.poolTokens(pool);
         assertEq(tokens.length, 2);
         assertEq(tokens[0], SonicLib.TOKEN_BEETS);
