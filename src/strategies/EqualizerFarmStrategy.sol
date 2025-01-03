@@ -34,7 +34,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -283,7 +283,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _compound() internal override {
         uint[] memory amountsToDeposit = _swapForDepositProportion(getAssetsProportions()[0]);
-        if (amountsToDeposit[0] != 0 && amountsToDeposit[1] != 0) {
+        if (amountsToDeposit[0] > 2500 && amountsToDeposit[1] > 2500) {
             _depositAssets(amountsToDeposit, true);
         }
     }
