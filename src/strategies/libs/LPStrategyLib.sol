@@ -183,10 +183,10 @@ library LPStrategyLib {
         amountsToDeposit = new uint[](2);
         SwapForDepositProportionVars memory vars;
         vars.swapper = ISwapper(IPlatform(platform).swapper());
-        vars.price = ammAdapter.getPrice(_pool, assets[1], address(0), 0);
+        vars.asset1decimals = IERC20Metadata(assets[1]).decimals();
+        vars.price = ammAdapter.getPrice(_pool, assets[1], assets[0], 10 ** vars.asset1decimals);
         vars.balance0 = _balance(assets[0]);
         vars.balance1 = _balance(assets[1]);
-        vars.asset1decimals = IERC20Metadata(assets[1]).decimals();
         vars.threshold0 = vars.swapper.threshold(assets[0]);
         vars.threshold1 = vars.swapper.threshold(assets[1]);
         if (vars.balance0 > vars.threshold0 || vars.balance1 > vars.threshold1) {

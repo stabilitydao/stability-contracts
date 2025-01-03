@@ -19,7 +19,7 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
         vm.expectRevert(IControllable.AlreadyExist.selector);
         balancerAdapter.setupHelpers(address(1));
 
-        address pool = SonicLib.POOL_BEETHOVENX_wS_stS;
+        address pool = SonicLib.POOL_BEETS_wS_stS;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e18;
         amounts[1] = 100e18;
@@ -33,13 +33,13 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicLib.POOL_BEETHOVENX_wS_stS;
+        address pool = SonicLib.POOL_BEETS_wS_stS;
         deal(SonicLib.TOKEN_wS, address(adapter), 1e16);
         adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, address(this), 10_000);
         uint out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.TOKEN_wS, address(adapter), 6e22);
+        deal(SonicLib.TOKEN_wS, address(adapter), 6e23);
         vm.expectRevert();
         adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, address(this), 10);
         // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
@@ -49,7 +49,7 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicLib.POOL_BEETHOVENX_wS_stS;
+        address pool = SonicLib.POOL_BEETS_wS_stS;
         uint price;
         price = adapter.getPrice(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_wS, 1e10);
         assertGt(price, 9e9);

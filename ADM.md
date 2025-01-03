@@ -69,11 +69,34 @@ function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitP
 
 ### Add swapper routes
 
-Use `ISwapper.addPools` method via cast.
+#### Use `ISwapper.addPools` method via cast.
 
 ```shell
 cast send -i --rpc-url sonic 0xe52fcf607a8328106723804de1ef65da512771be 'addPools((address,address,address,address)[],bool)' '[("0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3","0xaf95468b1a624605bbfb862b0fb6e9c73ad847b8","0x29219dd400f2Bf60E5a23d13Be72B486D4038894","0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38")]' true
 ```
+
+#### Use `ISwapper.addPools` method via explorer.
+
+<details>
+  <summary>solidity</summary>
+
+```solidity
+struct AddPoolData {
+    address pool;
+    string ammAdapterId;
+    address tokenIn;
+    address tokenOut;
+}
+
+function addPools(AddPoolData[] memory pools, bool rewrite) external;
+```
+</details>
+
+* [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
+* Connect operator wallet
+* `3. addPools`
+* pools_ (tuple[]): `[["0x139f8eCC5fC8Ef11226a83911FEBecC08476cfB1","0xE3374041F173FFCB0026A82C6EEf94409F713Cf9","0xddF26B42C1d903De8962d3F79a74a501420d5F19","0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38"],["0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f","0xE3374041F173FFCB0026A82C6EEf94409F713Cf9","0x50c42dEAcD8Fc9773493ED674b675bE577f2634b","0x29219dd400f2Bf60E5a23d13Be72B486D4038894"]]`
+* rewrite (bool): false
 
 ## Multisig actions
 

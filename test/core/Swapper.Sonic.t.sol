@@ -20,7 +20,7 @@ contract SwapperSonicTest is Test, SonicSetup {
 
     function testSwaps() public {
         uint got;
-        swapper.swap(SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, 1e13, 1_000); // 1%
+        swapper.swap(SonicLib.TOKEN_wS, SonicLib.TOKEN_stS, 1e17, 1_000); // 1%
         got = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         swapper.swap(SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, got, 1_000); // 1%
         got = IERC20(SonicLib.TOKEN_BEETS).balanceOf(address(this));
