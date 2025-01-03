@@ -14,6 +14,7 @@ import {BeetsStableFarm} from "../src/strategies/BeetsStableFarm.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 import {IGaugeEquivalent} from "../src/integrations/equalizer/IGaugeEquivalent.sol";
 import {EqualizerFarmStrategy} from "../src/strategies/EqualizerFarmStrategy.sol";
+import {BeetsWeightedFarm} from "../src/strategies/BeetsWeightedFarm.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -44,6 +45,7 @@ library SonicLib {
     address public constant POOL_BEETS_BEETS_stS = 0x10ac2F9DaE6539E77e372aDB14B1BF8fBD16b3e8;
     address public constant POOL_BEETS_wS_USDC = 0xE93a5fc4Ba77179F6843b30cff33a97d89FF441C;
     address public constant POOL_BEETS_USDC_scUSD = 0xCd4D2b142235D5650fFA6A38787eD0b7d7A51c0C;
+    address public constant POOL_BEETS_scUSD_stS = 0x25ca5451CD5a50AB1d324B5E64F32C0799661891;
     address public constant POOL_SUSHI_wS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
     address public constant POOL_EQUALIZER_wS_stS = 0xB75C9073ea00AbDa9ff420b5Ae46fEe248993380;
@@ -55,6 +57,7 @@ library SonicLib {
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
     address public constant BEETS_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
     address public constant BEETS_GAUGE_USDC_scUSD = 0x33B29bcf17e866A35941e07CbAd54f1807B337f5;
+    address public constant BEETS_GAUGE_scUSD_stS = 0xa472438718Fe7785107fCbE584d39183a6420D36;
 
     // Equalizer
     address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;
@@ -142,7 +145,7 @@ library SonicLib {
             tokenIn[4] = TOKEN_USDC;
             uint[] memory thresholdAmount = new uint[](5);
             thresholdAmount[0] = 1e12;
-            thresholdAmount[1] = 1e10;
+            thresholdAmount[1] = 1e16;
             thresholdAmount[2] = 1e10;
             thresholdAmount[3] = 1e12;
             thresholdAmount[4] = 1e4;
@@ -158,6 +161,7 @@ library SonicLib {
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
+        _addStrategyLogic(factory, StrategyIdLib.BEETS_WEIGHTED_FARM, address(new BeetsWeightedFarm()), true);
         _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion ----- Deploy strategy logics -----
@@ -199,7 +203,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](6);
+        _farms = new IFactory.Farm[](7);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -208,6 +212,7 @@ library SonicLib {
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_wS_stS);
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_wS_USDC);
         _farms[i++] = _makeEqualizerFarm(EQUALIZER_GAUGE_USDC_scUSD);
+        _farms[i++] = _makeBeetsWeightedFarm(BEETS_GAUGE_scUSD_stS);
     }
 
     function _makeBeetsStableFarm(address gauge) internal view returns (IFactory.Farm memory) {
@@ -219,6 +224,23 @@ library SonicLib {
         farm.rewardAssets = new address[](len);
         for (uint i; i < len; ++i) {
           farm.rewardAssets[i] = IBalancerGauge(gauge).reward_tokens(i);
+        }
+        farm.addresses = new address[](1);
+        farm.addresses[0] = gauge;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeBeetsWeightedFarm(address gauge) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IBalancerGauge(gauge).lp_token();
+        farm.strategyLogicId = StrategyIdLib.BEETS_WEIGHTED_FARM;
+        uint len = IBalancerGauge(gauge).reward_count();
+        farm.rewardAssets = new address[](len);
+        for (uint i; i < len; ++i) {
+            farm.rewardAssets[i] = IBalancerGauge(gauge).reward_tokens(i);
         }
         farm.addresses = new address[](1);
         farm.addresses[0] = gauge;
