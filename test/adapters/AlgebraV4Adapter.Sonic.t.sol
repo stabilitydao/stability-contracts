@@ -17,7 +17,7 @@ contract AlgebraV4AdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicLib.POOL_SWAPX_wS_SACRA;
+        address pool = SonicLib.POOL_SWAPX_CL_wS_SACRA;
         deal(SonicLib.TOKEN_wS, address(adapter), 1e16);
         adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_SACRA, address(this), 10_000);
         uint out = IERC20(SonicLib.TOKEN_SACRA).balanceOf(address(this));
@@ -41,7 +41,7 @@ contract AlgebraV4AdapterTest is SonicSetup {
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicLib.POOL_SWAPX_wS_SACRA;
+        address pool = SonicLib.POOL_SWAPX_CL_wS_SACRA;
         uint price;
         price = adapter.getPrice(pool, SonicLib.TOKEN_SACRA, SonicLib.TOKEN_wS, 1e10);
         assertGt(price, 0);

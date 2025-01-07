@@ -19,4 +19,5 @@ library StrategyIdLib {
     string internal constant BEETS_STABLE_FARM = "Beets Stable Farm";
     string internal constant BEETS_WEIGHTED_FARM = "Beets Weighted Farm";
     string internal constant EQUALIZER_FARM = "Equalizer Farm";
+    string internal constant ICHI_SWAPX_FARM = "Ichi SwapX Farm";
 }
