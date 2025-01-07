@@ -41,4 +41,10 @@ interface IGaugeV2_CL {
 
     /// @notice total supply held
     function totalSupply() external view returns (uint);
+
+    /// @notice ALM address
+    function TOKEN() external view returns (address);
+
+    /// @notice Reward token
+    function rewardToken() external view returns (address);
 }
