@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "../base/chains/SonicSetup.sol";
 import "../../src/interfaces/ICAmmAdapter.sol";
+import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 
 contract AlgebraV4AdapterTest is SonicSetup {
     bytes32 public _hash;
@@ -27,6 +28,14 @@ contract AlgebraV4AdapterTest is SonicSetup {
         adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_SACRA, address(this), 10);
         // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
+    }
+
+    function testReverts() public {
+        vm.expectRevert();
+        AlgebraV4Adapter(address(adapter)).algebraSwapCallback(0, 0, "");
+
+        vm.expectRevert();
+        adapter.getLiquidityForAmounts(address(0), new uint[](0));
     }
 
     function testViewMethods() public view {
@@ -70,6 +79,9 @@ contract AlgebraV4AdapterTest is SonicSetup {
         uint[] memory liquidityAmounts = adapter.getAmountsForLiquidity(pool, ticks, uint128(liquidity));
         assertGt(liquidityAmounts[0], 0);
         assertGt(liquidityAmounts[1], 0);
+
+        price = adapter.getPriceAtTick(pool, SonicLib.TOKEN_SACRA, 28320);
+        assertGt(price, 0);
 
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(ICAmmAdapter).interfaceId), true);
