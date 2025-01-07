@@ -54,7 +54,7 @@ library DeployAdapterLib {
             proxy.initProxy(address(new AlgebraV4Adapter()));
         }
 
-        require(proxy.implementation() != address(0), "Unknown AmmAdapter");
+        require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));
         IAmmAdapter(address(proxy)).init(platform);
         IPlatform(platform).addAmmAdapter(id, address(proxy));
 
