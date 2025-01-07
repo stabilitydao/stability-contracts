@@ -40,6 +40,8 @@ library SonicLib {
     address public constant TOKEN_EQUAL = 0xddF26B42C1d903De8962d3F79a74a501420d5F19;
     address public constant TOKEN_scUSD = 0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE;
     address public constant TOKEN_GOGLZ = 0x9fDbC3f8Abc05Fa8f3Ad3C17D2F806c1230c4564;
+    address public constant TOKEN_SACRA = 0x7AD5935EA295c4E743e4f2f5B4CDA951f41223c2;
+    address public constant TOKEN_SACRA_GEM_1 = 0xfC0dd337b92Baa949bC5D25FD9A99Cb3b6873204;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -54,6 +56,10 @@ library SonicLib {
     address public constant POOL_EQUALIZER_wS_EQUAL = 0x139f8eCC5fC8Ef11226a83911FEBecC08476cfB1;
     address public constant POOL_EQUALIZER_USDC_scUSD = 0xB78CdF29F7E563ea447feBB5b48DDe9bC3278Ba4;
     address public constant POOL_EQUALIZER_wS_GOGLZ = 0x832e2bb9579f6fF038d3E704Fa1BB5B6B18a6521;
+    address public constant POOL_SWAPX_wS_SACRA = 0x875819746112630cEe95aA78E4327cd4837Da70D;
+
+    // ALMs
+    address public constant ALM_ICHI_SWAPX_wS_SACRA = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
 
     // Beets
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -68,6 +74,9 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_wS_USDC = 0x9b55Fbd8Cd27B81aCc6adfd42D441858FeDe4326;
     address public constant EQUALIZER_GAUGE_USDC_scUSD = 0x8c030811a8C5E1890dAd1F5E581D28ac8740c532;
     address public constant EQUALIZER_GAUGE_wS_GOGLZ = 0x9E06a65E545b4Bd762158f6Bc34656DEe9693a4D;
+
+    // SwapX
+    address public constant SWAPX_GAUGE_ICHI_wS_SACRA = 0x413610103721Df45C7E8333D5E34Bb39975762f3;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -131,6 +140,7 @@ library SonicLib {
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_WEIGHTED))).proxy)
             .setupHelpers(BEETS_BALANCER_HELPERS);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.SOLIDLY);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA_V4);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion ----- Deploy AMM adapters -----
 
