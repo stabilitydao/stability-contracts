@@ -6,7 +6,7 @@ import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 import {IAlgebraPool} from "../../integrations/algebrav4/IAlgebraPool.sol";
 import {IAlgebraPoolErrors} from "../../integrations/algebrav4/pool/IAlgebraPoolErrors.sol";
 
-library ISFLib  {
+library ISFLib {
     /// @notice Checks if the oracle is currently connected to the pool
     /// @param oracleAddress The address of oracle
     /// @param oracleAddress The address of the pool
@@ -21,11 +21,10 @@ library ISFLib  {
 
         IAlgebraPool pool = IAlgebraPool(poolAddress);
         if (oracleAddress == pool.plugin()) {
-            (, , , uint8 pluginConfig, , ) = pool.globalState();
+            (,,, uint8 pluginConfig,,) = pool.globalState();
             connected = hasFlag(pluginConfig, BEFORE_SWAP_FLAG);
         }
     }
-
 
     /// @notice Given a tick and a token amount, calculates the amount of token received in exchange
     /// @param tick Tick value used to calculate the quote
@@ -38,7 +37,7 @@ library ISFLib  {
         uint128 baseAmount,
         address baseToken,
         address quoteToken
-    ) internal pure returns (uint256 quoteAmount) {
+    ) internal pure returns (uint quoteAmount) {
         uint160 sqrtRatioX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
         if (sqrtRatioX96 <= type(uint128).max) {
@@ -66,7 +65,7 @@ library ISFLib  {
         secondAgos[1] = 0;
 
         IVolatilityOracle oracle = IVolatilityOracle(oracleAddress);
-        (int56[] memory tickCumulatives, ) = oracle.getTimepoints(secondAgos);
+        (int56[] memory tickCumulatives,) = oracle.getTimepoints(secondAgos);
         int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
 
         timeWeightedAverageTick = int24(tickCumulativesDelta / int56(uint56(period)));
@@ -75,7 +74,7 @@ library ISFLib  {
         if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(period)) != 0)) timeWeightedAverageTick--;
     }
 
-    function hasFlag(uint8 pluginConfig, uint256 flag) internal pure returns (bool res) {
+    function hasFlag(uint8 pluginConfig, uint flag) internal pure returns (bool res) {
         assembly {
             res := gt(and(pluginConfig, flag), 0)
         }
@@ -85,13 +84,12 @@ library ISFLib  {
         if (selector != expectedSelector) revert IAlgebraPoolErrors.invalidHookResponse(expectedSelector);
     }
 
-    uint256 internal constant BEFORE_SWAP_FLAG = 1;
-    uint256 internal constant AFTER_SWAP_FLAG = 1 << 1;
-    uint256 internal constant BEFORE_POSITION_MODIFY_FLAG = 1 << 2;
-    uint256 internal constant AFTER_POSITION_MODIFY_FLAG = 1 << 3;
-    uint256 internal constant BEFORE_FLASH_FLAG = 1 << 4;
-    uint256 internal constant AFTER_FLASH_FLAG = 1 << 5;
-    uint256 internal constant AFTER_INIT_FLAG = 1 << 6;
-    uint256 internal constant DYNAMIC_FEE = 1 << 7;
-
+    uint internal constant BEFORE_SWAP_FLAG = 1;
+    uint internal constant AFTER_SWAP_FLAG = 1 << 1;
+    uint internal constant BEFORE_POSITION_MODIFY_FLAG = 1 << 2;
+    uint internal constant AFTER_POSITION_MODIFY_FLAG = 1 << 3;
+    uint internal constant BEFORE_FLASH_FLAG = 1 << 4;
+    uint internal constant AFTER_FLASH_FLAG = 1 << 5;
+    uint internal constant AFTER_INIT_FLAG = 1 << 6;
+    uint internal constant DYNAMIC_FEE = 1 << 7;
 }
