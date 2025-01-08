@@ -42,10 +42,10 @@ function addFarms(Farm[] memory farms_) external;
 ```
 </details>
 
-* [Factory polygonscan](https://polygonscan.com/address/0xa14EaAE76890595B3C7ea308dAEBB93863480EAD#writeProxyContract)
+* [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
 * Connect operator wallet
 * `1. addFarms`
-* `[[0, "0xAE81FAc689A1b4b1e06e7ef4a2ab4CD8aC0A087D", "DefiEdge QuickSwap Merkl Farm", ["0x958d208Cdf087843e9AD98d23823d32E17d723A1"], ["0x29f177EFF806b8A71Ff8C7259eC359312CaCE22D"], [0], []]]`
+* `[[0, "0x822B6E8D0A3EAf306A6A604f6AF370F6d893292d", "Equalizer Farm", ["0xddF26B42C1d903De8962d3F79a74a501420d5F19"], ["0xad2131601f22D15cBbc6267ACc16e4035FfC8bF6","0xcC6169aA1E879d3a4227536671F85afdb2d23fAD"], [], []]]`
 
 ### Set strategy available init params
 
@@ -83,7 +83,7 @@ cast send -i --rpc-url sonic 0xe52fcf607a8328106723804de1ef65da512771be 'addPool
 ```solidity
 struct AddPoolData {
     address pool;
-    string ammAdapterId;
+    address ammAdapter;
     address tokenIn;
     address tokenOut;
 }
@@ -92,11 +92,19 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 ```
 </details>
 
+<details>
+  <summary>AMM adapters on sonic</summary>
+
+* Solidly (Equalizer): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
+* AlgebraV4 (SwapX): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
+</details>
+
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
 * Connect operator wallet
 * `3. addPools`
-* pools_ (tuple[]): `[["0x139f8eCC5fC8Ef11226a83911FEBecC08476cfB1","0xE3374041F173FFCB0026A82C6EEf94409F713Cf9","0xddF26B42C1d903De8962d3F79a74a501420d5F19","0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38"],["0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f","0xE3374041F173FFCB0026A82C6EEf94409F713Cf9","0x50c42dEAcD8Fc9773493ED674b675bE577f2634b","0x29219dd400f2Bf60E5a23d13Be72B486D4038894"]]`
+* pools_ (tuple[]): `[["0x822B6E8D0A3EAf306A6A604f6AF370F6d893292d","0xe3374041f173ffcb0026a82c6eef94409f713cf9","0x05e31a691405d06708A355C029599c12d5da8b28","0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38"]]`
 * rewrite (bool): false
+* Check price on [PriceReader sonicscan](https://sonicscan.org/address/0x422025182dd83a610bfa8b20550dcccdf94dc549#readProxyContract)
 
 ## Multisig actions
 

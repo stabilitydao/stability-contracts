@@ -11,6 +11,7 @@ import "../../src/adapters/CurveAdapter.sol";
 import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
 import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
+import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -49,7 +50,11 @@ library DeployAdapterLib {
             proxy.initProxy(address(new SolidlyAdapter()));
         }
 
-        require(proxy.implementation() != address(0), "Unknown AmmAdapter");
+        if (eq(id, AmmAdapterIdLib.ALGEBRA_V4)) {
+            proxy.initProxy(address(new AlgebraV4Adapter()));
+        }
+
+        require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));
         IAmmAdapter(address(proxy)).init(platform);
         IPlatform(platform).addAmmAdapter(id, address(proxy));
 

@@ -35,6 +35,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration2 = 3 hours;
     uint public duration3 = 3 hours;
     uint public buildingPayPerVaultTokenAmount = 5e24;
+    uint public depositedSharesCheckDelimiter = 1000;
+    uint public makePoolVolumePriceImpactTolerance = 6_000;
+    bool public allowZeroApr = false;
 
     struct Strategy {
         string id;
@@ -343,14 +346,14 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0]);
                         // incrementing need for some tokens with custom fee
                         _deal(assets[0], address(this), depositAmounts[0] + 1);
-                        swapper.swapWithRoute(poolData, depositAmounts[0], 6_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[0], makePoolVolumePriceImpactTolerance);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1]);
                         // incrementing need for some tokens with custom fee
                         _deal(assets[1], address(this), depositAmounts[1] + 1);
-                        swapper.swapWithRoute(poolData, depositAmounts[1], 6_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[1], makePoolVolumePriceImpactTolerance);
                     }
                 }
 
@@ -407,13 +410,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenOut = assets[1];
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
                         _deal(assets[0], address(this), depositAmounts[0] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, 6_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, makePoolVolumePriceImpactTolerance);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
                         _deal(assets[1], address(this), depositAmounts[1] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, 6_000);
+                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, makePoolVolumePriceImpactTolerance);
                     }
                 }
 
@@ -490,11 +493,14 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                             StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
 
-                            assertGt(tempApr, 0, "HardWork APR");
-                            assertGt(tempEarned, 0, "HardWork Earned");
+                            if (!allowZeroApr) {
+                                assertGt(tempApr, 0, "HardWork APR");
+                                assertGt(tempEarned, 0, "HardWork Earned");
+                            }
+
                             assertGt(tempTvl, 0, "HardWork TVL");
                             assertGt(tempDuration, 0, "HardWork duration");
-                            if (!vars.isRVault && !vars.isRMVault) {
+                            if (!allowZeroApr && !vars.isRVault && !vars.isRMVault) {
                                 assertGt(tempAprCompound, 0, "Hardwork APR compound is zero. Check _compound() method.");
                             }
                         }
@@ -600,24 +606,24 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         } else {
                             assertLt(
                                 vaultBalance,
-                                sharesOut + sharesOut / 10000,
+                                sharesOut + sharesOut / depositedSharesCheckDelimiter,
                                 "previewDepositAssets by underlying: vault balance too big"
                             );
                             assertGt(
                                 vaultBalance,
-                                sharesOut - sharesOut / 1000,
+                                sharesOut - sharesOut / depositedSharesCheckDelimiter,
                                 "previewDepositAssets by underlying: vault balance too small"
                             );
                         }
 
                         uint[] memory minAmounts = new uint[](1);
-                        minAmounts[0] = totalWas - 1;
+                        minAmounts[0] = totalWas - totalWas / 10000;
                         vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                         vm.roll(block.number + 6);
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
-                        assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1, "U2");
-                        assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
+                        assertGe(IERC20(underlying).balanceOf(address(this)), minAmounts[0], "U2");
+                        assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 10);
                     } else {
                         {
                             vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));

@@ -12,6 +12,7 @@ contract EqualizerFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(3);
         _addStrategy(4);
         _addStrategy(5);
+        _addStrategy(7);
     }
 
     function _addStrategy(uint farmId) internal {
