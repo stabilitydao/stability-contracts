@@ -8,7 +8,7 @@ import "../../src/core/vaults/RVault.sol";
 import "../../src/core/vaults/RMVault.sol";
 import "../../src/strategies/YearnStrategy.sol";
 
-contract PrepareUpgrade5Polygon is Script {
+contract PrepareUpgrade5 is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -31,5 +31,5 @@ contract PrepareUpgrade5Polygon is Script {
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testPrepareUpgrade() external {}
 }

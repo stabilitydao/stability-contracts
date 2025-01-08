@@ -3,14 +3,13 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import "forge-std/Script.sol";
-import "../../chains/PolygonLib.sol";
 import "../../src/core/Factory.sol";
 import "../../src/core/Zap.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/core/vaults/RVault.sol";
 import "../../src/core/vaults/RMVault.sol";
 
-contract PrepareUpgrade1Polygon is Script {
+contract PrepareUpgrade1 is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -31,5 +30,5 @@ contract PrepareUpgrade1Polygon is Script {
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testPrepareUpgrade() external {}
 }
