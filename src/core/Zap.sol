@@ -25,7 +25,7 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.0.3";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -51,8 +51,6 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
-        // todo check vault
-
         if (amountIn == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
@@ -76,6 +74,9 @@ contract Zap is Controllable, ReentrancyGuardUpgradeable, IZap {
         // nosemgrep
         for (uint i; i < len; ++i) {
             if (tokenIn == assets[i]) {
+                continue;
+            }
+            if (swapData[i].length == 0) {
                 continue;
             }
             //slither-disable-next-line low-level-calls

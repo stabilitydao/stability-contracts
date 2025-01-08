@@ -6,9 +6,8 @@ import "../../src/adapters/AlgebraAdapter.sol";
 import "../../src/adapters/UniswapV3Adapter.sol";
 import "../../src/adapters/KyberAdapter.sol";
 import "../../src/core/Zap.sol";
-// import "../../src/strategies/QuickswapV3StaticFarmStrategy.sol";
 
-contract PrepareUpgrade2Polygon is Script {
+contract PrepareUpgrade2 is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -16,9 +15,8 @@ contract PrepareUpgrade2Polygon is Script {
         new UniswapV3Adapter();
         new KyberAdapter();
         new Zap();
-        // new QuickSwapV3StaticFarmStrategy();
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testPrepareUpgrade() external {}
 }
