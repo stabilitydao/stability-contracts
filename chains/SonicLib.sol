@@ -17,6 +17,7 @@ import {EqualizerFarmStrategy} from "../src/strategies/EqualizerFarmStrategy.sol
 import {BeetsWeightedFarm} from "../src/strategies/BeetsWeightedFarm.sol";
 import {IGaugeV2_CL} from "../src/integrations/swapx/IGaugeV2_CL.sol";
 import {IICHIVault} from "../src/integrations/ichi/IICHIVault.sol";
+import {IchiSwapXFarmStrategy} from "../src/strategies/IchiSwapXFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -196,6 +197,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
         _addStrategyLogic(factory, StrategyIdLib.BEETS_WEIGHTED_FARM, address(new BeetsWeightedFarm()), true);
         _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion ----- Deploy strategy logics -----
 

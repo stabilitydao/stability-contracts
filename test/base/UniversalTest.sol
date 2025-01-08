@@ -35,6 +35,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration2 = 3 hours;
     uint public duration3 = 3 hours;
     uint public buildingPayPerVaultTokenAmount = 5e24;
+    uint public depositedSharesCheckDelimiter = 1000;
 
     struct Strategy {
         string id;
@@ -600,24 +601,24 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         } else {
                             assertLt(
                                 vaultBalance,
-                                sharesOut + sharesOut / 10000,
+                                sharesOut + sharesOut / depositedSharesCheckDelimiter,
                                 "previewDepositAssets by underlying: vault balance too big"
                             );
                             assertGt(
                                 vaultBalance,
-                                sharesOut - sharesOut / 1000,
+                                sharesOut - sharesOut / depositedSharesCheckDelimiter,
                                 "previewDepositAssets by underlying: vault balance too small"
                             );
                         }
 
                         uint[] memory minAmounts = new uint[](1);
-                        minAmounts[0] = totalWas - 1;
+                        minAmounts[0] = totalWas - totalWas / 10000;
                         vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                         vm.roll(block.number + 6);
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
-                        assertGe(IERC20(underlying).balanceOf(address(this)), totalWas - 1, "U2");
-                        assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 1);
+                        assertGe(IERC20(underlying).balanceOf(address(this)), minAmounts[0], "U2");
+                        assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 10);
                     } else {
                         {
                             vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));

@@ -45,6 +45,9 @@ interface IGaugeV2_CL {
     /// @notice ALM address
     function TOKEN() external view returns (address);
 
+    /// @notice Distro address (voter)
+    function DISTRIBUTION() external view returns (address);
+
     /// @notice Reward token
     function rewardToken() external view returns (address);
 }
