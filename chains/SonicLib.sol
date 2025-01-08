@@ -72,12 +72,15 @@ library SonicLib {
     address public constant POOL_SWAPX_CL_wS_scETH = 0xFC64BD7c84F7Dc1387D6E752679a533F22f6F1DB;
     address public constant POOL_SWAPX_CL_USDC_stS = 0x5DDbeF774488cc68266d5F15bFB08eaA7cd513F9;
     address public constant POOL_SWAPX_CL_atETH_scETH = 0xCe39D66872015a8d1B2070725E6BFc687A418bD0;
+    address public constant POOL_SWAPX_CL_wS_SACRA_GEM_1 = 0x5e1Cb0d1196FF3451204fC40415A81a4d24Ec7eD;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
     address public constant ALM_ICHI_SWAPX_wS_SACRA = 0x32D1E0647fD2AE199bB0599Fe62A95e522C11bf3;
     address public constant ALM_ICHI_SWAPX_stS_wS = 0xa68D5DbAe00960De66DdEaD4d53faea39f21983b;
     address public constant ALM_ICHI_SWAPX_wS_stS = 0xfD10ac67449C16F368a4BB49f544E0A865A77614;
+    address public constant ALM_ICHI_SWAPX_SACRA_GEM_1_wS = 0x515626bC050c6fc1B000be7F4FDa71422CaD3e09;
+    address public constant ALM_ICHI_SWAPX_wS_SACRA_GEM_1 = 0xB97908b0Bec1Fac52281d108a56B055B633FDf67;
 
     // Beets
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -98,6 +101,8 @@ library SonicLib {
     address public constant SWAPX_GAUGE_ICHI_wS_SACRA = 0x2a2EF9F07c998140eA3709826e28157971F85d30;
     address public constant SWAPX_GAUGE_ICHI_stS_wS = 0x2f9e2852de03c42c13d3dCdD2C57c0b3cF0382c1;
     address public constant SWAPX_GAUGE_ICHI_wS_stS = 0xC693c6fc1d2b44DfB5C5aa05Ca2b02A91DB97528;
+    address public constant SWAPX_GAUGE_ICHI_SACRA_GEM_1_wS = 0xF46AeD788930E6Dd7f5881b9aeDf692dD6552d58;
+    address public constant SWAPX_GAUGE_ICHI_wS_SACRA_GEM_1 = 0xCe9f06c3d88fe91F16A8fb5489860677a2358d6F;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -222,7 +227,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](10);
+        pools = new ISwapper.AddPoolData[](11);
         uint i;
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
@@ -235,11 +240,12 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_GOGLZ, AmmAdapterIdLib.SOLIDLY, TOKEN_GOGLZ, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SWPx, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SWPx, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SACRA, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SACRA, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA_GEM_1, TOKEN_wS);
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](12);
+        _farms = new IFactory.Farm[](14);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -254,6 +260,8 @@ library SonicLib {
         _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_wS_SACRA);
         _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_stS_wS);
         _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_wS_stS);
+        _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_SACRA_GEM_1_wS);
+        _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_wS_SACRA_GEM_1);
     }
 
     function _makeIchiSwapXFarm(address gauge) internal view returns (IFactory.Farm memory) {
