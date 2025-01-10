@@ -5,6 +5,7 @@ import "../../../chains/SonicLib.sol";
 import "../ChainSetup.sol";
 import "../../../src/core/Platform.sol";
 import "../../../src/core/Factory.sol";
+import {IPoolMinimal} from "../../../src/integrations/aave/IPoolMinimal.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 
 abstract contract SonicSetup is ChainSetup, DeployCore {
@@ -18,7 +19,9 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
         // vm.rollFork(1462000); // Dec-24-2024 12:35:56 PM +UTC
         // vm.rollFork(1901000); // Dec-29-2024 12:45:51 PM +UTC
         // vm.rollFork(2026000); // Dec-30-2024 08:07:33 PM +UTC
-        vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
+        // vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
+        vm.rollFork(3273000); // Jan-10-2025 03:49:56 PM +UTC
+        //vm.rollFork(3292762); // Jan-10-2025 07:11:31 PM +UTC
     }
 
     function testSetupStub() external {}
@@ -32,6 +35,13 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
     }
 
     function _deal(address token, address to, uint amount) internal override {
-        deal(token, to, amount);
+        if (token == SonicLib.TOKEN_auUSDC) {
+            address aurumPool = 0x69f196a108002FD75d4B0a1118Ee04C065a63dE9;
+            deal(SonicLib.TOKEN_USDC, address(this), amount);
+            IERC20(SonicLib.TOKEN_USDC).approve(aurumPool, amount);
+            IPoolMinimal(aurumPool).supply(SonicLib.TOKEN_USDC, amount, address(this), 0);
+        } else {
+            deal(token, to, amount);
+        }
     }
 }

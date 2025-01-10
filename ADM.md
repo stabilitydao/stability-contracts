@@ -95,8 +95,8 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 <details>
   <summary>AMM adapters on sonic</summary>
 
-* Solidly (Equalizer): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
-* AlgebraV4 (SwapX): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
+* Solidly (Equalizer, SwapX classic): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
+* AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
