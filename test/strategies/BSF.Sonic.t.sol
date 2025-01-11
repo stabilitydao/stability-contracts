@@ -8,10 +8,6 @@ import "../base/UniversalTest.sol";
 import "../../src/integrations/balancer/IBalancerGauge.sol";
 
 contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
-    constructor() {
-        vm.rollFork(2912000); // Jan-07-2025 09:42:51 PM +UTC
-    }
-
     function testBSF() public universalTest {
         _addStrategy(0);
         _addStrategy(1);

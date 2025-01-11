@@ -10,7 +10,7 @@ contract AlgebraV4AdapterTest is SonicSetup {
     ICAmmAdapter public adapter;
 
     constructor() {
-        vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
+        //vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
         adapter = ICAmmAdapter(platform.ammAdapter(_hash).proxy);

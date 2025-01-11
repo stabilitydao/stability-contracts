@@ -36,6 +36,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration3 = 3 hours;
     uint public buildingPayPerVaultTokenAmount = 5e24;
     uint public depositedSharesCheckDelimiter = 1000;
+    bool public makePoolVolume = true;
     uint public makePoolVolumePriceImpactTolerance = 6_000;
     bool public allowZeroApr = false;
 
@@ -332,7 +333,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                 _skip(duration1, strategies[i].farmId);
 
-                if (vars.isLPStrategy) {
+                if (vars.isLPStrategy && makePoolVolume) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                     /*                       MAKE POOL VOLUME                     */
                     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -397,7 +398,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(isEmpty, false, "Withdraw assets zero amount");
                 }
 
-                if (vars.isLPStrategy) {
+                if (vars.isLPStrategy && makePoolVolume) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                     /*                       MAKE POOL VOLUME                     */
                     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
