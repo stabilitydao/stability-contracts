@@ -177,11 +177,11 @@ interface IFactory {
     /// @notice Calculating deployment key based on unique vault and strategy initialization parameters
     /// @param vaultType Vault type string
     /// @param strategyId Strategy logic Id string
-    /// @param vaultInitAddresses Vault initizlization addresses for deployVaultAndStrategy method
-    /// @param vaultInitNums Vault initizlization uint numbers for deployVaultAndStrategy method
-    /// @param strategyInitAddresses Strategy initizlization addresses for deployVaultAndStrategy method
-    /// @param strategyInitNums Strategy initizlization uint numbers for deployVaultAndStrategy method
-    /// @param strategyInitTicks Strategy initizlization int24 ticks for deployVaultAndStrategy method
+    /// @param vaultInitAddresses Vault initialization addresses for deployVaultAndStrategy method
+    /// @param vaultInitNums Vault initialization uint numbers for deployVaultAndStrategy method
+    /// @param strategyInitAddresses Strategy initialization addresses for deployVaultAndStrategy method
+    /// @param strategyInitNums Strategy initialization uint numbers for deployVaultAndStrategy method
+    /// @param strategyInitTicks Strategy initialization int24 ticks for deployVaultAndStrategy method
     function getDeploymentKey(
         string memory vaultType,
         string memory strategyId,
@@ -190,9 +190,10 @@ interface IFactory {
         address[] memory strategyInitAddresses,
         uint[] memory strategyInitNums,
         int24[] memory strategyInitTicks
-    ) external returns (bytes32);
+    ) external view returns (bytes32);
 
     /// @notice Available variants of new vault for creating.
+    /// DEPRECATED: use IFrontend.whatToBuild
     /// The structure of the function's output values is complex,
     /// but after parsing them, the front end has all the data to generate a list of vaults to create.
     /// @return desc Descriptions of the strategy for making money
@@ -209,11 +210,11 @@ interface IFactory {
     ///                 [7] End index in strategyInitNums
     ///                 [8] Start index in strategyInitTicks
     ///                 [9] End index in strategyInitTicks
-    /// @return vaultInitAddresses Vault initizlization addresses for deployVaultAndStrategy method for all building variants.
-    /// @return vaultInitNums Vault initizlization uint numbers for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitAddresses Strategy initizlization addresses for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitNums Strategy initizlization uint numbers for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitTicks Strategy initizlization int24 ticks for deployVaultAndStrategy method for all building variants.
+    /// @return vaultInitAddresses Vault initialization addresses for deployVaultAndStrategy method for all building variants.
+    /// @return vaultInitNums Vault initialization uint numbers for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitAddresses Strategy initialization addresses for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitNums Strategy initialization uint numbers for deployVaultAndStrategy method for all building variants.
+    /// @return strategyInitTicks Strategy initialization int24 ticks for deployVaultAndStrategy method for all building variants.
     function whatToBuild()
         external
         view
