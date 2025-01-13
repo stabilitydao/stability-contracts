@@ -22,7 +22,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.3.0";
+    string public constant VERSION = "2.4.0";
 
     uint internal constant _PRECISION = 10 ** 18;
 

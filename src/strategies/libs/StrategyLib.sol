@@ -161,7 +161,8 @@ library StrategyLib {
         address platform,
         address exchangeAsset,
         address[] memory rewardAssets_,
-        uint[] memory rewardAmounts_
+        uint[] memory rewardAmounts_,
+        uint customPriceImpactTolerance
     ) external returns (uint earnedExchangeAsset) {
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         uint len = rewardAssets_.length;
@@ -171,7 +172,7 @@ library StrategyLib {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
                 if (rewardAssets_[i] != exchangeAsset) {
                     swapper.swap(
-                        rewardAssets_[i], exchangeAsset, rewardAmounts_[i], SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
+                        rewardAssets_[i], exchangeAsset, rewardAmounts_[i], customPriceImpactTolerance != 0 ? customPriceImpactTolerance : SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
                     );
                 } else {
                     exchangeAssetBalanceBefore = 0;

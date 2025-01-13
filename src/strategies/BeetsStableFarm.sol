@@ -35,7 +35,7 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
