@@ -106,6 +106,35 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * rewrite (bool): false
 * Check price on [PriceReader sonicscan](https://sonicscan.org/address/0x422025182dd83a610bfa8b20550dcccdf94dc549#readProxyContract)
 
+### Add new strategy
+
+<details>
+  <summary>solidity</summary>
+
+```solidity
+struct StrategyLogicConfig {
+    string id;
+    address implementation;
+    bool deployAllowed;
+    bool upgradeAllowed;
+    bool farming;
+    uint tokenId;
+}
+
+/// @notice Initial addition or change of strategy logic settings.
+/// Operator can add new strategy logic. Governance or multisig can change existing logic config.
+/// @param config Strategy logic settings
+/// @param developer Strategy developer is receiver of minted StrategyLogic NFT on initial addition
+function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
+```
+</details>
+
+* [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
+* Connect operator wallet
+* `8. setStrategyLogicConfig`
+* fill
+
+
 ## Multisig actions
 
 ### Set vault config
@@ -151,7 +180,7 @@ Call it via Safe Transaction Builder:
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
 
-### Set strategy config
+### Upgrade strategy
 
 Use `IFactory.setStrategyLogicConfig` method.
 This need to add new strategy, upgrade strategy implementation or disable vaults building.

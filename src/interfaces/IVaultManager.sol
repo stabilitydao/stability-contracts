@@ -50,6 +50,7 @@ interface IVaultManager is IERC721Metadata {
     function getRevenueReceiver(uint tokenId) external view returns (address receiver);
 
     /// @notice All vaults data.
+    /// DEPRECATED: use IFrontend.vaults
     /// The output values are matched by index in the arrays.
     /// @param vaultAddress Vault addresses
     /// @param name Vault name

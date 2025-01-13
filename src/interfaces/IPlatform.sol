@@ -316,8 +316,8 @@ interface IPlatform {
             bytes32[] memory strategyExtra
         );
 
-    // todo add vaultSymbol, vaultName
     /// @notice Front-end balances, prices and vault list viewer
+    /// DEPRECATED: use IFrontend.getBalanceAssets and IFrontend.getBalanceVaults
     /// @param yourAccount Address of account to query balances
     /// @return token Tokens supported by the platform
     /// @return tokenPrice USD price of token. Index of token same as in previous array.

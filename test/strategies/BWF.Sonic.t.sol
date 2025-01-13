@@ -8,6 +8,7 @@ import "../base/UniversalTest.sol";
 contract BeetsWeightedFarmStrategyTest is SonicSetup, UniversalTest {
     function testBWF() public universalTest {
         _addStrategy(6);
+        _addStrategy(17);
     }
 
     function _addStrategy(uint farmId) internal {

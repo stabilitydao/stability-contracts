@@ -56,6 +56,9 @@ library SonicLib {
     address public constant TOKEN_ECO = 0x7A08Bf5304094CA4C7b4132Ef62b5EDc4a3478B7;
     address public constant TOKEN_INDI = 0x4EEC869d847A6d13b0F6D1733C5DEC0d1E741B4f;
     address public constant TOKEN_BRUSH = 0xE51EE9868C1f0d6cd968A8B8C8376Dc2991BFE44;
+    address public constant TOKEN_TYSG = 0x56192E94434c4fd3278b4Fa53039293fB00DE3DB;
+    address public constant TOKEN_Missor = 0xf26B3Fd147619Df61D4c1D0a9F7200B31A73FAfa;
+    address public constant TOKEN_WOOF   = 0x7F883dA3B0d77978075f7C9c03E1B9F461CA1B8d;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -63,6 +66,7 @@ library SonicLib {
     address public constant POOL_BEETS_wS_USDC = 0xE93a5fc4Ba77179F6843b30cff33a97d89FF441C;
     address public constant POOL_BEETS_USDC_scUSD = 0xCd4D2b142235D5650fFA6A38787eD0b7d7A51c0C;
     address public constant POOL_BEETS_scUSD_stS = 0x25ca5451CD5a50AB1d324B5E64F32C0799661891;
+    address public constant POOL_BEETS_USDC_stS = 0x713FB5036dC70012588d77a5B066f1Dd05c712d7;
     address public constant POOL_SUSHI_wS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
     address public constant POOL_EQUALIZER_wS_stS = 0xB75C9073ea00AbDa9ff420b5Ae46fEe248993380;
@@ -75,6 +79,7 @@ library SonicLib {
     address public constant POOL_EQUALIZER_ECO_EQUAL = 0x88615ba8aa369f2f27E4a6e8f66fdE85F1Ce15ec;
     address public constant POOL_EQUALIZER_wS_INDI = 0x913B1c9924F563692b3A306C90C9fDe9f825Ca27;
     address public constant POOL_EQUALIZER_wS_BRUSH = 0x38cFA6cB37d074B6E954C52d10a4cf0e4268607b;
+    address public constant POOL_EQUALIZER_WETH_Missor = 0x0d84Cb89787047aF1B671F12f589898F7fC8cDce;
     address public constant POOL_SWAPX_CL_wS_SACRA = 0x875819746112630cEe95aA78E4327cd4837Da70D;
     address public constant POOL_SWAPX_CL_wS_SWPx = 0xbeca246A76942502f61bFe88F60bbc87DaFefe80;
     address public constant POOL_SWAPX_CL_USDC_SWPx = 0x467865E7Ce29E7ED8f362D51Fd7141117B234b44;
@@ -90,6 +95,9 @@ library SonicLib {
     address public constant POOL_SWAPX_wS_GOGLZ = 0xE6aA7CA47DDb6203e71d4D1497959Da51F87AA98;
     address public constant POOL_SWAPX_AUR_auUSDC = 0xf9b7a6Da525f6f05910f99b298bb792025128C6f;
     address public constant POOL_SWAPX_USDC_AUR = 0xE87080413295b7a3B9c63F82a3337a882750F974;
+    address public constant POOL_SWAPX_wS_TYSG = 0x24f5cd888057A721F1ACD7CBA1Afa7A8384c3e12;
+    address public constant POOL_SWAPX_wS_ECO = 0x03281b6F11D943157A973cDB6B39B747501BDBBa;
+    address public constant POOL_SWAPX_wS_WOOF = 0x61974F520630B11E2aF36e2C92Cf0C0920Dd487A;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -102,12 +110,15 @@ library SonicLib {
     address public constant ALM_ICHI_SWAPX_USDC_wS = 0xc263e421Df94bdf57B27120A9B7B8534A6901D95;
     address public constant ALM_ICHI_SWAPX_scUSD_USDC = 0x776C31466F19D4e2c71bCE16c0549a8Bc0E37e17;
     address public constant ALM_ICHI_SWAPX_USDC_scUSD = 0xF77CeeD15596BfC127D17bA45dEA9767BC349Be0;
+    address public constant ALM_ICHI_SWAPX_atETH_scETH = 0x20737388dbc9F7E56f4Cc69D41DA62C96B355DB0;
+    address public constant ALM_ICHI_SWAPX_scETH_atETH = 0xD7A7f09a31Dcf76689Ff7046264a52Fc0D8feb72;
 
     // Beets
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
     address public constant BEETS_GAUGE_wS_stS = 0x8476F3A8DA52092e7835167AFe27835dC171C133;
     address public constant BEETS_GAUGE_USDC_scUSD = 0x33B29bcf17e866A35941e07CbAd54f1807B337f5;
     address public constant BEETS_GAUGE_scUSD_stS = 0xa472438718Fe7785107fCbE584d39183a6420D36;
+    address public constant BEETS_GAUGE_USDC_stS = 0xb3Bf2c247A599DFcEf06791b1668Fe9456677923;
 
     // Equalizer
     address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;
@@ -121,6 +132,7 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_ECO_EQUAL = 0xDAC4c0fcd65C71070E1b14f1deA8Ce48E746B2fD;
     address public constant EQUALIZER_GAUGE_wS_INDI = 0x15c2B42F6001758edDd9Cd13f327cdc812E5795D;
     address public constant EQUALIZER_GAUGE_wS_BRUSH = 0xA4Df0a210a5E242BE68E8a2b780ecc854ADD3583;
+    address public constant EQUALIZER_GAUGE_WETH_Missor = 0x199aF40E819CED6e7a56B2C06296e292d10C4727;
 
     // SwapX
     address public constant SWAPX_ROUTER_V2 = 0xF5F7231073b3B41c04BA655e1a7438b1a7b29c27;
@@ -134,9 +146,14 @@ library SonicLib {
     address public constant SWAPX_GAUGE_ICHI_USDC_wS = 0x29d10053BE597E0eBe6BD0434c4f4b750F0f3b69;
     address public constant SWAPX_GAUGE_ICHI_scUSD_USDC = 0x4604782BcD6F749B271Fc9d14BFd583be6e5a6cf;
     address public constant SWAPX_GAUGE_ICHI_USDC_scUSD = 0x640429B0633851F487639BcDd8Ed523DDf1Bbff8;
+    address public constant SWAPX_GAUGE_ICHI_atETH_scETH = 0xBBb10f33DCDd50BD4317459A4B051FC319B29585;
+    address public constant SWAPX_GAUGE_ICHI_scETH_atETH = 0x9ce7Cf104E8C11b77da6d0a6cdA542B8F53e84d4;
     address public constant SWAPX_GAUGE_USDC_scUSD = 0x2036D05eCA7fe86cD224927883490A255EF552BA;
     address public constant SWAPX_GAUGE_wS_GOGLZ = 0x5D671DE88045626e50Be05C1D438b2B9908cFa97;
     address public constant SWAPX_GAUGE_AUR_auUSDC = 0xca958280Ba083545C36A64e1AED18075317E3529;
+    address public constant SWAPX_GAUGE_wS_TYSG = 0xB7B6fC72CbC8E8FA67737f83e945Db2795a66Ef7;
+    address public constant SWAPX_GAUGE_wS_ECO = 0xa49c12D9542eB16494CF1980556f1bE437aCb212;
+    address public constant SWAPX_GAUGE_wS_WOOF = 0xc1742f8898d343b4909D29E7F1061EB2aC92e999;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -283,7 +300,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](17);
+        _farms = new IFactory.Farm[](18);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -303,6 +320,7 @@ library SonicLib {
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_USDC_scUSD);
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_wS_GOGLZ);
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_AUR_auUSDC);
+        _farms[i++] = _makeBeetsWeightedFarm(BEETS_GAUGE_USDC_stS);
     }
 
     function _makeSwapXFarm(address gauge) internal view returns (IFactory.Farm memory) {
