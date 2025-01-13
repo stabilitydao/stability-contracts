@@ -235,5 +235,4 @@ interface IStrategy is IERC165 {
     /// @notice Custom price impact tolerance instead default need for specific cases where low liquidity in pools
     /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
     function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
-
 }

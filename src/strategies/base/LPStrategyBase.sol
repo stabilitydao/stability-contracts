@@ -118,7 +118,9 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
 
     function _swapForDepositProportion(uint prop0Pool) internal returns (uint[] memory amountsToDeposit) {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
-        return LPStrategyLib.swapForDepositProportion(platform(), $.ammAdapter, $.pool, assets(), prop0Pool, customPriceImpactTolerance());
+        return LPStrategyLib.swapForDepositProportion(
+            platform(), $.ammAdapter, $.pool, assets(), prop0Pool, customPriceImpactTolerance()
+        );
     }
 
     function _getLPStrategyBaseStorage() internal pure returns (LPStrategyBaseStorage storage $) {

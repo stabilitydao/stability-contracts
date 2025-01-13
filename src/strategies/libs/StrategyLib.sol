@@ -172,7 +172,12 @@ library StrategyLib {
             if (rewardAmounts_[i] > swapper.threshold(rewardAssets_[i])) {
                 if (rewardAssets_[i] != exchangeAsset) {
                     swapper.swap(
-                        rewardAssets_[i], exchangeAsset, rewardAmounts_[i], customPriceImpactTolerance != 0 ? customPriceImpactTolerance : SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
+                        rewardAssets_[i],
+                        exchangeAsset,
+                        rewardAmounts_[i],
+                        customPriceImpactTolerance != 0
+                            ? customPriceImpactTolerance
+                            : SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
                     );
                 } else {
                     exchangeAssetBalanceBefore = 0;
