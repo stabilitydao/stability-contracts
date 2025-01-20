@@ -50,5 +50,4 @@ contract VaultOracleTestSonic is Test {
         int oraclePrice = IAggregatorInterfaceMinimal(vaultOracle).latestAnswer();
         assertEq(oraclePrice, 101757054);
     }
-
 }
