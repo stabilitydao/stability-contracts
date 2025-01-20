@@ -17,29 +17,19 @@ jobs:
 
     container:
       # A Docker image with Semgrep installed. Do not change this.
-      image: returntocorp/semgrep
+      image: semgrep/semgrep
 
     # Skip any PR created by dependabot to avoid permission issues:
     if: (github.actor != 'dependabot[bot]')
 
     steps:
-      # Fetch project source with GitHub Actions Checkout.
-      - uses: actions/checkout@v3
-      # Fetch semgrep rules
-      - name: Fetch semgrep rules
-        uses: actions/checkout@v3
-        with:
-          repository: decurity/semgrep-smart-contracts
-          path: rules
-      # Upgrade semgrep
-      - run: pip install semgrep --upgrade
-      # Run security and gas optimization rules
-      - run: semgrep ci --sarif --output=semgrep.sarif --exclude-rule rules.solidity.performance.unnecessary-checked-arithmetic-in-loop || true
+      # Fetch project source with GitHub Actions Checkout. Use either v3 or v4.
+      - uses: actions/checkout@v4
+      # Run the "semgrep ci" command on the command line of the docker image.
+      - run: semgrep ci
         env:
-             SEMGREP_RULES: rules/solidity/security rules/solidity/performance
-      # Upload findings to GitHub Advanced Security Dashboard
-      - name: Upload findings to GitHub Advanced Security Dashboard
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep.sarif
-        if: always()
+          SEMGREP_RULES: rules/solidity/security rules/solidity/performance
+          # Connect to Semgrep AppSec Platform through your SEMGREP_APP_TOKEN.
+          # Generate a token from Semgrep AppSec Platform > Settings
+          # and add it to your GitHub secrets.
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
