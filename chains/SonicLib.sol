@@ -188,7 +188,6 @@ library SonicLib {
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
     address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
-    address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
     address public constant ORACLE_PYTH_stS_USD = 0xfdbA54F2F4242Df3DbD34C72C8983E40d7C19CBE;
     address public constant ORACLE_PYTH_scUSD_USD = 0xC55C8c98Bd7359C587Cd9a5D999ab4720608F18C;
 
