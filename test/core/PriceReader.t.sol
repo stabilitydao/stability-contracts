@@ -180,9 +180,13 @@ contract PriceReaderTest is Test, MockSetup {
         removeAssets[0] = address(tokenA);
         address[] memory removeNotExistingAsset = new address[](1);
         removeNotExistingAsset[0] = address(123);
+
+        vm.startPrank(platform.multisig());
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
         chainlinkAdapter.removePriceFeeds(removeNotExistingAsset);
         chainlinkAdapter.removePriceFeeds(removeAssets);
+        vm.stopPrank();
+
         allAssets = chainlinkAdapter.assets();
         assertEq(allAssets[0], address(tokenD));
         (uint price,) = chainlinkAdapter.getPrice(address(this));
