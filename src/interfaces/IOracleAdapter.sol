@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 /// @dev Adapter for reading oracle prices
 /// @author Alien Deployer (https://github.com/a17)
 interface IOracleAdapter {
-
     event NewPriceFeeds(address[] assets, address[] priceFeeds);
     event UpdatedPriceFeed(address asset, address priceFeed);
     event RemovedPriceFeeds(address[] assets);
