@@ -26,7 +26,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.3.0";
+    string public constant VERSION = "2.4.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -392,16 +392,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
 
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
-        IHypervisor hypervisor = IHypervisor(_getStrategyBaseStorage()._underlying);
-        //slither-disable-next-line unused-return
-        (, int24 tick,,,,,) = IUniswapV3Pool(pool_).slot0();
-        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
-        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
-        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
-        //slither-disable-next-line divide-before-multiply
-        uint pool0PricedInToken1 = pool0 * price / _PRECISION;
-        //slither-disable-next-line divide-before-multiply
-        return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
+        return GRMFLib.getProportion0(pool_, _getStrategyBaseStorage()._underlying);
     }
 
     function _generateDescription(

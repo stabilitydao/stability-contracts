@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.1.0: customPriceImpactTolerance
 ///   2.0.0: previewDepositAssetsWrite; use platform.getCustomVaultFee
 ///   1.1.0: autoCompoundingByUnderlyingProtocol(), virtual total()
 /// @author Alien Deployer (https://github.com/a17)
@@ -21,7 +22,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.0.0";
+    string public constant VERSION_STRATEGY_BASE = "2.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -156,6 +157,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
         _withdrawAssets(total(), address(this));
     }
 
+    /// @inheritdoc IStrategy
+    function setCustomPriceImpactTolerance(uint priceImpactTolerance) external onlyOperator {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        $.customPriceImpactTolerance = priceImpactTolerance;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -246,6 +253,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function autoCompoundingByUnderlyingProtocol() public view virtual returns (bool) {
         return false;
+    }
+
+    /// @inheritdoc IStrategy
+    function customPriceImpactTolerance() public view returns (uint) {
+        return _getStrategyBaseStorage().customPriceImpactTolerance;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

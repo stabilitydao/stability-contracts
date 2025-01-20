@@ -47,6 +47,7 @@ interface IStrategy is IERC165 {
         address _underlying;
         string _id;
         uint _exchangeAssetIndex;
+        uint customPriceImpactTolerance;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -160,6 +161,9 @@ interface IStrategy is IERC165 {
     /// @notice Strategy not need to process revenue on HardWorks
     function autoCompoundingByUnderlyingProtocol() external view returns (bool);
 
+    /// @notice Custom price impact tolerance instead default need for specific cases where liquidity in pools is low
+    function customPriceImpactTolerance() external view returns (uint);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -227,4 +231,8 @@ interface IStrategy is IERC165 {
     /// This action triggers FUSE mode.
     /// Only governance or multisig can call this.
     function emergencyStopInvesting() external;
+
+    /// @notice Custom price impact tolerance instead default need for specific cases where low liquidity in pools
+    /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
+    function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
 }

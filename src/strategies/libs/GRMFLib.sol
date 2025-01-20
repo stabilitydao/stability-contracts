@@ -12,9 +12,13 @@ import "../../integrations/gamma/IUniProxy.sol";
 import "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import "../../integrations/uniswapv3/IQuoter.sol";
 import "../../integrations/retro/IOToken.sol";
+import {IHypervisor} from "../../integrations/gamma/IHypervisor.sol";
+import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 
 /// @title Library for GRMF strategy code splitting
 library GRMFLib {
+    uint internal constant _PRECISION = 1e36;
+
     /// @custom:storage-location erc7201:stability.GammaRetroFarmStrategy
     struct GammaRetroFarmStrategyStorage {
         IUniProxy uniProxy;
@@ -117,5 +121,19 @@ library GRMFLib {
             ALMPositionNameLib.getName(farm.nums[0]),
             " LP"
         );
+    }
+
+    /// @dev proportion of 1e18
+    function getProportion0(address pool_, address alm_) external view returns (uint) {
+        IHypervisor hypervisor = IHypervisor(alm_);
+        //slither-disable-next-line unused-return
+        (, int24 tick,,,,,) = IUniswapV3Pool(pool_).slot0();
+        uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
+        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), _PRECISION, 2 ** (96 * 2));
+        (uint pool0, uint pool1) = hypervisor.getTotalAmounts();
+        //slither-disable-next-line divide-before-multiply
+        uint pool0PricedInToken1 = pool0 * price / _PRECISION;
+        //slither-disable-next-line divide-before-multiply
+        return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
     }
 }
