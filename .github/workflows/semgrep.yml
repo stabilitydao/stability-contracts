@@ -28,7 +28,6 @@ jobs:
       # Run the "semgrep ci" command on the command line of the docker image.
       - run: semgrep ci
         env:
-          SEMGREP_RULES: rules/solidity/security rules/solidity/performance
           # Connect to Semgrep AppSec Platform through your SEMGREP_APP_TOKEN.
           # Generate a token from Semgrep AppSec Platform > Settings
           # and add it to your GitHub secrets.
