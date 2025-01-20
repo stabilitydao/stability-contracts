@@ -1,29 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../interfaces/IOracleAdapter.sol";
-import "../core/base/Controllable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "../core/base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IOracleAdapter} from "../interfaces/IOracleAdapter.sol";
 import {IOracle} from "../integrations/dia/IOracle.sol";
 
 /// @title Oracle adapter for Dia oracles
+/// Changelog:
+///   1.1.0: add updatePriceFeed; only gov or multisig can removePriceFeeds
 /// @author Alien Deployer (https://github.com/a17)
 contract DiaAdapter is Controllable, IOracleAdapter {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event NewPriceFeeds(address[] assets, address[] priceFeeds);
-    event RemovedPriceFeeds(address[] assets);
-
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
+    /// @inheritdoc IOracleAdapter
     mapping(address asset => address priceFeed) public priceFeeds;
+
     EnumerableSet.AddressSet internal _assets;
 
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }
 
+    /// @inheritdoc IOracleAdapter
     function addPriceFeeds(address[] memory assets_, address[] memory priceFeeds_) external onlyOperator {
         uint len = assets_.length;
         if (len != priceFeeds_.length) {
@@ -42,7 +45,17 @@ contract DiaAdapter is Controllable, IOracleAdapter {
         emit NewPriceFeeds(assets_, priceFeeds_);
     }
 
-    function removePriceFeeds(address[] memory assets_) external onlyOperator {
+    /// @inheritdoc IOracleAdapter
+    function updatePriceFeed(address asset, address priceFeed) external onlyGovernanceOrMultisig {
+        if (!_assets.contains(asset)) {
+            revert IControllable.NotExist();
+        }
+        priceFeeds[asset] = priceFeed;
+        emit UpdatedPriceFeed(asset, priceFeed);
+    }
+
+    /// @inheritdoc IOracleAdapter
+    function removePriceFeeds(address[] memory assets_) external onlyGovernanceOrMultisig {
         uint len = assets_.length;
         // nosemgrep
         for (uint i; i < len; ++i) {

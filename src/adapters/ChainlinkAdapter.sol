@@ -1,28 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../interfaces/IOracleAdapter.sol";
-import "../core/base/Controllable.sol";
-import "../integrations/chainlink/IAggregatorV3Interface.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "../core/base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IOracleAdapter} from "../interfaces/IOracleAdapter.sol";
+import {IAggregatorV3Interface} from "../integrations/chainlink/IAggregatorV3Interface.sol";
 
+/// @title Oracle adapter for Chainlink-compatible price feeds with 8 decimals
+/// Changelog:
+///   1.1.0: add updatePriceFeed; only gov or multisig can removePriceFeeds
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract ChainlinkAdapter is Controllable, IOracleAdapter {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    event NewPriceFeeds(address[] assets, address[] priceFeeds);
-    event RemovedPriceFeeds(address[] assets);
+    /// @inheritdoc IControllable
+    string public constant VERSION = "1.1.0";
 
-    /// @dev Version of ChainlinkAdapter implementation
-    string public constant VERSION = "1.0.0";
-
+    /// @inheritdoc IOracleAdapter
     mapping(address asset => address priceFeed) public priceFeeds;
+
     EnumerableSet.AddressSet internal _assets;
 
     function initialize(address platform_) public initializer {
         __Controllable_init(platform_);
     }
 
+    /// @inheritdoc IOracleAdapter
     function addPriceFeeds(address[] memory assets_, address[] memory priceFeeds_) external onlyOperator {
         uint len = assets_.length;
         if (len != priceFeeds_.length) {
@@ -41,7 +45,17 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         emit NewPriceFeeds(assets_, priceFeeds_);
     }
 
-    function removePriceFeeds(address[] memory assets_) external onlyOperator {
+    /// @inheritdoc IOracleAdapter
+    function updatePriceFeed(address asset, address priceFeed) external onlyGovernanceOrMultisig {
+        if (!_assets.contains(asset)) {
+            revert IControllable.NotExist();
+        }
+        priceFeeds[asset] = priceFeed;
+        emit UpdatedPriceFeed(asset, priceFeed);
+    }
+
+    /// @inheritdoc IOracleAdapter
+    function removePriceFeeds(address[] memory assets_) external onlyGovernanceOrMultisig {
         uint len = assets_.length;
         // nosemgrep
         for (uint i; i < len; ++i) {
@@ -55,12 +69,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         emit RemovedPriceFeeds(assets_);
     }
 
-    // USDC/USD 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7
-    // USDT/USD 0xf9d5AAC6E5572AEFa6bd64108ff86a222F69B64d
-    // ETH/USD 0xF9680D99D6C9589e2a93a78A04A279e509205945
-    // MATIC/USD 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0
-    // BTC/USD 0xc907E116054Ad103354f2D350FD2514433D57F6f
-
+    /// @inheritdoc IOracleAdapter
     function getPrice(address asset) external view returns (uint price, uint timestamp) {
         if (!_assets.contains(asset)) {
             return (0, 0);
@@ -70,7 +79,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         return (uint(answer) * 1e10, updatedAt);
     }
 
-    //slither-disable-next-line unused-return
+    /// @inheritdoc IOracleAdapter
     function getAllPrices()
         external
         view
@@ -89,6 +98,7 @@ contract ChainlinkAdapter is Controllable, IOracleAdapter {
         }
     }
 
+    /// @inheritdoc IOracleAdapter
     function assets() external view returns (address[] memory) {
         return _assets.values();
     }
