@@ -20,6 +20,9 @@ import {IGaugeV2} from "../src/integrations/swapx/IGaugeV2.sol";
 import {IICHIVault} from "../src/integrations/ichi/IICHIVault.sol";
 import {IchiSwapXFarmStrategy} from "../src/strategies/IchiSwapXFarmStrategy.sol";
 import {SwapXFarmStrategy} from "../src/strategies/SwapXFarmStrategy.sol";
+import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
+import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
+import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -112,6 +115,10 @@ library SonicLib {
     address public constant POOL_SWAPX_wS_sDOG = 0xbF23E7fC58b7094D17fe52ef8bdE979aa06b8916;
     address public constant POOL_SWAPX_wS_MOON = 0x8218825E5964e17D872adCEfA4C72D73c0D44021;
     address public constant POOL_SWAPX_wS_FS = 0xB545EA688f4d14d37B91df6370d75C922f4e9232;
+    address public constant POOL_UNISWAPV3_wS_USDC_3000 = 0xEcb04e075503Bd678241f00155AbCB532c0a15Eb;
+    address public constant POOL_UNISWAPV3_wS_WETH_3000 = 0x21043D7Ad92d9e7bC45C055AF29771E37307B111;
+    address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
+    address public constant POOL_UNISWAPV3_USDC_scUSD_100 = 0xDFCDAD314b0b96AB8890391e3F0540278E3B80F7;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -130,6 +137,10 @@ library SonicLib {
     address public constant ALM_ICHI_SWAPX_USDC_SWPx = 0x5De651be21beeDe8ABE808D1425b278ac4a3604B;
     address public constant ALM_ICHI_SWAPX_stS_USDC = 0x79cFAb400429c81f1656DF4D65363cb5FD340509;
     address public constant ALM_ICHI_SWAPX_USDC_stS = 0x86D13feF5e2F4F96c2c592aE7Fd096EB5AC424AC;
+    address public constant ALM_GAMMA_UNISWAPV3_wS_USDC_3000 = 0x318E378b6EC1590315e5e8160A2eF28308AE7Cfc;
+    address public constant ALM_GAMMA_UNISWAPV3_wS_WETH_3000 = 0x2Ea8A8ba347011FEF2a7E0A276354B90B4927cBC;
+    address public constant ALM_GAMMA_UNISWAPV3_USDC_WETH_500 = 0x2fA5E2E2a49de9375047225b7cea4997e8203AA4;
+    address public constant ALM_GAMMA_UNISWAPV3_USDC_scUSD_100 = 0xBd3332466d13588B1BFe8673B58190645bFE26bE;
 
     // Beets
     address public constant BEETS_BALANCER_HELPERS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
@@ -185,6 +196,9 @@ library SonicLib {
     address public constant SWAPX_GAUGE_wS_MOON = 0x9ad399ecC102212b4677B0Dbbc82c07ae1c74Cc5;
     address public constant SWAPX_GAUGE_wS_FS = 0x1cb9f6179A6A24f1A3756b6f6A14E5C5Fd3c0347;
 
+    // Gamma
+    address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
+
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
     address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
@@ -216,11 +230,11 @@ library SonicLib {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion ----- Deployed Platform -----
+        //endregion
 
         //region ----- Deploy and setup vault types -----
         _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
-        //endregion ----- Deploy and setup vault types -----
+        //endregion
 
         //region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
@@ -238,7 +252,7 @@ library SonicLib {
             priceReader.addAdapter(address(adapter));
             LogDeployLib.logDeployAndSetupOracleAdapter("Api3", address(adapter), showLog);
         }
-        //endregion ----- Deploy and setup oracle adapters -----
+        //endregion
 
         //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
@@ -252,7 +266,7 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.SOLIDLY);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA_V4);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
-        //endregion ----- Deploy AMM adapters -----
+        //endregion
 
         //region ----- Setup Swapper -----
         {
@@ -275,12 +289,12 @@ library SonicLib {
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion ----- Setup Swapper -----
+        //endregion
 
         //region ----- Add farms -----
         factory.addFarms(farms());
         LogDeployLib.logAddedFarms(address(factory), showLog);
-        //endregion ----- Add farms -----
+        //endregion
 
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
@@ -288,14 +302,15 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
-        //endregion ----- Deploy strategy logics -----
+        //endregion
 
         //region ----- Add DeX aggregators -----
         address[] memory dexAggRouter = new address[](1);
         dexAggRouter[0] = IPlatform(platform).swapper();
         IPlatform(platform).addDexAggregators(dexAggRouter);
-        //endregion -- Add DeX aggregators -----
+        //endregion
     }
 
     function routes()
@@ -333,7 +348,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](18);
+        _farms = new IFactory.Farm[](22);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -354,6 +369,30 @@ library SonicLib {
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_wS_GOGLZ);
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_AUR_auUSDC);
         _farms[i++] = _makeBeetsWeightedFarm(BEETS_GAUGE_USDC_stS);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_USDC_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
+    }
+
+    function _makeGammaUniswapV3MerklFarm(
+        address hypervisor,
+        uint preset,
+        address rewardAsset
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardAsset;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = GAMMA_UNISWAPV3_UNIPROXY;
+        farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
     }
 
     function _makeSwapXFarm(address gauge) internal view returns (IFactory.Farm memory) {

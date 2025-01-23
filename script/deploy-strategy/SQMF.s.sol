@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import "../../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 
-contract DeployStrategyIQMFPolygon is Script {
+contract DeployStrategySQMF is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new IchiQuickSwapMerklFarmStrategy();
+        new SteerQuickSwapMerklFarmStrategy();
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testDeployStrategy() external {}
 }
