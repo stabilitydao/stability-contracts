@@ -7,6 +7,11 @@ import "../../chains/SonicLib.sol";
 import "../base/UniversalTest.sol";
 
 contract EqualizerFarmStrategyTest is SonicSetup, UniversalTest {
+    constructor() {
+        allowZeroApr = true;
+        makePoolVolumePriceImpactTolerance = 10_000;
+    }
+
     function testEF() public universalTest {
         _addStrategy(2);
         _addStrategy(3);

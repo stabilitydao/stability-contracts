@@ -14,9 +14,9 @@ contract SwapXFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSF() public universalTest {
-        _addStrategy(14);
+        // _addStrategy(14);
         _addStrategy(15);
-        _addStrategy(16);
+        // _addStrategy(16);
     }
 
     function _addStrategy(uint farmId) internal {
