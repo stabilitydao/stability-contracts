@@ -12,7 +12,7 @@ abstract contract EthereumSetup is ChainSetup, DeployCore {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("ETHEREUM_RPC_URL")));
-        // vm.rollFork(55000000);
+        vm.rollFork(21680000); // Jan-22-2025 12:22:23 PM
     }
 
     function testSetupStub() external {}
@@ -22,7 +22,7 @@ abstract contract EthereumSetup is ChainSetup, DeployCore {
         platform = Platform(_deployCore(EthereumLib.platformDeployParams()));
         EthereumLib.deployAndSetupInfrastructure(address(platform), showDeployLog);
         factory = Factory(address(platform.factory()));
-        //endregion -- DeployCore.sol ----
+        //endregion
     }
 
     function _deal(address token, address to, uint amount) internal override {

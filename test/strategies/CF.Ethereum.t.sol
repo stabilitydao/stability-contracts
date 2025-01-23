@@ -14,7 +14,7 @@ contract CompoundFarmStrategyTest is EthereumSetup, UniversalTest {
             Strategy({
                 id: StrategyIdLib.COMPOUND_FARM,
                 pool: address(0),
-                farmId: farmId, // chains/BaseLib.sol
+                farmId: farmId,
                 underlying: address(0)
             })
         );
