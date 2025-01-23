@@ -11,12 +11,11 @@ import {IICHIVaultV4} from "../../src/integrations/ichi/IICHIVaultV4.sol";
 
 contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {
-        vm.rollFork(2975061); // Jan-08-2025 11:28:28 AM +UTC
-        skip(86400);
-
-        depositedSharesCheckDelimiter = 10;
         allowZeroApr = true;
 
+        /*vm.rollFork(2975061); // Jan-08-2025 11:28:28 AM +UTC
+        skip(86400);
+        depositedSharesCheckDelimiter = 10;
         // prevent emergencystop revert for empty Ichi ALMs
         _deal(SonicLib.TOKEN_wS, address(1), 20e18);
         _deal(SonicLib.TOKEN_SACRA_GEM_1, address(1), 20e18);
@@ -25,7 +24,7 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
         IERC20(SonicLib.TOKEN_SACRA_GEM_1).approve(SonicLib.ALM_ICHI_SWAPX_SACRA_GEM_1_wS, type(uint).max);
         IICHIVaultV4(SonicLib.ALM_ICHI_SWAPX_wS_SACRA_GEM_1).deposit(20e18, 0, address(1));
         IICHIVaultV4(SonicLib.ALM_ICHI_SWAPX_SACRA_GEM_1_wS).deposit(0, 20e18, address(1));
-        vm.stopPrank();
+        vm.stopPrank();*/
     }
 
     function testISF() public universalTest {
@@ -37,7 +36,7 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(13);
     }
 
-    function _preHardWork() internal override {
+    /*function _preHardWork() internal override {
         IGaugeV2_CL gauge = IGaugeV2_CL(IFarmingStrategy(currentStrategy).stakingPool());
         IVoterV3 voter = IVoterV3(gauge.DISTRIBUTION());
         address minter = voter.minter();
@@ -50,7 +49,7 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
         // voter.notifyRewardAmount(rewardAmount);
         voter.distribute(gauges);
         vm.stopPrank();
-    }
+    }*/
 
     function _addStrategy(uint farmId) internal {
         strategies.push(

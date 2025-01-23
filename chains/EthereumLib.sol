@@ -82,13 +82,13 @@ library EthereumLib {
             console.log("Deployed Stability platform", IPlatform(platform).platformVersion());
             console.log("Platform address: ", platform);
         }
-        //endregion -- Deployed Platform ----
+        //endregion
 
-        //region ---- Deploy and setup vault types -----
+        //region ----- Deploy and setup vault types -----
         _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 1e17);
-        //endregion -- Deploy and setup vault types -----
+        //endregion
 
-        // region -----Deploy and setup oracle adapters -----
+        // region ----- Deploy and setup oracle adapters -----
         IPriceReader priceReader = PriceReader(IPlatform(platform).priceReader());
         //Chainlink
         {
@@ -108,14 +108,14 @@ library EthereumLib {
             priceReader.addAdapter(address(chainlinkAdapter));
             LogDeployLib.logDeployAndSetupOracleAdapter("ChainLink", address(chainlinkAdapter), showLog);
         }
-        //endregion -- Deploy and setup oracle adapters -----
+        //endregion
 
-        //region ---- Deploy AMM adapters -----
+        //region ----- Deploy AMM adapters -----
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.UNISWAPV3);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
-        //endregion -- Deploy AMM adapters -----
+        //endregion
 
-        //region ---- Setup Swapper -----
+        //region ----- Setup Swapper -----
         {
             (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools) = routes();
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
@@ -132,23 +132,23 @@ library EthereumLib {
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
-        //endregion -- Setup Swapper -----
+        //endregion
 
         //region ----- Add farms -----
         factory.addFarms(farms());
         LogDeployLib.logAddedFarms(address(factory), showLog);
-        //engregion -- Add farms -----
+        //endregion
 
-        //region ---- Deploy strategy logics -----
+        //region ----- Deploy strategy logics -----
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
-        //endregion -- Deploy strategy logics -----
+        //endregion
 
         //region ----- Add DeX aggregators -----
         address[] memory dexAggRouter = new address[](1);
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
-        //endregion -- Add DeX aggregators -----
+        //endregion
     }
 
     function routes()
@@ -156,13 +156,13 @@ library EthereumLib {
         pure
         returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
     {
-        //region ---- Blue Chip Pools -----
+        //region ----- Blue Chip Pools -----
         bcPools = new ISwapper.AddPoolData[](2);
         bcPools[0] = _makePoolData(POOL_UNISWAPV3_USDC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_WETH);
         bcPools[1] = _makePoolData(POOL_UNISWAPV3_WETH_weETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WETH, TOKEN_weETH);
-        //endregion -- Blue Chip Pools -----
+        //endregion
 
-        //region ---- Pools -----
+        //region ----- Pools -----
         pools = new ISwapper.AddPoolData[](6);
         uint i;
         pools[i++] = _makePoolData(POOL_UNISWAPV3_USDC_WETH_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_WETH);
@@ -171,7 +171,7 @@ library EthereumLib {
         pools[i++] = _makePoolData(POOL_UNISWAPV3_COMP_WETH_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_COMP, TOKEN_WETH);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_SHFL_USDC_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_SHFL, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_UNISWAPV3_WBTC_EBTC_500, AmmAdapterIdLib.UNISWAPV3, TOKEN_WBTC, TOKEN_EBTC);
-        //endregion -- Pools -----
+        //endregion
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {

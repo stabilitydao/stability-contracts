@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../../src/strategies/TridentPearlFarmStrategy.sol";
+import "../../src/strategies/CompoundFarmStrategy.sol";
 
-contract DeployStrategyTPFReal is Script {
+contract DeployCF is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new TridentPearlFarmStrategy();
+        new CompoundFarmStrategy();
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testDeployStrategy() external {}
 }

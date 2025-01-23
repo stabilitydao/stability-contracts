@@ -2,15 +2,15 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
 
-contract DeployStrategyDQMFPolygon is Script {
+contract DeployStrategyGRMF is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new DefiEdgeQuickSwapMerklFarmStrategy();
+        new GammaRetroMerklFarmStrategy();
         vm.stopBroadcast();
     }
 
-    function testDeployPolygon() external {}
+    function testDeployStrategy() external {}
 }
