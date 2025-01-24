@@ -7,6 +7,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {MerkleDistributor} from "../../src/tokenomics/MerkleDistributor.sol";
 import {Token} from "../../src/tokenomics/Token.sol";
 import {IMerkleDistributor} from "../../src/interfaces/IMerkleDistributor.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract MerkleDistributorTest is Test, MockSetup {
     IMerkleDistributor public merkleDistributor;
@@ -83,6 +84,16 @@ contract MerkleDistributorTest is Test, MockSetup {
         tokenA.approve(address(merkleDistributor), 900_000e18);
         merkleDistributor.setupCampaign(contestId, address(tokenA), 900_000e18, root, false);
         campaignIds[0] = contestId;
+        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+
+        // reverts
+        campaignIds = new string[](2);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+
+        campaignIds = new string[](1);
+        campaignIds[0] = "incorrect";
+        vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
     }
 }
