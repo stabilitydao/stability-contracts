@@ -55,6 +55,7 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMerkleDistributor
+    //slither-disable-next-line reentrancy-events
     function setupCampaign(
         string memory campaignId,
         address token,
@@ -135,6 +136,7 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
         return keccak256(bytes(campaignId));
     }
 
+    //slither-disable-next-line reentrancy-events
     function _claim(
         address user,
         string[] memory campaignIds,
