@@ -76,7 +76,11 @@ contract MerkleDistributorTest is Test, MockSetup {
         proofs[0][4] = 0x3aa9c3396aa77ff0a55c2d2f9681f037f6a30706640c694ad5266f77f0b6bacc;
         proofs[0][5] = 0xa10c711d2ab1a41f1bc42d178081580cabb9df1bb4b5ed8e1397b2c08d4d95ee;
         proofs[0][6] = 0x30c763cb397b3e017dad2ae191e4f3575a4ea1981562c45752f7428736dd88fd;
-        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+        vm.expectRevert(IMerkleDistributor.YouAreNotDelegated.selector);
+        merkleDistributor.claimForUser(user2, campaignIds, amounts, proofs, address(10));
+
+        merkleDistributor.setDelegate(user2, address(this));
+        merkleDistributor.claimForUser(user2, campaignIds, amounts, proofs, address(10));
 
         // test not minted token
         contestId = "y200";
@@ -84,16 +88,23 @@ contract MerkleDistributorTest is Test, MockSetup {
         tokenA.approve(address(merkleDistributor), 900_000e18);
         merkleDistributor.setupCampaign(contestId, address(tokenA), 900_000e18, root, false);
         campaignIds[0] = contestId;
-        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+        merkleDistributor.claimForUser(user2, campaignIds, amounts, proofs, address(10));
+
+        // salvage
+        tokenB.mint(1e20);
+        tokenB.transfer(address(merkleDistributor), 1e20);
+        merkleDistributor.salvage(address(tokenB), 0.5e19, address(this));
+        merkleDistributor.salvage(address(tokenB), 0, address(this));
+        assertEq(tokenB.balanceOf(address(this)), 1e20);
 
         // reverts
         campaignIds = new string[](2);
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+        merkleDistributor.claimForUser(user2, campaignIds, amounts, proofs, address(10));
 
         campaignIds = new string[](1);
         campaignIds[0] = "incorrect";
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-        merkleDistributor.claimForUserWhoCantClaim(user2, campaignIds, amounts, proofs, address(10));
+        merkleDistributor.claimForUser(user2, campaignIds, amounts, proofs, address(10));
     }
 }

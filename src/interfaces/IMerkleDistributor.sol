@@ -4,9 +4,11 @@ pragma solidity ^0.8.23;
 interface IMerkleDistributor {
     event NewCampaign(string campaignId, address token, uint totalAmount, bytes32 merkleRoot, bool mint);
     event RewardClaimed(string campaignId, address user, uint amount, address receiver);
+    event DelegatedClaimer(address user, address claimer);
 
     error InvalidProof();
     error AlreadyClaimed();
+    error YouAreNotDelegated();
 
     /// @notice Initialize proxied contract
     function initialize(address platform_) external;
@@ -25,20 +27,6 @@ interface IMerkleDistributor {
         bool mint
     ) external;
 
-    /// @notice Claim rewards for users who have earned them but cant execute claim call themselves, such as pool contracts
-    /// @param user Address of contact who cant claim
-    /// @param campaignIds Array of string IDs of campaigns ("y10", "y11", etc)
-    /// @param amounts Amounts of reward for each campaign
-    /// @param proofs Proofs of merkle tree
-    /// @param receiver Address who receive reward
-    function claimForUserWhoCantClaim(
-        address user,
-        string[] memory campaignIds,
-        uint[] memory amounts,
-        bytes32[][] memory proofs,
-        address receiver
-    ) external;
-
     /// @notice Claim rewards
     /// @param campaignIds Array of string IDs of campaigns ("y10", "y11", etc)
     /// @param amounts Amounts of reward for each campaign
@@ -50,6 +38,32 @@ interface IMerkleDistributor {
         bytes32[][] memory proofs,
         address receiver
     ) external;
+
+    /// @notice Claim rewards for users who have earned them but cant execute claim call themselves, such as pool contracts
+    /// Caller need to be delegated
+    /// @param user Address of user who earned rewards
+    /// @param campaignIds Array of string IDs of campaigns ("y10", "y11", etc)
+    /// @param amounts Amounts of reward for each campaign
+    /// @param proofs Proofs of merkle tree
+    /// @param receiver Address who receive reward
+    function claimForUser(
+        address user,
+        string[] memory campaignIds,
+        uint[] memory amounts,
+        bytes32[][] memory proofs,
+        address receiver
+    ) external;
+
+    /// @notice Set delegated claimer of user's rewards by governance
+    /// @param user Address of user who earns rewards
+    /// @param delegatedClaimer Delegate who can claim user's rewards
+    function setDelegate(address user, address delegatedClaimer) external;
+
+    /// @notice Salvage lost tokens by governance
+    /// @param token Token Address
+    /// @param amount Amount of token
+    /// @param receiver Receiver of token
+    function salvage(address token, uint amount, address receiver) external;
 
     /// @notice View campaign data
     /// @param campaignId String IDs of campaign ("y10", etc)
@@ -66,4 +80,9 @@ interface IMerkleDistributor {
     /// @param campaignIds Array of string IDs of campaigns ("y10", "y11", etc)
     /// @return isClaimed Array of claimed status
     function claimed(address user, string[] memory campaignIds) external view returns (bool[] memory isClaimed);
+
+    /// @notice Delegated caller for claim user's reward
+    /// @param user User who earns rewards
+    /// @return Delegate who can claim user's rewards
+    function delegate(address user) external view returns (address);
 }

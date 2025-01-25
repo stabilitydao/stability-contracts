@@ -39,6 +39,7 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
     /// @custom:storage-location erc7201:stability.MerkleDistributor
     struct MerkleDistributorStorage {
         mapping(bytes32 campaignIdHash => Campaign campaign) campaigns;
+        mapping(address user => address delegate) delegates;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -78,14 +79,18 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
     }
 
     /// @inheritdoc IMerkleDistributor
-    function claimForUserWhoCantClaim(
-        address user,
-        string[] memory campaignIds,
-        uint[] memory amounts,
-        bytes32[][] memory proofs,
-        address receiver
-    ) external onlyOperator {
-        _claim(user, campaignIds, amounts, proofs, receiver);
+    function setDelegate(address user, address delegatedClaimer) external onlyGovernanceOrMultisig {
+        MerkleDistributorStorage storage $ = _getMerkleDistributorStorage();
+        $.delegates[user] = delegatedClaimer;
+        emit DelegatedClaimer(user, delegatedClaimer);
+    }
+
+    /// @inheritdoc IMerkleDistributor
+    function salvage(address token, uint amount, address receiver) external onlyGovernanceOrMultisig {
+        if (amount == 0) {
+            amount = IERC20(token).balanceOf(address(this));
+        }
+        IERC20(token).safeTransfer(receiver, amount);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -100,6 +105,20 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
         address receiver
     ) external {
         _claim(msg.sender, campaignIds, amounts, proofs, receiver);
+    }
+
+    /// @inheritdoc IMerkleDistributor
+    function claimForUser(
+        address user,
+        string[] memory campaignIds,
+        uint[] memory amounts,
+        bytes32[][] memory proofs,
+        address receiver
+    ) external {
+        if (delegate(user) != msg.sender) {
+            revert YouAreNotDelegated();
+        }
+        _claim(user, campaignIds, amounts, proofs, receiver);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -126,6 +145,12 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
             Campaign storage _campaign = $.campaigns[_campaignHash(campaignIds[i])];
             isClaimed[i] = _campaign.claimed[user];
         }
+    }
+
+    /// @inheritdoc IMerkleDistributor
+    function delegate(address user) public view returns (address) {
+        MerkleDistributorStorage storage $ = _getMerkleDistributorStorage();
+        return $.delegates[user];
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
