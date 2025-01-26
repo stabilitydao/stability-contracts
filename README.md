@@ -53,22 +53,30 @@ Contributions can be made in the form of developing strategies, developing the c
 * Stability Platform uses [CalVer](https://calver.org/) scheme **YY.MM.MINOR-TAG**
 * Core contracts and strategies use [SemVer](https://semver.org/) scheme **MAJOR.MINOR.PATCH**
 
-## Deployments
-
-### Platform address
-
-* **Sonic** [146] `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
-* **Polygon** [137] `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
-* **Base** [8453] `0x7eAeE5CfF17F7765d89F4A46b484256929C62312` [basescan](https://basescan.org/address/0x7eaee5cff17f7765d89f4a46b484256929c62312)
-* **Re.al** [111188] `0xB7838d447deece2a9A5794De0f342B47d0c1B9DC` [explorer.re.al](https://explorer.re.al/address/0xB7838d447deece2a9A5794De0f342B47d0c1B9DC)
-
-### Frontend address
-
-* **Sonic** [146] `0x15487495cce9210795f9C2E0e1A7238E336dFc32` [sonicscan](https://sonicscan.org/address/0x15487495cce9210795f9C2E0e1A7238E336dFc32)
-* **Polygon** [137] `0xa9f5593e6a809a24fb41d1d854a577a8bf507e28` [polygonscan](https://polygonscan.com/address/0xa9f5593e6a809a24fb41d1d854a577a8bf507e28)
-* **Base** [8453] `0x995c3bdee2830c7f96d4caa0c36f7b7b8ec60127` [basescan](https://basescan.org/address/0x995c3bdee2830c7f96d4caa0c36f7b7b8ec60127)
-* **Re.al** [111188] `0xfd1361E0565b01B85d3c1511FEf7545D6A84d93a` [explorer.re.al](https://explorer.re.al/address/0xfd1361E0565b01B85d3c1511FEf7545D6A84d93a)
-
 ## Audits
 
 * [Initial vault audit v24.01.1-alpha](audits/initial-audit-stability-platform-v24.01.1-alpha.md) | [critical scope](audits/scopes.md)
+
+## Deployments
+
+### Sonic [146]
+
+* **Platform** `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
+* **Frontend** `0x15487495cce9210795f9C2E0e1A7238E336dFc32` [sonicscan](https://sonicscan.org/address/0x15487495cce9210795f9C2E0e1A7238E336dFc32)
+* **MerkleDistributor** `0x0391aBDCFaB86947d93f9dd032955733B639416b` [sonicscan](https://sonicscan.org/address/0x0391abdcfab86947d93f9dd032955733b639416b)
+* **sGEM1** `0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d` [sonicscan](https://sonicscan.org/address/0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d)
+
+### Polygon [137]
+
+* **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
+* **Frontend** `0xa9f5593e6a809a24fb41d1d854a577a8bf507e28` [polygonscan](https://polygonscan.com/address/0xa9f5593e6a809a24fb41d1d854a577a8bf507e28)
+
+### Base [8453]
+
+* **Platform** `0x7eAeE5CfF17F7765d89F4A46b484256929C62312` [basescan](https://basescan.org/address/0x7eaee5cff17f7765d89f4a46b484256929c62312)
+* **Frontend** `0x995c3bdee2830c7f96d4caa0c36f7b7b8ec60127` [basescan](https://basescan.org/address/0x995c3bdee2830c7f96d4caa0c36f7b7b8ec60127)
+
+### Re.al [111188]
+
+* **Platform** `0xB7838d447deece2a9A5794De0f342B47d0c1B9DC` [explorer.re.al](https://explorer.re.al/address/0xB7838d447deece2a9A5794De0f342B47d0c1B9DC)
+* **Frontend** `0xfd1361E0565b01B85d3c1511FEf7545D6A84d93a` [explorer.re.al](https://explorer.re.al/address/0xfd1361E0565b01B85d3c1511FEf7545D6A84d93a)
