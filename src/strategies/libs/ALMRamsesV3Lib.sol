@@ -296,8 +296,12 @@ library ALMRamsesV3Lib {
         }
     }
 
-    function collectFarmRewards(IALM.ALMStrategyBaseStorage storage $, IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_) public {
-        IFactory.Farm memory farm = IFactory(IPlatform(IControllable(address(this)).platform()).factory()).farm(_f$f_.farmId);
+    function collectFarmRewards(
+        IALM.ALMStrategyBaseStorage storage $,
+        IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_
+    ) public {
+        IFactory.Farm memory farm =
+            IFactory(IPlatform(IControllable(address(this)).platform()).factory()).farm(_f$f_.farmId);
         address gauge = farm.addresses[0];
         uint len = $.positions.length;
         uint[] memory tokenIds = new uint[](len);

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 interface IALM {
-
     event Rebalance(Position[] newPosition);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
