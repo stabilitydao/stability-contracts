@@ -84,6 +84,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
         view
         returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params)
     {
+        //slither-disable-next-line unused-return
         return ALMLib.preset(_getALMStrategyBaseStorage());
     }
 
@@ -112,6 +113,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        //slither-disable-next-line unused-return
         return
             ALMLib.assetsAmounts(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage());
     }
@@ -124,6 +126,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
+        //slither-disable-next-line unused-return
         return ALMLib.previewDepositAssets(
             amountsMax, _getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage()
         );
