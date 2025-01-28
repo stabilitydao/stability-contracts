@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 
 import "./IAmmAdapter.sol";
 
-/// @dev Adapter for interacting with Concentrated Automated Market Make
+/// @dev Adapter for interacting with Concentrated Automated Market Maker
 /// based on liquidity pool of 2 tokens.
 /// @author Alien Deployer (https://github.com/a17)
 interface ICAmmAdapter is IAmmAdapter {
@@ -22,7 +22,7 @@ interface ICAmmAdapter is IAmmAdapter {
     /// @notice Computes the maximum amount of liquidity received for given amounts of pool assets and the current
     /// pool prices and the prices at the tick boundaries
     /// @param pool Address of a pool supported by the adapter
-    /// @param amounts Ampunts of pool assets
+    /// @param amounts Amounts of pool assets
     /// @param ticks Tick boundaries. Lower and upper ticks for UniswapV3-like AMM position.
     /// @return liquidity Liquidity out value
     /// @return amountsConsumed Amounts of consumed assets of provided liquidity

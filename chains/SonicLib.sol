@@ -22,7 +22,9 @@ import {IchiSwapXFarmStrategy} from "../src/strategies/IchiSwapXFarmStrategy.sol
 import {SwapXFarmStrategy} from "../src/strategies/SwapXFarmStrategy.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
+import {ALMLib} from "../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -68,6 +70,7 @@ library SonicLib {
     address public constant TOKEN_sDOG = 0x50Bc6e1DfF8039A4b967c1BF507ba5eA13fa18B6;
     address public constant TOKEN_MOON = 0x486B6Fa0419b33a0c7A6e4698c231D7E2f2D5299;
     address public constant TOKEN_OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
+    address public constant TOKEN_SHADOW = 0x3333b97138D4b086720b5aE8A7844b1345a33333;
     address public constant TOKEN_xSHADOW = 0x5050bc082FF4A74Fb6B0B04385dEfdDB114b2424;
 
     // AMMs
@@ -122,6 +125,7 @@ library SonicLib {
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
     address public constant POOL_UNISWAPV3_USDC_scUSD_100 = 0xDFCDAD314b0b96AB8890391e3F0540278E3B80F7;
     address public constant POOL_SHADOW_CL_wS_WETH = 0xB6d9B069F6B96A507243d501d1a23b3fCCFC85d3;
+    address public constant POOL_SHADOW_wS_SHADOW = 0xF19748a0E269c6965a84f8C98ca8C47A064D4dd0;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -338,7 +342,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](13);
+        pools = new ISwapper.AddPoolData[](14);
         uint i;
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
@@ -355,11 +359,12 @@ library SonicLib {
             _makePoolData(POOL_SWAPX_CL_wS_SACRA_GEM_1, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA_GEM_1, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_USDC_AUR, AmmAdapterIdLib.SOLIDLY, TOKEN_AUR, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
+        pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](22);
+        _farms = new IFactory.Farm[](23);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -384,6 +389,25 @@ library SonicLib {
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 600);
+    }
+
+    function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange) internal view returns(IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IGaugeV3(gauge).pool();
+        farm.strategyLogicId = StrategyIdLib.ALM_SHADOW_FARM;
+        farm.rewardAssets = IGaugeV3(gauge).getRewardTokens();
+        farm.addresses = new address[](3);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = IGaugeV3(gauge).nfpManager();
+        farm.addresses[2] = TOKEN_xSHADOW;
+        farm.nums = new uint[](1);
+        farm.nums[0] = algoId;
+        farm.ticks = new int24[](2);
+        farm.ticks[0] = range;
+        farm.ticks[1] = triggerRange;
+        return farm;
     }
 
     function _makeGammaUniswapV3MerklFarm(

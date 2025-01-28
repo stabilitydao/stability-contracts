@@ -17,4 +17,8 @@ interface IGaugeV3 {
 
     /// @notice retrieves rewards based on an array of NFP ids and an array of tokens
     function getReward(uint[] calldata tokenIds, address[] memory tokens) external;
+
+    function pool() external view returns (address);
+
+    function nfpManager() external view returns (address);
 }
