@@ -28,6 +28,20 @@ library ALMLib {
         }
     }
 
+    function getAssetsProportions(
+        IALM.ALMStrategyBaseStorage storage $,
+        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IStrategy.StrategyBaseStorage storage __$__
+    ) external view returns (uint[] memory proportions) {
+        (, uint[] memory amounts) = assetsAmounts($, _$_, __$__);
+        uint price = getUniswapV3PoolPrice(_$_.pool);
+        uint amount0PricedInAmount1 = amounts[0] * price / PRECISION;
+        uint prop0 = 1e18 * amount0PricedInAmount1 / (amount0PricedInAmount1 + amounts[1]);
+        proportions = new uint[](2);
+        proportions[0] = prop0;
+        proportions[1] = 1e18 - prop0;
+    }
+
     function needRebalance(
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
@@ -42,13 +56,11 @@ library ALMLib {
             int24 halfTriggerRange = $.params[1] / 2;
             int24 oldMedianTick = $.positions[0].tickLower + halfRange;
             int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
-            return
-                (currentTick > oldMedianTick + halfTriggerRange)
-                || (currentTick < oldMedianTick - halfTriggerRange);
+            return (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
         }
     }
 
-    function getAlgoNamyById(uint algoId) public pure returns(string memory) {
+    function getAlgoNamyById(uint algoId) public pure returns (string memory) {
         if (algoId == ALGO_FILL_UP) {
             return "Fill-Up";
         }
@@ -75,9 +87,10 @@ library ALMLib {
     }
 
     function preset(IALM.ALMStrategyBaseStorage storage $)
-    external
-    view
-    returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params) {
+        external
+        view
+        returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params)
+    {
         algoId = $.algoId;
         algoName = getAlgoNamyById(algoId);
         params = $.params;
@@ -88,7 +101,7 @@ library ALMLib {
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
-    ) external view returns (address[] memory assets_, uint[] memory amounts_) {
+    ) public view returns (address[] memory assets_, uint[] memory amounts_) {
         ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
         address _pool = _$_.pool;
         assets_ = __$__._assets;

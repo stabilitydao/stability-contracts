@@ -11,6 +11,7 @@ import "../../interfaces/ISwapper.sol";
 /// @title Base farming strategy
 /// @author Alien Deployer (https://github.com/a17)
 /// Changelog:
+///   1.3.1: liquidateRewards fix
 ///   1.3.0: use customPriceImpactTolerance
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
@@ -19,7 +20,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = "1.3.0";
+    string public constant VERSION_FARMING_STRATEGY_BASE = "1.3.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION =

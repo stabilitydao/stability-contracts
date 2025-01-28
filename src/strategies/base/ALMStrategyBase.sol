@@ -5,11 +5,14 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {StrategyBase} from "./StrategyBase.sol";
 import {LPStrategyBase} from "./LPStrategyBase.sol";
 import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
+import {ALMLib} from "../libs/ALMLib.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
 import {IALM} from "../../interfaces/IALM.sol";
 import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
-import {ALMLib} from "../libs/ALMLib.sol";
+import {IHardWorker} from "../../interfaces/IHardWorker.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @title Stability ALM
 /// @author Alien Deployer (https://github.com/a17)
@@ -58,6 +61,17 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
         types[0] = VaultTypeLib.COMPOUNDING;
     }
 
+    /// @inheritdoc IStrategy
+    function getAssetsProportions() public view returns (uint[] memory proportions) {
+        return ALMLib.getAssetsProportions(
+            _getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage()
+        );
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           IALM                             */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @inheritdoc IALM
     function positions() external view returns (Position[] memory) {
         ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
@@ -66,15 +80,30 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     /// @inheritdoc IALM
     function preset()
-    external
-    view
-    returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params) {
+        external
+        view
+        returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params)
+    {
         return ALMLib.preset(_getALMStrategyBaseStorage());
     }
 
     /// @inheritdoc IALM
     function needRebalance() external view returns (bool) {
         return ALMLib.needRebalance(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage());
+    }
+
+    /// @inheritdoc IALM
+    function rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external {
+        IPlatform _platform = IPlatform(platform());
+        IHardWorker hardworker = IHardWorker(_platform.hardWorker());
+        address rebalancer = _platform.rebalancer();
+        if (
+            msg.sender != rebalancer && !_platform.isOperator(msg.sender)
+                && !hardworker.dedicatedServerMsgSender(msg.sender)
+        ) {
+            revert IControllable.IncorrectMsgSender();
+        }
+        _rebalance(burnOldPositions, mintNewPositions);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -87,6 +116,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
             ALMLib.assetsAmounts(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage());
     }
 
+    /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
         internal
         view
@@ -98,6 +128,12 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
             amountsMax, _getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage()
         );
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*         Must be implemented by derived contracts           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal virtual;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

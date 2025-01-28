@@ -94,7 +94,7 @@ library ALMRamsesV3Lib {
         IStrategy.StrategyBaseStorage storage __$__
     ) external returns (uint[] memory amountsOut) {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
-            _collectFees($, _$_);
+            collectFees($, _$_);
             address nft = $.nft;
 
             // burn liquidity
@@ -152,15 +152,15 @@ library ALMRamsesV3Lib {
         IALM.NewPosition[] memory mintNewPositions,
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_,
-        IStrategy.StrategyBaseStorage storage __$__,
-        IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_
+        IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_,
+        IStrategy.StrategyBaseStorage storage __$__
     ) external {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
             require(mintNewPositions.length == 2, "Bad flow");
 
             // collect fees and farm rewards
-            _collectFees($, _$_);
-            _collectFarmRewards($, _f$f_);
+            collectFees($, _$_);
+            collectFarmRewards($, _f$f_);
 
             // burn old tokenIds
             address nft = $.nft;
@@ -257,7 +257,7 @@ library ALMRamsesV3Lib {
         }
     }
 
-    function _collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) internal {
+    function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
             address nft = $.nft;
             // collect fees
@@ -296,7 +296,7 @@ library ALMRamsesV3Lib {
         }
     }
 
-    function _collectFarmRewards(IALM.ALMStrategyBaseStorage storage $, IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_) internal {
+    function collectFarmRewards(IALM.ALMStrategyBaseStorage storage $, IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_) public {
         IFactory.Farm memory farm = IFactory(IPlatform(IControllable(address(this)).platform()).factory()).farm(_f$f_.farmId);
         address gauge = farm.addresses[0];
         uint len = $.positions.length;
