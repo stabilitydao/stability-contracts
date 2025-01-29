@@ -23,6 +23,7 @@ import {SwapXFarmStrategy} from "../src/strategies/SwapXFarmStrategy.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import {SiloFarmStrategy} from "../src/strategies/SiloFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -201,6 +202,9 @@ library SonicLib {
     address public constant SWAPX_GAUGE_wS_MOON = 0x9ad399ecC102212b4677B0Dbbc82c07ae1c74Cc5;
     address public constant SWAPX_GAUGE_wS_FS = 0x1cb9f6179A6A24f1A3756b6f6A14E5C5Fd3c0347;
 
+    // Silo
+    address public constant SILO_GAUGE_wS = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
+
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
 
@@ -308,6 +312,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -353,7 +358,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](22);
+        _farms = new IFactory.Farm[](23);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -378,6 +383,7 @@ library SonicLib {
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
+        _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS);
     }
 
     function _makeGammaUniswapV3MerklFarm(
