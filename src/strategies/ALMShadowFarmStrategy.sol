@@ -67,7 +67,6 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
         address swapper = IPlatform(addresses[0]).swapper();
         IERC20(IXShadow(farm.addresses[2]).SHADOW()).forceApprove(swapper, type(uint).max);
-
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -195,9 +194,7 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        return ALMRamsesV3Lib.withdrawAssets(
-            value, receiver, _getALMStrategyBaseStorage(), _getStrategyBaseStorage()
-        );
+        return ALMRamsesV3Lib.withdrawAssets(value, receiver, _getALMStrategyBaseStorage(), _getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase
