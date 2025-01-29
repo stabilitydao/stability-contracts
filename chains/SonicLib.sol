@@ -25,6 +25,7 @@ import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol"
 import {ALMLib} from "../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
+import {ALMShadowFarm} from "../src/strategies/ALMShadowFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -318,6 +319,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarm()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -397,7 +399,8 @@ library SonicLib {
         farm.status = 0;
         farm.pool = IGaugeV3(gauge).pool();
         farm.strategyLogicId = StrategyIdLib.ALM_SHADOW_FARM;
-        farm.rewardAssets = IGaugeV3(gauge).getRewardTokens();
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_xSHADOW;
         farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = IGaugeV3(gauge).nfpManager();

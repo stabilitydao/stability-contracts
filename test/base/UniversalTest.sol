@@ -403,21 +403,23 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     /*                       MAKE POOL VOLUME                     */
                     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                     {
+                        uint swapAmount0 = depositAmounts[0] * 2;
+                        uint swapAmount1 = depositAmounts[1] * 2;
                         ISwapper swapper = ISwapper(platform.swapper());
                         ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
                         poolData[0].pool = vars.pool;
                         poolData[0].ammAdapter = vars.ammAdapter;
                         poolData[0].tokenIn = assets[0];
                         poolData[0].tokenOut = assets[1];
-                        IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * 2);
-                        _deal(assets[0], address(this), depositAmounts[0] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[0] * 2, makePoolVolumePriceImpactTolerance);
+                        IERC20(assets[0]).approve(address(swapper), swapAmount0);
+                        _deal(assets[0], address(this), swapAmount0);
+                        swapper.swapWithRoute(poolData, swapAmount0, makePoolVolumePriceImpactTolerance);
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
-                        IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * 2);
-                        _deal(assets[1], address(this), depositAmounts[1] * 2);
-                        swapper.swapWithRoute(poolData, depositAmounts[1] * 2, makePoolVolumePriceImpactTolerance);
+                        IERC20(assets[1]).approve(address(swapper), swapAmount1);
+                        _deal(assets[1], address(this), swapAmount1);
+                        swapper.swapWithRoute(poolData, swapAmount1, makePoolVolumePriceImpactTolerance);
                     }
                 }
 

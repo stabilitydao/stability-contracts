@@ -24,10 +24,9 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     /// @dev Version of ALMStrategyBase implementation
     string public constant VERSION_ALM_STRATEGY_BASE = "1.0.0";
 
-    // todo
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ALMStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ALM_STRATEGY_BASE_STORAGE_LOCATION =
-        0xa6fdc931ca23c69f54119a0a2d6478619b5aa365084590a1fbc287668fbabe00;
+        0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

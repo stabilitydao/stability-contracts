@@ -33,7 +33,21 @@ library ALMLib {
         ILPStrategy.LPStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external view returns (uint[] memory proportions) {
-        (, uint[] memory amounts) = assetsAmounts($, _$_, __$__);
+        uint[] memory amounts;
+        if (__$__.total != 0) {
+            (, amounts) = assetsAmounts($, _$_, __$__);
+        } else {
+            ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
+            address pool = _$_.pool;
+            int24[] memory ticks = new int24[](2);
+            uint[] memory amountsMax = new uint[](2);
+            amountsMax[0] = 1e20;
+            amountsMax[1] = 1e20;
+            int24 tick = getUniswapV3CurrentTick(pool);
+            (ticks[0], ticks[1]) = calcFillUpBaseTicks(tick, $.params[0], getUniswapV3TickSpacing(pool));
+            (, amounts) = adapter.getLiquidityForAmounts(pool, amountsMax, ticks);
+        }
+
         uint price = getUniswapV3PoolPrice(_$_.pool);
         uint amount0PricedInAmount1 = amounts[0] * price / PRECISION;
         uint prop0 = 1e18 * amount0PricedInAmount1 / (amount0PricedInAmount1 + amounts[1]);

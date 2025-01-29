@@ -45,17 +45,17 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 3 || farm.nums.length != 1 || farm.ticks.length >= 2) {
+        if (farm.addresses.length != 3 || farm.nums.length != 1 || farm.ticks.length != 2) {
             revert IFarmingStrategy.BadFarm();
         }
 
         __ALMStrategyBase_init(
             LPStrategyBaseInitParams({
-                id: StrategyIdLib.BEETS_STABLE_FARM,
+                id: StrategyIdLib.ALM_SHADOW_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
-                underlying: farm.pool
+                underlying: address(0)
             }),
             ALMStrategyBaseInitParams({algoId: farm.nums[0], params: farm.ticks, nft: farm.addresses[1]})
         );
@@ -65,6 +65,9 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         address[] memory _assets = assets();
         IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
+        address swapper = IPlatform(addresses[0]).swapper();
+        IERC20(IXShadow(farm.addresses[2]).SHADOW()).forceApprove(swapper, type(uint).max);
+
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -193,7 +196,7 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         return ALMRamsesV3Lib.withdrawAssets(
-            value, receiver, _getALMStrategyBaseStorage(), _getLPStrategyBaseStorage(), _getStrategyBaseStorage()
+            value, receiver, _getALMStrategyBaseStorage(), _getStrategyBaseStorage()
         );
     }
 
@@ -209,15 +212,11 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         )
     {
         ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
-        LPStrategyBaseStorage storage _$_ = _getLPStrategyBaseStorage();
         FarmingStrategyBaseStorage storage _$f_ = _getFarmingStrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         __assets = __$__._assets;
         __rewardAssets = _$f_._rewardAssets;
-        ALMRamsesV3Lib.collectFees($, _$_);
-        __amounts = _$_._feesOnBalance;
-        _$_._feesOnBalance[0] = 0;
-        _$_._feesOnBalance[1] = 0;
+        __amounts = new uint[](2);
         ALMRamsesV3Lib.collectFarmRewards($, _$f_);
         __rewardAmounts = _$f_._rewardsOnBalance;
         uint len = __rewardAmounts.length;

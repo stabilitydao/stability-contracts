@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ALMLib} from "./ALMLib.sol";
 import {IALM} from "../../interfaces/IALM.sol";
 import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
@@ -13,6 +15,8 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 import {IGaugeV3} from "../../integrations/shadow/IGaugeV3.sol";
 
 library ALMRamsesV3Lib {
+    using SafeERC20 for IERC20;
+
     function depositAssets(
         uint[] memory amounts,
         IALM.ALMStrategyBaseStorage storage $,
@@ -51,12 +55,12 @@ library ALMRamsesV3Lib {
                 __$__.total = value;
             } else {
                 (, uint[] memory totalAmounts) = IStrategy(address(this)).assetsAmounts();
-                uint totalAmount = totalAmounts[1] + totalAmounts[0] * price / ALMLib.PRECISION;
+                uint totalAmount = totalAmounts[1] + totalAmounts[0] * price / ALMLib.PRECISION - value;
                 value = value * total / totalAmount;
 
                 uint positionsLength = $.positions.length;
                 IALM.Position memory position = $.positions[0];
-                (position.liquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
+                (uint128 addedLiquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
                     INonfungiblePositionManager.IncreaseLiquidityParams({
                         tokenId: position.tokenId,
                         amount0Desired: ALMLib.balance(assets[0]),
@@ -66,10 +70,11 @@ library ALMRamsesV3Lib {
                         deadline: block.timestamp
                     })
                 );
+                $.positions[0].liquidity = position.liquidity + addedLiquidity;
 
                 if (positionsLength == 2) {
                     position = $.positions[1];
-                    (position.liquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
+                    (addedLiquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
                         INonfungiblePositionManager.IncreaseLiquidityParams({
                             tokenId: position.tokenId,
                             amount0Desired: ALMLib.balance(assets[0]),
@@ -79,6 +84,7 @@ library ALMRamsesV3Lib {
                             deadline: block.timestamp
                         })
                     );
+                    $.positions[1].liquidity = position.liquidity + addedLiquidity;
                 }
 
                 __$__.total = total + value;
@@ -90,11 +96,9 @@ library ALMRamsesV3Lib {
         uint value,
         address receiver,
         IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external returns (uint[] memory amountsOut) {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
-            collectFees($, _$_);
             address nft = $.nft;
 
             // burn liquidity
@@ -112,6 +116,7 @@ library ALMRamsesV3Lib {
                     deadline: block.timestamp
                 })
             );
+            $.positions[0].liquidity = position.liquidity - liquidityToBurn;
             INonfungiblePositionManager(nft).collect(
                 INonfungiblePositionManager.CollectParams({
                     tokenId: position.tokenId,
@@ -132,6 +137,7 @@ library ALMRamsesV3Lib {
                         deadline: block.timestamp
                     })
                 );
+                $.positions[1].liquidity = position.liquidity - liquidityToBurn;
                 amountsOut[0] += fillupOut0;
                 amountsOut[1] += fillupOut1;
                 INonfungiblePositionManager(nft).collect(
@@ -143,6 +149,20 @@ library ALMRamsesV3Lib {
                     })
                 );
             }
+
+            // send balance part
+            address[] memory assets = __$__._assets;
+            uint balance0ToSend = ALMLib.balance(assets[0]) * value / total;
+            uint balance1ToSend = ALMLib.balance(assets[1]) * value / total;
+            if (balance0ToSend != 0) {
+                IERC20(assets[0]).safeTransfer(receiver, balance0ToSend);
+                amountsOut[0] += balance0ToSend;
+            }
+            if (balance1ToSend != 0) {
+                IERC20(assets[1]).safeTransfer(receiver, balance1ToSend);
+                amountsOut[1] += balance1ToSend;
+            }
+
             __$__.total = total - value;
         }
     }
@@ -158,8 +178,8 @@ library ALMRamsesV3Lib {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
             require(mintNewPositions.length == 2, "Bad flow");
 
-            // collect fees and farm rewards
-            collectFees($, _$_);
+            // collect farm rewards
+            // collectFees($, _$_);
             collectFarmRewards($, _f$f_);
 
             // burn old tokenIds
@@ -257,7 +277,7 @@ library ALMRamsesV3Lib {
         }
     }
 
-    function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
+    /*function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
             address nft = $.nft;
             // collect fees
@@ -275,6 +295,7 @@ library ALMRamsesV3Lib {
                 );
                 fees[0] = feeAmount0;
                 fees[1] = feeAmount1;
+                console.log('fees', fees[0], fees[1]);
                 if (positionsLength == 2) {
                     position = $.positions[1];
                     (feeAmount0, feeAmount1) = INonfungiblePositionManager(nft).collect(
@@ -294,7 +315,7 @@ library ALMRamsesV3Lib {
             }
             //////////
         }
-    }
+    }*/
 
     function collectFarmRewards(
         IALM.ALMStrategyBaseStorage storage $,
