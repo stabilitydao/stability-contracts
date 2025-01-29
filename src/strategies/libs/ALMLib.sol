@@ -15,7 +15,7 @@ library ALMLib {
 
     uint public constant PRECISION = 1e36;
 
-    function checkCompatibility(
+    /*function checkCompatibility(
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
     ) external view {
@@ -26,7 +26,7 @@ library ALMLib {
         if ($.algoId != ALGO_FILL_UP) {
             revert("Not supported ALM algo");
         }
-    }
+    }*/
 
     function getAssetsProportions(
         IALM.ALMStrategyBaseStorage storage $,
