@@ -59,6 +59,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.SWAPX_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.SILO_FARM)) {
+            return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
+        }
         return address(0);
     }
 }

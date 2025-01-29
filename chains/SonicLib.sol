@@ -483,6 +483,19 @@ library SonicLib {
         return farm;
     }
 
+    function _makeSiloFarm(address gauge) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = TOKEN_wS;
+        farm.addresses = new address[](1);
+        farm.addresses[0] = gauge;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
     function _makePoolData(
         address pool,
         string memory ammAdapterId,
