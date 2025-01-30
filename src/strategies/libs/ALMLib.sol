@@ -83,6 +83,9 @@ library ALMLib {
 
     function getPresetNameByAlgoAndParams(uint algoId, int24[] memory params) public pure returns (string memory) {
         if (algoId == ALGO_FILL_UP) {
+            if (params[0] >= 10000) {
+                return "Stretched";
+            }
             if (params[0] >= 4000) {
                 return "Passive";
             }
