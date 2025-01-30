@@ -25,6 +25,7 @@ import "../../src/interfaces/IFarmingStrategy.sol";
 import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IHardWorker.sol";
 import "../../src/interfaces/IZap.sol";
+import {IALM} from "../../src/interfaces/IALM.sol";
 
 abstract contract UniversalTest is Test, ChainSetup, Utils {
     Strategy[] public strategies;
@@ -39,6 +40,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     bool public makePoolVolume = true;
     uint public makePoolVolumePriceImpactTolerance = 6_000;
     bool public allowZeroApr = false;
+    uint public poolVolumeSwapAmount0Multiplier = 2;
+    uint public poolVolumeSwapAmount1Multiplier = 2;
+    mapping(address pool => uint multiplier) public poolVolumeSwapAmount0MultiplierForPool;
+    mapping(address pool => uint multiplier) public poolVolumeSwapAmount1MultiplierForPool;
 
     struct Strategy {
         string id;
@@ -70,6 +75,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         bool hwEventFound;
         uint depositUsdValue;
         uint withdrawnUsdValue;
+        bool isALM;
     }
 
     modifier universalTest() {
@@ -81,6 +87,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     function _addRewards(uint farmId) internal virtual {}
 
     function _preHardWork() internal virtual {}
+
+    function _rebalance() internal virtual {}
 
     function _preHardWork(uint farmId) internal virtual {}
 
@@ -273,6 +281,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(IAmmAdapter(vars.ammAdapter).ammAdapterId(), ILPStrategy(address(strategy)).ammAdapterId());
                     vars.pool = ILPStrategy(address(strategy)).pool();
                 }
+                vars.isALM = IERC165(address(strategy)).supportsInterface(type(IALM).interfaceId);
 
                 console.log(
                     string.concat(
@@ -403,23 +412,31 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     /*                       MAKE POOL VOLUME                     */
                     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                     {
-                        uint swapAmount0 = depositAmounts[0] * 2;
-                        uint swapAmount1 = depositAmounts[1] * 2;
+                        uint multiplier0 = poolVolumeSwapAmount0MultiplierForPool[vars.pool] != 0 ? poolVolumeSwapAmount0MultiplierForPool[vars.pool] : poolVolumeSwapAmount0Multiplier;
+                        uint multiplier1 = poolVolumeSwapAmount1MultiplierForPool[vars.pool] != 0 ? poolVolumeSwapAmount1MultiplierForPool[vars.pool] : poolVolumeSwapAmount1Multiplier;
                         ISwapper swapper = ISwapper(platform.swapper());
                         ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
                         poolData[0].pool = vars.pool;
                         poolData[0].ammAdapter = vars.ammAdapter;
                         poolData[0].tokenIn = assets[0];
                         poolData[0].tokenOut = assets[1];
-                        IERC20(assets[0]).approve(address(swapper), swapAmount0);
-                        _deal(assets[0], address(this), swapAmount0);
-                        swapper.swapWithRoute(poolData, swapAmount0, makePoolVolumePriceImpactTolerance);
+                        IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * multiplier0);
+                        _deal(assets[0], address(this), depositAmounts[0] * multiplier0);
+                        swapper.swapWithRoute(poolData, depositAmounts[0] * multiplier0, makePoolVolumePriceImpactTolerance);
+
+                        if (vars.isALM) {
+                            _rebalance();
+                        }
 
                         poolData[0].tokenIn = assets[1];
                         poolData[0].tokenOut = assets[0];
-                        IERC20(assets[1]).approve(address(swapper), swapAmount1);
-                        _deal(assets[1], address(this), swapAmount1);
-                        swapper.swapWithRoute(poolData, swapAmount1, makePoolVolumePriceImpactTolerance);
+                        IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * multiplier1);
+                        _deal(assets[1], address(this), depositAmounts[1] * multiplier1);
+                        swapper.swapWithRoute(poolData, depositAmounts[1] * multiplier1, makePoolVolumePriceImpactTolerance);
+
+                        if (vars.isALM) {
+                            _rebalance();
+                        }
                     }
                 }
 

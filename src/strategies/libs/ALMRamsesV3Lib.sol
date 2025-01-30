@@ -17,6 +17,12 @@ import {IGaugeV3} from "../../integrations/shadow/IGaugeV3.sol";
 library ALMRamsesV3Lib {
     using SafeERC20 for IERC20;
 
+    struct DepositAssetsVars {
+        address nft;
+        address pool;
+        address[] assets;
+    }
+
     function depositAssets(
         uint[] memory amounts,
         IALM.ALMStrategyBaseStorage storage $,
@@ -24,22 +30,23 @@ library ALMRamsesV3Lib {
         IStrategy.StrategyBaseStorage storage __$__
     ) external returns (uint value) {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
-            address nft = $.nft;
-            address pool = _$_.pool;
-            address[] memory assets = __$__._assets;
-            uint price = ALMLib.getUniswapV3PoolPrice(pool);
+            DepositAssetsVars memory v;
+            v.nft = $.nft;
+            v.pool = _$_.pool;
+            v.assets = __$__._assets;
+            uint price = ALMLib.getUniswapV3PoolPrice(v.pool);
             value = amounts[1] + (amounts[0] * price / ALMLib.PRECISION);
             uint total = __$__.total;
-            int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(pool);
+            int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(v.pool);
 
             if (total == 0) {
                 IALM.Position memory position;
                 (position.tickLower, position.tickUpper) =
-                    ALMLib.calcFillUpBaseTicks(ALMLib.getUniswapV3CurrentTick(pool), $.params[0], tickSpacing);
-                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(nft).mint(
+                    ALMLib.calcFillUpBaseTicks(ALMLib.getUniswapV3CurrentTick(v.pool), $.params[0], tickSpacing);
+                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(v.nft).mint(
                     INonfungiblePositionManager.MintParams({
-                        token0: assets[0],
-                        token1: assets[1],
+                        token0: v.assets[0],
+                        token1: v.assets[1],
                         tickSpacing: tickSpacing,
                         tickLower: position.tickLower,
                         tickUpper: position.tickUpper,
@@ -60,11 +67,11 @@ library ALMRamsesV3Lib {
 
                 uint positionsLength = $.positions.length;
                 IALM.Position memory position = $.positions[0];
-                (uint128 addedLiquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
+                (uint128 addedLiquidity,,) = INonfungiblePositionManager(v.nft).increaseLiquidity(
                     INonfungiblePositionManager.IncreaseLiquidityParams({
                         tokenId: position.tokenId,
-                        amount0Desired: ALMLib.balance(assets[0]),
-                        amount1Desired: ALMLib.balance(assets[1]),
+                        amount0Desired: ALMLib.balance(v.assets[0]),
+                        amount1Desired: ALMLib.balance(v.assets[1]),
                         amount0Min: 0,
                         amount1Min: 0,
                         deadline: block.timestamp
@@ -74,17 +81,21 @@ library ALMRamsesV3Lib {
 
                 if (positionsLength == 2) {
                     position = $.positions[1];
-                    (addedLiquidity,,) = INonfungiblePositionManager(nft).increaseLiquidity(
-                        INonfungiblePositionManager.IncreaseLiquidityParams({
-                            tokenId: position.tokenId,
-                            amount0Desired: ALMLib.balance(assets[0]),
-                            amount1Desired: ALMLib.balance(assets[1]),
-                            amount0Min: 0,
-                            amount1Min: 0,
-                            deadline: block.timestamp
-                        })
-                    );
-                    $.positions[1].liquidity = position.liquidity + addedLiquidity;
+                    uint amount0Desired = ALMLib.balance(v.assets[0]);
+                    uint amount1Desired = ALMLib.balance(v.assets[1]);
+                    if (amount0Desired > 100 || amount1Desired > 100) {
+                        (addedLiquidity,,) = INonfungiblePositionManager(v.nft).increaseLiquidity(
+                            INonfungiblePositionManager.IncreaseLiquidityParams({
+                                tokenId: position.tokenId,
+                                amount0Desired: amount0Desired,
+                                amount1Desired: amount1Desired,
+                                amount0Min: 0,
+                                amount1Min: 0,
+                                deadline: block.timestamp
+                            })
+                        );
+                        $.positions[1].liquidity = position.liquidity + addedLiquidity;
+                    }
                 }
 
                 __$__.total = total + value;
@@ -106,7 +117,7 @@ library ALMRamsesV3Lib {
             uint positionsLength = $.positions.length;
             IALM.Position memory position = $.positions[0];
             uint total = __$__.total;
-            uint128 liquidityToBurn = position.liquidity * uint128(value) / uint128(total);
+            uint128 liquidityToBurn = uint128(uint(position.liquidity) * value / total);
             (amountsOut[0], amountsOut[1]) = INonfungiblePositionManager(nft).decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                     tokenId: position.tokenId,
@@ -127,7 +138,7 @@ library ALMRamsesV3Lib {
             );
             if (positionsLength == 2) {
                 position = $.positions[1];
-                liquidityToBurn = position.liquidity * uint128(value) / uint128(total);
+                liquidityToBurn = uint128(uint(position.liquidity) * value / total);
                 (uint fillupOut0, uint fillupOut1) = INonfungiblePositionManager(nft).decreaseLiquidity(
                     INonfungiblePositionManager.DecreaseLiquidityParams({
                         tokenId: position.tokenId,
@@ -176,7 +187,9 @@ library ALMRamsesV3Lib {
         IStrategy.StrategyBaseStorage storage __$__
     ) external {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
-            require(mintNewPositions.length == 2, "Bad flow");
+            if (mintNewPositions.length != 1 && mintNewPositions.length != 2) {
+                revert IALM.IncorrectRebalanceArgs();
+            }
 
             // collect farm rewards
             // collectFees($, _$_);
@@ -253,24 +266,26 @@ library ALMRamsesV3Lib {
                 );
                 $.positions.push(position);
 
-                position.tickLower = mintNewPositions[1].tickLower;
-                position.tickUpper = mintNewPositions[1].tickUpper;
-                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(nft).mint(
-                    INonfungiblePositionManager.MintParams({
-                        token0: assets[0],
-                        token1: assets[1],
-                        tickSpacing: tickSpacing,
-                        tickLower: position.tickLower,
-                        tickUpper: position.tickUpper,
-                        amount0Desired: ALMLib.balance(assets[0]),
-                        amount1Desired: ALMLib.balance(assets[1]),
-                        amount0Min: 0,
-                        amount1Min: 0,
-                        recipient: address(this),
-                        deadline: block.timestamp
-                    })
-                );
-                $.positions.push(position);
+                if (mintNewPositions.length == 2) {
+                    position.tickLower = mintNewPositions[1].tickLower;
+                    position.tickUpper = mintNewPositions[1].tickUpper;
+                    (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(nft).mint(
+                        INonfungiblePositionManager.MintParams({
+                            token0: assets[0],
+                            token1: assets[1],
+                            tickSpacing: tickSpacing,
+                            tickLower: position.tickLower,
+                            tickUpper: position.tickUpper,
+                            amount0Desired: ALMLib.balance(assets[0]),
+                            amount1Desired: ALMLib.balance(assets[1]),
+                            amount0Min: 0,
+                            amount1Min: 0,
+                            recipient: address(this),
+                            deadline: block.timestamp
+                        })
+                    );
+                    $.positions.push(position);
+                }
             }
 
             emit IALM.Rebalance($.positions);

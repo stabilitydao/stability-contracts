@@ -125,8 +125,9 @@ library SonicLib {
     address public constant POOL_UNISWAPV3_wS_WETH_3000 = 0x21043D7Ad92d9e7bC45C055AF29771E37307B111;
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
     address public constant POOL_UNISWAPV3_USDC_scUSD_100 = 0xDFCDAD314b0b96AB8890391e3F0540278E3B80F7;
-    address public constant POOL_SHADOW_CL_wS_WETH = 0xB6d9B069F6B96A507243d501d1a23b3fCCFC85d3;
     address public constant POOL_SHADOW_wS_SHADOW = 0xF19748a0E269c6965a84f8C98ca8C47A064D4dd0;
+    address public constant POOL_SHADOW_CL_wS_WETH = 0xB6d9B069F6B96A507243d501d1a23b3fCCFC85d3;
+    address public constant POOL_SHADOW_CL_wS_BRUSH_5000 = 0xB8bda81EcCb1a21198899ac8F1f2F73C82bD7695;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -214,6 +215,7 @@ library SonicLib {
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
     address public constant SHADOW_GAUGE_CL_wS_WETH = 0x522c48B4F4dC355f409d3E01790d8317f7db0960;
+    address public constant SHADOW_GAUGE_CL_wS_BRUSH_5000 = 0x24391D1e1283b4bF1b2accD2f704C18Ec7417601;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -344,7 +346,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](14);
+        pools = new ISwapper.AddPoolData[](15);
         uint i;
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
@@ -362,11 +364,12 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SWAPX_USDC_AUR, AmmAdapterIdLib.SOLIDLY, TOKEN_AUR, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
         pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](23);
+        _farms = new IFactory.Farm[](26);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -391,16 +394,25 @@ library SonicLib {
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 600);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, TOKEN_BRUSH);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 1500, 600, TOKEN_BRUSH);
     }
 
-    function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange) internal view returns(IFactory.Farm memory) {
+    function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange, address secondRewardToken) internal view returns(IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IGaugeV3(gauge).pool();
         farm.strategyLogicId = StrategyIdLib.ALM_SHADOW_FARM;
-        farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = TOKEN_xSHADOW;
+        if (secondRewardToken == address(0)) {
+            farm.rewardAssets = new address[](1);
+            farm.rewardAssets[0] = TOKEN_xSHADOW;
+        } else {
+            farm.rewardAssets = new address[](2);
+            farm.rewardAssets[0] = TOKEN_xSHADOW;
+            farm.rewardAssets[1] = secondRewardToken;
+        }
         farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = IGaugeV3(gauge).nfpManager();

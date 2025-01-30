@@ -22,7 +22,7 @@ import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
-/// @title Earn Shadow pool fees and gauge rewards by Stability ALM
+/// @title Earn Shadow gauge rewards by Stability ALM
 /// @author Alien Deployer (https://github.com/a17)
 contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -227,7 +227,9 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         address shadow = IXShadow(xShadow).SHADOW();
         for (uint i; i < len; ++i) {
             if (__rewardAssets[i] == xShadow) {
-                __rewardAmounts[i] = IXShadow(xShadow).exit(__rewardAmounts[i]);
+                if (__rewardAmounts[i] > 0) {
+                    __rewardAmounts[i] = IXShadow(xShadow).exit(__rewardAmounts[i]);
+                }
                 __rewardAssets[i] = shadow;
             }
         }
@@ -268,7 +270,7 @@ contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
         return string.concat(
             "Earn ",
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " and pool fees on Shadow by Stability ALM with ",
+            " on Shadow by Stability ALM with ",
             algo,
             " algo and ",
             CommonLib.u2s(uint(int(farm.ticks[0]))),
