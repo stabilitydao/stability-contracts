@@ -24,7 +24,7 @@ import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
 /// @title Earn Shadow gauge rewards by Stability ALM
 /// @author Alien Deployer (https://github.com/a17)
-contract ALMShadowFarm is ALMStrategyBase, FarmingStrategyBase {
+contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
