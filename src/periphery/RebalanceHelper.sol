@@ -8,6 +8,8 @@ import {ILPStrategy} from "../interfaces/ILPStrategy.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
+/// @title ALM re-balancing helper that calculate args for rebalance() call
+/// @author Alien Deployer (https://github.com/a17)
 contract RebalanceHelper {
     string public constant VERSION = "1.0.0";
     uint internal constant SLIPPAGE_PRECISION = 100_000;
