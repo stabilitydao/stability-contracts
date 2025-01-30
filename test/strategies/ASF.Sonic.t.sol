@@ -44,7 +44,7 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
             }*/
 
             (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
-                rebalanceHelper.calcRebalanceArgs(currentStrategy);
+                rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
             IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
 
             /*

@@ -258,8 +258,8 @@ library ALMRamsesV3Lib {
                         tickUpper: position.tickUpper,
                         amount0Desired: ALMLib.balance(assets[0]),
                         amount1Desired: ALMLib.balance(assets[1]),
-                        amount0Min: 0,
-                        amount1Min: 0,
+                        amount0Min: mintNewPositions[0].minAmount0,
+                        amount1Min: mintNewPositions[0].minAmount1,
                         recipient: address(this),
                         deadline: block.timestamp
                     })
@@ -278,8 +278,8 @@ library ALMRamsesV3Lib {
                             tickUpper: position.tickUpper,
                             amount0Desired: ALMLib.balance(assets[0]),
                             amount1Desired: ALMLib.balance(assets[1]),
-                            amount0Min: 0,
-                            amount1Min: 0,
+                            amount0Min: mintNewPositions[1].minAmount0,
+                            amount1Min: mintNewPositions[1].minAmount1,
                             recipient: address(this),
                             deadline: block.timestamp
                         })

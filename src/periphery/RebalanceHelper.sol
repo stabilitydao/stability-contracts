@@ -9,7 +9,15 @@ import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
 contract RebalanceHelper {
-    function calcRebalanceArgs(address strategy)
+
+    uint internal constant SLIPPAGE_PRECISION = 100_000;
+
+    /// @notice Calculate new position arguments for ALM re-balancing
+    /// @param strategy Address of ALM strategy
+    /// @param slippage Slippage check. 50_000 - 50%, 1_000 - 1%, 100 - 0.1%, 1 - 0.001%
+    /// @return burnOldPositions Burn old positions or not. Zero length mean burn all.
+    /// @return mintNewPositions New positions data
+    function calcRebalanceArgs(address strategy, uint slippage)
         external
         view
         returns (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions)
@@ -62,10 +70,11 @@ contract RebalanceHelper {
                 ticks[0] = mintNewPositions[0].tickLower;
                 ticks[1] = mintNewPositions[0].tickUpper;
                 // slither-disable-next-line unused-return
-                (uint addedLiquidity, /*uint[] memory amountsConsumed*/ ) =
+                (uint addedLiquidity, uint[] memory amountsConsumed ) =
                     adapter.getLiquidityForAmounts(pool, amounts, ticks);
                 mintNewPositions[0].liquidity = uint128(addedLiquidity);
-                // todo slippage
+                mintNewPositions[0].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;
+                mintNewPositions[0].minAmount1 = amountsConsumed[1] - amountsConsumed[1] * slippage / SLIPPAGE_PRECISION;
             } else {
                 // 2 new positions
                 mintNewPositions = new IALM.NewPosition[](2);
@@ -78,7 +87,8 @@ contract RebalanceHelper {
                 (uint addedLiquidity, uint[] memory amountsConsumed) =
                     adapter.getLiquidityForAmounts(pool, amounts, ticks);
                 mintNewPositions[0].liquidity = uint128(addedLiquidity);
-                // todo slippage
+                mintNewPositions[0].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;
+                mintNewPositions[0].minAmount1 = amountsConsumed[1] - amountsConsumed[1] * slippage / SLIPPAGE_PRECISION;
 
                 // calc fill-up
                 uint[] memory amountsRemaining = new uint[](2);
@@ -99,7 +109,8 @@ contract RebalanceHelper {
                 ticks[1] = mintNewPositions[1].tickUpper;
                 (addedLiquidity, amountsConsumed) = adapter.getLiquidityForAmounts(pool, amountsRemaining, ticks);
                 mintNewPositions[1].liquidity = uint128(addedLiquidity);
-                // todo slippage
+                mintNewPositions[1].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;
+                mintNewPositions[1].minAmount1 = amountsConsumed[1] - amountsConsumed[1] * slippage / SLIPPAGE_PRECISION;
             }
         }
     }
