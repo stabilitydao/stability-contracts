@@ -39,6 +39,10 @@ library ALMRamsesV3Lib {
             uint total = __$__.total;
             int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(v.pool);
 
+            if ($.priceChangeProtection) {
+                ALMLib.checkPriceChange(v.pool, $.twapInterval, $.priceThreshold);
+            }
+
             if (total == 0) {
                 IALM.Position memory position;
                 (position.tickLower, position.tickUpper) =

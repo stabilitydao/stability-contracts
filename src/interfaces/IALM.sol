@@ -10,11 +10,14 @@ interface IALM {
     error NotNeedRebalance();
     error CantDoRebalance();
     error NotALM();
+    error PriceChangeProtection(uint price, uint priceBefore, uint priceThreshold, uint32 twapInterval);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event ALMParams(uint algoId, int24[] params);
+    event PriceChangeProtectionParams(bool enabled, uint32 twapInterval, uint priceThreshold);
     event Rebalance(Position[] newPosition);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -27,6 +30,9 @@ interface IALM {
         int24[] params;
         Position[] positions;
         address nft;
+        bool priceChangeProtection;
+        uint32 twapInterval;
+        uint priceThreshold;
     }
 
     struct ALMStrategyBaseInitParams {
@@ -74,4 +80,15 @@ interface IALM {
     /// @param burnOldPositions Burn old position or keep. Burn all if length 0 passed than.
     /// @param mintNewPositions New positions params
     function rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external;
+
+    /// @notice Setup price change protection params
+    /// @param enabled Enable protection
+    /// @param twapInterval TWAP interval in seconds
+    /// @param priceThreshold Price threshold. Default is 10_000.
+    function setupPriceChangeProtection(bool enabled, uint32 twapInterval, uint priceThreshold) external;
+
+    /// @notice Change ALM re-balancing params
+    /// @param algoId ID of ALM algorithm
+    /// @param params Re-balancing params
+    function setupALMParams(uint algoId, int24[] memory params) external;
 }

@@ -39,9 +39,16 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     ) internal onlyInitializing {
         __LPStrategyBase_init(lpParams);
         ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        $.nft = almParams.nft;
+
         $.algoId = almParams.algoId;
         $.params = almParams.params;
-        $.nft = almParams.nft;
+        emit ALMParams(almParams.algoId, almParams.params);
+
+        $.priceChangeProtection = true;
+        $.twapInterval = 600;
+        $.priceThreshold = 10_000;
+        emit PriceChangeProtectionParams(true, 600, 10_000);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -104,6 +111,23 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
             revert IControllable.IncorrectMsgSender();
         }
         _rebalance(burnOldPositions, mintNewPositions);
+    }
+
+    /// @inheritdoc IALM
+    function setupPriceChangeProtection(bool enabled, uint32 twapInterval, uint priceThreshold) external onlyOperator {
+        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        $.priceChangeProtection = enabled;
+        $.twapInterval = twapInterval;
+        $.priceThreshold = priceThreshold;
+        emit PriceChangeProtectionParams(enabled, twapInterval, priceThreshold);
+    }
+
+    /// @inheritdoc IALM
+    function setupALMParams(uint algoId, int24[] memory params) external onlyOperator {
+        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        $.algoId = algoId;
+        $.params = params;
+        emit ALMParams(algoId, params);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

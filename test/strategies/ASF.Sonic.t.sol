@@ -12,6 +12,11 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
     constructor() {
         vm.rollFork(5838000); // Jan-30-2025 12:11:36 AM +UTC
+
+        duration1 = 0.1 hours;
+        duration2 = 0.1 hours;
+        duration3 = 0.5 hours;
+
         makePoolVolumePriceImpactTolerance = 20_000;
         poolVolumeSwapAmount0MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 100; // 500k
         poolVolumeSwapAmount1MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 150; // 650k
