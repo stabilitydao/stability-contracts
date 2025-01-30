@@ -9,7 +9,7 @@ import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
 contract RebalanceHelper {
-
+    string public constant VERSION = "1.0.0";
     uint internal constant SLIPPAGE_PRECISION = 100_000;
 
     /// @notice Calculate new position arguments for ALM re-balancing
@@ -17,11 +17,10 @@ contract RebalanceHelper {
     /// @param slippage Slippage check. 50_000 - 50%, 1_000 - 1%, 100 - 0.1%, 1 - 0.001%
     /// @return burnOldPositions Burn old positions or not. Zero length mean burn all.
     /// @return mintNewPositions New positions data
-    function calcRebalanceArgs(address strategy, uint slippage)
-        external
-        view
-        returns (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions)
-    {
+    function calcRebalanceArgs(
+        address strategy,
+        uint slippage
+    ) external view returns (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) {
         if (!IERC165(strategy).supportsInterface(type(IALM).interfaceId)) {
             revert IALM.NotALM();
         }
@@ -70,7 +69,7 @@ contract RebalanceHelper {
                 ticks[0] = mintNewPositions[0].tickLower;
                 ticks[1] = mintNewPositions[0].tickUpper;
                 // slither-disable-next-line unused-return
-                (uint addedLiquidity, uint[] memory amountsConsumed ) =
+                (uint addedLiquidity, uint[] memory amountsConsumed) =
                     adapter.getLiquidityForAmounts(pool, amounts, ticks);
                 mintNewPositions[0].liquidity = uint128(addedLiquidity);
                 mintNewPositions[0].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;

@@ -128,6 +128,8 @@ library SonicLib {
     address public constant POOL_SHADOW_wS_SHADOW = 0xF19748a0E269c6965a84f8C98ca8C47A064D4dd0;
     address public constant POOL_SHADOW_CL_wS_WETH = 0xB6d9B069F6B96A507243d501d1a23b3fCCFC85d3;
     address public constant POOL_SHADOW_CL_wS_BRUSH_5000 = 0xB8bda81EcCb1a21198899ac8F1f2F73C82bD7695;
+    address public constant POOL_SHADOW_CL_wS_USDC = 0x324963c267C354c7660Ce8CA3F5f167E05649970;
+    address public constant POOL_SHADOW_CL_wS_GOGLZ_5000 = 0x1f4eFC47e5A5Ab6539d95A76e2dDE6d74462acEa;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -216,6 +218,8 @@ library SonicLib {
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
     address public constant SHADOW_GAUGE_CL_wS_WETH = 0x522c48B4F4dC355f409d3E01790d8317f7db0960;
     address public constant SHADOW_GAUGE_CL_wS_BRUSH_5000 = 0x24391D1e1283b4bF1b2accD2f704C18Ec7417601;
+    address public constant SHADOW_GAUGE_CL_wS_USDC = 0x0ac98Ce57D24f77F48161D12157cb815Af469fc0;
+    address public constant SHADOW_GAUGE_CL_wS_GOGLZ_5000 = 0x5631cEa9AE0ED0b3637c0099Ee241B926663da1A;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -369,7 +373,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](26);
+        _farms = new IFactory.Farm[](30);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -398,6 +402,10 @@ library SonicLib {
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, TOKEN_BRUSH);
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 1500, 600, TOKEN_BRUSH);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
     }
 
     function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange, address secondRewardToken) internal view returns(IFactory.Farm memory) {

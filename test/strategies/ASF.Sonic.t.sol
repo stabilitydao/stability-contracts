@@ -26,6 +26,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(23); // wS_WETH 1500
         _addStrategy(24); // wS_BRUSH 3000
         _addStrategy(25); // wS_BRUSH 1500
+        _addStrategy(26);
+        _addStrategy(27);
+        _addStrategy(28);
+        _addStrategy(29);
     }
 
     function _rebalance() internal override {
@@ -61,6 +65,8 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
                 console.logInt(positions[1].tickUpper);
                 console.log(positions[1].liquidity);
             }*/
+
+            rebalanceHelper.VERSION();
         }
     }
 
