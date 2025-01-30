@@ -211,16 +211,13 @@ library ALMLib {
     /// @param pool UniswapV3Pool address
     /// @param twapInterval Time intervals
     /// @param priceThreshold Price Threshold
-    function checkPriceChange(
-        address pool,
-        uint32 twapInterval,
-        uint priceThreshold
-    ) external view {
-        (uint160 sqrtPrice, , , , , , ) = IUniswapV3Pool(pool).slot0();
-        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), PRECISION, 2**(96 * 2));
+    function checkPriceChange(address pool, uint32 twapInterval, uint priceThreshold) external view {
+        (uint160 sqrtPrice,,,,,,) = IUniswapV3Pool(pool).slot0();
+        uint price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), PRECISION, 2 ** (96 * 2));
 
         uint160 sqrtPriceBefore = _getUniswapV3SqrtTwapX96(pool, twapInterval);
-        uint priceBefore = UniswapV3MathLib.mulDiv(uint(sqrtPriceBefore) * uint(sqrtPriceBefore), PRECISION, 2**(96 * 2));
+        uint priceBefore =
+            UniswapV3MathLib.mulDiv(uint(sqrtPriceBefore) * uint(sqrtPriceBefore), PRECISION, 2 ** (96 * 2));
         if (price * 10_000 / priceBefore > priceThreshold || priceBefore * 10_000 / price > priceThreshold) {
             revert IALM.PriceChangeProtection(price, priceBefore, priceThreshold, twapInterval);
         }
@@ -233,13 +230,15 @@ library ALMLib {
     function _getUniswapV3SqrtTwapX96(address pool, uint32 twapInterval) internal view returns (uint160 sqrtPriceX96) {
         if (twapInterval == 0) {
             /// return the current price if _twapInterval == 0
-            (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
+            (sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
         } else {
             uint32[] memory secondsAgos = new uint32[](2);
-            secondsAgos[0] = twapInterval; /// from (before)
-            secondsAgos[1] = 0; /// to (now)
+            secondsAgos[0] = twapInterval;
+            /// from (before)
+            secondsAgos[1] = 0;
+            /// to (now)
 
-            (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
+            (int56[] memory tickCumulatives,) = IUniswapV3Pool(pool).observe(secondsAgos);
 
             /// tick(imprecise as it's an integer) to price
             sqrtPriceX96 = UniswapV3MathLib.getSqrtRatioAtTick(
