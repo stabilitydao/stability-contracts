@@ -23,11 +23,13 @@ contract RebalanceHelper {
         }
 
         burnOldPositions = new bool[](0);
+        // slither-disable-next-line unused-return
         (uint algoId,,, int24[] memory params) = IALM(strategy).preset();
         address pool = ILPStrategy(strategy).pool();
         ICAmmAdapter adapter = ICAmmAdapter(address(ILPStrategy(strategy).ammAdapter()));
         int24 tick = ALMLib.getUniswapV3CurrentTick(pool);
         int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(pool);
+        // slither-disable-next-line unused-return
         (, uint[] memory amounts) = IStrategy(strategy).assetsAmounts();
         int24[] memory ticks = new int24[](2);
 
@@ -39,6 +41,7 @@ contract RebalanceHelper {
                 mintNewPositions = new IALM.NewPosition[](1);
                 if (tick > oldBasePosition.tickUpper) {
                     int24 tickDistance = tick - oldBasePosition.tickUpper;
+                    //slither-disable-next-line divide-before-multiply
                     tickDistance = tickDistance / tickSpacing * tickSpacing;
                     if (tickDistance == 0) {
                         revert IALM.CantDoRebalance();
@@ -47,6 +50,7 @@ contract RebalanceHelper {
                     mintNewPositions[0].tickUpper = oldBasePosition.tickUpper + tickDistance;
                 } else {
                     int24 tickDistance = oldBasePosition.tickLower - tick;
+                    //slither-disable-next-line divide-before-multiply
                     tickDistance = tickDistance / tickSpacing * tickSpacing;
                     if (tickDistance == 0) {
                         revert IALM.CantDoRebalance();
@@ -57,6 +61,7 @@ contract RebalanceHelper {
 
                 ticks[0] = mintNewPositions[0].tickLower;
                 ticks[1] = mintNewPositions[0].tickUpper;
+                // slither-disable-next-line unused-return
                 (uint addedLiquidity, /*uint[] memory amountsConsumed*/ ) =
                     adapter.getLiquidityForAmounts(pool, amounts, ticks);
                 mintNewPositions[0].liquidity = uint128(addedLiquidity);
@@ -81,9 +86,11 @@ contract RebalanceHelper {
                 amountsRemaining[1] = amounts[1] - amountsConsumed[1];
                 if (mintNewPositions[0].tickLower > oldBasePosition.tickLower) {
                     mintNewPositions[1].tickLower = mintNewPositions[0].tickLower;
+                    //slither-disable-next-line divide-before-multiply
                     mintNewPositions[1].tickUpper =
                         tick > 0 ? (tick / tickSpacing * tickSpacing) : (tick / tickSpacing * tickSpacing - tickSpacing);
                 } else {
+                    //slither-disable-next-line divide-before-multiply
                     mintNewPositions[1].tickLower =
                         tick > 0 ? (tick / tickSpacing * tickSpacing + tickSpacing) : (tick / tickSpacing * tickSpacing);
                     mintNewPositions[1].tickUpper = mintNewPositions[0].tickUpper;

@@ -43,7 +43,8 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
                 console.log(positions[1].liquidity);
             }*/
 
-            (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) = rebalanceHelper.calcRebalanceArgs(currentStrategy);
+            (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
+                rebalanceHelper.calcRebalanceArgs(currentStrategy);
             IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
 
             /*
@@ -61,7 +62,6 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
                 console.log(positions[1].liquidity);
             }*/
         }
-
     }
 
     function _addStrategy(uint farmId) internal {

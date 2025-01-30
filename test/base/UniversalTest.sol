@@ -412,8 +412,12 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     /*                       MAKE POOL VOLUME                     */
                     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                     {
-                        uint multiplier0 = poolVolumeSwapAmount0MultiplierForPool[vars.pool] != 0 ? poolVolumeSwapAmount0MultiplierForPool[vars.pool] : poolVolumeSwapAmount0Multiplier;
-                        uint multiplier1 = poolVolumeSwapAmount1MultiplierForPool[vars.pool] != 0 ? poolVolumeSwapAmount1MultiplierForPool[vars.pool] : poolVolumeSwapAmount1Multiplier;
+                        uint multiplier0 = poolVolumeSwapAmount0MultiplierForPool[vars.pool] != 0
+                            ? poolVolumeSwapAmount0MultiplierForPool[vars.pool]
+                            : poolVolumeSwapAmount0Multiplier;
+                        uint multiplier1 = poolVolumeSwapAmount1MultiplierForPool[vars.pool] != 0
+                            ? poolVolumeSwapAmount1MultiplierForPool[vars.pool]
+                            : poolVolumeSwapAmount1Multiplier;
                         ISwapper swapper = ISwapper(platform.swapper());
                         ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
                         poolData[0].pool = vars.pool;
@@ -422,7 +426,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenOut = assets[1];
                         IERC20(assets[0]).approve(address(swapper), depositAmounts[0] * multiplier0);
                         _deal(assets[0], address(this), depositAmounts[0] * multiplier0);
-                        swapper.swapWithRoute(poolData, depositAmounts[0] * multiplier0, makePoolVolumePriceImpactTolerance);
+                        swapper.swapWithRoute(
+                            poolData, depositAmounts[0] * multiplier0, makePoolVolumePriceImpactTolerance
+                        );
 
                         if (vars.isALM) {
                             _rebalance();
@@ -432,7 +438,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         poolData[0].tokenOut = assets[0];
                         IERC20(assets[1]).approve(address(swapper), depositAmounts[1] * multiplier1);
                         _deal(assets[1], address(this), depositAmounts[1] * multiplier1);
-                        swapper.swapWithRoute(poolData, depositAmounts[1] * multiplier1, makePoolVolumePriceImpactTolerance);
+                        swapper.swapWithRoute(
+                            poolData, depositAmounts[1] * multiplier1, makePoolVolumePriceImpactTolerance
+                        );
 
                         if (vars.isALM) {
                             _rebalance();
