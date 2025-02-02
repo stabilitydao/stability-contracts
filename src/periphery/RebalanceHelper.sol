@@ -9,9 +9,11 @@ import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
 /// @title ALM re-balancing helper that calculate args for rebalance() call
+/// Changelog:
+///   1.0.1: calcRebalanceArgs bugfix
 /// @author Alien Deployer (https://github.com/a17)
 contract RebalanceHelper {
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
     uint internal constant SLIPPAGE_PRECISION = 100_000;
 
     /// @notice Calculate new position arguments for ALM re-balancing
@@ -80,7 +82,7 @@ contract RebalanceHelper {
                 // 2 new positions
                 mintNewPositions = new IALM.NewPosition[](2);
                 (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
-                    ALMLib.calcFillUpBaseTicks(tick, params[0], params[1]);
+                    ALMLib.calcFillUpBaseTicks(tick, params[0], tickSpacing);
 
                 // calc new base position liquidity and amounts
                 ticks[0] = mintNewPositions[0].tickLower;
