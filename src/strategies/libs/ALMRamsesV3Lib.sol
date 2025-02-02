@@ -68,8 +68,6 @@ library ALMRamsesV3Lib {
                 (, uint[] memory totalAmounts) = IStrategy(address(this)).assetsAmounts();
                 uint totalAmount = totalAmounts[1] + totalAmounts[0] * price / ALMLib.PRECISION - value;
                 value = value * total / totalAmount;
-
-                uint positionsLength = $.positions.length;
                 IALM.Position memory position = $.positions[0];
                 (uint128 addedLiquidity,,) = INonfungiblePositionManager(v.nft).increaseLiquidity(
                     INonfungiblePositionManager.IncreaseLiquidityParams({
@@ -82,26 +80,6 @@ library ALMRamsesV3Lib {
                     })
                 );
                 $.positions[0].liquidity = position.liquidity + addedLiquidity;
-
-                if (positionsLength == 2) {
-                    position = $.positions[1];
-                    uint amount0Desired = ALMLib.balance(v.assets[0]);
-                    uint amount1Desired = ALMLib.balance(v.assets[1]);
-                    if (amount0Desired > 100 || amount1Desired > 100) {
-                        (addedLiquidity,,) = INonfungiblePositionManager(v.nft).increaseLiquidity(
-                            INonfungiblePositionManager.IncreaseLiquidityParams({
-                                tokenId: position.tokenId,
-                                amount0Desired: amount0Desired,
-                                amount1Desired: amount1Desired,
-                                amount0Min: 0,
-                                amount1Min: 0,
-                                deadline: block.timestamp
-                            })
-                        );
-                        $.positions[1].liquidity = position.liquidity + addedLiquidity;
-                    }
-                }
-
                 __$__.total = total + value;
             }
         }

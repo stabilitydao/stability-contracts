@@ -34,15 +34,18 @@ library ALMLib {
         IStrategy.StrategyBaseStorage storage __$__
     ) external view returns (uint[] memory proportions) {
         uint[] memory amounts;
+        ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
+        address pool = _$_.pool;
+        uint[] memory amountsMax = new uint[](2);
+        amountsMax[0] = 1e20;
+        amountsMax[1] = 1e20;
+        int24[] memory ticks = new int24[](2);
         if (__$__.total != 0) {
-            (, amounts) = assetsAmounts($, _$_, __$__);
+            IALM.Position memory position = $.positions[0];
+            ticks[0] = position.tickLower;
+            ticks[1] = position.tickUpper;
+            (, amounts) = adapter.getLiquidityForAmounts(pool, amountsMax, ticks);
         } else {
-            ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
-            address pool = _$_.pool;
-            int24[] memory ticks = new int24[](2);
-            uint[] memory amountsMax = new uint[](2);
-            amountsMax[0] = 1e20;
-            amountsMax[1] = 1e20;
             int24 tick = getUniswapV3CurrentTick(pool);
             (ticks[0], ticks[1]) = calcFillUpBaseTicks(tick, $.params[0], getUniswapV3TickSpacing(pool));
             (, amounts) = adapter.getLiquidityForAmounts(pool, amountsMax, ticks);
@@ -153,25 +156,11 @@ library ALMLib {
                 (, amountsConsumed) = adapter.getLiquidityForAmounts(pool, amountsMax, ticks);
                 value = amountsConsumed[1] + (amountsConsumed[0] * price / PRECISION);
             } else {
-                uint positionsLength = $.positions.length;
                 int24[] memory ticks = new int24[](2);
                 IALM.Position memory position = $.positions[0];
                 ticks[0] = position.tickLower;
                 ticks[1] = position.tickUpper;
                 (, amountsConsumed) = adapter.getLiquidityForAmounts(pool, amountsMax, ticks);
-
-                if (positionsLength == 2) {
-                    uint[] memory amountsRemaining = new uint[](2);
-                    amountsRemaining[0] = amountsMax[0] - amountsConsumed[0];
-                    amountsRemaining[1] = amountsMax[1] - amountsConsumed[1];
-                    position = $.positions[1];
-                    ticks[0] = position.tickLower;
-                    ticks[1] = position.tickUpper;
-                    (, uint[] memory amountsConsumedFillUp) =
-                        adapter.getLiquidityForAmounts(pool, amountsRemaining, ticks);
-                    amountsConsumed[0] += amountsConsumedFillUp[0];
-                    amountsConsumed[1] += amountsConsumedFillUp[1];
-                }
 
                 value = amountsConsumed[1] + (amountsConsumed[0] * price / PRECISION);
 
@@ -197,7 +186,10 @@ library ALMLib {
     }
 
     function getUniswapV3PoolPrice(address pool) public view returns (uint price) {
+        // both ways are ok probably
         (uint160 sqrtPrice,,,,,,) = IUniswapV3Pool(pool).slot0();
+        //(, int24 tick,,,,,) = IUniswapV3Pool(pool).slot0();
+        //uint160 sqrtPrice = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         price = UniswapV3MathLib.mulDiv(uint(sqrtPrice) * uint(sqrtPrice), PRECISION, 2 ** (96 * 2));
     }
 

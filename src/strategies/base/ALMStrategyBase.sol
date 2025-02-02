@@ -15,6 +15,8 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @title Stability ALM
+/// Changelog:
+///   1.1.0: Fill-Up algo deposits to base range only
 /// @author Alien Deployer (https://github.com/a17)
 abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -22,7 +24,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ALMStrategyBase implementation
-    string public constant VERSION_ALM_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_ALM_STRATEGY_BASE = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ALMStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ALM_STRATEGY_BASE_STORAGE_LOCATION =

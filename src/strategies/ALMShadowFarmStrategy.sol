@@ -23,6 +23,8 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
 /// @title Earn Shadow gauge rewards by Stability ALM
+/// Changelog:
+///   1.1.0: Fill-Up algo deposits to base range only; improved description
 /// @author Alien Deployer (https://github.com/a17)
 contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -32,7 +34,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -106,6 +108,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
         addresses = new address[](0);
         ticks = new int24[](0);
 
@@ -113,11 +116,8 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
         uint localTtotal;
-        //nosemgrep
         for (uint i; i < len; ++i) {
-            //nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 ++localTtotal;
             }
@@ -126,15 +126,12 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
         variants = new string[](localTtotal);
         nums = new uint[](localTtotal);
         localTtotal = 0;
-        //nosemgrep
         for (uint i; i < len; ++i) {
-            //nosemgrep
             IFactory.Farm memory farm = farms[i];
-            //nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
                 nums[localTtotal] = i;
                 //slither-disable-next-line calls-loop
-                variants[localTtotal] = _generateDescription(farm);
+                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
                 ++localTtotal;
             }
         }
@@ -169,8 +166,10 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return _generateDescription(farm);
+        IPlatform _platform = IPlatform(platform());
+        IFactory.Farm memory farm = IFactory(_platform.factory()).farm($f.farmId);
+        IAmmAdapter _ammAdapter = IAmmAdapter(_platform.ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        return _generateDescription(farm, _ammAdapter);
     }
 
     /// @inheritdoc IStrategy
@@ -264,17 +263,27 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _generateDescription(IFactory.Farm memory farm) internal view returns (string memory) {
+    function _generateDescription(
+        IFactory.Farm memory farm,
+        IAmmAdapter _ammAdapter
+    ) internal view returns (string memory) {
         string memory algo = ALMLib.getAlgoNamyById(farm.nums[0]);
+        string memory presetName = ALMLib.getPresetNameByAlgoAndParams(farm.nums[0], farm.ticks);
         //slither-disable-next-line calls-loop
         return string.concat(
             "Earn ",
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on Shadow by Stability ALM with ",
+            " in Shadow ",
+            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+            " pool by Stability ALM with ",
             algo,
             " algo and ",
+            presetName,
+            " preset (range: ",
             CommonLib.u2s(uint(int(farm.ticks[0]))),
-            " preset"
+            " ticks, re-balance trigger: ",
+            CommonLib.u2s(uint(int(farm.ticks[1]))),
+            " ticks)"
         );
     }
 }
