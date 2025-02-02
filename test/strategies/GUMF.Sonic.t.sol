@@ -6,7 +6,7 @@ import "../base/UniversalTest.sol";
 
 contract GammaUniswapV3MerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
-        vm.rollFork(5169000); // Jan-23-2025 07:56:29 PM
+        //vm.rollFork(5169000); // Jan-23-2025 07:56:29 PM
     }
 
     function testGUMF() public universalTest {
@@ -29,6 +29,6 @@ contract GammaUniswapV3MerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
     function _preHardWork(uint farmId) internal override {
         IFactory.Farm memory f = factory.farm(farmId);
-        deal(f.rewardAssets[0], currentStrategy, 1e17);
+        deal(f.rewardAssets[0], currentStrategy, 1e18);
     }
 }

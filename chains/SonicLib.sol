@@ -22,7 +22,10 @@ import {IchiSwapXFarmStrategy} from "../src/strategies/IchiSwapXFarmStrategy.sol
 import {SwapXFarmStrategy} from "../src/strategies/SwapXFarmStrategy.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
+import {ALMLib} from "../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
+import {ALMShadowFarmStrategy} from "../src/strategies/ALMShadowFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -68,6 +71,9 @@ library SonicLib {
     address public constant TOKEN_sDOG = 0x50Bc6e1DfF8039A4b967c1BF507ba5eA13fa18B6;
     address public constant TOKEN_MOON = 0x486B6Fa0419b33a0c7A6e4698c231D7E2f2D5299;
     address public constant TOKEN_OS = 0xb1e25689D55734FD3ffFc939c4C3Eb52DFf8A794;
+    address public constant TOKEN_SHADOW = 0x3333b97138D4b086720b5aE8A7844b1345a33333;
+    address public constant TOKEN_xSHADOW = 0x5050bc082FF4A74Fb6B0B04385dEfdDB114b2424;
+    address public constant TOKEN_sGEM1 = 0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -106,6 +112,7 @@ library SonicLib {
     address public constant POOL_SWAPX_CL_atETH_scETH = 0xCe39D66872015a8d1B2070725E6BFc687A418bD0;
     address public constant POOL_SWAPX_CL_wS_SACRA_GEM_1 = 0x5e1Cb0d1196FF3451204fC40415A81a4d24Ec7eD;
     address public constant POOL_SWAPX_CL_wS_OS = 0xa76Beaf111BaD5dD866fa4835D66b9aA2Eb1FdEc;
+    address public constant POOL_SWAPX_CL_scETH_WETH = 0xDa2fDdeb3D654E1F32E2664d8d95C9329e34E5c8;
     address public constant POOL_SWAPX_USDC_scUSD = 0xBb8aE5b889243561ac9261F22F592B72250AFd1F;
     address public constant POOL_SWAPX_wS_GOGLZ = 0xE6aA7CA47DDb6203e71d4D1497959Da51F87AA98;
     address public constant POOL_SWAPX_AUR_auUSDC = 0xf9b7a6Da525f6f05910f99b298bb792025128C6f;
@@ -120,6 +127,13 @@ library SonicLib {
     address public constant POOL_UNISWAPV3_wS_WETH_3000 = 0x21043D7Ad92d9e7bC45C055AF29771E37307B111;
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
     address public constant POOL_UNISWAPV3_USDC_scUSD_100 = 0xDFCDAD314b0b96AB8890391e3F0540278E3B80F7;
+    address public constant POOL_SHADOW_wS_SHADOW = 0xF19748a0E269c6965a84f8C98ca8C47A064D4dd0;
+    address public constant POOL_SHADOW_CL_wS_WETH = 0xB6d9B069F6B96A507243d501d1a23b3fCCFC85d3;
+    address public constant POOL_SHADOW_CL_wS_BRUSH_5000 = 0xB8bda81EcCb1a21198899ac8F1f2F73C82bD7695;
+    address public constant POOL_SHADOW_CL_wS_USDC = 0x324963c267C354c7660Ce8CA3F5f167E05649970;
+    address public constant POOL_SHADOW_CL_wS_GOGLZ_5000 = 0x1f4eFC47e5A5Ab6539d95A76e2dDE6d74462acEa;
+    address public constant POOL_SHADOW_CL_sGEM1_scUSD_20000 = 0x1ADcAaF67307453a3995a7FFf78b8CBEc1eFd00F;
+    address public constant POOL_SHADOW_CL_SACRA_scUSD_20000 = 0x350598C4C17dDC02049e34Bfdf4555422d2d670E;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -140,6 +154,8 @@ library SonicLib {
     address public constant ALM_ICHI_SWAPX_USDC_stS = 0x86D13feF5e2F4F96c2c592aE7Fd096EB5AC424AC;
     address public constant ALM_ICHI_SWAPX_wS_OS = 0x36dA3b8156C421118d1cc27956454C49eeC5fC1B;
     address public constant ALM_ICHI_SWAPX_OS_wS = 0xc4A71981DC8ee8ee704b6217DaebAd6ECe185aeb;
+    address public constant ALM_ICHI_SWAPX_WETH_scETH = 0x0f385EEa80cB6909A1dbA5CDc763e97F8589f47D;
+    address public constant ALM_ICHI_SWAPX_scETH_WETH = 0x6E8A8037533aA74FfFEb92390E443294d034d769;
     address public constant ALM_GAMMA_UNISWAPV3_wS_USDC_3000 = 0x318E378b6EC1590315e5e8160A2eF28308AE7Cfc;
     address public constant ALM_GAMMA_UNISWAPV3_wS_WETH_3000 = 0x2Ea8A8ba347011FEF2a7E0A276354B90B4927cBC;
     address public constant ALM_GAMMA_UNISWAPV3_USDC_WETH_500 = 0x2fA5E2E2a49de9375047225b7cea4997e8203AA4;
@@ -191,6 +207,8 @@ library SonicLib {
     address public constant SWAPX_GAUGE_ICHI_USDC_stS = 0x6bd21754fB317ABA1F112c3d01904669e7D34803;
     address public constant SWAPX_GAUGE_ICHI_wS_OS = 0x7FCd694E0c24bF12DCbD471DF38601059F2b8093;
     address public constant SWAPX_GAUGE_ICHI_OS_wS = 0x3a4A0040475575638beB4051d8950ea21686ce27;
+    address public constant SWAPX_GAUGE_ICHI_WETH_scETH = 0x882A10B15F2cdC893a5109C4b4B562674aBb18b0;
+    address public constant SWAPX_GAUGE_ICHI_scETH_WETH = 0x0ceEb9B74f2b94CAC261E92e484f368efF8ab681;
     address public constant SWAPX_GAUGE_USDC_scUSD = 0x2036D05eCA7fe86cD224927883490A255EF552BA;
     address public constant SWAPX_GAUGE_wS_GOGLZ = 0x5D671DE88045626e50Be05C1D438b2B9908cFa97;
     address public constant SWAPX_GAUGE_AUR_auUSDC = 0xca958280Ba083545C36A64e1AED18075317E3529;
@@ -203,6 +221,14 @@ library SonicLib {
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
+
+    // Shadow
+    address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
+    address public constant SHADOW_GAUGE_CL_wS_WETH = 0x522c48B4F4dC355f409d3E01790d8317f7db0960;
+    address public constant SHADOW_GAUGE_CL_wS_BRUSH_5000 = 0x24391D1e1283b4bF1b2accD2f704C18Ec7417601;
+    address public constant SHADOW_GAUGE_CL_wS_USDC = 0x0ac98Ce57D24f77F48161D12157cb815Af469fc0;
+    address public constant SHADOW_GAUGE_CL_wS_GOGLZ_5000 = 0x5631cEa9AE0ED0b3637c0099Ee241B926663da1A;
+    address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0x05A2f49425108095cf65ebFEb1424905D24a1BB5;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -308,6 +334,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -332,7 +359,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](13);
+        pools = new ISwapper.AddPoolData[](15);
         uint i;
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
@@ -349,11 +376,13 @@ library SonicLib {
             _makePoolData(POOL_SWAPX_CL_wS_SACRA_GEM_1, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA_GEM_1, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_USDC_AUR, AmmAdapterIdLib.SOLIDLY, TOKEN_AUR, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
+        pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](22);
+        _farms = new IFactory.Farm[](31);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -378,6 +407,40 @@ library SonicLib {
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
         _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, TOKEN_BRUSH);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 1500, 600, TOKEN_BRUSH);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 12000, 5000, address(0));
+    }
+
+    function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange, address secondRewardToken) internal view returns(IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IGaugeV3(gauge).pool();
+        farm.strategyLogicId = StrategyIdLib.ALM_SHADOW_FARM;
+        if (secondRewardToken == address(0)) {
+            farm.rewardAssets = new address[](1);
+            farm.rewardAssets[0] = TOKEN_xSHADOW;
+        } else {
+            farm.rewardAssets = new address[](2);
+            farm.rewardAssets[0] = TOKEN_xSHADOW;
+            farm.rewardAssets[1] = secondRewardToken;
+        }
+        farm.addresses = new address[](3);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = IGaugeV3(gauge).nfpManager();
+        farm.addresses[2] = TOKEN_xSHADOW;
+        farm.nums = new uint[](1);
+        farm.nums[0] = algoId;
+        farm.ticks = new int24[](2);
+        farm.ticks[0] = range;
+        farm.ticks[1] = triggerRange;
+        return farm;
     }
 
     function _makeGammaUniswapV3MerklFarm(

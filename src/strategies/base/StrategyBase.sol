@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.1.1: extractFees fixed
 ///   2.1.0: customPriceImpactTolerance
 ///   2.0.0: previewDepositAssetsWrite; use platform.getCustomVaultFee
 ///   1.1.0: autoCompoundingByUnderlyingProtocol(), virtual total()
@@ -22,7 +23,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.1.0";
+    string public constant VERSION_STRATEGY_BASE = "2.1.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
