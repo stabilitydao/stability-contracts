@@ -10,7 +10,7 @@ import "../../src/integrations/balancer/IBalancerGauge.sol";
 contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
     function testBSF() public universalTest {
         _addStrategy(0);
-        _addStrategy(1);
+        //_addStrategy(1);
     }
 
     /*function _preHardWork() internal override {

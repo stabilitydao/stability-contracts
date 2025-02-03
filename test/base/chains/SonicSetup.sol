@@ -22,7 +22,8 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
         // vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
         // vm.rollFork(3273000); // Jan-10-2025 03:49:56 PM +UTC
         // vm.rollFork(3292762); // Jan-10-2025 07:11:31 PM +UTC
-        vm.rollFork(5169000); // Jan-23-2025 07:56:29 PM
+        // vm.rollFork(5169000); // Jan-23-2025 07:56:29 PM
+        vm.rollFork(5715000); // Jan-28-2025 09:03:09 PM +UTC
     }
 
     function testSetupStub() external {}
@@ -32,7 +33,7 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
         platform = Platform(_deployCore(SonicLib.platformDeployParams()));
         SonicLib.deployAndSetupInfrastructure(address(platform), showDeployLog);
         factory = Factory(address(platform.factory()));
-        //endregion ----- DeployCore.sol -----
+        //endregion
     }
 
     function _deal(address token, address to, uint amount) internal override {

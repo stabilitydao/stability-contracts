@@ -118,13 +118,11 @@ library StrategyLib {
         amountsRemaining = new uint[](len);
         // nosemgrep
         for (uint i; i < len; ++i) {
-            amounts_[i] = Math.min(amounts_[i], balance(assets_[i]));
-            if (amounts_[i] > 0) {
-                // revenue fee amount of assets_[i]
-                vars.amountPlatform = amounts_[i] * vars.feePlatform / ConstantsLib.DENOMINATOR;
+            // revenue fee amount of assets_[i]
+            vars.amountPlatform = amounts_[i] * vars.feePlatform / ConstantsLib.DENOMINATOR;
+            vars.amountPlatform = Math.min(vars.amountPlatform, balance(assets_[i]));
 
-                amountsRemaining[i] = amounts_[i] - vars.amountPlatform;
-
+            if (vars.amountPlatform > 0) {
                 // VaultManager amount
                 vars.amountVaultManager = vars.amountPlatform * vars.feeShareVaultManager / ConstantsLib.DENOMINATOR;
 
@@ -153,6 +151,8 @@ library StrategyLib {
                 emit IStrategy.ExtractFees(
                     vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount
                 );
+                amountsRemaining[i] = amounts_[i] - vars.amountPlatform;
+                amountsRemaining[i] = Math.min(amountsRemaining[i], balance(assets_[i]));
             }
         }
     }
@@ -174,7 +174,7 @@ library StrategyLib {
                     swapper.swap(
                         rewardAssets_[i],
                         exchangeAsset,
-                        rewardAmounts_[i],
+                        Math.min(rewardAmounts_[i], balance(rewardAssets_[i])),
                         customPriceImpactTolerance != 0
                             ? customPriceImpactTolerance
                             : SWAP_REWARDS_PRICE_IMPACT_TOLERANCE
