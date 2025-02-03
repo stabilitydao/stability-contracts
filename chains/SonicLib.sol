@@ -24,6 +24,7 @@ import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import {SiloFarmStrategy} from "../src/strategies/SiloFarmStrategy.sol";
+import {ISiloIncentivesController} from "../src/integrations/silo/ISiloIncentivesController.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -495,8 +496,9 @@ library SonicLib {
         farm.strategyLogicId = StrategyIdLib.SILO_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = TOKEN_wS;
-        farm.addresses = new address[](1);
+        farm.addresses = new address[](2);
         farm.addresses[0] = gauge;
+        farm.addresses[1] = ISiloIncentivesController(gauge).SHARE_TOKEN();
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

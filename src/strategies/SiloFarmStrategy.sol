@@ -4,12 +4,14 @@ pragma solidity ^0.8.23;
 import "./base/FarmingStrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
+import "../integrations/silo/ISiloIncentivesController.sol";
+import "../integrations/silo/ISilo.sol";
+import {console} from "forge-std/console.sol";
 
 /// @title Earning wS by supplying assets to Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -23,26 +25,22 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
-        // if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
-        //     revert IControllable.IncorrectInitParams();
-        // }
+        if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
+            revert IControllable.IncorrectInitParams();
+        }
 
-        // IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        // if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
-        //     revert IFarmingStrategy.BadFarm();
-        // }
-
-        // // CompoundFarmStrategyStorage storage $ = _getCompoundFarmStrategyStorage();
-        // // $.comet = IComet(farm.addresses[0]);
-        // // $.cometRewards = ICometRewards(farm.addresses[1]);
-        // address[] memory _assets = new address[](1);
-        // // _assets[0] = IComet(farm.addresses[0]).baseToken();
-
-        // __StrategyBase_init(addresses[0], StrategyIdLib.SILO_FARM, addresses[1], _assets, address(0), 0);
-
-        // __FarmingStrategyBase_init(addresses[0], nums[0]);
-
-        // IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+            revert IFarmingStrategy.BadFarm();
+        }
+        
+        address[] memory assets = new address[](1);
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        assets[0] = siloVault.asset();
+        __StrategyBase_init(addresses[0], StrategyIdLib.SILO_FARM, addresses[1], assets, address(0), 0);
+        __FarmingStrategyBase_init(addresses[0], nums[0]);
+        IERC20(assets[0]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -60,7 +58,10 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function description() external view returns (string memory) {}
+    function description() external view returns (string memory) {
+        IFactory.Farm memory farm = _getFarm();
+        return _genDesc(farm.addresses[1]);
+    }
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() external pure returns (uint[] memory proportions) {
@@ -88,36 +89,36 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        // addresses = new address[](0);
-        // ticks = new int24[](0);
-        // IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        // uint len = farms.length;
-        // variants = new string[](1);
-        // nums = new uint[](1);
-        // uint total;
-        // // nosemgrep
-        // for (uint i; i < len; ++i) {
-        //     // nosemgrep
-        //     IFactory.Farm memory farm = farms[i];
-        //     // nosemgrep
-        //     if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
-        //         ++total;
-        //     }
-        // }
-        // variants = new string[](total);
-        // nums = new uint[](total);
-        // total = 0;
-        // // nosemgrep
-        // for (uint i; i < len; ++i) {
-        //     // nosemgrep
-        //     IFactory.Farm memory farm = farms[i];
-        //     // nosemgrep
-        //     if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
-        //         nums[total] = i;
-        //         variants[total] = _genDesc(farm.addresses[0]);
-        //         ++total;
-        //     }
-        // }
+        addresses = new address[](0);
+        ticks = new int24[](0);
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        variants = new string[](1);
+        nums = new uint[](1);
+        uint total;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
+                ++total;
+            }
+        }
+        variants = new string[](total);
+        nums = new uint[](total);
+        total = 0;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
+                nums[total] = i;
+                variants[total] = _genDesc(farm.addresses[1]);
+                ++total;
+            }
+        }
     }
 
     /// @inheritdoc IStrategy
@@ -149,7 +150,16 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {}
+    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        IFactory.Farm memory farm = _getFarm();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        value = amounts[0];
+        if(value > 0) {
+            siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
+            $base.total += value;
+        }
+    }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
@@ -159,10 +169,18 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(
-        address[] memory assets_,
+        address[] memory, // _assets
         uint value,
         address receiver
-    ) internal override returns (uint[] memory amountsOut) {}
+    ) internal override returns (uint[] memory amountsOut) {
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        siloVault.withdraw(value, receiver, address(this), ISilo.CollateralType.Collateral);
+        amountsOut = new uint[](1);
+        amountsOut[0] = value;
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total -= value;
+    }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
@@ -174,10 +192,42 @@ contract SiloFarmStrategy is FarmingStrategyBase {
             address[] memory __rewardAssets,
             uint[] memory __rewardAmounts
         )
-    {}
+    {
+        __assets = assets();
+        __amounts = new uint[](__assets.length);
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        uint[] memory balanceBefore = new uint[](rwLen);
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+        IFactory.Farm memory farm = _getFarm();
+        ISiloIncentivesController(farm.addresses[0]).claimRewards(address(this));
+        for (uint i; i < rwLen; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
+        }
+    }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {}
+    function _compound() internal override {
+        address[] memory _assets = assets();
+        uint len = _assets.length;
+        uint[] memory amounts = new uint[](len);
+        //slither-disable-next-line uninitialized-local
+        bool notZero;
+
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(_assets[i]);
+            if (amounts[i] != 0) {
+                notZero = true;
+            }
+        }
+        if (notZero) {
+            _depositAssets(amounts, false);
+        }
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
@@ -196,6 +246,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         address[] memory, /*assets_*/
         uint[] memory amountsMax
     ) internal pure override(StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+
         return _previewDepositAssets(amountsMax);
     }
 
@@ -219,9 +270,9 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _genDesc(address comet) internal view returns (string memory) {
+    function _genDesc(address silo) internal view returns (string memory) {
         return string.concat(
-            // "Earn COMP by supplying ", IERC20Metadata(IComet(comet).baseToken()).symbol(), " to Compound III"
+            "Earn wS by supplying ", IERC20Metadata(ISilo(silo).asset()).symbol(), " to Silo V2"
         );
     }
 }
