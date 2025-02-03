@@ -151,7 +151,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo siloVault = ISilo(farm.addresses[1]);
         value = amounts[0];
-        if(value > 0) {
+        if (value > 0) {
             siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
             $base.total += value;
         }
@@ -244,7 +244,6 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         address[] memory, /*assets_*/
         uint[] memory amountsMax
     ) internal pure override(StrategyBase) returns (uint[] memory amountsConsumed, uint value) {
-
         return _previewDepositAssets(amountsMax);
     }
 
