@@ -33,7 +33,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
-        
+
         address[] memory siloAssets = new address[](1);
         ISilo siloVault = ISilo(farm.addresses[1]);
         siloAssets[0] = siloVault.asset();
