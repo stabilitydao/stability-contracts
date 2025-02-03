@@ -34,12 +34,12 @@ contract SiloFarmStrategy is FarmingStrategyBase {
             revert IFarmingStrategy.BadFarm();
         }
         
-        address[] memory assets = new address[](1);
+        address[] memory siloAssets = new address[](1);
         ISilo siloVault = ISilo(farm.addresses[1]);
-        assets[0] = siloVault.asset();
-        __StrategyBase_init(addresses[0], StrategyIdLib.SILO_FARM, addresses[1], assets, address(0), 0);
+        siloAssets[0] = siloVault.asset();
+        __StrategyBase_init(addresses[0], StrategyIdLib.SILO_FARM, addresses[1], siloAssets, address(0), 0);
         __FarmingStrategyBase_init(addresses[0], nums[0]);
-        IERC20(assets[0]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(siloAssets[0]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
@@ -95,12 +95,10 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         uint len = farms.length;
         variants = new string[](1);
         nums = new uint[](1);
+        //slither-disable-next-line uninitialized-local
         uint total;
-        // nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
                 ++total;
             }
@@ -108,11 +106,8 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         variants = new string[](total);
         nums = new uint[](total);
         total = 0;
-        // nosemgrep
         for (uint i; i < len; ++i) {
-            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
                 nums[total] = i;
                 variants[total] = _genDesc(farm);
@@ -150,6 +145,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
+    //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
@@ -168,6 +164,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
+    //slither-disable-next-line unused-return
     function _withdrawAssets(
         address[] memory, // _assets
         uint value,
@@ -183,6 +180,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc StrategyBase
+    //slither-disable-next-line unused-return
     function _claimRevenue()
         internal
         override
