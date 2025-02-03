@@ -60,7 +60,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFactory.Farm memory farm = _getFarm();
-        return _genDesc(farm.addresses[1]);
+        return _genDesc(farm);
     }
 
     /// @inheritdoc IStrategy
@@ -115,7 +115,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
             // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
                 nums[total] = i;
-                variants[total] = _genDesc(farm.addresses[1]);
+                variants[total] = _genDesc(farm);
                 ++total;
             }
         }
@@ -270,9 +270,9 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _genDesc(address silo) internal view returns (string memory) {
+    function _genDesc(IFactory.Farm memory farm) internal view returns (string memory) {
         return string.concat(
-            "Earn wS by supplying ", IERC20Metadata(ISilo(silo).asset()).symbol(), " to Silo V2"
+            "Earn wS by supplying ", CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ""), " to Silo V2"
         );
     }
 }
