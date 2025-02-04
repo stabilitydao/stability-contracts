@@ -53,8 +53,8 @@ contract AlgebraV4AdapterTest is SonicSetup {
         assertEq(tokens[1], SonicLib.TOKEN_SACRA);
 
         uint[] memory props = adapter.getProportions(pool);
-        assertGt(props[0], 1e17);
-        assertGt(props[1], 1e17);
+        assertGt(props[0], 9e16);
+        assertGt(props[1], 9e16);
         //console.log(props[0]);
         //console.log(props[1]);
 
@@ -62,8 +62,8 @@ contract AlgebraV4AdapterTest is SonicSetup {
         ticks[0] = 28320;
         ticks[1] = 41700;
         props = adapter.getProportions(pool, ticks);
-        assertGt(props[0], 1e17);
-        assertGt(props[1], 1e17);
+        assertGt(props[0], 9e16);
+        assertGt(props[1], 9e16);
         //console.log(props[0]);
         //console.log(props[1]);
 

@@ -27,15 +27,15 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testASF() public universalTest {
-        _addStrategy(22); // wS_WETH 3000
-        _addStrategy(23); // wS_WETH 1500
-        _addStrategy(24); // wS_BRUSH 3000
-        _addStrategy(25); // wS_BRUSH 1500
-        _addStrategy(26);
+        _addStrategy(23); // wS_WETH 3000
+        _addStrategy(24); // wS_WETH 1500
+        _addStrategy(25); // wS_BRUSH 3000
+        _addStrategy(26); // wS_BRUSH 1500
         _addStrategy(27);
         _addStrategy(28);
         _addStrategy(29);
         _addStrategy(30);
+        _addStrategy(31);
     }
 
     function _rebalance() internal override {
