@@ -266,10 +266,10 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     function _genDesc(IFactory.Farm memory farm) internal view returns (string memory) {
         return string.concat(
-            "Earn ", 
-            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), " and "), 
-            " supply APR by lending ", 
-            IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(), 
+            "Earn ",
+            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), " and "),
+            " supply APR by lending ",
+            IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
             " to Silo V2"
         );
     }
