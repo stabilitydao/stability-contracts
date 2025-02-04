@@ -7,7 +7,7 @@ import "./libs/FarmMechanicsLib.sol";
 import "../integrations/silo/ISiloIncentivesController.sol";
 import "../integrations/silo/ISilo.sol";
 
-/// @title Earning wS by supplying assets to Silo V2
+/// @title Earns incentives and supply APR on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -266,7 +266,11 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     function _genDesc(IFactory.Farm memory farm) internal view returns (string memory) {
         return string.concat(
-            "Earn wS by supplying ", CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ""), " to Silo V2"
+            "Earn ", 
+            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), " and "), 
+            " supply APR by lending ", 
+            IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(), 
+            " to Silo V2"
         );
     }
 }
