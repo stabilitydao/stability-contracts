@@ -6,7 +6,6 @@ import "./libs/StrategyIdLib.sol";
 import "./libs/FarmMechanicsLib.sol";
 import "../integrations/silo/ISiloIncentivesController.sol";
 import "../integrations/silo/ISilo.sol";
-import {console} from "forge-std/console.sol";
 
 /// @title Earning wS by supplying assets to Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
