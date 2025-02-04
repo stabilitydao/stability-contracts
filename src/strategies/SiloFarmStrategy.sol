@@ -8,6 +8,8 @@ import "../integrations/silo/ISiloIncentivesController.sol";
 import "../integrations/silo/ISilo.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
+/// Changelog:
+///   1.0.1: claimRevenue bugfix
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -16,7 +18,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -199,6 +201,9 @@ contract SiloFarmStrategy is FarmingStrategyBase {
             balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
         ISiloIncentivesController(farm.addresses[0]).claimRewards(address(this));
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
