@@ -171,7 +171,11 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     ) internal override returns (uint[] memory amountsOut) {
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
-        siloVault.withdraw(value, receiver, address(this), ISilo.CollateralType.Collateral);
+        uint toWithdraw = value;
+        if (address(this) == receiver) {
+            toWithdraw--;
+        }
+        siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
         amountsOut = new uint[](1);
         amountsOut[0] = value;
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
