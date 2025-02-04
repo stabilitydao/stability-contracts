@@ -23,7 +23,7 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
         // vm.rollFork(3273000); // Jan-10-2025 03:49:56 PM +UTC
         // vm.rollFork(3292762); // Jan-10-2025 07:11:31 PM +UTC
         // vm.rollFork(5169000); // Jan-23-2025 07:56:29 PM
-        vm.rollFork(5715000); // Jan-28-2025 09:03:09 PM +UTC
+        vm.rollFork(5916871); // Jan-30-2025 04:32:17 PM +UTC
     }
 
     function testSetupStub() external {}

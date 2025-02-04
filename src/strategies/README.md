@@ -36,7 +36,7 @@ Put third-party interfaces to `src/integrations/<protocol>/`.
 From now on you need to create draft Pull Request for merging from your branch to main branch of this repo. Use this link for creating PR with changing *your-branch* to your branch name:
 
 ```text
-https://github.com/stabilitydao/stability-contracts/compare/main..your-branch.?template=pr_strategy.md&labels=STRATEGY&quick_pull=1
+https://github.com/stabilitydao/stability-contracts/compare/main...YOUR-BRANCH?template=pr_strategy.md&labels=STRATEGY&quick_pull=1
 ```
 
 ## 3. Add swapper routes
