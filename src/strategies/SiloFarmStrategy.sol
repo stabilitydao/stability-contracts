@@ -224,6 +224,10 @@ contract SiloFarmStrategy is FarmingStrategyBase {
                 notZero = true;
             }
         }
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base.total = siloVault.convertToAssets(siloVault.balanceOf(address(this)));
         if (notZero) {
             _depositAssets(amounts, false);
         }
