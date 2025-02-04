@@ -268,7 +268,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         return string.concat(
             "Earn ",
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " supply APR by lending ",
+            " and supply APR by lending ",
             IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
             " to Silo V2"
         );
