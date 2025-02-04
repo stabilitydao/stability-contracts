@@ -93,6 +93,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         ticks = new int24[](0);
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
         uint _total;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
