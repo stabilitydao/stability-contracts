@@ -93,25 +93,22 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         ticks = new int24[](0);
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
-        variants = new string[](1);
-        nums = new uint[](1);
-        //slither-disable-next-line uninitialized-local
-        uint total;
+        uint _total;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
-                ++total;
+                ++_total;
             }
         }
-        variants = new string[](total);
-        nums = new uint[](total);
-        total = 0;
+        variants = new string[](_total);
+        nums = new uint[](_total);
+        _total = 0;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_FARM)) {
-                nums[total] = i;
-                variants[total] = _genDesc(farm);
-                ++total;
+                nums[_total] = i;
+                variants[_total] = _genDesc(farm);
+                ++_total;
             }
         }
     }
