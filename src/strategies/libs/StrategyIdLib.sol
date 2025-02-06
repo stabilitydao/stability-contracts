@@ -23,4 +23,5 @@ library StrategyIdLib {
     string internal constant SWAPX_FARM = "SwapX Farm";
     string internal constant SILO_FARM = "Silo Farm";
     string internal constant ALM_SHADOW_FARM = "ALM Shadow Farm";
+    string internal constant SILO = "Silo";
 }
