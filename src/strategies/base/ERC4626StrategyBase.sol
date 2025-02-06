@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "./StrategyBase.sol";
+import {console} from "forge-std/console.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// @author Alien Deployer (https://github.com/a17)
@@ -14,7 +15,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
@@ -93,7 +94,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
+    function _depositAssets(uint[] memory amounts, bool) internal virtual override returns (uint value) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
         value = IERC4626(u).deposit(amounts[0], address(this));
@@ -168,7 +169,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         address[] memory,
         uint value,
         address receiver
-    ) internal override returns (uint[] memory amountsOut) {
+    ) internal virtual override returns (uint[] memory amountsOut) {
         amountsOut = new uint[](1);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));

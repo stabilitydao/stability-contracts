@@ -25,6 +25,7 @@ import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol"
 import {ALMLib} from "../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import {SiloFarmStrategy} from "../src/strategies/SiloFarmStrategy.sol";
+import {SiloStrategy} from "../src/strategies/SiloStrategy.sol";
 import {ISiloIncentivesController} from "../src/integrations/silo/ISiloIncentivesController.sol";
 import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
 import {ALMShadowFarmStrategy} from "../src/strategies/ALMShadowFarmStrategy.sol";
@@ -224,6 +225,7 @@ library SonicLib {
     // Silo
     address public constant SILO_GAUGE_wS_008 = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
+    address public constant SILO_VAULT_USDC_20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -342,6 +344,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
