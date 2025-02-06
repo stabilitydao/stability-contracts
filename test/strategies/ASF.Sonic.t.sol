@@ -36,6 +36,7 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(29);
         _addStrategy(30);
         _addStrategy(31);
+        _addStrategy(33);
     }
 
     function _rebalance() internal override {
