@@ -75,12 +75,14 @@ library ALMLib {
             int24 oldTickUpper = $.positions[0].tickUpper;
             int24 oldMedianTick = oldTickLower + halfRange;
             int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
-            bool fillUpRebalanceTrigger = (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
+            bool fillUpRebalanceTrigger =
+                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
             bool outOfRange = currentTick < oldTickLower || currentTick > oldTickUpper;
             bool cantMoveRange = false;
             if (outOfRange) {
                 int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
-                int24 tickDistance = currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
+                int24 tickDistance =
+                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
                 tickDistance = tickDistance / tickSpacing * tickSpacing;
                 if (tickDistance == 0) {
                     cantMoveRange = true;
