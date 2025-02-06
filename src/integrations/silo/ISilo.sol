@@ -21,5 +21,10 @@ interface ISilo is IERC4626 {
     /// @dev Reverts for debt asset type
     function withdraw(uint256 _assets, address _receiver, address _owner, CollateralType collateralType) external returns (uint256 shares);
 
+    /// @inheritdoc IERC4626
+    /// @dev For protected (non-borrowable) collateral and debt, use:
+    /// `convertToAssets(uint256 _shares, AssetType _assetType)` with `AssetType.Protected` or `AssetType.Debt`
+    function convertToAssets(uint256 _shares) external view returns (uint256 assets);
+
     function asset() view external returns(address assetTokenAddres);
 }
