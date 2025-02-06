@@ -209,9 +209,9 @@ function setStrategyLogicConfig(StrategyLogicConfig memory config, address devel
 
 Call it via Safe Transaction Builder:
 
-* [New transasction](https://app.safe.global/apps/open?safe=matic:0x36780E69D38c8b175761c6C5F8eD42E61ee490E9&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
 * Connect signer wallet
-* Address: `0xa14EaAE76890595B3C7ea308dAEBB93863480EAD`
+* Address: `0xc184a3ecca684f2621c903a7943d85fa42f56671`
 
 <details>
   <summary>ABI</summary>
@@ -225,3 +225,4 @@ Call it via Safe Transaction Builder:
 * developer: 0x0000000000000000000000000000000000000000 (zero address for upgrades and NFT receiver address for new logic)
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
+* Upgrade vault's strategy [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
