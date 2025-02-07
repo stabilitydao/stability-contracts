@@ -50,7 +50,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         string id;
         address pool;
         uint farmId;
-        address underlying;
+        address[] strategyInitAddresses;
     }
 
     struct TestStrategiesVars {
@@ -233,7 +233,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         factory.updateFarm(nums[0], f);
                         ///
                     } else {
-                        initStrategyAddresses = new address[](2);
+                        initStrategyAddresses = new address[](10);
                         vm.expectRevert(IControllable.IncorrectInitParams.selector);
                         factory.deployVaultAndStrategy(
                             vars.types[k],
@@ -245,8 +245,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             ticks
                         );
 
-                        initStrategyAddresses = new address[](1);
-                        initStrategyAddresses[0] = strategies[i].underlying;
+                        initStrategyAddresses = strategies[i].strategyInitAddresses;
                         nums = new uint[](0);
                     }
 

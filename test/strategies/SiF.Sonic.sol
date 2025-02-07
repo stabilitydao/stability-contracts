@@ -21,7 +21,7 @@ contract SiloFarmStrategyTest is SonicSetup, UniversalTest {
                 id: StrategyIdLib.SILO_FARM,
                 pool: address(0),
                 farmId: farmId, // chains/SonicLib.sol
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }

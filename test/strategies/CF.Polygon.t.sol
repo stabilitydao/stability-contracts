@@ -11,7 +11,7 @@ contract CompoundFarmStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.COMPOUND_FARM,
                 pool: address(0),
                 farmId: 17, // chains/PolygonLib.sol
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }

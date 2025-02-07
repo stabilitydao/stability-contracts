@@ -53,7 +53,7 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.ICHI_SWAPX_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({id: StrategyIdLib.ICHI_SWAPX_FARM, pool: address(0), farmId: farmId, strategyInitAddresses: new address[](0)})
         );
     }
 }

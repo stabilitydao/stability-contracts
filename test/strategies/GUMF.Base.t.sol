@@ -19,7 +19,7 @@ contract GammaUniswapV3MerklFarmStrategyTest is BaseSetup, UniversalTest {
                 id: StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }
