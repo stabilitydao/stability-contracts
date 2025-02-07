@@ -21,7 +21,12 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
         address[] memory initStrategyAddresses = new address[](1);
         initStrategyAddresses[0] = yaernV3Vault;
         strategies.push(
-            Strategy({id: StrategyIdLib.YEARN, pool: address(0), farmId: type(uint).max, strategyInitAddresses: initStrategyAddresses})
+            Strategy({
+                id: StrategyIdLib.YEARN,
+                pool: address(0),
+                farmId: type(uint).max,
+                strategyInitAddresses: initStrategyAddresses
+            })
         );
     }
 
