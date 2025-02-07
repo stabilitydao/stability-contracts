@@ -10,9 +10,7 @@ interface ISiloIncentivesController is IDistributionManager {
      * @param _to Address that will be receiving the rewards
      * @return accruedRewards
      */
-    function claimRewards(
-        address _to
-    ) external returns (AccruedRewards[] memory accruedRewards);
+    function claimRewards(address _to) external returns (AccruedRewards[] memory accruedRewards);
 
     /**
      * @dev Claims reward for an user to the desired address, on all the assets of the lending pool,
@@ -26,5 +24,5 @@ interface ISiloIncentivesController is IDistributionManager {
         string[] calldata _programNames
     ) external returns (AccruedRewards[] memory accruedRewards);
 
-    function SHARE_TOKEN() view external returns(address);
+    function SHARE_TOKEN() external view returns (address);
 }

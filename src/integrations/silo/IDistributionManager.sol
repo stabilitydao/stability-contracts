@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 interface IDistributionManager {
     struct AccruedRewards {
-        uint256 amount;
+        uint amount;
         bytes32 programId;
         address rewardToken;
     }

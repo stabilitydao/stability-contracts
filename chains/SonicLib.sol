@@ -224,6 +224,8 @@ library SonicLib {
     // Silo
     address public constant SILO_GAUGE_wS_008 = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
+    address public constant SILO_VAULT_3_stS = 0x396922EF30Cf012973343f7174db850c7D265278;
+    address public constant SILO_VAULT_3_wS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;

@@ -31,7 +31,7 @@ contract GammaQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }

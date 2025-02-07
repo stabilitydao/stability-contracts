@@ -18,7 +18,7 @@ contract CompoundFarmStrategyTest is BaseSetup, UniversalTest {
                 id: StrategyIdLib.COMPOUND_FARM,
                 pool: address(0),
                 farmId: farmId, // chains/BaseLib.sol
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }

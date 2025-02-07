@@ -15,7 +15,7 @@ contract CompoundFarmStrategyTest is ArbitrumSetup, UniversalTest {
                 id: StrategyIdLib.COMPOUND_FARM,
                 pool: address(0),
                 farmId: farmId, // chains/ArbitrumLib.sol
-                underlying: address(0)
+                strategyInitAddresses: new address[](0)
             })
         );
     }
