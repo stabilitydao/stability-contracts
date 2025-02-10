@@ -225,7 +225,11 @@ library SonicLib {
     // Silo
     address public constant SILO_GAUGE_wS_008 = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
+    address public constant SILO_VAULT_USDC_8 = 0x4E216C15697C1392fE59e1014B009505E05810Df;
     address public constant SILO_VAULT_USDC_20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
+    address public constant SILO_VAULT_stS_3 = 0x396922EF30Cf012973343f7174db850c7D265278;
+    address public constant SILO_VAULT_wS_9 = 0x4bFead9975A64545C3594090327ef6666C2f6164;
+    address public constant SILO_VAULT_scUSD_15 = 0x2f5Dc399B1E31f9808D1EF1256917ABD2447c74f;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -353,6 +357,18 @@ library SonicLib {
         dexAggRouter[0] = IPlatform(platform).swapper();
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion
+
+        //region ----- Add strategy available init params -----
+        IFactory.StrategyAvailableInitParams memory p;
+        p.initAddresses = new address[](5);
+        p.initAddresses[0] = SILO_VAULT_USDC_8;
+        p.initAddresses[1] = SILO_VAULT_USDC_20;
+        p.initAddresses[2] = SILO_VAULT_stS_3;
+        p.initAddresses[3] = SILO_VAULT_wS_9;
+        p.initAddresses[4] = SILO_VAULT_scUSD_15;
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
+        //endregion -- Add strategy available init params -----
     }
 
     function routes()

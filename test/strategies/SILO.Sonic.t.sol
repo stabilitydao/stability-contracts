@@ -11,17 +11,16 @@ contract SiloStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiFSonic() public universalTest {
+        _addStrategy(SonicLib.SILO_VAULT_USDC_8);
         _addStrategy(SonicLib.SILO_VAULT_USDC_20);
+        _addStrategy(SonicLib.SILO_VAULT_stS_3);
+        _addStrategy(SonicLib.SILO_VAULT_wS_9);
+        _addStrategy(SonicLib.SILO_VAULT_scUSD_15);
     }
 
     function _addStrategy(address siloVault) internal {
         strategies.push(
-            Strategy({
-                id: StrategyIdLib.SILO,
-                pool: address(0),   
-                farmId: type(uint).max,
-                underlying: siloVault
-            })
+            Strategy({id: StrategyIdLib.SILO, pool: address(0), farmId: type(uint).max, underlying: siloVault})
         );
     }
 }

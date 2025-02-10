@@ -5,6 +5,7 @@ import "./base/ERC4626StrategyBase.sol";
 import "./libs/StrategyIdLib.sol";
 import "../integrations/silo/ISiloIncentivesController.sol";
 import "../integrations/silo/ISilo.sol";
+import "../integrations/silo/ISiloConfig.sol";
 
 /// @title Earns APR by lending assets on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -50,8 +51,9 @@ contract SiloStrategy is ERC4626StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        return ("", false);
+    function getSpecificName() external view override returns (string memory, bool) {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        return (CommonLib.u2s(_getMarketId($base._underlying)), true);
     }
 
     /// @inheritdoc IStrategy
@@ -65,7 +67,19 @@ contract SiloStrategy is ERC4626StrategyBase {
         public
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
-    {}
+    {
+        IFactory.StrategyAvailableInitParams memory params =
+            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        uint len = params.initAddresses.length;
+        variants = new string[](len);
+        addresses = new address[](len);
+        nums = new uint[](0);
+        ticks = new int24[](0);
+        for (uint i; i < len; ++i) {
+            variants[i] = _genDesc(params.initAddresses[i]);
+            addresses[i] = params.initAddresses[i];
+        }
+    }
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
@@ -98,7 +112,8 @@ contract SiloStrategy is ERC4626StrategyBase {
     ) internal virtual override returns (uint[] memory amountsOut) {
         amountsOut = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        amountsOut[0] = ISilo($base._underlying).withdraw(value, receiver, address(this), ISilo.CollateralType.Collateral);
+        ISilo silo = ISilo($base._underlying);
+        amountsOut[0] = silo.redeem(value, receiver, address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -108,10 +123,14 @@ contract SiloStrategy is ERC4626StrategyBase {
     function _genDesc(address silo) internal view returns (string memory) {
         return string.concat(
             "Earn ",
-            // CommonLib.implode(CommonLib.getSymbols(silo), ", "),
             " and supply APR by lending ",
             IERC20Metadata(ISilo(silo).asset()).symbol(),
-            " to Silo V2"
+            " to Silo V2 ",
+            CommonLib.u2s(_getMarketId(silo))
         );
+    }
+
+    function _getMarketId(address _silo) internal view returns (uint marketId) {
+        marketId = ISiloConfig(ISilo(_silo).siloConfig()).SILO_ID();
     }
 }
