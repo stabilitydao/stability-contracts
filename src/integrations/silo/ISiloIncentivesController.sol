@@ -26,5 +26,6 @@ interface ISiloIncentivesController is IDistributionManager {
         string[] calldata _programNames
     ) external returns (AccruedRewards[] memory accruedRewards);
 
+    function getAllProgramsNames() view external returns(string[] memory);
     function SHARE_TOKEN() view external returns(address);
 }

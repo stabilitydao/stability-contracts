@@ -26,5 +26,7 @@ interface ISilo is IERC4626 {
     /// `convertToAssets(uint256 _shares, AssetType _assetType)` with `AssetType.Protected` or `AssetType.Debt`
     function convertToAssets(uint256 _shares) external view returns (uint256 assets);
 
+    function siloConfig() view external returns(address siloConfig);
+
     function asset() view external returns(address assetTokenAddres);
 }
