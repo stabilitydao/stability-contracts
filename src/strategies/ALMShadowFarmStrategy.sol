@@ -24,6 +24,8 @@ import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
 /// @title Earn Shadow gauge rewards by Stability ALM
 /// Changelog:
+///   1.1.1: ALMStrategyBase 1.1.1: Not need re-balance when cant move range
+///   1.1.1: LPStrategyBase._swapForDepositProportion use try..catch
 ///   1.1.0: Fill-Up algo deposits to base range only; improved description
 /// @author Alien Deployer (https://github.com/a17)
 contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
@@ -34,7 +36,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

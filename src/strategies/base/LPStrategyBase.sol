@@ -7,6 +7,7 @@ import "../../interfaces/ILPStrategy.sol";
 
 /// @dev Base liquidity providing strategy
 /// Changelog:
+///   1.1.1: _swapForDepositProportion use try..catch
 ///   1.1.0: use customPriceImpactTolerance
 ///   1.0.4: _swapForDepositProportion support all amm adapters
 /// @author Alien Deployer (https://github.com/a17)
@@ -17,7 +18,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of LPStrategyBase implementation
-    string public constant VERSION_LP_STRATEGY_BASE = "1.1.0";
+    string public constant VERSION_LP_STRATEGY_BASE = "1.1.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.LPStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LPSTRATEGYBASE_STORAGE_LOCATION =
@@ -118,9 +119,13 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
 
     function _swapForDepositProportion(uint prop0Pool) internal returns (uint[] memory amountsToDeposit) {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
-        return LPStrategyLib.swapForDepositProportion(
+        try LPStrategyLib.swapForDepositProportion(
             platform(), $.ammAdapter, $.pool, assets(), prop0Pool, customPriceImpactTolerance()
-        );
+        ) returns (uint[] memory _amountsToDeposit) {
+            return _amountsToDeposit;
+        } catch {
+            return new uint[](assets().length);
+        }
     }
 
     function _getLPStrategyBaseStorage() internal pure returns (LPStrategyBaseStorage storage $) {

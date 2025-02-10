@@ -392,7 +392,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](33);
+        _farms = new IFactory.Farm[](34);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -426,8 +426,9 @@ library SonicLib {
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 12000, 5000, address(0));
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000, address(0));
         _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS_020);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 800, 400, address(0));
     }
 
     function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange, address secondRewardToken) internal view returns(IFactory.Farm memory) {
