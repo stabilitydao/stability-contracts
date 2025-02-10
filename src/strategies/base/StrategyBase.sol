@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.1.2: call hardWorkMintFeeCallback only on positive amounts
 ///   2.1.1: extractFees fixed
 ///   2.1.0: customPriceImpactTolerance
 ///   2.0.0: previewDepositAssetsWrite; use platform.getCustomVaultFee
@@ -23,7 +24,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.1.1";
+    string public constant VERSION_STRATEGY_BASE = "2.1.2";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -141,7 +142,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 // maybe this is not final logic
                 // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
                 // but for many strategies linked to CVault if this feature will be implemented
-                IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
+
+                if (StrategyLib.isPositiveAmountInArray(__amounts)) {
+                    IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
+                }
                 // call empty method only for coverage or them can be overriden
                 _liquidateRewards(__assets[0], __rewardAssets, __rewardAmounts);
                 _processRevenue(__assets, __amounts);

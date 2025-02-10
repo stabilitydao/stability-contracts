@@ -246,6 +246,16 @@ library StrategyLib {
         }
     }
 
+    function isPositiveAmountInArray(uint[] memory amounts) external pure returns (bool) {
+        uint len = amounts.length;
+        for (uint i; i < len; ++i) {
+            if (amounts[i] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
     //     uint total;
     //     IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
