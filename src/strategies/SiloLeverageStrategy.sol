@@ -8,6 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
@@ -185,8 +186,19 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     }
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        return ("", false);
+    function getSpecificName() external view override returns (string memory, bool) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        address lendingVault = $.lendingVault;
+        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
+        string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
+        (,, uint targetLeverage) = _getLtvData(lendingVault, $.targetLeveragePercent);
+        return (string .concat(
+            CommonLib.u2s(siloId),
+            " ",
+            borrowAssetSymbol,
+            " ",
+            _formatLeverageShort(targetLeverage)
+        ), false);
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -217,6 +229,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         }
     }
 
+    /// @inheritdoc ILeverageLendingStrategy
     function state()
         external
         view
@@ -476,5 +489,11 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
         swapper.swap(tokenIn, tokenOut, amount, 1000);
         amountOut = StrategyLib.balance(tokenOut) - outBalanceBefore;
+    }
+
+    function _formatLeverageShort(uint amount) internal pure returns (string memory) {
+        uint intAmount = amount / 100_00;
+        uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
+        return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
     }
 }

@@ -63,6 +63,12 @@ interface ILeverageLendingStrategy {
     /// @return trusted True if only oracle prices was used for calculation.
     function realSharePrice() external view returns (uint sharePrice, bool trusted);
 
+    /// @notice Show leverage main data
+    /// @return ltv Current LTV with 4 decimals. 90_00 is 90%.
+    /// @return leverage Current leverage multiplier with 4 decimals
+    /// @return collateralAmount Current amount of collateral asset (strategy asset)
+    /// @return debtAmount Current debt of borrowed asset
+    /// @return targetLeveragePercent Configurable percent of max leverage. 90_00 is 90%.
     function state()
         external
         view
