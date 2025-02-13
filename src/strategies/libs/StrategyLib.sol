@@ -263,6 +263,13 @@ library StrategyLib {
         return false;
     }
 
+    function swap(address platform, address tokenIn, address tokenOut, uint amount) external returns (uint amountOut) {
+        uint outBalanceBefore = balance(tokenOut);
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, 1000);
+        amountOut = balance(tokenOut) - outBalanceBefore;
+    }
+
     // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
     //     uint total;
     //     IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
