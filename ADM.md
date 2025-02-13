@@ -226,3 +226,17 @@ Call it via Safe Transaction Builder:
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
 * Upgrade vault's strategy [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
+
+### Init contest gems rewards
+
+Use `IMerkleDistributor.setupCampaign`.
+
+1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+2. `0x0391aBDCFaB86947d93f9dd032955733B639416b` (sGEM1)
+3. Enter ABI: `[{"type": "function", "name": "setupCampaign", "inputs": [{"name": "campaignId", "type": "string", "internalType": "string"}, {"name": "token", "type": "address", "internalType": "address"}, {"name": "totalAmount", "type": "uint256", "internalType": "uint256"}, {"name": "merkleRoot", "type": "bytes32", "internalType": "bytes32"}, {"name": "mint", "type": "bool", "internalType": "bool"}], "outputs": [], "stateMutability": "nonpayable"}]`
+4. campignId: `y<num>`
+5. token: `0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d`
+6. totalAmount: `900000000000000000000000`
+7. merkleRoot: `<copy>`
+8. mint: `true`
+
