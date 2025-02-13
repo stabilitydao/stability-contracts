@@ -3,6 +3,16 @@ pragma solidity ^0.8.23;
 
 interface ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    event LeverageLendingHardWork(
+        int realApr, int earned, uint realTvl, uint duration, uint realSharePrice, uint supplyApr, uint borrowApr
+    );
+    event LeverageLendingHealth(uint ltv, uint leverage);
+    event TargetLeveragePercent(uint value);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -46,8 +56,23 @@ interface ILeverageLendingStrategy {
     enum CurrentAction {
         None,
         Deposit,
-        Withdraw
+        Withdraw,
+        DecreaseLtv,
+        IncreaseLtv
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      WRITE FUNCTIONS                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Re-balance debt
+    /// @param newLtv Target LTV after re-balancing with 4 decimals. 90_00 is 90%.
+    /// @return resultLtv LTV after re-balance. For static calls.
+    function rebalanceDebt(uint newLtv) external returns (uint resultLtv);
+
+    /// @notice Change target leverage percent
+    /// @param value Value with 4 decimals, 90_00 is 90%.
+    function setTargetLeveragePercent(uint value) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -65,12 +90,25 @@ interface ILeverageLendingStrategy {
 
     /// @notice Show leverage main data
     /// @return ltv Current LTV with 4 decimals. 90_00 is 90%.
+    /// @return maxLtv Maximum LTV with 4 decimals. 90_00 is 90%.
     /// @return leverage Current leverage multiplier with 4 decimals
     /// @return collateralAmount Current amount of collateral asset (strategy asset)
     /// @return debtAmount Current debt of borrowed asset
     /// @return targetLeveragePercent Configurable percent of max leverage. 90_00 is 90%.
-    function state()
+    function health()
         external
         view
-        returns (uint ltv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent);
+        returns (
+            uint ltv,
+            uint maxLtv,
+            uint leverage,
+            uint collateralAmount,
+            uint debtAmount,
+            uint targetLeveragePercent
+        );
+
+    /// @notice Show APRs
+    /// @return supplyApr APR of supplying with 5 decimals.
+    /// @return borrowApr APR of borrowing with 5 decimals.
+    function getSupplyAndBorrowAprs() external view returns (uint supplyApr, uint borrowApr);
 }

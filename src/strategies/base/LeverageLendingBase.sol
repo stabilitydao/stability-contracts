@@ -7,6 +7,9 @@ import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {IHardWorker} from "../../interfaces/IHardWorker.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
 
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -40,6 +43,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.flashLoanVault = params.flashLoanVault;
         $.helper = params.helper;
         $.targetLeveragePercent = 87_00;
+        emit TargetLeveragePercent(87_00);
         address[] memory _assets = new address[](1);
         _assets[0] = params.collateralAsset;
         __StrategyBase_init(params.platform, params.strategyId, params.vault, _assets, address(0), type(uint).max);
@@ -48,6 +52,28 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc ILeverageLendingStrategy
+    function rebalanceDebt(uint newLtv) external returns (uint resultLtv) {
+        IPlatform _platform = IPlatform(platform());
+        IHardWorker hardworker = IHardWorker(_platform.hardWorker());
+        address rebalancer = _platform.rebalancer();
+        if (
+            msg.sender != rebalancer && !_platform.isOperator(msg.sender)
+                && !hardworker.dedicatedServerMsgSender(msg.sender)
+        ) {
+            revert IControllable.IncorrectMsgSender();
+        }
+
+        resultLtv = _rebalanceDebt(newLtv);
+    }
+
+    /// @inheritdoc ILeverageLendingStrategy
+    function setTargetLeveragePercent(uint value) external onlyOperator {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        $.targetLeveragePercent = value;
+        emit TargetLeveragePercent(value);
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -86,9 +112,23 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         return true;
     }
 
+    /// @inheritdoc IStrategy
+    function getRevenue() external pure virtual returns (address[] memory assets_, uint[] memory amounts) {}
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc StrategyBase
+    function _compound() internal virtual override {}
+
+    /// @inheritdoc StrategyBase
+    function _processRevenue(
+        address[] memory, /*assets_*/
+        uint[] memory /*amountsRemaining*/
+    ) internal pure virtual override returns (bool needCompound) {
+        needCompound = true;
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(
@@ -112,6 +152,12 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override returns (uint earnedExchangeAsset) {}
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*         Must be implemented by derived contracts           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _rebalanceDebt(uint newLtv) internal virtual returns (uint resultLtv);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

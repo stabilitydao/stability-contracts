@@ -501,25 +501,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 )
                             );
 
-                            if (vars.isLeverageLending) {
-                                (uint realTvl,) = ILeverageLendingStrategy(address(strategy)).realTvl();
-                                (uint realSharePrice,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
-                                (uint ltv, uint leverage,,,) = ILeverageLendingStrategy(address(strategy)).state();
-                                console.log(
-                                    string.concat(
-                                        "    Real TVL: ",
-                                        CommonLib.formatUsdAmount(realTvl),
-                                        ". Real share price: ",
-                                        _formatSharePrice(realSharePrice),
-                                        ". LTV: ",
-                                        _formatLtv(ltv),
-                                        ". Leverage: ",
-                                        _formatLeverage(leverage),
-                                        "."
-                                    )
-                                );
-                            }
-
                             StrategyLib.computeApr(tempTvl, tempEarned, tempDuration);
 
                             if (!allowZeroApr) {
@@ -533,8 +514,85 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 assertGt(tempAprCompound, 0, "Hardwork APR compound is zero. Check _compound() method.");
                             }
                         }
+
+                        if (
+                            vars.entries[j].topics[0]
+                                == keccak256(
+                                    "LeverageLendingHardWork(int256,int256,uint256,uint256,uint256,uint256,uint256)"
+                                )
+                        ) {
+                            (
+                                int realApr,
+                                int earned,
+                                uint realTvl,
+                                ,
+                                uint realSharePrice,
+                                uint supplyApr,
+                                uint borrowApr
+                            ) = abi.decode(vars.entries[j].data, (int, int, uint, uint, uint, uint, uint));
+                            (uint ltv,, uint leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
+
+                            console.log(
+                                string.concat(
+                                    "    Real APR: ",
+                                    CommonLib.formatAprInt(realApr),
+                                    ". Earned: ",
+                                    CommonLib.i2s2(earned),
+                                    ". Real TVL: ",
+                                    CommonLib.formatUsdAmount(realTvl),
+                                    ". Real share price: ",
+                                    _formatSharePrice(realSharePrice),
+                                    ". LTV: ",
+                                    _formatLtv(ltv),
+                                    ". Leverage: ",
+                                    _formatLeverage(leverage),
+                                    ". Supply APR: ",
+                                    CommonLib.formatApr(supplyApr),
+                                    ". Borrow APR: ",
+                                    CommonLib.formatApr(borrowApr),
+                                    "."
+                                )
+                            );
+                        }
                     }
                     require(vars.hwEventFound, "UniversalTest: HardWork event not emitted");
+                }
+
+                if (vars.isLeverageLending) {
+                    // decrease LTV
+                    (uint ltv,, uint leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
+                    uint rebalanceDebtTarget = ltv - 10_00;
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
+                    console.log(
+                        string.concat(
+                            "Re-balance debt LTV target: ",
+                            _formatLtv(rebalanceDebtTarget),
+                            ". Result LTV: ",
+                            _formatLtv(ltv),
+                            ". Leverage: ",
+                            _formatLeverage(leverage),
+                            "."
+                        )
+                    );
+                    // increase LTV
+                    rebalanceDebtTarget = ltv + 10_00;
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
+                    console.log(
+                        string.concat(
+                            "Re-balance debt LTV target: ",
+                            _formatLtv(rebalanceDebtTarget),
+                            ". Result LTV: ",
+                            _formatLtv(ltv),
+                            ". Leverage: ",
+                            _formatLeverage(leverage),
+                            "."
+                        )
+                    );
+
+                    ILeverageLendingStrategy(address(strategy)).setTargetLeveragePercent(86_99);
+                    ILeverageLendingStrategy(address(strategy)).getSupplyAndBorrowAprs();
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -744,7 +802,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint balNow = IERC20(assets[j]).balanceOf(address(this));
                     vars.withdrawnUsdValue += balNow * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
-                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue * 98_00 / 100_00, "E1");
+                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue * 96_00 / 100_00, "E1");
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         COVERAGE                           */

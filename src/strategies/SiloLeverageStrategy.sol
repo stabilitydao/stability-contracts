@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/Test.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
+import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
@@ -27,6 +26,8 @@ import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {IBVault} from "../integrations/balancer/IBVault.sol";
 
+/// @title Silo V2 leverage strategy
+/// @author Alien Deployer (https://github.com/a17)
 contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     using SafeERC20 for IERC20;
 
@@ -100,6 +101,11 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             // pay flash loan
             IERC20(tokens[0]).safeTransfer(flashLoanVault, amounts[0] + feeAmounts[0]);
 
+            // supply remaining balance
+            ISilo($.lendingVault).deposit(
+                StrategyLib.balance(tokens[0]), address(this), ISilo.CollateralType.Collateral
+            );
+
             // reset temp vars
             $.tempBorrowAmount = 0;
         }
@@ -114,7 +120,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             ISilo($.borrowingVault).repay(amounts[0], address(this));
 
             // withdraw
-            uint collateralAmountTotal = IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
+            uint collateralAmountTotal = _totalCollateral(lendingVault);
             collateralAmountTotal -= collateralAmountTotal / 1000;
             ISilo(lendingVault).withdraw(
                 Math.min(tempCollateralAmount, collateralAmountTotal),
@@ -135,6 +141,58 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             // reset temp vars
             $.tempCollateralAmount = 0;
         }
+
+        if ($.tempAction == CurrentAction.DecreaseLtv) {
+            // tokens[0] is collateral asset
+            address lendingVault = $.lendingVault;
+
+            // swap
+            _swap(tokens[0], $.borrowAsset, amounts[0]);
+
+            // repay
+            ISilo($.borrowingVault).repay(StrategyLib.balance($.borrowAsset), address(this));
+
+            // withdraw amount to pay flash loan
+            uint toWithdraw = amounts[0] + feeAmounts[0] - StrategyLib.balance(tokens[0]);
+            ISilo(lendingVault).withdraw(toWithdraw, address(this), address(this), ISilo.CollateralType.Collateral);
+
+            // pay flash loan
+            IERC20(tokens[0]).safeTransfer(flashLoanVault, amounts[0] + feeAmounts[0]);
+        }
+
+        if ($.tempAction == CurrentAction.IncreaseLtv) {
+            // tokens[0] is collateral asset
+            uint tempBorrowAmount = $.tempBorrowAmount;
+            address lendingVault = $.lendingVault;
+
+            // supply
+            ISilo($.lendingVault).deposit(amounts[0], address(this), ISilo.CollateralType.Collateral);
+
+            // borrow
+            ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
+
+            // swap
+            _swap($.borrowAsset, tokens[0], tempBorrowAmount);
+
+            // withdraw or supply if need
+            uint bal = StrategyLib.balance(tokens[0]);
+            uint remaining = bal < (amounts[0] + feeAmounts[0]) ? amounts[0] + feeAmounts[0] - bal : 0;
+            if (remaining != 0) {
+                ISilo(lendingVault).withdraw(remaining, address(this), address(this), ISilo.CollateralType.Collateral);
+            } else {
+                uint toSupply = bal - (amounts[0] + feeAmounts[0]);
+                ISilo($.lendingVault).deposit(toSupply, address(this), ISilo.CollateralType.Collateral);
+            }
+
+            // pay flash loan
+            IERC20(tokens[0]).safeTransfer(flashLoanVault, amounts[0] + feeAmounts[0]);
+
+            // reset temp vars
+            $.tempBorrowAmount = 0;
+        }
+
+        (uint ltv,, uint leverage,,,) = health();
+        emit LeverageLendingHealth(ltv, leverage);
 
         $.tempAction = CurrentAction.None;
     }
@@ -177,8 +235,6 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         }
     }
 
-    function getRevenue() external view returns (address[] memory assets_, uint[] memory amounts) {}
-
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
@@ -192,13 +248,10 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
         string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
         (,, uint targetLeverage) = _getLtvData(lendingVault, $.targetLeveragePercent);
-        return (string .concat(
-            CommonLib.u2s(siloId),
-            " ",
-            borrowAssetSymbol,
-            " ",
-            _formatLeverageShort(targetLeverage)
-        ), false);
+        return (
+            string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
+            false
+        );
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -208,11 +261,10 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         address lendingVault = $.lendingVault;
         address collateralAsset = $.collateralAsset;
         address borrowAsset = $.borrowAsset;
-        uint collateralAmount = StrategyLib.balance(collateralAsset)
-            + IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
+        uint collateralAmount = StrategyLib.balance(collateralAsset) + _totalCollateral(lendingVault);
         (uint collateralPrice, bool CollateralPriceTrusted) = priceReader.getPrice(collateralAsset);
         uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
-        uint borrowedAmount = ISilo($.borrowingVault).maxRepay(address(this));
+        uint borrowedAmount = _totalDebt($.borrowingVault);
         (uint borrowAssetPrice, bool borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
         uint borrowAssetUsd = borrowedAmount * borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
         tvl = collateralUsd - borrowAssetUsd;
@@ -220,7 +272,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     }
 
     /// @inheritdoc ILeverageLendingStrategy
-    function realSharePrice() external view returns (uint sharePrice, bool trusted) {
+    function realSharePrice() public view returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl();
         uint totalSupply = IERC20(vault()).totalSupply();
@@ -230,21 +282,27 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     }
 
     /// @inheritdoc ILeverageLendingStrategy
-    function state()
-        external
+    function health()
+        public
         view
-        returns (uint ltv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent)
+        returns (
+            uint ltv,
+            uint maxLtv,
+            uint leverage,
+            uint collateralAmount,
+            uint debtAmount,
+            uint targetLeveragePercent
+        )
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         address lendingVault = $.lendingVault;
         address collateralAsset = $.collateralAsset;
 
-        ltv = ISiloLens($.helper).getLtv($.lendingVault, address(this));
+        ltv = ISiloLens($.helper).getLtv(lendingVault, address(this));
         ltv = ltv * INTERNAL_PRECISION / 1e18;
 
-        collateralAmount = StrategyLib.balance(collateralAsset)
-            + IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
-        debtAmount = ISilo($.borrowingVault).maxRepay(address(this));
+        collateralAmount = StrategyLib.balance(collateralAsset) + _totalCollateral(lendingVault);
+        debtAmount = _totalDebt($.borrowingVault);
 
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         (uint _realTvl,) = realTvl();
@@ -253,6 +311,64 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         leverage = collateralUsd * INTERNAL_PRECISION / _realTvl;
 
         targetLeveragePercent = $.targetLeveragePercent;
+
+        (maxLtv,,) = _getLtvData(lendingVault, targetLeveragePercent);
+    }
+
+    /// @inheritdoc ILeverageLendingStrategy
+    function getSupplyAndBorrowAprs() external view returns (uint supplyApr, uint borrowApr) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        return _getDepositAndBorrowAprs($.helper, $.lendingVault, $.borrowingVault);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                   LEVERAGE LENDING BASE                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
+        (uint ltv, uint maxLtv,, uint collateralAmount,,) = health();
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        LeverageLendingAddresses memory v = LeverageLendingAddresses({
+            collateralAsset: $.collateralAsset,
+            borrowAsset: $.borrowAsset,
+            lendingVault: $.lendingVault,
+            borrowingVault: $.borrowingVault
+        });
+
+        uint tvlPricedInCollateralAsset = _calcTotal(v);
+
+        // here is the math that works:
+        // collateral_value - debt_value = real_TVL
+        // debt_value * PRECISION / collateral_value = LTV
+        // ---
+        // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
+
+        uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
+        address[] memory flashAssets = new address[](1);
+        flashAssets[0] = v.collateralAsset;
+        uint[] memory flashAmounts = new uint[](1);
+
+        if (newLtv < ltv) {
+            $.tempAction = CurrentAction.DecreaseLtv;
+
+            // need decrease debt and collateral
+            uint collateralDiff = collateralAmount - newCollateralValue;
+            flashAmounts[0] = collateralDiff;
+        } else {
+            $.tempAction = CurrentAction.IncreaseLtv;
+
+            // need increase debt and collateral
+            uint collateralDiff = newCollateralValue - collateralAmount;
+            (uint priceCtoB,) = _getPrices(v.lendingVault, v.borrowingVault);
+            flashAmounts[0] = collateralDiff;
+            $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
+        }
+
+        IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
+
+        $.tempAction = CurrentAction.None;
+        (resultLtv,,,,,) = health();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -264,9 +380,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         assets_ = assets();
         amounts_ = new uint[](1);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        IERC4626 lendingVault = IERC4626($.lendingVault);
-        uint lendShares = lendingVault.balanceOf(address(this));
-        amounts_[0] = lendingVault.convertToAssets(lendShares);
+        amounts_[0] = _totalCollateral($.lendingVault);
     }
 
     /// @inheritdoc StrategyBase
@@ -304,12 +418,20 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             __amounts[0] = totalNow - totalWas;
         }
         $base.total = totalNow;
-        //console.log('total was', totalWas);
-        //console.log('total now', totalNow);
-    }
 
-    /// @inheritdoc StrategyBase
-    function _compound() internal override {}
+        {
+            int earned = int(totalNow) - int(totalWas);
+            (uint _realTvl,) = realTvl();
+            uint duration = block.timestamp - $base.lastHardWork;
+            int realApr = StrategyLib.computeAprInt(_realTvl, earned, duration);
+            (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
+            (uint sharePrice,) = realSharePrice();
+            emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
+        }
+
+        (uint ltv,, uint leverage,,,) = health();
+        emit LeverageLendingHealth(ltv, leverage);
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
@@ -341,7 +463,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amounts[0] * targetLeverage / INTERNAL_PRECISION;
 
-        (uint priceCtoB,) = _getPrices(ISilo(v.lendingVault).config(), v.lendingVault, v.borrowingVault);
+        (uint priceCtoB,) = _getPrices(v.lendingVault, v.borrowingVault);
         $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
 
         IBVault($.flashLoanVault).flashLoan(address(this), _assets, flashAmounts, "");
@@ -376,7 +498,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
 
         (uint maxLtv, uint maxLeverage,) = _getLtvData(v.lendingVault, $.targetLeveragePercent);
 
-        (uint priceCtoB,) = _getPrices(ISilo(v.lendingVault).config(), v.lendingVault, $.borrowingVault);
+        (uint priceCtoB,) = _getPrices(v.lendingVault, v.borrowingVault);
 
         {
             uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
@@ -403,14 +525,6 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
-    }
-
-    /// @inheritdoc StrategyBase
-    function _processRevenue(
-        address[] memory, /*assets_*/
-        uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {
-        needCompound = true;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -442,20 +556,12 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function _getPrices(
-        address configContract,
-        address lendVault,
-        address debtVault
-    ) internal view returns (uint priceCtoB, uint priceBtoC) {
-        ISiloConfig.ConfigData memory collateralConfig = ISiloConfig(configContract).getConfig(lendVault);
+    function _getPrices(address lendVault, address debtVault) internal view returns (uint priceCtoB, uint priceBtoC) {
+        ISiloConfig siloConfig = ISiloConfig(ISilo(lendVault).config());
+        ISiloConfig.ConfigData memory collateralConfig = siloConfig.getConfig(lendVault);
         address collateralOracle = collateralConfig.solvencyOracle;
-        ISiloConfig.ConfigData memory borrowConfig = ISiloConfig(configContract).getConfig(debtVault);
+        ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
-
-        //console.log('collateralOracle', collateralOracle);
-        //console.log('borrowOracle', borrowOracle);
-        //console.log('collateral token', collateralConfig.token);
-
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
             priceCtoB = ISiloOracle(collateralOracle).quote(
                 10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
@@ -468,20 +574,12 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         } else {
             revert("Not implemented yet");
         }
-
-        //console.log('priceCtoB', priceCtoB);
-        //console.log('priceBtoC', priceBtoC);
     }
 
     function _calcTotal(LeverageLendingAddresses memory v) internal view returns (uint) {
-        uint collateralAmount = IERC4626(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault));
-        uint borrowedAmount = ISilo(v.borrowingVault).maxRepay(address(this));
-        //console.log('collateralAmount', collateralAmount);
-        //console.log('borrowedAmount', borrowedAmount);
-        (, uint priceBtoC) = _getPrices(ISilo(v.lendingVault).config(), v.lendingVault, v.borrowingVault);
-        uint borrowedAmountPricedInCollateral = borrowedAmount * priceBtoC / 1e18;
-        //console.log("Total", collateralAmount - borrowedAmountPricedInCollateral);
-        return collateralAmount - borrowedAmountPricedInCollateral;
+        (, uint priceBtoC) = _getPrices(v.lendingVault, v.borrowingVault);
+        uint borrowedAmountPricedInCollateral = _totalDebt(v.borrowingVault) * priceBtoC / 1e18;
+        return _totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
     }
 
     function _swap(address tokenIn, address tokenOut, uint amount) internal returns (uint amountOut) {
@@ -495,5 +593,22 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         uint intAmount = amount / 100_00;
         uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
         return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
+    }
+
+    function _totalCollateral(address lendingVault) internal view returns (uint) {
+        return IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
+    }
+
+    function _totalDebt(address borrowingVault) internal view returns (uint) {
+        return ISilo(borrowingVault).maxRepay(address(this));
+    }
+
+    function _getDepositAndBorrowAprs(
+        address lens,
+        address lendingVault,
+        address debtVault
+    ) internal view returns (uint depositApr, uint borrowApr) {
+        depositApr = ISiloLens(lens).getDepositAPR(lendingVault) * ConstantsLib.DENOMINATOR / 1e18;
+        borrowApr = ISiloLens(lens).getBorrowAPR(debtVault) * ConstantsLib.DENOMINATOR / 1e18;
     }
 }
