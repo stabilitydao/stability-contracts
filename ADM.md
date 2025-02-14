@@ -62,7 +62,7 @@ function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitP
 ```
 </details>
 
-* [Factory polygonscan](https://polygonscan.com/address/0xa14EaAE76890595B3C7ea308dAEBB93863480EAD#writeProxyContract)
+* [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
 * Connect operator wallet
 * `4. setStrategyAvailableInitParams (0x6c2713a3)`
 * fill params
