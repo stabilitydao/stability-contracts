@@ -21,7 +21,12 @@ contract SwapXFarmStrategyTest is SonicSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.SWAPX_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({
+                id: StrategyIdLib.SWAPX_FARM,
+                pool: address(0),
+                farmId: farmId,
+                strategyInitAddresses: new address[](0)
+            })
         );
     }
 }

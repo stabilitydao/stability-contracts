@@ -18,8 +18,15 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
     }
 
     function _addStrategy(address yaernV3Vault) internal {
+        address[] memory initStrategyAddresses = new address[](1);
+        initStrategyAddresses[0] = yaernV3Vault;
         strategies.push(
-            Strategy({id: StrategyIdLib.YEARN, pool: address(0), farmId: type(uint).max, underlying: yaernV3Vault})
+            Strategy({
+                id: StrategyIdLib.YEARN,
+                pool: address(0),
+                farmId: type(uint).max,
+                strategyInitAddresses: initStrategyAddresses
+            })
         );
     }
 

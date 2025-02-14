@@ -223,6 +223,13 @@ library StrategyLib {
         return earned * 1e18 * ConstantsLib.DENOMINATOR * uint(365) / tvl / (duration * 1e18 / 1 days);
     }
 
+    function computeAprInt(uint tvl, int earned, uint duration) public pure returns (int) {
+        if (tvl == 0 || duration == 0) {
+            return 0;
+        }
+        return earned * int(1e18) * int(ConstantsLib.DENOMINATOR) * int(365) / int(tvl) / int(duration * 1e18 / 1 days);
+    }
+
     function assetsAmountsWithBalances(
         address[] memory assets_,
         uint[] memory amounts_
@@ -244,6 +251,23 @@ library StrategyLib {
                 break;
             }
         }
+    }
+
+    function isPositiveAmountInArray(uint[] memory amounts) external pure returns (bool) {
+        uint len = amounts.length;
+        for (uint i; i < len; ++i) {
+            if (amounts[i] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function swap(address platform, address tokenIn, address tokenOut, uint amount) external returns (uint amountOut) {
+        uint outBalanceBefore = balance(tokenOut);
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, 1000);
+        amountOut = balance(tokenOut) - outBalanceBefore;
     }
 
     // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {

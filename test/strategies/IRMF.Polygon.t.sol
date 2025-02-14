@@ -20,7 +20,12 @@ contract IchiRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.ICHI_RETRO_MERKL_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({
+                id: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
+                pool: address(0),
+                farmId: farmId,
+                strategyInitAddresses: new address[](0)
+            })
         );
     }
 
