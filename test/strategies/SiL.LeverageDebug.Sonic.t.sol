@@ -16,8 +16,8 @@ import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
 contract SiloLeverageLendingStrategyDebugTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
-    //address public constant STRATEGY = 0x811002015AC45D551A3D962d8375A7B16Dede6BE; // S-stS
-    address public constant STRATEGY = 0xfF9C35acDA4b136F71B1736B2BDFB5479f111C4A; // stS-S
+    address public constant STRATEGY = 0x811002015AC45D551A3D962d8375A7B16Dede6BE; // S-stS
+    //address public constant STRATEGY = 0xfF9C35acDA4b136F71B1736B2BDFB5479f111C4A; // stS-S
     address public vault;
     address public multisig;
     IFactory public factory;
@@ -30,12 +30,36 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         factory = IFactory(IPlatform(IControllable(STRATEGY).platform()).factory());
     }
 
-    function testSiLHardWork() public {
-        //deal(SonicLib.TOKEN_wS, STRATEGY, 500e18);
-        //_deposit(10000e18);
-        //vm.roll(block.number + 6);
-        //_withdrawAll();
+    function testSiloDepositWithdrawUsersImpact() public {
+        address user1 = address(1);
+        address user2 = address(2);
+        uint user1Deposit = 1_000e18;
+        uint user2Deposit = 10_000e18;
 
+        uint originOracleSharePrice = _getOracledSharePrice();
+
+        _depositForUser(user1, user1Deposit);
+        assertEq(originOracleSharePrice, _getOracledSharePrice());
+
+        _depositForUser(user2, user2Deposit);
+        assertEq(originOracleSharePrice, _getOracledSharePrice());
+
+        _depositForUser(user2, user2Deposit);
+        assertEq(originOracleSharePrice, _getOracledSharePrice());
+
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(user2);
+        assertEq(originOracleSharePrice, _getOracledSharePrice());
+
+        _withdrawAllForUser(user1);
+        assertEq(originOracleSharePrice, _getOracledSharePrice());
+    }
+
+    function _getOracledSharePrice() internal view returns (uint) {
+        return IStrategy(STRATEGY).total() * 1e18 / IERC20(vault).totalSupply();
+    }
+
+    function testSiLHardWork() public {
         vm.recordLogs();
         vm.prank(vault);
         IStrategy(STRATEGY).doHardWork();
@@ -64,6 +88,17 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         console.log('Result LTV', resultLtv);
     }*/
 
+    function _depositForUser(address user, uint depositAmount) internal {
+        address[] memory assets = IStrategy(STRATEGY).assets();
+        deal(assets[0], user, depositAmount);
+        vm.startPrank(user);
+        IERC20(assets[0]).approve(vault, depositAmount);
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = depositAmount;
+        IVault(vault).depositAssets(assets, amounts, 0, user);
+        vm.stopPrank();
+    }
+
     function _deposit(uint depositAmount) internal {
         address[] memory assets = IStrategy(STRATEGY).assets();
         deal(assets[0], address(this), depositAmount);
@@ -71,6 +106,13 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         uint[] memory amounts = new uint[](1);
         amounts[0] = depositAmount;
         IVault(vault).depositAssets(assets, amounts, 0, address(this));
+    }
+
+    function _withdrawAllForUser(address user) internal {
+        address[] memory assets = IStrategy(STRATEGY).assets();
+        uint bal = IERC20(vault).balanceOf(user);
+        vm.prank(user);
+        IVault(vault).withdrawAssets(assets, bal, new uint[](1));
     }
 
     function _withdrawAll() internal {
