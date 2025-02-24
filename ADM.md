@@ -4,6 +4,12 @@
 
 ### Manual HardWork
 
+#### Sonic
+
+```shell
+cast send -r sonic --gas-limit 15000000 --account DedicatedServerMsgSender 0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701 'call(address[])' [0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224]
+```
+
 #### Polygon
 
 ```shell
