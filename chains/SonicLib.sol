@@ -77,6 +77,10 @@ library SonicLib {
     address public constant TOKEN_SHADOW = 0x3333b97138D4b086720b5aE8A7844b1345a33333;
     address public constant TOKEN_xSHADOW = 0x5050bc082FF4A74Fb6B0B04385dEfdDB114b2424;
     address public constant TOKEN_sGEM1 = 0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d;
+    address public constant TOKEN_stkscUSD = 0x4D85bA8c3918359c78Ed09581E5bc7578ba932ba;
+    address public constant TOKEN_wstkscUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
+    address public constant TOKEN_stkscETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
+    address public constant TOKEN_wstkscETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -137,6 +141,10 @@ library SonicLib {
     address public constant POOL_SHADOW_CL_wS_GOGLZ_5000 = 0x1f4eFC47e5A5Ab6539d95A76e2dDE6d74462acEa;
     address public constant POOL_SHADOW_CL_sGEM1_scUSD_20000 = 0x1ADcAaF67307453a3995a7FFf78b8CBEc1eFd00F;
     address public constant POOL_SHADOW_CL_SACRA_scUSD_20000 = 0x350598C4C17dDC02049e34Bfdf4555422d2d670E;
+    address public constant POOL_SHADOW_CL_USDC_scUSD_100 = 0x2C13383855377faf5A562F1AeF47E4be7A0f12Ac;
+    address public constant POOL_SHADOW_CL_scETH_WETH_100 = 0xC291CA0a0a0e793dC6A0442a34E1607Ce1905389;
+    address public constant POOL_SHADOW_CL_stkscUSD_scUSD_3000 = 0x666805eBf99E2E797D09e07b7e255ad0e67B086B;
+    address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -229,6 +237,8 @@ library SonicLib {
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
     address public constant SILO_VAULT_3_stS = 0x396922EF30Cf012973343f7174db850c7D265278;
     address public constant SILO_VAULT_3_wS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
+    address public constant SILO_VAULT_23_wstkscUSD = 0x4E09FF794D255a123b00efa30162667A8054a845;
+    address public constant SILO_VAULT_26_wstkscETH = 0xE8e1A980a7fc8D47D337d704FA73FBb81eE55C25;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;

@@ -10,4 +10,5 @@ library AmmAdapterIdLib {
     string public constant BALANCER_COMPOSABLE_STABLE = "BalancerComposableStable";
     string public constant BALANCER_WEIGHTED = "BalancerWeighted";
     string public constant ALGEBRA_V4 = "AlgebraV4";
+    string public constant ERC_4626 = "ERC4626";
 }
