@@ -15,7 +15,6 @@ import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrateg
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
-import {ITeller} from "../../interfaces/ITeller.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -261,7 +260,7 @@ library SiloAdvancedLib {
     /*function _mintCollateralAsset(address token, address */
 
     /*tokenOut*/
-        /*, uint amount) internal {
+    /*, uint amount) internal {
             if (token == TOKEN_USDC) {
             // mint scUSD
             IERC20(TOKEN_USDC).forceApprove(TOKEN_scUSD, amount);
