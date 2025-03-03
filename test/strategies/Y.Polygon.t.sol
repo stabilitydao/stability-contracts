@@ -25,7 +25,8 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.YEARN,
                 pool: address(0),
                 farmId: type(uint).max,
-                strategyInitAddresses: initStrategyAddresses
+                strategyInitAddresses: initStrategyAddresses,
+                strategyInitNums: new uint[](0)
             })
         );
     }

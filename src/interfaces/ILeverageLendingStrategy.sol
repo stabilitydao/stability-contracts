@@ -11,6 +11,7 @@ interface ILeverageLendingStrategy {
     );
     event LeverageLendingHealth(uint ltv, uint leverage);
     event TargetLeveragePercent(uint value);
+    event UniversalParams(uint[] params);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -32,6 +33,22 @@ interface ILeverageLendingStrategy {
         // configurable params
         /// @dev Percent of max leverage. 90_00 is 90%.
         uint targetLeveragePercent;
+        /// @dev Universal configurable param 0 for depositAssets
+        uint depositParam0;
+        /// @dev Universal configurable param 1 for depositAssets
+        uint depositParam1;
+        /// @dev Universal configurable param 0 for withdrawAssets
+        uint withdrawParam0;
+        /// @dev Universal configurable param 1 for withdrawAssets
+        uint withdrawParam1;
+        /// @dev Universal configurable param 0 for increase LTV
+        uint increaseLtvParam0;
+        /// @dev Universal configurable param 1 for increase LTV
+        uint increaseLtvParam1;
+        /// @dev Universal configurable param 0 for decrease LTV
+        uint decreaseLtvParam0;
+        /// @dev Universal configurable param 1 for decrease LTV
+        uint decreaseLtvParam1;
     }
 
     struct LeverageLendingStrategyBaseInitParams {
@@ -44,6 +61,7 @@ interface ILeverageLendingStrategy {
         address borrowingVault;
         address flashLoanVault;
         address helper;
+        uint targetLeveragePercent;
     }
 
     struct LeverageLendingAddresses {
@@ -73,6 +91,9 @@ interface ILeverageLendingStrategy {
     /// @notice Change target leverage percent
     /// @param value Value with 4 decimals, 90_00 is 90%.
     function setTargetLeveragePercent(uint value) external;
+
+    /// @notice Change universal configurable params
+    function setUniversalParams(uint[] memory params) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */

@@ -11,13 +11,17 @@ import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 
+/// @notice Base strategy for leverage lending
+/// Changelog:
+///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
+/// @author Alien Deployer (https://github.com/a17)
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.1.0";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
@@ -42,8 +46,8 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.borrowingVault = params.borrowingVault;
         $.flashLoanVault = params.flashLoanVault;
         $.helper = params.helper;
-        $.targetLeveragePercent = 87_00;
-        emit TargetLeveragePercent(87_00);
+        $.targetLeveragePercent = params.targetLeveragePercent;
+        emit TargetLeveragePercent(params.targetLeveragePercent);
         address[] memory _assets = new address[](1);
         _assets[0] = params.collateralAsset;
         __StrategyBase_init(params.platform, params.strategyId, params.vault, _assets, address(0), type(uint).max);
@@ -73,6 +77,20 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.targetLeveragePercent = value;
         emit TargetLeveragePercent(value);
+    }
+
+    /// @inheritdoc ILeverageLendingStrategy
+    function setUniversalParams(uint[] memory params) external onlyOperator {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        $.depositParam0 = params[0];
+        $.depositParam1 = params[1];
+        $.withdrawParam0 = params[2];
+        $.withdrawParam1 = params[3];
+        $.increaseLtvParam0 = params[4];
+        $.increaseLtvParam1 = params[5];
+        $.decreaseLtvParam0 = params[6];
+        $.decreaseLtvParam1 = params[7];
+        emit UniversalParams(params);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
