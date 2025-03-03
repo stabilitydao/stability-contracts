@@ -90,6 +90,8 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.increaseLtvParam1 = params[5];
         $.decreaseLtvParam0 = params[6];
         $.decreaseLtvParam1 = params[7];
+        $.swapPriceImpactTolerance0 = params[8];
+        $.swapPriceImpactTolerance1 = params[9];
         emit UniversalParams(params);
     }
 

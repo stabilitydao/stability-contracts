@@ -49,6 +49,10 @@ interface ILeverageLendingStrategy {
         uint decreaseLtvParam0;
         /// @dev Universal configurable param 1 for decrease LTV
         uint decreaseLtvParam1;
+        /// @dev Swap price impact tolerance on enter/exit
+        uint swapPriceImpactTolerance0;
+        /// @dev Swap price impact tolerance on re-balance debt
+        uint swapPriceImpactTolerance1;
     }
 
     struct LeverageLendingStrategyBaseInitParams {

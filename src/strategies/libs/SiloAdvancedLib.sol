@@ -40,7 +40,7 @@ library SiloAdvancedLib {
             uint tempBorrowAmount = $.tempBorrowAmount;
 
             // swap
-            StrategyLib.swap(platform, token, collateralAsset, amount);
+            StrategyLib.swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
             // supply
             ISilo($.lendingVault).deposit(
@@ -62,6 +62,7 @@ library SiloAdvancedLib {
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
             uint tempCollateralAmount = $.tempCollateralAmount;
+            uint swapPriceImpactTolerance0 = $.swapPriceImpactTolerance0;
 
             // repay debt
             ISilo($.borrowingVault).repay(amount, address(this));
@@ -81,14 +82,18 @@ library SiloAdvancedLib {
 
             // swap
             StrategyLib.swap(
-                platform, collateralAsset, token, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))
+                platform,
+                collateralAsset,
+                token,
+                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
+                swapPriceImpactTolerance0
             );
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token));
+            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -106,7 +111,7 @@ library SiloAdvancedLib {
             );
 
             // swap
-            StrategyLib.swap(platform, collateralAsset, token, $.tempCollateralAmount);
+            StrategyLib.swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
@@ -125,7 +130,8 @@ library SiloAdvancedLib {
                 platform,
                 token,
                 collateralAsset,
-                IERC20(token).balanceOf(address(this)) * $.increaseLtvParam1 / INTERNAL_PRECISION
+                IERC20(token).balanceOf(address(this)) * $.increaseLtvParam1 / INTERNAL_PRECISION,
+                $.swapPriceImpactTolerance1
             );
 
             // supply

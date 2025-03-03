@@ -73,6 +73,9 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         $.increaseLtvParam1 = 99_00;
         // Multiplier of collateral diff
         $.decreaseLtvParam0 = 101_00;
+        // Swap price impact tolerance
+        $.swapPriceImpactTolerance0 = 1_000;
+        $.swapPriceImpactTolerance1 = 1_000;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
