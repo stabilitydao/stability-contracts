@@ -28,6 +28,7 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         factory = IFactory(IPlatform(IControllable(STRATEGY).platform()).factory());
+        //console.logBytes4(type(ILeverageLendingStrategy).interfaceId);
     }
 
     function testSiloDepositWithdrawUsersImpact() public {

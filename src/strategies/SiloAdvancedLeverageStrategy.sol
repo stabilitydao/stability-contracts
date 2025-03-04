@@ -25,6 +25,8 @@ import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.
 import {IBVault} from "../integrations/balancer/IBVault.sol";
 
 /// @title Silo V2 advanced leverage strategy
+/// Changelog:
+///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
 contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     using SafeERC20 for IERC20;
@@ -34,7 +36,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -119,7 +121,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         uint len = params.initAddresses.length / 4;
         variants = new string[](len);
         addresses = new address[](len * 4);
-        nums = new uint[](0);
+        nums = new uint[](len);
         ticks = new int24[](0);
         for (uint i; i < len; ++i) {
             address collateralAsset = IERC4626(params.initAddresses[i * 2]).asset();
@@ -129,6 +131,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             addresses[i * 2 + 1] = params.initAddresses[i * 2 + 1];
             addresses[i * 2 + 2] = params.initAddresses[i * 2 + 2];
             addresses[i * 2 + 3] = params.initAddresses[i * 2 + 3];
+            nums[i] = params.initNums[i];
         }
     }
 
