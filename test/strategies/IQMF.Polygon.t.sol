@@ -22,7 +22,8 @@ contract IchiQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                strategyInitAddresses: new address[](0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

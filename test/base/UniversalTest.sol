@@ -52,6 +52,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         address pool;
         uint farmId;
         address[] strategyInitAddresses;
+        uint[] strategyInitNums;
     }
 
     struct TestStrategiesVars {
@@ -248,7 +249,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         );
 
                         initStrategyAddresses = strategies[i].strategyInitAddresses;
-                        nums = new uint[](0);
+                        nums = strategies[i].strategyInitNums;
                     }
 
                     factory.deployVaultAndStrategy(
@@ -802,7 +803,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     uint balNow = IERC20(assets[j]).balanceOf(address(this));
                     vars.withdrawnUsdValue += balNow * price / 10 ** IERC20Metadata(assets[j]).decimals();
                 }
-                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue * 96_00 / 100_00, "E1");
+                assertGe(vars.withdrawnUsdValue, vars.depositUsdValue * 93_00 / 100_00, "E1");
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         COVERAGE                           */

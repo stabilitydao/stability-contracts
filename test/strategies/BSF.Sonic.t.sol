@@ -30,7 +30,8 @@ contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
                 id: StrategyIdLib.BEETS_STABLE_FARM,
                 pool: address(0),
                 farmId: farmId,
-                strategyInitAddresses: new address[](0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

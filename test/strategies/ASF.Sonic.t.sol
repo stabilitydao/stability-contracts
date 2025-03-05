@@ -83,7 +83,8 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
                 id: StrategyIdLib.ALM_SHADOW_FARM,
                 pool: address(0),
                 farmId: farmId,
-                strategyInitAddresses: new address[](0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

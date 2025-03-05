@@ -23,7 +23,8 @@ contract TridentPearlFarmStrategyTest is RealSetup, UniversalTest {
                 id: StrategyIdLib.TRIDENT_PEARL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                strategyInitAddresses: new address[](0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

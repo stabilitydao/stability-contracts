@@ -12,6 +12,7 @@ import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerCompos
 import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -52,6 +53,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.ALGEBRA_V4)) {
             proxy.initProxy(address(new AlgebraV4Adapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.ERC_4626)) {
+            proxy.initProxy(address(new ERC4626Adapter()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));

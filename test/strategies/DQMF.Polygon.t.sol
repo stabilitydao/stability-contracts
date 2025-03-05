@@ -35,7 +35,8 @@ contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                strategyInitAddresses: new address[](0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

@@ -29,6 +29,7 @@ import {ISiloIncentivesController} from "../src/integrations/silo/ISiloIncentive
 import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
 import {ALMShadowFarmStrategy} from "../src/strategies/ALMShadowFarmStrategy.sol";
 import {SiloLeverageStrategy} from "../src/strategies/SiloLeverageStrategy.sol";
+import {SiloAdvancedLeverageStrategy} from "../src/strategies/SiloAdvancedLeverageStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -77,6 +78,11 @@ library SonicLib {
     address public constant TOKEN_SHADOW = 0x3333b97138D4b086720b5aE8A7844b1345a33333;
     address public constant TOKEN_xSHADOW = 0x5050bc082FF4A74Fb6B0B04385dEfdDB114b2424;
     address public constant TOKEN_sGEM1 = 0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d;
+    address public constant TOKEN_stkscUSD = 0x4D85bA8c3918359c78Ed09581E5bc7578ba932ba;
+    address public constant TOKEN_wstkscUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
+    address public constant TOKEN_stkscETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
+    address public constant TOKEN_wstkscETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
+    address public constant TOKEN_wOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -137,6 +143,10 @@ library SonicLib {
     address public constant POOL_SHADOW_CL_wS_GOGLZ_5000 = 0x1f4eFC47e5A5Ab6539d95A76e2dDE6d74462acEa;
     address public constant POOL_SHADOW_CL_sGEM1_scUSD_20000 = 0x1ADcAaF67307453a3995a7FFf78b8CBEc1eFd00F;
     address public constant POOL_SHADOW_CL_SACRA_scUSD_20000 = 0x350598C4C17dDC02049e34Bfdf4555422d2d670E;
+    address public constant POOL_SHADOW_CL_USDC_scUSD_100 = 0x2C13383855377faf5A562F1AeF47E4be7A0f12Ac;
+    address public constant POOL_SHADOW_CL_scETH_WETH_100 = 0xC291CA0a0a0e793dC6A0442a34E1607Ce1905389;
+    address public constant POOL_SHADOW_CL_stkscUSD_scUSD_3000 = 0x666805eBf99E2E797D09e07b7e255ad0e67B086B;
+    address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -229,6 +239,12 @@ library SonicLib {
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
     address public constant SILO_VAULT_3_stS = 0x396922EF30Cf012973343f7174db850c7D265278;
     address public constant SILO_VAULT_3_wS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
+    address public constant SILO_VAULT_23_wstkscUSD = 0x4E09FF794D255a123b00efa30162667A8054a845;
+    address public constant SILO_VAULT_23_USDC = 0x5954ce6671d97D24B782920ddCdBB4b1E63aB2De;
+    address public constant SILO_VAULT_26_wstkscETH = 0xE8e1A980a7fc8D47D337d704FA73FBb81eE55C25;
+    address public constant SILO_VAULT_26_wETH = 0x219656F33c58488D09d518BaDF50AA8CdCAcA2Aa;
+    address public constant SILO_VAULT_22_wOS = 0x1d7E3726aFEc5088e11438258193A199F9D5Ba93;
+    address public constant SILO_VAULT_22_wS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -307,6 +323,7 @@ library SonicLib {
             .setupHelpers(BEETS_BALANCER_HELPERS);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.SOLIDLY);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA_V4);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ERC_4626);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
@@ -349,6 +366,15 @@ library SonicLib {
         p.initNums[0] = 1;
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_LEVERAGE, p);
+        p.initAddresses = new address[](4);
+        p.initAddresses[0] = SILO_VAULT_23_wstkscUSD;
+        p.initAddresses[1] = SILO_VAULT_23_USDC;
+        p.initAddresses[2] = BEETS_VAULT;
+        p.initAddresses[3] = SILO_LENS;
+        p.initNums = new uint[](1);
+        p.initNums[0] = 87_00;
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -361,6 +387,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_LEVERAGE, address(new SiloLeverageStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -377,17 +404,23 @@ library SonicLib {
         returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
     {
         //region ----- BC pools ----
-        bcPools = new ISwapper.AddPoolData[](2);
+        bcPools = new ISwapper.AddPoolData[](4);
         //bcPools[0] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
         //bcPools[0] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_stS, TOKEN_wS);
         bcPools[0] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
         // bcPools[1] = _makePoolData(POOL_BEETS_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         // bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
         bcPools[1] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
+        bcPools[2] = _makePoolData(
+            POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC
+        );
+        bcPools[3] = _makePoolData(
+            POOL_SHADOW_CL_scETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scETH, TOKEN_wETH
+        );
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](15);
+        pools = new ISwapper.AddPoolData[](21);
         uint i;
         //pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         //pools[i++] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_wS, TOKEN_stS);
@@ -410,6 +443,32 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
         pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
+        pools[i++] = _makePoolData(
+            TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD
+        );
+        pools[i++] = _makePoolData(
+            POOL_SHADOW_CL_stkscUSD_scUSD_3000,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_stkscUSD,
+            TOKEN_scUSD
+        );
+        pools[i++] = _makePoolData(
+            TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscETH, TOKEN_stkscETH
+        );
+        pools[i++] = _makePoolData(
+            POOL_SHADOW_CL_scETH_stkscETH_250,
+            AmmAdapterIdLib.UNISWAPV3,
+            TOKEN_stkscETH,
+            TOKEN_scETH
+        );
+
+        pools[i++] = _makePoolData(
+            POOL_SWAPX_CL_wS_OS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_OS, TOKEN_wS
+        );
+        pools[i++] = _makePoolData(
+            TOKEN_wOS, AmmAdapterIdLib.ERC_4626, TOKEN_wOS, TOKEN_OS
+        );
+
         //endregion ----- Pools ----
     }
 

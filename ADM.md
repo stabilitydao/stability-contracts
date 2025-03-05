@@ -104,6 +104,7 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * Solidly (Equalizer, SwapX classic): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
 * AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
 * UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
+* ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
@@ -238,7 +239,7 @@ Call it via Safe Transaction Builder:
 Use `IMerkleDistributor.setupCampaign`.
 
 1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
-2. `0x0391aBDCFaB86947d93f9dd032955733B639416b` (sGEM1)
+2. `0x0391aBDCFaB86947d93f9dd032955733B639416b` (MerkleDistributor)
 3. Enter ABI: `[{"type": "function", "name": "setupCampaign", "inputs": [{"name": "campaignId", "type": "string", "internalType": "string"}, {"name": "token", "type": "address", "internalType": "address"}, {"name": "totalAmount", "type": "uint256", "internalType": "uint256"}, {"name": "merkleRoot", "type": "bytes32", "internalType": "bytes32"}, {"name": "mint", "type": "bool", "internalType": "bool"}], "outputs": [], "stateMutability": "nonpayable"}]`
 4. campignId: `y<num>`
 5. token: `0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d`
