@@ -63,8 +63,6 @@ Contributions can be made in the form of developing strategies, developing the c
 
 * **Platform** `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
 * **Frontend** `0x15487495cce9210795f9C2E0e1A7238E336dFc32` [sonicscan](https://sonicscan.org/address/0x15487495cce9210795f9C2E0e1A7238E336dFc32)
-* **MerkleDistributor** `0x0391aBDCFaB86947d93f9dd032955733B639416b` [sonicscan](https://sonicscan.org/address/0x0391abdcfab86947d93f9dd032955733b639416b)
-* **sGEM1** `0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d` [sonicscan](https://sonicscan.org/address/0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d)
 * **RebalanceHelper** `0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319` [sonicscan](https://sonicscan.org/address/0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319)
 
 ### Polygon [137]

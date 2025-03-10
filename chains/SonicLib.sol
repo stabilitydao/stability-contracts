@@ -83,6 +83,11 @@ library SonicLib {
     address public constant TOKEN_stkscETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
     address public constant TOKEN_wstkscETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
     address public constant TOKEN_wOS = 0x9F0dF7799f6FDAd409300080cfF680f5A23df4b1;
+    address public constant TOKEN_STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
+    address public constant TOKEN_anS = 0x0C4E186Eae8aCAA7F7de1315D5AD174BE39Ec987;
+    address public constant TOKEN_wanS = 0xfA85Fe5A8F5560e9039C04f2b0a90dE1415aBD70;
+    address public constant TOKEN_fBOMB = 0xEdF8b632b537d5993Adb5e2E15882CD791c284cB;
+    address public constant TOKEN_EGGS = 0xf26Ff70573ddc8a90Bd7865AF8d7d70B8Ff019bC;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -132,6 +137,8 @@ library SonicLib {
     address public constant POOL_SWAPX_wS_sDOG = 0xbF23E7fC58b7094D17fe52ef8bdE979aa06b8916;
     address public constant POOL_SWAPX_wS_MOON = 0x8218825E5964e17D872adCEfA4C72D73c0D44021;
     address public constant POOL_SWAPX_wS_FS = 0xB545EA688f4d14d37B91df6370d75C922f4e9232;
+    address public constant POOL_SWAPX_USDC_STBL = 0x4D864C2CFb4c11A2CeE4C2d5cBfa318c7B7e14F8;
+    address public constant POOL_SWAPX_fBOMB_EGGS = 0xEBEeC250676833b96505D8e2967215E91C74e477;
     address public constant POOL_UNISWAPV3_wS_USDC_3000 = 0xEcb04e075503Bd678241f00155AbCB532c0a15Eb;
     address public constant POOL_UNISWAPV3_wS_WETH_3000 = 0x21043D7Ad92d9e7bC45C055AF29771E37307B111;
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
@@ -147,6 +154,7 @@ library SonicLib {
     address public constant POOL_SHADOW_CL_scETH_WETH_100 = 0xC291CA0a0a0e793dC6A0442a34E1607Ce1905389;
     address public constant POOL_SHADOW_CL_stkscUSD_scUSD_3000 = 0x666805eBf99E2E797D09e07b7e255ad0e67B086B;
     address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
+    address public constant POOL_SHADOW_CL_USDC_EGGS = 0x66A8289bdD968D1157eB1a608f60a87759632cd6;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -232,6 +240,8 @@ library SonicLib {
     address public constant SWAPX_GAUGE_wS_sDOG = 0x48C3fF29dAEaC7aFa7785A3977Aab247e6761576;
     address public constant SWAPX_GAUGE_wS_MOON = 0x9ad399ecC102212b4677B0Dbbc82c07ae1c74Cc5;
     address public constant SWAPX_GAUGE_wS_FS = 0x1cb9f6179A6A24f1A3756b6f6A14E5C5Fd3c0347;
+    address public constant SWAPX_GAUGE_USDC_STBL = 0x17D11842cCECd5166BFC6c6D7aAa440476A9F883;
+    address public constant SWAPX_GAUGE_fBOMB_EGGS = 0x2E5228cFEcFEFA439f92Aa4823E5593de5bFcB7D;
 
     // Silo
     address public constant SILO_LENS = 0xE05966aee69CeCD677a30f469812Ced650cE3b5E;
@@ -256,6 +266,7 @@ library SonicLib {
     address public constant SHADOW_GAUGE_CL_wS_USDC = 0x0ac98Ce57D24f77F48161D12157cb815Af469fc0;
     address public constant SHADOW_GAUGE_CL_wS_GOGLZ_5000 = 0x5631cEa9AE0ED0b3637c0099Ee241B926663da1A;
     address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0x05A2f49425108095cf65ebFEb1424905D24a1BB5;
+    address public constant SHADOW_ROUTER = 0x1D368773735ee1E678950B7A97bcA2CafB330CDc;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -433,7 +444,7 @@ library SonicLib {
         pools[i++] =
             _makePoolData(POOL_BEETS_USDC_scUSD, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_scUSD, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
-        pools[i++] = _makePoolData(POOL_EQUALIZER_USDC_WETH, AmmAdapterIdLib.SOLIDLY, TOKEN_wETH, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_EQUALIZER_USDC_WETH, AmmAdapterIdLib.SOLIDLY, TOKEN_wETH, TOKEN_USDC); // changed
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_GOGLZ, AmmAdapterIdLib.SOLIDLY, TOKEN_GOGLZ, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SWPx, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SWPx, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SACRA, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA, TOKEN_wS);
