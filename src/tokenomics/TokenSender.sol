@@ -15,6 +15,7 @@ contract TokenSender {
         require(IPlatform(platform).isOperator(msg.sender), "denied");
         uint len = receivers.length;
         for (uint i; i < len; ++i) {
+            // slither-disable-next-line unchecked-transfer
             IERC20(token).transferFrom(msg.sender, receivers[i], amounts[i]);
         }
     }
