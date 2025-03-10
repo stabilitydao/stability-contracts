@@ -33,5 +33,8 @@ contract TokenSenderTest is Test, MockSetup {
         tokenSender.send(STBL, receivers, amounts);
         vm.stopPrank();
         assertEq(IERC20(STBL).balanceOf(address(3)), 111e18);
+
+        vm.expectRevert();
+        tokenSender.send(STBL, receivers, amounts);
     }
 }
