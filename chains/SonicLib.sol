@@ -96,6 +96,7 @@ library SonicLib {
     address public constant POOL_BEETS_USDC_scUSD = 0xCd4D2b142235D5650fFA6A38787eD0b7d7A51c0C;
     address public constant POOL_BEETS_scUSD_stS = 0x25ca5451CD5a50AB1d324B5E64F32C0799661891;
     address public constant POOL_BEETS_USDC_stS = 0x713FB5036dC70012588d77a5B066f1Dd05c712d7;
+    address public constant POOL_BEETS_V3_SILO_VAULT_25_wS_anS = 0x944D4AE892dE4BFd38742Cc8295d6D5164c5593C;
     address public constant POOL_SUSHI_wS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
     address public constant POOL_EQUALIZER_wS_stS = 0xB75C9073ea00AbDa9ff420b5Ae46fEe248993380;
@@ -189,6 +190,7 @@ library SonicLib {
     address public constant BEETS_GAUGE_USDC_scUSD = 0x33B29bcf17e866A35941e07CbAd54f1807B337f5;
     address public constant BEETS_GAUGE_scUSD_stS = 0xa472438718Fe7785107fCbE584d39183a6420D36;
     address public constant BEETS_GAUGE_USDC_stS = 0xb3Bf2c247A599DFcEf06791b1668Fe9456677923;
+    address public constant BEETS_V3_ROUTER = 0x6077b9801B5627a65A5eeE70697C793751D1a71c;
 
     // Equalizer
     address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;
@@ -255,6 +257,8 @@ library SonicLib {
     address public constant SILO_VAULT_26_wETH = 0x219656F33c58488D09d518BaDF50AA8CdCAcA2Aa;
     address public constant SILO_VAULT_22_wOS = 0x1d7E3726aFEc5088e11438258193A199F9D5Ba93;
     address public constant SILO_VAULT_22_wS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
+    address public constant SILO_VAULT_25_wanS = 0x21580de05C4F3d6D6a5345b03a898C33B872Ab51;
+    address public constant SILO_VAULT_25_wS = 0x016C306e103FbF48EC24810D078C65aD13c5f11B;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -335,6 +339,9 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.SOLIDLY);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ALGEBRA_V4);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ERC_4626);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE);
+        IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy)
+        .setupHelpers(BEETS_V3_ROUTER);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
