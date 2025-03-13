@@ -341,7 +341,7 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.ERC_4626);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE);
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy)
-        .setupHelpers(BEETS_V3_ROUTER);
+            .setupHelpers(BEETS_V3_ROUTER);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
@@ -401,11 +401,15 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true);
+        _addStrategyLogic(
+            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
+        );
         _addStrategyLogic(factory, StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_LEVERAGE, address(new SiloLeverageStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false);
+        _addStrategyLogic(
+            factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false
+        );
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -427,18 +431,18 @@ library SonicLib {
         //bcPools[0] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_stS, TOKEN_wS);
         bcPools[0] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
         // bcPools[1] = _makePoolData(POOL_BEETS_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
-        // bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
-        bcPools[1] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
-        bcPools[2] = _makePoolData(
+        bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
+        //bcPools[1] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
+        /*bcPools[2] = _makePoolData(
             POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC
         );
         bcPools[3] = _makePoolData(
             POOL_SHADOW_CL_scETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scETH, TOKEN_wETH
-        );
+        );*/
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](21);
+        pools = new ISwapper.AddPoolData[](25);
         uint i;
         //pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
         //pools[i++] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_wS, TOKEN_stS);
@@ -447,11 +451,11 @@ library SonicLib {
         //pools[i++] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETS_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
-        pools[i++] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
+        pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
         pools[i++] =
             _makePoolData(POOL_BEETS_USDC_scUSD, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_scUSD, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
-        pools[i++] = _makePoolData(POOL_EQUALIZER_USDC_WETH, AmmAdapterIdLib.SOLIDLY, TOKEN_wETH, TOKEN_USDC); // changed
+        pools[i++] = _makePoolData(POOL_SWAPX_CL_USDC_WETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wETH, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_GOGLZ, AmmAdapterIdLib.SOLIDLY, TOKEN_GOGLZ, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SWPx, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SWPx, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_SACRA, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_SACRA, TOKEN_wS);
@@ -461,31 +465,22 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
         pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
-        pools[i++] = _makePoolData(
-            TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD
-        );
-        pools[i++] = _makePoolData(
-            POOL_SHADOW_CL_stkscUSD_scUSD_3000,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_stkscUSD,
-            TOKEN_scUSD
-        );
-        pools[i++] = _makePoolData(
-            TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscETH, TOKEN_stkscETH
-        );
-        pools[i++] = _makePoolData(
-            POOL_SHADOW_CL_scETH_stkscETH_250,
-            AmmAdapterIdLib.UNISWAPV3,
-            TOKEN_stkscETH,
-            TOKEN_scETH
-        );
+        pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_scETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_scETH, TOKEN_wS);
+        pools[i++] = _makePoolData(TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD);
+        pools[i++] =
+            _makePoolData(POOL_SHADOW_CL_stkscUSD_scUSD_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscUSD, TOKEN_scUSD);
+        pools[i++] = _makePoolData(TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscETH, TOKEN_stkscETH);
+        pools[i++] =
+            _makePoolData(POOL_SHADOW_CL_scETH_stkscETH_250, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscETH, TOKEN_scETH);
 
+        pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_OS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_OS, TOKEN_wS);
+        pools[i++] = _makePoolData(TOKEN_wOS, AmmAdapterIdLib.ERC_4626, TOKEN_wOS, TOKEN_OS);
+
+        pools[i++] = _makePoolData(SILO_VAULT_25_wS, AmmAdapterIdLib.ERC_4626, SILO_VAULT_25_wS, TOKEN_wS);
         pools[i++] = _makePoolData(
-            POOL_SWAPX_CL_wS_OS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_OS, TOKEN_wS
+            POOL_BEETS_V3_SILO_VAULT_25_wS_anS, AmmAdapterIdLib.BALANCER_V3_STABLE, TOKEN_anS, SILO_VAULT_25_wS
         );
-        pools[i++] = _makePoolData(
-            TOKEN_wOS, AmmAdapterIdLib.ERC_4626, TOKEN_wOS, TOKEN_OS
-        );
+        pools[i++] = _makePoolData(TOKEN_wanS, AmmAdapterIdLib.ERC_4626, TOKEN_wanS, TOKEN_anS);
 
         //endregion ----- Pools ----
     }
@@ -512,10 +507,14 @@ library SonicLib {
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_wS_GOGLZ);
         _farms[i++] = _makeSwapXFarm(SWAPX_GAUGE_AUR_auUSDC);
         _farms[i++] = _makeBeetsWeightedFarm(BEETS_GAUGE_USDC_stS);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_USDC_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
-        _farms[i++] = _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_USDC_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_wS_WETH_3000, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_WETH_500, ALMPositionNameLib.NARROW, TOKEN_wS);
+        _farms[i++] =
+            _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
         _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS_008);
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
@@ -525,12 +524,19 @@ library SonicLib {
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000, address(0));
+        _farms[i++] =
+            _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000, address(0));
         _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS_020);
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 800, 400, address(0));
     }
 
-    function _makeALMShadowFarm(address gauge, uint algoId, int24 range, int24 triggerRange, address secondRewardToken) internal view returns(IFactory.Farm memory) {
+    function _makeALMShadowFarm(
+        address gauge,
+        uint algoId,
+        int24 range,
+        int24 triggerRange,
+        address secondRewardToken
+    ) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IGaugeV3(gauge).pool();
