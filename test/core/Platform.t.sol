@@ -258,7 +258,11 @@ contract PlatformTest is Test {
 
             skip(30 days);
 
-            vm.startPrank(address(101));
+            address notOperator;
+            unchecked {
+                notOperator = address(uint160(multisig) + 1);
+            }
+            vm.startPrank(notOperator);
             vm.expectRevert(IControllable.NotOperator.selector);
             platform.upgrade();
             vm.stopPrank();

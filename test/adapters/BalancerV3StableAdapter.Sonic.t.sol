@@ -42,9 +42,9 @@ contract BalancerV3StableAdapterTest is SonicSetup {
         uint out = IERC20(SonicLib.TOKEN_anS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.SILO_VAULT_25_wS, address(adapter), 8000e18);
+        deal(SonicLib.SILO_VAULT_25_wS, address(adapter), 200000000e18);
         vm.expectRevert();
-        adapter.swap(pool, SonicLib.SILO_VAULT_25_wS, SonicLib.TOKEN_anS, address(this), 10);
+        adapter.swap(pool, SonicLib.SILO_VAULT_25_wS, SonicLib.TOKEN_anS, address(this), 1);
         // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }

@@ -162,6 +162,12 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
+        {
+            // take pool commission
+            uint swapFeePercentage = IPoolInfo(pool).getStaticSwapFeePercentage();
+            amount -= amount * swapFeePercentage / 1e18;
+        }
+
         address[] memory tokens = poolTokens(pool);
         uint[] memory balancesScaled18 = IPoolInfo(pool).getCurrentLiveBalances();
         (uint tokenInIndex, uint tokenOutIndex) = _getTokenInOutIndexes(tokens, tokenIn, tokenOut);

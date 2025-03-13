@@ -426,19 +426,9 @@ library SonicLib {
         returns (ISwapper.AddPoolData[] memory bcPools, ISwapper.AddPoolData[] memory pools)
     {
         //region ----- BC pools ----
-        bcPools = new ISwapper.AddPoolData[](4);
-        //bcPools[0] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
-        //bcPools[0] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_stS, TOKEN_wS);
+        bcPools = new ISwapper.AddPoolData[](2);
         bcPools[0] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
-        // bcPools[1] = _makePoolData(POOL_BEETS_wS_USDC, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_USDC, TOKEN_wS);
         bcPools[1] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
-        //bcPools[1] = _makePoolData(POOL_EQUALIZER_wS_USDC, AmmAdapterIdLib.SOLIDLY, TOKEN_USDC, TOKEN_wS);
-        /*bcPools[2] = _makePoolData(
-            POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC
-        );
-        bcPools[3] = _makePoolData(
-            POOL_SHADOW_CL_scETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scETH, TOKEN_wETH
-        );*/
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
@@ -453,7 +443,7 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_BEETS_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
         pools[i++] =
-            _makePoolData(POOL_BEETS_USDC_scUSD, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_scUSD, TOKEN_USDC);
+            _makePoolData(POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_USDC_WETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wETH, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_GOGLZ, AmmAdapterIdLib.SOLIDLY, TOKEN_GOGLZ, TOKEN_wS);
