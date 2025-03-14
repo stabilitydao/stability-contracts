@@ -16,7 +16,7 @@ contract SwapperUpgradeSonicTest is Test {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(13119000); // Mar-11-2025 08:29:09 PM +UTC
+        vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
     }
 
@@ -45,6 +45,13 @@ contract SwapperUpgradeSonicTest is Test {
         assertGt(price, 0);
         price = swapper.getPrice(SonicLib.TOKEN_wstkscETH, SonicLib.TOKEN_wETH, 0);
         assertGt(price, 0);
+
+        price = swapper.getPrice(SonicLib.TOKEN_sfrxUSD, SonicLib.TOKEN_SWPx, 0);
+        assertGt(price, 0);
+        price = swapper.getPrice(SonicLib.TOKEN_SWPx, SonicLib.TOKEN_sfrxUSD, 0);
+        assertGt(price, 0);
+        price = swapper.getPrice(SonicLib.TOKEN_SWPx, SonicLib.TOKEN_frxUSD, 0);
+        assertGt(price, 0);
     }
 
     function _addAdapter() internal {
@@ -61,13 +68,13 @@ contract SwapperUpgradeSonicTest is Test {
         proxies[0] = address(swapper);
         address[] memory implementations = new address[](1);
         implementations[0] = newImplementation;
-        IPlatform(PLATFORM).announcePlatformUpgrade("2025.03.0-alpha", proxies, implementations);
+        IPlatform(PLATFORM).announcePlatformUpgrade("2025.03.1-alpha", proxies, implementations);
         skip(1 days);
         IPlatform(PLATFORM).upgrade();
     }
 
     function _routes() internal pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](7);
+        pools = new ISwapper.AddPoolData[](6);
         uint i;
         // wanS -> USDC
         pools[i++] = _makePoolData(
@@ -84,16 +91,16 @@ contract SwapperUpgradeSonicTest is Test {
 
         // wstkscUSD -> USDC
         pools[i++] = _makePoolData(
-            SonicLib.TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_wstkscUSD, SonicLib.TOKEN_stkscUSD
+            SonicLib.TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_stkscUSD, SonicLib.TOKEN_wstkscUSD
         );
-        pools[i++] = _makePoolData(
+        /*pools[i++] = _makePoolData(
             SonicLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
             AmmAdapterIdLib.UNISWAPV3,
             SonicLib.TOKEN_stkscUSD,
             SonicLib.TOKEN_scUSD
-        );
+        );*/
 
-        // wstksceth -> USDC
+        // wstksceth -> ETH
         pools[i++] = _makePoolData(
             SonicLib.TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_wstkscETH, SonicLib.TOKEN_stkscETH
         );
