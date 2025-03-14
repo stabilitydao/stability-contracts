@@ -29,12 +29,12 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testISF() public universalTest {
-//        _addStrategy(8);
-//        _addStrategy(9);
-//        _addStrategy(10);
-//        _addStrategy(11);
-//        _addStrategy(12);
-//        _addStrategy(13);
+        //        _addStrategy(8);
+        //        _addStrategy(9);
+        //        _addStrategy(10);
+        //        _addStrategy(11);
+        //        _addStrategy(12);
+        //        _addStrategy(13);
         _addStrategy(34);
     }
 
