@@ -142,7 +142,6 @@ function setStrategyLogicConfig(StrategyLogicConfig memory config, address devel
 * `8. setStrategyLogicConfig`
 * fill
 
-
 ## Multisig actions
 
 ### Set vault config
@@ -247,3 +246,11 @@ Use `IMerkleDistributor.setupCampaign`.
 7. merkleRoot: `<copy>`
 8. mint: `true`
 
+### Upgrade platform
+
+Use `IPlatform.announcePlatformUpgrade`
+
+1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+2. `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
+3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
+4. Fill
