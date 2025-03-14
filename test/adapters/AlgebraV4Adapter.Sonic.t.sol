@@ -71,12 +71,13 @@ contract AlgebraV4AdapterTest is SonicSetup {
         amounts[0] = 1e6;
         amounts[1] = 2e6;
 
-        (uint liquidity, /*uint[] memory amountsConsumed*/) = adapter.getLiquidityForAmounts(pool, amounts, ticks);
+        (uint liquidity, /*uint[] memory amountsConsumed*/ ) = adapter.getLiquidityForAmounts(pool, amounts, ticks);
         //assertGt(liquidity, 0);
         //assertGt(amountsConsumed[0], 0);
         //assertGt(amountsConsumed[1], 0);
 
-        /*uint[] memory liquidityAmounts = */adapter.getAmountsForLiquidity(pool, ticks, uint128(liquidity));
+        /*uint[] memory liquidityAmounts = */
+        adapter.getAmountsForLiquidity(pool, ticks, uint128(liquidity));
         //assertGt(liquidityAmounts[0], 0);
         //assertGt(liquidityAmounts[1], 0);
 

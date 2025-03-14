@@ -8,7 +8,7 @@ import "../../../src/core/Factory.sol";
 import {IPoolMinimal} from "../../../src/integrations/aave/IPoolMinimal.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 
-abstract contract   SonicSetup is ChainSetup, DeployCore {
+abstract contract SonicSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
     constructor() {
