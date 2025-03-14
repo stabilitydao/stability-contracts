@@ -457,8 +457,7 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETS_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
-        pools[i++] =
-            _makePoolData(POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_SHADOW_CL_USDC_scUSD_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scUSD, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_EQUAL, AmmAdapterIdLib.SOLIDLY, TOKEN_EQUAL, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_USDC_WETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wETH, TOKEN_USDC);
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_GOGLZ, AmmAdapterIdLib.SOLIDLY, TOKEN_GOGLZ, TOKEN_wS);
@@ -472,9 +471,14 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
         //pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_scETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_scETH, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SHADOW_CL_scETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scETH, TOKEN_wETH);
-        pools[i++] = _makePoolData(TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD);
+        //pools[i++] = _makePoolData(TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD);
+        //pools[i++] =
+        //    _makePoolData(POOL_SHADOW_CL_stkscUSD_scUSD_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscUSD, TOKEN_scUSD);
+
         pools[i++] =
-            _makePoolData(POOL_SHADOW_CL_stkscUSD_scUSD_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscUSD, TOKEN_scUSD);
+            _makePoolData(POOL_SWAPX_CL_wstkscUSD_scUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wstkscUSD, TOKEN_scUSD);
+        pools[i++] = _makePoolData(TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_stkscUSD, TOKEN_wstkscUSD);
+
         pools[i++] = _makePoolData(TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscETH, TOKEN_stkscETH);
         pools[i++] =
             _makePoolData(POOL_SHADOW_CL_scETH_stkscETH_250, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscETH, TOKEN_scETH);
@@ -489,7 +493,8 @@ library SonicLib {
         pools[i++] = _makePoolData(TOKEN_wanS, AmmAdapterIdLib.ERC_4626, TOKEN_wanS, TOKEN_anS);
 
         pools[i++] = _makePoolData(POOL_SWAPX_CL_frxUSD_scUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_frxUSD, TOKEN_scUSD);
-        pools[i++] = _makePoolData(POOL_SWAPX_CL_sfrxUSD_frxUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_sfrxUSD, TOKEN_frxUSD);
+        pools[i++] =
+            _makePoolData(POOL_SWAPX_CL_sfrxUSD_frxUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_sfrxUSD, TOKEN_frxUSD);
 
         //endregion ----- Pools ----
     }
