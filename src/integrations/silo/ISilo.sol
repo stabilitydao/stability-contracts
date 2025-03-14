@@ -54,6 +54,13 @@ interface ISilo is IERC4626 {
     /// @return siloConfig Address of the configuration contract associated with the silo
     function config() external view returns (address siloConfig);
 
+    /// @notice Calculates the maximum amount of assets that can be borrowed by the given address
+    /// @param _borrower Address of the potential borrower
+    /// @return maxAssets Maximum amount of assets that the borrower can borrow, this value is underestimated
+    /// That means, in some cases when you borrow maxAssets, you will be able to borrow again eg. up to 2wei
+    /// Reason for underestimation is to return value that will not cause borrow revert
+    function maxBorrow(address _borrower) external view returns (uint maxAssets);
+
     /// @notice Calculates the maximum amount an address can repay based on their debt shares
     /// @param _borrower Address of the borrower
     /// @return assets Maximum amount of assets the borrower can repay

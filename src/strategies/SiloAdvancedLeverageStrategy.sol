@@ -26,6 +26,7 @@ import {IBVault} from "../integrations/balancer/IBVault.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
 contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
@@ -36,7 +37,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -67,8 +68,8 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        // Multiplier of flash amount for borrow on deposit. Default is 100_30 == 100.3%.
-        $.depositParam0 = 100_30;
+        // Multiplier of flash amount for borrow on deposit. Default is 90_00 == 90%.
+        $.depositParam0 = 90_00;
         // Multiplier of debt diff
         $.increaseLtvParam0 = 100_80;
         // Multiplier of swap borrow asset to collateral in flash loan callback
@@ -83,6 +84,8 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    receive() external payable {}
 
     /// @inheritdoc IFlashLoanRecipient
     function receiveFlashLoan(
@@ -99,6 +102,21 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function getUniversalParams() external view returns (uint[] memory params) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        params = new uint[](10);
+        params[0] = $.depositParam0;
+        params[1] = $.depositParam1;
+        params[2] = $.withdrawParam0;
+        params[3] = $.withdrawParam1;
+        params[4] = $.increaseLtvParam0;
+        params[5] = $.increaseLtvParam1;
+        params[6] = $.decreaseLtvParam0;
+        params[7] = $.decreaseLtvParam1;
+        params[8] = $.swapPriceImpactTolerance0;
+        params[9] = $.swapPriceImpactTolerance1;
+    }
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
@@ -236,8 +254,6 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             $.tempAction = CurrentAction.IncreaseLtv;
 
             uint debtDiff = newDebtAmount - debtAmount;
-
-            $.tempBorrowAmount = debtDiff;
             flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
         }
 
@@ -340,8 +356,8 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         flashAssets[0] = v.borrowAsset;
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amounts[0] * targetLeverage / INTERNAL_PRECISION;
-
-        $.tempBorrowAmount = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+        // not sure that its right way, but its working
+        flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
 
         IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
 

@@ -9,7 +9,8 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(11356000); // Mar-03-2025 08:19:49 AM +UTC
+        //vm.rollFork(11356000); // Mar-03-2025 08:19:49 AM +UTC
+        vm.rollFork(13119000); // Mar-11-2025 08:29:09 PM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -17,10 +18,10 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALSonic() public universalTest {
-        //_addStrategy(SonicLib.SILO_VAULT_23_wstkscUSD, SonicLib.SILO_VAULT_23_USDC, 80_00);
-        // not work because Swapper need support longer route
-        //_addStrategy(SonicLib.SILO_VAULT_26_wstkscETH, SonicLib.SILO_VAULT_26_wETH, 80_00);
-        _addStrategy(SonicLib.SILO_VAULT_22_wOS, SonicLib.SILO_VAULT_22_wS, 86_90);
+        //_addStrategy(SonicLib.SILO_VAULT_22_wOS, SonicLib.SILO_VAULT_22_wS, 86_90);
+        _addStrategy(SonicLib.SILO_VAULT_23_wstkscUSD, SonicLib.SILO_VAULT_23_USDC, 88_00);
+        //_addStrategy(SonicLib.SILO_VAULT_26_wstkscETH, SonicLib.SILO_VAULT_26_wETH, 90_00);
+        //_addStrategy(SonicLib.SILO_VAULT_25_wanS, SonicLib.SILO_VAULT_25_wS, 90_00);
     }
 
     function _addStrategy(
