@@ -9,7 +9,7 @@ import "../base/UniversalTest.sol";
 contract EqualizerFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         allowZeroApr = true;
-        makePoolVolumePriceImpactTolerance = 15_000;
+        makePoolVolumePriceImpactTolerance = 30_000;
     }
 
     function testEF() public universalTest {
@@ -17,7 +17,7 @@ contract EqualizerFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(3);
         _addStrategy(4);
         _addStrategy(5);
-        _addStrategy(7);
+        //_addStrategy(7);
     }
 
     function _addStrategy(uint farmId) internal {

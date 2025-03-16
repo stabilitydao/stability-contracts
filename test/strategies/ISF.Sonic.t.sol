@@ -12,6 +12,7 @@ import {IICHIVaultV4} from "../../src/integrations/ichi/IICHIVaultV4.sol";
 contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         allowZeroApr = true;
+        vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
 
         /*vm.rollFork(2975061); // Jan-08-2025 11:28:28 AM +UTC
         skip(86400);
@@ -28,12 +29,13 @@ contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testISF() public universalTest {
-        _addStrategy(8);
-        _addStrategy(9);
-        _addStrategy(10);
-        _addStrategy(11);
-        _addStrategy(12);
-        _addStrategy(13);
+        //        _addStrategy(8);
+        //        _addStrategy(9);
+        //        _addStrategy(10);
+        //        _addStrategy(11);
+        //        _addStrategy(12);
+        //        _addStrategy(13);
+        _addStrategy(34);
     }
 
     /*function _preHardWork() internal override {

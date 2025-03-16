@@ -105,6 +105,7 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
 * UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
 * ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
+* BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
@@ -141,7 +142,6 @@ function setStrategyLogicConfig(StrategyLogicConfig memory config, address devel
 * Connect operator wallet
 * `8. setStrategyLogicConfig`
 * fill
-
 
 ## Multisig actions
 
@@ -247,3 +247,11 @@ Use `IMerkleDistributor.setupCampaign`.
 7. merkleRoot: `<copy>`
 8. mint: `true`
 
+### Upgrade platform
+
+Use `IPlatform.announcePlatformUpgrade`
+
+1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+2. `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
+3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
+4. Fill
