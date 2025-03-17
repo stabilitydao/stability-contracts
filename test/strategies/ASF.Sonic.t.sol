@@ -11,11 +11,6 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     RebalanceHelper public rebalanceHelper;
 
     constructor() {
-        //vm.rollFork(5838000); // Jan-30-2025 12:11:36 AM +UTC
-
-        // todo fix ASF
-        allowZeroApr = true;
-
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.5 hours;
@@ -30,16 +25,12 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testASF() public universalTest {
-        _addStrategy(23); // wS_WETH 3000
-        _addStrategy(24); // wS_WETH 1500
-        _addStrategy(25); // wS_BRUSH 3000
-        _addStrategy(26); // wS_BRUSH 1500
-        _addStrategy(27);
-        _addStrategy(28);
+        _addStrategy(25); // wS_WETH 3000
+        _addStrategy(26); // wS_WETH 1500
+        _addStrategy(27); // wS_USDC 3000
+        _addStrategy(28); // wS_USDC 1500
         _addStrategy(29);
         _addStrategy(30);
-        _addStrategy(31);
-        _addStrategy(33);
     }
 
     function _rebalance() internal override {
