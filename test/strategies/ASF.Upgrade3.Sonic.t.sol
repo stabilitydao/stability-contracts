@@ -36,7 +36,9 @@ contract ASFUpgrade3Test is Test {
 
     function testASFBugfix3() public {
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
-        pools[0] = _makePoolData(SonicLib.POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, SonicLib.TOKEN_x33, SonicLib.TOKEN_SHADOW);
+        pools[0] = _makePoolData(
+            SonicLib.POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, SonicLib.TOKEN_x33, SonicLib.TOKEN_SHADOW
+        );
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IGaugeV3(NEW_GAUGE).pool();
