@@ -90,6 +90,7 @@ library SonicLib {
     address public constant TOKEN_EGGS = 0xf26Ff70573ddc8a90Bd7865AF8d7d70B8Ff019bC;
     address public constant TOKEN_frxUSD = 0x80Eede496655FB9047dd39d9f418d5483ED600df;
     address public constant TOKEN_sfrxUSD = 0x5Bff88cA1442c2496f7E475E9e7786383Bc070c0;
+    address public constant TOKEN_x33 = 0x3333111A391cC08fa51353E9195526A70b333333;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -161,6 +162,7 @@ library SonicLib {
     address public constant POOL_SHADOW_CL_stkscUSD_scUSD_3000 = 0x666805eBf99E2E797D09e07b7e255ad0e67B086B;
     address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
     address public constant POOL_SHADOW_CL_USDC_EGGS = 0x66A8289bdD968D1157eB1a608f60a87759632cd6;
+    address public constant POOL_SHADOW_CL_x33_SHADOW = 0xBB528A050a3b3b998a9651F893Fa46162967A04C;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -280,12 +282,10 @@ library SonicLib {
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
-    address public constant SHADOW_GAUGE_CL_wS_WETH = 0x522c48B4F4dC355f409d3E01790d8317f7db0960;
-    address public constant SHADOW_GAUGE_CL_wS_BRUSH_5000 = 0x24391D1e1283b4bF1b2accD2f704C18Ec7417601;
-    address public constant SHADOW_GAUGE_CL_wS_USDC = 0x0ac98Ce57D24f77F48161D12157cb815Af469fc0;
-    address public constant SHADOW_GAUGE_CL_wS_GOGLZ_5000 = 0x5631cEa9AE0ED0b3637c0099Ee241B926663da1A;
-    address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0x05A2f49425108095cf65ebFEb1424905D24a1BB5;
     address public constant SHADOW_ROUTER = 0x1D368773735ee1E678950B7A97bcA2CafB330CDc;
+    address public constant SHADOW_GAUGE_CL_wS_WETH = 0xF5C7598C953E49755576CDA6b2B2A9dAaf89a837;
+    address public constant SHADOW_GAUGE_CL_wS_USDC = 0xe879d0E44e6873cf4ab71686055a4f6817685f02;
+    address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0xbf2EdE70EB05E3A15d43A8D33BDf3A4156e98932;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
@@ -447,13 +447,9 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](27);
+        pools = new ISwapper.AddPoolData[](28);
         uint i;
-        //pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_wS, TOKEN_stS);
-        //pools[i++] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wS, TOKEN_stS);
-        //pools[i++] = _makePoolData(POOL_BEETS_wS_stS, AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE, TOKEN_stS, TOKEN_wS);
-        //pools[i++] = _makePoolData(POOL_EQUALIZER_wS_stS, AmmAdapterIdLib.SOLIDLY, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_BEETS_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, TOKEN_BEETS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SUSHI_wS_USDC, AmmAdapterIdLib.UNISWAPV3, TOKEN_USDC, TOKEN_wS);
@@ -469,11 +465,7 @@ library SonicLib {
         pools[i++] = _makePoolData(POOL_SWAPX_AUR_auUSDC, AmmAdapterIdLib.SOLIDLY, TOKEN_auUSDC, TOKEN_AUR);
         pools[i++] = _makePoolData(POOL_SHADOW_wS_SHADOW, AmmAdapterIdLib.SOLIDLY, TOKEN_SHADOW, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SHADOW_CL_wS_BRUSH_5000, AmmAdapterIdLib.UNISWAPV3, TOKEN_BRUSH, TOKEN_wS);
-        //pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_scETH, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_scETH, TOKEN_wS);
         pools[i++] = _makePoolData(POOL_SHADOW_CL_scETH_WETH_100, AmmAdapterIdLib.UNISWAPV3, TOKEN_scETH, TOKEN_wETH);
-        //pools[i++] = _makePoolData(TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, TOKEN_wstkscUSD, TOKEN_stkscUSD);
-        //pools[i++] =
-        //    _makePoolData(POOL_SHADOW_CL_stkscUSD_scUSD_3000, AmmAdapterIdLib.UNISWAPV3, TOKEN_stkscUSD, TOKEN_scUSD);
 
         pools[i++] =
             _makePoolData(POOL_SWAPX_CL_wstkscUSD_scUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wstkscUSD, TOKEN_scUSD);
@@ -496,11 +488,14 @@ library SonicLib {
         pools[i++] =
             _makePoolData(POOL_SWAPX_CL_sfrxUSD_frxUSD, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_sfrxUSD, TOKEN_frxUSD);
 
+        pools[i++] =
+            _makePoolData(POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, TOKEN_x33, TOKEN_SHADOW);
+
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](35);
+        _farms = new IFactory.Farm[](31);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -530,40 +525,27 @@ library SonicLib {
         _farms[i++] =
             _makeGammaUniswapV3MerklFarm(ALM_GAMMA_UNISWAPV3_USDC_scUSD_100, ALMPositionNameLib.STABLE, TOKEN_wS);
         _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS_008);
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, TOKEN_BRUSH);
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_BRUSH_5000, ALMLib.ALGO_FILL_UP, 1500, 600, TOKEN_BRUSH);
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 3000, 1200, address(0));
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_GOGLZ_5000, ALMLib.ALGO_FILL_UP, 1500, 600, address(0));
-        _farms[i++] =
-            _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000, address(0));
         _farms[i++] = _makeSiloFarm(SILO_GAUGE_wS_020);
-        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 800, 400, address(0));
-        _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_sfrxUSD_frxUSD);
+        _farms[i++] = _makeIchiSwapXFarm(SWAPX_GAUGE_ICHI_sfrxUSD_frxUSD); // farm 24
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 3000, 1200);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_WETH, ALMLib.ALGO_FILL_UP, 1500, 600);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 3000, 1200);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000);
+        _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 800, 400);
     }
 
     function _makeALMShadowFarm(
         address gauge,
         uint algoId,
         int24 range,
-        int24 triggerRange,
-        address secondRewardToken
+        int24 triggerRange
     ) internal view returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = IGaugeV3(gauge).pool();
         farm.strategyLogicId = StrategyIdLib.ALM_SHADOW_FARM;
-        if (secondRewardToken == address(0)) {
-            farm.rewardAssets = new address[](1);
-            farm.rewardAssets[0] = TOKEN_xSHADOW;
-        } else {
-            farm.rewardAssets = new address[](2);
-            farm.rewardAssets[0] = TOKEN_xSHADOW;
-            farm.rewardAssets[1] = secondRewardToken;
-        }
+        farm.rewardAssets = IGaugeV3(gauge).getRewardTokens();
         farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = IGaugeV3(gauge).nfpManager();

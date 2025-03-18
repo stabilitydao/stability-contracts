@@ -62,6 +62,7 @@ library StrategyLib {
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
+        $._rewardsOnBalance = new uint[](len);
     }
 
     function transferAssets(
