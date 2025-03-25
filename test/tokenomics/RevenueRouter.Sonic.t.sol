@@ -31,6 +31,7 @@ contract RevenueRouterTestSonic is Test {
 
     function test_RevenueRouter() public {
         _deploy();
+
         deal(SonicLib.TOKEN_STBL, address(this), 1e10);
         IERC20(SonicLib.TOKEN_STBL).approve(address(revenueRouter), 1e10);
         revenueRouter.processFeeAsset(SonicLib.TOKEN_STBL, 1e10);
@@ -60,8 +61,12 @@ contract RevenueRouterTestSonic is Test {
         xStbl.exit(1e18);
         vm.stopPrank();
 
+        vm.expectRevert();
+        revenueRouter.updatePeriod();
+
         vm.warp(block.timestamp + 7 days);
         revenueRouter.updatePeriod();
+        assertEq(revenueRouter.activePeriod(), revenueRouter.getPeriod());
 
         vm.warp(block.timestamp + 31 minutes);
         uint assumedEarned = pendingRevenue + 5e17;

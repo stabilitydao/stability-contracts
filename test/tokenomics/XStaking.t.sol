@@ -44,6 +44,16 @@ contract XStakingTest is Test, MockSetup {
     }
 
     function test_staking() public {
+        assertEq(xStaking.xSTBL(), address(xStbl));
+        assertEq(xStaking.lastTimeRewardApplicable(), 0);
+        assertEq(xStaking.totalSupply(), 0);
+        assertEq(xStaking.lastUpdateTime(), 0);
+        assertEq(xStaking.rewardPerTokenStored(), 0);
+        assertEq(xStaking.rewardPerToken(), 0);
+        assertEq(xStaking.rewardRate(), 0);
+        assertEq(xStaking.storedRewardsPerUser(address(1)), 0);
+        assertEq(xStaking.userRewardPerTokenStored(address(1)), 0);
+
         // mint xSTBL
         tokenA.mint(100e18);
         IERC20(stbl).approve(address(xStbl), 100e18);
@@ -62,6 +72,7 @@ contract XStakingTest is Test, MockSetup {
         vm.warp(block.timestamp + 7 days);
         revenueRouter.updatePeriod();
         assertEq(xStbl.pendingRebase(), 0);
+        assertGt(xStbl.lastDistributedPeriod(), 0);
         vm.warp(block.timestamp + 1 days);
 
         // claim rewards
@@ -74,5 +85,11 @@ contract XStakingTest is Test, MockSetup {
         xStaking.withdraw(1e18);
         xStaking.withdrawAll();
         xStaking.depositAll();
+
+        vm.prank(address(1));
+        vm.expectRevert();
+        xStaking.setNewDuration(1 hours);
+        xStaking.setNewDuration(1 hours);
+        assertEq(xStaking.duration(), 1 hours);
     }
 }

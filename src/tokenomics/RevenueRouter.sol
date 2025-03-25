@@ -54,6 +54,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         $.xStaking = IXSTBL(xStbl_).xStaking();
         $.feeTreasury = feeTreasury_;
         $.xShare = 50;
+        $.activePeriod = getPeriod();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

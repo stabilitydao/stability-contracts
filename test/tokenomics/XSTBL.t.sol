@@ -132,4 +132,21 @@ contract XSTBLTest is Test, MockSetup {
         xStbl.exitVest(2);
         assertEq(IERC20(stbl).balanceOf(address(this)), balanceWas + 20e18);
     }
+
+    function test_reverts() public {
+        vm.expectRevert();
+        xStbl.rebase();
+
+        vm.expectRevert();
+        xStbl.enter(0);
+
+        vm.expectRevert();
+        xStbl.exit(0);
+
+        vm.expectRevert();
+        xStbl.createVest(0);
+
+        vm.expectRevert();
+        xStbl.exitVest(0);
+    }
 }
