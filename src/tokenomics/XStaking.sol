@@ -187,9 +187,6 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         $.lastUpdateTime = block.timestamp;
         /// @dev update periodFinish (when all rewards are streamed)
         $.periodFinish = block.timestamp + _duration;
-        /// @dev the timestamp of when people can withdraw next
-        /// @dev not DoSable because only xShadow can notify
-        //unlockTime = cooldown + periodFinish;
 
         emit NotifyReward(msg.sender, amount);
     }
@@ -328,6 +325,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             IXSTBL(_xSTBL).enter(reward);
 
             /// @dev transfer xSTBL to the user
+            // slither-disable-next-line unchecked-transfer
             IERC20(_xSTBL).transfer(user, reward);
 
             emit ClaimRewards(user, reward);
