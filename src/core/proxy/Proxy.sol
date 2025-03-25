@@ -1,30 +1,25 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "../base/UpgradeableProxy.sol";
-import "../../interfaces/IControllable.sol";
-import "../../interfaces/IProxy.sol";
+import {UpgradeableProxy} from "../base/UpgradeableProxy.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
+import {IProxy} from "../../interfaces/IProxy.sol";
 
 /// @title Proxy for Stability Platform core contracts.
 /// @dev ERC-1967: Proxy Storage Slots used.
 /// @author JodsMigel (https://github.com/JodsMigel)
 contract Proxy is UpgradeableProxy, IProxy {
     /// @inheritdoc IProxy
-    function initProxy(address logic_) external override {
-        _init(logic_);
+    function initProxy(address logic) external override {
+        _init(logic);
     }
 
     /// @inheritdoc IProxy
-    //slither-disable-next-line naming-convention
-    function upgrade(address _newImplementation) external override {
-        if (IControllable(address(this)).platform() != msg.sender) {
-            revert IControllable.NotPlatform();
-        }
-        _upgradeTo(_newImplementation);
+    function upgrade(address newImplementation) external override {
+        require(IControllable(address(this)).platform() == msg.sender, IControllable.NotPlatform());
+        _upgradeTo(newImplementation);
         // the new contract must have the same ABI and you must have the power to change it again
-        if (IControllable(address(this)).platform() != msg.sender) {
-            revert IControllable.NotPlatform();
-        }
+        require(IControllable(address(this)).platform() == msg.sender, IControllable.NotPlatform());
     }
 
     /// @inheritdoc IProxy
