@@ -47,6 +47,7 @@ contract XStakingTest is Test, MockSetup {
         assertEq(xStaking.xSTBL(), address(xStbl));
         assertEq(xStaking.lastTimeRewardApplicable(), 0);
         assertEq(xStaking.totalSupply(), 0);
+        assertEq(xStaking.periodFinish(), 0);
         assertEq(xStaking.lastUpdateTime(), 0);
         assertEq(xStaking.rewardPerTokenStored(), 0);
         assertEq(xStaking.rewardPerToken(), 0);
@@ -91,5 +92,14 @@ contract XStakingTest is Test, MockSetup {
         xStaking.setNewDuration(1 hours);
         xStaking.setNewDuration(1 hours);
         assertEq(xStaking.duration(), 1 hours);
+
+        vm.expectRevert();
+        xStaking.deposit(0);
+
+        vm.expectRevert();
+        xStaking.withdraw(0);
+
+        vm.expectRevert();
+        xStaking.notifyRewardAmount(0);
     }
 }

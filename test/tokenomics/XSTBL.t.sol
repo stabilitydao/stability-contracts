@@ -147,6 +147,6 @@ contract XSTBLTest is Test, MockSetup {
         xStbl.createVest(0);
 
         vm.expectRevert();
-        xStbl.exitVest(0);
+        xStbl.exitVest(10);
     }
 }
