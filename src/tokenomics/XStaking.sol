@@ -104,6 +104,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         XStakingStorage storage $ = _getXStakingStorage();
 
         /// @dev transfer xSTBL in
+        // slither-disable-next-line unchecked-transfer
         IERC20($.xSTBL).transferFrom(msg.sender, address(this), amount);
 
         /// @dev update accounting

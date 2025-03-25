@@ -28,7 +28,9 @@ contract XStakingTest is Test, MockSetup {
         Proxy revenueRouterProxy = new Proxy();
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
-        XSTBL(address(xSTBLProxy)).initialize(address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy));
+        XSTBL(address(xSTBLProxy)).initialize(
+            address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
+        );
         RevenueRouter(address(revenueRouterProxy)).initialize(address(platform), address(xSTBLProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         xStaking = IXStaking(address(xStakingProxy));
@@ -62,9 +64,5 @@ contract XStakingTest is Test, MockSetup {
         xStaking.getReward();
         uint balanceChange = IERC20(address(xStbl)).balanceOf(address(this)) - balanceWas;
         assertGt(balanceChange, 0);
-
-
-
     }
-
 }

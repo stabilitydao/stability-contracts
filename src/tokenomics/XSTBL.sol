@@ -165,6 +165,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         /// @dev ensure the amount_ is > 0
         require(amount_ != 0, IncorrectZeroArgument());
         /// @dev transfer from the caller to this address
+        // slither-disable-next-line unchecked-transfer
         IERC20(STBL()).transferFrom(msg.sender, address(this), amount_);
         /// @dev mint the xSTBL to the caller
         _mint(msg.sender, amount_);
@@ -190,6 +191,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         $.pendingRebase += penalty;
 
         /// @dev transfer the exitAmount to the caller
+        // slither-disable-next-line unchecked-transfer
         IERC20($.STBL).transfer(msg.sender, exitAmount);
 
         /// @dev emit actual exited amount
@@ -240,6 +242,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         } else if (_vest.maxEnd <= block.timestamp) {
             /// @dev case: vest is complete
             /// @dev send liquid STBL to msg.sender
+            // slither-disable-next-line unchecked-transfer
             IERC20($.STBL).transfer(msg.sender, _amount);
 
             emit ExitVesting(msg.sender, vestID_, _amount, _amount);
@@ -260,6 +263,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             $.pendingRebase += (_amount - exitedAmount);
 
             /// @dev transfer underlying to the sender after penalties removed
+            // slither-disable-next-line unchecked-transfer
             IERC20($.STBL).transfer(msg.sender, exitedAmount);
 
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);

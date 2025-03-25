@@ -24,7 +24,9 @@ contract XSTBLTest is Test, MockSetup {
         Proxy revenueRouterProxy = new Proxy();
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
-        XSTBL(address(xSTBLProxy)).initialize(address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy));
+        XSTBL(address(xSTBLProxy)).initialize(
+            address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
+        );
         RevenueRouter(address(revenueRouterProxy)).initialize(address(platform), address(xSTBLProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff)));
@@ -100,7 +102,7 @@ contract XSTBLTest is Test, MockSetup {
         // cancel vesting
         vm.warp(time + 13 days);
         xStbl.exitVest(0);
-        (amount, , ) = xStbl.vestInfo(address(this), 0);
+        (amount,,) = xStbl.vestInfo(address(this), 0);
         assertEq(amount, 0);
         assertEq(IERC20(address(xStbl)).balanceOf(address(this)), 50e18);
         assertEq(xStbl.pendingRebase(), 25e18);
@@ -111,7 +113,7 @@ contract XSTBLTest is Test, MockSetup {
         assertEq(xStbl.usersTotalVests(address(this)), 2);
         vm.warp(time + 179 days);
         xStbl.exitVest(1);
-        (amount, , ) = xStbl.vestInfo(address(this), 1);
+        (amount,,) = xStbl.vestInfo(address(this), 1);
         assertEq(amount, 0);
         assertGt(IERC20(stbl).balanceOf(address(this)), 25e18 + 29e18);
         assertLt(IERC20(stbl).balanceOf(address(this)), 25e18 + 30e18);
@@ -124,5 +126,4 @@ contract XSTBLTest is Test, MockSetup {
         xStbl.exitVest(2);
         assertEq(IERC20(stbl).balanceOf(address(this)), balanceWas + 20e18);
     }
-
 }

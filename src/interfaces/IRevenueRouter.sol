@@ -17,5 +17,4 @@ interface IRevenueRouter {
 
     /// @notice Accumulated STBL amount for next distribution
     function pendingRevenue() external view returns (uint);
-
 }

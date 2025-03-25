@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 interface IXStaking {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -91,5 +90,4 @@ interface IXStaking {
     /// @param user the address to check
     /// @return The staked balance
     function balanceOf(address user) external view returns (uint);
-
 }

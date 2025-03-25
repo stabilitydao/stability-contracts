@@ -31,17 +31,8 @@ interface IXSTBL {
     event Enter(address indexed user, uint amount);
     event InstantExit(address indexed user, uint exitAmount);
     event NewVest(address indexed user, uint indexed vestId, uint amount);
-    event CancelVesting(
-        address indexed user,
-        uint indexed vestId,
-        uint amount
-    );
-    event ExitVesting(
-        address indexed user,
-        uint indexed vestId,
-        uint totalAmount,
-        uint exitedAmount
-    );
+    event CancelVesting(address indexed user, uint indexed vestId, uint amount);
+    event ExitVesting(address indexed user, uint indexed vestId, uint totalAmount, uint exitedAmount);
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
@@ -64,16 +55,10 @@ interface IXSTBL {
     function exitVest(uint vestID_) external;
 
     /// @notice Set exemption status for from address
-    function setExemptionFrom(
-        address[] calldata exemptee,
-        bool[] calldata exempt
-    ) external;
+    function setExemptionFrom(address[] calldata exemptee, bool[] calldata exempt) external;
 
     /// @notice Set exemption status for to address
-    function setExemptionTo(
-        address[] calldata exemptee,
-        bool[] calldata exempt
-    ) external;
+    function setExemptionTo(address[] calldata exemptee, bool[] calldata exempt) external;
 
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
@@ -95,24 +80,19 @@ interface IXSTBL {
     function MAX_VEST() external view returns (uint);
 
     /// @notice STBL address
-    function STBL() external view returns(address);
+    function STBL() external view returns (address);
 
     /// @notice xSTBL staking contract
-    function xStaking() external view returns(address);
+    function xStaking() external view returns (address);
 
     /// @notice Revenue distributor contract
-    function revenueRouter() external view returns(address);
+    function revenueRouter() external view returns (address);
 
     /// @notice returns info on a user's vests
-    function vestInfo(
-        address user,
-        uint vestId
-    ) external view returns (uint amount, uint start, uint maxEnd);
+    function vestInfo(address user, uint vestId) external view returns (uint amount, uint start, uint maxEnd);
 
     /// @notice Returns the total number of individual vests the user has
-    function usersTotalVests(
-        address who
-    ) external view returns (uint numOfVests);
+    function usersTotalVests(address who) external view returns (uint numOfVests);
 
     /// @notice Amount of pvp rebase penalties accumulated pending to be distributed
     function pendingRebase() external view returns (uint);
