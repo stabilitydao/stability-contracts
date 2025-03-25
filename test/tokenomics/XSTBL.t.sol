@@ -10,6 +10,7 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
+import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 
 contract XSTBLTest is Test, MockSetup {
     address public stbl;
@@ -23,11 +24,14 @@ contract XSTBLTest is Test, MockSetup {
         xSTBLProxy.initProxy(address(new XSTBL()));
         Proxy revenueRouterProxy = new Proxy();
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
+        Proxy feeTreasuryProxy = new Proxy();
+        feeTreasuryProxy.initProxy(address(new FeeTreasury()));
+        FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform));
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
         XSTBL(address(xSTBLProxy)).initialize(
             address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
         );
-        RevenueRouter(address(revenueRouterProxy)).initialize(address(platform), address(xSTBLProxy));
+        RevenueRouter(address(revenueRouterProxy)).initialize(address(platform), address(xSTBLProxy), address(feeTreasuryProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff)));
     }

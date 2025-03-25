@@ -8,6 +8,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
+import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -27,11 +28,16 @@ contract XStakingTest is Test, MockSetup {
         xSTBLProxy.initProxy(address(new XSTBL()));
         Proxy revenueRouterProxy = new Proxy();
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
+        Proxy feeTreasuryProxy = new Proxy();
+        feeTreasuryProxy.initProxy(address(new FeeTreasury()));
+        FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform));
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
         XSTBL(address(xSTBLProxy)).initialize(
             address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
         );
-        RevenueRouter(address(revenueRouterProxy)).initialize(address(platform), address(xSTBLProxy));
+        RevenueRouter(address(revenueRouterProxy)).initialize(
+            address(platform), address(xSTBLProxy), address(feeTreasuryProxy)
+        );
         xStbl = IXSTBL(address(xSTBLProxy));
         xStaking = IXStaking(address(xStakingProxy));
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
@@ -64,5 +70,9 @@ contract XStakingTest is Test, MockSetup {
         xStaking.getReward();
         uint balanceChange = IERC20(address(xStbl)).balanceOf(address(this)) - balanceWas;
         assertGt(balanceChange, 0);
+
+        xStaking.withdraw(1e18);
+        xStaking.withdrawAll();
+        xStaking.depositAll();
     }
 }

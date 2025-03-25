@@ -8,6 +8,12 @@ interface IRevenueRouter {
     /// @return newPeriod The new period
     function updatePeriod() external returns (uint newPeriod);
 
+    /// @notice Process platform fee in form of an asset
+    function processFeeAsset(address asset, uint amount) external;
+
+    /// @notice Process platform fee in form of an vault shares
+    function processFeeVault(address vault, uint amount) external;
+
     /// @notice The period used for rewarding
     /// @return The block.timestamp divided by 1 week in seconds
     function getPeriod() external view returns (uint);

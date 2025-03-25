@@ -2,12 +2,20 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IXStaking} from "../interfaces/IXStaking.sol";
 
+/// @title Platform revenue distributor
+/// @author Alien Deployer (https://github.com/a17)
 contract RevenueRouter is Controllable, IRevenueRouter {
+    using SafeERC20 for IERC20;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -28,6 +36,8 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         address stbl;
         address xStbl;
         address xStaking;
+        address feeTreasury;
+        uint xShare;
         uint activePeriod;
         uint pendingRevenue;
     }
@@ -36,19 +46,26 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, address xStbl_) external initializer {
+    function initialize(address platform_, address xStbl_, address feeTreasury_) external initializer {
         __Controllable_init(platform_);
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         $.stbl = IXSTBL(xStbl_).STBL();
         $.xStbl = xStbl_;
         $.xStaking = IXSTBL(xStbl_).xStaking();
+        $.feeTreasury = feeTreasury_;
+        $.xShare = 50;
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       USER ACTIONS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IRevenueRouter
     function updatePeriod() external returns (uint newPeriod) {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
 
         uint _activePeriod = getPeriod();
+        uint _pendingRevenue = $.pendingRevenue;
 
         require($.activePeriod < _activePeriod, WaitForNewPeriod());
 
@@ -56,6 +73,40 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         newPeriod = _activePeriod;
 
         IXSTBL($.xStbl).rebase();
+
+        if (_pendingRevenue != 0) {
+            address _xStaking = $.xStaking;
+            IERC20($.stbl).approve(_xStaking, _pendingRevenue);
+            IXStaking(_xStaking).notifyRewardAmount(_pendingRevenue);
+            $.pendingRevenue = 0;
+        }
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function processFeeAsset(address asset, uint amount) external {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        uint xAmount = amount * $.xShare / 100;
+        uint feeTreasuryAmount = amount - xAmount;
+        address stbl = $.stbl;
+        uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), xAmount);
+        IERC20(asset).safeTransferFrom(msg.sender, $.feeTreasury, feeTreasuryAmount);
+        ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+        uint threshold = swapper.threshold(asset);
+        if (xAmount > threshold) {
+            if (asset != stbl) {
+                uint amountToSwap = IERC20(asset).balanceOf(address(this));
+                IERC20(asset).forceApprove(address(swapper), amountToSwap);
+                try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
+            }
+            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
+            $.pendingRevenue += stblGot;
+        }
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function processFeeVault(address vault, uint amount) external {
+        IERC20(vault).safeTransferFrom(msg.sender, _getRevenueRouterStorage().feeTreasury, amount);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

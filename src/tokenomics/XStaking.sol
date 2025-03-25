@@ -10,6 +10,9 @@ import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 
+/// @title Staking contract for xSTBL
+/// Inspired by VoteModule from Ramses/Shadow codebase
+/// @author Alien Deployer (https://github.com/a17)
 contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -62,7 +65,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         __ReentrancyGuard_init();
         XStakingStorage storage $ = _getXStakingStorage();
         $.xSTBL = xSTBL_;
-        $.duration = 1 days;
+        $.duration = 30 minutes;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -158,8 +161,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         address _xSTBL = $.xSTBL;
 
         /// @dev only callable by xSTBL and RevenueRouter contract
-        // todo RevenueRouter
-        require(msg.sender == _xSTBL || IPlatform(platform()).isOperator(msg.sender), IncorrectMsgSender());
+        require(msg.sender == _xSTBL || msg.sender == IXSTBL(_xSTBL).revenueRouter(), IncorrectMsgSender());
 
         /// @dev take the STBL from a contract to the XStaking
         IERC20(IXSTBL(_xSTBL).STBL()).transferFrom(msg.sender, address(this), amount);

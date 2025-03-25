@@ -10,6 +10,9 @@ import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
 
+/// @title xSTBL token
+/// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
+/// @author Alien Deployer (https://github.com/a17)
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     using EnumerableSet for EnumerableSet.AddressSet;
 
