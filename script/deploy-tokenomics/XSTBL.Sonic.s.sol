@@ -29,4 +29,6 @@ contract DeployXSTBLSystem is Script {
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xSTBLProxy), address(feeTreasuryProxy));
         vm.stopBroadcast();
     }
+
+    function testDeployScript() external {}
 }
