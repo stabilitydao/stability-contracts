@@ -146,6 +146,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         $.balanceOf[msg.sender] -= amount;
 
         /// @dev transfer the xSTBL to the caller
+        // slither-disable-next-line unchecked-transfer
         IERC20($.xSTBL).transfer(msg.sender, amount);
 
         emit Withdraw(msg.sender, amount);
@@ -164,6 +165,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         require(msg.sender == _xSTBL || msg.sender == IXSTBL(_xSTBL).revenueRouter(), IncorrectMsgSender());
 
         /// @dev take the STBL from a contract to the XStaking
+        // slither-disable-next-line unchecked-transfer
         IERC20(IXSTBL(_xSTBL).STBL()).transferFrom(msg.sender, address(this), amount);
 
         uint _periodFinish = $.periodFinish;
