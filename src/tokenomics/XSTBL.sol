@@ -1,0 +1,340 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "../core/base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IXSTBL} from "../interfaces/IXSTBL.sol";
+import {IXStaking} from "../interfaces/IXStaking.sol";
+import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
+
+contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         CONSTANTS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IControllable
+    string public constant VERSION = "1.0.0";
+
+    /// @inheritdoc IXSTBL
+    uint public constant BASIS = 10_000;
+
+    /// @inheritdoc IXSTBL
+    uint public constant SLASHING_PENALTY = 5000;
+
+    /// @inheritdoc IXSTBL
+    uint public constant MIN_VEST = 14 days;
+
+    /// @inheritdoc IXSTBL
+    uint public constant MAX_VEST = 180 days;
+
+    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant XSTBL_STORAGE_LOCATION = 0x8070df933051cfd06b1bc8a1cc21337087bed1e1452be7055e564e22eadb9e00;
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @custom:storage-location erc7201:stability.XSTBL
+    struct XSTBLStorage {
+        /// @inheritdoc IXSTBL
+        address STBL;
+        /// @inheritdoc IXSTBL
+        address xStaking;
+        /// @inheritdoc IXSTBL
+        address revenueRouter;
+        /// @dev stores the addresses that are exempt from transfer limitations when transferring out
+        EnumerableSet.AddressSet exempt;
+        /// @dev stores the addresses that are exempt from transfer limitations when transferring to them
+        EnumerableSet.AddressSet exemptTo;
+        /// @inheritdoc IXSTBL
+        uint pendingRebase;
+        /// @inheritdoc IXSTBL
+        uint lastDistributedPeriod;
+        /// @inheritdoc IXSTBL
+        mapping(address => VestPosition[]) vestInfo;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      INITIALIZATION                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function initialize(
+        address platform_,
+        address stbl_,
+        address xStaking_,
+        address revenueRouter_
+    ) external initializer {
+        __Controllable_init(platform_);
+        __ERC20_init("xStability", "xSTBL");
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        $.STBL = stbl_;
+        $.xStaking = xStaking_;
+        $.revenueRouter = revenueRouter_;
+
+        $.exempt.add(xStaking_);
+        $.exemptTo.add(xStaking_);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IXSTBL
+    function rebase() external {
+        XSTBLStorage storage $ = _getXSTBLStorage();
+
+        address _revenueRouter = $.revenueRouter;
+
+        /// @dev gate to minter and call it on epoch flips
+        require(msg.sender == _revenueRouter, IncorrectMsgSender());
+
+        /// @dev fetch the current period
+        uint period = IRevenueRouter(_revenueRouter).getPeriod();
+
+        uint _pendingRebase = $.pendingRebase;
+
+        /// @dev if it's a new period (epoch)
+        if (
+            /// @dev if the rebase is greater than the Basis
+            period > $.lastDistributedPeriod && _pendingRebase >= BASIS
+        ) {
+            /// @dev PvP rebase notified to the XStaking contract to stream to xSTBL
+            /// @dev fetch the current period from voter
+            $.lastDistributedPeriod = period;
+
+            /// @dev zero it out
+            $.pendingRebase = 0;
+
+            address _xStaking = $.xStaking;
+
+            /// @dev approve STBL transferring to voteModule
+            IERC20($.STBL).approve(_xStaking, _pendingRebase);
+
+            /// @dev notify the STBL rebase
+            IXStaking(_xStaking).notifyRewardAmount(_pendingRebase);
+
+            emit Rebase(msg.sender, _pendingRebase);
+        }
+    }
+
+    /// @inheritdoc IXSTBL
+    function setExemptionFrom(address[] calldata exemptee, bool[] calldata exempt) external onlyGovernanceOrMultisig {
+        /// @dev ensure arrays of same length
+        require(exemptee.length == exempt.length, IncorrectArrayLength());
+
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        EnumerableSet.AddressSet storage exemptFrom = $.exempt;
+
+        /// @dev loop through all and attempt add/remove based on status
+        uint len = exempt.length;
+        for (uint i; i < len; ++i) {
+            bool success = exempt[i] ? exemptFrom.add(exemptee[i]) : exemptFrom.remove(exemptee[i]);
+            /// @dev emit : (who, status, success)
+            emit ExemptionFrom(exemptee[i], exempt[i], success);
+        }
+    }
+
+    /// @inheritdoc IXSTBL
+    function setExemptionTo(address[] calldata exemptee, bool[] calldata exempt) external onlyGovernanceOrMultisig {
+        /// @dev ensure arrays of same length
+        require(exemptee.length == exempt.length, IncorrectArrayLength());
+
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        EnumerableSet.AddressSet storage exemptTo = $.exemptTo;
+
+        /// @dev loop through all and attempt add/remove based on status
+        uint len = exempt.length;
+        for (uint i; i < len; ++i) {
+            bool success = exempt[i] ? exemptTo.add(exemptee[i]) : exemptTo.remove(exemptee[i]);
+            /// @dev emit : (who, status, success)
+            emit ExemptionTo(exemptee[i], exempt[i], success);
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       USER ACTIONS                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IXSTBL
+    function enter(uint amount_) external {
+        /// @dev ensure the amount_ is > 0
+        require(amount_ != 0, IncorrectZeroArgument());
+        /// @dev transfer from the caller to this address
+        IERC20(STBL()).transferFrom(msg.sender, address(this), amount_);
+        /// @dev mint the xSTBL to the caller
+        _mint(msg.sender, amount_);
+        /// @dev emit an event for conversion
+        emit Enter(msg.sender, amount_);
+    }
+
+    /// @inheritdoc IXSTBL
+    function exit(uint amount_) external returns (uint exitedAmount) {
+        /// @dev cannot exit a 0 amount
+        require(amount_ != 0, IncorrectZeroArgument());
+
+        /// @dev if it's at least 2 wei it will give a penalty
+        uint penalty = amount_ * SLASHING_PENALTY / BASIS;
+        uint exitAmount = amount_ - penalty;
+
+        /// @dev burn the xSTBL from the caller's address
+        _burn(msg.sender, amount_);
+
+        XSTBLStorage storage $ = _getXSTBLStorage();
+
+        /// @dev store the rebase earned from the penalty
+        $.pendingRebase += penalty;
+
+        /// @dev transfer the exitAmount to the caller
+        IERC20($.STBL).transfer(msg.sender, exitAmount);
+
+        /// @dev emit actual exited amount
+        emit InstantExit(msg.sender, exitAmount);
+
+        return exitAmount;
+    }
+
+    /// @inheritdoc IXSTBL
+    function createVest(uint amount_) external {
+        /// @dev ensure not 0
+        require(amount_ != 0, IncorrectZeroArgument());
+
+        /// @dev preemptive burn
+        _burn(msg.sender, amount_);
+
+        XSTBLStorage storage $ = _getXSTBLStorage();
+
+        /// @dev fetch total length of vests
+        uint vestLength = $.vestInfo[msg.sender].length;
+
+        /// @dev push new position
+        $.vestInfo[msg.sender].push(VestPosition(amount_, block.timestamp, block.timestamp + MAX_VEST, vestLength));
+
+        emit NewVest(msg.sender, vestLength, amount_);
+    }
+
+    /// @inheritdoc IXSTBL
+    function exitVest(uint vestID_) external {
+        XSTBLStorage storage $ = _getXSTBLStorage();
+
+        VestPosition storage _vest = $.vestInfo[msg.sender][vestID_];
+        require(_vest.amount != 0, NO_VEST());
+
+        /// @dev store amount in the vest and start time
+        uint _amount = _vest.amount;
+        uint _start = _vest.start;
+
+        /// @dev zero out the amount before anything else as a safety measure
+        _vest.amount = 0;
+
+        if (block.timestamp < _start + MIN_VEST) {
+            /// @dev case: vest has not crossed the minimum vesting threshold
+            /// @dev mint cancelled xSTBL back to msg.sender
+            _mint(msg.sender, _amount);
+
+            emit CancelVesting(msg.sender, vestID_, _amount);
+        } else if (_vest.maxEnd <= block.timestamp) {
+            /// @dev case: vest is complete
+            /// @dev send liquid STBL to msg.sender
+            IERC20($.STBL).transfer(msg.sender, _amount);
+
+            emit ExitVesting(msg.sender, vestID_, _amount, _amount);
+        } else {
+            /// @dev case: vest is in progress
+            /// @dev calculate % earned based on length of time that has vested
+            /// @dev linear calculations
+
+            /// @dev the base to start at (50%)
+            uint base = _amount * SLASHING_PENALTY / BASIS;
+
+            /// @dev calculate the extra earned via vesting
+            uint vestEarned = _amount * (BASIS - SLASHING_PENALTY) * (block.timestamp - _start) / MAX_VEST / BASIS;
+
+            uint exitedAmount = base + vestEarned;
+
+            /// @dev add to the existing pendingRebases
+            $.pendingRebase += (_amount - exitedAmount);
+
+            /// @dev transfer underlying to the sender after penalties removed
+            IERC20($.STBL).transfer(msg.sender, exitedAmount);
+
+            emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      VIEW FUNCTIONS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IXSTBL
+    function STBL() public view returns (address) {
+        return _getXSTBLStorage().STBL;
+    }
+
+    /// @inheritdoc IXSTBL
+    function xStaking() external view returns (address) {
+        return _getXSTBLStorage().xStaking;
+    }
+
+    /// @inheritdoc IXSTBL
+    function revenueRouter() external view returns (address) {
+        return _getXSTBLStorage().revenueRouter;
+    }
+
+    /// @inheritdoc IXSTBL
+    function vestInfo(address user, uint vestID) external view returns (uint amount, uint start, uint maxEnd) {
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        VestPosition memory vestPosition = $.vestInfo[user][vestID];
+        amount = vestPosition.amount;
+        start = vestPosition.start;
+        maxEnd = vestPosition.maxEnd;
+    }
+
+    /// @inheritdoc IXSTBL
+    function usersTotalVests(address who) external view returns (uint numOfVests) {
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        return $.vestInfo[who].length;
+    }
+
+    /// @inheritdoc IXSTBL
+    function pendingRebase() external view returns (uint) {
+        return _getXSTBLStorage().pendingRebase;
+    }
+
+    /// @inheritdoc IXSTBL
+    function lastDistributedPeriod() external view returns (uint) {
+        return _getXSTBLStorage().lastDistributedPeriod;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     HOOKS TO OVERRIDE                      */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _update(address from, address to, uint value) internal override {
+        require(_isExempted(from, to), NOT_WHITELISTED(from, to));
+
+        /// @dev call parent function
+        super._update(from, to, value);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev internal check for the transfer whitelist
+    function _isExempted(address from_, address to_) internal view returns (bool) {
+        XSTBLStorage storage $ = _getXSTBLStorage();
+        return (from_ == address(0) || to_ == address(0) || $.exempt.contains(from_) || $.exemptTo.contains(to_));
+    }
+
+    function _getXSTBLStorage() internal pure returns (XSTBLStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := XSTBL_STORAGE_LOCATION
+        }
+    }
+}
