@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 /// @notice Interface of the main contract and entry point to the platform.
 /// @author Alien Deployer (https://github.com/a17)
@@ -65,6 +65,7 @@ interface IPlatform {
     event CustomVaultFee(address vault, uint platformFee);
     event Rebalancer(address rebalancer_);
     event Bridge(address bridge_);
+    event RevenueRouter(address revenueRouter_);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -178,6 +179,10 @@ interface IPlatform {
     /// @notice Stability Bridge
     /// @return Address of Bridge proxy
     function bridge() external view returns (address);
+
+    /// @notice Platform revenue distributor
+    /// @return Address of the revenue distributor proxy
+    function revenueRouter() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
@@ -316,36 +321,6 @@ interface IPlatform {
             bytes32[] memory strategyExtra
         );
 
-    /// @notice Front-end balances, prices and vault list viewer
-    /// DEPRECATED: use IFrontend.getBalanceAssets and IFrontend.getBalanceVaults
-    /// @param yourAccount Address of account to query balances
-    /// @return token Tokens supported by the platform
-    /// @return tokenPrice USD price of token. Index of token same as in previous array.
-    /// @return tokenUserBalance User balance of token. Index of token same as in previous array.
-    /// @return vault Deployed vaults
-    /// @return vaultSharePrice Price 1.0 vault share. Index of vault same as in previous array.
-    /// @return vaultUserBalance User balance of vault. Index of vault same as in previous array.
-    /// @return nft Ecosystem NFTs
-    ///         nft[0] BuildingPermitToken
-    ///         nft[1] VaultManager
-    ///         nft[2] StrategyLogic
-    /// @return nftUserBalance User balance of NFT. Index of NFT same as in previous array.
-    /// @return buildingPayPerVaultTokenBalance User balance of vault creation paying token
-    function getBalance(address yourAccount)
-        external
-        view
-        returns (
-            address[] memory token,
-            uint[] memory tokenPrice,
-            uint[] memory tokenUserBalance,
-            address[] memory vault,
-            uint[] memory vaultSharePrice,
-            uint[] memory vaultUserBalance,
-            address[] memory nft,
-            uint[] memory nftUserBalance,
-            uint buildingPayPerVaultTokenBalance
-        );
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -448,13 +423,4 @@ interface IPlatform {
     /// @param platformFee Custom platform fee
     function setCustomVaultFee(address vault, uint platformFee) external;
 
-    /// @notice Setup Rebalancer.
-    /// Only Goverannce or Multisig can do this when Rebalancer is not set.
-    /// @param rebalancer_ Proxy address of Bridge
-    function setupRebalancer(address rebalancer_) external;
-
-    /// @notice Setup Bridge.
-    /// Only Goverannce or Multisig can do this when Bridge is not set.
-    /// @param bridge_ Proxy address of Bridge
-    function setupBridge(address bridge_) external;
 }

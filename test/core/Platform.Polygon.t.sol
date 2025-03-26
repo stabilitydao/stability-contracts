@@ -50,45 +50,6 @@ contract PlatformPolygonTest is PolygonSetup {
         require(canReceive);
     }
 
-    function testUserBalance() public view {
-        (
-            address[] memory token,
-            uint[] memory tokenPrice,
-            uint[] memory tokenUserBalance,
-            address[] memory vault,
-            uint[] memory vaultSharePrice,
-            uint[] memory vaultUserBalance,
-            address[] memory nft,
-            uint[] memory nftUserBalance,
-        ) = platform.getBalance(address(this));
-        uint len = token.length;
-        for (uint i; i < len; ++i) {
-            assertNotEq(token[i], address(0));
-            assertGt(tokenPrice[i], 0);
-            if (token[i] == PolygonLib.TOKEN_USDCe) {
-                assertEq(tokenUserBalance[i], 1e12);
-            } else if (token[i] == platform.allowedBBTokens()[0]) {
-                assertEq(tokenUserBalance[i], 5e24);
-            } else {
-                assertEq(tokenUserBalance[i], 0);
-            }
-        }
-        len = vault.length;
-        for (uint i; i < len; ++i) {
-            assertNotEq(vault[i], address(0));
-            assertGt(vaultSharePrice[i], 0);
-            assertEq(vaultUserBalance[i], 0);
-        }
-        len = nft.length;
-        for (uint i; i < len; ++i) {
-            assertNotEq(nft[i], address(0));
-            assertEq(nftUserBalance[i], 0);
-        }
-        assertEq(nft[0], platform.buildingPermitToken());
-        assertEq(nft[1], platform.vaultManager());
-        assertEq(nft[2], platform.strategyLogic());
-    }
-
     // todo refactor this test, move HardWorker related to HardWorker.Polygon.t.sol
     function testAll() public {
         // change heartbeat to prevent "OLD_PRICE revert" for DefiEdge underlings
@@ -189,9 +150,7 @@ contract PlatformPolygonTest is PolygonSetup {
                 strategyInitNums,
                 strategyInitTicks
             );
-            (,,,, uint[] memory vaultSharePrice, uint[] memory vaultUserBalance,,,) = platform.getBalance(address(this));
-            assertEq(vaultSharePrice[0], 0);
-            assertEq(vaultUserBalance[0], 0);
+
             bytes32 deploymentKey = factory.getDeploymentKey(
                 vars.vaultType[i],
                 vars.strategyId[i],
