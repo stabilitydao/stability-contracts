@@ -108,14 +108,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
-        uint len = __assets.length;
-        amounts = new uint[](len);
-        for (uint i; i < len; ++i) {
-            amounts[i] = StrategyLib.balance(__assets[i]);
-        }
-    }
+    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
 
     /// @inheritdoc IStrategy
     function initVariants(address platform_)
@@ -190,12 +183,13 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {}
+    function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {
+        return true;
+    }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external view returns (bool) {
-        FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
-        return StrategyLib.assetsAreOnBalance(_$_._rewardAssets);
+    function isReadyForHardWork() external pure returns (bool) {
+        return true;
     }
 
     /// @inheritdoc IFarmingStrategy

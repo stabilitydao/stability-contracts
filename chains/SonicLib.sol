@@ -379,18 +379,20 @@ library SonicLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](5);
+            address[] memory tokenIn = new address[](6);
             tokenIn[0] = TOKEN_wS;
             tokenIn[1] = TOKEN_stS;
             tokenIn[2] = TOKEN_BEETS;
             tokenIn[3] = TOKEN_EQUAL;
             tokenIn[4] = TOKEN_USDC;
-            uint[] memory thresholdAmount = new uint[](5);
+            tokenIn[5] = TOKEN_DIAMONDS;
+            uint[] memory thresholdAmount = new uint[](6);
             thresholdAmount[0] = 1e12;
             thresholdAmount[1] = 1e16;
             thresholdAmount[2] = 1e10;
             thresholdAmount[3] = 1e12;
             thresholdAmount[4] = 1e4;
+            thresholdAmount[5] = 1e15;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
