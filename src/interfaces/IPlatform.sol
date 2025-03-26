@@ -422,5 +422,4 @@ interface IPlatform {
     /// @param vault Vault address
     /// @param platformFee Custom platform fee
     function setCustomVaultFee(address vault, uint platformFee) external;
-
 }
