@@ -18,6 +18,8 @@ interface IGaugeEquivalent {
 
     function getReward() external;
 
+    function getReward(address account, address[] memory tokens) external;
+
     function notifyRewardAmount(address _rewardsToken, uint _reward) external;
 
     function addReward(address _rewardsToken, address _rewardsDistributor, uint _rewardsDuration) external;

@@ -30,6 +30,7 @@ import {IGaugeV3} from "../src/integrations/shadow/IGaugeV3.sol";
 import {ALMShadowFarmStrategy} from "../src/strategies/ALMShadowFarmStrategy.sol";
 import {SiloLeverageStrategy} from "../src/strategies/SiloLeverageStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../src/strategies/SiloAdvancedLeverageStrategy.sol";
+import {GammaEqualizerFarmStrategy} from "../src/strategies/GammaEqualizerFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -91,6 +92,7 @@ library SonicLib {
     address public constant TOKEN_frxUSD = 0x80Eede496655FB9047dd39d9f418d5483ED600df;
     address public constant TOKEN_sfrxUSD = 0x5Bff88cA1442c2496f7E475E9e7786383Bc070c0;
     address public constant TOKEN_x33 = 0x3333111A391cC08fa51353E9195526A70b333333;
+    address public constant TOKEN_DIAMONDS = 0xdBde38013d44aE23baDC4cd8081271B8028eCaF4;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -163,6 +165,10 @@ library SonicLib {
     address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
     address public constant POOL_SHADOW_CL_USDC_EGGS = 0x66A8289bdD968D1157eB1a608f60a87759632cd6;
     address public constant POOL_SHADOW_CL_x33_SHADOW = 0xBB528A050a3b3b998a9651F893Fa46162967A04C;
+    // address public constant POOL_EQUALIZER_wS_USDC = 0xb1BC4B830FCbA2184B92e15b9133c41160518038;
+    // address public constant POOL_EQUALIZER_WETH_wS = 0x81ACF1C9BCC452b634D6DA33DB3f8D96e2CD1c73;
+    // address public constant POOL_EQUALIZER_USDC_WETH = 0xfe809A1D337Bdfc98B77A1067e3819f66d8AD23F;
+    address public constant POOL_EQUALIZER_wS_DIAMONDS = 0x2db92f3cf994520aC480d6692e956Ab7d8A24dcE;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -194,6 +200,9 @@ library SonicLib {
     address public constant ALM_GAMMA_UNISWAPV3_wS_WETH_3000 = 0x2Ea8A8ba347011FEF2a7E0A276354B90B4927cBC;
     address public constant ALM_GAMMA_UNISWAPV3_USDC_WETH_500 = 0x2fA5E2E2a49de9375047225b7cea4997e8203AA4;
     address public constant ALM_GAMMA_UNISWAPV3_USDC_scUSD_100 = 0xBd3332466d13588B1BFe8673B58190645bFE26bE;
+    address public constant ALM_GAMMA_EQUALIZER_wS_USDC = 0xC225FA4e6fFE9cc248518004946B48B76b9E4dFE;
+    address public constant ALM_GAMMA_EQUALIZER_WETH_wS = 0x2Fcc0d25c4CD2084e402c16DB68FBE206A36A46F;
+    address public constant ALM_GAMMA_EQUALIZER_USDC_WETH = 0xBc7D3b581cd4c4f34fC2942491Fa803761C574e2;
 
     // Beets
     address public constant BEETS_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
@@ -222,6 +231,9 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_wS_THC = 0x4C09EcEc77Bd56ea28CE85DA6a2A4E39de997e35;
     address public constant EQUALIZER_GAUGE_wS_FS = 0x152A791a2B3E415d482F4Bc608A328f3ebE37A5D;
     address public constant EQUALIZER_GAUGE_wS_sDOG = 0xa9366d013bE7E7151f251cb47133Ed14aa3cFCdC;
+    address public constant EQUALIZER_GAUGE_GAMMA_wS_USDC = 0xa4B6867eEad7B373642f86253c5367bA84E12f76;
+    address public constant EQUALIZER_GAUGE_GAMMA_WETH_wS = 0x28b96E430ecC193c07318325f6a8af17c44333D8;
+    address public constant EQUALIZER_GAUGE_GAMMA_USDC_WETH = 0xdC44bf3bF760e88DdaC7667C2386A0D5B6668b47;
 
     // SwapX
     address public constant SWAPX_ROUTER_V2 = 0xF5F7231073b3B41c04BA655e1a7438b1a7b29c27;
@@ -279,6 +291,7 @@ library SonicLib {
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
+    address public constant GAMMA_EQUALIZER_UNIPROXY = 0x38f61169D8bcc08cE303401A13332259F557B35f;
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
@@ -425,6 +438,7 @@ library SonicLib {
         _addStrategyLogic(
             factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false
         );
+        _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -447,7 +461,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](28);
+        pools = new ISwapper.AddPoolData[](29);
         uint i;
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
@@ -490,12 +504,14 @@ library SonicLib {
 
         pools[i++] =
             _makePoolData(POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, TOKEN_x33, TOKEN_SHADOW);
+        
+        pools[i++] = _makePoolData(POOL_EQUALIZER_wS_DIAMONDS, AmmAdapterIdLib.SOLIDLY, TOKEN_DIAMONDS, TOKEN_wS);
 
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](31);
+        _farms = new IFactory.Farm[](34);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -533,6 +549,9 @@ library SonicLib {
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_wS_USDC, ALMLib.ALGO_FILL_UP, 1500, 600);
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 120000, 40000);
         _farms[i++] = _makeALMShadowFarm(SHADOW_GAUGE_CL_SACRA_scUSD_20000, ALMLib.ALGO_FILL_UP, 800, 400);
+        _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_wS_USDC, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_wS_USDC);
+        _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_WETH_wS, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_WETH_wS);
+        _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_USDC_WETH, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_USDC_WETH);
     }
 
     function _makeALMShadowFarm(
@@ -572,6 +591,30 @@ library SonicLib {
         farm.addresses = new address[](2);
         farm.addresses[0] = GAMMA_UNISWAPV3_UNIPROXY;
         farm.addresses[1] = hypervisor;
+        farm.nums = new uint[](1);
+        farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeGammaEqualizerFarm(
+        address hypervisor,
+        uint preset,
+        address gauge
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IHypervisor(hypervisor).pool();
+        farm.strategyLogicId = StrategyIdLib.GAMMA_EQUALIZER_FARM;
+        uint len = IGaugeEquivalent(gauge).rewardsListLength();
+        farm.rewardAssets = new address[](len);
+        for (uint i; i < len; ++i) {
+            farm.rewardAssets[i] = IGaugeEquivalent(gauge).rewardTokens(i);
+        }
+        farm.addresses = new address[](3);
+        farm.addresses[0] = GAMMA_EQUALIZER_UNIPROXY;
+        farm.addresses[1] = hypervisor;
+        farm.addresses[2] = gauge;
         farm.nums = new uint[](1);
         farm.nums[0] = preset;
         farm.ticks = new int24[](0);
