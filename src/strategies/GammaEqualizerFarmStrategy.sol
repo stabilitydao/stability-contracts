@@ -342,6 +342,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     ) internal view {
         amountsConsumed[1] = amountsMax[1];
         amountsConsumed[0] = amountsMax[0];
+        //slither-disable-next-line unused-return
         (, uint amount0End) = $.uniProxy.getDepositAmount(underlying_, assets_[1], amountsMax[1]);
 
         // Inline the assignment and condition with a ternary operator
