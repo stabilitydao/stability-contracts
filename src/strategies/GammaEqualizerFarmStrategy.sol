@@ -13,7 +13,6 @@ import "../integrations/uniswapv3/IUniswapV3Pool.sol";
 import "../core/libs/CommonLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
-// import "forge-std/console.sol";
 
 /// @title Earn Equalizer farm rewards by Gamma ALM
 /// @author Jude (https://github.com/iammrjude)
@@ -276,21 +275,20 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         )
     {
         __assets = assets();
-        __amounts = new uint[](__assets.length); // TODO: is it getting the correct amount? why is it [0,0] ??
+        __amounts = new uint[](__assets.length);
         FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
         __rewardAssets = _$_._rewardAssets;
         uint rwLen = __rewardAssets.length;
         uint[] memory balanceBefore = new uint[](rwLen);
         __rewardAmounts = new uint[](rwLen);
         for (uint i; i < rwLen; ++i) {
-            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]); // TODO: Why is balance befor zero [0,0] ?? Maybe because no rewards have been claimed before ??
+            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         IFactory.Farm memory farm = _getFarm();
         // IGaugeEquivalent(farm.addresses[2]).getReward();
         IGaugeEquivalent(farm.addresses[2]).getReward(address(this), __rewardAssets);
         for (uint i; i < rwLen; ++i) {
-            // console.logUint(StrategyLib.balance(__rewardAssets[i]));
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i]; // TODO: __rewardAmounts is also zero [0,0], that means `getReward()` is not working for some unknown reasons ??
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }
     }
 
