@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import "./StrategyBase.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyBase} from "./StrategyBase.sol";
+import {StrategyLib} from "../libs/StrategyLib.sol";
+import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// @author Alien Deployer (https://github.com/a17)
@@ -14,7 +21,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.0";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
