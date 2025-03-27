@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -19,6 +19,7 @@ import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IWETH} from "../../integrations/weth/IWETH.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
+import {IBVault} from "../../integrations/balancer/IBVault.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -207,6 +208,57 @@ library SiloAdvancedLib {
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
     }
 
+    function rebalanceDebt(
+        address platform,
+        uint newLtv,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) external returns (uint resultLtv) {
+        (uint ltv,,, uint collateralAmount, uint debtAmount,) = health(platform, $);
+
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = ILeverageLendingStrategy.LeverageLendingAddresses({
+            collateralAsset: $.collateralAsset,
+            borrowAsset: $.borrowAsset,
+            lendingVault: $.lendingVault,
+            borrowingVault: $.borrowingVault
+        });
+
+        uint tvlPricedInCollateralAsset = calcTotal(v);
+
+        // here is the math that works:
+        // collateral_value - debt_value = real_TVL
+        // debt_value * PRECISION / collateral_value = LTV
+        // ---
+        // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
+
+        uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        uint newDebtAmount = newCollateralValue * newLtv / INTERNAL_PRECISION * priceCtoB / 1e18;
+        address[] memory flashAssets = new address[](1);
+        flashAssets[0] = v.borrowAsset;
+        uint[] memory flashAmounts = new uint[](1);
+
+        if (newLtv < ltv) {
+            // need decrease debt and collateral
+            $.tempAction = ILeverageLendingStrategy.CurrentAction.DecreaseLtv;
+
+            uint debtDiff = debtAmount - newDebtAmount;
+            flashAmounts[0] = debtDiff;
+
+            $.tempCollateralAmount = (collateralAmount - newCollateralValue) * $.decreaseLtvParam0 / INTERNAL_PRECISION;
+        } else {
+            // need increase debt and collateral
+            $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
+
+            uint debtDiff = newDebtAmount - debtAmount;
+            flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
+        }
+
+        IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
+
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
+        (resultLtv,,,,,) = health(platform, $);
+    }
+
     function realTvl(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
@@ -263,7 +315,7 @@ library SiloAdvancedLib {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) external view returns (uint) {
+    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
         (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
         uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
         return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;

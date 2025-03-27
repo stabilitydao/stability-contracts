@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./libs/StrategyIdLib.sol";
-import "./base/ERC4626StrategyBase.sol";
-import "../integrations/yearn/IYearnVault.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {IYearnVault} from "../integrations/yearn/IYearnVault.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @title Hodl Yearn V3 multi ERC4626 vault, emit revenue, collect fees and show underlying protocols
 /// @author Alien Deployer (https://github.com/a17)
@@ -13,7 +19,7 @@ contract YearnStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

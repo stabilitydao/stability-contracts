@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {StrategyBase} from "./StrategyBase.sol";
@@ -13,6 +13,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
+///   1.1.1: StrategyBase 2.1.3
 ///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
 /// @author Alien Deployer (https://github.com/a17)
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
@@ -21,7 +22,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.1.0";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.1.1";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
