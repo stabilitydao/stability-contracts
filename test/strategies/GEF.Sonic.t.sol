@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "../base/chains/SonicSetup.sol";
-import "../base/UniversalTest.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract GammaEqualizerFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import "./base/LPStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/UniswapV3MathLib.sol";
-import "./libs/ALMPositionNameLib.sol";
-import "../integrations/gamma/IUniProxy.sol";
-import "../integrations/gamma/IHypervisor.sol";
-import "../integrations/uniswapv3/IUniswapV3Pool.sol";
-import "../core/libs/CommonLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
+import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
+import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
+import {IUniProxy} from "../integrations/gamma/IUniProxy.sol";
+import {IHypervisor} from "../integrations/gamma/IHypervisor.sol";
+import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 
 /// @title Earn Equalizer farm rewards by Gamma ALM

@@ -71,7 +71,7 @@ You must inherit from contracts `<ChainName>Setup`, `UniversalTest` and write `t
 Run tests:
 
 ```shell
-forge test -vv -match-test test***
+forge test -vv --match-test test***
 ```
 
 ## 7. Implement and debug strategy logic
@@ -84,7 +84,7 @@ Mitigate security findings posted in PR.
 
 ## 8. Write deploy script
 
-Put deploy script for operator to `script/DeployStrategy****.<ChainName>.s.sol` with deploying strategy implementation, adding swap routes and farms.
+Put deploy script for operator to `script/deploy-strategy/****.<ChainName>.s.sol` with deploying strategy implementation, adding swap routes and farms.
 
 The script should not use `<ChainName>Lib.sol`, otherwise this lib will be deployed when the script is launched, which is unnecessary and is an extra waste of gas.
 
