@@ -1,8 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "./base/LPStrategyBase.sol";
-import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
+import {
+    LPStrategyBase,
+    ILPStrategy,
+    IStrategy,
+    IControllable,
+    SafeERC20,
+    IERC20,
+    IERC165,
+    StrategyBase,
+    IAmmAdapter,
+    VaultTypeLib
+} from "./base/LPStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
@@ -75,10 +86,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory _assets = assets();
         IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[1], type(uint).max);
-        IERC20(farm.addresses[1]).forceApprove(farm.addresses[1], type(uint).max);
         IERC20(farm.addresses[1]).forceApprove(farm.addresses[2], type(uint).max);
-
-        // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.GammaEqualizerFarmStrategy")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -107,7 +115,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
+    function getRevenue() external pure returns (address[] memory __assets, uint[] memory amounts) {}
 
     /// @inheritdoc IStrategy
     function initVariants(address platform_)
