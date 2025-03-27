@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "../libs/SlotsLib.sol";
-import "../../interfaces/IControllable.sol";
-import "../../interfaces/IPlatform.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SlotsLib} from "../libs/SlotsLib.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @dev Base core contract.
 ///      It store an immutable platform proxy address in the storage and provides access control to inherited contracts.
@@ -14,7 +15,7 @@ import "../../interfaces/IPlatform.sol";
 abstract contract Controllable is Initializable, IControllable, ERC165 {
     using SlotsLib for bytes32;
 
-    string public constant CONTROLLABLE_VERSION = "1.0.0";
+    string public constant CONTROLLABLE_VERSION = "1.0.1";
     bytes32 internal constant _PLATFORM_SLOT = bytes32(uint(keccak256("eip1967.controllable.platform")) - 1);
     bytes32 internal constant _CREATED_BLOCK_SLOT = bytes32(uint(keccak256("eip1967.controllable.created_block")) - 1);
 
@@ -29,9 +30,7 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
     /// @param platform_ Platform address
     //slither-disable-next-line naming-convention
     function __Controllable_init(address platform_) internal onlyInitializing {
-        if (platform_ == address(0) || IPlatform(platform_).multisig() == address(0)) {
-            revert IncorrectZeroArgument();
-        }
+        require(platform_ != address(0) && IPlatform(platform_).multisig() != address(0), IncorrectZeroArgument());
         SlotsLib.set(_PLATFORM_SLOT, platform_); // syntax for forge coverage
         _CREATED_BLOCK_SLOT.set(block.number);
         emit ContractInitialized(platform_, block.timestamp, block.number);
@@ -80,34 +79,25 @@ abstract contract Controllable is Initializable, IControllable, ERC165 {
     }
 
     function _requireGovernance() internal view {
-        if (IPlatform(platform()).governance() != msg.sender) {
-            revert NotGovernance();
-        }
+        require(IPlatform(platform()).governance() == msg.sender, NotGovernance());
     }
 
     function _requireMultisig() internal view {
-        if (!IPlatform(platform()).isOperator(msg.sender)) {
-            revert NotMultisig();
-        }
+        require(IPlatform(platform()).multisig() == msg.sender, NotMultisig());
     }
 
     function _requireGovernanceOrMultisig() internal view {
         IPlatform _platform = IPlatform(platform());
-        // nosemgrep
-        if (_platform.governance() != msg.sender && _platform.multisig() != msg.sender) {
-            revert NotGovernanceAndNotMultisig();
-        }
+        require(
+            _platform.governance() == msg.sender || _platform.multisig() == msg.sender, NotGovernanceAndNotMultisig()
+        );
     }
 
     function _requireOperator() internal view {
-        if (!IPlatform(platform()).isOperator(msg.sender)) {
-            revert NotOperator();
-        }
+        require(IPlatform(platform()).isOperator(msg.sender), NotOperator());
     }
 
     function _requireFactory() internal view {
-        if (IPlatform(platform()).factory() != msg.sender) {
-            revert NotFactory();
-        }
+        require(IPlatform(platform()).factory() == msg.sender, NotFactory());
     }
 }

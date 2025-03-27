@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "./base/Controllable.sol";
-import "./libs/ConstantsLib.sol";
-import "./libs/CommonLib.sol";
-import "../interfaces/IPlatform.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/IProxy.sol";
-import "../interfaces/ISwapper.sol";
-import "../interfaces/IPriceReader.sol";
-import "../interfaces/IVaultManager.sol";
-import "../interfaces/IVault.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {ConstantsLib} from "./libs/ConstantsLib.sol";
+import {CommonLib} from "./libs/CommonLib.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IProxy} from "../interfaces/IProxy.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
+import {IVaultManager} from "../interfaces/IVaultManager.sol";
+import {IVault} from "../interfaces/IVault.sol";
 
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings, allows plaform upgrades etc.
@@ -33,7 +35,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -122,6 +124,8 @@ contract Platform is Controllable, IPlatform {
         uint feeShareStrategyLogic;
         uint feeShareEcosystem;
         mapping(address vault => uint platformFee) customVaultFee;
+        /// @inheritdoc IPlatform
+        address revenueRouter;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -146,9 +150,7 @@ contract Platform is Controllable, IPlatform {
         IPlatform.PlatformSettings memory settings
     ) external onlyOperator {
         PlatformStorage storage $ = _getStorage();
-        if ($.factory != address(0)) {
-            revert AlreadyExist();
-        }
+        require($.factory == address(0), AlreadyExist());
 
         $.factory = addresses.factory;
         $.priceReader = addresses.priceReader;
@@ -203,18 +205,14 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function addOperator(address operator) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        if (!$.operators.add(operator)) {
-            revert AlreadyExist();
-        }
+        require($.operators.add(operator), AlreadyExist());
         emit OperatorAdded(operator);
     }
 
     /// @inheritdoc IPlatform
     function removeOperator(address operator) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        if (!$.operators.remove(operator)) {
-            revert NotExist();
-        }
+        require($.operators.remove(operator), NotExist());
         emit OperatorRemoved(operator);
     }
 
@@ -225,30 +223,21 @@ contract Platform is Controllable, IPlatform {
         address[] memory newImplementations
     ) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        if ($.pendingPlatformUpgrade.proxies.length != 0) {
-            revert AlreadyAnnounced();
-        }
+        require($.pendingPlatformUpgrade.proxies.length == 0, AlreadyAnnounced());
         uint len = proxies.length;
-        if (len != newImplementations.length) {
-            revert IncorrectArrayLength();
-        }
-        // nosemgrep
+        require(len == newImplementations.length, IncorrectArrayLength());
+
         for (uint i; i < len; ++i) {
-            if (proxies[i] == address(0)) {
-                revert IControllable.IncorrectZeroArgument();
-            }
-            if (newImplementations[i] == address(0)) {
-                revert IControllable.IncorrectZeroArgument();
-            }
+            require(proxies[i] != address(0), IControllable.IncorrectZeroArgument());
+            require(newImplementations[i] != address(0), IControllable.IncorrectZeroArgument());
             //slither-disable-next-line calls-loop
-            if (CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION())) {
-                revert SameVersion();
-            }
+            require(
+                !CommonLib.eq(IControllable(proxies[i]).VERSION(), IControllable(newImplementations[i]).VERSION()),
+                SameVersion()
+            );
         }
         string memory oldVersion = $.platformVersion;
-        if (CommonLib.eq(oldVersion, newVersion)) {
-            revert SameVersion();
-        }
+        require(!CommonLib.eq(oldVersion, newVersion), SameVersion());
         $.pendingPlatformUpgrade.newVersion = newVersion;
         $.pendingPlatformUpgrade.proxies = proxies;
         $.pendingPlatformUpgrade.newImplementations = newImplementations;
@@ -262,13 +251,9 @@ contract Platform is Controllable, IPlatform {
     function upgrade() external onlyOperator {
         PlatformStorage storage $ = _getStorage();
         uint ts = $.platformUpgradeTimelock;
-        if (ts == 0) {
-            revert NoNewVersion();
-        }
+        require(ts != 0, NoNewVersion());
         //slither-disable-next-line timestamp
-        if (ts > block.timestamp) {
-            revert UpgradeTimerIsNotOver(ts);
-        }
+        require(block.timestamp > ts, UpgradeTimerIsNotOver(ts));
         PlatformUpgrade memory platformUpgrade = $.pendingPlatformUpgrade;
         uint len = platformUpgrade.proxies.length;
         // nosemgrep
@@ -297,9 +282,7 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function cancelUpgrade() external onlyOperator {
         PlatformStorage storage $ = _getStorage();
-        if ($.platformUpgradeTimelock == 0) {
-            revert NoNewVersion();
-        }
+        require($.platformUpgradeTimelock != 0, NoNewVersion());
         emit CancelUpgrade(VERSION, $.pendingPlatformUpgrade.newVersion);
         $.pendingPlatformUpgrade.newVersion = "";
         $.pendingPlatformUpgrade.proxies = new address[](0);
@@ -312,7 +295,7 @@ contract Platform is Controllable, IPlatform {
         uint feeShareVaultManager,
         uint feeShareStrategyLogic,
         uint feeShareEcosystem
-    ) external onlyGovernance {
+    ) external onlyGovernanceOrMultisig {
         _setFees(fee, feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem);
     }
 
@@ -448,18 +431,10 @@ contract Platform is Controllable, IPlatform {
         $.customVaultFee[vault] = platformFee;
     }
 
-    /// @inheritdoc IPlatform
-    function setupRebalancer(address rebalancer_) external onlyGovernanceOrMultisig {
+    function setupRevenueRouter(address revenueRouter_) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
-        emit Rebalancer(rebalancer_);
-        $.rebalancer = rebalancer_;
-    }
-
-    /// @inheritdoc IPlatform
-    function setupBridge(address bridge_) external onlyGovernanceOrMultisig {
-        PlatformStorage storage $ = _getStorage();
-        emit Bridge(bridge_);
-        $.bridge = bridge_;
+        emit RevenueRouter(revenueRouter_);
+        $.revenueRouter = revenueRouter_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -674,66 +649,6 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    //slither-disable-next-line unused-return
-    function getBalance(address yourAccount)
-        external
-        view
-        returns (
-            address[] memory token,
-            uint[] memory tokenPrice,
-            uint[] memory tokenUserBalance,
-            address[] memory vault,
-            uint[] memory vaultSharePrice,
-            uint[] memory vaultUserBalance,
-            address[] memory nft,
-            uint[] memory nftUserBalance,
-            uint buildingPayPerVaultTokenBalance
-        )
-    {
-        PlatformStorage storage $ = _getStorage();
-        token = ISwapper($.swapper).allAssets();
-        IPriceReader _priceReader = IPriceReader($.priceReader);
-        uint len = token.length;
-        tokenPrice = new uint[](len);
-        tokenUserBalance = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            //slither-disable-next-line calls-loop
-            (tokenPrice[i],) = _priceReader.getPrice(token[i]);
-            //slither-disable-next-line calls-loop
-            tokenUserBalance[i] = IERC20(token[i]).balanceOf(yourAccount);
-        }
-
-        vault = IVaultManager($.vaultManager).vaultAddresses();
-        len = vault.length;
-        vaultSharePrice = new uint[](len);
-        vaultUserBalance = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            //slither-disable-next-line calls-loop unused-return
-            (vaultSharePrice[i],) = IVault(vault[i]).price();
-            //slither-disable-next-line calls-loop
-            vaultUserBalance[i] = IERC20(vault[i]).balanceOf(yourAccount);
-        }
-
-        len = 3;
-        nft = new address[](len);
-        nft[0] = $.buildingPermitToken;
-        nft[1] = $.vaultManager;
-        nft[2] = $.strategyLogic;
-        nftUserBalance = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            //slither-disable-next-line calls-loop
-            if (nft[i] != address(0)) {
-                nftUserBalance[i] = IERC721(nft[i]).balanceOf(yourAccount);
-            }
-        }
-
-        buildingPayPerVaultTokenBalance = IERC20($.buildingPayPerVaultToken).balanceOf(yourAccount);
-    }
-
-    /// @inheritdoc IPlatform
     function platformVersion() external view returns (string memory) {
         PlatformStorage storage $ = _getStorage();
         return $.platformVersion;
@@ -833,6 +748,12 @@ contract Platform is Controllable, IPlatform {
     function bridge() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.bridge;
+    }
+
+    /// @inheritdoc IPlatform
+    function revenueRouter() external view returns (address) {
+        PlatformStorage storage $ = _getStorage();
+        return $.revenueRouter;
     }
 
     /// @inheritdoc IPlatform
