@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -26,6 +26,7 @@ import {IBVault} from "../integrations/balancer/IBVault.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   1.1.1: use LeverageLendingBase 1.1.1; decrease size
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
@@ -37,7 +38,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -216,51 +217,8 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
-        (uint ltv,,, uint collateralAmount, uint debtAmount,) = health();
-
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        LeverageLendingAddresses memory v = LeverageLendingAddresses({
-            collateralAsset: $.collateralAsset,
-            borrowAsset: $.borrowAsset,
-            lendingVault: $.lendingVault,
-            borrowingVault: $.borrowingVault
-        });
-
-        uint tvlPricedInCollateralAsset = SiloAdvancedLib.calcTotal(v);
-
-        // here is the math that works:
-        // collateral_value - debt_value = real_TVL
-        // debt_value * PRECISION / collateral_value = LTV
-        // ---
-        // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
-
-        uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        (uint priceCtoB,) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
-        uint newDebtAmount = newCollateralValue * newLtv / INTERNAL_PRECISION * priceCtoB / 1e18;
-        address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.borrowAsset;
-        uint[] memory flashAmounts = new uint[](1);
-
-        if (newLtv < ltv) {
-            // need decrease debt and collateral
-            $.tempAction = CurrentAction.DecreaseLtv;
-
-            uint debtDiff = debtAmount - newDebtAmount;
-            flashAmounts[0] = debtDiff;
-
-            $.tempCollateralAmount = (collateralAmount - newCollateralValue) * $.decreaseLtvParam0 / INTERNAL_PRECISION;
-        } else {
-            // need increase debt and collateral
-            $.tempAction = CurrentAction.IncreaseLtv;
-
-            uint debtDiff = newDebtAmount - debtAmount;
-            flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
-        }
-
-        IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
-
-        $.tempAction = CurrentAction.None;
-        (resultLtv,,,,,) = health();
+        return SiloAdvancedLib.rebalanceDebt(platform(), newLtv, $);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
