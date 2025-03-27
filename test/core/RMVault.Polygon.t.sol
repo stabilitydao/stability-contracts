@@ -193,13 +193,16 @@ contract RMVaultTest is PolygonSetup {
         vm.prank(address(0));
         vm.expectRevert(IControllable.NotMultisig.selector);
         vault.setRewardsRedirect(address(this), address(1));
+        vm.prank(platform.multisig());
         vault.setRewardsRedirect(address(this), address(1));
         assertEq((vault.rewardsRedirect(address(this))), address(1));
 
+        vm.prank(platform.multisig());
         vault.setRewardsRedirect(address(this), address(0));
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
         vault.getAllRewardsAndRedirect(address(this));
 
+        vm.prank(platform.multisig());
         vault.setRewardsRedirect(address(this), address(1));
         vault.getAllRewardsAndRedirect(address(this));
 

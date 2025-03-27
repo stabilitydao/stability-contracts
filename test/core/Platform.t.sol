@@ -86,11 +86,8 @@ contract PlatformTest is Test {
         assertEq(platform.rebalancer(), address(101));
         assertEq(platform.bridge(), address(102));
 
-        platform.setupRebalancer(address(1001));
-        platform.setupBridge(address(1002));
-
-        assertEq(platform.rebalancer(), address(1001));
-        assertEq(platform.bridge(), address(1002));
+        platform.setupRevenueRouter(address(1001));
+        assertEq(platform.revenueRouter(), address(1001));
 
         assertEq(platform.networkName(), "Localhost Ethereum");
         assertEq(
@@ -283,7 +280,7 @@ contract PlatformTest is Test {
         address govAddr = platform.governance();
 
         vm.prank(address(1));
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernance.selector));
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         platform.setFees(1, 1, 1, 1);
 
         vm.startPrank(govAddr);
