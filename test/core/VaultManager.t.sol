@@ -1,13 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@solady/utils/LibString.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/vaults/RMVault.sol";
-import "../base/Utils.sol";
-import "../base/FullMockSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {LibString} from "@solady/utils/LibString.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
+import {MockStrategy} from "../../src/test/MockStrategy.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {IAprOracle} from "../../src/interfaces/IAprOracle.sol";
+import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {Utils} from "../base/Utils.sol";
+import {FullMockSetup} from "../base/FullMockSetup.sol";
 
 contract VaultManagerTest is Test, FullMockSetup, Utils {
     using LibString for string;

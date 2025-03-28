@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/strategies/libs/StrategyIdLib.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockAmmAdapter.sol";
-import "../../src/test/MockStrategyUpgrade.sol";
-import "../../src/test/MockVaultUpgrade.sol";
-import "../../src/test/MockERC721.sol";
-import "../base/MockSetup.sol";
-import "../../src/interfaces/IStrategyLogic.sol";
-import "../../chains/PolygonLib.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Factory, IFactory, IVaultProxy, IStrategyProxy} from "../../src/core/Factory.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {MockStrategy} from "../../src/test/MockStrategy.sol";
+import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
+import {MockStrategyUpgrade} from "../../src/test/MockStrategyUpgrade.sol";
+import {MockVaultUpgrade} from "../../src/test/MockVaultUpgrade.sol";
+import {MockERC721} from "../../src/test/MockERC721.sol";
+import {MockSetup} from "../base/MockSetup.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IStrategyLogic} from "../../src/interfaces/IStrategyLogic.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract FactoryTest is Test, MockSetup {
     Factory public factory;
@@ -42,9 +49,8 @@ contract FactoryTest is Test, MockSetup {
                 aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(0),
-                rebalancer: address(0),
                 zap: address(0),
-                bridge: address(0)
+                revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -535,13 +541,13 @@ contract FactoryTest is Test, MockSetup {
 
     function testSetAliasName() public {
         string memory aliasName_ = "USDC";
-        factory.setAliasName(PolygonLib.TOKEN_USDC, aliasName_);
+        factory.setAliasName(address(1), aliasName_);
     }
 
     function testGetAliasName() public {
         string memory aliasName_ = "USDC";
-        factory.setAliasName(PolygonLib.TOKEN_USDC, aliasName_);
-        string memory aliasName = factory.getAliasName(PolygonLib.TOKEN_USDC);
-        console.log("alias: %s", aliasName);
+        factory.setAliasName(address(1), aliasName_);
+        /*string memory aliasName = */factory.getAliasName(address(1));
+        //console.log("alias: %s", aliasName);
     }
 }
