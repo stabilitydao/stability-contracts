@@ -547,7 +547,8 @@ contract FactoryTest is Test, MockSetup {
     function testGetAliasName() public {
         string memory aliasName_ = "USDC";
         factory.setAliasName(address(1), aliasName_);
-        /*string memory aliasName = */factory.getAliasName(address(1));
+        /*string memory aliasName = */
+        factory.getAliasName(address(1));
         //console.log("alias: %s", aliasName);
     }
 }
