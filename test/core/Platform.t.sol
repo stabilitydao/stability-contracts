@@ -1,18 +1,26 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Platform} from "../../src/core/Platform.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/test/MockVaultUpgrade.sol";
-import "../../src/test/MockStrategy.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/Swapper.sol";
-import "../../src/core/StrategyLogic.sol";
-import "../../src/core/libs/ConstantsLib.sol";
-import "../../src/interfaces/IControllable.sol";
-import "../../src/strategies/libs/StrategyDeveloperLib.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {MockVaultUpgrade} from "../../src/test/MockVaultUpgrade.sol";
+import {MockStrategy} from "../../src/test/MockStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
+import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
+import {ConstantsLib} from "../../src/core/libs/ConstantsLib.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IStrategyLogic} from "../../src/interfaces/IStrategyLogic.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
 
 contract PlatformTest is Test {
     Platform public platform;
@@ -63,9 +71,8 @@ contract PlatformTest is Test {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                rebalancer: address(101),
                 zap: address(0),
-                bridge: address(102)
+                revenueRouter: address(1)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -83,9 +90,7 @@ contract PlatformTest is Test {
         assertEq(platform.minInitialBoostPerDay(), 31e18);
         assertEq(platform.minInitialBoostDuration(), 31 * 86400);
 
-        assertEq(platform.rebalancer(), address(101));
-        assertEq(platform.bridge(), address(102));
-
+        assertEq(platform.revenueRouter(), address(1));
         platform.setupRevenueRouter(address(1001));
         assertEq(platform.revenueRouter(), address(1001));
 
@@ -109,9 +114,8 @@ contract PlatformTest is Test {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                rebalancer: address(0),
                 zap: address(0),
-                bridge: address(0)
+                revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -479,9 +483,8 @@ contract PlatformTest is Test {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                rebalancer: address(0),
                 zap: address(0),
-                bridge: address(0)
+                revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",

@@ -29,8 +29,8 @@ contract RevenueRouterTestSonic is Test {
         multisig = IPlatform(PLATFORM).multisig();
     }
 
-    function test_RevenueRouter() public {
-        _deploy();
+    function test_RevenueRouter_xStbl_feeTreasury() public {
+        _deployWithXSTBLandFeeTreasury();
 
         deal(SonicLib.TOKEN_STBL, address(this), 1e10);
         IERC20(SonicLib.TOKEN_STBL).approve(address(revenueRouter), 1e10);
@@ -79,7 +79,36 @@ contract RevenueRouterTestSonic is Test {
         assertEq(IERC20(SonicLib.TOKEN_stkscUSD).balanceOf(feeTreasury), 1e18);
     }
 
-    function _deploy() internal {
+    function test_RevenueRouter_minimal() public {
+        _deployMinimal();
+
+        deal(SonicLib.TOKEN_STBL, address(this), 1e10);
+        IERC20(SonicLib.TOKEN_STBL).approve(address(revenueRouter), 1e10);
+        revenueRouter.processFeeAsset(SonicLib.TOKEN_STBL, 1e10);
+        assertEq(revenueRouter.pendingRevenue(), 0);
+
+        deal(SonicLib.TOKEN_STBL, address(this), 1e16);
+        IERC20(SonicLib.TOKEN_STBL).approve(address(revenueRouter), 1e16);
+        revenueRouter.processFeeAsset(SonicLib.TOKEN_STBL, 1e16);
+        assertEq(revenueRouter.pendingRevenue(), 0);
+
+        deal(SonicLib.TOKEN_wETH, address(this), 1e16);
+        IERC20(SonicLib.TOKEN_wETH).approve(address(revenueRouter), 1e16);
+        revenueRouter.processFeeAsset(SonicLib.TOKEN_wETH, 1e16);
+
+        vm.expectRevert();
+        revenueRouter.updatePeriod();
+
+        vm.warp(block.timestamp + 7 days);
+        revenueRouter.updatePeriod();
+        assertEq(revenueRouter.activePeriod(), revenueRouter.getPeriod());
+
+        deal(SonicLib.TOKEN_stkscUSD, address(this), 1e18);
+        IERC20(SonicLib.TOKEN_stkscUSD).approve(address(revenueRouter), 1e18);
+        revenueRouter.processFeeVault(SonicLib.TOKEN_stkscUSD, 1e18);
+    }
+
+    function _deployWithXSTBLandFeeTreasury() internal {
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
         Proxy xSTBLProxy = new Proxy();
@@ -94,6 +123,17 @@ contract RevenueRouterTestSonic is Test {
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xSTBLProxy), address(feeTreasuryProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         xStaking = IXStaking(address(xStakingProxy));
+        revenueRouter = IRevenueRouter(address(revenueRouterProxy));
+        feeTreasury = address(feeTreasuryProxy);
+    }
+
+    function _deployMinimal() internal {
+        Proxy revenueRouterProxy = new Proxy();
+        revenueRouterProxy.initProxy(address(new RevenueRouter()));
+        Proxy feeTreasuryProxy = new Proxy();
+        feeTreasuryProxy.initProxy(address(new FeeTreasury()));
+        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM);
+        RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(0), address(feeTreasuryProxy));
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);
     }

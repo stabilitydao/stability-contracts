@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Script.sol";
-import "../../src/core/vaults/CVault.sol";
+import {Script} from "forge-std/Script.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
 
 contract DeployCVaultSonic is Script {
     function run() external {
@@ -12,5 +12,5 @@ contract DeployCVaultSonic is Script {
         vm.stopBroadcast();
     }
 
-    function testDeploySonic() external {}
+    function testDeployScript() external {}
 }

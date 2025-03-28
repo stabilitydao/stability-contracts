@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {console} from "forge-std/Test.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/core/Platform.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/VaultManager.sol";
-import "../../src/core/StrategyLogic.sol";
-import "../../src/core/PriceReader.sol";
-import "../../src/core/Swapper.sol";
-import "../../src/core/AprOracle.sol";
-import "../../src/core/HardWorker.sol";
-import "../../src/core/Zap.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/vaults/RMVault.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {Platform, IPlatform} from "../../src/core/Platform.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {VaultManager} from "../../src/core/VaultManager.sol";
+import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
+import {AprOracle} from "../../src/core/AprOracle.sol";
+import {HardWorker} from "../../src/core/HardWorker.sol";
+import {Zap} from "../../src/core/Zap.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
+import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
+import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 
 abstract contract DeployCore {
     struct DeployPlatformVars {
@@ -29,6 +31,8 @@ abstract contract DeployCore {
         AprOracle aprOracle;
         HardWorker hardWorker;
         Zap zap;
+        RevenueRouter revenueRouter;
+        FeeTreasury feeTreasury;
     }
 
     function _deployCore(IPlatformDeployer.DeployPlatformParams memory p) internal returns (address) {
@@ -86,6 +90,16 @@ abstract contract DeployCore {
         vars.zap = Zap(payable(address(vars.proxy)));
         vars.zap.initialize(address(vars.platform));
 
+        // RevenueRouter + FeeTreasury
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new FeeTreasury()));
+        vars.feeTreasury = FeeTreasury(address(vars.proxy));
+        vars.feeTreasury.initialize(address(vars.platform));
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new RevenueRouter()));
+        vars.revenueRouter = RevenueRouter(address(vars.proxy));
+        vars.revenueRouter.initialize(address(vars.platform), address(0), address(vars.feeTreasury));
+
         // setup platform
         vars.platform.setup(
             IPlatform.SetupAddresses({
@@ -99,9 +113,8 @@ abstract contract DeployCore {
                 aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: p.targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
-                rebalancer: address(0),
                 zap: address(vars.zap),
-                bridge: address(0)
+                revenueRouter: address(vars.revenueRouter)
             }),
             IPlatform.PlatformSettings({
                 networkName: p.networkName,

@@ -106,6 +106,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     function rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external {
         IPlatform _platform = IPlatform(platform());
         IHardWorker hardworker = IHardWorker(_platform.hardWorker());
+        // todo remove rebalancer address
         address rebalancer = _platform.rebalancer();
         if (
             msg.sender != rebalancer && !_platform.isOperator(msg.sender)

@@ -35,7 +35,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -162,9 +162,8 @@ contract Platform is Controllable, IPlatform {
         $.aprOracle = addresses.aprOracle;
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
-        $.rebalancer = addresses.rebalancer;
         $.zap = addresses.zap;
-        $.bridge = addresses.bridge;
+        $.revenueRouter = addresses.revenueRouter;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -176,10 +175,11 @@ contract Platform is Controllable, IPlatform {
             addresses.strategyLogic,
             addresses.aprOracle,
             addresses.hardWorker,
-            addresses.rebalancer,
+            address(0),
             addresses.zap,
-            addresses.bridge
+            address(0)
         );
+        emit RevenueRouter(addresses.revenueRouter);
         $.networkName = settings.networkName;
         $.networkExtra = settings.networkExtra;
         _setFees(
@@ -742,12 +742,6 @@ contract Platform is Controllable, IPlatform {
     function zap() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.zap;
-    }
-
-    /// @inheritdoc IPlatform
-    function bridge() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.bridge;
     }
 
     /// @inheritdoc IPlatform
