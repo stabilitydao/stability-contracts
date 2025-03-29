@@ -102,8 +102,7 @@ library StrategyLib {
             amountEcosystem: 0
         });
 
-        (vars.feePlatform,,,) =
-            vars.platform.getFees();
+        (vars.feePlatform,,,) = vars.platform.getFees();
         try vars.platform.getCustomVaultFee(vault) returns (uint vaultCustomFee) {
             if (vaultCustomFee != 0) {
                 vars.feePlatform = vaultCustomFee;
@@ -125,7 +124,7 @@ library StrategyLib {
             vars.amountPlatform = Math.min(vars.amountPlatform, balance(assets_[i]));
 
             if (vars.amountPlatform > 0) {
-                try vars.platform.revenueRouter() returns(address revenueReceiver) {
+                try vars.platform.revenueRouter() returns (address revenueReceiver) {
                     IERC20(assets_[i]).forceApprove(revenueReceiver, vars.amountPlatform);
                     IRevenueRouter(revenueReceiver).processFeeAsset(assets_[i], vars.amountPlatform);
                 } catch {

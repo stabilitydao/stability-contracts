@@ -55,7 +55,8 @@ contract ISFUpgradeTest is Test {
         hw.call(vaultsForHardWork);
 
         uint wsBalanceChange = IERC20(SonicLib.TOKEN_wS).balanceOf(FEE_TREASURY) - wsBalanceWas;
-        uint stblBalanceChange = IERC20(SonicLib.TOKEN_STBL).balanceOf(IPlatform(PLATFORM).revenueRouter()) - stblBalanceWas;
+        uint stblBalanceChange =
+            IERC20(SonicLib.TOKEN_STBL).balanceOf(IPlatform(PLATFORM).revenueRouter()) - stblBalanceWas;
         assertGt(wsBalanceChange, 0);
         assertGt(stblBalanceChange, 0);
     }
