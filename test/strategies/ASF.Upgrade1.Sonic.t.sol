@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SonicLib} from "../../chains/SonicLib.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
@@ -64,7 +64,7 @@ contract ASFUpgrade1Test is Test {
         factory.upgradeStrategyProxy(STRATEGY);
 
         proportions = IStrategy(STRATEGY).getAssetsProportions();
-        console.log(proportions[0], proportions[1]);
+        //console.log(proportions[0], proportions[1]);
 
         IVault(vault).depositAssets(assets, amounts, 0, address(this));
     }

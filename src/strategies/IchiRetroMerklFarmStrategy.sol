@@ -10,6 +10,7 @@ import "./libs/FarmMechanicsLib.sol";
 import "./libs/IRMFLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
 import "../integrations/ichi/IICHIVault.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on Retro
 /// @dev 2.0.0: oRETRO transmutation through CASH flash loan

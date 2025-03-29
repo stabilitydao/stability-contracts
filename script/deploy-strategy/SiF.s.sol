@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Script.sol";
-import "../../src/strategies/SiloFarmStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 
 contract DeploySiF is Script {
     function run() external {

@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Controllable} from "../../core/base/Controllable.sol";
+import {Controllable, IControllable} from "../../core/base/Controllable.sol";
 import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {StrategyLib} from "../libs/StrategyLib.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVault} from "../../interfaces/IVault.sol";
-import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.2.0: extractFees use RevenueRouter
 ///   2.1.3: call hardWorkMintFeeCallback always
 ///   2.1.2: call hardWorkMintFeeCallback only on positive amounts
 ///   2.1.1: extractFees fixed
@@ -29,7 +28,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.1.3";
+    string public constant VERSION_STRATEGY_BASE = "2.2.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -134,7 +133,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 __amounts[exchangeAssetIndex] +=
                     _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
-                uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, $._id, __assets, __amounts);
+                uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, __assets, __amounts);
 
                 bool needCompound = _processRevenue(__assets, amountsRemaining);
 

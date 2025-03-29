@@ -105,8 +105,7 @@ interface IPlatform {
         address targetExchangeAsset;
         address hardWorker;
         address zap;
-        address bridge;
-        address rebalancer;
+        address revenueRouter;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -175,10 +174,6 @@ interface IPlatform {
     /// @notice ZAP feature
     /// @return Address of Zap proxy
     function zap() external view returns (address);
-
-    /// @notice Stability Bridge
-    /// @return Address of Bridge proxy
-    function bridge() external view returns (address);
 
     /// @notice Platform revenue distributor
     /// @return Address of the revenue distributor proxy
