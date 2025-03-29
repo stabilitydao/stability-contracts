@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Script.sol";
-import "../../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {QuickSwapStaticMerklFarmStrategy} from "../../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
 
 contract DeployStrategyQSMF is Script {
     function run() external {

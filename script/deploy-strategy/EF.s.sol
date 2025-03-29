@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Script.sol";
-import "../../src/strategies/EqualizerFarmStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
 
 contract DeployEF is Script {
     function run() external {
