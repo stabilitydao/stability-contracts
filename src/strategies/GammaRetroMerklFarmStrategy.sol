@@ -14,6 +14,7 @@ import "../integrations/gamma/IHypervisor.sol";
 import "../integrations/uniswapv3/IUniswapV3Pool.sol";
 import "../core/libs/CommonLib.sol";
 import "../adapters/libs/AmmAdapterIdLib.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
 
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
 /// @dev 2.0.0: oRETRO transmutation through CASH flash loan

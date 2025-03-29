@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./StrategyBase.sol";
-import "../libs/StrategyLib.sol";
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/IFactory.sol";
-import "../../interfaces/IFarmingStrategy.sol";
-import "../../interfaces/ISwapper.sol";
+import {StrategyBase, StrategyLib, IControllable, IStrategy, IERC165} from "./StrategyBase.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @title Base farming strategy
 /// @author Alien Deployer (https://github.com/a17)
 /// Changelog:
+///   1.3.3: StrategyBase 2.2.0
 ///   1.3.2: refreshFarmingAssets bugfix
 ///   1.3.1: liquidateRewards fix
 ///   1.3.0: use customPriceImpactTolerance
@@ -21,7 +20,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_FARMING_STRATEGY_BASE = "1.3.2";
+    string public constant VERSION_FARMING_STRATEGY_BASE = "1.3.3";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.FarmingStrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant FARMINGSTRATEGYBASE_STORAGE_LOCATION =
