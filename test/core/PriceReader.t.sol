@@ -1,17 +1,19 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
-import "../../src/core/PriceReader.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/test/MockAggregatorV3Interface.sol";
-import "../../src/adapters/ChainlinkAdapter.sol";
-import "../base/MockSetup.sol";
-import "../../src/test/MockAmmAdapter.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../../src/adapters/UniswapV3Adapter.sol";
-import "../../src/core/Swapper.sol";
-import "../../chains/PolygonLib.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {MockAggregatorV3Interface} from "../../src/test/MockAggregatorV3Interface.sol";
+import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
+import {MockSetup} from "../base/MockSetup.sol";
+import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
+import {Platform, IPlatform} from "../../src/core/Platform.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract PriceReaderTest is Test, MockSetup {
     Swapper public swapper;
@@ -75,9 +77,8 @@ contract PriceReaderTest is Test, MockSetup {
                 aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
-                rebalancer: address(0),
                 zap: address(11),
-                bridge: address(0)
+                revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -95,7 +96,7 @@ contract PriceReaderTest is Test, MockSetup {
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: PolygonLib.POOL_UNISWAPV3_USDCe_USDT_100,
+            pool: address(1),
             ammAdapter: address(dexAdapter),
             tokenIn: address(tokenE),
             tokenOut: address(tokenD)

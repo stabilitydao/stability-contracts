@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../base/FullMockSetup.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {FullMockSetup} from "../base/FullMockSetup.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
 contract VaultSharePrice is Test, FullMockSetup {
     CVault public vault;

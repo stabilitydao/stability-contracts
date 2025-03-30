@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./StrategyBase.sol";
-import "../libs/LPStrategyLib.sol";
-import "../../interfaces/ILPStrategy.sol";
+import {StrategyBase, IERC165, IStrategy} from "./StrategyBase.sol";
+import {LPStrategyLib, ILPStrategy} from "../libs/LPStrategyLib.sol";
+import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
+import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 
 /// @dev Base liquidity providing strategy
 /// Changelog:

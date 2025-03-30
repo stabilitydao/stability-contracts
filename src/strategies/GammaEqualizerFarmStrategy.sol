@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {LPStrategyBase, ILPStrategy} from "./base/LPStrategyBase.sol";
 import {
-    LPStrategyBase,
-    ILPStrategy,
-    IStrategy,
-    IControllable,
-    SafeERC20,
-    IERC20,
-    IERC165,
-    StrategyBase,
-    IAmmAdapter,
-    VaultTypeLib
-} from "./base/LPStrategyBase.sol";
-import {FarmingStrategyBase, IFarmingStrategy, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+    FarmingStrategyBase, StrategyBase, IFarmingStrategy, IFactory, StrategyLib
+} from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
@@ -22,8 +15,13 @@ import {IUniProxy} from "../integrations/gamma/IUniProxy.sol";
 import {IHypervisor} from "../integrations/gamma/IHypervisor.sol";
 import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @title Earn Equalizer farm rewards by Gamma ALM
 /// @author Jude (https://github.com/iammrjude)

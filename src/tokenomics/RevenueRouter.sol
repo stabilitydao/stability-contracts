@@ -3,8 +3,7 @@ pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Controllable} from "../core/base/Controllable.sol";
-import {IControllable} from "../interfaces/IControllable.sol";
+import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
@@ -21,7 +20,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -49,11 +48,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function initialize(address platform_, address xStbl_, address feeTreasury_) external initializer {
         __Controllable_init(platform_);
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        $.stbl = IXSTBL(xStbl_).STBL();
-        $.xStbl = xStbl_;
-        $.xStaking = IXSTBL(xStbl_).xStaking();
+        if (xStbl_ != address(0)) {
+            $.stbl = IXSTBL(xStbl_).STBL();
+            $.xStbl = xStbl_;
+            $.xStaking = IXSTBL(xStbl_).xStaking();
+            $.xShare = 50;
+        }
         $.feeTreasury = feeTreasury_;
-        $.xShare = 50;
         $.activePeriod = getPeriod();
     }
 
@@ -64,44 +65,48 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function updatePeriod() external returns (uint newPeriod) {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-
         uint _activePeriod = getPeriod();
-        uint _pendingRevenue = $.pendingRevenue;
-
         require($.activePeriod < _activePeriod, WaitForNewPeriod());
-
         $.activePeriod = _activePeriod;
         newPeriod = _activePeriod;
-
-        IXSTBL($.xStbl).rebase();
-
-        if (_pendingRevenue != 0) {
-            address _xStaking = $.xStaking;
-            IERC20($.stbl).approve(_xStaking, _pendingRevenue);
-            IXStaking(_xStaking).notifyRewardAmount(_pendingRevenue);
-            $.pendingRevenue = 0;
+        address _xstbl = $.xStbl;
+        if (_xstbl != address(0)) {
+            IXSTBL($.xStbl).rebase();
+            uint _pendingRevenue = $.pendingRevenue;
+            if (_pendingRevenue != 0) {
+                address _xStaking = $.xStaking;
+                IERC20($.stbl).approve(_xStaking, _pendingRevenue);
+                IXStaking(_xStaking).notifyRewardAmount(_pendingRevenue);
+                $.pendingRevenue = 0;
+            }
         }
     }
 
     /// @inheritdoc IRevenueRouter
     function processFeeAsset(address asset, uint amount) external {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        uint xAmount = amount * $.xShare / 100;
-        uint feeTreasuryAmount = amount - xAmount;
         address stbl = $.stbl;
-        uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), xAmount);
-        IERC20(asset).safeTransferFrom(msg.sender, $.feeTreasury, feeTreasuryAmount);
-        ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-        uint threshold = swapper.threshold(asset);
-        if (xAmount > threshold) {
-            if (asset != stbl) {
-                uint amountToSwap = IERC20(asset).balanceOf(address(this));
-                IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
+        address feeTreasury = $.feeTreasury;
+        if (stbl != address(0)) {
+            uint xAmount = amount * $.xShare / 100;
+            uint feeTreasuryAmount = amount - xAmount;
+            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+            IERC20(asset).safeTransferFrom(msg.sender, address(this), xAmount);
+
+            IERC20(asset).safeTransferFrom(msg.sender, feeTreasury, feeTreasuryAmount);
+            ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+            uint threshold = swapper.threshold(asset);
+            if (xAmount > threshold) {
+                if (asset != stbl) {
+                    uint amountToSwap = IERC20(asset).balanceOf(address(this));
+                    IERC20(asset).forceApprove(address(swapper), amountToSwap);
+                    try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
+                }
+                uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
+                $.pendingRevenue += stblGot;
             }
-            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-            $.pendingRevenue += stblGot;
+        } else {
+            IERC20(asset).safeTransferFrom(msg.sender, feeTreasury, amount);
         }
     }
 

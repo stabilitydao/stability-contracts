@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "./Controllable.sol";
-import "../libs/ConstantsLib.sol";
-import "../libs/VaultStatusLib.sol";
-import "../libs/VaultBaseLib.sol";
-import "../../interfaces/IVault.sol";
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/IPriceReader.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IAprOracle.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IFactory.sol";
+import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {Controllable, IControllable} from "./Controllable.sol";
+import {ConstantsLib} from "../libs/ConstantsLib.sol";
+import {VaultStatusLib} from "../libs/VaultStatusLib.sol";
+import {VaultBaseLib} from "../libs/VaultBaseLib.sol";
+import {IVault} from "../../interfaces/IVault.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IAprOracle} from "../../interfaces/IAprOracle.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 
 /// @notice Base vault implementation.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc)
 /// Changelog:
+///   2.2.0: hardWorkMintFeeCallback use revenueRouter
 ///   2.1.0: previewDepositAssetsWrite
 ///   2.0.0: use strategy.previewDepositAssetsWrite; hardWorkMintFeeCallback use platform.getCustomVaultFee
 ///   1.3.0: hardWorkMintFeeCallback
@@ -37,7 +40,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.1.0";
+    string public constant VERSION_VAULT_BASE = "2.2.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -108,14 +111,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IVault
     function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external virtual {
-        (address[] memory feeReceivers, uint[] memory feeShares) = VaultBaseLib.hardWorkMintFeeCallback(
-            IPlatform(platform()), revenueAssets, revenueAmounts, _getVaultBaseStorage()
-        );
-        uint len = feeReceivers.length;
-        for (uint i; i < len; ++i) {
-            if (feeShares[i] != 0) {
-                _mint(feeReceivers[i], feeShares[i]);
-            }
+        IPlatform _platform = IPlatform(platform());
+        uint feeShares =
+            VaultBaseLib.hardWorkMintFeeCallback(_platform, revenueAssets, revenueAmounts, _getVaultBaseStorage());
+        if (feeShares != 0) {
+            address revenueRouter = _platform.revenueRouter();
+            _approve(address(this), revenueRouter, feeShares);
+            _mint(address(this), feeShares);
+            IRevenueRouter(revenueRouter).processFeeVault(address(this), feeShares);
         }
     }
 

@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import {Platform} from "../../src/core/Platform.sol";
-import "../../src/core/PriceReader.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/test/MockERC20.sol";
-import "../../src/core/Factory.sol";
-import "../../src/test/MockAggregatorV3Interface.sol";
-import "../../src/adapters/ChainlinkAdapter.sol";
-import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockAmmAdapter.sol";
-import "../../src/strategies/libs/StrategyIdLib.sol";
-import "../../src/core/Swapper.sol";
-import "../../src/test/MockERC721.sol";
-import "./MockSetup.sol";
-import "../../src/core/AprOracle.sol";
-import "../../src/core/HardWorker.sol";
+import {Platform, IPlatform} from "../../src/core/Platform.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {MockERC20} from "../../src/test/MockERC20.sol";
+import {Factory, IFactory} from "../../src/core/Factory.sol";
+import {MockAggregatorV3Interface} from "../../src/test/MockAggregatorV3Interface.sol";
+import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
+import {MockStrategy} from "../../src/test/MockStrategy.sol";
+import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
+import {MockERC721} from "../../src/test/MockERC721.sol";
+import {MockSetup} from "./MockSetup.sol";
+import {AprOracle} from "../../src/core/AprOracle.sol";
+import {HardWorker} from "../../src/core/HardWorker.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
+import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;
@@ -72,6 +76,15 @@ abstract contract FullMockSetup is MockSetup {
         HardWorker hardworker = HardWorker(payable(address(proxy)));
         hardworker.initialize(address(platform), address(0), 0, 0);
 
+        proxy = new Proxy();
+        proxy.initProxy(address(new RevenueRouter()));
+        RevenueRouter revenueRouter = RevenueRouter(address(proxy));
+        proxy = new Proxy();
+        proxy.initProxy(address(new FeeTreasury()));
+        FeeTreasury feeTreasury = FeeTreasury(address(proxy));
+        feeTreasury.initialize(address(platform));
+        revenueRouter.initialize(address(platform), address(0), address(feeTreasury));
+
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(factory),
@@ -84,9 +97,8 @@ abstract contract FullMockSetup is MockSetup {
                 aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
-                rebalancer: address(0),
                 zap: address(0),
-                bridge: address(0)
+                revenueRouter: address(revenueRouter)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
