@@ -31,6 +31,7 @@ import {ALMShadowFarmStrategy} from "../src/strategies/ALMShadowFarmStrategy.sol
 import {SiloLeverageStrategy} from "../src/strategies/SiloLeverageStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../src/strategies/SiloAdvancedLeverageStrategy.sol";
 import {GammaEqualizerFarmStrategy} from "../src/strategies/GammaEqualizerFarmStrategy.sol";
+import {IchiEqualizerFarmStrategy} from "../src/strategies/IchiEqualizerFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -203,6 +204,12 @@ library SonicLib {
     address public constant ALM_GAMMA_EQUALIZER_wS_USDC = 0xC225FA4e6fFE9cc248518004946B48B76b9E4dFE;
     address public constant ALM_GAMMA_EQUALIZER_WETH_wS = 0x2Fcc0d25c4CD2084e402c16DB68FBE206A36A46F;
     address public constant ALM_GAMMA_EQUALIZER_USDC_WETH = 0xBc7D3b581cd4c4f34fC2942491Fa803761C574e2;
+    address public constant ALM_ICHI_EQUALIZER_USDC_wS = 0x85025E8941a00c3B174e60E27aA073c799e9b2a9; // ICHI Vault Liquidity (ICHI_Vault_LP)
+    address public constant ALM_ICHI_EQUALIZER_wS_USDC = 0x238C26DDEa068190Fe715b095463B82796F0058B;
+    address public constant ALM_ICHI_EQUALIZER_WETH_USDC = 0x05386D6548017D6ED2904F6ce28fe25029A1fef1;
+    address public constant ALM_ICHI_EQUALIZER_wS_WETH = 0x3D74D879215BAEA209Ff8A4b614A5D656C65a5A7;
+    address public constant ALM_ICHI_EQUALIZER_WETH_wS = 0x8AF7FAbf22e9a6aF8E52e828D078e0478F54e2eB;
+    address public constant ALM_ICHI_EQUALIZER_USDC_WETH = 0x187b22C2e64365b1Ed8Fd1dE00a29341612a8d0e;
 
     // Beets
     address public constant BEETS_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
@@ -234,6 +241,12 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_GAMMA_wS_USDC = 0xa4B6867eEad7B373642f86253c5367bA84E12f76;
     address public constant EQUALIZER_GAUGE_GAMMA_WETH_wS = 0x28b96E430ecC193c07318325f6a8af17c44333D8;
     address public constant EQUALIZER_GAUGE_GAMMA_USDC_WETH = 0xdC44bf3bF760e88DdaC7667C2386A0D5B6668b47;
+    address public constant EQUALIZER_GAUGE_ICHI_USDC_wS = 0x5b6096eB55A01cd260F0d4e7165dCBCFA10874ee; // Equalizer V3 Gauge for ICHI Vault Liquidity (E3.G:ICHI_Vault_LP)
+    address public constant EQUALIZER_GAUGE_ICHI_wS_USDC = 0x610262807FAfB649A8F63942E59c03a4D5b2fE7f;
+    address public constant EQUALIZER_GAUGE_ICHI_WETH_USDC = 0x2a8Ee722125c8E9363705653EDCcfeD55824274f;
+    address public constant EQUALIZER_GAUGE_ICHI_wS_WETH = 0x7ec92F5dF960F3a7F3334ab6f237361A69452B47;
+    address public constant EQUALIZER_GAUGE_ICHI_WETH_wS = 0xE6c0792f85F43A3dFdEF6fe84E37Eb54AB9BE0F2;
+    address public constant EQUALIZER_GAUGE_ICHI_USDC_WETH = 0x44f4f140ba1E45Bccf6B83c18e2a19a2ce6b4D85;
 
     // SwapX
     address public constant SWAPX_ROUTER_V2 = 0xF5F7231073b3B41c04BA655e1a7438b1a7b29c27;
@@ -292,6 +305,10 @@ library SonicLib {
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
     address public constant GAMMA_EQUALIZER_UNIPROXY = 0x38f61169D8bcc08cE303401A13332259F557B35f;
+
+    // ICHI
+    address public constant ICHI_EQUALIZER_VAULT_GATEWAY = 0x4c8c0D2Ca19a97896AA9135449e6d6471a53FC5f;
+    address public constant ICHI_EQUALIZER_VAULT_DEPLOYER = 0x0b2a31D95B1a4c8b1e772599ffcB8875FB4e2d33;
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
@@ -441,6 +458,7 @@ library SonicLib {
             factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false
         );
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -513,7 +531,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](34);
+        _farms = new IFactory.Farm[](40);
         uint i;
 
         _farms[i++] = _makeBeetsStableFarm(BEETS_GAUGE_wS_stS);
@@ -554,6 +572,12 @@ library SonicLib {
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_wS_USDC, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_wS_USDC);
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_WETH_wS, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_WETH_wS);
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_USDC_WETH, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_USDC_WETH);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_USDC, TOKEN_wS, ALM_ICHI_EQUALIZER_USDC_wS, EQUALIZER_GAUGE_ICHI_USDC_wS);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wS, TOKEN_USDC, ALM_ICHI_EQUALIZER_wS_USDC, EQUALIZER_GAUGE_ICHI_wS_USDC);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wETH, TOKEN_USDC, ALM_ICHI_EQUALIZER_WETH_USDC, EQUALIZER_GAUGE_ICHI_WETH_USDC);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wS, TOKEN_wETH, ALM_ICHI_EQUALIZER_wS_WETH, EQUALIZER_GAUGE_ICHI_wS_WETH);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wETH, TOKEN_wS, ALM_ICHI_EQUALIZER_WETH_wS, EQUALIZER_GAUGE_ICHI_WETH_wS);
+        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_USDC, TOKEN_wETH, ALM_ICHI_EQUALIZER_USDC_WETH, EQUALIZER_GAUGE_ICHI_USDC_WETH);
     }
 
     function _makeALMShadowFarm(
@@ -649,6 +673,33 @@ library SonicLib {
         farm.addresses = new address[](2);
         farm.addresses[0] = alm;
         farm.addresses[1] = gauge;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeIchiEqualizerFarm(
+        address token0,
+        address token1, // TODO: needs to be removed if I don't use it later
+        address vault,
+        address gauge
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IICHIVault(vault).pool();
+        farm.strategyLogicId = StrategyIdLib.ICHI_EQUALIZER_FARM;
+        uint len = IGaugeEquivalent(gauge).rewardsListLength();
+        farm.rewardAssets = new address[](len);
+        for (uint i; i < len; ++i) {
+            farm.rewardAssets[i] = IGaugeEquivalent(gauge).rewardTokens(i);
+        }
+        farm.addresses = new address[](6);
+        farm.addresses[0] = ICHI_EQUALIZER_VAULT_GATEWAY;
+        farm.addresses[1] = token0;
+        farm.addresses[2] = token1;
+        farm.addresses[3] = vault;
+        farm.addresses[4] = ICHI_EQUALIZER_VAULT_DEPLOYER;
+        farm.addresses[5] = gauge;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
