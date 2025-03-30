@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {LPStrategyBase, ILPStrategy} from "./base/LPStrategyBase.sol";
 import {
-    LPStrategyBase,
-    ILPStrategy,
-    IStrategy,
-    IControllable,
-    SafeERC20,
-    IERC20,
-    IERC165,
+    FarmingStrategyBase,
     StrategyBase,
-    IAmmAdapter,
-    VaultTypeLib
-} from "./base/LPStrategyBase.sol";
-import {FarmingStrategyBase, IFarmingStrategy, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+    StrategyLib,
+    IControllable,
+    IPlatform,
+    IFarmingStrategy,
+    IStrategy,
+    IFactory
+} from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
@@ -21,16 +24,15 @@ import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
 import {IICHIVaultGateway} from "../integrations/ichi/IICHIVaultGateway.sol";
 import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ISFLib} from "./libs/ISFLib.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 import {IICHIVaultV4} from "../integrations/ichi/IICHIVaultV4.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 
 /// @title Earn Equalizer farm rewards by Ichi ALM
 /// @author Jude (https://github.com/iammrjude)
@@ -45,23 +47,6 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     string public constant VERSION = "1.0.0";
 
     uint internal constant PRECISION = 1e18;
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         DATA TYPES                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    struct PreviewDepositVars {
-        uint32 twapPeriod;
-        uint32 auxTwapPeriod;
-        uint price;
-        uint twap;
-        uint auxTwap;
-        uint pool0;
-        uint pool1;
-        address pool;
-        address token0;
-        address token1;
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -245,18 +230,21 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         assets_ = $base._assets;
         uint value = $base.total;
-        IICHIVaultV4 vault = IICHIVaultV4($base._underlying);
-        (uint amount0, uint amount1) = vault.getTotalAmounts();
-        uint totalSupply = vault.totalSupply();
+        IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
+        (uint amount0, uint amount1) = _underlying.getTotalAmounts();
+        uint totalSupply = _underlying.totalSupply();
         amounts_ = new uint[](2);
         amounts_[0] = amount0 * value / totalSupply;
         amounts_[1] = amount1 * value / totalSupply;
     }
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(
-        uint[] memory amountsMax // TODO: make sure the code in this block is correct
-    ) internal view override(StrategyBase, LPStrategyBase) returns (uint[] memory amountsConsumed, uint value) {
+    function _previewDepositAssets(uint[] memory amountsMax)
+        internal
+        view
+        override(StrategyBase, LPStrategyBase)
+        returns (uint[] memory amountsConsumed, uint value)
+    {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
         amountsConsumed = new uint[](2);
@@ -267,34 +255,17 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             amountsConsumed[1] = amountsMax[1];
         }
 
-        PreviewDepositVars memory v;
-        v.pool = _underlying.pool();
-        v.token0 = _underlying.token0();
-        v.token1 = _underlying.token1();
-
-        v.twapPeriod = _underlying.twapPeriod();
-
-        // Get spot price
-        v.price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
-
-        // Get TWAP price
-        v.twap = _fetchTwap(v.pool, v.token0, v.token1, v.twapPeriod, PRECISION);
-
-        v.auxTwapPeriod = _underlying.auxTwapPeriod();
-
-        v.auxTwap = v.auxTwapPeriod > 0 ? _fetchTwap(v.pool, v.token0, v.token1, v.auxTwapPeriod, PRECISION) : v.twap;
-
+        uint32 twapPeriod = 600;
+        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
+        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
         (uint pool0, uint pool1) = _underlying.getTotalAmounts();
-
-        // Calculate share value in token1
-        uint priceForDeposit = _getConservativePrice(v.price, v.twap, v.auxTwap, false, v.auxTwapPeriod);
-        uint deposit0PricedInToken1 = amountsConsumed[0] * priceForDeposit / PRECISION;
+        // aggregated deposit
+        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
 
         value = amountsConsumed[1] + deposit0PricedInToken1;
         uint totalSupply = _underlying.totalSupply();
         if (totalSupply != 0) {
-            uint priceForPool = _getConservativePrice(v.price, v.twap, v.auxTwap, true, v.auxTwapPeriod);
-            uint pool0PricedInToken1 = pool0 * priceForPool / PRECISION;
+            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
             value = value * totalSupply / (pool0PricedInToken1 + pool1);
         }
     }
@@ -460,36 +431,6 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         basePlugin = IAlgebraPool(pool_).plugin(); // TODO: Shouldn't it be Uniswap Pool ?
         // make sure the base plugin is connected to the pool
         require(ISFLib.isOracleConnectedToPool(basePlugin, pool_), "IV: diconnected plugin");
-    }
-
-    /**
-     * @notice Helper function to get the most conservative price
-     *  @param spot Current spot price
-     *  @param twap TWAP price
-     *  @param auxTwap Auxiliary TWAP price
-     *  @param isPool Flag indicating if the valuation is for the pool or deposit
-     *  @return price Most conservative price
-     */
-    function _getConservativePrice(
-        uint spot,
-        uint twap,
-        uint auxTwap,
-        bool isPool,
-        uint32 auxTwapPeriod
-    ) internal pure returns (uint) {
-        if (isPool) {
-            // For pool valuation, use highest price to be conservative
-            if (auxTwapPeriod > 0) {
-                return Math.max(Math.max(spot, twap), auxTwap);
-            }
-            return Math.max(spot, twap);
-        } else {
-            // For deposit valuation, use lowest price to be conservative
-            if (auxTwapPeriod > 0) {
-                return Math.min(Math.min(spot, twap), auxTwap);
-            }
-            return Math.min(spot, twap);
-        }
     }
 
     function _generateDescription(
