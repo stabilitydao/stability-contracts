@@ -572,12 +572,12 @@ library SonicLib {
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_wS_USDC, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_wS_USDC);
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_WETH_wS, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_WETH_wS);
         _farms[i++] = _makeGammaEqualizerFarm(ALM_GAMMA_EQUALIZER_USDC_WETH, ALMPositionNameLib.NARROW, EQUALIZER_GAUGE_GAMMA_USDC_WETH);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_USDC, TOKEN_wS, ALM_ICHI_EQUALIZER_USDC_wS, EQUALIZER_GAUGE_ICHI_USDC_wS);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wS, TOKEN_USDC, ALM_ICHI_EQUALIZER_wS_USDC, EQUALIZER_GAUGE_ICHI_wS_USDC);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wETH, TOKEN_USDC, ALM_ICHI_EQUALIZER_WETH_USDC, EQUALIZER_GAUGE_ICHI_WETH_USDC);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wS, TOKEN_wETH, ALM_ICHI_EQUALIZER_wS_WETH, EQUALIZER_GAUGE_ICHI_wS_WETH);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_wETH, TOKEN_wS, ALM_ICHI_EQUALIZER_WETH_wS, EQUALIZER_GAUGE_ICHI_WETH_wS);
-        _farms[i++] = _makeIchiEqualizerFarm(TOKEN_USDC, TOKEN_wETH, ALM_ICHI_EQUALIZER_USDC_WETH, EQUALIZER_GAUGE_ICHI_USDC_WETH);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_USDC_wS, EQUALIZER_GAUGE_ICHI_USDC_wS);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_wS_USDC, EQUALIZER_GAUGE_ICHI_wS_USDC);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_WETH_USDC, EQUALIZER_GAUGE_ICHI_WETH_USDC);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_wS_WETH, EQUALIZER_GAUGE_ICHI_wS_WETH);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_WETH_wS, EQUALIZER_GAUGE_ICHI_WETH_wS);
+        _farms[i++] = _makeIchiEqualizerFarm(ALM_ICHI_EQUALIZER_USDC_WETH, EQUALIZER_GAUGE_ICHI_USDC_WETH);
     }
 
     function _makeALMShadowFarm(
@@ -679,8 +679,6 @@ library SonicLib {
     }
 
     function _makeIchiEqualizerFarm(
-        address token0,
-        address token1, // TODO: needs to be removed if I don't use it later
         address vault,
         address gauge
     ) internal view returns (IFactory.Farm memory) {
@@ -693,13 +691,11 @@ library SonicLib {
         for (uint i; i < len; ++i) {
             farm.rewardAssets[i] = IGaugeEquivalent(gauge).rewardTokens(i);
         }
-        farm.addresses = new address[](6);
+        farm.addresses = new address[](4);
         farm.addresses[0] = ICHI_EQUALIZER_VAULT_GATEWAY;
-        farm.addresses[1] = token0;
-        farm.addresses[2] = token1;
-        farm.addresses[3] = vault;
-        farm.addresses[4] = ICHI_EQUALIZER_VAULT_DEPLOYER;
-        farm.addresses[5] = gauge;
+        farm.addresses[1] = vault;
+        farm.addresses[2] = ICHI_EQUALIZER_VAULT_DEPLOYER;
+        farm.addresses[3] = gauge;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

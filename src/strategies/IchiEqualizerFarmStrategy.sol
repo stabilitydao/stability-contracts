@@ -19,8 +19,6 @@ import {
 } from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
-import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
-import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
 import {IICHIVaultGateway} from "../integrations/ichi/IICHIVaultGateway.sol";
 import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
@@ -29,10 +27,8 @@ import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
-import {ISFLib} from "./libs/ISFLib.sol";
-import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
+import {IRMFLib} from "./libs/IRMFLib.sol";
 import {IICHIVaultV4} from "../integrations/ichi/IICHIVaultV4.sol";
-// import "forge-std/console.sol";
 
 /// @title Earn Equalizer farm rewards by Ichi ALM
 /// @author Jude (https://github.com/iammrjude)
@@ -46,7 +42,9 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    uint internal constant PRECISION = 1e18;
+    uint internal constant PRECISION = 10 ** 18;
+
+    uint internal constant MIN_SHARES = 1000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -59,7 +57,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 6 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -69,7 +67,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
-                underlying: farm.addresses[3]
+                underlying: farm.addresses[1]
             })
         );
 
@@ -78,7 +76,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory _assets = assets();
         IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
-        IERC20(farm.addresses[3]).forceApprove(farm.addresses[5], type(uint).max);
+        IERC20(farm.addresses[1]).forceApprove(farm.addresses[3], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -104,7 +102,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc FarmingStrategyBase
     function stakingPool() external view override returns (address) {
         IFactory.Farm memory farm = _getFarm();
-        return farm.addresses[5];
+        return farm.addresses[3];
     }
 
     /// @inheritdoc ILPStrategy
@@ -202,7 +200,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        IICHIVaultV4 _ivault = IICHIVaultV4(farm.addresses[3]);
+        IICHIVaultV4 _ivault = IICHIVaultV4(farm.addresses[1]);
         address allowedToken = _ivault.allowToken0() ? _ivault.token0() : _ivault.token1();
         string memory symbol = IERC20Metadata(allowedToken).symbol();
         return (symbol, false);
@@ -255,18 +253,38 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             amountsConsumed[1] = amountsMax[1];
         }
 
-        uint32 twapPeriod = 600;
+        // Get the Spot Price
         uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
-        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, PRECISION);
+
+        // Get the TWAP
+        uint twap = _fetchTwap(
+            _underlying.pool(), _underlying.token0(), _underlying.token1(), _underlying.twapPeriod(), PRECISION
+        );
+
+        uint32 auxTwapPeriod = _underlying.auxTwapPeriod();
+        // Get aux TWAP if aux period is set (otherwise set it equal to the TWAP price)
+        uint auxTwap = auxTwapPeriod > 0
+            ? _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), auxTwapPeriod, PRECISION)
+            : twap;
+
+        // Check price manipulation
+        _checkPriceManipulation(price, twap, auxTwap);
+
         (uint pool0, uint pool1) = _underlying.getTotalAmounts();
+
         // aggregated deposit
-        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / PRECISION;
+        uint priceForDeposit = _getConservativePrice(price, twap, auxTwap, false);
+        uint deposit0PricedInToken1 = (amountsConsumed[0] * priceForDeposit) / PRECISION;
 
         value = amountsConsumed[1] + deposit0PricedInToken1;
+
         uint totalSupply = _underlying.totalSupply();
         if (totalSupply != 0) {
-            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / PRECISION;
-            value = value * totalSupply / (pool0PricedInToken1 + pool1);
+            uint priceForPool = _getConservativePrice(price, twap, auxTwap, true);
+            uint pool0PricedInToken1 = (pool0 * priceForPool) / PRECISION;
+            value = (value * totalSupply) / (pool0PricedInToken1 + pool1);
+        } else {
+            value = value * MIN_SHARES;
         }
     }
 
@@ -295,23 +313,25 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 $f._rewardsOnBalance[i] += rewardAmounts[i];
             }
         }
-        uint initialValue = IERC20(farm.addresses[3]).balanceOf(address(this));
-        uint minimumProceeds = 1;
-        // TODO: How do I know what is `amounts[0]` if it is the right deposit amount?
-        // Note: It deposits only token0
-        // console.logUint(amounts[0]);
+
+        address ichiVault = farm.addresses[1];
+        uint initialValue = IERC20(ichiVault).balanceOf(address(this));
+        IICHIVaultV4 alm = IICHIVaultV4($base._underlying);
+        address token = alm.allowToken0() ? alm.token0() : alm.token1();
+        uint amount = alm.allowToken0() ? amounts[0] : amounts[1];
+
         IICHIVaultGateway(farm.addresses[0]).forwardDepositToICHIVault(
-            farm.addresses[3], farm.addresses[4], farm.addresses[1], amounts[0], minimumProceeds, address(this)
+            ichiVault, farm.addresses[2], token, amount, 1, address(this)
         );
-        value = IERC20(farm.addresses[3]).balanceOf(address(this)) - initialValue;
-        IGaugeEquivalent(farm.addresses[5]).deposit(value);
+        value = IERC20(ichiVault).balanceOf(address(this)) - initialValue;
+        IGaugeEquivalent(farm.addresses[3]).deposit(value);
         $base.total += value;
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
         IFactory.Farm memory farm = _getFarm();
-        IGaugeEquivalent(farm.addresses[5]).deposit(amount);
+        IGaugeEquivalent(farm.addresses[3]).deposit(amount);
         amountsConsumed = _previewDepositUnderlying(amount);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total += amount;
@@ -320,9 +340,9 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         IFactory.Farm memory farm = _getFarm();
-        IGaugeEquivalent(farm.addresses[5]).withdraw(value);
+        IGaugeEquivalent(farm.addresses[3]).withdraw(value);
         amountsOut = new uint[](2);
-        (amountsOut[0], amountsOut[1]) = IICHIVaultV4(farm.addresses[3]).withdraw(value, receiver);
+        (amountsOut[0], amountsOut[1]) = IICHIVaultV4(farm.addresses[1]).withdraw(value, receiver);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
     }
@@ -330,8 +350,8 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
         IFactory.Farm memory farm = _getFarm();
-        IGaugeEquivalent(farm.addresses[5]).withdraw(amount);
-        IERC20(farm.addresses[3]).safeTransfer(receiver, amount);
+        IGaugeEquivalent(farm.addresses[3]).withdraw(amount);
+        IERC20(farm.addresses[1]).safeTransfer(receiver, amount);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= amount;
     }
@@ -358,7 +378,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
         IFactory.Farm memory farm = _getFarm();
-        IGaugeEquivalent(farm.addresses[5]).getReward(address(this), __rewardAssets);
+        IGaugeEquivalent(farm.addresses[3]).getReward(address(this), __rewardAssets);
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }
@@ -388,7 +408,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
      *  @param _tokenOut token for the output amount
      *  @param _tick tick for the spot price
      *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
+     *  @param amountOut equivalent anount in _tokenOut
      */
     function _fetchSpot(
         address _tokenIn,
@@ -396,7 +416,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         int24 _tick,
         uint _amountIn
     ) internal pure returns (uint amountOut) {
-        return ISFLib.getQuoteAtTick(_tick, SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
+        return IRMFLib.getQuoteAtTick(_tick, SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
     }
 
     /**
@@ -406,7 +426,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
      *  @param _tokenOut token for the output amount
      *  @param _twapPeriod the averaging time period
      *  @param _amountIn amount in _tokenIn
-     *  @return amountOut equivalent anount in _tokenOut
+     *  @param amountOut equivalent anount in _tokenOut
      */
     function _fetchTwap(
         address _pool,
@@ -416,10 +436,8 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         uint _amountIn
     ) internal view returns (uint amountOut) {
         // Leave twapTick as a int256 to avoid solidity casting
-        address basePlugin = _getBasePluginFromPool(_pool);
-
-        int twapTick = ISFLib.consult(basePlugin, _twapPeriod);
-        return ISFLib.getQuoteAtTick(
+        int twapTick = IRMFLib.consult(_pool, _twapPeriod);
+        return IRMFLib.getQuoteAtTick(
             int24(twapTick), // can assume safe being result from consult()
             SafeCast.toUint128(_amountIn),
             _tokenIn,
@@ -427,10 +445,69 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         );
     }
 
-    function _getBasePluginFromPool(address pool_) private view returns (address basePlugin) {
-        basePlugin = IAlgebraPool(pool_).plugin(); // TODO: Shouldn't it be Uniswap Pool ?
-        // make sure the base plugin is connected to the pool
-        require(ISFLib.isOracleConnectedToPool(basePlugin, pool_), "IV: diconnected plugin");
+    /**
+     * @notice Helper function to check price manipulation
+     *  @param price Current spot price
+     *  @param twap TWAP price
+     *  @param auxTwap Auxiliary TWAP price
+     */
+    function _checkPriceManipulation(uint price, uint twap, uint auxTwap) internal view {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
+
+        uint delta = (price > twap) ? ((price - twap) * PRECISION) / price : ((twap - price) * PRECISION) / twap;
+
+        uint hysteresis = _underlying.hysteresis();
+        if (_underlying.auxTwapPeriod() > 0) {
+            uint auxDelta =
+                (price > auxTwap) ? ((price - auxTwap) * PRECISION) / price : ((auxTwap - price) * PRECISION) / auxTwap;
+
+            if (delta > hysteresis || auxDelta > hysteresis) {
+                require(checkHysteresis(), "IV16");
+            }
+        } else if (delta > hysteresis) {
+            require(checkHysteresis(), "IV17");
+        }
+    }
+
+    /**
+     * @notice Checks if the last price change happened in the current block
+     */
+    function checkHysteresis() private view returns (bool) {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
+
+        (,, uint16 observationIndex,,,,) = IUniswapV3Pool(_underlying.pool()).slot0();
+        (uint32 blockTimestamp,,,) = IUniswapV3Pool(_underlying.pool()).observations(observationIndex);
+        return (block.timestamp != blockTimestamp);
+    }
+
+    /**
+     * @notice Helper function to get the most conservative price
+     *  @param spot Current spot price
+     *  @param twap TWAP price
+     *  @param auxTwap Auxiliary TWAP price
+     *  @param isPool Flag indicating if the valuation is for the pool or deposit
+     *  @return price Most conservative price
+     */
+    function _getConservativePrice(uint spot, uint twap, uint auxTwap, bool isPool) internal view returns (uint) {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
+        uint32 auxTwapPeriod = _underlying.auxTwapPeriod();
+
+        if (isPool) {
+            // For pool valuation, use highest price to be conservative
+            if (auxTwapPeriod > 0) {
+                return Math.max(Math.max(spot, twap), auxTwap);
+            }
+            return Math.max(spot, twap);
+        } else {
+            // For deposit valuation, use lowest price to be conservative
+            if (auxTwapPeriod > 0) {
+                return Math.min(Math.min(spot, twap), auxTwap);
+            }
+            return Math.min(spot, twap);
+        }
     }
 
     function _generateDescription(
@@ -447,7 +524,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
             " Ichi ",
             //slither-disable-next-line calls-loop
-            IERC20Metadata(farm.addresses[3]).symbol()
+            IERC20Metadata(farm.addresses[1]).symbol()
         );
     }
 }
