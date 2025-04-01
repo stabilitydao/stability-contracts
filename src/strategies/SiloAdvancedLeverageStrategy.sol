@@ -18,6 +18,7 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
@@ -26,6 +27,7 @@ import {IBVault} from "../integrations/balancer/IBVault.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   1.1.2: realApr bugfix, emergency withdraw fix
 ///   1.1.1: use LeverageLendingBase 1.1.1; decrease size
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
@@ -38,7 +40,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.1.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -273,7 +275,11 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             int earned = int(totalNow) - int(totalWas);
             (uint _realTvl,) = realTvl();
             uint duration = block.timestamp - $base.lastHardWork;
-            int realApr = StrategyLib.computeAprInt(_realTvl, earned, duration);
+
+            IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
+            int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
+            int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
             (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
             (uint sharePrice,) = realSharePrice();
             emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
@@ -372,7 +378,9 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             amountsOut[0] = Math.min(value + (valueNow - valueWas), bal);
         }
 
-        IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
+        if (receiver != address(this)) {
+            IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
+        }
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
