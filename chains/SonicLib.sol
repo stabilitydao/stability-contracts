@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "../script/libs/LogDeployLib.sol";
+import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
+import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
+import {Proxy} from "../src/core/proxy/Proxy.sol";
+import {CVault} from "../src/core/vaults/CVault.sol";
+import {PriceReader} from "../src/core/PriceReader.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
+import {IPlatform} from "../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../src/interfaces/ISwapper.sol";
+import {IFactory} from "../src/interfaces/IFactory.sol";
+import {IPriceReader} from "../src/interfaces/IPriceReader.sol";
 import {IBalancerAdapter} from "../src/interfaces/IBalancerAdapter.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -62,16 +70,16 @@ library SonicLib {
     address public constant TOKEN_atETH = 0x284D81e48fBc782Aa9186a03a226690aEA5cBe0E;
     address public constant TOKEN_AUR = 0x7F144F8691CbA3d2EfD8e5bcf042f9303EE31a46;
     address public constant TOKEN_auUSDC = 0xd6a69EBFa44f78cEe454A2Df2C77751A42f8f38c;
-    address public constant TOKEN_NAVI = 0x6881B80ea7C858E4aEEf63893e18a8A36f3682f3;
-    address public constant TOKEN_ECO = 0x7A08Bf5304094CA4C7b4132Ef62b5EDc4a3478B7;
-    address public constant TOKEN_INDI = 0x4EEC869d847A6d13b0F6D1733C5DEC0d1E741B4f;
+    //address public constant TOKEN_NAVI = 0x6881B80ea7C858E4aEEf63893e18a8A36f3682f3;
+    //address public constant TOKEN_ECO = 0x7A08Bf5304094CA4C7b4132Ef62b5EDc4a3478B7;
+    //address public constant TOKEN_INDI = 0x4EEC869d847A6d13b0F6D1733C5DEC0d1E741B4f;
     address public constant TOKEN_BRUSH = 0xE51EE9868C1f0d6cd968A8B8C8376Dc2991BFE44;
-    address public constant TOKEN_TYSG = 0x56192E94434c4fd3278b4Fa53039293fB00DE3DB;
-    address public constant TOKEN_Missor = 0xf26B3Fd147619Df61D4c1D0a9F7200B31A73FAfa;
-    address public constant TOKEN_WOOF = 0x7F883dA3B0d77978075f7C9c03E1B9F461CA1B8d; // extra cheap
-    address public constant TOKEN_DONKS = 0x0a54364631Ea37813a63edb3bBa1C46f8d8304B2;
-    address public constant TOKEN_TAILS = 0x41211648C51AcB9A5F39A93C657e894A0bdB88e4;
-    address public constant TOKEN_THC = 0x17Af1Df44444AB9091622e4Aa66dB5BB34E51aD5;
+    //address public constant TOKEN_TYSG = 0x56192E94434c4fd3278b4Fa53039293fB00DE3DB;
+    //address public constant TOKEN_Missor = 0xf26B3Fd147619Df61D4c1D0a9F7200B31A73FAfa;
+    //address public constant TOKEN_WOOF = 0x7F883dA3B0d77978075f7C9c03E1B9F461CA1B8d; // extra cheap
+    //address public constant TOKEN_DONKS = 0x0a54364631Ea37813a63edb3bBa1C46f8d8304B2;
+    //address public constant TOKEN_TAILS = 0x41211648C51AcB9A5F39A93C657e894A0bdB88e4;
+    //address public constant TOKEN_THC = 0x17Af1Df44444AB9091622e4Aa66dB5BB34E51aD5;
     address public constant TOKEN_FS = 0xBC0d0650412EF353D672c0Bbd12eFFF90591B251;
     address public constant TOKEN_sDOG = 0x50Bc6e1DfF8039A4b967c1BF507ba5eA13fa18B6;
     address public constant TOKEN_MOON = 0x486B6Fa0419b33a0c7A6e4698c231D7E2f2D5299;
@@ -87,12 +95,16 @@ library SonicLib {
     address public constant TOKEN_STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
     address public constant TOKEN_anS = 0x0C4E186Eae8aCAA7F7de1315D5AD174BE39Ec987;
     address public constant TOKEN_wanS = 0xfA85Fe5A8F5560e9039C04f2b0a90dE1415aBD70;
-    address public constant TOKEN_fBOMB = 0xEdF8b632b537d5993Adb5e2E15882CD791c284cB;
-    address public constant TOKEN_EGGS = 0xf26Ff70573ddc8a90Bd7865AF8d7d70B8Ff019bC;
+    //address public constant TOKEN_fBOMB = 0xEdF8b632b537d5993Adb5e2E15882CD791c284cB;
+    //address public constant TOKEN_EGGS = 0xf26Ff70573ddc8a90Bd7865AF8d7d70B8Ff019bC;
     address public constant TOKEN_frxUSD = 0x80Eede496655FB9047dd39d9f418d5483ED600df;
     address public constant TOKEN_sfrxUSD = 0x5Bff88cA1442c2496f7E475E9e7786383Bc070c0;
     address public constant TOKEN_x33 = 0x3333111A391cC08fa51353E9195526A70b333333;
     address public constant TOKEN_DIAMONDS = 0xdBde38013d44aE23baDC4cd8081271B8028eCaF4;
+    address public constant TOKEN_PT_aUSDC_14AUG2025 = 0x930441Aa7Ab17654dF5663781CA0C02CC17e6643;
+    address public constant TOKEN_PT_wstkscUSD_29MAY2025 = 0xBe27993204Ec64238F71A527B4c4D5F4949034C3;
+    address public constant TOKEN_aUSDC = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
+    address public constant TOKEN_PT_stS_29MAY2025 = 0x420df605D062F8611EFb3F203BF258159b8FfFdE;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -109,17 +121,17 @@ library SonicLib {
     address public constant POOL_EQUALIZER_wS_EQUAL = 0x139f8eCC5fC8Ef11226a83911FEBecC08476cfB1;
     address public constant POOL_EQUALIZER_USDC_scUSD = 0xB78CdF29F7E563ea447feBB5b48DDe9bC3278Ba4;
     address public constant POOL_EQUALIZER_wS_GOGLZ = 0x832e2bb9579f6fF038d3E704Fa1BB5B6B18a6521;
-    address public constant POOL_EQUALIZER_wS_NAVI = 0x25f21F51b3D6322E165b80C9fdE31104CB82df04;
-    address public constant POOL_EQUALIZER_wS_ECO = 0x93B3Db87d07e4925274174CbD650EFdcd8885Cc6;
-    address public constant POOL_EQUALIZER_ECO_EQUAL = 0x88615ba8aa369f2f27E4a6e8f66fdE85F1Ce15ec;
-    address public constant POOL_EQUALIZER_wS_INDI = 0x913B1c9924F563692b3A306C90C9fDe9f825Ca27;
-    address public constant POOL_EQUALIZER_wS_BRUSH = 0x38cFA6cB37d074B6E954C52d10a4cf0e4268607b;
-    address public constant POOL_EQUALIZER_WETH_Missor = 0x0d84Cb89787047aF1B671F12f589898F7fC8cDce;
-    address public constant POOL_EQUALIZER_wS_DONKS = 0xB51DCB7D0adBF69A817bA1BBB62b637A3123ba54;
-    address public constant POOL_EQUALIZER_wS_TAILS = 0x84f66B604604bA80d67742106c5D9c98A6bE4EB3;
-    address public constant POOL_EQUALIZER_wS_THC = 0x3E6daa42268a5097De68ab39e48B860B9B55f589;
-    address public constant POOL_EQUALIZER_wS_FS = 0x110026eefCe21c356598Ded1B637B01aa67434A1;
-    address public constant POOL_EQUALIZER_wS_sDOG = 0x7Fd1213b759aA864fcfaFDb3cc8c8105F1eec01c;
+    //address public constant POOL_EQUALIZER_wS_NAVI = 0x25f21F51b3D6322E165b80C9fdE31104CB82df04;
+    //address public constant POOL_EQUALIZER_wS_ECO = 0x93B3Db87d07e4925274174CbD650EFdcd8885Cc6;
+    //address public constant POOL_EQUALIZER_ECO_EQUAL = 0x88615ba8aa369f2f27E4a6e8f66fdE85F1Ce15ec;
+    //address public constant POOL_EQUALIZER_wS_INDI = 0x913B1c9924F563692b3A306C90C9fDe9f825Ca27;
+    //address public constant POOL_EQUALIZER_wS_BRUSH = 0x38cFA6cB37d074B6E954C52d10a4cf0e4268607b;
+    //address public constant POOL_EQUALIZER_WETH_Missor = 0x0d84Cb89787047aF1B671F12f589898F7fC8cDce;
+    //address public constant POOL_EQUALIZER_wS_DONKS = 0xB51DCB7D0adBF69A817bA1BBB62b637A3123ba54;
+    //address public constant POOL_EQUALIZER_wS_TAILS = 0x84f66B604604bA80d67742106c5D9c98A6bE4EB3;
+    //address public constant POOL_EQUALIZER_wS_THC = 0x3E6daa42268a5097De68ab39e48B860B9B55f589;
+    //address public constant POOL_EQUALIZER_wS_FS = 0x110026eefCe21c356598Ded1B637B01aa67434A1;
+    //address public constant POOL_EQUALIZER_wS_sDOG = 0x7Fd1213b759aA864fcfaFDb3cc8c8105F1eec01c;
     address public constant POOL_SWAPX_CL_wS_SACRA = 0x875819746112630cEe95aA78E4327cd4837Da70D;
     address public constant POOL_SWAPX_CL_wS_SWPx = 0xbeca246A76942502f61bFe88F60bbc87DaFefe80;
     address public constant POOL_SWAPX_CL_USDC_SWPx = 0x467865E7Ce29E7ED8f362D51Fd7141117B234b44;
@@ -169,6 +181,9 @@ library SonicLib {
     // address public constant POOL_EQUALIZER_WETH_wS = 0x81ACF1C9BCC452b634D6DA33DB3f8D96e2CD1c73;
     // address public constant POOL_EQUALIZER_USDC_WETH = 0xfe809A1D337Bdfc98B77A1067e3819f66d8AD23F;
     address public constant POOL_EQUALIZER_wS_DIAMONDS = 0x2db92f3cf994520aC480d6692e956Ab7d8A24dcE;
+    address public constant POOL_PENDLE_PT_aUSDC_14AUG2025 = 0x3F5EA53d1160177445B1898afbB16da111182418;
+    address public constant POOL_PENDLE_PT_wstkscUSD_29MAY2025 = 0x6e4e95FaB7db1f0524b4b0a05F0b9c96380b7Dfa;
+    address public constant POOL_PENDLE_PT_stS_29MAY2025 = 0x3aeF1d372d0a7a7E482F465Bc14A42D78f920392;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -223,14 +238,14 @@ library SonicLib {
     address public constant EQUALIZER_GAUGE_wS_NAVI = 0xe33588B5507E7c1D8Dd8367Cd8C7CE406DAeb019;
     address public constant EQUALIZER_GAUGE_wS_ECO = 0xE9DB22DC69129FD131CB744e8E638A8FA084e66e;
     address public constant EQUALIZER_GAUGE_ECO_EQUAL = 0xDAC4c0fcd65C71070E1b14f1deA8Ce48E746B2fD;
-    address public constant EQUALIZER_GAUGE_wS_INDI = 0x15c2B42F6001758edDd9Cd13f327cdc812E5795D;
-    address public constant EQUALIZER_GAUGE_wS_BRUSH = 0xA4Df0a210a5E242BE68E8a2b780ecc854ADD3583;
-    address public constant EQUALIZER_GAUGE_WETH_Missor = 0x199aF40E819CED6e7a56B2C06296e292d10C4727;
-    address public constant EQUALIZER_GAUGE_wS_DONKS = 0xD3b67f0DE1Bf85aCCD538BB1CE214a635605A0c2;
-    address public constant EQUALIZER_GAUGE_wS_TAILS = 0x8C0B131c178505EA8b7a06fd6db0422392Cf8AB3;
-    address public constant EQUALIZER_GAUGE_wS_THC = 0x4C09EcEc77Bd56ea28CE85DA6a2A4E39de997e35;
-    address public constant EQUALIZER_GAUGE_wS_FS = 0x152A791a2B3E415d482F4Bc608A328f3ebE37A5D;
-    address public constant EQUALIZER_GAUGE_wS_sDOG = 0xa9366d013bE7E7151f251cb47133Ed14aa3cFCdC;
+    //address public constant EQUALIZER_GAUGE_wS_INDI = 0x15c2B42F6001758edDd9Cd13f327cdc812E5795D;
+    //address public constant EQUALIZER_GAUGE_wS_BRUSH = 0xA4Df0a210a5E242BE68E8a2b780ecc854ADD3583;
+    //address public constant EQUALIZER_GAUGE_WETH_Missor = 0x199aF40E819CED6e7a56B2C06296e292d10C4727;
+    //address public constant EQUALIZER_GAUGE_wS_DONKS = 0xD3b67f0DE1Bf85aCCD538BB1CE214a635605A0c2;
+    //address public constant EQUALIZER_GAUGE_wS_TAILS = 0x8C0B131c178505EA8b7a06fd6db0422392Cf8AB3;
+    //address public constant EQUALIZER_GAUGE_wS_THC = 0x4C09EcEc77Bd56ea28CE85DA6a2A4E39de997e35;
+    //address public constant EQUALIZER_GAUGE_wS_FS = 0x152A791a2B3E415d482F4Bc608A328f3ebE37A5D;
+    //address public constant EQUALIZER_GAUGE_wS_sDOG = 0xa9366d013bE7E7151f251cb47133Ed14aa3cFCdC;
     address public constant EQUALIZER_GAUGE_GAMMA_wS_USDC = 0xa4B6867eEad7B373642f86253c5367bA84E12f76;
     address public constant EQUALIZER_GAUGE_GAMMA_WETH_wS = 0x28b96E430ecC193c07318325f6a8af17c44333D8;
     address public constant EQUALIZER_GAUGE_GAMMA_USDC_WETH = 0xdC44bf3bF760e88DdaC7667C2386A0D5B6668b47;
@@ -288,6 +303,10 @@ library SonicLib {
     address public constant SILO_VAULT_22_wS = 0x112380065A2cb73A5A429d9Ba7368cc5e8434595;
     address public constant SILO_VAULT_25_wanS = 0x21580de05C4F3d6D6a5345b03a898C33B872Ab51;
     address public constant SILO_VAULT_25_wS = 0x016C306e103FbF48EC24810D078C65aD13c5f11B;
+    address public constant SILO_VAULT_46_PT_aUSDC_14AUG = 0x558d6D6D53270ae8ba622daF123983D9F3c21792;
+    address public constant SILO_VAULT_46_scUSD = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
+    address public constant SILO_VAULT_40_PT_stS_29MAY = 0x058766008d237faF3B05eeEebABc73C64d677bAE;
+    address public constant SILO_VAULT_40_scUSD = 0x24F7692af5231d559219d07c65276Ad8C8ceE9A3;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -370,6 +389,7 @@ library SonicLib {
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.BALANCER_V3_STABLE);
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy)
             .setupHelpers(BEETS_V3_ROUTER);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.PENDLE);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
@@ -463,7 +483,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](29);
+        pools = new ISwapper.AddPoolData[](32);
         uint i;
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_wS, TOKEN_stS);
         pools[i++] = _makePoolData(POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, TOKEN_stS, TOKEN_wS);
@@ -508,6 +528,10 @@ library SonicLib {
             _makePoolData(POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, TOKEN_x33, TOKEN_SHADOW);
         
         pools[i++] = _makePoolData(POOL_EQUALIZER_wS_DIAMONDS, AmmAdapterIdLib.SOLIDLY, TOKEN_DIAMONDS, TOKEN_wS);
+
+        pools[i++] = _makePoolData(POOL_PENDLE_PT_aUSDC_14AUG2025, AmmAdapterIdLib.PENDLE, TOKEN_PT_aUSDC_14AUG2025, TOKEN_USDC);
+        pools[i++] = _makePoolData(POOL_PENDLE_PT_wstkscUSD_29MAY2025, AmmAdapterIdLib.PENDLE, TOKEN_PT_wstkscUSD_29MAY2025, TOKEN_stkscUSD);
+        pools[i++] = _makePoolData(POOL_PENDLE_PT_stS_29MAY2025, AmmAdapterIdLib.PENDLE, TOKEN_PT_stS_29MAY2025, TOKEN_stS);
 
         //endregion ----- Pools ----
     }
