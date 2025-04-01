@@ -14,6 +14,7 @@ import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
+import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -62,6 +63,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.BALANCER_V3_STABLE)) {
             proxy.initProxy(address(new BalancerV3StableAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.PENDLE)) {
+            proxy.initProxy(address(new PendleAdapter()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));

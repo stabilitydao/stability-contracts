@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "../base/chains/SonicSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {SonicLib, AmmAdapterIdLib, IBalancerAdapter} from "../../chains/SonicLib.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract BalancerWeightedAdapterTest is SonicSetup {
     bytes32 public _hash;
