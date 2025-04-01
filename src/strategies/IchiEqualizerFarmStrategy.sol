@@ -216,6 +216,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x965fff), bytes3(0x000000)));
     }
 
@@ -477,8 +478,11 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
 
+        //slither-disable-next-line unused-return
         (,, uint16 observationIndex,,,,) = IUniswapV3Pool(_underlying.pool()).slot0();
+        //slither-disable-next-line unused-return
         (uint32 blockTimestamp,,,) = IUniswapV3Pool(_underlying.pool()).observations(observationIndex);
+        //slither-disable-next-line timestamp
         return (block.timestamp != blockTimestamp);
     }
 
