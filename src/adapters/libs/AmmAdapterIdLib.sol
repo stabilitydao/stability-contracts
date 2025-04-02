@@ -12,4 +12,5 @@ library AmmAdapterIdLib {
     string public constant ALGEBRA_V4 = "AlgebraV4";
     string public constant ERC_4626 = "ERC4626";
     string public constant BALANCER_V3_STABLE = "BalancerV3Stable";
+    string public constant PENDLE = "Pendle";
 }
