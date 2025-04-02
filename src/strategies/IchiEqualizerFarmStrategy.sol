@@ -38,10 +38,6 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    uint internal constant PRECISION = 10 ** 18;
-
-    uint internal constant MIN_SHARES = 1000;
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -183,7 +179,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
-        return IEFLib.getAssetsProportions(_getStrategyBaseStorage());
+        proportions = IEFLib.getAssetsProportions(_getStrategyBaseStorage());
     }
 
     /// @inheritdoc IStrategy
@@ -233,7 +229,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        return IEFLib.previewDepositAssets(amountsMax, _getStrategyBaseStorage());
+        (amountsConsumed, value) = IEFLib.previewDepositAssets(amountsMax, _getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase
@@ -274,7 +270,8 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        return IEFLib._claimRevenue(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm());
+        (__assets, __amounts, __rewardAssets, __rewardAmounts) =
+            IEFLib._claimRevenue(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm());
     }
 
     /// @inheritdoc StrategyBase
