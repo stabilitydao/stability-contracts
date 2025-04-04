@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../../chains/SonicLib.sol";
+import "../../chains/sonic/SonicLib.sol";
 import "../base/UniversalTest.sol";
 import "../../src/integrations/balancer/IBalancerGauge.sol";
 
@@ -15,12 +15,12 @@ contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
 
     /*function _preHardWork() internal override {
         address gauge = IFarmingStrategy(currentStrategy).stakingPool();
-        S_0 memory s = IBalancerGauge(gauge).reward_data(SonicLib.TOKEN_BEETS);
+        S_0 memory s = IBalancerGauge(gauge).reward_data(SonicConstantsLib.TOKEN_BEETS);
         address distributor = s.distributor;
-        _deal(SonicLib.TOKEN_BEETS, distributor, 1000e18);
+        _deal(SonicConstantsLib.TOKEN_BEETS, distributor, 1000e18);
         vm.startPrank(distributor);
-        IERC20(SonicLib.TOKEN_BEETS).approve(gauge, type(uint).max);
-        IBalancerGauge(gauge).deposit_reward_token(SonicLib.TOKEN_BEETS, 200e18);
+        IERC20(SonicConstantsLib.TOKEN_BEETS).approve(gauge, type(uint).max);
+        IBalancerGauge(gauge).deposit_reward_token(SonicConstantsLib.TOKEN_BEETS, 200e18);
         vm.stopPrank();
     }*/
 

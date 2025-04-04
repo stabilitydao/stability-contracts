@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -37,7 +37,10 @@ contract ASFUpgrade3Test is Test {
     function testASFBugfix3() public {
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
         pools[0] = _makePoolData(
-            SonicLib.POOL_SHADOW_CL_x33_SHADOW, AmmAdapterIdLib.UNISWAPV3, SonicLib.TOKEN_x33, SonicLib.TOKEN_SHADOW
+            SonicConstantsLib.POOL_SHADOW_CL_x33_SHADOW,
+            AmmAdapterIdLib.UNISWAPV3,
+            SonicConstantsLib.TOKEN_x33,
+            SonicConstantsLib.TOKEN_SHADOW
         );
         IFactory.Farm memory farm;
         farm.status = 0;
@@ -47,7 +50,7 @@ contract ASFUpgrade3Test is Test {
         farm.addresses = new address[](3);
         farm.addresses[0] = NEW_GAUGE;
         farm.addresses[1] = IGaugeV3(NEW_GAUGE).nfpManager();
-        farm.addresses[2] = SonicLib.TOKEN_xSHADOW;
+        farm.addresses[2] = SonicConstantsLib.TOKEN_xSHADOW;
         farm.nums = new uint[](1);
         farm.nums[0] = 0;
         farm.ticks = new int24[](2);
