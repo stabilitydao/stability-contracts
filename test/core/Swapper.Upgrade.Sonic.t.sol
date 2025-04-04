@@ -6,7 +6,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 
@@ -29,28 +29,28 @@ contract SwapperUpgradeSonicTest is Test {
         swapper.addPools(_routes(), false);
         vm.stopPrank();
 
-        uint price = swapper.getPrice(SonicLib.TOKEN_USDC, SonicLib.TOKEN_wanS, 0);
+        uint price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wanS, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_wanS, SonicLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_wanS, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_wstkscUSD, SonicLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_USDC, SonicLib.TOKEN_wstkscUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_USDC, SonicLib.TOKEN_wstkscETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscETH, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_wstkscETH, SonicLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscETH, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_wETH, SonicLib.TOKEN_wstkscETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_wstkscETH, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_wstkscETH, SonicLib.TOKEN_wETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscETH, SonicConstantsLib.TOKEN_wETH, 0);
         assertGt(price, 0);
 
-        price = swapper.getPrice(SonicLib.TOKEN_sfrxUSD, SonicLib.TOKEN_SWPx, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_sfrxUSD, SonicConstantsLib.TOKEN_SWPx, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_SWPx, SonicLib.TOKEN_sfrxUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPx, SonicConstantsLib.TOKEN_sfrxUSD, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicLib.TOKEN_SWPx, SonicLib.TOKEN_frxUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPx, SonicConstantsLib.TOKEN_frxUSD, 0);
         assertGt(price, 0);
     }
 
@@ -58,7 +58,7 @@ contract SwapperUpgradeSonicTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BalancerV3StableAdapter()));
         BalancerV3StableAdapter(address(proxy)).init(PLATFORM);
-        BalancerV3StableAdapter(address(proxy)).setupHelpers(SonicLib.BEETS_V3_ROUTER);
+        BalancerV3StableAdapter(address(proxy)).setupHelpers(SonicConstantsLib.BEETS_V3_ROUTER);
         IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.BALANCER_V3_STABLE, address(proxy));
     }
 
@@ -78,37 +78,50 @@ contract SwapperUpgradeSonicTest is Test {
         uint i;
         // wanS -> USDC
         pools[i++] = _makePoolData(
-            SonicLib.SILO_VAULT_25_wS, AmmAdapterIdLib.ERC_4626, SonicLib.SILO_VAULT_25_wS, SonicLib.TOKEN_wS
+            SonicConstantsLib.SILO_VAULT_25_wS,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.SILO_VAULT_25_wS,
+            SonicConstantsLib.TOKEN_wS
         );
         pools[i++] = _makePoolData(
-            SonicLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS,
+            SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS,
             AmmAdapterIdLib.BALANCER_V3_STABLE,
-            SonicLib.TOKEN_anS,
-            SonicLib.SILO_VAULT_25_wS
+            SonicConstantsLib.TOKEN_anS,
+            SonicConstantsLib.SILO_VAULT_25_wS
         );
-        pools[i++] =
-            _makePoolData(SonicLib.TOKEN_wanS, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_wanS, SonicLib.TOKEN_anS);
+        pools[i++] = _makePoolData(
+            SonicConstantsLib.TOKEN_wanS,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.TOKEN_wanS,
+            SonicConstantsLib.TOKEN_anS
+        );
 
         // wstkscUSD -> USDC
         pools[i++] = _makePoolData(
-            SonicLib.TOKEN_wstkscUSD, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_stkscUSD, SonicLib.TOKEN_wstkscUSD
+            SonicConstantsLib.TOKEN_wstkscUSD,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.TOKEN_wstkscUSD
         );
         /*pools[i++] = _makePoolData(
-            SonicLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
+            SonicConstantsLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicLib.TOKEN_stkscUSD,
-            SonicLib.TOKEN_scUSD
+            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.TOKEN_scUSD
         );*/
 
         // wstksceth -> ETH
         pools[i++] = _makePoolData(
-            SonicLib.TOKEN_wstkscETH, AmmAdapterIdLib.ERC_4626, SonicLib.TOKEN_wstkscETH, SonicLib.TOKEN_stkscETH
+            SonicConstantsLib.TOKEN_wstkscETH,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.TOKEN_wstkscETH,
+            SonicConstantsLib.TOKEN_stkscETH
         );
         pools[i++] = _makePoolData(
-            SonicLib.POOL_SHADOW_CL_scETH_stkscETH_250,
+            SonicConstantsLib.POOL_SHADOW_CL_scETH_stkscETH_250,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicLib.TOKEN_stkscETH,
-            SonicLib.TOKEN_scETH
+            SonicConstantsLib.TOKEN_stkscETH,
+            SonicConstantsLib.TOKEN_scETH
         );
     }
 

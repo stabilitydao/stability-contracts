@@ -8,7 +8,7 @@ import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IOracleAdapter} from "../../src/interfaces/IOracleAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract ChainlinkAdapterTestSonic is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -35,12 +35,12 @@ contract ChainlinkAdapterTestSonic is Test {
     function testChainlinkAdapterSonic() public {
         _addAdapter();
         address[] memory assets = new address[](1);
-        assets[0] = SonicLib.TOKEN_scUSD;
+        assets[0] = SonicConstantsLib.TOKEN_scUSD;
         address[] memory feeds = new address[](1);
-        feeds[0] = SonicLib.ORACLE_PYTH_scUSD_USD;
+        feeds[0] = SonicConstantsLib.ORACLE_PYTH_scUSD_USD;
         vm.prank(multisig);
         adapter.addPriceFeeds(assets, feeds);
-        (uint price, bool trusted) = priceReader.getPrice(SonicLib.TOKEN_scUSD);
+        (uint price, bool trusted) = priceReader.getPrice(SonicConstantsLib.TOKEN_scUSD);
         assertGt(price, 999e15);
         assertLt(price, 101e16);
         assertEq(trusted, true);

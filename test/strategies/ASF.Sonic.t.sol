@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../../chains/SonicLib.sol";
+import "../../chains/sonic/SonicLib.sol";
 import "../base/UniversalTest.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
 
@@ -16,10 +16,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         duration3 = 0.5 hours;
 
         makePoolVolumePriceImpactTolerance = 34_000;
-        poolVolumeSwapAmount0MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 100; // 500k
-        poolVolumeSwapAmount1MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 150; // 650k
-        poolVolumeSwapAmount0MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 80;
-        poolVolumeSwapAmount1MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 40;
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 100; // 500k
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 150; // 650k
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 80;
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 40;
 
         rebalanceHelper = new RebalanceHelper();
     }

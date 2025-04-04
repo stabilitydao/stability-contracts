@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import {SonicLib, AmmAdapterIdLib, IBalancerAdapter} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib, AmmAdapterIdLib, IBalancerAdapter} from "../../chains/sonic/SonicLib.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 
@@ -24,7 +24,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
         vm.expectRevert(IControllable.AlreadyExist.selector);
         balancerAdapter.setupHelpers(address(1));
 
-        address pool = SonicLib.POOL_BEETS_BEETS_stS;
+        address pool = SonicConstantsLib.POOL_BEETS_BEETS_stS;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e18;
         amounts[1] = 100e18;
@@ -38,27 +38,27 @@ contract BalancerWeightedAdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicLib.POOL_BEETS_BEETS_stS;
-        deal(SonicLib.TOKEN_stS, address(adapter), 1e15);
-        adapter.swap(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, address(this), 10_000);
-        uint out = IERC20(SonicLib.TOKEN_BEETS).balanceOf(address(this));
+        address pool = SonicConstantsLib.POOL_BEETS_BEETS_stS;
+        deal(SonicConstantsLib.TOKEN_stS, address(adapter), 1e15);
+        adapter.swap(pool, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_BEETS, address(this), 10_000);
+        uint out = IERC20(SonicConstantsLib.TOKEN_BEETS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.TOKEN_stS, address(adapter), 8000e18);
+        deal(SonicConstantsLib.TOKEN_stS, address(adapter), 8000e18);
         vm.expectRevert();
-        adapter.swap(pool, SonicLib.TOKEN_stS, SonicLib.TOKEN_BEETS, address(this), 10);
-        // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
+        adapter.swap(pool, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_BEETS, address(this), 10);
+        // out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }
 
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicLib.POOL_BEETS_BEETS_stS;
+        address pool = SonicConstantsLib.POOL_BEETS_BEETS_stS;
         address[] memory tokens = adapter.poolTokens(pool);
         assertEq(tokens.length, 2);
-        assertEq(tokens[0], SonicLib.TOKEN_BEETS);
-        assertEq(tokens[1], SonicLib.TOKEN_stS);
+        assertEq(tokens[0], SonicConstantsLib.TOKEN_BEETS);
+        assertEq(tokens[1], SonicConstantsLib.TOKEN_stS);
 
         uint[] memory props = adapter.getProportions(pool);
         assertEq(props[0], 8e17);
@@ -67,7 +67,7 @@ contract BalancerWeightedAdapterTest is SonicSetup {
         // console.log(props[1]);
 
         uint price;
-        price = adapter.getPrice(pool, SonicLib.TOKEN_BEETS, SonicLib.TOKEN_stS, 1e18);
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_BEETS, SonicConstantsLib.TOKEN_stS, 1e18);
         assertGt(price, 1e8);
         // console.log(price);
 

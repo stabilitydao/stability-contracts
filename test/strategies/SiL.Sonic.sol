@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
@@ -15,16 +15,16 @@ contract SiloLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiLSonic() public universalTest {
-        _addStrategy(SonicLib.SILO_VAULT_3_stS, SonicLib.SILO_VAULT_3_wS);
-        //_addStrategy(SonicLib.SILO_VAULT_3_wS, SonicLib.SILO_VAULT_3_stS);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_3_stS, SonicConstantsLib.SILO_VAULT_3_wS);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_3_wS, SonicConstantsLib.SILO_VAULT_3_stS);
     }
 
     function _addStrategy(address strategyInitAddress0, address strategyInitAddress1) internal {
         address[] memory initStrategyAddresses = new address[](4);
         initStrategyAddresses[0] = strategyInitAddress0;
         initStrategyAddresses[1] = strategyInitAddress1;
-        initStrategyAddresses[2] = SonicLib.BEETS_VAULT;
-        initStrategyAddresses[3] = SonicLib.SILO_LENS;
+        initStrategyAddresses[2] = SonicConstantsLib.BEETS_VAULT;
+        initStrategyAddresses[3] = SonicConstantsLib.SILO_LENS;
         strategies.push(
             Strategy({
                 id: StrategyIdLib.SILO_LEVERAGE,

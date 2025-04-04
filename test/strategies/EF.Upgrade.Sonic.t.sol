@@ -8,7 +8,7 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
-// import "../../chains/SonicLib.sol";
+// import "../../chains/sonic/SonicLib.sol";
 
 contract EFUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -31,7 +31,7 @@ contract EFUpgradeTest is Test {
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
 
         // test
-        //deal(SonicLib.TOKEN_USDC, STRATEGY, 1700);
+        //deal(SonicConstantsLib.TOKEN_USDC, STRATEGY, 1700);
         ///////
 
         vm.expectRevert();

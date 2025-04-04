@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../../chains/SonicLib.sol";
+import "../../../chains/sonic/SonicLib.sol";
 import "../ChainSetup.sol";
 import "../../../src/core/Platform.sol";
 import "../../../src/core/Factory.sol";
@@ -38,11 +38,11 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
     }
 
     function _deal(address token, address to, uint amount) internal override {
-        if (token == SonicLib.TOKEN_auUSDC) {
+        if (token == SonicConstantsLib.TOKEN_auUSDC) {
             address aurumPool = 0x69f196a108002FD75d4B0a1118Ee04C065a63dE9;
-            deal(SonicLib.TOKEN_USDC, address(this), amount);
-            IERC20(SonicLib.TOKEN_USDC).approve(aurumPool, amount);
-            IPoolMinimal(aurumPool).supply(SonicLib.TOKEN_USDC, amount, address(this), 0);
+            deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
+            IERC20(SonicConstantsLib.TOKEN_USDC).approve(aurumPool, amount);
+            IPoolMinimal(aurumPool).supply(SonicConstantsLib.TOKEN_USDC, amount, address(this), 0);
         } else {
             deal(token, to, amount);
         }
