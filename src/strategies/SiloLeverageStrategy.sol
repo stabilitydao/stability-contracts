@@ -17,6 +17,7 @@ import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
@@ -26,6 +27,7 @@ import {IBVault} from "../integrations/balancer/IBVault.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
+///   1.1.2: realApr bugfix
 ///   1.1.1: use LeverageLendingBase 1.1.1
 ///   1.1.0: use LeverageLendingBase 1.1.0
 /// @author Alien Deployer (https://github.com/a17)
@@ -37,7 +39,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.1.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -282,7 +284,10 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             int earned = int(totalNow) - int(totalWas);
             (uint _realTvl,) = realTvl();
             uint duration = block.timestamp - $base.lastHardWork;
-            int realApr = StrategyLib.computeAprInt(_realTvl, earned, duration);
+            IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
+            int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
+            int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
             (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
             (uint sharePrice,) = realSharePrice();
             emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);

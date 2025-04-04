@@ -106,6 +106,7 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
 * ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
 * BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
+* Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
