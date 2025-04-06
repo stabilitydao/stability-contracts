@@ -49,7 +49,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -59,7 +59,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
-                underlying: farm.addresses[1]
+                underlying: farm.addresses[0]
             })
         );
 
@@ -68,7 +68,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         address[] memory _assets = assets();
         IERC20(_assets[0]).forceApprove(farm.addresses[0], type(uint).max);
         IERC20(_assets[1]).forceApprove(farm.addresses[0], type(uint).max);
-        IERC20(farm.addresses[1]).forceApprove(farm.addresses[3], type(uint).max);
+        IERC20(farm.addresses[0]).forceApprove(farm.addresses[1], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -94,7 +94,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc FarmingStrategyBase
     function stakingPool() external view override returns (address) {
         IFactory.Farm memory farm = _getFarm();
-        return farm.addresses[3];
+        return farm.addresses[1];
     }
 
     /// @inheritdoc ILPStrategy
@@ -185,7 +185,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        IICHIVaultV4 _ivault = IICHIVaultV4(farm.addresses[1]);
+        IICHIVaultV4 _ivault = IICHIVaultV4(farm.addresses[0]);
         address allowedToken = _ivault.allowToken0() ? _ivault.token0() : _ivault.token1();
         string memory symbol = IERC20Metadata(allowedToken).symbol();
         return (symbol, false);

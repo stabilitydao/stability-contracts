@@ -126,11 +126,9 @@ library SonicFarmMakerLib {
         for (uint i; i < len; ++i) {
             farm.rewardAssets[i] = IGaugeEquivalent(gauge).rewardTokens(i);
         }
-        farm.addresses = new address[](4);
-        farm.addresses[0] = SonicConstantsLib.ICHI_EQUALIZER_VAULT_GATEWAY;
-        farm.addresses[1] = vault;
-        farm.addresses[2] = SonicConstantsLib.ICHI_EQUALIZER_VAULT_DEPLOYER;
-        farm.addresses[3] = gauge;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = vault;
+        farm.addresses[1] = gauge;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

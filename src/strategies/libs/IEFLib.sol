@@ -12,7 +12,6 @@ import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
-import {IICHIVaultGateway} from "../../integrations/ichi/IICHIVaultGateway.sol";
 import {IGaugeEquivalent} from "../../integrations/equalizer/IGaugeEquivalent.sol";
 import {StrategyLib} from "./StrategyLib.sol";
 import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
@@ -43,17 +42,8 @@ library IEFLib {
             }
         }
 
-        address ichiVault = farm.addresses[1];
-        uint initialValue = IERC20(ichiVault).balanceOf(address(this));
-        IICHIVaultV4 alm = IICHIVaultV4($base._underlying);
-        address token = alm.allowToken0() ? alm.token0() : alm.token1();
-        uint amount = alm.allowToken0() ? amounts[0] : amounts[1];
-
-        IICHIVaultGateway(farm.addresses[0]).forwardDepositToICHIVault(
-            ichiVault, farm.addresses[2], token, amount, 1, address(this)
-        );
-        value = IERC20(ichiVault).balanceOf(address(this)) - initialValue;
-        IGaugeEquivalent(farm.addresses[3]).deposit(value);
+        value = IICHIVaultV4($base._underlying).deposit(amounts[0], amounts[1], address(this));
+        IGaugeEquivalent(farm.addresses[1]).deposit(value);
         $base.total += value;
     }
 
@@ -62,7 +52,7 @@ library IEFLib {
         IFactory.Farm memory farm,
         IStrategy.StrategyBaseStorage storage $base
     ) external returns (uint[] memory amountsConsumed) {
-        IGaugeEquivalent(farm.addresses[3]).deposit(amount);
+        IGaugeEquivalent(farm.addresses[1]).deposit(amount);
         amountsConsumed = previewDepositUnderlying(amount, $base);
         $base.total += amount;
     }
@@ -85,9 +75,9 @@ library IEFLib {
         IFactory.Farm memory farm,
         IStrategy.StrategyBaseStorage storage $base
     ) external returns (uint[] memory amountsOut) {
-        IGaugeEquivalent(farm.addresses[3]).withdraw(value);
+        IGaugeEquivalent(farm.addresses[1]).withdraw(value);
         amountsOut = new uint[](2);
-        (amountsOut[0], amountsOut[1]) = IICHIVaultV4(farm.addresses[1]).withdraw(value, receiver);
+        (amountsOut[0], amountsOut[1]) = IICHIVaultV4(farm.addresses[0]).withdraw(value, receiver);
         $base.total -= value;
     }
 
@@ -97,8 +87,8 @@ library IEFLib {
         IFactory.Farm memory farm,
         IStrategy.StrategyBaseStorage storage $base
     ) external {
-        IGaugeEquivalent(farm.addresses[3]).withdraw(amount);
-        IERC20(farm.addresses[1]).safeTransfer(receiver, amount);
+        IGaugeEquivalent(farm.addresses[1]).withdraw(amount);
+        IERC20(farm.addresses[0]).safeTransfer(receiver, amount);
         $base.total -= amount;
     }
 
@@ -138,7 +128,7 @@ library IEFLib {
         for (uint i; i < rwLen; ++i) {
             balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
-        IGaugeEquivalent(farm.addresses[3]).getReward(address(this), __rewardAssets);
+        IGaugeEquivalent(farm.addresses[1]).getReward(address(this), __rewardAssets);
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }
@@ -364,7 +354,7 @@ library IEFLib {
             CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
             " Ichi ",
             //slither-disable-next-line calls-loop
-            IERC20Metadata(farm.addresses[1]).symbol()
+            IERC20Metadata(farm.addresses[0]).symbol()
         );
     }
 }
