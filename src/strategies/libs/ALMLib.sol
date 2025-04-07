@@ -62,35 +62,62 @@ library ALMLib {
     function needRebalance(
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
-    ) external view returns (bool need) {
-        if ($.algoId == ALGO_FILL_UP) {
-            uint len = $.positions.length;
-            if (len == 0) {
-                return false;
-            }
+    ) external view returns (bool baseRebalanceNeeded, bool limitRebalanceNeeded) {
+        uint len = $.positions.length;
 
-            int24 halfRange = $.params[0] / 2;
-            int24 halfTriggerRange = $.params[1] / 2;
-            int24 oldTickLower = $.positions[0].tickLower;
-            int24 oldTickUpper = $.positions[0].tickUpper;
-            int24 oldMedianTick = oldTickLower + halfRange;
-            int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
-            bool fillUpRebalanceTrigger =
-                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
-            bool outOfRange = currentTick < oldTickLower || currentTick > oldTickUpper;
-            bool cantMoveRange = false;
-            if (outOfRange) {
-                int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
-                int24 tickDistance =
-                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
-                tickDistance = tickDistance / tickSpacing * tickSpacing;
-                if (tickDistance == 0) {
-                    cantMoveRange = true;
-                }
-            }
-
-            return !cantMoveRange && fillUpRebalanceTrigger;
+        if ($.algoId != ALGO_FILL_UP || len == 0) {
+            return (false, false);
         }
+
+        int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
+        
+        baseRebalanceNeeded = checkBaseRebalanceNeeded($, _$_, currentTick);
+
+        if ($.positions.length > 1) {
+            limitRebalanceNeeded = checkLimitRebalanceNeeded($, currentTick);
+        }
+    }
+
+    function checkBaseRebalanceNeeded(
+        IALM.ALMStrategyBaseStorage storage $,
+        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        int24 currentTick
+    ) internal view returns (bool baseRebalanceNeeded) {
+        int24 halfRange = $.params[0] / 2;
+        int24 halfTriggerRange = $.params[1] / 2;
+        int24 oldTickLower = $.positions[0].tickLower;
+        int24 oldTickUpper = $.positions[0].tickUpper;
+        int24 oldMedianTick = oldTickLower + halfRange;
+
+        bool fillUpRebalanceTrigger = (currentTick > oldMedianTick + halfTriggerRange) ||
+                              (currentTick < oldMedianTick - halfTriggerRange);
+
+        bool outOfRange = (currentTick < oldTickLower || currentTick > oldTickUpper);
+        
+        bool cantMoveRange = false;
+
+        if (outOfRange) {
+            int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
+            int24 tickDistance =
+                currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
+            tickDistance = tickDistance / tickSpacing * tickSpacing;
+            if (tickDistance == 0) {
+                cantMoveRange = true;
+            }
+        }
+
+        baseRebalanceNeeded = !cantMoveRange && fillUpRebalanceTrigger;
+    }
+
+    function checkLimitRebalanceNeeded(
+        IALM.ALMStrategyBaseStorage storage $,
+        int24 currentTick
+    ) internal view returns (bool) {
+        int24 rangeSize = $.params[2];
+        int24 limitTickLower = $.positions[1].tickLower;
+        int24 limitTickUpper = $.positions[1].tickUpper;
+        return (currentTick > limitTickUpper - (rangeSize / 10)) ||
+                                (currentTick < limitTickLower + (rangeSize / 10));
     }
 
     function getAlgoNamyById(uint algoId) public pure returns (string memory) {
@@ -101,25 +128,25 @@ library ALMLib {
     }
 
     function getPresetNameByAlgoAndParams(uint algoId, int24[] memory params) public pure returns (string memory) {
-        if (algoId == ALGO_FILL_UP) {
-            if (params[0] >= 10000) {
-                return "Stretched";
-            }
-            if (params[0] >= 4000) {
-                return "Passive";
-            }
-            if (params[0] >= 2000) {
-                return "Wide";
-            }
-            if (params[0] >= 1000) {
-                return "Narrow";
-            }
-            if (params[0] >= 100) {
-                return "Aggressive";
-            }
-            return "Insane";
+        if (algoId != ALGO_FILL_UP)
+            return "Unknown";
+
+        if (params[0] >= 10000) {
+            return "Stretched";
         }
-        return "Unknown";
+        if (params[0] >= 4000) {
+            return "Passive";
+        }
+        if (params[0] >= 2000) {
+            return "Wide";
+        }
+        if (params[0] >= 1000) {
+            return "Narrow";
+        }
+        if (params[0] >= 100) {
+            return "Aggressive";
+        }
+        return "Insane";
     }
 
     function preset(IALM.ALMStrategyBaseStorage storage $)

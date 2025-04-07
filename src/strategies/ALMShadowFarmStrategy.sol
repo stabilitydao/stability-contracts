@@ -13,6 +13,7 @@ import {ALMRamsesV3Lib} from "./libs/ALMRamsesV3Lib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IALM} from "../interfaces/IALM.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
@@ -252,7 +253,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*                     ALM STRATEGY BASE                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal override {
+    function _rebalance(IALM.RebalanceAction[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal override {
         ALMRamsesV3Lib.rebalance(
             burnOldPositions,
             mintNewPositions,

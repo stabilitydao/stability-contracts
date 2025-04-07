@@ -161,50 +161,37 @@ library ALMRamsesV3Lib {
     }
 
     function rebalance(
-        bool[] memory,
+        IALM.RebalanceAction[] memory burnOldPositions,
         IALM.NewPosition[] memory mintNewPositions,
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external {
-        if ($.algoId == ALMLib.ALGO_FILL_UP) {
-            if (mintNewPositions.length != 1 && mintNewPositions.length != 2) {
-                revert IALM.IncorrectRebalanceArgs();
-            }
+        if ($.algoId != ALMLib.ALGO_FILL_UP)
+            return;
 
-            // collect farm rewards
-            // collectFees($, _$_);
-            collectFarmRewards($, _f$f_);
+        uint positionsLength = $.positions.length;
 
-            // burn old tokenIds
-            address nft = $.nft;
-            uint positionsLength = $.positions.length;
-            IALM.Position memory position;
-            if (positionsLength == 2) {
-                position = $.positions[1];
-                INonfungiblePositionManager(nft).decreaseLiquidity(
-                    INonfungiblePositionManager.DecreaseLiquidityParams({
-                        tokenId: position.tokenId,
-                        liquidity: position.liquidity,
-                        amount0Min: 0,
-                        amount1Min: 0,
-                        deadline: block.timestamp
-                    })
-                );
-                INonfungiblePositionManager(nft).collect(
-                    INonfungiblePositionManager.CollectParams({
-                        tokenId: position.tokenId,
-                        recipient: address(this),
-                        amount0Max: type(uint128).max,
-                        amount1Max: type(uint128).max
-                    })
-                );
-                INonfungiblePositionManager(nft).burn(position.tokenId);
-                $.positions.pop();
-            }
+        if (burnOldPositions.length != positionsLength) {
+            revert IALM.IncorrectRebalanceArgs();
+        }
 
-            position = $.positions[0];
+        // collect farm rewards
+        collectFarmRewards($, _f$f_);
+
+        // burn old tokenIds
+        address nft = $.nft;
+        IALM.Position memory position;
+
+        uint newPositionIndex = 0;
+
+        for (uint i = 0; i < positionsLength; i++) {
+            if (burnOldPositions[i] == IALM.RebalanceAction.KEEP)
+                continue;
+
+            // Burn old position
+            position = $.positions[i];
             INonfungiblePositionManager(nft).decreaseLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
                     tokenId: position.tokenId,
@@ -223,55 +210,61 @@ library ALMRamsesV3Lib {
                 })
             );
             INonfungiblePositionManager(nft).burn(position.tokenId);
-            $.positions.pop();
 
-            // mint new positions
-            {
-                address[] memory assets = __$__._assets;
-                int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(_$_.pool);
-                position.tickLower = mintNewPositions[0].tickLower;
-                position.tickUpper = mintNewPositions[0].tickUpper;
-                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(nft).mint(
-                    INonfungiblePositionManager.MintParams({
-                        token0: assets[0],
-                        token1: assets[1],
-                        tickSpacing: tickSpacing,
-                        tickLower: position.tickLower,
-                        tickUpper: position.tickUpper,
-                        amount0Desired: ALMLib.balance(assets[0]),
-                        amount1Desired: ALMLib.balance(assets[1]),
-                        amount0Min: mintNewPositions[0].minAmount0,
-                        amount1Min: mintNewPositions[0].minAmount1,
-                        recipient: address(this),
-                        deadline: block.timestamp
-                    })
-                );
-                $.positions.push(position);
+            if (i == 2 && burnOldPositions[i] == IALM.RebalanceAction.REMOVE)
+                $.positions.pop();
 
-                if (mintNewPositions.length == 2) {
-                    position.tickLower = mintNewPositions[1].tickLower;
-                    position.tickUpper = mintNewPositions[1].tickUpper;
-                    (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(nft).mint(
-                        INonfungiblePositionManager.MintParams({
-                            token0: assets[0],
-                            token1: assets[1],
-                            tickSpacing: tickSpacing,
-                            tickLower: position.tickLower,
-                            tickUpper: position.tickUpper,
-                            amount0Desired: ALMLib.balance(assets[0]),
-                            amount1Desired: ALMLib.balance(assets[1]),
-                            amount0Min: mintNewPositions[1].minAmount0,
-                            amount1Min: mintNewPositions[1].minAmount1,
-                            recipient: address(this),
-                            deadline: block.timestamp
-                        })
-                    );
-                    $.positions.push(position);
-                }
-            }
-
-            emit IALM.Rebalance($.positions);
+            // Mint new position at the same index
+            IALM.Position memory newPosition;
+            address[] memory assets = __$__._assets;
+            int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(_$_.pool);
+            newPosition.tickLower = mintNewPositions[newPositionIndex].tickLower;
+            newPosition.tickUpper = mintNewPositions[newPositionIndex].tickUpper;
+            (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft).mint(
+                INonfungiblePositionManager.MintParams({
+                    token0: assets[0],
+                    token1: assets[1],
+                    tickSpacing: tickSpacing,
+                    tickLower: newPosition.tickLower,
+                    tickUpper: newPosition.tickUpper,
+                    amount0Desired: ALMLib.balance(assets[0]),
+                    amount1Desired: ALMLib.balance(assets[1]),
+                    amount0Min: mintNewPositions[newPositionIndex].minAmount0,
+                    amount1Min: mintNewPositions[newPositionIndex].minAmount1,
+                    recipient: address(this),
+                    deadline: block.timestamp
+                })
+            );
+            $.positions[i] = newPosition; // Overwrite the existing position
+            newPositionIndex ++;
         }
+
+        if (newPositionIndex != mintNewPositions.length) {
+            // Mint new position at the same index
+            IALM.Position memory newPosition;
+            address[] memory assets = __$__._assets;
+            int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(_$_.pool);
+            newPosition.tickLower = mintNewPositions[newPositionIndex].tickLower;
+            newPosition.tickUpper = mintNewPositions[newPositionIndex].tickUpper;
+            (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft).mint(
+                INonfungiblePositionManager.MintParams({
+                    token0: assets[0],
+                    token1: assets[1],
+                    tickSpacing: tickSpacing,
+                    tickLower: newPosition.tickLower,
+                    tickUpper: newPosition.tickUpper,
+                    amount0Desired: ALMLib.balance(assets[0]),
+                    amount1Desired: ALMLib.balance(assets[1]),
+                    amount0Min: mintNewPositions[newPositionIndex].minAmount0,
+                    amount1Min: mintNewPositions[newPositionIndex].minAmount1,
+                    recipient: address(this),
+                    deadline: block.timestamp
+                })
+            );
+            $.positions.push(newPosition); // Overwrite the existing position
+        }
+
+        emit IALM.Rebalance($.positions);
     }
 
     /*function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
