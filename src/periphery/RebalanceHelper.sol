@@ -78,7 +78,8 @@ contract RebalanceHelper {
             IALM.Position memory oldBasePosition = positions[0];
 
             // Determine if base position needs rebalancing
-            v.baseRebalanceNeeded = (v.currentTick < oldBasePosition.tickLower || v.currentTick > oldBasePosition.tickUpper);
+            v.baseRebalanceNeeded =
+                (v.currentTick < oldBasePosition.tickLower || v.currentTick > oldBasePosition.tickUpper);
 
             if (v.baseRebalanceNeeded) {
                 // Mark all positions for burning if base position is out of range
@@ -87,13 +88,7 @@ contract RebalanceHelper {
                 }
 
                 mintNewPositions = _createSingleBasePosition(
-                    oldBasePosition,
-                    v.currentTick,
-                    v.tickSpacing,
-                    adapter,
-                    v.pool,
-                    v.amounts,
-                    slippage
+                    oldBasePosition, v.currentTick, v.tickSpacing, adapter, v.pool, v.amounts, slippage
                 );
             } else {
                 // Mark only non-base positions for burning
@@ -102,13 +97,7 @@ contract RebalanceHelper {
                 }
 
                 mintNewPositions = _createBaseAndFillUpPositions(
-                    v.currentTick,
-                    v.params[0],
-                    v.tickSpacing,
-                    adapter,
-                    v.pool,
-                    v.amounts,
-                    slippage
+                    v.currentTick, v.params[0], v.tickSpacing, adapter, v.pool, v.amounts, slippage
                 );
             }
         }
@@ -133,9 +122,9 @@ contract RebalanceHelper {
         uint slippage
     ) internal view returns (IALM.NewPosition[] memory mintNewPositions) {
         mintNewPositions = new IALM.NewPosition[](1);
-        
+
         int24 tickDistance;
-        
+
         if (currentTick > oldBasePosition.tickUpper) {
             tickDistance = (currentTick - oldBasePosition.tickUpper) / tickSpacing * tickSpacing;
             mintNewPositions[0].tickLower = oldBasePosition.tickLower + tickDistance;
@@ -154,14 +143,11 @@ contract RebalanceHelper {
         ticks[0] = mintNewPositions[0].tickLower;
         ticks[1] = mintNewPositions[0].tickUpper;
 
-        (uint addedLiquidity, uint[] memory amountsConsumed) =
-            adapter.getLiquidityForAmounts(pool, amounts, ticks);
+        (uint addedLiquidity, uint[] memory amountsConsumed) = adapter.getLiquidityForAmounts(pool, amounts, ticks);
 
         mintNewPositions[0].liquidity = uint128(addedLiquidity);
-        mintNewPositions[0].minAmount0 =
-            amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
-        mintNewPositions[0].minAmount1 =
-            amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
+        mintNewPositions[0].minAmount0 = amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
+        mintNewPositions[0].minAmount1 = amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
 
         return mintNewPositions;
     }
@@ -195,14 +181,11 @@ contract RebalanceHelper {
         baseTicks[1] = mintNewPositions[0].tickUpper;
 
         // Calculate liquidity and consumed amounts for base position
-        (uint addedLiquidity, uint[] memory amountsConsumed) =
-            adapter.getLiquidityForAmounts(pool, amounts, baseTicks);
+        (uint addedLiquidity, uint[] memory amountsConsumed) = adapter.getLiquidityForAmounts(pool, amounts, baseTicks);
 
         mintNewPositions[0].liquidity = uint128(addedLiquidity);
-        mintNewPositions[0].minAmount0 =
-            amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
-        mintNewPositions[0].minAmount1 =
-            amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
+        mintNewPositions[0].minAmount0 = amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
+        mintNewPositions[0].minAmount1 = amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
 
         // Calculate remaining asset amounts for fill-up position
         uint[] memory remainingAmounts = new uint[](2);
@@ -235,11 +218,11 @@ contract RebalanceHelper {
         int24 lowerTickLower = params.currentTick > 0
             ? (params.currentTick / params.tickSpacing * params.tickSpacing)
             : ((params.currentTick / params.tickSpacing * params.tickSpacing) - params.tickSpacing);
-        
+
         int24 lowerTickUpper = lowerTickLower + params.tickSpacing;
-        
+
         int24 upperTickLower = lowerTickUpper;
-        
+
         int24 upperTickUpper = upperTickLower + params.tickSpacing;
 
         // Prepare tick arrays for liquidity comparison

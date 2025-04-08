@@ -80,11 +80,9 @@ library ALMLib {
             int24 oldMedianTick = oldTickLower + halfRange;
 
             bool fillUpRebalanceTrigger =
-                (currentTick > oldMedianTick + halfTriggerRange) || 
-                (currentTick < oldMedianTick - halfTriggerRange);
+                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
 
-            bool outOfRangeBasePosition =
-                currentTick < oldTickLower || currentTick > oldTickUpper;
+            bool outOfRangeBasePosition = currentTick < oldTickLower || currentTick > oldTickUpper;
 
             bool cantMoveRange = false;
             if (outOfRangeBasePosition) {
@@ -109,8 +107,7 @@ library ALMLib {
             int24 limitTickUpper = $.positions[1].tickUpper;
 
             // Trigger if current tick is out of range for the limit position
-            bool limitPositionTrigger =
-                currentTick < limitTickLower || currentTick > limitTickUpper;
+            bool limitPositionTrigger = currentTick < limitTickLower || currentTick > limitTickUpper;
 
             if (limitPositionTrigger) {
                 return true;
@@ -128,8 +125,9 @@ library ALMLib {
     }
 
     function getPresetNameByAlgoAndParams(uint algoId, int24[] memory params) public pure returns (string memory) {
-        if (algoId != ALGO_FILL_UP)
+        if (algoId != ALGO_FILL_UP) {
             return "Unknown";
+        }
 
         if (params[0] >= 10000) {
             return "Stretched";
