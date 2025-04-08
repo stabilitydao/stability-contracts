@@ -253,7 +253,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*                     ALM STRATEGY BASE                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _rebalance(IALM.RebalanceAction[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal override {
+    function _rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal override {
         ALMRamsesV3Lib.rebalance(
             burnOldPositions,
             mintNewPositions,

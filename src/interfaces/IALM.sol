@@ -56,8 +56,6 @@ interface IALM {
         uint minAmount1;
     }
 
-    enum RebalanceAction { KEEP, BURN, REMOVE }
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -72,7 +70,7 @@ interface IALM {
     function positions() external view returns (Position[] memory);
 
     /// @notice Is a re-balance needed now
-    function needRebalance() external view returns (bool baseRebalanceNeeded, bool limitRebalanceNeeded);
+    function needRebalance() external view returns (bool need);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -81,7 +79,7 @@ interface IALM {
     /// @notice Re-balance positions
     /// @param burnOldPositions Burn old position or keep. Burn all if length 0 passed than.
     /// @param mintNewPositions New positions params
-    function rebalance(RebalanceAction[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external;
+    function rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external;
 
     /// @notice Setup price change protection params
     /// @param enabled Enable protection

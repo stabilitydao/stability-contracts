@@ -62,62 +62,62 @@ library ALMLib {
     function needRebalance(
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
-    ) external view returns (bool baseRebalanceNeeded, bool limitRebalanceNeeded) {
+    ) external view returns (bool need) {
+        // Check if positions exist and algorithm is set to ALGO_FILL_UP
         uint len = $.positions.length;
-
-        if ($.algoId != ALGO_FILL_UP || len == 0) {
-            return (false, false);
+        if (len == 0 || $.algoId != ALGO_FILL_UP) {
+            return false;
         }
 
         int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
-        
-        baseRebalanceNeeded = checkBaseRebalanceNeeded($, _$_, currentTick);
 
-        if ($.positions.length > 1) {
-            limitRebalanceNeeded = checkLimitRebalanceNeeded($, currentTick);
-        }
-    }
+        // Base Position Rebalancing Logic
+        {
+            int24 halfRange = $.params[0] / 2;
+            int24 halfTriggerRange = $.params[1] / 2;
+            int24 oldTickLower = $.positions[0].tickLower;
+            int24 oldTickUpper = $.positions[0].tickUpper;
+            int24 oldMedianTick = oldTickLower + halfRange;
 
-    function checkBaseRebalanceNeeded(
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
-        int24 currentTick
-    ) internal view returns (bool baseRebalanceNeeded) {
-        int24 halfRange = $.params[0] / 2;
-        int24 halfTriggerRange = $.params[1] / 2;
-        int24 oldTickLower = $.positions[0].tickLower;
-        int24 oldTickUpper = $.positions[0].tickUpper;
-        int24 oldMedianTick = oldTickLower + halfRange;
+            bool fillUpRebalanceTrigger =
+                (currentTick > oldMedianTick + halfTriggerRange) || 
+                (currentTick < oldMedianTick - halfTriggerRange);
 
-        bool fillUpRebalanceTrigger = (currentTick > oldMedianTick + halfTriggerRange) ||
-                              (currentTick < oldMedianTick - halfTriggerRange);
+            bool outOfRangeBasePosition =
+                currentTick < oldTickLower || currentTick > oldTickUpper;
 
-        bool outOfRange = (currentTick < oldTickLower || currentTick > oldTickUpper);
-        
-        bool cantMoveRange = false;
+            bool cantMoveRange = false;
+            if (outOfRangeBasePosition) {
+                int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
+                int24 tickDistance =
+                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
+                tickDistance = (tickDistance / tickSpacing) * tickSpacing;
 
-        if (outOfRange) {
-            int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
-            int24 tickDistance =
-                currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
-            tickDistance = tickDistance / tickSpacing * tickSpacing;
-            if (tickDistance == 0) {
-                cantMoveRange = true;
+                if (tickDistance == 0) {
+                    cantMoveRange = true;
+                }
+            }
+
+            if (!cantMoveRange && fillUpRebalanceTrigger) {
+                return true;
             }
         }
 
-        baseRebalanceNeeded = !cantMoveRange && fillUpRebalanceTrigger;
-    }
+        // Limit Position Rebalancing Logic
+        if (len > 1) {
+            int24 limitTickLower = $.positions[1].tickLower;
+            int24 limitTickUpper = $.positions[1].tickUpper;
 
-    function checkLimitRebalanceNeeded(
-        IALM.ALMStrategyBaseStorage storage $,
-        int24 currentTick
-    ) internal view returns (bool) {
-        int24 rangeSize = $.params[2];
-        int24 limitTickLower = $.positions[1].tickLower;
-        int24 limitTickUpper = $.positions[1].tickUpper;
-        return (currentTick > limitTickUpper - (rangeSize / 10)) ||
-                                (currentTick < limitTickLower + (rangeSize / 10));
+            // Trigger if current tick is out of range for the limit position
+            bool limitPositionTrigger =
+                currentTick < limitTickLower || currentTick > limitTickUpper;
+
+            if (limitPositionTrigger) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     function getAlgoNamyById(uint algoId) public pure returns (string memory) {

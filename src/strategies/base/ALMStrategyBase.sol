@@ -98,12 +98,12 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     }
 
     /// @inheritdoc IALM
-    function needRebalance() external view returns (bool baseRebalanceNeeded, bool limitRebalanceNeeded) {
-        (baseRebalanceNeeded, limitRebalanceNeeded) = ALMLib.needRebalance(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage());
+    function needRebalance() external view returns (bool need) {
+        need = ALMLib.needRebalance(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage());
     }
 
     /// @inheritdoc IALM
-    function rebalance(IALM.RebalanceAction[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external {
+    function rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) external {
         IPlatform _platform = IPlatform(platform());
         IHardWorker hardworker = IHardWorker(_platform.hardWorker());
         // todo remove rebalancer address
@@ -163,7 +163,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     /*         Must be implemented by derived contracts           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _rebalance(IALM.RebalanceAction[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal virtual;
+    function _rebalance(bool[] memory burnOldPositions, NewPosition[] memory mintNewPositions) internal virtual;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

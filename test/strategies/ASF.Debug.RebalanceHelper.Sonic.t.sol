@@ -41,9 +41,7 @@ contract ASFDebug2Test is Test {
     }
 
     function testASRebalance1() public view {
-        (bool baseRebalanceNeeded, bool limitRebalanceNeeded) = IALM(STRATEGY).needRebalance();
-        assertEq(baseRebalanceNeeded, true);
-        assertEq(limitRebalanceNeeded, true);
+        assertEq(IALM(STRATEGY).needRebalance(), true);
 
         (, IALM.NewPosition[] memory mintNewPositions) = rebalancerHelper.calcRebalanceArgs(STRATEGY, 100);
         // this is error
