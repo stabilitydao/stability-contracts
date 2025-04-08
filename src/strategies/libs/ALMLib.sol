@@ -70,6 +70,7 @@ library ALMLib {
         }
 
         int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
+        int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
 
         // Base Position Rebalancing Logic
         {
@@ -86,7 +87,6 @@ library ALMLib {
 
             bool cantMoveRange = false;
             if (outOfRangeBasePosition) {
-                int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
                 int24 tickDistance =
                     currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
                 tickDistance = (tickDistance / tickSpacing) * tickSpacing;
@@ -105,11 +105,18 @@ library ALMLib {
         if (len > 1) {
             int24 limitTickLower = $.positions[1].tickLower;
             int24 limitTickUpper = $.positions[1].tickUpper;
+            // Check if moving the range is feasible
+            int24 tickDistance;
+            if (currentTick < limitTickLower) {
+                tickDistance = (limitTickLower - currentTick) / tickSpacing * tickSpacing;
+            } else if (currentTick > limitTickUpper) {
+                tickDistance = (currentTick - limitTickUpper) / tickSpacing * tickSpacing;
+            } else {
+                tickDistance = 0; // No movement needed
+            }
 
-            // Trigger if current tick is out of range for the limit position
-            bool limitPositionTrigger = currentTick < limitTickLower || currentTick > limitTickUpper;
-
-            if (limitPositionTrigger) {
+            // If tickDistance is zero, moving the range is not feasible
+            if (tickDistance != 0) {
                 return true;
             }
         }
