@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import "../../chains/SonicLib.sol";
+import "../../chains/sonic/SonicLib.sol";
 import {DeployCore} from "../base/DeployCore.sol";
 
 contract DeploySonic is Script, DeployCore {
