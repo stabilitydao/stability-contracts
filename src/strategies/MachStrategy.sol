@@ -283,6 +283,7 @@ contract MachStrategy is StrategyBase {
 
     function _generateDescription(address cToken) internal view returns (string memory) {
         // TODO
+        //slither-disable-next-line calls-loop
         return string.concat(
             "Earn",
             " and supply APR by lending ",
