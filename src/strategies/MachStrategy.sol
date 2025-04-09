@@ -143,7 +143,7 @@ contract MachStrategy is StrategyBase {
     function isReadyForHardWork() external pure override returns (bool isReady) {
         // (address[] memory __assets, uint[] memory amounts) = getRevenue();
         // isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
-        isReady = true;
+        isReady = true; // TODO
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
