@@ -12,10 +12,13 @@ contract MachStrategyTestSonic is SonicSetup, UniversalTest {
     }
 
     function testMachStrategy() public universalTest {
-        // _addStrategy(31);
-        // _addStrategy(32);
-        // _addStrategy(33);
-        _addStrategy(SonicConstantsLib.MACH_USDCe);
+        _addStrategy(SonicConstantsLib.MACH_USDCe); // good
+            // _addStrategy(SonicConstantsLib.MACH_WETH); // good
+            // _addStrategy(SonicConstantsLib.MACH_stS); // good
+            // _addStrategy(SonicConstantsLib.MACH_scUSD); // good
+            // _addStrategy(SonicConstantsLib.MACH_scBTC); // need to add swapper routes for scBTC token
+            // _addStrategy(SonicConstantsLib.MACH_scETH); // good
+            // _addStrategy(SonicConstantsLib.MACH_wOS); // good
     }
 
     function _addStrategy(address cToken) internal {

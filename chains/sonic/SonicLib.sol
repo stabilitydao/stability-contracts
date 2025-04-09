@@ -165,7 +165,13 @@ library SonicLib {
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
         p.initAddresses = new address[](1);
-        p.initAddresses[0] = MACH_USDCe;
+        p.initAddresses[0] = SonicConstantsLib.MACH_USDCe;
+        // p.initAddresses[1] = SonicConstantsLib.MACH_WETH;
+        // p.initAddresses[2] = SonicConstantsLib.MACH_stS;
+        // p.initAddresses[3] = SonicConstantsLib.MACH_scUSD;
+        // p.initAddresses[4] = SonicConstantsLib.MACH_scBTC;
+        // p.initAddresses[4] = SonicConstantsLib.MACH_scETH;
+        // p.initAddresses[5] = SonicConstantsLib.MACH_wOS;
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.MACH, p);
@@ -260,6 +266,7 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025, SonicConstantsLib.TOKEN_stkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_stS_29MAY2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_stS_29MAY2025, SonicConstantsLib.TOKEN_stS);
+        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_scBTC_wS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_scBTC, SonicConstantsLib.TOKEN_wS);
 
         //endregion ----- Pools ----
     }
