@@ -135,26 +135,25 @@ library ALMLib {
     }
 
     function getPresetNameByAlgoAndParams(uint algoId, int24[] memory params) public pure returns (string memory) {
-        if (algoId != ALGO_FILL_UP) {
-            return "Unknown";
+        if (algoId == ALGO_FILL_UP) {
+            if (params[0] >= 10000) {
+                return "Stretched";
+            }
+            if (params[0] >= 4000) {
+                return "Passive";
+            }
+            if (params[0] >= 2000) {
+                return "Wide";
+            }
+            if (params[0] >= 1000) {
+                return "Narrow";
+            }
+            if (params[0] >= 100) {
+                return "Aggressive";
+            }
+            return "Insane";
         }
-
-        if (params[0] >= 10000) {
-            return "Stretched";
-        }
-        if (params[0] >= 4000) {
-            return "Passive";
-        }
-        if (params[0] >= 2000) {
-            return "Wide";
-        }
-        if (params[0] >= 1000) {
-            return "Narrow";
-        }
-        if (params[0] >= 100) {
-            return "Aggressive";
-        }
-        return "Insane";
+        return "Unknown";
     }
 
     function preset(IALM.ALMStrategyBaseStorage storage $)

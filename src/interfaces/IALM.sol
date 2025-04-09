@@ -70,7 +70,7 @@ interface IALM {
     function positions() external view returns (Position[] memory);
 
     /// @notice Is a re-balance needed now
-    function needRebalance() external view returns (bool need);
+    function needRebalance() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */

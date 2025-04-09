@@ -98,8 +98,8 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     }
 
     /// @inheritdoc IALM
-    function needRebalance() external view returns (bool need) {
-        need = ALMLib.needRebalance(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage());
+    function needRebalance() external view returns (bool) {
+        return ALMLib.needRebalance(_getALMStrategyBaseStorage(), _getLPStrategyBaseStorage());
     }
 
     /// @inheritdoc IALM
