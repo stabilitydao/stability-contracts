@@ -287,7 +287,6 @@ contract MachStrategy is StrategyBase {
         return string.concat(
             "Earn",
             " and supply APR by lending ",
-            //slither-disable-next-line calls-loop
             IERC20Metadata(ICErc20Delegate(cToken).underlying()).symbol(),
             " to Mach "
         );
