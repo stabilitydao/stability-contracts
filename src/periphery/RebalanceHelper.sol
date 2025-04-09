@@ -58,6 +58,10 @@ contract RebalanceHelper {
             revert IALM.NotALM();
         }
 
+        if (!IALM(strategy).needRebalance()) {
+            revert IALM.NotNeedRebalance();
+        }
+
         // Initialize variables using CalcRebalanceVars struct
         CalcRebalanceVars memory v;
         v.pool = ILPStrategy(strategy).pool();
@@ -92,7 +96,7 @@ contract RebalanceHelper {
                 );
             } else {
                 // Mark only non-base positions for burning
-                for (uint i = 1; i < positionsLength; i++) {
+                for (uint i = 0; i < positionsLength; i++) {
                     burnOldPositions[i] = true;
                 }
 

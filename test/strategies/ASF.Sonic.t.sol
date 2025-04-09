@@ -29,8 +29,8 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(26); // wS_WETH 1500
         _addStrategy(27); // wS_USDC 3000
         _addStrategy(28); // wS_USDC 1500
-        _addStrategy(29);
-        _addStrategy(30);
+        _addStrategy(29); // SACRA-scUSD 120000
+        _addStrategy(30); // SACRA-scUSD 800
     }
 
     function _rebalance() internal override {

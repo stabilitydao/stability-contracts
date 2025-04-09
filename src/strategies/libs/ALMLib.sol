@@ -63,61 +63,64 @@ library ALMLib {
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
     ) external view returns (bool need) {
-        // Check if positions exist and algorithm is set to ALGO_FILL_UP
-        uint len = $.positions.length;
-        if (len == 0 || $.algoId != ALGO_FILL_UP) {
-            return false;
-        }
+        // Check algorithm is set to ALGO_FILL_UP
+        if ($.algoId == ALGO_FILL_UP) {
+            uint len = $.positions.length;
+            // Check if positions exist
+            if (len == 0) {
+                return false;
+            }
 
-        int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
-        int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
+            int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
+            int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
 
-        // Base Position Rebalancing Logic
-        {
-            int24 halfRange = $.params[0] / 2;
-            int24 halfTriggerRange = $.params[1] / 2;
-            int24 oldTickLower = $.positions[0].tickLower;
-            int24 oldTickUpper = $.positions[0].tickUpper;
-            int24 oldMedianTick = oldTickLower + halfRange;
+            // Base Position Rebalancing Logic
+            {
+                int24 halfRange = $.params[0] / 2;
+                int24 halfTriggerRange = $.params[1] / 2;
+                int24 oldTickLower = $.positions[0].tickLower;
+                int24 oldTickUpper = $.positions[0].tickUpper;
+                int24 oldMedianTick = oldTickLower + halfRange;
 
-            bool fillUpRebalanceTrigger =
-                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
+                bool fillUpRebalanceTrigger =
+                    (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
 
-            bool outOfRangeBasePosition = currentTick < oldTickLower || currentTick > oldTickUpper;
+                bool outOfRangeBasePosition = currentTick < oldTickLower || currentTick > oldTickUpper;
 
-            bool cantMoveRange = false;
-            if (outOfRangeBasePosition) {
-                int24 tickDistance =
-                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
-                tickDistance = (tickDistance / tickSpacing) * tickSpacing;
+                bool cantMoveRange = false;
+                if (outOfRangeBasePosition) {
+                    int24 tickDistance =
+                        currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
+                    tickDistance = (tickDistance / tickSpacing) * tickSpacing;
 
-                if (tickDistance == 0) {
-                    cantMoveRange = true;
+                    if (tickDistance == 0) {
+                        cantMoveRange = true;
+                    }
+                }
+
+                if (!cantMoveRange && fillUpRebalanceTrigger) {
+                    return true;
                 }
             }
 
-            if (!cantMoveRange && fillUpRebalanceTrigger) {
-                return true;
-            }
-        }
+            // Limit Position Rebalancing Logic
+            if (len > 1) {
+                int24 limitTickLower = $.positions[1].tickLower;
+                int24 limitTickUpper = $.positions[1].tickUpper;
+                // Check if moving the range is feasible
+                int24 tickDistance;
+                if (currentTick < limitTickLower) {
+                    tickDistance = (limitTickLower - currentTick) / tickSpacing * tickSpacing;
+                } else if (currentTick > limitTickUpper) {
+                    tickDistance = (currentTick - limitTickUpper) / tickSpacing * tickSpacing;
+                } else {
+                    tickDistance = 0; // No movement needed
+                }
 
-        // Limit Position Rebalancing Logic
-        if (len > 1) {
-            int24 limitTickLower = $.positions[1].tickLower;
-            int24 limitTickUpper = $.positions[1].tickUpper;
-            // Check if moving the range is feasible
-            int24 tickDistance;
-            if (currentTick < limitTickLower) {
-                tickDistance = (limitTickLower - currentTick) / tickSpacing * tickSpacing;
-            } else if (currentTick > limitTickUpper) {
-                tickDistance = (currentTick - limitTickUpper) / tickSpacing * tickSpacing;
-            } else {
-                tickDistance = 0; // No movement needed
-            }
-
-            // If tickDistance is zero, moving the range is not feasible
-            if (tickDistance != 0) {
-                return true;
+                // If tickDistance is zero, moving the range is not feasible
+                if (tickDistance != 0) {
+                    return true;
+                }
             }
         }
 
