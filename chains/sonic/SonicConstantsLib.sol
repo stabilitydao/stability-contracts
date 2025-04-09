@@ -63,6 +63,7 @@ library SonicConstantsLib {
     address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
+    // address public constant TOKEN_scBTC = 0xBb30e76d9Bb2CC9631F7fC5Eb8e87B5Aff32bFbd;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -148,6 +149,7 @@ library SonicConstantsLib {
     address public constant POOL_PENDLE_PT_wstkscUSD_29MAY2025 = 0x6e4e95FaB7db1f0524b4b0a05F0b9c96380b7Dfa;
     address public constant POOL_PENDLE_PT_wstkscETH_29MAY2025 = 0xd14117baf6EC5D12BE68CD06e763A4B82C9B6d1D;
     address public constant POOL_PENDLE_PT_wOS_29MAY2025 = 0x4E82347Bc41CFD5d62cEF483C7f0a739a8158963;
+    // address public constant POOL_SWAPX_scBTC_wS = 0xcD531DAfD592be3CA9bef79cDb4C0dF8A5104b81;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -304,6 +306,13 @@ library SonicConstantsLib {
 
     // Mach
     address public constant MACH_USDCe = 0xC84F54B2dB8752f80DEE5b5A48b64a2774d2B445;
+    // address public constant MACH_Sonic = 0x9F5d9f2FDDA7494aA58c90165cF8E6B070Fe92e6;
+    // address public constant MACH_scBTC = 0x7752f826E0CC11eb049004b050EF1d4Cbe9F3bd1;
+    address public constant MACH_WETH = 0x15eF11b942Cc14e582797A61e95D47218808800D;
+    address public constant MACH_stS = 0xbAA06b4D6f45ac93B6c53962Ea861e6e3052DC74;
+    address public constant MACH_scUSD = 0xe5A79Db6623BCA3C65337dd6695Ae6b1f53Bec45;
+    address public constant MACH_scETH = 0x08A1821Fbb570359d458fa1e6740a1e677Aa45B8;
+    address public constant MACH_wOS = 0x368D75a257371D8E80A3582eefc061c187062fd1;
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;

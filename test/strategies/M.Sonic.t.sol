@@ -8,14 +8,20 @@ contract MachStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(18692101); // Apr-07-2025 09:22:44 AM +UTC
-        makePoolVolumePriceImpactTolerance = 9_000;
+        allowZeroApr = true;
+        duration1 = 0.1 hours;
+        duration2 = 0.1 hours;
+        duration3 = 0.1 hours;
     }
 
     function testMachStrategy() public universalTest {
-        // _addStrategy(31);
-        // _addStrategy(32);
-        // _addStrategy(33);
         _addStrategy(SonicConstantsLib.MACH_USDCe);
+        _addStrategy(SonicConstantsLib.MACH_WETH);
+        _addStrategy(SonicConstantsLib.MACH_stS);
+        _addStrategy(SonicConstantsLib.MACH_scUSD);
+        _addStrategy(SonicConstantsLib.MACH_scETH);
+        _addStrategy(SonicConstantsLib.MACH_wOS);
+        // _addStrategy(SonicConstantsLib.MACH_scBTC);
     }
 
     function _addStrategy(address cToken) internal {

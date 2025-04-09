@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
@@ -55,7 +54,7 @@ contract MachStrategy is StrategyBase {
         _assets[0] = ICErc20Delegate(addresses[2]).underlying();
         __StrategyBase_init(addresses[0], StrategyIdLib.MACH, addresses[1], _assets, addresses[2], type(uint).max);
 
-        IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max); // TODO: approve CErc20Delegate (_underlying) to spend asset (_assets[0])
+        IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -75,13 +74,14 @@ contract MachStrategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00d395), bytes3(0x000000)));
     }
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        return (IERC20Metadata($base._underlying).symbol(), true); // TODO
+        return (IERC20Metadata($base._underlying).symbol(), true);
     }
 
     /// @inheritdoc IStrategy
@@ -140,9 +140,8 @@ contract MachStrategy is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external view override returns (bool isReady) {
-        (address[] memory __assets, uint[] memory amounts) = getRevenue();
-        isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
+    function isReadyForHardWork() external pure override returns (bool isReady) {
+        isReady = true;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -171,7 +170,7 @@ contract MachStrategy is StrategyBase {
         amountsConsumed = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
-        amountsConsumed[0] = IERC4626(u).convertToAssets(amount); // TODO
+        amountsConsumed[0] = (amount * ICErc20Delegate(u).exchangeRateStored()) / 1e18;
         MachStrategyStorage storage $ = _getStorage();
         if ($.lastSharePrice == 0) {
             $.lastSharePrice = _getSharePrice(u);
@@ -204,7 +203,7 @@ contract MachStrategy is StrategyBase {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        value = IERC4626($base._underlying).convertToShares(amountsMax[0]); // TODO
+        value = (amountsMax[0] * 1e18) / ICErc20Delegate($base._underlying).exchangeRateStored();
     }
 
     /// @inheritdoc StrategyBase
@@ -233,7 +232,7 @@ contract MachStrategy is StrategyBase {
         ICErc20Delegate cToken = ICErc20Delegate($base._underlying);
         address depositedAsset = cToken.underlying();
         uint initialValue = StrategyLib.balance(depositedAsset);
-        uint success = cToken.redeemUnderlying(value);
+        uint success = cToken.redeem(value);
         uint amountOut = StrategyLib.balance(depositedAsset) - initialValue;
         if (success == 0) amountsOut[0] = amountOut;
 
@@ -252,7 +251,7 @@ contract MachStrategy is StrategyBase {
         assets_ = $base._assets;
         address u = $base._underlying;
         amounts_ = new uint[](1);
-        amounts_[0] = IERC4626(u).convertToAssets(StrategyLib.balance(u)); // TODO
+        amounts_[0] = (StrategyLib.balance(u) * ICErc20Delegate(u).exchangeRateStored()) / 1e18;
     }
 
     /// @inheritdoc StrategyBase
@@ -281,13 +280,8 @@ contract MachStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _generateDescription(address cToken) internal view returns (string memory) {
-        // TODO
-        return string.concat(
-            "Earn ",
-            " and supply APR by lending ",
-            IERC20Metadata(ICErc20Delegate(cToken).underlying()).symbol(),
-            " to Mach "
-        );
+        //slither-disable-next-line calls-loop
+        return string.concat("Supply ", IERC20Metadata(ICErc20Delegate(cToken).underlying()).symbol(), " to Mach ");
     }
 
     function _getStorage() internal pure returns (MachStrategyStorage storage $) {
@@ -297,13 +291,10 @@ contract MachStrategy is StrategyBase {
         }
     }
 
-    // TODO
     function _getSharePrice(address u) internal view returns (uint) {
-        // totalSupply cant be zero in our integrations
-        return ICErc20Delegate(u).totalReserves() * 1e18 / ICErc20Delegate(u).totalSupply();
+        return ICErc20Delegate(u).exchangeRateStored();
     }
 
-    // TODO
     function _getRevenue(
         uint newSharePrice,
         address u
