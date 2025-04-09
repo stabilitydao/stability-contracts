@@ -169,20 +169,22 @@ library ALMRamsesV3Lib {
         IStrategy.StrategyBaseStorage storage __$__
     ) external {
         // Validate algorithm type and mint positions length
-        if ($.algoId != ALMLib.ALGO_FILL_UP || (mintNewPositions.length != 1 && mintNewPositions.length != 2)) {
-            revert IALM.IncorrectRebalanceArgs();
+        if ($.algoId == ALMLib.ALGO_FILL_UP) {
+            if (mintNewPositions.length != 1 && mintNewPositions.length != 2) {
+                revert IALM.IncorrectRebalanceArgs();
+            }
+
+            // collect farm rewards
+            collectFarmRewards($, _f$f_);
+
+            // Burn old positions based on burnOldPositions array
+            _burnOldPositions(burnOldPositions, $.positions, $.nft);
+
+            // Mint new positions
+            _mintNewPositions(mintNewPositions, $, __$__, _$_.pool);
+
+            emit IALM.Rebalance($.positions);
         }
-
-        // collect farm rewards
-        collectFarmRewards($, _f$f_);
-
-        // Burn old positions based on burnOldPositions array
-        _burnOldPositions(burnOldPositions, $.positions, $.nft);
-
-        // Mint new positions
-        _mintNewPositions(mintNewPositions, $, __$__, _$_.pool);
-
-        emit IALM.Rebalance($.positions);
     }
 
     /// @dev Burns old positions based on the `burnOldPositions` array.
