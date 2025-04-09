@@ -12,7 +12,7 @@ contract Api3AdapterTest is SonicSetup {
     }
 
     function testApi3() public {
-        (uint usdcPrice,) = adapter.getPrice(SonicLib.TOKEN_USDC);
+        (uint usdcPrice,) = adapter.getPrice(SonicConstantsLib.TOKEN_USDC);
         // console.log(usdcPrice);
         assertGt(usdcPrice, 9e17);
         assertLt(usdcPrice, 11e17);

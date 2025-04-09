@@ -17,16 +17,16 @@ contract AlgebraV4AdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicLib.POOL_SWAPX_CL_wS_SACRA;
-        deal(SonicLib.TOKEN_wS, address(adapter), 1e16);
-        adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_SACRA, address(this), 10_000);
-        uint out = IERC20(SonicLib.TOKEN_SACRA).balanceOf(address(this));
+        address pool = SonicConstantsLib.POOL_SWAPX_CL_wS_SACRA;
+        deal(SonicConstantsLib.TOKEN_wS, address(adapter), 1e16);
+        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SACRA, address(this), 10_000);
+        uint out = IERC20(SonicConstantsLib.TOKEN_SACRA).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicLib.TOKEN_wS, address(adapter), 6e23);
+        deal(SonicConstantsLib.TOKEN_wS, address(adapter), 6e23);
         vm.expectRevert();
-        adapter.swap(pool, SonicLib.TOKEN_wS, SonicLib.TOKEN_SACRA, address(this), 10);
-        // out = IERC20(SonicLib.TOKEN_stS).balanceOf(address(this));
+        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SACRA, address(this), 10);
+        // out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }
 
@@ -41,16 +41,16 @@ contract AlgebraV4AdapterTest is SonicSetup {
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicLib.POOL_SWAPX_CL_wS_SACRA;
+        address pool = SonicConstantsLib.POOL_SWAPX_CL_wS_SACRA;
         uint price;
-        price = adapter.getPrice(pool, SonicLib.TOKEN_SACRA, SonicLib.TOKEN_wS, 1e10);
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_SACRA, SonicConstantsLib.TOKEN_wS, 1e10);
         assertGt(price, 0);
         //console.log(price);
 
         address[] memory tokens = adapter.poolTokens(pool);
         assertEq(tokens.length, 2);
-        assertEq(tokens[0], SonicLib.TOKEN_wS);
-        assertEq(tokens[1], SonicLib.TOKEN_SACRA);
+        assertEq(tokens[0], SonicConstantsLib.TOKEN_wS);
+        assertEq(tokens[1], SonicConstantsLib.TOKEN_SACRA);
 
         uint[] memory props = adapter.getProportions(pool);
         //assertGt(props[0], 9e16);
@@ -81,7 +81,7 @@ contract AlgebraV4AdapterTest is SonicSetup {
         //assertGt(liquidityAmounts[0], 0);
         //assertGt(liquidityAmounts[1], 0);
 
-        price = adapter.getPriceAtTick(pool, SonicLib.TOKEN_SACRA, 28320);
+        price = adapter.getPriceAtTick(pool, SonicConstantsLib.TOKEN_SACRA, 28320);
         //assertGt(price, 0);
 
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);

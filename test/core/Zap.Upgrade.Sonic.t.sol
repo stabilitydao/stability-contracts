@@ -9,7 +9,7 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IZap} from "../../src/interfaces/IZap.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract ZapUpgradeSonic is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -37,7 +37,7 @@ contract ZapUpgradeSonic is Test {
         ZapTestVars memory v;
         v.strategy = IVault(vault).strategy();
         v.assets = v.strategy.assets();
-        v.depositToken = SonicLib.TOKEN_USDC;
+        v.depositToken = SonicConstantsLib.TOKEN_USDC;
         v.depositAmount = 100e6;
         (, v.swapAmounts) = zap.getDepositSwapAmounts(vault, v.depositToken, v.depositAmount);
         //console.log(v.swapAmounts[0],v.swapAmounts[1]);

@@ -8,7 +8,7 @@ import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IOracleAdapter} from "../../src/interfaces/IOracleAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IAggregatorInterfaceMinimal} from "../../src/integrations/chainlink/IAggregatorInterfaceMinimal.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {VaultOracle} from "../../src/periphery/VaultOracle.sol";
 
 contract VaultOracleTestSonic is Test {
@@ -33,9 +33,9 @@ contract VaultOracleTestSonic is Test {
         IOracleAdapter adapter = IOracleAdapter(address(proxy));
 
         address[] memory assets = new address[](1);
-        assets[0] = SonicLib.TOKEN_scUSD;
+        assets[0] = SonicConstantsLib.TOKEN_scUSD;
         address[] memory feeds = new address[](1);
-        feeds[0] = SonicLib.ORACLE_PYTH_scUSD_USD;
+        feeds[0] = SonicConstantsLib.ORACLE_PYTH_scUSD_USD;
         vm.prank(multisig);
         adapter.addPriceFeeds(assets, feeds);
     }
