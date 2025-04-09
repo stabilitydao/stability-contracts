@@ -34,6 +34,7 @@ import {GammaEqualizerFarmStrategy} from "../../src/strategies/GammaEqualizerFar
 import {IchiEqualizerFarmStrategy} from "../../src/strategies/IchiEqualizerFarmStrategy.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
+import {MachStrategy} from "../../src/strategies/MachStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -163,6 +164,11 @@ library SonicLib {
         p.initNums[0] = 87_00;
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
+        p.initAddresses = new address[](1);
+        p.initAddresses[0] = MACH_USDCe;
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.MACH, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -182,6 +188,7 @@ library SonicLib {
         );
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.MACH, address(new MachStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
