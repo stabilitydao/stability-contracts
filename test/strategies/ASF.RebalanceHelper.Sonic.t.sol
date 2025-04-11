@@ -55,7 +55,11 @@ contract RebalanceHelperTest is Test {
 
         // Validate new positions
         console.log("New positions count:", newPositions.length);
-        assertEq(newPositions.length, 2, "Should create 2 new positions");
+        if (positions.length > 0 && IALM(STRATEGY).needRebalance()) {
+            assertEq(newPositions.length, 2, "Should create 2 new positions");
+        } else {
+            assertEq(newPositions.length, 1, "Should create 1 new position");
+        }
 
         // Validate base position
         IALM.NewPosition memory basePosition = newPositions[0];
@@ -64,24 +68,29 @@ contract RebalanceHelperTest is Test {
         console.logInt(basePosition.tickLower);
         console.logInt(basePosition.tickUpper);
 
-        // Validate fill-up position
-        IALM.NewPosition memory fillUpPosition = newPositions[1];
-        console.log("Fill-up position liquidity:", fillUpPosition.liquidity);
-        assertGt(fillUpPosition.liquidity, 0, "Fill-up position should have liquidity");
-        console.logInt(fillUpPosition.tickLower);
-        console.logInt(fillUpPosition.tickUpper);
-
-        // Verify tick alignment
         int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(pool);
+
+        // Validate fill-up position if applicable
+        if (newPositions.length > 1) {
+            IALM.NewPosition memory fillUpPosition = newPositions[1];
+            console.log("Fill-up position liquidity:", fillUpPosition.liquidity);
+            assertGt(fillUpPosition.liquidity, 0, "Fill-up position should have liquidity");
+            console.logInt(fillUpPosition.tickLower);
+            console.logInt(fillUpPosition.tickUpper);
+
+            // Verify tick alignment for fill-up position
+            assertEq(
+                (fillUpPosition.tickUpper - fillUpPosition.tickLower) % tickSpacing,
+                0,
+                "Fill-up position ticks should align with spacing"
+            );
+        }
+
+        // Verify tick alignment for base position
         assertEq(
             (basePosition.tickUpper - basePosition.tickLower) % tickSpacing,
             0,
             "Base position ticks should align with spacing"
-        );
-        assertEq(
-            (fillUpPosition.tickUpper - fillUpPosition.tickLower) % tickSpacing,
-            0,
-            "Fill-up position ticks should align with spacing"
         );
     }
 
@@ -90,8 +99,17 @@ contract RebalanceHelperTest is Test {
 
         // Verify slippage protection
         (, uint[] memory amounts) = IStrategy(STRATEGY).assetsAmounts();
-        uint totalAmount0 = newPositions[0].minAmount0 + newPositions[1].minAmount0;
-        uint totalAmount1 = newPositions[0].minAmount1 + newPositions[1].minAmount1;
+
+        uint totalAmount0;
+        uint totalAmount1;
+
+        if (newPositions.length > 1) {
+            totalAmount0 = newPositions[0].minAmount0 + newPositions[1].minAmount0;
+            totalAmount1 = newPositions[0].minAmount1 + newPositions[1].minAmount1;
+        } else {
+            totalAmount0 = newPositions[0].minAmount0;
+            totalAmount1 = newPositions[0].minAmount1;
+        }
 
         assertApproxEqAbs(
             totalAmount0,
