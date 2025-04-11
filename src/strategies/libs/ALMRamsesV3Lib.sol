@@ -175,112 +175,72 @@ library ALMRamsesV3Lib {
             }
 
             // collect farm rewards
+            // collectFees($, _$_);
             collectFarmRewards($, _f$f_);
 
+            address nft = $.nft;
+            uint positionsLength = $.positions.length;
+            address pool = _$_.pool;
+            address[] memory assets = __$__._assets;
+            int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(pool);
+
             // Burn old positions based on burnOldPositions array
-            _burnOldPositions(burnOldPositions, $.positions, $.nft);
+            for (uint i = positionsLength; i > 0; i--) {
+                uint index = i - 1;
+                if (burnOldPositions[index]) {
+                    IALM.Position storage position = $.positions[index];
+
+                    INonfungiblePositionManager(nft).decreaseLiquidity(
+                        INonfungiblePositionManager.DecreaseLiquidityParams({
+                            tokenId: position.tokenId,
+                            liquidity: position.liquidity,
+                            amount0Min: 0,
+                            amount1Min: 0,
+                            deadline: block.timestamp
+                        })
+                    );
+                    INonfungiblePositionManager(nft).collect(
+                        INonfungiblePositionManager.CollectParams({
+                            tokenId: position.tokenId,
+                            recipient: address(this),
+                            amount0Max: type(uint128).max,
+                            amount1Max: type(uint128).max
+                        })
+                    );
+                    INonfungiblePositionManager(nft).burn(position.tokenId);
+
+                    $.positions.pop();
+                }
+            }
 
             // Mint new positions
-            _mintNewPositions(mintNewPositions, $, __$__, _$_.pool);
+            for (uint i = 0; i < mintNewPositions.length; i++) {
+                IALM.Position memory newPosition;
 
-            emit IALM.Rebalance($.positions);
-        }
-    }
+                newPosition.tickLower = mintNewPositions[i].tickLower;
+                newPosition.tickUpper = mintNewPositions[i].tickUpper;
 
-    /// @dev Burns old positions based on the `burnOldPositions` array.
-    /// @param burnOldPositions Array indicating which positions to burn.
-    /// @param positions Array of current positions.
-    /// @param nft Address of the Nonfungible Position Manager.
-    function _burnOldPositions(
-        bool[] memory burnOldPositions,
-        IALM.Position[] storage positions,
-        address nft
-    ) internal {
-        uint positionsLength = positions.length;
-
-        for (uint i = 0; i < positionsLength; i++) {
-            if (burnOldPositions[i]) {
-                IALM.Position memory position = positions[i];
-
-                INonfungiblePositionManager(nft).decreaseLiquidity(
-                    INonfungiblePositionManager.DecreaseLiquidityParams({
-                        tokenId: position.tokenId,
-                        liquidity: position.liquidity,
-                        amount0Min: 0,
-                        amount1Min: 0,
+                (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft).mint(
+                    INonfungiblePositionManager.MintParams({
+                        token0: assets[0],
+                        token1: assets[1],
+                        tickSpacing: tickSpacing,
+                        tickLower: newPosition.tickLower,
+                        tickUpper: newPosition.tickUpper,
+                        amount0Desired: ALMLib.balance(assets[0]),
+                        amount1Desired: ALMLib.balance(assets[1]),
+                        amount0Min: mintNewPositions[i].minAmount0,
+                        amount1Min: mintNewPositions[i].minAmount1,
+                        recipient: address(this),
                         deadline: block.timestamp
                     })
                 );
-                INonfungiblePositionManager(nft).collect(
-                    INonfungiblePositionManager.CollectParams({
-                        tokenId: position.tokenId,
-                        recipient: address(this),
-                        amount0Max: type(uint128).max,
-                        amount1Max: type(uint128).max
-                    })
-                );
-                INonfungiblePositionManager(nft).burn(position.tokenId);
 
-                // Remove the position from storage
-                _removePosition(positions, i);
+                $.positions.push(newPosition);
             }
+
+            emit IALM.Rebalance($.positions);
         }
-    }
-
-    /// @dev Mints new positions based on `mintNewPositions`.
-    /// @param mintNewPositions Array containing details of new positions to mint.
-    /// @param $ Strategy base storage.
-    /// @param __$__ Strategy assets storage.
-    /// @param pool Address of the Uniswap V3 pool.
-    function _mintNewPositions(
-        IALM.NewPosition[] memory mintNewPositions,
-        IALM.ALMStrategyBaseStorage storage $,
-        IStrategy.StrategyBaseStorage storage __$__,
-        address pool
-    ) internal {
-        address nft = $.nft;
-        address[] memory assets = __$__._assets;
-        int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(pool);
-
-        for (uint i = 0; i < mintNewPositions.length; i++) {
-            IALM.Position memory newPosition;
-
-            newPosition.tickLower = mintNewPositions[i].tickLower;
-            newPosition.tickUpper = mintNewPositions[i].tickUpper;
-
-            (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft).mint(
-                INonfungiblePositionManager.MintParams({
-                    token0: assets[0],
-                    token1: assets[1],
-                    tickSpacing: tickSpacing,
-                    tickLower: newPosition.tickLower,
-                    tickUpper: newPosition.tickUpper,
-                    amount0Desired: ALMLib.balance(assets[0]),
-                    amount1Desired: ALMLib.balance(assets[1]),
-                    amount0Min: mintNewPositions[i].minAmount0,
-                    amount1Min: mintNewPositions[i].minAmount1,
-                    recipient: address(this),
-                    deadline: block.timestamp
-                })
-            );
-
-            $.positions.push(newPosition);
-        }
-
-        emit IALM.Rebalance($.positions);
-    }
-
-    /// @dev Helper function to remove a position from storage.
-    /// @param positions The array of positions.
-    /// @param index The index of the position to remove.
-    function _removePosition(IALM.Position[] storage positions, uint index) internal {
-        uint lastIndex = positions.length - 1;
-
-        if (index < lastIndex) {
-            positions[index] = positions[lastIndex];
-        }
-
-        positions.pop();
     }
 
     /*function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
