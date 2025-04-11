@@ -26,22 +26,18 @@ contract RebalanceHelper {
         int24 currentTick;
         int24 tickSpacing;
         uint[] amounts;
-    }
-
-    struct FillUpTicks {
+        uint addedLiquidity;
+        uint[] amountsConsumed;
         int24 lowerTickLower;
         int24 lowerTickUpper;
         int24 upperTickLower;
         int24 upperTickUpper;
-    }
-
-    struct FillUpParams {
-        int24 currentTick;
-        int24 tickSpacing;
-        uint[] remainingAmounts;
-        uint slippage;
-        ICAmmAdapter adapter;
-        address pool;
+        int24[] fillUpTicksLowerSide;
+        int24[] fillUpTicksUpperSide;
+        uint fillUpLiquidityLowerSide;
+        uint fillUpLiquidityUpperSide;
+        uint[] fillUpAmountsConsumedLowerSide;
+        uint[] fillUpAmountsConsumedUpperSide;
     }
 
     /// @notice Calculate new position arguments for ALM re-balancing
@@ -64,14 +60,16 @@ contract RebalanceHelper {
 
         // Initialize variables using CalcRebalanceVars struct
         CalcRebalanceVars memory v;
+
+        // Retrieve strategy preset and positions
+        (v.algoId,,, v.params) = IALM(strategy).preset();
+
         v.pool = ILPStrategy(strategy).pool();
         v.tickSpacing = ALMLib.getUniswapV3TickSpacing(v.pool);
         v.currentTick = ALMLib.getUniswapV3CurrentTick(v.pool);
         ICAmmAdapter adapter = ICAmmAdapter(address(ILPStrategy(strategy).ammAdapter()));
+        // slither-disable-next-line unused-return
         (, v.amounts) = IStrategy(strategy).assetsAmounts();
-
-        // Retrieve strategy preset and positions
-        (v.algoId,,, v.params) = IALM(strategy).preset();
         IALM.Position[] memory positions = IALM(strategy).positions();
         uint positionsLength = positions.length;
 
@@ -91,178 +89,107 @@ contract RebalanceHelper {
                     burnOldPositions[i] = true;
                 }
 
-                mintNewPositions = _createSingleBasePosition(
-                    oldBasePosition, v.currentTick, v.tickSpacing, adapter, v.pool, v.amounts, slippage
-                );
+                mintNewPositions = new IALM.NewPosition[](1);
+
+                int24 tickDistance;
+
+                if (v.currentTick > oldBasePosition.tickUpper) {
+                    tickDistance = (v.currentTick - oldBasePosition.tickUpper) / v.tickSpacing * v.tickSpacing;
+                    mintNewPositions[0].tickLower = oldBasePosition.tickLower + tickDistance;
+                    mintNewPositions[0].tickUpper = oldBasePosition.tickUpper + tickDistance;
+                } else {
+                    tickDistance = (oldBasePosition.tickLower - v.currentTick) / v.tickSpacing * v.tickSpacing;
+                    mintNewPositions[0].tickLower = oldBasePosition.tickLower - tickDistance;
+                    mintNewPositions[0].tickUpper = oldBasePosition.tickUpper - tickDistance;
+                }
+
+                if (tickDistance == 0) {
+                    revert IALM.CantDoRebalance();
+                }
+
+                int24[] memory ticks = new int24[](2);
+                ticks[0] = mintNewPositions[0].tickLower;
+                ticks[1] = mintNewPositions[0].tickUpper;
+
+                (v.addedLiquidity, v.amountsConsumed) = adapter.getLiquidityForAmounts(v.pool, v.amounts, ticks);
+
+                mintNewPositions[0].liquidity = uint128(v.addedLiquidity);
+                mintNewPositions[0].minAmount0 =
+                    v.amountsConsumed[0] - (v.amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
+                mintNewPositions[0].minAmount1 =
+                    v.amountsConsumed[1] - (v.amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
             } else {
                 // Mark only non-base positions for burning
                 for (uint i = 0; i < positionsLength; i++) {
                     burnOldPositions[i] = true;
                 }
 
-                mintNewPositions = _createBaseAndFillUpPositions(
-                    v.currentTick, v.params[0], v.tickSpacing, adapter, v.pool, v.amounts, slippage
-                );
+                mintNewPositions = new IALM.NewPosition[](2);
+
+                // Calculate base position ticks
+                (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
+                    ALMLib.calcFillUpBaseTicks(v.currentTick, v.params[0], v.tickSpacing);
+
+                int24[] memory baseTicks = new int24[](2);
+                baseTicks[0] = mintNewPositions[0].tickLower;
+                baseTicks[1] = mintNewPositions[0].tickUpper;
+
+                // Calculate liquidity and consumed amounts for base position
+                (v.addedLiquidity, v.amountsConsumed) = adapter.getLiquidityForAmounts(v.pool, v.amounts, baseTicks);
+
+                mintNewPositions[0].liquidity = uint128(v.addedLiquidity);
+                mintNewPositions[0].minAmount0 =
+                    v.amountsConsumed[0] - (v.amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
+                mintNewPositions[0].minAmount1 =
+                    v.amountsConsumed[1] - (v.amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
+
+                // Calculate remaining asset amounts for fill-up position
+                uint[] memory amountsRemaining = new uint[](2);
+                amountsRemaining[0] = v.amounts[0] - v.amountsConsumed[0];
+                amountsRemaining[1] = v.amounts[1] - v.amountsConsumed[1];
+
+                // Calculate fill-up ticks on both sides of the current price
+                v.lowerTickLower = v.currentTick > 0
+                    ? (v.currentTick / v.tickSpacing * v.tickSpacing)
+                    : ((v.currentTick / v.tickSpacing * v.tickSpacing) - v.tickSpacing);
+                v.lowerTickUpper = v.lowerTickLower + v.tickSpacing;
+                v.upperTickLower = v.lowerTickUpper;
+                v.upperTickUpper = v.upperTickLower + v.tickSpacing;
+
+                // Prepare tick arrays for liquidity comparison
+                v.fillUpTicksLowerSide = new int24[](2);
+                v.fillUpTicksLowerSide[0] = v.lowerTickLower;
+                v.fillUpTicksLowerSide[1] = v.lowerTickUpper;
+
+                v.fillUpTicksUpperSide = new int24[](2);
+                v.fillUpTicksUpperSide[0] = v.upperTickLower;
+                v.fillUpTicksUpperSide[1] = v.upperTickUpper;
+
+                // Compare liquidity for both sides
+                (v.fillUpLiquidityLowerSide, v.fillUpAmountsConsumedLowerSide) =
+                    adapter.getLiquidityForAmounts(v.pool, amountsRemaining, v.fillUpTicksLowerSide);
+
+                (v.fillUpLiquidityUpperSide, v.fillUpAmountsConsumedUpperSide) =
+                    adapter.getLiquidityForAmounts(v.pool, amountsRemaining, v.fillUpTicksUpperSide);
+
+                if (v.fillUpLiquidityLowerSide > v.fillUpLiquidityUpperSide) {
+                    mintNewPositions[1].tickLower = v.fillUpTicksLowerSide[0];
+                    mintNewPositions[1].tickUpper = v.fillUpTicksLowerSide[1];
+                    mintNewPositions[1].liquidity = uint128(v.fillUpLiquidityLowerSide);
+                    mintNewPositions[1].minAmount0 = v.fillUpAmountsConsumedLowerSide[0]
+                        - (v.fillUpAmountsConsumedLowerSide[0] * slippage) / SLIPPAGE_PRECISION;
+                    mintNewPositions[1].minAmount1 = v.fillUpAmountsConsumedLowerSide[1]
+                        - (v.fillUpAmountsConsumedLowerSide[1] * slippage) / SLIPPAGE_PRECISION;
+                } else {
+                    mintNewPositions[1].tickLower = v.fillUpTicksUpperSide[0];
+                    mintNewPositions[1].tickUpper = v.fillUpTicksUpperSide[1];
+                    mintNewPositions[1].liquidity = uint128(v.fillUpLiquidityUpperSide);
+                    mintNewPositions[1].minAmount0 = v.fillUpAmountsConsumedUpperSide[0]
+                        - (v.fillUpAmountsConsumedUpperSide[0] * slippage) / SLIPPAGE_PRECISION;
+                    mintNewPositions[1].minAmount1 = v.fillUpAmountsConsumedUpperSide[1]
+                        - (v.fillUpAmountsConsumedUpperSide[1] * slippage) / SLIPPAGE_PRECISION;
+                }
             }
         }
-    }
-
-    /// @dev Creates a single base position when the current tick is out of range.
-    /// @param oldBasePosition The existing base position.
-    /// @param currentTick The current tick.
-    /// @param tickSpacing The tick spacing of the pool.
-    /// @param adapter The AMM adapter.
-    /// @param pool The pool address.
-    /// @param amounts The asset amounts.
-    /// @param slippage The slippage tolerance.
-    /// @return mintNewPositions Array containing the new base position.
-    function _createSingleBasePosition(
-        IALM.Position memory oldBasePosition,
-        int24 currentTick,
-        int24 tickSpacing,
-        ICAmmAdapter adapter,
-        address pool,
-        uint[] memory amounts,
-        uint slippage
-    ) internal view returns (IALM.NewPosition[] memory mintNewPositions) {
-        mintNewPositions = new IALM.NewPosition[](1);
-
-        int24 tickDistance;
-
-        if (currentTick > oldBasePosition.tickUpper) {
-            tickDistance = (currentTick - oldBasePosition.tickUpper) / tickSpacing * tickSpacing;
-            mintNewPositions[0].tickLower = oldBasePosition.tickLower + tickDistance;
-            mintNewPositions[0].tickUpper = oldBasePosition.tickUpper + tickDistance;
-        } else {
-            tickDistance = (oldBasePosition.tickLower - currentTick) / tickSpacing * tickSpacing;
-            mintNewPositions[0].tickLower = oldBasePosition.tickLower - tickDistance;
-            mintNewPositions[0].tickUpper = oldBasePosition.tickUpper - tickDistance;
-        }
-
-        if (tickDistance == 0) {
-            revert IALM.CantDoRebalance();
-        }
-
-        int24[] memory ticks = new int24[](2);
-        ticks[0] = mintNewPositions[0].tickLower;
-        ticks[1] = mintNewPositions[0].tickUpper;
-
-        (uint addedLiquidity, uint[] memory amountsConsumed) = adapter.getLiquidityForAmounts(pool, amounts, ticks);
-
-        mintNewPositions[0].liquidity = uint128(addedLiquidity);
-        mintNewPositions[0].minAmount0 = amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
-        mintNewPositions[0].minAmount1 = amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
-
-        return mintNewPositions;
-    }
-
-    /// @dev Creates a base position and fill-up position when the current tick is within range.
-    /// @param currentTick The current tick.
-    /// @param baseRangeWidth The width of the base range.
-    /// @param tickSpacing The tick spacing of the pool.
-    /// @param adapter The AMM adapter.
-    /// @param pool The pool address.
-    /// @param amounts The asset amounts.
-    /// @param slippage The slippage tolerance.
-    /// @return mintNewPositions Array containing the base and fill-up positions.
-    function _createBaseAndFillUpPositions(
-        int24 currentTick,
-        int24 baseRangeWidth,
-        int24 tickSpacing,
-        ICAmmAdapter adapter,
-        address pool,
-        uint[] memory amounts,
-        uint slippage
-    ) internal view returns (IALM.NewPosition[] memory mintNewPositions) {
-        mintNewPositions = new IALM.NewPosition[](2);
-
-        // Calculate base position ticks
-        (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
-            ALMLib.calcFillUpBaseTicks(currentTick, baseRangeWidth, tickSpacing);
-
-        int24[] memory baseTicks = new int24[](2);
-        baseTicks[0] = mintNewPositions[0].tickLower;
-        baseTicks[1] = mintNewPositions[0].tickUpper;
-
-        // Calculate liquidity and consumed amounts for base position
-        (uint addedLiquidity, uint[] memory amountsConsumed) = adapter.getLiquidityForAmounts(pool, amounts, baseTicks);
-
-        mintNewPositions[0].liquidity = uint128(addedLiquidity);
-        mintNewPositions[0].minAmount0 = amountsConsumed[0] - (amountsConsumed[0] * slippage) / SLIPPAGE_PRECISION;
-        mintNewPositions[0].minAmount1 = amountsConsumed[1] - (amountsConsumed[1] * slippage) / SLIPPAGE_PRECISION;
-
-        // Calculate remaining asset amounts for fill-up position
-        uint[] memory remainingAmounts = new uint[](2);
-        remainingAmounts[0] = amounts[0] - amountsConsumed[0];
-        remainingAmounts[1] = amounts[1] - amountsConsumed[1];
-
-        // Prepare parameters for fill-up ticks and liquidity comparison
-        FillUpParams memory params = FillUpParams({
-            currentTick: currentTick,
-            tickSpacing: tickSpacing,
-            remainingAmounts: remainingAmounts,
-            slippage: slippage,
-            adapter: adapter,
-            pool: pool
-        });
-
-        // Select the better fill-up position
-        mintNewPositions[1] = _selectBestFillUpPosition(params);
-
-        return mintNewPositions;
-    }
-
-    /// @dev Helper function to select the best fill-up position based on liquidity.
-    function _selectBestFillUpPosition(FillUpParams memory params)
-        internal
-        view
-        returns (IALM.NewPosition memory bestPosition)
-    {
-        // Calculate fill-up ticks on both sides of the current price
-        int24 lowerTickLower = params.currentTick > 0
-            ? (params.currentTick / params.tickSpacing * params.tickSpacing)
-            : ((params.currentTick / params.tickSpacing * params.tickSpacing) - params.tickSpacing);
-
-        int24 lowerTickUpper = lowerTickLower + params.tickSpacing;
-
-        int24 upperTickLower = lowerTickUpper;
-
-        int24 upperTickUpper = upperTickLower + params.tickSpacing;
-
-        // Prepare tick arrays for liquidity comparison
-        int24[] memory lowerFillUpTicks = new int24[](2);
-        lowerFillUpTicks[0] = lowerTickLower;
-        lowerFillUpTicks[1] = lowerTickUpper;
-
-        int24[] memory upperFillUpTicks = new int24[](2);
-        upperFillUpTicks[0] = upperTickLower;
-        upperFillUpTicks[1] = upperTickUpper;
-
-        // Compare liquidity for both sides
-        (uint lowerLiquidity, uint[] memory lowerAmountsConsumed) =
-            params.adapter.getLiquidityForAmounts(params.pool, params.remainingAmounts, lowerFillUpTicks);
-
-        (uint upperLiquidity, uint[] memory upperAmountsConsumed) =
-            params.adapter.getLiquidityForAmounts(params.pool, params.remainingAmounts, upperFillUpTicks);
-
-        if (lowerLiquidity > upperLiquidity) {
-            bestPosition.tickLower = lowerFillUpTicks[0];
-            bestPosition.tickUpper = lowerFillUpTicks[1];
-            bestPosition.liquidity = uint128(lowerLiquidity);
-            bestPosition.minAmount0 =
-                lowerAmountsConsumed[0] - (lowerAmountsConsumed[0] * params.slippage) / SLIPPAGE_PRECISION;
-            bestPosition.minAmount1 =
-                lowerAmountsConsumed[1] - (lowerAmountsConsumed[1] * params.slippage) / SLIPPAGE_PRECISION;
-        } else {
-            bestPosition.tickLower = upperFillUpTicks[0];
-            bestPosition.tickUpper = upperFillUpTicks[1];
-            bestPosition.liquidity = uint128(upperLiquidity);
-            bestPosition.minAmount0 =
-                upperAmountsConsumed[0] - (upperAmountsConsumed[0] * params.slippage) / SLIPPAGE_PRECISION;
-            bestPosition.minAmount1 =
-                upperAmountsConsumed[1] - (upperAmountsConsumed[1] * params.slippage) / SLIPPAGE_PRECISION;
-        }
-
-        return bestPosition;
     }
 }
