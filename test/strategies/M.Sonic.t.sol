@@ -8,17 +8,20 @@ contract MachStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(18692101); // Apr-07-2025 09:22:44 AM +UTC
-        makePoolVolumePriceImpactTolerance = 9_000;
+        allowZeroApr = true;
+        duration1 = 0.1 hours;
+        duration2 = 0.1 hours;
+        duration3 = 0.1 hours;
     }
 
     function testMachStrategy() public universalTest {
-        _addStrategy(SonicConstantsLib.MACH_USDCe); // good
-            // _addStrategy(SonicConstantsLib.MACH_WETH); // good
-            // _addStrategy(SonicConstantsLib.MACH_stS); // good
-            // _addStrategy(SonicConstantsLib.MACH_scUSD); // good
-            // _addStrategy(SonicConstantsLib.MACH_scBTC); // need to add swapper routes for scBTC token
-            // _addStrategy(SonicConstantsLib.MACH_scETH); // good
-            // _addStrategy(SonicConstantsLib.MACH_wOS); // good
+        _addStrategy(SonicConstantsLib.MACH_USDCe);
+        _addStrategy(SonicConstantsLib.MACH_WETH);
+        _addStrategy(SonicConstantsLib.MACH_stS);
+        _addStrategy(SonicConstantsLib.MACH_scUSD);
+        _addStrategy(SonicConstantsLib.MACH_scETH);
+        _addStrategy(SonicConstantsLib.MACH_wOS);
+        // _addStrategy(SonicConstantsLib.MACH_scBTC); // need to add swapper routes for scBTC token
     }
 
     function _addStrategy(address cToken) internal {
