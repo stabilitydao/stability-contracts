@@ -306,7 +306,6 @@ contract MachStrategy is StrategyBase {
         uint oldSharePrice = $.lastSharePrice;
         // nosemgrep
         if (newSharePrice > oldSharePrice && oldSharePrice != 0) {
-            // TODO: this calculation might not be correct
             amounts[0] = StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
         }
     }
