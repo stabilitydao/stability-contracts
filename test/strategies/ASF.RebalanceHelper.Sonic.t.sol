@@ -47,10 +47,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
             // Execute rebalance
             (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-            
+
             // Validate burn flags
             _validateBurnFlags(burnOldPositions, initialPositionCount);
-            
+
             IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
 
             // Post-rebalance validation
@@ -71,10 +71,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         IALM.Position[] memory oldPositions
     ) internal view {
         require(newPositions.length == 1 || newPositions.length == 2, "Invalid new positions count");
-        
+
         // Validate base position
         _validatePosition(newPositions[0], currentTick, oldPositions);
-        
+
         // Validate fill-up position if exists
         if (newPositions.length > 1) {
             _validateFillUpPosition(newPositions[1], currentTick);
@@ -93,20 +93,19 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
         // Check if base position needs rebalancing
         bool baseRebalanceNeeded = currentTick < oldPositions[0].tickLower || currentTick > oldPositions[0].tickUpper;
-        
+
         if (baseRebalanceNeeded) {
             // Verify position shift
             int24 expectedShift = _calculateExpectedShift(currentTick, oldPositions[0], tickSpacing);
             require(
-                position.tickLower == oldPositions[0].tickLower + expectedShift &&
-                position.tickUpper == oldPositions[0].tickUpper + expectedShift,
+                position.tickLower == oldPositions[0].tickLower + expectedShift
+                    && position.tickUpper == oldPositions[0].tickUpper + expectedShift,
                 "Incorrect position shift"
             );
         } else {
             // Verify base position ticks
             (,,, int24[] memory params) = IALM(currentStrategy).preset();
-            (int24 expectedLower, int24 expectedUpper) = 
-                ALMLib.calcFillUpBaseTicks(currentTick, params[0], tickSpacing);
+            (int24 expectedLower, int24 expectedUpper) = ALMLib.calcFillUpBaseTicks(currentTick, params[0], tickSpacing);
             require(
                 position.tickLower == expectedLower && position.tickUpper == expectedUpper,
                 "Incorrect base position ticks"
@@ -118,30 +117,22 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         require(position.minAmount0 > 0 && position.minAmount1 > 0, "Invalid slippage protection");
     }
 
-    function _validateFillUpPosition(
-        IALM.NewPosition memory fillUp,
-        int24 currentTick
-    ) internal view {
+    function _validateFillUpPosition(IALM.NewPosition memory fillUp, int24 currentTick) internal view {
         int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
         // Calculate expected fill-up ranges based on current tick
-        int24 expectedLowerLower = currentTick > 0 
+        int24 expectedLowerLower = currentTick > 0
             ? (currentTick / tickSpacing * tickSpacing)
             : (currentTick / tickSpacing * tickSpacing - tickSpacing);
-        
+
         int24 expectedLowerUpper = expectedLowerLower + tickSpacing;
         int24 expectedUpperLower = expectedLowerUpper;
         int24 expectedUpperUpper = expectedUpperLower + tickSpacing;
 
-        bool isValidLowerFillUp = fillUp.tickLower == expectedLowerLower 
-            && fillUp.tickUpper == expectedLowerUpper;
-        
-        bool isValidUpperFillUp = fillUp.tickLower == expectedUpperLower 
-            && fillUp.tickUpper == expectedUpperUpper;
+        bool isValidLowerFillUp = fillUp.tickLower == expectedLowerLower && fillUp.tickUpper == expectedLowerUpper;
 
-        require(
-            isValidLowerFillUp || isValidUpperFillUp,
-            "Fill-up position not adjacent to current price range"
-        );
+        bool isValidUpperFillUp = fillUp.tickLower == expectedUpperLower && fillUp.tickUpper == expectedUpperUpper;
+
+        require(isValidLowerFillUp || isValidUpperFillUp, "Fill-up position not adjacent to current price range");
     }
 
     function _calculateExpectedShift(
