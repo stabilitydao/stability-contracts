@@ -15,6 +15,7 @@ import {
     IStrategy,
     IFactory
 } from "./base/FarmingStrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ISFLib} from "./libs/ISFLib.sol";
@@ -29,9 +30,10 @@ import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 
 /// @title Earn SwapX farm rewards by Ichi ALM
 /// Changelog:
+///   1.2.0: add MerklStrategyBase, update _claimRevenue to earn SwapX gems
 ///   1.1.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
-contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
+contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -39,7 +41,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -101,7 +103,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(LPStrategyBase, FarmingStrategyBase)
+        override(LPStrategyBase, FarmingStrategyBase, MerklStrategyBase)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -364,14 +366,19 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         __amounts = new uint[](__assets.length);
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         __rewardAssets = $f._rewardAssets;
-        uint balanceBefore = StrategyLib.balance(__rewardAssets[0]);
-        __rewardAmounts = new uint[](1);
+        uint len = __rewardAssets.length;
+        uint swpxBalancesBefore = StrategyLib.balance(__rewardAssets[0]);
+        __rewardAmounts = new uint[](len);
         IFactory.Farm memory farm = _getFarm();
         IVoterV3 voter = IVoterV3(IGaugeV2_CL(farm.addresses[1]).DISTRIBUTION());
         address[] memory gauges = new address[](1);
         gauges[0] = farm.addresses[1];
         voter.claimRewards(gauges);
-        __rewardAmounts[0] = StrategyLib.balance(__rewardAssets[0]) - balanceBefore;
+        __rewardAmounts[0] = StrategyLib.balance(__rewardAssets[0]) - swpxBalancesBefore;
+        // other are merkl rewards
+        for (uint i = 1; i < len; ++i) {
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
     }
 
     /// @inheritdoc StrategyBase

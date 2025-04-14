@@ -60,6 +60,7 @@ library SonicConstantsLib {
     address public constant TOKEN_PT_wstkscUSD_29MAY2025 = 0xBe27993204Ec64238F71A527B4c4D5F4949034C3;
     address public constant TOKEN_PT_wstkscETH_29MAY2025 = 0xa2161E75EDf50d70544e6588788A5732A3105c00;
     address public constant TOKEN_PT_wOS_29MAY2025 = 0x46eb02b9F47634c4fab3110CC7ADc1C6311DfAC1;
+    address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -103,6 +104,7 @@ library SonicConstantsLib {
     address public constant POOL_SWAPX_CL_wstkscUSD_scUSD = 0xEd08f5caD599E7F523d6B3FD598005B43aA003bb;
     address public constant POOL_SWAPX_CL_sfrxUSD_frxUSD = 0x7d709a567BA2fdBbB92E94E5fE74b9cbbc590835;
     address public constant POOL_SWAPX_CL_frxUSD_scUSD = 0x63a66Dd60b0F2812249802477adA8a890A030Eca;
+    address public constant POOL_SWAPX_CL_GEMSx_OS = 0xeDFa946815c5CDb14BF894aEd1542D3049a7Be0c;
     address public constant POOL_SWAPX_USDC_scUSD = 0xBb8aE5b889243561ac9261F22F592B72250AFd1F;
     address public constant POOL_SWAPX_wS_GOGLZ = 0xE6aA7CA47DDb6203e71d4D1497959Da51F87AA98;
     address public constant POOL_SWAPX_AUR_auUSDC = 0xf9b7a6Da525f6f05910f99b298bb792025128C6f;
@@ -299,4 +301,7 @@ library SonicConstantsLib {
     address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
     address public constant ORACLE_PYTH_stS_USD = 0xfdbA54F2F4242Df3DbD34C72C8983E40d7C19CBE;
     address public constant ORACLE_PYTH_scUSD_USD = 0xC55C8c98Bd7359C587Cd9a5D999ab4720608F18C;
+
+    // Merkl
+    address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 }
