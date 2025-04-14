@@ -292,10 +292,10 @@ library SonicConstantsLib {
     // Mach
     address public constant MACH_USDCe = 0xC84F54B2dB8752f80DEE5b5A48b64a2774d2B445;
     // address public constant MACH_Sonic = 0x9F5d9f2FDDA7494aA58c90165cF8E6B070Fe92e6;
+    // address public constant MACH_scBTC = 0x7752f826E0CC11eb049004b050EF1d4Cbe9F3bd1;
     address public constant MACH_WETH = 0x15eF11b942Cc14e582797A61e95D47218808800D;
     address public constant MACH_stS = 0xbAA06b4D6f45ac93B6c53962Ea861e6e3052DC74;
     address public constant MACH_scUSD = 0xe5A79Db6623BCA3C65337dd6695Ae6b1f53Bec45;
-    // address public constant MACH_scBTC = 0x7752f826E0CC11eb049004b050EF1d4Cbe9F3bd1;
     address public constant MACH_scETH = 0x08A1821Fbb570359d458fa1e6740a1e677Aa45B8;
     address public constant MACH_wOS = 0x368D75a257371D8E80A3582eefc061c187062fd1;
 

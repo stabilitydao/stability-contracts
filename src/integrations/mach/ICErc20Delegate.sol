@@ -16,6 +16,7 @@ interface ICErc20Delegate {
     function decimals() external view returns (uint8);
 
     function exchangeRateStored() external view returns (uint);
+    function exchangeRateCurrent() external returns (uint);
     function getAccountSnapshot(address) external view returns (uint, uint, uint, uint);
     function getCash() external view returns (uint);
     function implementation() external view returns (address);

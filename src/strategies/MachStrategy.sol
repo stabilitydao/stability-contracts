@@ -54,7 +54,7 @@ contract MachStrategy is StrategyBase {
         _assets[0] = ICErc20Delegate(addresses[2]).underlying();
         __StrategyBase_init(addresses[0], StrategyIdLib.MACH, addresses[1], _assets, addresses[2], type(uint).max);
 
-        IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max); // TODO: approve CErc20Delegate (_underlying) to spend asset (_assets[0])
+        IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -81,7 +81,7 @@ contract MachStrategy is StrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        return (IERC20Metadata($base._underlying).symbol(), true); // TODO
+        return (IERC20Metadata($base._underlying).symbol(), true);
     }
 
     /// @inheritdoc IStrategy
@@ -130,8 +130,8 @@ contract MachStrategy is StrategyBase {
     function getRevenue() public view override returns (address[] memory assets_, uint[] memory amounts) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
-        uint newSharePrice = _getSharePrice(u); // TODO
-        (assets_, amounts) = _getRevenue(newSharePrice, u); // TODO
+        uint newSharePrice = _getSharePrice(u);
+        (assets_, amounts) = _getRevenue(newSharePrice, u);
     }
 
     /// @inheritdoc IStrategy
@@ -141,9 +141,7 @@ contract MachStrategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external pure override returns (bool isReady) {
-        // (address[] memory __assets, uint[] memory amounts) = getRevenue();
-        // isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
-        isReady = true; // TODO
+        isReady = true;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -172,7 +170,7 @@ contract MachStrategy is StrategyBase {
         amountsConsumed = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
-        amountsConsumed[0] = (amount * ICErc20Delegate(u).exchangeRateStored()) / 1e18; // TODO
+        amountsConsumed[0] = (amount * ICErc20Delegate(u).exchangeRateStored()) / 1e18;
         MachStrategyStorage storage $ = _getStorage();
         if ($.lastSharePrice == 0) {
             $.lastSharePrice = _getSharePrice(u);
@@ -205,7 +203,7 @@ contract MachStrategy is StrategyBase {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        value = (amountsMax[0] * 1e18) / ICErc20Delegate($base._underlying).exchangeRateStored(); // TODO
+        value = (amountsMax[0] * 1e18) / ICErc20Delegate($base._underlying).exchangeRateStored();
     }
 
     /// @inheritdoc StrategyBase
@@ -253,7 +251,7 @@ contract MachStrategy is StrategyBase {
         assets_ = $base._assets;
         address u = $base._underlying;
         amounts_ = new uint[](1);
-        amounts_[0] = (StrategyLib.balance(u) * ICErc20Delegate(u).exchangeRateStored()) / 1e18; // TODO
+        amounts_[0] = (StrategyLib.balance(u) * ICErc20Delegate(u).exchangeRateStored()) / 1e18;
     }
 
     /// @inheritdoc StrategyBase
@@ -271,7 +269,7 @@ contract MachStrategy is StrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
         uint newSharePrice = _getSharePrice(u);
-        (__assets, __amounts) = _getRevenue(newSharePrice, u); // TODO
+        (__assets, __amounts) = _getRevenue(newSharePrice, u);
         $.lastSharePrice = newSharePrice;
         __rewardAssets = new address[](0);
         __rewardAmounts = new uint[](0);
@@ -282,14 +280,8 @@ contract MachStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _generateDescription(address cToken) internal view returns (string memory) {
-        // TODO
         //slither-disable-next-line calls-loop
-        return string.concat(
-            "Earn",
-            " and supply APR by lending ",
-            IERC20Metadata(ICErc20Delegate(cToken).underlying()).symbol(),
-            " to Mach "
-        );
+        return string.concat("Supply ", IERC20Metadata(ICErc20Delegate(cToken).underlying()).symbol(), " to Mach ");
     }
 
     function _getStorage() internal pure returns (MachStrategyStorage storage $) {
@@ -299,13 +291,10 @@ contract MachStrategy is StrategyBase {
         }
     }
 
-    // TODO
     function _getSharePrice(address u) internal view returns (uint) {
-        // totalSupply cant be zero in our integrations
-        return ICErc20Delegate(u).totalReserves() * 1e18 / ICErc20Delegate(u).totalSupply();
+        return ICErc20Delegate(u).exchangeRateStored();
     }
 
-    // TODO
     function _getRevenue(
         uint newSharePrice,
         address u
