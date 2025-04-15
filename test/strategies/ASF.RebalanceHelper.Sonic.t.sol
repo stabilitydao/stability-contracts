@@ -107,6 +107,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         if (baseRebalanceNeeded) {
             // Verify position shift
             int24 expectedShift = _calculateExpectedShift(currentTick, oldPositions[0], tickSpacing);
+            if (expectedShift == 0) {
+                vm.expectRevert(IALM.CantDoRebalance.selector);
+            }
+            // Validate position ticks
             require(
                 position.tickLower == oldPositions[0].tickLower + expectedShift
                     && position.tickUpper == oldPositions[0].tickUpper + expectedShift,
