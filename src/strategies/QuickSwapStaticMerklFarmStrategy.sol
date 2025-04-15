@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./base/LPStrategyBase.sol";
-import "./base/MerklStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/QSMFLib.sol";
-import "./libs/UniswapV3MathLib.sol";
-import "../integrations/algebra/INonfungiblePositionManager.sol";
-import "../integrations/algebra/IAlgebraPool.sol";
-import "../core/libs/CommonLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../interfaces/ICAmmAdapter.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {LPStrategyBase, StrategyBase, IStrategy, ILPStrategy, IERC165} from "./base/LPStrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IControllable, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {QSMFLib} from "./libs/QSMFLib.sol";
+import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
+import {INonfungiblePositionManager} from "../integrations/algebra/INonfungiblePositionManager.sol";
+import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 
 /// @title Earning Merkl rewards and swap fees by QuickSwap V3 static liquidity position
+/// Changelog
+///   1.5.0: decrease code size
 /// @author Alien Deployer (https://github.com/a17)
 contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -24,23 +27,11 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.5.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickSwapV3StaticMerkFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION =
         0xe97e1b58b908486b9bee3f474a5533db9346238783d026373610f149c8ce1e00;
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         DATA TYPES                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @custom:storage-location erc7201:stability.QuickSwapV3StaticMerkFarmStrategy
-    struct QuickswapV3StaticMerklFarmStrategyStorage {
-        int24 lowerTick;
-        int24 upperTick;
-        uint _tokenId;
-        INonfungiblePositionManager _nft;
-    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -56,7 +47,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 2) {
             revert IFarmingStrategy.BadFarm();
         }
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         $.lowerTick = farm.ticks[0];
         $.upperTick = farm.ticks[1];
         $._nft = INonfungiblePositionManager(farm.addresses[0]);
@@ -109,75 +100,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
-        StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
-        FarmingStrategyBaseStorage storage __$ = _getFarmingStrategyBaseStorage();
-
-        {
-            uint returnLength = 2 + __$._rewardAssets.length;
-            __assets = new address[](returnLength);
-            amounts = new uint[](returnLength);
-            __assets[0] = _$._assets[0];
-            __assets[1] = _$._assets[1];
-            for (uint i = 2; i < returnLength; ++i) {
-                __assets[i] = __$._rewardAssets[i - 2];
-                amounts[i] = StrategyLib.balance(__assets[i]);
-            }
-        }
-
-        {
-            IAlgebraPool _pool = IAlgebraPool(pool());
-            uint __tokenId = $._tokenId;
-            // get fees
-            UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params =
-                UniswapV3MathLib.ComputeFeesEarnedCommonParams({tick: 0, lowerTick: 0, upperTick: 0, liquidity: 0});
-            (, params.tick,,,,,) = _pool.globalState();
-            //slither-disable-next-line similar-names
-            uint feeGrowthInside0Last;
-            uint feeGrowthInside1Last;
-            //slither-disable-next-line similar-names
-            uint128 tokensOwed0;
-            uint128 tokensOwed1;
-            (
-                ,
-                ,
-                ,
-                ,
-                params.lowerTick,
-                params.upperTick,
-                params.liquidity,
-                feeGrowthInside0Last,
-                feeGrowthInside1Last,
-                tokensOwed0,
-                tokensOwed1
-            ) = $._nft.positions(__tokenId);
-            //slither-disable-next-line similar-names
-            (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
-            //slither-disable-next-line similar-names
-            (,, uint feeGrowthOutsideUpper0to1, uint feeGrowthOutsideUpper1to0,,,,) = _pool.ticks(params.upperTick);
-            amounts[0] = uint(
-                uint128(
-                    UniswapV3MathLib.computeFeesEarned(
-                        params,
-                        _pool.totalFeeGrowth0Token(),
-                        feeGrowthOutsideLower0to1,
-                        feeGrowthOutsideUpper0to1,
-                        feeGrowthInside0Last
-                    )
-                ) + tokensOwed0
-            );
-            amounts[1] = uint(
-                uint128(
-                    UniswapV3MathLib.computeFeesEarned(
-                        params,
-                        _pool.totalFeeGrowth1Token(),
-                        feeGrowthOutsideLower1to0,
-                        feeGrowthOutsideUpper1to0,
-                        feeGrowthInside1Last
-                    )
-                ) + tokensOwed1
-            );
-        }
+        return QSMFLib.getRevenue(pool(), _getQuickStaticFarmStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
     }
 
     /// @inheritdoc IStrategy
@@ -237,7 +160,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-events
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         uint128 liquidity;
         uint tokenId = $._tokenId;
@@ -279,7 +202,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-events
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
 
         amountsOut = new uint[](2);
         uint tokenId = $._tokenId;
@@ -325,7 +248,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
             uint[] memory __rewardAmounts
         )
     {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
         LPStrategyBaseStorage storage __$ = _getLPStrategyBaseStorage();
@@ -374,7 +297,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         override(StrategyBase, LPStrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
@@ -383,7 +306,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
@@ -397,7 +320,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getQuickStaticFarmStorage() internal pure returns (QuickswapV3StaticMerklFarmStrategyStorage storage $) {
+    function _getQuickStaticFarmStorage() internal pure returns (QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION
@@ -405,7 +328,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     }
 
     function _getProportion0(address pool_) internal view returns (uint) {
-        QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
+        QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;

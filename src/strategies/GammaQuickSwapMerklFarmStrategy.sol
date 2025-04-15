@@ -1,21 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./base/LPStrategyBase.sol";
-import "./base/MerklStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/UniswapV3MathLib.sol";
-import "./libs/ALMPositionNameLib.sol";
-import "../integrations/gamma/IUniProxy.sol";
-import "../integrations/gamma/IHypervisor.sol";
-import "../integrations/algebra/IAlgebraPool.sol";
-import "../core/libs/CommonLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
+import {LPStrategyBase, ILPStrategy, IStrategy, IERC165, StrategyBase} from "./base/LPStrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IControllable, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
+import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
+import {IUniProxy} from "../integrations/gamma/IUniProxy.sol";
+import {IHypervisor} from "../integrations/gamma/IHypervisor.sol";
+import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {GQMFLib} from "./libs/GQMFLib.sol";
 
 /// @title Earning Merkl rewards on QuickSwap V3 by underlying Gamma Hypervisor
+/// Changelog
+///   1.7.0: decrease code size
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author Hcrypto7 (https://github.com/Hcrypto7)
@@ -27,7 +30,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.6.0";
+    string public constant VERSION = "1.7.0";
 
     uint internal constant _PRECISION = 1e36;
 
@@ -119,39 +122,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
+        return GQMFLib.initVariants(platform_, strategyLogicId(), ammAdapterId());
     }
 
     /// @inheritdoc IStrategy
@@ -182,7 +153,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return _generateDescription(farm, $lp.ammAdapter);
+        return GQMFLib.generateDescription(farm, $lp.ammAdapter);
     }
 
     /// @inheritdoc IStrategy
@@ -410,25 +381,6 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
         uint pool0PricedInToken1 = pool0 * price / _PRECISION;
         //slither-disable-next-line divide-before-multiply
         return 1e18 * pool0PricedInToken1 / (pool0PricedInToken1 + pool1);
-    }
-
-    function _generateDescription(
-        IFactory.Farm memory farm,
-        IAmmAdapter _ammAdapter
-    ) internal view returns (string memory) {
-        //slither-disable-next-line calls-loop
-        return string.concat(
-            "Earn ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on QuickSwap by ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-            " Gamma ",
-            //slither-disable-next-line calls-loop
-            ALMPositionNameLib.getName(farm.nums[0]),
-            " LP"
-        );
     }
 
     function _getGammaQuickStorage() private pure returns (GammaQuickSwapFarmStrategyStorage storage $) {
