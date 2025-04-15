@@ -76,9 +76,7 @@ library GRMFLib {
         route[0].ammAdapter = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId))).proxy;
         route[0].tokenIn = uToken;
         route[0].tokenOut = paymentToken;
-        ISwapper(swapper).swapWithRoute(
-            route, balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-        );
+        ISwapper(swapper).swapWithRoute(route, balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
 
         // Pay off our loan
         uint pairDebt = paymentTokenAmount + fee1;
@@ -87,10 +85,14 @@ library GRMFLib {
         $.flashOn = false;
     }
 
-    function initVariants(address platform_, string memory strategyLogicId, string memory ammAdapterId)
-    public
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(
+        address platform_,
+        string memory strategyLogicId,
+        string memory ammAdapterId
+    )
+        public
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
         addresses = new address[](0);

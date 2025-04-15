@@ -4,7 +4,14 @@ pragma solidity ^0.8.28;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LPStrategyBase, StrategyBase, IStrategy, ILPStrategy, IERC165} from "./base/LPStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
-import {FarmingStrategyBase, IFarmingStrategy, IControllable, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+import {
+    FarmingStrategyBase,
+    IFarmingStrategy,
+    IControllable,
+    IFactory,
+    IPlatform,
+    StrategyLib
+} from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {QSMFLib} from "./libs/QSMFLib.sol";
@@ -100,7 +107,9 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        return QSMFLib.getRevenue(pool(), _getQuickStaticFarmStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
+        return QSMFLib.getRevenue(
+            pool(), _getQuickStaticFarmStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
+        );
     }
 
     /// @inheritdoc IStrategy
@@ -320,7 +329,11 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getQuickStaticFarmStorage() internal pure returns (QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $) {
+    function _getQuickStaticFarmStorage()
+        internal
+        pure
+        returns (QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $)
+    {
         //slither-disable-next-line assembly
         assembly {
             $.slot := QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION

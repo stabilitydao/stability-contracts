@@ -34,7 +34,6 @@ library QSMFLib {
         IStrategy.StrategyBaseStorage storage _$,
         IFarmingStrategy.FarmingStrategyBaseStorage storage __$
     ) external view returns (address[] memory __assets, uint[] memory amounts) {
-
         {
             uint returnLength = 2 + __$._rewardAssets.length;
             __assets = new address[](returnLength);
@@ -52,7 +51,7 @@ library QSMFLib {
             uint __tokenId = $._tokenId;
             // get fees
             UniswapV3MathLib.ComputeFeesEarnedCommonParams memory params =
-                                UniswapV3MathLib.ComputeFeesEarnedCommonParams({tick: 0, lowerTick: 0, upperTick: 0, liquidity: 0});
+                UniswapV3MathLib.ComputeFeesEarnedCommonParams({tick: 0, lowerTick: 0, upperTick: 0, liquidity: 0});
             (, params.tick,,,,,) = _pool.globalState();
             //slither-disable-next-line similar-names
             uint feeGrowthInside0Last;
@@ -61,10 +60,10 @@ library QSMFLib {
             uint128 tokensOwed0;
             uint128 tokensOwed1;
             (
-            ,
-            ,
-            ,
-            ,
+                ,
+                ,
+                ,
+                ,
                 params.lowerTick,
                 params.upperTick,
                 params.liquidity,

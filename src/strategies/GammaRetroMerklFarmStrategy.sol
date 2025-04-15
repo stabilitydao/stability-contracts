@@ -99,11 +99,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     // Call back function, called by the pair during our flashloan.
     function uniswapV3FlashCallback(uint, uint fee1, bytes calldata) external {
         GRMFLib.uniswapV3FlashCallback(
-            platform(),
-            ammAdapterId(),
-            _getGammaRetroStorage(),
-            _getFarmingStrategyBaseStorage(),
-            fee1
+            platform(), ammAdapterId(), _getGammaRetroStorage(), _getFarmingStrategyBaseStorage(), fee1
         );
     }
 

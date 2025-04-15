@@ -26,10 +26,14 @@ library IRMFLib {
         bool flashOn;
     }
 
-    function initVariants(address platform_, string memory strategyLogicId, string memory ammAdapterId)
-    external
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(
+        address platform_,
+        string memory strategyLogicId,
+        string memory ammAdapterId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
         addresses = new address[](0);
