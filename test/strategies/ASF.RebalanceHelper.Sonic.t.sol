@@ -79,7 +79,7 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         IALM.NewPosition[] memory newPositions,
         int24 currentTick,
         IALM.Position[] memory oldPositions
-    ) internal view {
+    ) internal {
         require(newPositions.length == 1 || newPositions.length == 2, "Invalid new positions count");
 
         // Validate base position
@@ -95,7 +95,7 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         IALM.NewPosition memory position,
         int24 currentTick,
         IALM.Position[] memory oldPositions
-    ) internal view {
+    ) internal {
         // Tick validation
         int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
         require((position.tickUpper - position.tickLower) % tickSpacing == 0, "Invalid tick spacing");
