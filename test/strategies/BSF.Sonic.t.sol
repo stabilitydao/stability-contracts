@@ -8,6 +8,7 @@ import "../base/UniversalTest.sol";
 import "../../src/integrations/balancer/IBalancerGauge.sol";
 
 contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
+    
     function testBSF() public universalTest {
         _addStrategy(0);
         //_addStrategy(1);

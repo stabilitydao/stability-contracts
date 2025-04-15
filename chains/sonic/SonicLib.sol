@@ -204,7 +204,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](33);
+        pools = new ISwapper.AddPoolData[](34);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS);
@@ -254,6 +254,8 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025, SonicConstantsLib.TOKEN_stkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_stS_29MAY2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_stS_29MAY2025, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_bUSDCe20, SonicConstantsLib.TOKEN_wstkscUSD);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
+        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aSonUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
         //endregion ----- Pools ----
     }
 
@@ -306,6 +308,7 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeIchiEqualizerFarm(SonicConstantsLib.ALM_ICHI_EQUALIZER_WETH_wS, SonicConstantsLib.EQUALIZER_GAUGE_ICHI_WETH_wS);
         _farms[i++] = SonicFarmMakerLib._makeIchiEqualizerFarm(SonicConstantsLib.ALM_ICHI_EQUALIZER_USDC_WETH, SonicConstantsLib.EQUALIZER_GAUGE_ICHI_USDC_WETH);
         _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD); // farm 41
+        // _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD); // farm 42
     }
 
     function _makePoolData(
