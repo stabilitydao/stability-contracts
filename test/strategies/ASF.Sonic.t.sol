@@ -6,10 +6,6 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import "../../chains/sonic/SonicLib.sol";
 import "../base/UniversalTest.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
-import {IALM} from "../../src/interfaces/IALM.sol";
-import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
-import {ALMLib} from "../../src/strategies/libs/ALMLib.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     RebalanceHelper public rebalanceHelper;
@@ -20,8 +16,8 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         duration3 = 0.5 hours;
 
         makePoolVolumePriceImpactTolerance = 34_000;
-        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 100;
-        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 150;
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 100; // 500k
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 150; // 650k
         poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 80;
         poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 40;
 
@@ -33,117 +29,45 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         _addStrategy(26); // wS_WETH 1500
         _addStrategy(27); // wS_USDC 3000
         _addStrategy(28); // wS_USDC 1500
-        _addStrategy(29); // SACRA-scUSD 120000
-        _addStrategy(30); // SACRA-scUSD 800
+        _addStrategy(29);
+        _addStrategy(30);
     }
 
     function _rebalance() internal override {
         if (IALM(currentStrategy).needRebalance()) {
-            // Store initial state
-            IALM.Position[] memory initialPositions = IALM(currentStrategy).positions();
-            int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
-            uint initialPositionCount = initialPositions.length;
+            /*console.log('Need re-balance call');
+            IALM.Position[] memory positions = IALM(currentStrategy).positions();
+            console.log("Old base position (ticks, liquidity):");
+            console.logInt(positions[0].tickLower);
+            console.logInt(positions[0].tickUpper);
+            console.log(positions[0].liquidity);
+            if (positions.length == 2) {
+                console.log("Old flup position (ticks, liquidity):");
+                console.logInt(positions[1].tickLower);
+                console.logInt(positions[1].tickUpper);
+                console.log(positions[1].liquidity);
+            }*/
 
-            // Execute rebalance
             (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-
-            // Validate burn flags
-            _validateBurnFlags(burnOldPositions, initialPositionCount);
-
             IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
 
-            // Post-rebalance validation
-            _validateNewPositions(mintNewPositions, initialTick, initialPositions);
-        }
-    }
+            /*
+            positions = IALM(currentStrategy).positions();
+            console.log('Re-balance done. New tick:');
+            console.logInt(ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool()));
+            console.log("New base position (ticks, liquidity):");
+            console.logInt(positions[0].tickLower);
+            console.logInt(positions[0].tickUpper);
+            console.log(positions[0].liquidity);
+            if (positions.length == 2) {
+                console.log("New flup position (ticks, liquidity):");
+                console.logInt(positions[1].tickLower);
+                console.logInt(positions[1].tickUpper);
+                console.log(positions[1].liquidity);
+            }*/
 
-    function _validateBurnFlags(bool[] memory burnFlags, uint initialCount) internal pure {
-        require(burnFlags.length == initialCount, "Incorrect burn flags length");
-        for (uint i = 0; i < burnFlags.length; i++) {
-            require(burnFlags[i], "All positions should be marked for burn");
-        }
-    }
-
-    function _validateNewPositions(
-        IALM.NewPosition[] memory newPositions,
-        int24 currentTick,
-        IALM.Position[] memory oldPositions
-    ) internal view {
-        require(newPositions.length == 1 || newPositions.length == 2, "Invalid new positions count");
-
-        // Validate base position
-        _validatePosition(newPositions[0], currentTick, oldPositions);
-
-        // Validate fill-up position if exists
-        if (newPositions.length > 1) {
-            _validateFillUpPosition(newPositions[1], currentTick);
-        }
-    }
-
-    function _validatePosition(
-        IALM.NewPosition memory position,
-        int24 currentTick,
-        IALM.Position[] memory oldPositions
-    ) internal view {
-        // Tick validation
-        int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
-        require((position.tickUpper - position.tickLower) % tickSpacing == 0, "Invalid tick spacing");
-        require(position.tickLower < position.tickUpper, "Invalid tick range");
-
-        // Check if base position needs rebalancing
-        bool baseRebalanceNeeded = currentTick < oldPositions[0].tickLower || currentTick > oldPositions[0].tickUpper;
-
-        if (baseRebalanceNeeded) {
-            // Verify position shift
-            int24 expectedShift = _calculateExpectedShift(currentTick, oldPositions[0], tickSpacing);
-            require(
-                position.tickLower == oldPositions[0].tickLower + expectedShift
-                    && position.tickUpper == oldPositions[0].tickUpper + expectedShift,
-                "Incorrect position shift"
-            );
-        } else {
-            // Verify base position ticks
-            (,,, int24[] memory params) = IALM(currentStrategy).preset();
-            (int24 expectedLower, int24 expectedUpper) = ALMLib.calcFillUpBaseTicks(currentTick, params[0], tickSpacing);
-            require(
-                position.tickLower == expectedLower && position.tickUpper == expectedUpper,
-                "Incorrect base position ticks"
-            );
-        }
-
-        // Liquidity validation
-        require(position.liquidity > 0, "Position liquidity must be positive");
-        require(position.minAmount0 > 0 && position.minAmount1 > 0, "Invalid slippage protection");
-    }
-
-    function _validateFillUpPosition(IALM.NewPosition memory fillUp, int24 currentTick) internal view {
-        int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
-        // Calculate expected fill-up ranges based on current tick
-        int24 expectedLowerLower = currentTick > 0
-            ? (currentTick / tickSpacing * tickSpacing)
-            : (currentTick / tickSpacing * tickSpacing - tickSpacing);
-
-        int24 expectedLowerUpper = expectedLowerLower + tickSpacing;
-        int24 expectedUpperLower = expectedLowerUpper;
-        int24 expectedUpperUpper = expectedUpperLower + tickSpacing;
-
-        bool isValidLowerFillUp = fillUp.tickLower == expectedLowerLower && fillUp.tickUpper == expectedLowerUpper;
-
-        bool isValidUpperFillUp = fillUp.tickLower == expectedUpperLower && fillUp.tickUpper == expectedUpperUpper;
-
-        require(isValidLowerFillUp || isValidUpperFillUp, "Fill-up position not adjacent to current price range");
-    }
-
-    function _calculateExpectedShift(
-        int24 currentTick,
-        IALM.Position memory oldPosition,
-        int24 tickSpacing
-    ) internal pure returns (int24) {
-        if (currentTick > oldPosition.tickUpper) {
-            return ((currentTick - oldPosition.tickUpper) / tickSpacing) * tickSpacing;
-        } else {
-            return -((oldPosition.tickLower - currentTick) / tickSpacing) * tickSpacing;
+            rebalanceHelper.VERSION();
         }
     }
 
@@ -158,19 +82,4 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
             })
         );
     }
-
-    // // Additional test cases
-    // function testNonALMStrategy() public {
-    //     address nonALM = address(new NonALMStrategy());
-    //     rebalanceHelper.calcRebalanceArgs(nonALM, 10);
-    //     vm.expectRevert(IALM.NotALM.selector);
-    // }
-
-    // function testRebalanceNotNeeded() public {
-    //     vm.mockCall(currentStrategy, abi.encodeWithSelector(IALM.needRebalance.selector), abi.encode(false));
-    //     rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-    //     vm.expectRevert(IALM.NotNeedRebalance.selector);
-    // }
 }
-
-contract NonALMStrategy {}

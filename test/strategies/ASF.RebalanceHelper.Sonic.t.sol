@@ -38,23 +38,33 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _rebalance() internal override {
-        if (IALM(currentStrategy).needRebalance()) {
-            // Store initial state
-            IALM.Position[] memory initialPositions = IALM(currentStrategy).positions();
-            int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
-            uint initialPositionCount = initialPositions.length;
+        // Validate strategy interface
+        if (!IERC165(currentStrategy).supportsInterface(type(IALM).interfaceId)) {
+            vm.expectRevert(IALM.NotALM.selector);
+            rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
+        } else {
+            // Check if rebalance is needed
+            if (IALM(currentStrategy).needRebalance()) {
+                // Store initial state
+                IALM.Position[] memory initialPositions = IALM(currentStrategy).positions();
+                int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
+                uint initialPositionCount = initialPositions.length;
 
-            // Execute rebalance
-            (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
+                // Execute rebalance
+                (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
+                    rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
+
+                // Validate burn flags
+                _validateBurnFlags(burnOldPositions, initialPositionCount);
+
+                IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
+
+                // Post-rebalance validation
+                _validateNewPositions(mintNewPositions, initialTick, initialPositions);
+            } else {
+                vm.expectRevert(IALM.NotNeedRebalance.selector);
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-
-            // Validate burn flags
-            _validateBurnFlags(burnOldPositions, initialPositionCount);
-
-            IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
-
-            // Post-rebalance validation
-            _validateNewPositions(mintNewPositions, initialTick, initialPositions);
+            }
         }
     }
 
@@ -160,17 +170,19 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     // // Additional test cases
-    // function testNonALMStrategy() public {
-    //     address nonALM = address(new NonALMStrategy());
-    //     rebalanceHelper.calcRebalanceArgs(nonALM, 10);
-    //     vm.expectRevert(IALM.NotALM.selector);
-    // }
+    function testNonALMStrategy() public universalTest {
+        // Mock a contract that does not implement the IALM interface
+        address nonALMStrategy = address(new MockNonALMStrategy());
 
-    // function testRebalanceNotNeeded() public {
-    //     vm.mockCall(currentStrategy, abi.encodeWithSelector(IALM.needRebalance.selector), abi.encode(false));
-    //     rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-    //     vm.expectRevert(IALM.NotNeedRebalance.selector);
-    // }
+        // Expect the call to revert with NotALM error
+        vm.expectRevert(IALM.NotALM.selector);
+        rebalanceHelper.calcRebalanceArgs(nonALMStrategy, 10);
+    }
 }
 
-contract NonALMStrategy {}
+// Mock contract that does not implement the IALM interface
+contract MockNonALMStrategy is IERC165 {
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IERC165).interfaceId; // Only supports IERC165, not IALM
+    }
+}
