@@ -53,12 +53,12 @@ contract RebalanceHelper {
 
         // Initialize variables using CalcRebalanceVars struct
         CalcRebalanceVars memory v;
+
         uint positionsLength = IALM(strategy).positions().length;
+        burnOldPositions = new bool[](positionsLength); // Initialize burnOldPositions array
         for (uint i = 0; i < positionsLength; i++) {
             burnOldPositions[i] = true;
         }
-
-        burnOldPositions = new bool[](positionsLength); // Initialize burnOldPositions array
         // Retrieve strategy preset and positions
         // slither-disable-next-line unused-return
         (v.algoId,,, v.params) = IALM(strategy).preset();
