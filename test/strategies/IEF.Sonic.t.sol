@@ -6,8 +6,7 @@ import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract IchiEqualizerFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(17034013); // Mar-30-2025 03:16:13 PM +UTC
+        vm.rollFork(18524880); // Mar-30-2025 03:16:13 PM +UTC
         makePoolVolumePriceImpactTolerance = 9_000;
     }
 

@@ -7,7 +7,7 @@ import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 contract GammaEqualizerFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(16088032); // Mar-26-2025 12:46:06 PM +UTC
+        vm.rollFork(18588032); // Mar-26-2025 12:46:06 PM +UTC
         makePoolVolumePriceImpactTolerance = 9_000;
     }
 
