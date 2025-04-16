@@ -4,7 +4,7 @@ Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approacha
 
 ## Strategy development
 
-[Strategy Developer Guide V2](./src/strategies/README.md)
+[Strategy Developer Guide V2](guides/README.md)
 
 See the unified list of implemented strategies and those proposed for implementation on the [Strategies](https://stabilitydao.gitbook.io/stability/stability-platform/strategies) page in the [Stability Book](https://stabilitydao.gitbook.io).
 
@@ -12,7 +12,7 @@ See the unified list of implemented strategies and those proposed for implementa
 
 ## Core development
 
-[Core Developer's guide](./src/core/README.md)
+[Core Developer's guide](guides/README.md)
 
 [issues](https://github.com/stabilitydao/stability-platform-contracts/issues)
 
