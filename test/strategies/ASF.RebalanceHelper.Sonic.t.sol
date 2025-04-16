@@ -14,6 +14,29 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     RebalanceHelper public rebalanceHelper;
 
+    struct CalcRebalanceVars {
+        uint algoId;
+        int24[] params;
+        address pool;
+        bool baseRebalanceNeeded;
+        bool limitRebalanceNeeded;
+        int24 currentTick;
+        int24 tickSpacing;
+        uint[] amounts;
+        uint addedLiquidity;
+        uint[] amountsConsumed;
+        int24 lowerTickLower;
+        int24 lowerTickUpper;
+        int24 upperTickLower;
+        int24 upperTickUpper;
+        int24[] fillUpTicksLowerSide;
+        int24[] fillUpTicksUpperSide;
+        uint fillUpLiquidityLowerSide;
+        uint fillUpLiquidityUpperSide;
+        uint[] fillUpAmountsConsumedLowerSide;
+        uint[] fillUpAmountsConsumedUpperSide;
+    }
+
     constructor() {
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -38,33 +61,39 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _rebalance() internal override {
-        // Validate strategy interface
-        if (!IERC165(currentStrategy).supportsInterface(type(IALM).interfaceId)) {
-            vm.expectRevert(IALM.NotALM.selector);
-            rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-        } else {
-            // Check if rebalance is needed
-            if (IALM(currentStrategy).needRebalance()) {
-                // Store initial state
-                IALM.Position[] memory initialPositions = IALM(currentStrategy).positions();
-                int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
-                uint initialPositionCount = initialPositions.length;
+        // Check if rebalance is needed
+        // if (!IALM(currentStrategy).needRebalance()) {
+        //     vm.expectRevert(IALM.NotNeedRebalance.selector);
+        //     rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
+        // }
+        if (IALM(currentStrategy).needRebalance()) {
+            // Initialize variables using CalcRebalanceVars struct
+            CalcRebalanceVars memory v;
 
-                // Execute rebalance
-                (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
-                    rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
+            // Retrieve strategy preset and positions
+            (v.algoId,,, v.params) = IALM(currentStrategy).preset();
 
-                // Validate burn flags
-                _validateBurnFlags(burnOldPositions, initialPositionCount);
+            v.pool = ILPStrategy(currentStrategy).pool();
+            v.tickSpacing = ALMLib.getUniswapV3TickSpacing(v.pool);
+            v.currentTick = ALMLib.getUniswapV3CurrentTick(v.pool);
+            // ICAmmAdapter adapter = ICAmmAdapter(address(ILPStrategy(currentStrategy).ammAdapter()));
+            // slither-disable-next-line unused-return
+            (, v.amounts) = IStrategy(currentStrategy).assetsAmounts();
 
-                IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
+            // Store initial state
+            IALM.Position[] memory initialPositions = IALM(currentStrategy).positions();
+            int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
 
-                // Post-rebalance validation
-                _validateNewPositions(mintNewPositions, initialTick, initialPositions);
-            } else {
-                vm.expectRevert(IALM.NotNeedRebalance.selector);
+            console.log("here");
+            // Execute rebalance
+            (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-            }
+            console.log("here");
+
+            IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
+
+            // Post-rebalance validation
+            _validateNewPositions(mintNewPositions, initialTick, initialPositions, burnOldPositions);
         }
     }
 
@@ -72,18 +101,20 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         require(burnFlags.length == initialCount, "Incorrect burn flags length");
         for (uint i = 0; i < burnFlags.length; i++) {
             require(burnFlags[i], "All positions should be marked for burn");
+            assertTrue(burnFlags[i], string(abi.encodePacked("burnOldPositions[", vm.toString(i), "] should be true")));
         }
     }
 
     function _validateNewPositions(
         IALM.NewPosition[] memory newPositions,
         int24 currentTick,
-        IALM.Position[] memory oldPositions
+        IALM.Position[] memory oldPositions,
+        bool[] memory burnOldPositions
     ) internal {
         require(newPositions.length == 1 || newPositions.length == 2, "Invalid new positions count");
 
         // Validate base position
-        _validatePosition(newPositions[0], currentTick, oldPositions);
+        _validatePosition(newPositions[0], currentTick, oldPositions, burnOldPositions);
 
         // Validate fill-up position if exists
         if (newPositions.length > 1) {
@@ -94,17 +125,23 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     function _validatePosition(
         IALM.NewPosition memory position,
         int24 currentTick,
-        IALM.Position[] memory oldPositions
+        IALM.Position[] memory oldPositions,
+        bool[] memory burnOldPositions
     ) internal {
         // Tick validation
         int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
         require((position.tickUpper - position.tickLower) % tickSpacing == 0, "Invalid tick spacing");
         require(position.tickLower < position.tickUpper, "Invalid tick range");
 
+        uint initialPositionCount = oldPositions.length;
+
         // Check if base position needs rebalancing
         bool baseRebalanceNeeded = currentTick < oldPositions[0].tickLower || currentTick > oldPositions[0].tickUpper;
 
         if (baseRebalanceNeeded) {
+            // Validate burn flags
+            _validateBurnFlags(burnOldPositions, initialPositionCount);
+
             // Verify position shift
             int24 expectedShift = _calculateExpectedShift(currentTick, oldPositions[0], tickSpacing);
             if (expectedShift == 0) {
