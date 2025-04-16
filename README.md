@@ -21,8 +21,6 @@
 <img src="https://img.shields.io/github/commit-activity/m/stabilitydao/stability-contracts" alt="Commit activity">
 
 [<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/stabilitydao/stability-contracts?logo=solidity">](https://docs.soliditylang.org/en/)
-[<img src="https://raw.githubusercontent.com/foundry-rs/foundry/master/.github/logo.png" alt="Foundry" width="20" />](https://book.getfoundry.sh/)
-
 
 ### 🏷️ Issues
 
