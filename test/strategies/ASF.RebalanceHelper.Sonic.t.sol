@@ -62,10 +62,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
     function _rebalance() internal override {
         // Check if rebalance is needed
-        // if (!IALM(currentStrategy).needRebalance()) {
-        //     vm.expectRevert(IALM.NotNeedRebalance.selector);
-        //     rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
-        // }
+        if (!IALM(currentStrategy).needRebalance()) {
+            vm.expectRevert(IALM.NotNeedRebalance.selector);
+            rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
+        }
         if (IALM(currentStrategy).needRebalance()) {
             // Initialize variables using CalcRebalanceVars struct
             CalcRebalanceVars memory v;
@@ -133,15 +133,14 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         require((position.tickUpper - position.tickLower) % tickSpacing == 0, "Invalid tick spacing");
         require(position.tickLower < position.tickUpper, "Invalid tick range");
 
-        uint initialPositionCount = oldPositions.length;
+        uint positionsLength = oldPositions.length;
 
         // Check if base position needs rebalancing
         bool baseRebalanceNeeded = currentTick < oldPositions[0].tickLower || currentTick > oldPositions[0].tickUpper;
 
         if (baseRebalanceNeeded) {
             // Validate burn flags
-            require(burnOldPositions.length == initialPositionCount, "Incorrect burn flags length");
-            for (uint i = 0; i < burnOldPositions.length; i++) {
+            for (uint i = 0; i < positionsLength; i++) {
                 require(burnOldPositions[i], "All positions should be marked for burn");
                 assertTrue(
                     burnOldPositions[i],
