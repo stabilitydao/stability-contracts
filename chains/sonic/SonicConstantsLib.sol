@@ -174,6 +174,10 @@ library SonicConstantsLib {
     address public constant ALM_ICHI_SWAPX_frxUSD_sfrxUSD = 0x65B970bcB133650D02B4D96901f2F5c855D1F2f7;
     address public constant ALM_ICHI_SWAPX_sfrxUSD_frxUSD = 0xe33108E60906C3122C76e8F3e68a9c272F8DcD1B;
     address public constant ALM_ICHI_SWAPX_frxUSD_scUSD = 0x1B282d69a54a983714bB6Bea8cAAcB29D4cb45B5;
+    address public constant ALM_ICHI_SWAPX_bUSDCe20_wstkscUSD = 0x3151f7289Cecf8E92fBc68CdA307491d9DAb2E03;
+    address public constant ALM_ICHI_SWAPX_wstkscUSD_bUSDCe20 = 0x619f5B53969f8A9Cc1f244E422970f0E1C9152aE;
+    address public constant ALM_ICHI_SWAPX_aSonUSDC_wstkscUS = 0xf248b0EF6d45Aa492C73699B71748b5D1a6770C6;
+    address public constant ALM_ICHI_SWAPX_wstkscUS_aSonUSDC = 0xF2a497F783C6bfEe0670757462a31f9429fdE53d;
     address public constant ALM_GAMMA_UNISWAPV3_wS_USDC_3000 = 0x318E378b6EC1590315e5e8160A2eF28308AE7Cfc;
     address public constant ALM_GAMMA_UNISWAPV3_wS_WETH_3000 = 0x2Ea8A8ba347011FEF2a7E0A276354B90B4927cBC;
     address public constant ALM_GAMMA_UNISWAPV3_USDC_WETH_500 = 0x2fA5E2E2a49de9375047225b7cea4997e8203AA4;
@@ -264,7 +268,9 @@ library SonicConstantsLib {
     address public constant SWAPX_GAUGE_USDC_STBL = 0x17D11842cCECd5166BFC6c6D7aAa440476A9F883;
     address public constant SWAPX_GAUGE_fBOMB_EGGS = 0x2E5228cFEcFEFA439f92Aa4823E5593de5bFcB7D;
     address public constant SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD = 0xFc463D9bE936DEe0cEcBB600433aDE1b921813C7;
+    address public constant SWAPX_GAUGE_ICHI_wstkscUSD_bUSDCe20 = 0x1009f1dE14Cdb1161658F346437156dF4DBf1A38;
     address public constant SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD = 0x55aA8F27dAFe5Ce79F052FBdC817698C2bf889D5;
+    address public constant SWAPX_GAUGE_ICHI_wstkscUS_aSonUSDC = 0x36b356fAA33567e7Dd7E1641bDc474755Fe17E8f;
 
     // Silo
     address public constant SILO_LENS = 0xE05966aee69CeCD677a30f469812Ced650cE3b5E;
