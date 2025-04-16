@@ -71,36 +71,31 @@ library ALMLib {
                 return false;
             }
 
-            int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
             int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
 
             // Base Position Rebalancing Logic
-            {
-                int24 halfRange = $.params[0] / 2;
-                int24 halfTriggerRange = $.params[1] / 2;
-                int24 oldTickLower = $.positions[0].tickLower;
-                int24 oldTickUpper = $.positions[0].tickUpper;
-                int24 oldMedianTick = oldTickLower + halfRange;
+            int24 halfRange = $.params[0] / 2;
+            int24 halfTriggerRange = $.params[1] / 2;
+            int24 oldTickLower = $.positions[0].tickLower;
+            int24 oldTickUpper = $.positions[0].tickUpper;
+            int24 oldMedianTick = oldTickLower + halfRange;
+            int24 currentTick = getUniswapV3CurrentTick(_$_.pool);
+            bool fillUpRebalanceTrigger =
+                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
+            bool outOfRange = currentTick < oldTickLower || currentTick > oldTickUpper;
 
-                bool fillUpRebalanceTrigger =
-                    (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
-
-                bool outOfRangeBasePosition = currentTick < oldTickLower || currentTick > oldTickUpper;
-
-                bool cantMoveRange = false;
-                if (outOfRangeBasePosition) {
-                    int24 tickDistance =
-                        currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
-                    tickDistance = (tickDistance / tickSpacing) * tickSpacing;
-
-                    if (tickDistance == 0) {
-                        cantMoveRange = true;
-                    }
+            bool cantMoveRange = false;
+            if (outOfRange) {
+                int24 tickDistance =
+                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
+                tickDistance = tickDistance / tickSpacing * tickSpacing;
+                if (tickDistance == 0) {
+                    cantMoveRange = true;
                 }
+            }
 
-                if (!cantMoveRange && fillUpRebalanceTrigger) {
-                    return true;
-                }
+            if (!cantMoveRange && fillUpRebalanceTrigger) {
+                return true;
             }
 
             // Limit Position Rebalancing Logic
