@@ -13,6 +13,7 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
     IAmmAdapter public adapter;
 
     constructor() {
+        // vm.rollFork(18524880); // Mar-30-2025 03:16:13 PM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE));
         adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
@@ -46,7 +47,7 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
         // console.log(out);
         deal(SonicConstantsLib.TOKEN_wS, address(adapter), 6e23);
         vm.expectRevert();
-        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS, address(this), 10);
+        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS, address(this), 1);
         // out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
         // console.log(out);
     }

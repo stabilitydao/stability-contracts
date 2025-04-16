@@ -62,7 +62,7 @@ library SonicConstantsLib {
     address public constant TOKEN_PT_wOS_29MAY2025 = 0x46eb02b9F47634c4fab3110CC7ADc1C6311DfAC1;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
-    // address public constant TOKEN_aSonUSDC = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
+    address public constant TOKEN_aSonUSDC = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -120,7 +120,7 @@ library SonicConstantsLib {
     address public constant POOL_SWAPX_USDC_STBL = 0x4D864C2CFb4c11A2CeE4C2d5cBfa318c7B7e14F8;
     address public constant POOL_SWAPX_fBOMB_EGGS = 0xEBEeC250676833b96505D8e2967215E91C74e477;
     address public constant POOL_SWAPX_CL_bUSDCe20_wstkscUSD = 0x85279f76f6ce5bB26F721931Ba4e3188cd28Ad51;
-    // address public constant POOL_SWAPX_CL_aSonUSDC_wstkscUSD = 0x151283BEfA4301619b1Ec2BdAA23A2e49B41D8E7;
+    address public constant POOL_SWAPX_CL_aSonUSDC_wstkscUSD = 0x151283BEfA4301619b1Ec2BdAA23A2e49B41D8E7;
     address public constant POOL_UNISWAPV3_wS_USDC_3000 = 0xEcb04e075503Bd678241f00155AbCB532c0a15Eb;
     address public constant POOL_UNISWAPV3_wS_WETH_3000 = 0x21043D7Ad92d9e7bC45C055AF29771E37307B111;
     address public constant POOL_UNISWAPV3_USDC_WETH_500 = 0xCfD41dF89D060b72eBDd50d65f9021e4457C477e;
@@ -264,7 +264,7 @@ library SonicConstantsLib {
     address public constant SWAPX_GAUGE_USDC_STBL = 0x17D11842cCECd5166BFC6c6D7aAa440476A9F883;
     address public constant SWAPX_GAUGE_fBOMB_EGGS = 0x2E5228cFEcFEFA439f92Aa4823E5593de5bFcB7D;
     address public constant SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD = 0xFc463D9bE936DEe0cEcBB600433aDE1b921813C7;
-    // address public constant SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD = 0x55aA8F27dAFe5Ce79F052FBdC817698C2bf889D5;
+    address public constant SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD = 0x55aA8F27dAFe5Ce79F052FBdC817698C2bf889D5;
 
     // Silo
     address public constant SILO_LENS = 0xE05966aee69CeCD677a30f469812Ced650cE3b5E;

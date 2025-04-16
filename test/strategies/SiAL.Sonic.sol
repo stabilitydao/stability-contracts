@@ -11,7 +11,7 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
         //vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         //vm.rollFork(11356000); // Mar-03-2025 08:19:49 AM +UTC
         //vm.rollFork(13119000); // Mar-11-2025 08:29:09 PM +UTC
-        vm.rollFork(17487000); // Apr-01-2025 03:26:51 PM +UTC
+        vm.rollFork(18553912); // Apr-01-2025 03:26:51 PM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

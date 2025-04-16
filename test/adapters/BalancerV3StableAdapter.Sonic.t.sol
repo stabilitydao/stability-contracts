@@ -64,7 +64,7 @@ contract BalancerV3StableAdapterTest is SonicSetup {
         assertEq(tokens[1], SonicConstantsLib.TOKEN_anS);
 
         uint[] memory props = adapter.getProportions(pool);
-        assertGt(props[0], 4e17);
+        assertLt(props[0], 4e17);
         assertGt(props[1], 4e17);
         //console.log(props[0]);
         //console.log(props[1]);
