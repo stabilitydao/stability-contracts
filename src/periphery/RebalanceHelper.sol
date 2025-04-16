@@ -54,6 +54,9 @@ contract RebalanceHelper {
         // Initialize variables using CalcRebalanceVars struct
         CalcRebalanceVars memory v;
         uint positionsLength = IALM(strategy).positions().length;
+        for (uint i = 0; i < positionsLength; i++) {
+            burnOldPositions[i] = true;
+        }
 
         burnOldPositions = new bool[](positionsLength); // Initialize burnOldPositions array
         // Retrieve strategy preset and positions
@@ -73,10 +76,6 @@ contract RebalanceHelper {
             IALM.Position memory oldBasePosition = IALM(strategy).positions()[0];
             // Determine if base position needs rebalancing
             if (tick > oldBasePosition.tickUpper || tick < oldBasePosition.tickLower) {
-                // Mark all positions for burning if base position is out of range
-                for (uint i = 0; i < positionsLength; i++) {
-                    burnOldPositions[i] = true;
-                }
                 // out of range: 1 new position with single asset
                 mintNewPositions = new IALM.NewPosition[](1);
                 if (tick > oldBasePosition.tickUpper) {
@@ -108,11 +107,6 @@ contract RebalanceHelper {
                 mintNewPositions[0].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;
                 mintNewPositions[0].minAmount1 = amountsConsumed[1] - amountsConsumed[1] * slippage / SLIPPAGE_PRECISION;
             } else {
-                // 2 new positions
-                for (uint i = 0; i < positionsLength; i++) {
-                    burnOldPositions[i] = true;
-                }
-
                 mintNewPositions = new IALM.NewPosition[](2);
                 (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
                     ALMLib.calcFillUpBaseTicks(tick, v.params[0], tickSpacing);
