@@ -140,7 +140,14 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
         if (baseRebalanceNeeded) {
             // Validate burn flags
-            _validateBurnFlags(burnOldPositions, initialPositionCount);
+            require(burnOldPositions.length == initialPositionCount, "Incorrect burn flags length");
+            for (uint i = 0; i < burnOldPositions.length; i++) {
+                require(burnOldPositions[i], "All positions should be marked for burn");
+                assertTrue(
+                    burnOldPositions[i],
+                    string(abi.encodePacked("burnOldPositions[", vm.toString(i), "] should be true"))
+                );
+            }
 
             // Verify position shift
             int24 expectedShift = _calculateExpectedShift(currentTick, oldPositions[0], tickSpacing);
