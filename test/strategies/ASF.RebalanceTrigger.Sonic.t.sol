@@ -127,7 +127,7 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         assertTrue(rebalanceBasePosition || rebalanceLimitPosition, "ALM strategy does not need to rebalance");
     }
 
-    function testNeedRebalance_LimitPositionBranches() public {
+    function testNeedRebalance_LimitPositionBranches() public universalTest {
         // 1. Get Storage pointers
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
@@ -173,34 +173,34 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         );
 
         // --------- Case 1: currentTick < limitTickLower (tickDistance != 0, should return true) ---------
-        int24 currentTick = 900; // less than 1000
+        int24 currentTick1 = 900; // less than 1000
         vm.mockCall(
             pool,
             abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-            abi.encode(uint160(0), currentTick, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
+            abi.encode(uint160(0), currentTick1, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
         );
-        bool need = ALMLib.needRebalance(almStrategy, lpStrategy);
-        assertTrue(need, "Should need rebalance when currentTick < limitTickLower");
+        bool need1 = ALMLib.needRebalance(almStrategy, lpStrategy);
+        assertTrue(need1, "Should need rebalance when currentTick < limitTickLower");
 
         // --------- Case 2: currentTick > limitTickUpper (tickDistance != 0, should return true) ---------
-        currentTick = 2100; // greater than 2000
+        int24 currentTick2 = 2100; // greater than 2000
         vm.mockCall(
             pool,
             abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-            abi.encode(uint160(0), currentTick, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
+            abi.encode(uint160(0), currentTick2, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
         );
-        need = ALMLib.needRebalance(almStrategy, lpStrategy);
-        assertTrue(need, "Should need rebalance when currentTick > limitTickUpper");
+        bool need2 = ALMLib.needRebalance(almStrategy, lpStrategy);
+        assertTrue(need2, "Should need rebalance when currentTick > limitTickUpper");
 
         // --------- Case 3: currentTick inside limit position (tickDistance == 0, should return false) ---------
-        // currentTick = 1500; // between 1000 and 2000
+        // int24 currentTick3 = 1500; // between 1000 and 2000
         // vm.mockCall(
         //     pool,
         //     abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-        //     abi.encode(uint160(0), currentTick, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
+        //     abi.encode(uint160(0), currentTick3, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
         // );
-        // need = ALMLib.needRebalance(almStrategy, lpStrategy);
-        // assertFalse(need, "Should NOT need rebalance when currentTick inside limit position");
+        // bool need3 = ALMLib.needRebalance(almStrategy, lpStrategy);
+        // assertFalse(need3, "Should NOT need rebalance when currentTick inside limit position");
     }
 
     // // Additional test cases
