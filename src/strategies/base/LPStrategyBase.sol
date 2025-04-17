@@ -11,6 +11,7 @@ import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 ///   1.1.1: _swapForDepositProportion use try..catch
 ///   1.1.0: use customPriceImpactTolerance
 ///   1.0.4: _swapForDepositProportion support all amm adapters
+///   1.0.3: swapForDepositProportion fix
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract LPStrategyBase is StrategyBase, ILPStrategy {

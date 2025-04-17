@@ -1,12 +1,79 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IVolatilityOracle} from "../../integrations/algebrav4/IVolatilityOracle.sol";
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 import {IAlgebraPool} from "../../integrations/algebrav4/IAlgebraPool.sol";
 import {IAlgebraPoolErrors} from "../../integrations/algebrav4/pool/IAlgebraPoolErrors.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
+import {CommonLib} from "../../core/libs/CommonLib.sol";
+import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 library ISFLib {
+    function initVariants(
+        address platform_,
+        string memory strategyLogicId,
+        string memory ammAdapterId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
+        ICAmmAdapter _ammAdapter = ICAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
+        addresses = new address[](0);
+        ticks = new int24[](0);
+
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint localTtotal;
+        //nosemgrep
+        for (uint i; i < len; ++i) {
+            //nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            //nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                ++localTtotal;
+            }
+        }
+
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
+        //nosemgrep
+        for (uint i; i < len; ++i) {
+            //nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            //nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                nums[localTtotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTtotal] = generateDescription(farm, _ammAdapter);
+                ++localTtotal;
+            }
+        }
+    }
+
+    function generateDescription(
+        IFactory.Farm memory farm,
+        IAmmAdapter _ammAdapter
+    ) public view returns (string memory) {
+        //slither-disable-next-line calls-loop
+        return string.concat(
+            "Earn ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
+            " and fees on SwapX pool ",
+            //slither-disable-next-line calls-loop
+            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
+            " by Ichi ",
+            IERC20Metadata(farm.addresses[0]).symbol()
+        );
+    }
+
     /// @notice Checks if the oracle is currently connected to the pool
     /// @param oracleAddress The address of oracle
     /// @param oracleAddress The address of the pool
