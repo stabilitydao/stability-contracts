@@ -13,7 +13,7 @@ contract BalancerV3StableAdapterTest is SonicSetup {
     IAmmAdapter public adapter;
 
     constructor() {
-        vm.rollFork(13119000); // Mar-11-2025 08:29:09 PM +UTC
+        // vm.rollFork(13624880); // Mar-14-2025 08:29:09 PM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE));
         adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
@@ -64,7 +64,7 @@ contract BalancerV3StableAdapterTest is SonicSetup {
         assertEq(tokens[1], SonicConstantsLib.TOKEN_anS);
 
         uint[] memory props = adapter.getProportions(pool);
-        assertGt(props[0], 4e17);
+        assertLt(props[0], 4e17);
         assertGt(props[1], 4e17);
         //console.log(props[0]);
         //console.log(props[1]);

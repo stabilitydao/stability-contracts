@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../libs/UniswapV3MathLib.sol";
-import "../../core/libs/CommonLib.sol";
-import "../../interfaces/IFactory.sol";
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/IFarmingStrategy.sol";
-import "../../interfaces/IAmmAdapter.sol";
-import "../../integrations/uniswapv3/IUniswapV3Pool.sol";
-import "../../integrations/uniswapv3/IQuoter.sol";
-import "../../integrations/retro/IOToken.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {UniswapV3MathLib} from "../libs/UniswapV3MathLib.sol";
+import {CommonLib} from "../../core/libs/CommonLib.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
+import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
+import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {IQuoter} from "../../integrations/uniswapv3/IQuoter.sol";
+import {IOToken} from "../../integrations/retro/IOToken.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @title Library for IRMF strategy code splitting
 library IRMFLib {
@@ -21,6 +24,50 @@ library IRMFLib {
         address uToPaymentTokenPool;
         address quoter;
         bool flashOn;
+    }
+
+    function initVariants(
+        address platform_,
+        string memory strategyLogicId,
+        string memory ammAdapterId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
+        addresses = new address[](0);
+        ticks = new int24[](0);
+
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint localTtotal;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                ++localTtotal;
+            }
+        }
+
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                nums[localTtotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTtotal] = generateDescription(farm, _ammAdapter);
+                ++localTtotal;
+            }
+        }
     }
 
     /// @notice Fetches time-weighted average tick using UniswapV3 dataStorage
@@ -73,7 +120,7 @@ library IRMFLib {
     function generateDescription(
         IFactory.Farm memory farm,
         IAmmAdapter ammAdapter
-    ) external view returns (string memory) {
+    ) public view returns (string memory) {
         //slither-disable-next-line calls-loop
         return string.concat(
             "Earn ",

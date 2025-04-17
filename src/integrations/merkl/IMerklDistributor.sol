@@ -20,4 +20,18 @@ interface IMerklDistributor {
         uint[] calldata amounts,
         bytes32[][] calldata proofs
     ) external;
+
+    /// @notice Same as the function above except that for each token claimed, the caller may set different
+    /// recipients for rewards and pass arbitrary data to the reward recipient on claim
+    /// @dev Only a `msg.sender` calling for itself can set a different recipient for the token rewards
+    /// within the context of a call to claim
+    /// @dev Non-zero recipient addresses given by the `msg.sender` can override any previously set reward address
+    function claimWithRecipient(
+        address[] calldata users,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
+        bytes32[][] calldata proofs,
+        address[] calldata recipients,
+        bytes[] memory datas
+    ) external;
 }
