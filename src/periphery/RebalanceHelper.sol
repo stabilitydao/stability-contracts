@@ -125,21 +125,18 @@ contract RebalanceHelper {
                 amountsRemaining[0] = amounts[0] - amountsConsumed[0];
                 amountsRemaining[1] = amounts[1] - amountsConsumed[1];
                 //bool intDiv = tick / tickSpacing * tickSpacing == tick;
+
                 // Calculate fill-up ticks on both sides of the current price
-                v.lowerTickLower =
-                    tick > 0 ? (tick / tickSpacing * tickSpacing) : ((tick / tickSpacing * tickSpacing) - tickSpacing);
-                v.lowerTickUpper = v.lowerTickLower + tickSpacing;
-                v.upperTickLower = v.lowerTickUpper;
-                v.upperTickUpper = v.upperTickLower + tickSpacing;
-
-                // Prepare tick arrays for liquidity comparison
                 v.fillUpTicksLowerSide = new int24[](2);
-                v.fillUpTicksLowerSide[0] = v.lowerTickLower;
-                v.fillUpTicksLowerSide[1] = v.lowerTickUpper;
-
+                v.fillUpTicksLowerSide[0] = mintNewPositions[0].tickLower;
+                //slither-disable-next-line divide-before-multiply
+                v.fillUpTicksLowerSide[1] =
+                    tick > 0 ? (tick / tickSpacing * tickSpacing) : (tick / tickSpacing * tickSpacing - tickSpacing);
                 v.fillUpTicksUpperSide = new int24[](2);
-                v.fillUpTicksUpperSide[0] = v.upperTickLower;
-                v.fillUpTicksUpperSide[1] = v.upperTickUpper;
+                //slither-disable-next-line divide-before-multiply
+                v.fillUpTicksUpperSide[0] =
+                    tick > 0 ? (tick / tickSpacing * tickSpacing + tickSpacing) : (tick / tickSpacing * tickSpacing);
+                v.fillUpTicksUpperSide[1] = mintNewPositions[0].tickUpper;
 
                 // Compare liquidity for both sides
                 (v.fillUpLiquidityLowerSide, v.fillUpAmountsConsumedLowerSide) =
