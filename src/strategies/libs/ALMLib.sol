@@ -62,7 +62,7 @@ library ALMLib {
     function needRebalance(
         IALM.ALMStrategyBaseStorage storage $,
         ILPStrategy.LPStrategyBaseStorage storage _$_
-    ) external view returns (bool need) {
+    ) public view returns (bool need) {
         // Check algorithm is set to ALGO_FILL_UP
         if ($.algoId == ALGO_FILL_UP) {
             uint len = $.positions.length;

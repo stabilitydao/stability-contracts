@@ -37,38 +37,10 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         if (IALM(currentStrategy).needRebalance()) {
             _validateNeedBalance();
 
-            /*console.log('Need re-balance call');
-            IALM.Position[] memory positions = IALM(currentStrategy).positions();
-            console.log("Old base position (ticks, liquidity):");
-            console.logInt(positions[0].tickLower);
-            console.logInt(positions[0].tickUpper);
-            console.log(positions[0].liquidity);
-            if (positions.length == 2) {
-                console.log("Old flup position (ticks, liquidity):");
-                console.logInt(positions[1].tickLower);
-                console.logInt(positions[1].tickUpper);
-                console.log(positions[1].liquidity);
-            }*/
-
             (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
 
             IALM(currentStrategy).rebalance(burnOldPositions, mintNewPositions);
-
-            /*
-            positions = IALM(currentStrategy).positions();
-            console.log('Re-balance done. New tick:');
-            console.logInt(ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool()));
-            console.log("New base position (ticks, liquidity):");
-            console.logInt(positions[0].tickLower);
-            console.logInt(positions[0].tickUpper);
-            console.log(positions[0].liquidity);
-            if (positions.length == 2) {
-                console.log("New flup position (ticks, liquidity):");
-                console.logInt(positions[1].tickLower);
-                console.logInt(positions[1].tickUpper);
-                console.log(positions[1].liquidity);
-            }*/
 
             rebalanceHelper.VERSION();
         }
