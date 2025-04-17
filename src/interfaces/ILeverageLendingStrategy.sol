@@ -30,6 +30,13 @@ interface ILeverageLendingStrategy {
         CurrentAction tempAction;
         uint tempBorrowAmount;
         uint tempCollateralAmount;
+        // temp storage for withdraw
+        address tempCollateralAsset;
+        address tempBorrowAsset;
+        address tempLendingVault;
+        address tempBorrowingVault;
+        uint tempValueWas;
+        uint tempValueNow;
         // configurable params
         /// @dev Percent of max leverage. 90_00 is 90%.
         uint targetLeveragePercent;

@@ -222,7 +222,7 @@ library SiloAdvancedLib {
             borrowingVault: $.borrowingVault
         });
 
-        uint tvlPricedInCollateralAsset = calcTotal(v);
+        uint tvlPricedInCollateralAsset = calcTotal(platform, v);
 
         // here is the math that works:
         // collateral_value - debt_value = real_TVL
@@ -231,7 +231,7 @@ library SiloAdvancedLib {
         // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        (uint priceCtoB,) = getPrices(platform, v.lendingVault, v.borrowingVault);
         uint newDebtAmount = newCollateralValue * newLtv / INTERNAL_PRECISION * priceCtoB / 1e18;
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
@@ -277,27 +277,38 @@ library SiloAdvancedLib {
         trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
     }
 
-    function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
+    function getPrices(
+        address platform,
+        address lendVault,
+        address debtVault
+    ) public view returns (uint priceCtoB, uint priceBtoC) {
         ISiloConfig siloConfig = ISiloConfig(ISilo(lendVault).config());
         ISiloConfig.ConfigData memory collateralConfig = siloConfig.getConfig(lendVault);
-        address collateralOracle = collateralConfig.solvencyOracle;
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
-        address borrowOracle = borrowConfig.solvencyOracle;
-        if (collateralOracle != address(0) && borrowOracle == address(0)) {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
-            priceBtoC = 1e18 * 1e18 / priceCtoB;
-        } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
-            priceBtoC =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
-            priceCtoB = 1e18 * 1e18 / priceBtoC;
-        } else {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
-            priceBtoC = 1e18 * 1e18 / priceCtoB;
+        
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        (uint collateralPrice,) = priceReader.getPrice(collateralConfig.token);
+        (uint borrowPrice,) = priceReader.getPrice(borrowConfig.token);
+        
+        // Convert prices to 18 decimals if needed
+        uint collateralDecimals = IERC20Metadata(collateralConfig.token).decimals();
+        uint borrowDecimals = IERC20Metadata(borrowConfig.token).decimals();
+        
+        if (collateralDecimals < 18) {
+            collateralPrice = collateralPrice * 10 ** (18 - collateralDecimals);
+        } else if (collateralDecimals > 18) {
+            collateralPrice = collateralPrice / 10 ** (collateralDecimals - 18);
         }
+        
+        if (borrowDecimals < 18) {
+            borrowPrice = borrowPrice * 10 ** (18 - borrowDecimals);
+        } else if (borrowDecimals > 18) {
+            borrowPrice = borrowPrice / 10 ** (borrowDecimals - 18);
+        }
+        
+        // Calculate price ratios
+        priceCtoB = collateralPrice * 1e18 / borrowPrice;
+        priceBtoC = borrowPrice * 1e18 / collateralPrice;
     }
 
     /// @dev LTV data
@@ -315,8 +326,11 @@ library SiloAdvancedLib {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
-        (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
+    function calcTotal(
+        address platform,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v
+    ) public view returns (uint) {
+        (, uint priceBtoC) = getPrices(platform, v.lendingVault, v.borrowingVault);
         uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
         return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
     }
