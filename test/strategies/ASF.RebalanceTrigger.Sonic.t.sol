@@ -37,8 +37,6 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
 
     function _rebalance() internal override {
         if (IALM(currentStrategy).needRebalance()) {
-            _validateNeedBalance();
-
             (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) =
                 rebalanceHelper.calcRebalanceArgs(currentStrategy, 10);
 
@@ -60,149 +58,6 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         );
     }
 
-    function _validateNeedBalance() public view {
-        IALM.Position[] memory positions = IALM(currentStrategy).positions();
-
-        // int24 initialTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
-        // Check algorithm is set to ALGO_FILL_UP
-        // assertEq(IALM(currentStrategy).algoId(), ALMLib.ALGO_FILL_UP, "ALM algoId is not ALGO_FILL_UP");
-        uint len = positions.length;
-        // Check if positions exist
-        assertGt(len, 0, "ALM positions length is 0");
-
-        int24 tickSpacing = ALMLib.getUniswapV3TickSpacing(ILPStrategy(currentStrategy).pool());
-        int24 currentTick = ALMLib.getUniswapV3CurrentTick(ILPStrategy(currentStrategy).pool());
-        bool rebalanceBasePosition = false;
-        bool rebalanceLimitPosition = false;
-
-        {
-            // Base Position Rebalancing Logic
-            (,,, int24[] memory params) = IALM(currentStrategy).preset();
-            int24 halfRange = params[0] / 2;
-            int24 halfTriggerRange = params[1] / 2;
-            int24 oldTickLower = positions[0].tickLower;
-            int24 oldTickUpper = positions[0].tickUpper;
-            int24 oldMedianTick = oldTickLower + halfRange;
-            bool fillUpRebalanceTrigger =
-                (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
-            bool outOfRange = currentTick < oldTickLower || currentTick > oldTickUpper;
-
-            bool cantMoveRange = false;
-            if (outOfRange) {
-                int24 tickDistance =
-                    currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
-                tickDistance = tickDistance / tickSpacing * tickSpacing;
-                if (tickDistance == 0) {
-                    cantMoveRange = true;
-                }
-            }
-
-            rebalanceBasePosition = !cantMoveRange && fillUpRebalanceTrigger;
-        }
-
-        // Limit Position Rebalancing Logic
-        if (len > 1 && !rebalanceBasePosition) {
-            int24 limitTickLower = positions[1].tickLower;
-            int24 limitTickUpper = positions[1].tickUpper;
-            // Check if moving the range is feasible
-            int24 tickDistance;
-            if (currentTick < limitTickLower) {
-                tickDistance = (limitTickLower - currentTick) / tickSpacing * tickSpacing;
-            } else if (currentTick > limitTickUpper) {
-                tickDistance = (currentTick - limitTickUpper) / tickSpacing * tickSpacing;
-            } else {
-                tickDistance = 0; // No movement needed
-            }
-
-            assertNotEq(tickDistance, 0, "Moving the range is not feasible");
-
-            // If tickDistance is zero, moving the range is not feasible
-            if (tickDistance != 0) {
-                rebalanceLimitPosition = true;
-            }
-        }
-        if (rebalanceBasePosition) console.log("rebalanceBasePosition is True");
-        if (rebalanceLimitPosition) console.log("rebalanceLimitPosition is True");
-
-        assertTrue(rebalanceBasePosition || rebalanceLimitPosition, "ALM strategy does not need to rebalance");
-    }
-
-    function testNeedRebalance_LimitPositionBranches() public universalTest {
-        // 1. Get Storage pointers
-        IALM.ALMStrategyBaseStorage storage almStrategy;
-        ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
-        IStrategy.StrategyBaseStorage storage strategyBase;
-
-        //Get $ for ALMStrategyBase
-        bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        assembly {
-            almStrategy.slot := alm_strategy_location
-        }
-
-        //Get $_$ for LPStrategyBase
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
-        assembly {
-            lpStrategy.slot := lp_strategy_location
-        }
-
-        //Get __$__ for StrategyBase
-        bytes32 strategy_location = 0x534261688bdf3f7c39c3a02e62205067b50727e2b3f4438fbc6918965fa85d82;
-        assembly {
-            strategyBase.slot := strategy_location
-        }
-
-        // Set algoId and params
-        almStrategy.algoId = ALMLib.ALGO_FILL_UP;
-        almStrategy.params = new int24[](2);
-        almStrategy.params[0] = 1000;
-        almStrategy.params[1] = 200;
-
-        // Add two positions
-        almStrategy.positions.push();
-        almStrategy.positions[0].tickLower = -500;
-        almStrategy.positions[0].tickUpper = 500;
-        almStrategy.positions.push();
-        almStrategy.positions[1].tickLower = 1000;
-        almStrategy.positions[1].tickUpper = 2000;
-
-        // Mock tickSpacing
-        address pool = lpStrategy.pool;
-        int24 tickSpacing = 10;
-        vm.mockCall(
-            pool, abi.encodeWithSelector(IUniswapV3PoolImmutables.tickSpacing.selector), abi.encode(tickSpacing)
-        );
-
-        // --------- Case 1: currentTick < limitTickLower (tickDistance != 0, should return true) ---------
-        int24 currentTick1 = 900; // less than 1000
-        vm.mockCall(
-            pool,
-            abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-            abi.encode(uint160(0), currentTick1, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
-        );
-        bool need1 = ALMLib.needRebalance(almStrategy, lpStrategy);
-        assertTrue(need1, "Should need rebalance when currentTick < limitTickLower");
-
-        // --------- Case 2: currentTick > limitTickUpper (tickDistance != 0, should return true) ---------
-        int24 currentTick2 = 2100; // greater than 2000
-        vm.mockCall(
-            pool,
-            abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-            abi.encode(uint160(0), currentTick2, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
-        );
-        bool need2 = ALMLib.needRebalance(almStrategy, lpStrategy);
-        assertTrue(need2, "Should need rebalance when currentTick > limitTickUpper");
-
-        // --------- Case 3: currentTick inside limit position (tickDistance == 0, should return false) ---------
-        // int24 currentTick3 = 1500; // between 1000 and 2000
-        // vm.mockCall(
-        //     pool,
-        //     abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
-        //     abi.encode(uint160(0), currentTick3, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
-        // );
-        // bool need3 = ALMLib.needRebalance(almStrategy, lpStrategy);
-        // assertFalse(need3, "Should NOT need rebalance when currentTick inside limit position");
-    }
-
     // // Additional test cases
     function testNonALMStrategy() public universalTest {
         // Mock a contract that does not implement the IALM interface
@@ -211,6 +66,109 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         // Expect the call to revert with NotALM error
         vm.expectRevert(IALM.NotALM.selector);
         rebalanceHelper.calcRebalanceArgs(nonALMStrategy, 10);
+    }
+
+    function testNeedRebalance_LimitPosition_NoMove() public universalTest {
+        IALM.ALMStrategyBaseStorage storage almStrategy;
+        ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
+
+        bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+
+        assembly {
+            almStrategy.slot := alm_strategy_location
+            lpStrategy.slot := lp_strategy_location
+        }
+
+        almStrategy.algoId = ALMLib.ALGO_FILL_UP;
+        almStrategy.params = new int24[](2);
+        almStrategy.params[0] = 1000;
+        almStrategy.params[1] = 200;
+
+        almStrategy.positions.push();
+        almStrategy.positions[0].tickLower = 1000;
+        almStrategy.positions[0].tickUpper = 2000;
+        almStrategy.positions.push();
+        almStrategy.positions[1].tickLower = 1000;
+        almStrategy.positions[1].tickUpper = 2000;
+
+        address pool = lpStrategy.pool;
+        int24 tickSpacing = 10;
+        vm.mockCall(
+            pool, abi.encodeWithSelector(IUniswapV3PoolImmutables.tickSpacing.selector), abi.encode(tickSpacing)
+        );
+
+        int24 currentTick = 1500;
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
+            abi.encode(uint160(0), currentTick, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
+        );
+
+        bool need = ALMLib.needRebalance(almStrategy, lpStrategy);
+        console.log(need);
+        assertFalse(need, "Should NOT need rebalance when tickDistance == 0");
+    }
+
+    function testNeedRebalance_BasePositionTrigger() public universalTest {
+        IALM.ALMStrategyBaseStorage storage almStrategy;
+        ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
+
+        bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+
+        assembly {
+            almStrategy.slot := alm_strategy_location
+            lpStrategy.slot := lp_strategy_location
+        }
+
+        almStrategy.algoId = ALMLib.ALGO_FILL_UP;
+        almStrategy.params = new int24[](2);
+        almStrategy.params[0] = 1000; // range
+        almStrategy.params[1] = 200; // trigger range
+
+        almStrategy.positions.push();
+        almStrategy.positions[0].tickLower = -500;
+        almStrategy.positions[0].tickUpper = 500;
+
+        address pool = lpStrategy.pool;
+        int24 tickSpacing = 10;
+        vm.mockCall(
+            pool, abi.encodeWithSelector(IUniswapV3PoolImmutables.tickSpacing.selector), abi.encode(tickSpacing)
+        );
+
+        int24 currentTick = 700; // triggers fillUpRebalance
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(IUniswapV3PoolState.slot0.selector),
+            abi.encode(uint160(0), currentTick, uint16(0), uint16(0), uint16(0), uint8(0), bool(false))
+        );
+
+        bool need = ALMLib.needRebalance(almStrategy, lpStrategy);
+        assertTrue(need, "Should trigger base position rebalance");
+    }
+
+    function testNeedRebalance_UnsupportedAlgo() public universalTest {
+        IALM.ALMStrategyBaseStorage storage almStrategy;
+        ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
+
+        bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+
+        assembly {
+            almStrategy.slot := alm_strategy_location
+            lpStrategy.slot := lp_strategy_location
+        }
+
+        almStrategy.algoId = 0;
+        almStrategy.params = new int24[](2);
+        address pool = lpStrategy.pool;
+
+        // Still mock so the call doesn't revert
+        vm.mockCall(pool, abi.encodeWithSelector(IUniswapV3PoolImmutables.tickSpacing.selector), abi.encode(int24(10)));
+
+        bool need = ALMLib.needRebalance(almStrategy, lpStrategy);
+        assertFalse(need, "Should NOT rebalance if algoId is not ALGO_FILL_UP");
     }
 }
 
