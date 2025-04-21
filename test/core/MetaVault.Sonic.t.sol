@@ -29,7 +29,8 @@ contract MetaVaultSonicTest is Test {
         proportions_[1] = 30e16;
         proportions_[2] = 20e16;
         metaVaults = new address[](1);
-        metaVaults[0] = _deployMetaVaultStandalone(address(0), "Stability metaUSD stablecoin", "metaUSD", vaults_, proportions_);
+        metaVaults[0] =
+            _deployMetaVaultStandalone(address(0), "Stability metaUSD stablecoin", "metaUSD", vaults_, proportions_);
 
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff)));
     }
@@ -59,7 +60,7 @@ contract MetaVaultSonicTest is Test {
         string memory symbol_,
         address[] memory vaults_,
         uint[] memory proportions_
-    ) internal returns(address metaVaultProxy) {
+    ) internal returns (address metaVaultProxy) {
         MetaVault implementation = new MetaVault();
         Proxy proxy = new Proxy();
         proxy.initProxy(address(implementation));

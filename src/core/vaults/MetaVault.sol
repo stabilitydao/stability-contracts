@@ -105,7 +105,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] memory amountsMax,
         uint minSharesOut,
         address receiver
-    ) external virtual nonReentrant {
+    ) external nonReentrant {
         // todo deposit to target vault
     }
 
@@ -114,7 +114,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint amountShares,
         uint[] memory minAssetAmountsOut
-    ) external virtual nonReentrant returns (uint[] memory) {
+    ) external nonReentrant returns (uint[] memory) {
         // todo
     }
 
