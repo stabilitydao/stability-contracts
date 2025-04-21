@@ -64,6 +64,7 @@ library SonicConstantsLib {
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     // address public constant TOKEN_scBTC = 0xBb30e76d9Bb2CC9631F7fC5Eb8e87B5Aff32bFbd;
+    // address public constant TOKEN_scBTC = 0xBb30e76d9Bb2CC9631F7fC5Eb8e87B5Aff32bFbd;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
