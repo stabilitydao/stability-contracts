@@ -91,29 +91,36 @@ library SiloAdvancedLib {
             {
                 address lendingVault = $.lendingVault;
                 uint collateralAmountTotal = totalCollateral(lendingVault);
-                collateralAmountTotal -= collateralAmountTotal / 1000;
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Collateral
-                );
+                // Ensure we don't withdraw more than we have
+                uint withdrawAmount = Math.min(tempCollateralAmount, collateralAmountTotal);
+                if (withdrawAmount > 0) {
+                    ISilo(lendingVault).withdraw(
+                        withdrawAmount,
+                        address(this),
+                        address(this),
+                        ISilo.CollateralType.Collateral
+                    );
+                }
             }
 
             // swap
-            StrategyLib.swap(
-                platform,
-                collateralAsset,
-                token,
-                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
-                swapPriceImpactTolerance0
-            );
+            if (StrategyLib.balance(collateralAsset) > 0) {
+                StrategyLib.swap(
+                    platform,
+                    collateralAsset,
+                    token,
+                    StrategyLib.balance(collateralAsset),
+                    swapPriceImpactTolerance0
+                );
+            }
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
+            if (StrategyLib.balance(token) > 0) {
+                StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
+            }
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -277,38 +284,31 @@ library SiloAdvancedLib {
         trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
     }
 
+    function _calculatePrices(
+        address platform,
+        address collateralAsset,
+        address borrowAsset
+    ) internal view returns (uint collateralPrice, uint borrowPrice) {
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        (collateralPrice,) = priceReader.getPrice(collateralAsset);
+        (borrowPrice,) = priceReader.getPrice(borrowAsset);
+    }
+
     function getPrices(
         address platform,
-        address lendVault,
-        address debtVault
-    ) public view returns (uint priceCtoB, uint priceBtoC) {
-        ISiloConfig siloConfig = ISiloConfig(ISilo(lendVault).config());
-        ISiloConfig.ConfigData memory collateralConfig = siloConfig.getConfig(lendVault);
-        ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
+        address lendingVault,
+        address borrowingVault
+    ) internal view returns (uint priceCtoB, uint priceBtoC) {
+        address collateralAsset = IERC4626(lendingVault).asset();
+        address borrowAsset = IERC4626(borrowingVault).asset();
         
-        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
-        (uint collateralPrice,) = priceReader.getPrice(collateralConfig.token);
-        (uint borrowPrice,) = priceReader.getPrice(borrowConfig.token);
+        (uint collateralPrice, uint borrowPrice) = _calculatePrices(platform, collateralAsset, borrowAsset);
         
-        // Convert prices to 18 decimals if needed
-        uint collateralDecimals = IERC20Metadata(collateralConfig.token).decimals();
-        uint borrowDecimals = IERC20Metadata(borrowConfig.token).decimals();
+        uint collateralDecimals = IERC20Metadata(collateralAsset).decimals();
+        uint borrowDecimals = IERC20Metadata(borrowAsset).decimals();
         
-        if (collateralDecimals < 18) {
-            collateralPrice = collateralPrice * 10 ** (18 - collateralDecimals);
-        } else if (collateralDecimals > 18) {
-            collateralPrice = collateralPrice / 10 ** (collateralDecimals - 18);
-        }
-        
-        if (borrowDecimals < 18) {
-            borrowPrice = borrowPrice * 10 ** (18 - borrowDecimals);
-        } else if (borrowDecimals > 18) {
-            borrowPrice = borrowPrice / 10 ** (borrowDecimals - 18);
-        }
-        
-        // Calculate price ratios
-        priceCtoB = collateralPrice * 1e18 / borrowPrice;
-        priceBtoC = borrowPrice * 1e18 / collateralPrice;
+        priceCtoB = borrowPrice * 10 ** collateralDecimals / (collateralPrice * 10 ** borrowDecimals);
+        priceBtoC = collateralPrice * 10 ** borrowDecimals / (borrowPrice * 10 ** collateralDecimals);
     }
 
     /// @dev LTV data
