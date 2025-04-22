@@ -423,7 +423,7 @@ library SiloAdvancedLib {
     function calcTotalWithPrices(
         address platform,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v
-    ) internal view returns (uint) {
+    ) external view returns (uint) {
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
         (uint borrowPrice,) = priceReader.getPrice(v.borrowAsset);
@@ -463,7 +463,7 @@ library SiloAdvancedLib {
         uint depositParam0,
         uint collateralPrice,
         uint8 collateralDecimals
-    ) internal pure returns (uint) {
+    ) external pure returns (uint) {
         // Normalize the deposit amount to 18 decimals using price and decimals
         uint normalizedAmount = calculateNormalizedValue(amount, collateralPrice, collateralDecimals);
 
@@ -481,7 +481,7 @@ library SiloAdvancedLib {
     /// @param valueWas Previous value
     /// @param amount Original amount
     /// @return Resulting value
-    function calculateValueDifference(uint valueNow, uint valueWas, uint amount) internal pure returns (uint) {
+    function calculateValueDifference(uint valueNow, uint valueWas, uint amount) external pure returns (uint) {
         if (valueNow > valueWas) {
             return amount + (valueNow - valueWas);
         } else {
@@ -501,7 +501,7 @@ library SiloAdvancedLib {
         address platform,
         address collateralAsset,
         address borrowAsset
-    ) internal view returns (uint collateralPrice, uint borrowPrice, uint8 collateralDecimals, uint8 borrowDecimals) {
+    ) external view returns (uint collateralPrice, uint borrowPrice, uint8 collateralDecimals, uint8 borrowDecimals) {
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         (collateralPrice,) = priceReader.getPrice(collateralAsset);
         (borrowPrice,) = priceReader.getPrice(borrowAsset);
