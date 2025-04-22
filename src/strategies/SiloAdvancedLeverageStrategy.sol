@@ -337,17 +337,6 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         $base.total += value;
     }
 
-    /// @notice Calculates normalized value of an amount using price and decimals
-    /// @param amount The amount to normalize
-    /// @param price The price from oracle
-    /// @param decimals The number of decimals of the token
-    /// @return Normalized value in 18 decimals
-    function _calculateNormalizedValue(uint amount, uint price, uint8 decimals) internal pure returns (uint) {
-        // Нормализация к 18 decimals (стандарт для большинства ERC20)
-        uint normalizedPrice = price * (10 ** (18 - decimals));
-        return amount * normalizedPrice / (10 ** decimals);
-    }
-
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
