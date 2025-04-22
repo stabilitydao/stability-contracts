@@ -411,11 +411,7 @@ library SiloAdvancedLib {
     /// @param price The price from oracle
     /// @param decimals The number of decimals of the token
     /// @return Normalized value in 18 decimals
-    function calculateNormalizedValue(
-        uint amount,
-        uint price,
-        uint8 decimals
-    ) internal pure returns (uint) {
+    function calculateNormalizedValue(uint amount, uint price, uint8 decimals) internal pure returns (uint) {
         uint normalizedPrice = price * (10 ** (18 - decimals));
         return amount * normalizedPrice / (10 ** decimals);
     }
@@ -441,11 +437,7 @@ library SiloAdvancedLib {
             collateralDecimals
         );
 
-        uint debtValue = calculateNormalizedValue(
-            totalDebt(v.borrowingVault),
-            borrowPrice,
-            borrowDecimals
-        );
+        uint debtValue = calculateNormalizedValue(totalDebt(v.borrowingVault), borrowPrice, borrowDecimals);
 
         return collateralValue > debtValue ? collateralValue - debtValue : 0;
     }
@@ -474,11 +466,11 @@ library SiloAdvancedLib {
     ) internal pure returns (uint) {
         // Normalize the deposit amount to 18 decimals using price and decimals
         uint normalizedAmount = calculateNormalizedValue(amount, collateralPrice, collateralDecimals);
-        
+
         // Calculate flash loan amount based on target leverage
         // targetLeverage is in INTERNAL_PRECISION (e.g., 2x = 200_00)
         uint flashAmount = normalizedAmount * targetLeverage / INTERNAL_PRECISION;
-        
+
         // Apply deposit parameter to adjust the final amount
         // depositParam0 is in INTERNAL_PRECISION (e.g., 90% = 90_00)
         return flashAmount * depositParam0 / INTERNAL_PRECISION;
@@ -489,11 +481,7 @@ library SiloAdvancedLib {
     /// @param valueWas Previous value
     /// @param amount Original amount
     /// @return Resulting value
-    function calculateValueDifference(
-        uint valueNow,
-        uint valueWas,
-        uint amount
-    ) internal pure returns (uint) {
+    function calculateValueDifference(uint valueNow, uint valueWas, uint amount) internal pure returns (uint) {
         if (valueNow > valueWas) {
             return amount + (valueNow - valueWas);
         } else {
@@ -513,12 +501,7 @@ library SiloAdvancedLib {
         address platform,
         address collateralAsset,
         address borrowAsset
-    ) internal view returns (
-        uint collateralPrice,
-        uint borrowPrice,
-        uint8 collateralDecimals,
-        uint8 borrowDecimals
-    ) {
+    ) internal view returns (uint collateralPrice, uint borrowPrice, uint8 collateralDecimals, uint8 borrowDecimals) {
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
         (collateralPrice,) = priceReader.getPrice(collateralAsset);
         (borrowPrice,) = priceReader.getPrice(borrowAsset);

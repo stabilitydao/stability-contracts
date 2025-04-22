@@ -311,35 +311,28 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             lendingVault: $.lendingVault,
             borrowingVault: $.borrowingVault
         });
-        
+
         uint valueWas = SiloAdvancedLib.calcTotalWithPrices(platform(), v);
-        
+
         (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
 
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
         uint[] memory flashAmounts = new uint[](1);
-        
-        (uint collateralPrice,, uint8 collateralDecimals,) = SiloAdvancedLib.getPricesAndDecimals(
-            platform(),
-            v.collateralAsset,
-            v.borrowAsset
-        );
-        
+
+        (uint collateralPrice,, uint8 collateralDecimals,) =
+            SiloAdvancedLib.getPricesAndDecimals(platform(), v.collateralAsset, v.borrowAsset);
+
         flashAmounts[0] = SiloAdvancedLib.calculateDepositFlashLoanAmount(
-            amounts[0],
-            targetLeverage,
-            $.depositParam0,
-            collateralPrice,
-            collateralDecimals
+            amounts[0], targetLeverage, $.depositParam0, collateralPrice, collateralDecimals
         );
-        
+
         IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
-        
+
         uint valueNow = SiloAdvancedLib.calcTotalWithPrices(platform(), v);
-        
+
         value = SiloAdvancedLib.calculateValueDifference(valueNow, valueWas, amounts[0]);
-        
+
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total += value;
     }
@@ -349,11 +342,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /// @param price The price from oracle
     /// @param decimals The number of decimals of the token
     /// @return Normalized value in 18 decimals
-    function _calculateNormalizedValue(
-        uint amount,
-        uint price,
-        uint8 decimals
-    ) internal pure returns (uint) {
+    function _calculateNormalizedValue(uint amount, uint price, uint8 decimals) internal pure returns (uint) {
         // Нормализация к 18 decimals (стандарт для большинства ERC20)
         uint normalizedPrice = price * (10 ** (18 - decimals));
         return amount * normalizedPrice / (10 ** decimals);
