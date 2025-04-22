@@ -209,6 +209,10 @@ library ALMRamsesV3Lib {
                     );
                     INonfungiblePositionManager(nft).burn(position.tokenId);
 
+                    for (uint j = index; j < $.positions.length - 1; j++) {
+                        $.positions[j] = $.positions[j + 1];
+                    }
+
                     $.positions.pop();
                 }
             }
@@ -236,7 +240,11 @@ library ALMRamsesV3Lib {
                     })
                 );
 
-                $.positions.push(newPosition);
+                $.positions.push();
+                for (uint j = $.positions.length - 1; j > i; j--) {
+                    $.positions[j] = $.positions[j - 1];
+                }
+                $.positions[i] = newPosition;
             }
 
             emit IALM.Rebalance($.positions);

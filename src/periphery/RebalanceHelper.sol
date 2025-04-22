@@ -53,7 +53,7 @@ contract RebalanceHelper {
         uint positionsLength = IALM(strategy).positions().length;
         burnOldPositions = new bool[](positionsLength); // Initialize burnOldPositions array
         for (uint i = 0; i < positionsLength; i++) {
-            burnOldPositions[i] = true;
+            burnOldPositions[i] = false;
         }
         // Retrieve strategy preset and positions
         // slither-disable-next-line unused-return
@@ -74,6 +74,7 @@ contract RebalanceHelper {
             if (tick > oldBasePosition.tickUpper || tick < oldBasePosition.tickLower) {
                 // out of range: 1 new position with single asset
                 mintNewPositions = new IALM.NewPosition[](1);
+                burnOldPositions[0] = true;
                 if (tick > oldBasePosition.tickUpper) {
                     int24 tickDistance = tick - oldBasePosition.tickUpper;
                     //slither-disable-next-line divide-before-multiply
@@ -105,6 +106,8 @@ contract RebalanceHelper {
             } else {
                 // 2 new positions
                 mintNewPositions = new IALM.NewPosition[](2);
+                if (burnOldPositions.length > 0) burnOldPositions[0] = true;
+                if (burnOldPositions.length > 1) burnOldPositions[1] = true;
                 (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
                     ALMLib.calcFillUpBaseTicks(tick, v.params[0], tickSpacing);
 
