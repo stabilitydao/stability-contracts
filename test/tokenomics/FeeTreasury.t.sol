@@ -73,6 +73,8 @@ contract FeeTreasuryTest is Test, MockSetup {
         assertEq(claimers.length, 3);
         assertEq(_shares.length, 3);
         assertEq(_shares[2], 1);
+
+        feeTreasury.removeAssets(assets);
     }
 
     function test_feeTreasury() public {
