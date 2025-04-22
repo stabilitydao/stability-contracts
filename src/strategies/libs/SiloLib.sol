@@ -22,28 +22,6 @@ library SiloLib {
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
-    function _executeSiloOperation(
-        address lendingVault,
-        uint amount,
-        bool isDeposit,
-        ISilo.CollateralType collateralType
-    ) internal {
-        if (isDeposit) {
-            ISilo(lendingVault).deposit(amount, address(this), collateralType);
-        } else {
-            ISilo(lendingVault).withdraw(amount, address(this), address(this), collateralType);
-        }
-    }
-
-    function _executeSwap(
-        address platform,
-        address tokenIn,
-        address tokenOut,
-        uint amount
-    ) internal {
-        StrategyLib.swap(platform, tokenIn, tokenOut, amount);
-    }
-
     function receiveFlashLoan(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -57,57 +35,110 @@ library SiloLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
-            // Deposit flow
-            _executeSiloOperation($.lendingVault, amount, true, ISilo.CollateralType.Collateral);
-            ISilo($.borrowingVault).borrow($.tempBorrowAmount, address(this), address(this));
-            _executeSwap(platform, $.borrowAsset, token, $.tempBorrowAmount);
+            // token is collateral asset
+            uint tempBorrowAmount = $.tempBorrowAmount;
+
+            // supply
+            ISilo($.lendingVault).deposit(amount, address(this), ISilo.CollateralType.Collateral);
+
+            // borrow
+            ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
+
+            // swap
+            StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
+
+            // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
-            _executeSiloOperation($.lendingVault, StrategyLib.balance(token), true, ISilo.CollateralType.Collateral);
+
+            // supply remaining balance
+            ISilo($.lendingVault).deposit(StrategyLib.balance(token), address(this), ISilo.CollateralType.Collateral);
+
+            // reset temp vars
             $.tempBorrowAmount = 0;
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
-            // Withdraw flow
+            // token is borrow asset
+            address collateralAsset = $.collateralAsset;
+            uint tempCollateralAmount = $.tempCollateralAmount;
+
+            // repay debt
             ISilo($.borrowingVault).repay(amount, address(this));
-            uint collateralAmountTotal = totalCollateral($.lendingVault);
-            collateralAmountTotal -= collateralAmountTotal / 1000;
-            _executeSiloOperation(
-                $.lendingVault,
-                Math.min($.tempCollateralAmount, collateralAmountTotal),
-                false,
-                ISilo.CollateralType.Collateral
+
+            // withdraw
+            {
+                address lendingVault = $.lendingVault;
+                uint collateralAmountTotal = totalCollateral(lendingVault);
+                collateralAmountTotal -= collateralAmountTotal / 1000;
+                ISilo(lendingVault).withdraw(
+                    Math.min(tempCollateralAmount, collateralAmountTotal),
+                    address(this),
+                    address(this),
+                    ISilo.CollateralType.Collateral
+                );
+            }
+
+            // swap
+            StrategyLib.swap(
+                platform, collateralAsset, token, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))
             );
-            _executeSwap(platform, $.collateralAsset, token, Math.min($.tempCollateralAmount, StrategyLib.balance($.collateralAsset)));
+
+            // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
-            _executeSwap(platform, token, $.collateralAsset, StrategyLib.balance(token));
+
+            // swap unnecessary borrow asset
+            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token));
+
+            // reset temp vars
             $.tempCollateralAmount = 0;
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.DecreaseLtv) {
-            // Decrease LTV flow
-            _executeSwap(platform, token, $.borrowAsset, amount);
+            // tokens[0] is collateral asset
+            address lendingVault = $.lendingVault;
+
+            // swap
+            StrategyLib.swap(platform, token, $.borrowAsset, amount);
+
+            // repay
             ISilo($.borrowingVault).repay(StrategyLib.balance($.borrowAsset), address(this));
+
+            // withdraw amount to pay flash loan
             uint toWithdraw = amount + feeAmount - StrategyLib.balance(token);
-            _executeSiloOperation($.lendingVault, toWithdraw, false, ISilo.CollateralType.Collateral);
+            ISilo(lendingVault).withdraw(toWithdraw, address(this), address(this), ISilo.CollateralType.Collateral);
+
+            // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.IncreaseLtv) {
-            // Increase LTV flow
-            _executeSiloOperation($.lendingVault, amount, true, ISilo.CollateralType.Collateral);
-            ISilo($.borrowingVault).borrow($.tempBorrowAmount, address(this), address(this));
-            _executeSwap(platform, $.borrowAsset, token, $.tempBorrowAmount);
-            
+            // tokens[0] is collateral asset
+            uint tempBorrowAmount = $.tempBorrowAmount;
+            address lendingVault = $.lendingVault;
+
+            // supply
+            ISilo($.lendingVault).deposit(amount, address(this), ISilo.CollateralType.Collateral);
+
+            // borrow
+            ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
+
+            // swap
+            StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
+
+            // withdraw or supply if need
             uint bal = StrategyLib.balance(token);
             uint remaining = bal < (amount + feeAmount) ? amount + feeAmount - bal : 0;
             if (remaining != 0) {
-                _executeSiloOperation($.lendingVault, remaining, false, ISilo.CollateralType.Collateral);
+                ISilo(lendingVault).withdraw(remaining, address(this), address(this), ISilo.CollateralType.Collateral);
             } else {
                 uint toSupply = bal - (amount + feeAmount);
-                _executeSiloOperation($.lendingVault, toSupply, true, ISilo.CollateralType.Collateral);
+                ISilo($.lendingVault).deposit(toSupply, address(this), ISilo.CollateralType.Collateral);
             }
-            
+
+            // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
+
+            // reset temp vars
             $.tempBorrowAmount = 0;
         }
 
@@ -115,25 +146,6 @@ library SiloLib {
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
-    }
-
-    struct HealthVars {
-        address lendingVault;
-        address collateralAsset;
-        address borrowingVault;
-        uint collateralPrice;
-        uint collateralUsd;
-        uint _realTvl;
-    }
-
-    function _calculatePrices(
-        address platform,
-        address collateralAsset,
-        address borrowAsset
-    ) internal view returns (uint collateralPrice, uint borrowPrice) {
-        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
-        (collateralPrice,) = priceReader.getPrice(collateralAsset);
-        (borrowPrice,) = priceReader.getPrice(borrowAsset);
     }
 
     function health(
@@ -151,22 +163,24 @@ library SiloLib {
             uint targetLeveragePercent
         )
     {
-        ltv = ISiloLens($.helper).getLtv($.lendingVault, address(this));
+        address lendingVault = $.lendingVault;
+        address collateralAsset = $.collateralAsset;
+
+        ltv = ISiloLens($.helper).getLtv(lendingVault, address(this));
         ltv = ltv * INTERNAL_PRECISION / 1e18;
 
-        collateralAmount = StrategyLib.balance($.collateralAsset) + totalCollateral($.lendingVault);
+        collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
 
-        (uint collateralPrice, uint borrowPrice) = _calculatePrices(platform, $.collateralAsset, $.borrowAsset);
-        uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata($.collateralAsset).decimals();
-        uint debtUsd = debtAmount * borrowPrice / 10 ** IERC20Metadata($.borrowAsset).decimals();
-        uint _realTvl = collateralUsd - debtUsd;
-
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        (uint _realTvl,) = realTvl(platform, $);
+        (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
+        uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
         leverage = collateralUsd * INTERNAL_PRECISION / _realTvl;
+
         targetLeveragePercent = $.targetLeveragePercent;
 
-        (maxLtv,,) = getLtvData($.lendingVault, targetLeveragePercent);
-        ltv = debtUsd * INTERNAL_PRECISION / collateralUsd;
+        (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
     }
 
     function realTvl(
@@ -187,24 +201,24 @@ library SiloLib {
         trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
     }
 
-    function getPrices(address platform, address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
-        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
-        address collateralAsset = ISilo(lendVault).asset();
-        address borrowAsset = ISilo(debtVault).asset();
-
-        (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
-        (uint borrowPrice,) = priceReader.getPrice(borrowAsset);
-
-        // Convert prices to 18 decimals in one step
-        uint collateralDecimals = IERC20Metadata(collateralAsset).decimals();
-        uint borrowDecimals = IERC20Metadata(borrowAsset).decimals();
-        
-        collateralPrice = collateralPrice * (10 ** (18 - collateralDecimals));
-        borrowPrice = borrowPrice * (10 ** (18 - borrowDecimals));
-
-        // Calculate price ratios
-        priceCtoB = collateralPrice * 1e18 / borrowPrice;
-        priceBtoC = borrowPrice * 1e18 / collateralPrice;
+    function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
+        ISiloConfig siloConfig = ISiloConfig(ISilo(lendVault).config());
+        ISiloConfig.ConfigData memory collateralConfig = siloConfig.getConfig(lendVault);
+        address collateralOracle = collateralConfig.solvencyOracle;
+        ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
+        address borrowOracle = borrowConfig.solvencyOracle;
+        if (collateralOracle != address(0) && borrowOracle == address(0)) {
+            priceCtoB = ISiloOracle(collateralOracle).quote(
+                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
+            );
+            priceBtoC = 1e18 * 1e18 / priceCtoB;
+        } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
+            priceBtoC =
+                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceCtoB = 1e18 * 1e18 / priceBtoC;
+        } else {
+            revert("Not implemented yet");
+        }
     }
 
     /// @dev LTV data
@@ -222,11 +236,10 @@ library SiloLib {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function calcTotal(address platform, ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
-        uint collateralAmount = totalCollateral(v.lendingVault);
-        uint debtAmount = totalDebt(v.borrowingVault);
-        (, uint priceBtoC) = getPrices(platform, v.lendingVault, v.borrowingVault);
-        return collateralAmount - debtAmount * priceBtoC / 1e18;
+    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) external view returns (uint) {
+        (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
+        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
+        return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
     }
 
     function totalCollateral(address lendingVault) public view returns (uint) {

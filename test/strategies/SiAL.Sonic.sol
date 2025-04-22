@@ -19,41 +19,13 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALSonic() public universalTest {
-        // Initialize first strategy
-        address[] memory initStrategyAddresses1 = new address[](4);
-        initStrategyAddresses1[0] = SonicConstantsLib.SILO_VAULT_46_PT_aUSDC_14AUG;
-        initStrategyAddresses1[1] = SonicConstantsLib.SILO_VAULT_46_scUSD;
-        initStrategyAddresses1[2] = SonicConstantsLib.BEETS_VAULT;
-        initStrategyAddresses1[3] = SonicConstantsLib.SILO_LENS;
-        uint[] memory strategyInitNums1 = new uint[](1);
-        strategyInitNums1[0] = 60_00;
-        strategies.push(
-            Strategy({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                pool: address(0),
-                farmId: type(uint).max,
-                strategyInitAddresses: initStrategyAddresses1,
-                strategyInitNums: strategyInitNums1
-            })
-        );
-
-        // Initialize second strategy
-        address[] memory initStrategyAddresses2 = new address[](4);
-        initStrategyAddresses2[0] = SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY;
-        initStrategyAddresses2[1] = SonicConstantsLib.SILO_VAULT_40_wS;
-        initStrategyAddresses2[2] = SonicConstantsLib.BEETS_VAULT;
-        initStrategyAddresses2[3] = SonicConstantsLib.SILO_LENS;
-        uint[] memory strategyInitNums2 = new uint[](1);
-        strategyInitNums2[0] = 65_00;
-        strategies.push(
-            Strategy({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                pool: address(0),
-                farmId: type(uint).max,
-                strategyInitAddresses: initStrategyAddresses2,
-                strategyInitNums: strategyInitNums2
-            })
-        );
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_22_wOS, SonicConstantsLib.SILO_VAULT_22_wS, 86_90);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_23_wstkscUSD, SonicConstantsLib.SILO_VAULT_23_USDC, 88_00);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_26_wstkscETH, SonicConstantsLib.SILO_VAULT_26_wETH, 90_00);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_25_wanS, SonicConstantsLib.SILO_VAULT_25_wS, 90_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_46_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_46_scUSD, 60_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY, SonicConstantsLib.SILO_VAULT_40_wS, 65_00);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_wstkscUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_frxUSD, 65_00);
     }
 
     function _addStrategy(

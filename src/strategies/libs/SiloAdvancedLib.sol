@@ -91,36 +91,29 @@ library SiloAdvancedLib {
             {
                 address lendingVault = $.lendingVault;
                 uint collateralAmountTotal = totalCollateral(lendingVault);
-                // Ensure we don't withdraw more than we have
-                uint withdrawAmount = Math.min(tempCollateralAmount, collateralAmountTotal);
-                if (withdrawAmount > 0) {
-                    ISilo(lendingVault).withdraw(
-                        withdrawAmount,
-                        address(this),
-                        address(this),
-                        ISilo.CollateralType.Collateral
-                    );
-                }
+                collateralAmountTotal -= collateralAmountTotal / 1000;
+                ISilo(lendingVault).withdraw(
+                    Math.min(tempCollateralAmount, collateralAmountTotal),
+                    address(this),
+                    address(this),
+                    ISilo.CollateralType.Collateral
+                );
             }
 
             // swap
-            if (StrategyLib.balance(collateralAsset) > 0) {
-                StrategyLib.swap(
-                    platform,
-                    collateralAsset,
-                    token,
-                    StrategyLib.balance(collateralAsset),
-                    swapPriceImpactTolerance0
-                );
-            }
+            StrategyLib.swap(
+                platform,
+                collateralAsset,
+                token,
+                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
+                swapPriceImpactTolerance0
+            );
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            if (StrategyLib.balance(token) > 0) {
-                StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
-            }
+            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -229,7 +222,7 @@ library SiloAdvancedLib {
             borrowingVault: $.borrowingVault
         });
 
-        uint tvlPricedInCollateralAsset = calcTotal(platform, v);
+        uint tvlPricedInCollateralAsset = calcTotal(v);
 
         // here is the math that works:
         // collateral_value - debt_value = real_TVL
@@ -238,7 +231,7 @@ library SiloAdvancedLib {
         // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        (uint priceCtoB,) = getPrices(platform, v.lendingVault, v.borrowingVault);
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         uint newDebtAmount = newCollateralValue * newLtv / INTERNAL_PRECISION * priceCtoB / 1e18;
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
@@ -284,31 +277,27 @@ library SiloAdvancedLib {
         trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
     }
 
-    function _calculatePrices(
-        address platform,
-        address collateralAsset,
-        address borrowAsset
-    ) internal view returns (uint collateralPrice, uint borrowPrice) {
-        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
-        (collateralPrice,) = priceReader.getPrice(collateralAsset);
-        (borrowPrice,) = priceReader.getPrice(borrowAsset);
-    }
-
-    function getPrices(
-        address platform,
-        address lendingVault,
-        address borrowingVault
-    ) internal view returns (uint priceCtoB, uint priceBtoC) {
-        address collateralAsset = IERC4626(lendingVault).asset();
-        address borrowAsset = IERC4626(borrowingVault).asset();
-        
-        (uint collateralPrice, uint borrowPrice) = _calculatePrices(platform, collateralAsset, borrowAsset);
-        
-        uint collateralDecimals = IERC20Metadata(collateralAsset).decimals();
-        uint borrowDecimals = IERC20Metadata(borrowAsset).decimals();
-        
-        priceCtoB = borrowPrice * 10 ** collateralDecimals / (collateralPrice * 10 ** borrowDecimals);
-        priceBtoC = collateralPrice * 10 ** borrowDecimals / (borrowPrice * 10 ** collateralDecimals);
+    function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
+        ISiloConfig siloConfig = ISiloConfig(ISilo(lendVault).config());
+        ISiloConfig.ConfigData memory collateralConfig = siloConfig.getConfig(lendVault);
+        address collateralOracle = collateralConfig.solvencyOracle;
+        ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
+        address borrowOracle = borrowConfig.solvencyOracle;
+        if (collateralOracle != address(0) && borrowOracle == address(0)) {
+            priceCtoB = ISiloOracle(collateralOracle).quote(
+                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
+            );
+            priceBtoC = 1e18 * 1e18 / priceCtoB;
+        } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
+            priceBtoC =
+                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceCtoB = 1e18 * 1e18 / priceBtoC;
+        } else {
+            priceCtoB = ISiloOracle(collateralOracle).quote(
+                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
+            );
+            priceBtoC = 1e18 * 1e18 / priceCtoB;
+        }
     }
 
     /// @dev LTV data
@@ -326,11 +315,8 @@ library SiloAdvancedLib {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function calcTotal(
-        address platform,
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v
-    ) public view returns (uint) {
-        (, uint priceBtoC) = getPrices(platform, v.lendingVault, v.borrowingVault);
+    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
+        (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
         uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
         return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
     }
@@ -418,5 +404,125 @@ library SiloAdvancedLib {
         }
 
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
+    }
+
+    /// @notice Calculates normalized value of an amount using price and decimals
+    /// @param amount The amount to normalize
+    /// @param price The price from oracle
+    /// @param decimals The number of decimals of the token
+    /// @return Normalized value in 18 decimals
+    function calculateNormalizedValue(
+        uint amount,
+        uint price,
+        uint8 decimals
+    ) internal pure returns (uint) {
+        uint normalizedPrice = price * (10 ** (18 - decimals));
+        return amount * normalizedPrice / (10 ** decimals);
+    }
+
+    /// @notice Calculates total value of collateral and debt using oracle prices
+    /// @param platform Platform address
+    /// @param v LeverageLendingAddresses struct
+    /// @return Total value in normalized form
+    function calcTotalWithPrices(
+        address platform,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v
+    ) internal view returns (uint) {
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
+        (uint borrowPrice,) = priceReader.getPrice(v.borrowAsset);
+
+        uint8 collateralDecimals = IERC20Metadata(v.collateralAsset).decimals();
+        uint8 borrowDecimals = IERC20Metadata(v.borrowAsset).decimals();
+
+        uint collateralValue = calculateNormalizedValue(
+            StrategyLib.balance(v.collateralAsset) + totalCollateral(v.lendingVault),
+            collateralPrice,
+            collateralDecimals
+        );
+
+        uint debtValue = calculateNormalizedValue(
+            totalDebt(v.borrowingVault),
+            borrowPrice,
+            borrowDecimals
+        );
+
+        return collateralValue > debtValue ? collateralValue - debtValue : 0;
+    }
+
+    /// @notice Calculates flash loan amount for deposit operation
+    /// @param amount Amount to deposit
+    /// @param targetLeverage Target leverage value
+    /// @param depositParam0 Deposit parameter (typically 90_00 for 90%)
+    /// @param collateralPrice Price of collateral asset from oracle
+    /// @param collateralDecimals Decimals of collateral asset
+    /// @return Flash loan amount
+    /// @dev This function performs the following calculations:
+    ///      1. Normalizes the deposit amount using price and decimals to 18 decimals
+    ///      2. Calculates the flash loan amount based on target leverage
+    ///      3. Applies the deposit parameter to adjust the final amount
+    ///      Example: For 100 USDC (6 decimals) with price $1 and target leverage 2x:
+    ///      - Normalized amount = 100 * 1 * 10^(18-6) = 100 * 10^12
+    ///      - Flash amount = normalized * 2 / INTERNAL_PRECISION
+    ///      - Final amount = flash amount * 90% (if depositParam0 is 90_00)
+    function calculateDepositFlashLoanAmount(
+        uint amount,
+        uint targetLeverage,
+        uint depositParam0,
+        uint collateralPrice,
+        uint8 collateralDecimals
+    ) internal pure returns (uint) {
+        // Normalize the deposit amount to 18 decimals using price and decimals
+        uint normalizedAmount = calculateNormalizedValue(amount, collateralPrice, collateralDecimals);
+        
+        // Calculate flash loan amount based on target leverage
+        // targetLeverage is in INTERNAL_PRECISION (e.g., 2x = 200_00)
+        uint flashAmount = normalizedAmount * targetLeverage / INTERNAL_PRECISION;
+        
+        // Apply deposit parameter to adjust the final amount
+        // depositParam0 is in INTERNAL_PRECISION (e.g., 90% = 90_00)
+        return flashAmount * depositParam0 / INTERNAL_PRECISION;
+    }
+
+    /// @notice Calculates value difference between two states
+    /// @param valueNow Current value
+    /// @param valueWas Previous value
+    /// @param amount Original amount
+    /// @return Resulting value
+    function calculateValueDifference(
+        uint valueNow,
+        uint valueWas,
+        uint amount
+    ) internal pure returns (uint) {
+        if (valueNow > valueWas) {
+            return amount + (valueNow - valueWas);
+        } else {
+            return amount - (valueWas - valueNow);
+        }
+    }
+
+    /// @notice Gets prices and decimals for both assets
+    /// @param platform Platform address
+    /// @param collateralAsset Collateral asset address
+    /// @param borrowAsset Borrow asset address
+    /// @return collateralPrice Price of collateral asset
+    /// @return borrowPrice Price of borrow asset
+    /// @return collateralDecimals Decimals of collateral asset
+    /// @return borrowDecimals Decimals of borrow asset
+    function getPricesAndDecimals(
+        address platform,
+        address collateralAsset,
+        address borrowAsset
+    ) internal view returns (
+        uint collateralPrice,
+        uint borrowPrice,
+        uint8 collateralDecimals,
+        uint8 borrowDecimals
+    ) {
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+        (collateralPrice,) = priceReader.getPrice(collateralAsset);
+        (borrowPrice,) = priceReader.getPrice(borrowAsset);
+        collateralDecimals = IERC20Metadata(collateralAsset).decimals();
+        borrowDecimals = IERC20Metadata(borrowAsset).decimals();
     }
 }
