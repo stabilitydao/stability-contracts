@@ -173,7 +173,8 @@ library SonicLib {
         p.initAddresses[3] = SonicConstantsLib.MACH_scUSD;
         p.initAddresses[4] = SonicConstantsLib.MACH_scETH;
         p.initAddresses[5] = SonicConstantsLib.MACH_wOS;
-        // p.initAddresses[6] = SonicConstantsLib.MACH_scBTC;
+        // p.initAddresses[6] = SonicConstantsLib.MACH_Sonic;
+        // p.initAddresses[7] = SonicConstantsLib.MACH_scBTC;
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.MACH, p);

@@ -21,6 +21,7 @@ contract MachStrategyTestSonic is SonicSetup, UniversalTest {
         _addStrategy(SonicConstantsLib.MACH_scUSD);
         _addStrategy(SonicConstantsLib.MACH_scETH);
         _addStrategy(SonicConstantsLib.MACH_wOS);
+        // _addStrategy(SonicConstantsLib.MACH_Sonic);
         // _addStrategy(SonicConstantsLib.MACH_scBTC);
     }
 
