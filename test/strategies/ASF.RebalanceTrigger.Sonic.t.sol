@@ -34,7 +34,7 @@ contract RebalanceTriggerTest is Test {
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -75,7 +75,7 @@ contract RebalanceTriggerTest is Test {
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -113,7 +113,7 @@ contract RebalanceTriggerTest is Test {
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -136,7 +136,7 @@ contract RebalanceTriggerTest is Test {
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -177,7 +177,7 @@ contract RebalanceTriggerTest is Test {
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
