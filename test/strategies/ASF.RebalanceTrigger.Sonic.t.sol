@@ -1,33 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/Test.sol";
-import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {console, Test} from "forge-std/Test.sol";
 import "../../chains/sonic/SonicLib.sol";
-import "../base/UniversalTest.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
+import {IALM} from "../../src/interfaces/IALM.sol";
+import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
 import {IUniswapV3PoolImmutables} from "../../src/integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 import {IUniswapV3PoolState} from "../../src/integrations/uniswapv3/pool/IUniswapV3PoolState.sol";
 
-contract RebalanceTriggerTest is SonicSetup, UniversalTest {
+contract RebalanceTriggerTest is Test {
     RebalanceHelper public rebalanceHelper;
 
     constructor() {
-        duration1 = 0.1 hours;
-        duration2 = 0.1 hours;
-        duration3 = 0.5 hours;
-
-        makePoolVolumePriceImpactTolerance = 34_000;
-        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 500; // 500k
-        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 650; // 650k
-        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 800;
-        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 400;
-
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.rollFork(18553912); // Mar-14-2025 07:49:27 AM +UTC
         rebalanceHelper = new RebalanceHelper();
     }
 
     // // Additional test cases
-    function testNonALMStrategy() public universalTest {
+    function testNonALMStrategy() public {
         // Mock a contract that does not implement the IALM interface
         address nonALMStrategy = address(new MockNonALMStrategy());
 
@@ -36,12 +29,12 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         rebalanceHelper.calcRebalanceArgs(nonALMStrategy, 10);
     }
 
-    function testNeedRebalance_LimitPosition_NoMove() public universalTest {
+    function testNeedRebalance_LimitPosition_NoMove() public {
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -77,12 +70,12 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         assertFalse(need, "Should NOT need rebalance when tickDistance == 0");
     }
 
-    function testNeedRebalance_BasePositionTrigger() public universalTest {
+    function testNeedRebalance_BasePositionTrigger() public {
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -115,12 +108,12 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         assertTrue(need, "Should trigger base position rebalance");
     }
 
-    function testNeedRebalance_UnsupportedAlgo() public universalTest {
+    function testNeedRebalance_UnsupportedAlgo() public {
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -138,12 +131,12 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         assertFalse(need, "Should NOT rebalance if algoId is not ALGO_FILL_UP");
     }
 
-    function testNeedRebalance_LimitPosition_MoveBelow1() public universalTest {
+    function testNeedRebalance_LimitPosition_MoveBelow1() public {
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
@@ -179,12 +172,12 @@ contract RebalanceTriggerTest is SonicSetup, UniversalTest {
         assertTrue(need, "Should need rebalance when currentTick is below limitTickLower");
     }
 
-    function testNeedRebalance_LimitPosition_MoveBelow2() public universalTest {
+    function testNeedRebalance_LimitPosition_MoveBelow2() public {
         IALM.ALMStrategyBaseStorage storage almStrategy;
         ILPStrategy.LPStrategyBaseStorage storage lpStrategy;
 
         bytes32 alm_strategy_location = 0xa7b5cf2e827fe3bcf3fe6a0f3315b77285780eac3248f46a43fc1c44c1d47900;
-        bytes32 lp_strategy_location = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
+        bytes32 lp_strategy_location  = 0x72189c387e876b9a88f41e18ce5929a30f87f78bd01fd02027d49c1ff673554f;
 
         assembly {
             almStrategy.slot := alm_strategy_location
