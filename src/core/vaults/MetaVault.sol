@@ -32,6 +32,19 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         0x303154e675d2f93642b6b4ae068c749c9b8a57de9202c6344dbbb24ab936f000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         DATA TYPES                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    struct DepositAssetsVars {
+        address targetVault;
+        uint totalSupplyBefore;
+        uint totalSharesBefore;
+        uint len;
+        uint[] balanceBefore;
+        uint[] amountsConsumed;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -106,7 +119,45 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
-        // todo deposit to target vault
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        DepositAssetsVars memory v;
+        v.targetVault = targetVault();
+        v.totalSupplyBefore = totalSupply();
+        v.totalSharesBefore = $.totalShares;
+        v.len = assets_.length;
+        v.balanceBefore = new uint[](v.len);
+        v.amountsConsumed = new uint[](v.len);
+        (uint targetVaultTvlBefore,) = IStabilityVault(v.targetVault).tvl();
+        for (uint i; i < v.len; ++i) {
+            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
+            v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
+        }
+        IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
+        for (uint i; i < v.len; ++i) {
+            v.amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+            uint refund = amountsMax[i] - v.amountsConsumed[i];
+            if (refund != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, refund);
+            }
+        }
+        (uint targetVaultTvlAfter,) = IStabilityVault(v.targetVault).tvl();
+        uint depositedTvl = targetVaultTvlAfter - targetVaultTvlBefore;
+        uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
+        uint sharesToCreate;
+        if (v.totalSharesBefore == 0) {
+            sharesToCreate = balanceOut;
+        } else {
+            sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
+        }
+
+        _mint($, receiver, sharesToCreate, balanceOut);
+
+        // todo slippage
+        // todo flashloan defence
+        // todo dead shares
+
+        emit DepositAssets(receiver, assets_, v.amountsConsumed, balanceOut);
     }
 
     /// @inheritdoc IStabilityVault
@@ -217,6 +268,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
+    function targetAssets() external view returns (address[] memory) {
+        return IVault(targetVault()).strategy().assets();
+    }
+
+    /// @inheritdoc IMetaVault
     function pegAsset() external view returns (address) {
         return _getMetaVaultStorage().pegAsset;
     }
@@ -236,7 +292,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
-        // todo
+        address _targetVault = targetVault();
+        uint targetVaultSharesOut;
+        uint targetVaultStrategyValueOut;
+        (uint targetVaultSharePrice,) = IStabilityVault(_targetVault).price();
+        (amountsConsumed, targetVaultSharesOut, targetVaultStrategyValueOut) =
+            IStabilityVault(_targetVault).previewDepositAssets(assets_, amountsMax);
+        uint usdOut = targetVaultSharePrice * targetVaultSharesOut / 1e18;
+        sharesOut = _usdAmountToMetaVaultBalance(usdOut);
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        uint _totalShares = $.totalShares;
+        if (_totalShares == 0) {
+            valueOut = sharesOut;
+        } else {
+            valueOut = _amountToShares(sharesOut, $.totalShares, totalSupply());
+        }
     }
 
     /// @inheritdoc IStabilityVault
@@ -252,6 +322,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IStabilityVault
     function tvl() public view returns (uint tvl_, bool trusted_) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        // get deposited TVL of used vaults
         address[] memory _vaults = $.vaults;
         uint len = _vaults.length;
         for (uint i; i < len; ++i) {
@@ -260,6 +332,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
             tvl_ += vaultSharesBalance * vaultTvl / vaultTotalSupply;
         }
+
+        // get TVL of assets on contract balance
         address[] memory _assets = $.assets.values();
         len = _assets.length;
         uint[] memory assetsOnBalance = new uint[](len);
@@ -269,6 +343,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint assetsTvlUsd,,,) =
             IPriceReader(IPlatform(platform()).priceReader()).getAssetsPrice(_assets, assetsOnBalance);
         tvl_ += assetsTvlUsd;
+
         trusted_ = true;
     }
 
@@ -300,7 +375,19 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) public pure returns (uint) {
+    function _mint(MetaVaultStorage storage $, address account, uint mintShares, uint mintBalance) internal {
+        require(account != address(0), ERC20InvalidReceiver(account));
+        $.totalShares += mintShares;
+        $.shareBalance[account] += mintShares;
+        emit Transfer(address(0), account, mintBalance);
+    }
+
+    function _usdAmountToMetaVaultBalance(uint usdAmount) internal view returns (uint) {
+        (uint priceAsset,) = price();
+        return usdAmount * 1e18 / priceAsset;
+    }
+
+    function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {
         if (totalSupply_ == 0) {
             return 0;
         }

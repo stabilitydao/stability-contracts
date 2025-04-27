@@ -55,6 +55,9 @@ interface IMetaVault is IStabilityVault {
     /// @notice Vault where to deposit first
     function targetVault() external view returns (address);
 
+    /// @notice Assets for deposit
+    function targetAssets() external view returns (address[] memory);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
