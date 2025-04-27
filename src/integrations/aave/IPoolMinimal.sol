@@ -14,4 +14,6 @@ interface IPoolMinimal {
      *   0 if the action is executed directly by the user, without any middle-man
      */
     function supply(address asset, uint amount, address onBehalfOf, uint16 referralCode) external;
+
+    function withdraw(address asset, uint amount, address to) external returns (uint);
 }
