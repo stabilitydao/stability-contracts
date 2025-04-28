@@ -63,6 +63,8 @@ library SonicConstantsLib {
     address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
+    address public constant TOKEN_GEMS = 0x5555b2733602DEd58D47b8D3D989E631CBee5555;
+    address public constant TOKEN_xUSD = 0x6202B9f02E30E5e1c62Cc01E4305450E5d83b926;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -149,6 +151,8 @@ library SonicConstantsLib {
     address public constant POOL_PENDLE_PT_wstkscETH_29MAY2025 = 0xd14117baf6EC5D12BE68CD06e763A4B82C9B6d1D;
     address public constant POOL_PENDLE_PT_wOS_29MAY2025 = 0x4E82347Bc41CFD5d62cEF483C7f0a739a8158963;
     address public constant POOL_SHADOW_USDC_STBL = 0xC00021495419f35Ad564e289B5077F48D1399b2D;
+    address public constant POOL_SHADOW_wS_GEMS = 0x382E360D672Ec27D9225C3d2C439993316F95623;
+    address public constant POOL_SHADOW_aSonUSDC_xUSD = 0xFEAd02Fb16eC3b2F6318dcA230198db73E99428C;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -310,6 +314,8 @@ library SonicConstantsLib {
     address public constant SHADOW_GAUGE_CL_wS_USDC = 0xe879d0E44e6873cf4ab71686055a4f6817685f02;
     address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0xbf2EdE70EB05E3A15d43A8D33BDf3A4156e98932;
     address public constant SHADOW_GAUGE_USDC_STBL = 0x6D728396Be4FBC069dD8242BCAbbfe2a1FF2A432;
+    address public constant SHADOW_GAUGE_USDC_aSonUSDC = 0xFD197f2C6E8077BB5ad81f6F682736E4C4De8712;
+    address public constant SHADOW_GAUGE_aSonUSDC_xUSD = 0xe36a0e94870D1F5629f2A0Ddc038abd76b20938c;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;

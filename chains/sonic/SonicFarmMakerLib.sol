@@ -206,8 +206,7 @@ library SonicFarmMakerLib {
         farm.status = 0;
         farm.pool = IGauge(gauge).stake();
         farm.strategyLogicId = StrategyIdLib.SHADOW_FARM;
-        farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = IGauge(gauge).rewardsList()[0];
+        farm.rewardAssets = IGauge(gauge).rewardsList();
         farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = SonicConstantsLib.SHADOW_ROUTER;

@@ -259,6 +259,8 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_USDC_STBL, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC);
+        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_GEMS, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_GEMS, SonicConstantsLib.TOKEN_wS);
+        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_aSonUSDC_xUSD, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_xUSD, SonicConstantsLib.TOKEN_aUSDC);
         //endregion ----- Pools ----
     }
 
@@ -313,6 +315,8 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD); // farm 41
         _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD); // farm 42
         _farms[i++] = SonicFarmMakerLib._makeShadowFarm(SonicConstantsLib.SHADOW_GAUGE_USDC_STBL);
+        // _farms[i++] = SonicFarmMakerLib._makeShadowFarm(SonicConstantsLib.SHADOW_GAUGE_USDC_aSonUSDC);
+        // _farms[i++] = SonicFarmMakerLib._makeShadowFarm(SonicConstantsLib.SHADOW_GAUGE_aSonUSDC_xUSD);
     }
 
     function _makePoolData(
