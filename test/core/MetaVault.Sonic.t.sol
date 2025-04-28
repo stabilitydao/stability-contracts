@@ -88,6 +88,7 @@ contract MetaVaultSonicTest is Test {
             }
 
             // test transfer and transferFrom
+            vm.roll(block.number + 6);
             {
                 uint user1BalanceBefore = IERC20(metavault).balanceOf(address(1));
                 vm.prank(address(1));
@@ -99,6 +100,8 @@ contract MetaVaultSonicTest is Test {
                 vm.prank(address(1));
                 vm.expectRevert();
                 IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
+
+                vm.roll(block.number + 6);
 
                 vm.prank(address(2));
                 IERC20(metavault).approve(address(1), user1BalanceBefore);
@@ -114,6 +117,27 @@ contract MetaVaultSonicTest is Test {
                 _dealAndApprove(address(3), metavault, assets, depositAmounts);
                 vm.prank(address(3));
                 IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, address(3));
+            }
+
+            // flash loan protection check
+            {
+                uint bal = IERC20(metavault).balanceOf(address(3));
+
+                // transfer
+                vm.prank(address(3));
+                vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
+                IERC20(metavault).transfer(address(10), bal);
+
+                // deposit
+                _dealAndApprove(address(3), metavault, assets, depositAmounts);
+                vm.prank(address(3));
+                vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
+                IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, address(3));
+
+                // withdraw
+                vm.prank(address(3));
+                vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
+                IStabilityVault(metavault).withdrawAssets(assets, bal, new uint[](assets.length));
             }
 
             // check proportions

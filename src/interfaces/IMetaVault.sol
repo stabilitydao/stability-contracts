@@ -12,6 +12,9 @@ interface IMetaVault is IStabilityVault {
 
     /// @custom:storage-location erc7201:stability.MetaVault
     struct MetaVaultStorage {
+        /// @dev Flash loan exploit protection.
+        ///      Prevents manipulations with deposit/transfer and withdraw/deposit in short time.
+        mapping(address msgSender => uint blockNumber) lastTransferBlock;
         /// @inheritdoc IMetaVault
         address pegAsset;
         /// @inheritdoc IMetaVault

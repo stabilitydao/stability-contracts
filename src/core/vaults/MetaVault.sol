@@ -29,6 +29,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
+    /// @dev Delay between deposits/transfers and withdrawals
+    uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
+
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant _METAVAULT_STORAGE_LOCATION =
         0x303154e675d2f93642b6b4ae068c749c9b8a57de9202c6344dbbb24ab936f000;
@@ -122,6 +125,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver
     ) external nonReentrant {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        _beforeDepositOrWithdraw($, receiver);
+
         DepositAssetsVars memory v;
         v.targetVault = vaultForDeposit();
         v.totalSupplyBefore = totalSupply();
@@ -156,7 +162,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _mint($, receiver, sharesToCreate, balanceOut);
 
         // todo slippage
-        // todo flashloan defence
         // todo dead shares
 
         emit DepositAssets(receiver, assets_, v.amountsConsumed, balanceOut);
@@ -201,13 +206,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         require(to != address(0), ERC20InvalidReceiver(to));
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         _spendAllowanceOrBlock(from, msg.sender, amount);
+        _checkLastBlockProtection($, from);
         uint shareTransfer = _amountToShares(amount, $.totalShares, totalSupply());
         $.shareBalance[from] -= shareTransfer;
         $.shareBalance[to] += shareTransfer;
-
-        // todo flash loan defence
-
-        emit Transfer(from, to, amount);
+        _update($, from, to, amount);
         return true;
     }
 
@@ -412,6 +415,23 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
+        $.lastTransferBlock[from] = block.number;
+        $.lastTransferBlock[to] = block.number;
+        emit Transfer(from, to, amount);
+    }
+
+    function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
+       _checkLastBlockProtection($, owner);
+        $.lastTransferBlock[owner] = block.number;
+    }
+
+    function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal {
+        if ($.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
+            revert WaitAFewBlocks();
+        }
+    }
+
     function _withdrawAssets(
         address[] memory assets_,
         uint amount,
@@ -422,7 +442,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
-
         if (amount == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
@@ -434,6 +453,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        _beforeDepositOrWithdraw($, owner);
+
         uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply());
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
@@ -453,6 +475,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         _burn($, owner, amount, sharesToBurn);
 
+        $.lastTransferBlock[receiver] = block.number;
+
         emit WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
     }
 
@@ -469,14 +493,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function _burn(MetaVaultStorage storage $, address account, uint amountToBurn, uint sharesToBurn) internal {
         $.totalShares -= sharesToBurn;
         $.shareBalance[account] -= sharesToBurn;
-        emit Transfer(account, address(0), amountToBurn);
+        _update($, account, address(0), amountToBurn);
     }
 
     function _mint(MetaVaultStorage storage $, address account, uint mintShares, uint mintBalance) internal {
         require(account != address(0), ERC20InvalidReceiver(account));
         $.totalShares += mintShares;
         $.shareBalance[account] += mintShares;
-        emit Transfer(address(0), account, mintBalance);
+        _update($, address(0), account, mintBalance);
     }
 
     function _usdAmountToMetaVaultBalance(uint usdAmount) internal view returns (uint) {
