@@ -2,27 +2,17 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @notice Base interface of Stability Vault
-interface IStabilityVault is IERC20 {
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                         DATA TYPES                         */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @custom:storage-location erc7201:stability.StabilityVaultBase
-    struct StabilityVaultBaseStorage {
-        /// @dev Prevents manipulations with deposit and withdraw in short time.
-        ///      For simplification we are setup new withdraw request on each deposit/transfer.
-        mapping(address msgSender => uint blockNumber) withdrawRequests;
-        /// @inheritdoc IStabilityVault
-        uint maxSupply;
-    }
+interface IStabilityVault is IERC20, IERC20Metadata {
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error WaitAFewBlocks();
+    error ExceedSlippage(uint mintToUser, uint minToMint);
     error ExceedMaxSupply(uint maxSupply);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

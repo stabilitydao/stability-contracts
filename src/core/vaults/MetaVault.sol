@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 //import {console} from "forge-std/Test.sol";
 
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -161,7 +162,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         _mint($, receiver, sharesToCreate, balanceOut);
 
-        // todo slippage
+        if (balanceOut < minSharesOut) {
+            revert ExceedSlippage(balanceOut, minSharesOut);
+        }
         // todo dead shares
 
         emit DepositAssets(receiver, assets_, v.amountsConsumed, balanceOut);
@@ -411,6 +414,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return $.allowance[owner][spender];
     }
 
+    /// @inheritdoc IERC20Metadata
+    function name() external view returns (string memory) {
+        return _getMetaVaultStorage().name;
+    }
+
+    /// @inheritdoc IERC20Metadata
+    function symbol() external view returns (string memory) {
+        return _getMetaVaultStorage().symbol;
+    }
+
+    /// @inheritdoc IERC20Metadata
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -422,11 +440,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
-       _checkLastBlockProtection($, owner);
+        _checkLastBlockProtection($, owner);
         $.lastTransferBlock[owner] = block.number;
     }
 
-    function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal {
+    function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view {
         if ($.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
         }

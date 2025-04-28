@@ -3,7 +3,14 @@ pragma solidity ^0.8.28;
 
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Test, console} from "forge-std/Test.sol";
-import {MetaVault, IMetaVault, IStabilityVault, IPlatform, IPriceReader} from "../../src/core/vaults/MetaVault.sol";
+import {
+    MetaVault,
+    IMetaVault,
+    IStabilityVault,
+    IPlatform,
+    IPriceReader,
+    IControllable
+} from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 
 contract MetaVaultSonicTest is Test {
@@ -51,7 +58,7 @@ contract MetaVaultSonicTest is Test {
             uint[] memory depositAmounts = _getAmountsForDeposit(1000, assets);
 
             // previewDepositAssets
-            (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) =
+            (uint[] memory amountsConsumed, uint sharesOut,) =
                 IStabilityVault(metavault).previewDepositAssets(assets, depositAmounts);
 
             // check previewDepositAssets return values
@@ -140,6 +147,16 @@ contract MetaVaultSonicTest is Test {
                 IStabilityVault(metavault).withdrawAssets(assets, bal, new uint[](assets.length));
             }
 
+            // deposit slippage check
+            vm.roll(block.number + 6);
+            {
+                uint minSharesOut = IERC20(metavault).balanceOf(address(3));
+                _dealAndApprove(address(3), metavault, assets, depositAmounts);
+                vm.prank(address(3));
+                vm.expectRevert();
+                IStabilityVault(metavault).depositAssets(assets, depositAmounts, minSharesOut * 2, address(3));
+            }
+
             // check proportions
             {
                 uint[] memory props = IMetaVault(metavault).currentProportions();
@@ -170,7 +187,7 @@ contract MetaVaultSonicTest is Test {
         }
     }
 
-    function test_empty_metavault() public view {
+    function test_empty_metavault() public {
         IMetaVault metavault = IMetaVault(metaVaults[0]);
         assertEq(metavault.pegAsset(), address(0));
         (uint price, bool trusted) = metavault.price();
@@ -187,6 +204,18 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.vaultForDeposit(), VAULT_C_USDC_SiF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
+
+        assertEq(IERC20Metadata(address(metavault)).name(), "Stability metaUSD");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSD");
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        metavault.setName("new name");
+        vm.prank(IPlatform(PLATFORM).multisig());
+        metavault.setName("new name");
+        assertEq(IERC20Metadata(address(metavault)).name(), "new name");
+        vm.prank(IPlatform(PLATFORM).multisig());
+        metavault.setSymbol("new symbol");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "new symbol");
     }
 
     function _deployMetaVaultStandalone(
@@ -206,7 +235,7 @@ contract MetaVaultSonicTest is Test {
     function _getAmountsForDeposit(
         uint usdValue,
         address[] memory assets
-    ) internal returns (uint[] memory depositAmounts) {
+    ) internal view returns (uint[] memory depositAmounts) {
         depositAmounts = new uint[](assets.length);
         for (uint j; j < assets.length; ++j) {
             (uint price,) = priceReader.getPrice(assets[j]);

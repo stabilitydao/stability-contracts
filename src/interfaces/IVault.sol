@@ -18,7 +18,6 @@ interface IVault is IERC165, IStabilityVault {
 
     error NotEnoughBalanceToPay();
     error FuseTrigger();
-    error ExceedSlippage(uint mintToUser, uint minToMint);
     error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error StrategyZeroDeposit();

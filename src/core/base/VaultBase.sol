@@ -300,7 +300,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IERC20Metadata
-    function name() public view override returns (string memory) {
+    function name() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         string memory changedName = $.changedName;
         if (bytes(changedName).length > 0) {
@@ -310,7 +310,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IERC20Metadata
-    function symbol() public view override returns (string memory) {
+    function symbol() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         string memory changedSymbol = $.changedSymbol;
         if (bytes(changedSymbol).length > 0) {
