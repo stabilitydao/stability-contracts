@@ -133,7 +133,9 @@ contract MetaVaultSonicTest is Test {
                 depositAmounts = _getAmountsForDeposit(500, assets);
                 _dealAndApprove(address(3), metavault, assets, depositAmounts);
                 vm.prank(address(3));
-                IStabilityVault(metavault).depositAssets(assets, depositAmounts, sharesOut - sharesOut / 100, address(3));
+                IStabilityVault(metavault).depositAssets(
+                    assets, depositAmounts, sharesOut - sharesOut / 100, address(3)
+                );
             }
 
             // flash loan protection check
@@ -216,15 +218,23 @@ contract MetaVaultSonicTest is Test {
                 // reverts
                 uint withdrawAmount = 0;
                 vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
+                IStabilityVault(metavault).withdrawAssets(
+                    assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
+                );
                 withdrawAmount = IERC20(metavault).balanceOf(address(this));
                 vm.expectRevert();
-                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this));
+                IStabilityVault(metavault).withdrawAssets(
+                    assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this)
+                );
 
                 vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this));
+                IStabilityVault(metavault).withdrawAssets(
+                    assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this)
+                );
 
-                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
+                IStabilityVault(metavault).withdrawAssets(
+                    assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
+                );
             }
         }
     }
