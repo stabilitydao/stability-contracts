@@ -148,6 +148,7 @@ library SonicConstantsLib {
     address public constant POOL_PENDLE_PT_wstkscUSD_29MAY2025 = 0x6e4e95FaB7db1f0524b4b0a05F0b9c96380b7Dfa;
     address public constant POOL_PENDLE_PT_wstkscETH_29MAY2025 = 0xd14117baf6EC5D12BE68CD06e763A4B82C9B6d1D;
     address public constant POOL_PENDLE_PT_wOS_29MAY2025 = 0x4E82347Bc41CFD5d62cEF483C7f0a739a8158963;
+    address public constant POOL_SHADOW_USDC_STBL = 0xC00021495419f35Ad564e289B5077F48D1399b2D;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -308,6 +309,7 @@ library SonicConstantsLib {
     address public constant SHADOW_GAUGE_CL_wS_WETH = 0xF5C7598C953E49755576CDA6b2B2A9dAaf89a837;
     address public constant SHADOW_GAUGE_CL_wS_USDC = 0xe879d0E44e6873cf4ab71686055a4f6817685f02;
     address public constant SHADOW_GAUGE_CL_SACRA_scUSD_20000 = 0xbf2EdE70EB05E3A15d43A8D33BDf3A4156e98932;
+    address public constant SHADOW_GAUGE_USDC_STBL = 0x6D728396Be4FBC069dD8242BCAbbfe2a1FF2A432;
 
     // Oracles
     address public constant ORACLE_API3_USDC_USD = 0xD3C586Eec1C6C3eC41D276a23944dea080eDCf7f;
