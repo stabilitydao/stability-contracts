@@ -13,6 +13,7 @@ import {
 } from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -113,18 +114,26 @@ contract MetaVaultSonicTest is Test {
 
                 vm.prank(address(2));
                 IERC20(metavault).approve(address(1), user1BalanceBefore);
+                assertEq(IERC20(metavault).allowance(address(2), address(1)), user1BalanceBefore);
                 vm.prank(address(1));
                 IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
                 assertEq(IERC20(metavault).balanceOf(address(2)), 0);
+
+                // reverts
+                vm.expectRevert();
+                vm.prank(address(3));
+                IERC20(metavault).transfer(address(0), 1);
             }
 
             // depositAssets | third deposit
             {
+                (, sharesOut,) = IStabilityVault(metavault).previewDepositAssets(assets, depositAmounts);
+
                 assets = IMetaVault(metavault).assetsForDeposit();
                 depositAmounts = _getAmountsForDeposit(500, assets);
                 _dealAndApprove(address(3), metavault, assets, depositAmounts);
                 vm.prank(address(3));
-                IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, address(3));
+                IStabilityVault(metavault).depositAssets(assets, depositAmounts, sharesOut - sharesOut / 100, address(3));
             }
 
             // flash loan protection check
@@ -200,7 +209,22 @@ contract MetaVaultSonicTest is Test {
 
                     // do max withdraw
                     IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw, new uint[](assets.length));
+
+                    vm.roll(block.number + 6);
                 }
+
+                // reverts
+                uint withdrawAmount = 0;
+                vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
+                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
+                withdrawAmount = IERC20(metavault).balanceOf(address(this));
+                vm.expectRevert();
+                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this));
+
+                vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this));
+
+                IStabilityVault(metavault).withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
             }
         }
     }
@@ -250,6 +274,9 @@ contract MetaVaultSonicTest is Test {
         vm.prank(IPlatform(PLATFORM).multisig());
         metavault.setTargetProportions(newTargetProportions);
         assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
+
+        assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
+        assertEq(metavault.vaultType(), VaultTypeLib.METAVAULT);
     }
 
     function _deployMetaVaultStandalone(
