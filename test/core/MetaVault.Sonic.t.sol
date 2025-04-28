@@ -12,6 +12,7 @@ import {
     IControllable
 } from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -167,6 +168,23 @@ contract MetaVaultSonicTest is Test {
                 }
             }
 
+            // report
+            {
+                console.log(
+                    string.concat(
+                        IERC20Metadata(metavault).symbol(),
+                        " [Vaults: ",
+                        CommonLib.u2s(IMetaVault(metavault).vaults().length),
+                        "]. Name: ",
+                        IERC20Metadata(metavault).name(),
+                        "."
+                    )
+                );
+
+                (uint tvl,) = IStabilityVault(metavault).tvl();
+                console.log(string.concat("  TVL: ", CommonLib.formatUsdAmount(tvl), "."));
+            }
+
             // withdraw
             vm.roll(block.number + 6);
             {
@@ -207,6 +225,7 @@ contract MetaVaultSonicTest is Test {
 
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability metaUSD");
         assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSD");
+        assertEq(IERC20Metadata(address(metavault)).decimals(), 18);
 
         vm.expectRevert(IControllable.NotOperator.selector);
         metavault.setName("new name");
@@ -216,6 +235,21 @@ contract MetaVaultSonicTest is Test {
         vm.prank(IPlatform(PLATFORM).multisig());
         metavault.setSymbol("new symbol");
         assertEq(IERC20Metadata(address(metavault)).symbol(), "new symbol");
+
+        uint[] memory newTargetProportions = new uint[](2);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        newTargetProportions = new uint[](3);
+        vm.expectRevert(IMetaVault.IncorrectProportions.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        newTargetProportions[0] = 2e17;
+        newTargetProportions[1] = 3e17;
+        newTargetProportions[2] = 5e17;
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        vm.prank(IPlatform(PLATFORM).multisig());
+        metavault.setTargetProportions(newTargetProportions);
+        assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
     }
 
     function _deployMetaVaultStandalone(

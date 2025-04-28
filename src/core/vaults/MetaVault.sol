@@ -15,6 +15,7 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IVault, IStrategy} from "../../interfaces/IVault.sol";
+import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -81,11 +82,26 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         $.pegAsset = pegAsset_;
         $.name = name_;
         $.symbol = symbol_;
+        emit TargetProportions(proportions_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IMetaVault
+    function setTargetProportions(uint[] memory newTargetProportions) external {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
+        _checkProportions(newTargetProportions);
+        IPlatform _platform = IPlatform(platform());
+        require(
+            _platform.isOperator(msg.sender) || IHardWorker(_platform.hardWorker()).dedicatedServerMsgSender(msg.sender),
+            IControllable.IncorrectMsgSender()
+        );
+        $.targetProportions = newTargetProportions;
+        emit TargetProportions(newTargetProportions);
+    }
 
     /// @inheritdoc IMetaVault
     function rebalance(
@@ -432,6 +448,15 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _checkProportions(uint[] memory proportions_) internal pure {
+        uint len = proportions_.length;
+        uint total;
+        for (uint i; i < len; ++i) {
+            total += proportions_[i];
+        }
+        require(total == 1e18, IncorrectProportions());
+    }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
         $.lastTransferBlock[from] = block.number;

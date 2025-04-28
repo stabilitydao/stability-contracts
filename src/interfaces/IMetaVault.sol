@@ -37,12 +37,15 @@ interface IMetaVault is IStabilityVault {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event TargetProportions(uint[] proportions);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error MaxAmountForWithdrawPerTxReached(uint amount, uint maxAmount);
     error ZeroSharesToBurn(uint amountToWithdraw);
+    error IncorrectProportions();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -89,6 +92,9 @@ interface IMetaVault is IStabilityVault {
         uint[] memory withdrawAmounts,
         uint[] memory depositAmounts
     ) external returns (uint proportions, uint cost);
+
+    /// @notice Set new target proportions
+    function setTargetProportions(uint[] memory newTargetProportions) external;
 
     /// @notice Add CVault to MetaVault
     function addVault(address vault, uint[] memory newTargetProportions) external;
