@@ -18,7 +18,6 @@ interface IMetaVault is IStabilityVault {
         EnumerableSet.AddressSet assets;
         /// @inheritdoc IMetaVault
         address[] vaults;
-        address targetVault;
         /// @inheritdoc IMetaVault
         uint[] targetProportions;
         /// @inheritdoc IERC20Metadata
@@ -30,6 +29,17 @@ interface IMetaVault is IStabilityVault {
         uint totalShares;
         mapping(address => uint) shareBalance;
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           EVENTS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    error MaxAmountForWithdrawPerTxReached(uint amount, uint maxAmount);
+    error ZeroSharesToBurn(uint amountToWithdraw);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -53,10 +63,19 @@ interface IMetaVault is IStabilityVault {
     function targetProportions() external view returns (uint[] memory);
 
     /// @notice Vault where to deposit first
-    function targetVault() external view returns (address);
+    function vaultForDeposit() external view returns (address);
 
     /// @notice Assets for deposit
-    function targetAssets() external view returns (address[] memory);
+    function assetsForDeposit() external view returns (address[] memory);
+
+    /// @notice Vault for withdraw first
+    function vaultForWithdraw() external view returns (address);
+
+    /// @notice Assets for withdraw
+    function assetsForWithdraw() external view returns (address[] memory);
+
+    /// @notice Maximum withdraw amount for next withdraw TX
+    function maxWithdrawAmountTx() external view returns (uint);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */

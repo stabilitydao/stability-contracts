@@ -45,15 +45,10 @@ contract MetaVaultSonicTest is Test {
         // test all metavaults
         for (uint i; i < metaVaults.length; ++i) {
             address metavault = metaVaults[i];
-            address[] memory assets = IMetaVault(metavault).targetAssets();
+            address[] memory assets = IMetaVault(metavault).assetsForDeposit();
 
             // get amounts for $1000 of each
-            uint[] memory depositAmounts = new uint[](assets.length);
-            for (uint j; j < assets.length; ++j) {
-                (uint price,) = priceReader.getPrice(assets[j]);
-                require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
-                depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
-            }
+            uint[] memory depositAmounts = _getAmountsForDeposit(1000, assets);
 
             // previewDepositAssets
             (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) =
@@ -61,21 +56,13 @@ contract MetaVaultSonicTest is Test {
 
             // check previewDepositAssets return values
             assertGt(amountsConsumed[0], 0);
-            assertEq(amountsConsumed.length, IMetaVault(metavault).targetAssets().length);
+            assertEq(amountsConsumed.length, IMetaVault(metavault).assetsForDeposit().length);
             (uint consumedUSD,,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
             assertGt(consumedUSD, 990e18);
             assertLt(consumedUSD, assets.length * 1001e18);
 
             // deal and approve
-            for (uint j; j < assets.length; ++j) {
-                deal(assets[j], address(this), depositAmounts[j]);
-                IERC20(assets[j]).approve(metavault, depositAmounts[j]);
-
-                // user address(1)
-                deal(assets[j], address(1), depositAmounts[j] / 2);
-                vm.prank(address(1));
-                IERC20(assets[j]).approve(metavault, depositAmounts[j] / 2);
-            }
+            _dealAndApprove(address(this), metavault, assets, depositAmounts);
 
             // depositAssets | first deposit
             IStabilityVault(metavault).depositAssets(assets, depositAmounts, sharesOut - 10000, address(this));
@@ -92,12 +79,69 @@ contract MetaVaultSonicTest is Test {
 
             // depositAssets | second deposit
             {
-                uint[] memory depositAmounts2 = new uint[](assets.length);
-                for (uint j; j < assets.length; ++j) {
-                    depositAmounts2[j] = depositAmounts[j] / 2;
-                }
+                assets = IMetaVault(metavault).assetsForDeposit();
+                depositAmounts = _getAmountsForDeposit(500, assets);
+                _dealAndApprove(address(1), metavault, assets, depositAmounts);
+
                 vm.prank(address(1));
-                IStabilityVault(metavault).depositAssets(assets, depositAmounts2, 0, address(1));
+                IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, address(1));
+            }
+
+            // test transfer and transferFrom
+            {
+                uint user1BalanceBefore = IERC20(metavault).balanceOf(address(1));
+                vm.prank(address(1));
+                IERC20(metavault).transfer(address(2), user1BalanceBefore);
+                assertEq(IERC20(metavault).balanceOf(address(1)), 0);
+                assertGe(IERC20(metavault).balanceOf(address(2)), user1BalanceBefore - 1);
+                assertLe(IERC20(metavault).balanceOf(address(2)), user1BalanceBefore);
+
+                vm.prank(address(1));
+                vm.expectRevert();
+                IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
+
+                vm.prank(address(2));
+                IERC20(metavault).approve(address(1), user1BalanceBefore);
+                vm.prank(address(1));
+                IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
+                assertEq(IERC20(metavault).balanceOf(address(2)), 0);
+            }
+
+            // depositAssets | third deposit
+            {
+                assets = IMetaVault(metavault).assetsForDeposit();
+                depositAmounts = _getAmountsForDeposit(500, assets);
+                _dealAndApprove(address(3), metavault, assets, depositAmounts);
+                vm.prank(address(3));
+                IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, address(3));
+            }
+
+            // check proportions
+            {
+                uint[] memory props = IMetaVault(metavault).currentProportions();
+                if (props.length == 3) {
+                    assertGt(props[0], 0);
+                    assertGt(props[1], 0);
+                    assertGt(props[2], 0);
+                }
+            }
+
+            // withdraw
+            vm.roll(block.number + 6);
+            {
+                uint maxWithdraw = IMetaVault(metavault).maxWithdrawAmountTx();
+                if (maxWithdraw < IERC20(metavault).balanceOf(address(this))) {
+                    // revert when want withdraw more
+                    vm.expectRevert(
+                        abi.encodeWithSelector(
+                            IMetaVault.MaxAmountForWithdrawPerTxReached.selector, maxWithdraw + 10, maxWithdraw
+                        )
+                    );
+                    IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw + 10, new uint[](assets.length));
+
+                    // do max withdraw
+                    IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw, new uint[](assets.length));
+                }
             }
         }
     }
@@ -116,7 +160,7 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.targetProportions()[0], 50e16);
         assertEq(metavault.currentProportions().length, 3);
         assertEq(metavault.currentProportions()[0], 50e16);
-        assertEq(metavault.targetVault(), VAULT_C_USDC_SiF);
+        assertEq(metavault.vaultForDeposit(), VAULT_C_USDC_SiF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
     }
@@ -133,5 +177,30 @@ contract MetaVaultSonicTest is Test {
         proxy.initProxy(address(implementation));
         MetaVault(address(proxy)).initialize(PLATFORM, pegAsset, name_, symbol_, vaults_, proportions_);
         return address(proxy);
+    }
+
+    function _getAmountsForDeposit(
+        uint usdValue,
+        address[] memory assets
+    ) internal returns (uint[] memory depositAmounts) {
+        depositAmounts = new uint[](assets.length);
+        for (uint j; j < assets.length; ++j) {
+            (uint price,) = priceReader.getPrice(assets[j]);
+            require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
+            depositAmounts[j] = usdValue * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
+        }
+    }
+
+    function _dealAndApprove(
+        address user,
+        address metavault,
+        address[] memory assets,
+        uint[] memory amounts
+    ) internal {
+        for (uint j; j < assets.length; ++j) {
+            deal(assets[j], user, amounts[j]);
+            vm.prank(user);
+            IERC20(assets[j]).approve(metavault, amounts[j]);
+        }
     }
 }
