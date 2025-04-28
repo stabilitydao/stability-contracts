@@ -107,7 +107,8 @@ contract ShadowFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        return ShFLib.initVariants(platform_);
+        // return ShFLib.initVariants(platform_);
+        (variants, addresses, nums, ticks) = ShFLib.initVariants(platform_);
     }
 
     /// @inheritdoc IStrategy
@@ -201,7 +202,9 @@ contract ShadowFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        return ShFLib.claimRevenue(_getFarmingStrategyBaseStorage(), assets(), _getFarm());
+        // return ShFLib.claimRevenue(_getFarmingStrategyBaseStorage(), assets(), _getFarm());
+        (__assets, __amounts, __rewardAssets, __rewardAmounts) =
+            ShFLib.claimRevenue(_getFarmingStrategyBaseStorage(), assets(), _getFarm());
     }
 
     /// @inheritdoc StrategyBase
