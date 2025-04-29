@@ -6,6 +6,10 @@ import "./libs/StrategyIdLib.sol";
 import "../integrations/silo/ISiloIncentivesController.sol";
 import "../integrations/silo/ISilo.sol";
 import "../integrations/silo/ISiloConfig.sol";
+import "../interfaces/IControllable.sol";
+import {CommonLib} from "src/core/libs/CommonLib.sol";
+import "../interfaces/IFactory.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title Earns APR by lending assets on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -27,7 +31,7 @@ contract SiloStrategy is ERC4626StrategyBase {
         if (addresses.length != 3 || nums.length != 0 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
-        __ERC4626StrategyBase_init(StrategyIdLib.SILO, addresses[0], addresses[1], addresses[2]);
+        __ERC4626StrategyBase_init(StrategyIdLib.SILO_FARM, addresses[0], addresses[1], addresses[2]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -36,7 +40,7 @@ contract SiloStrategy is ERC4626StrategyBase {
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.SILO;
+        return StrategyIdLib.SILO_FARM;
     }
 
     /// @inheritdoc IStrategy
@@ -131,6 +135,6 @@ contract SiloStrategy is ERC4626StrategyBase {
     }
 
     function _getMarketId(address _silo) internal view returns (uint marketId) {
-        marketId = ISiloConfig(ISilo(_silo).siloConfig()).SILO_ID();
+        marketId = ISiloConfig(ISilo(_silo).config()).SILO_ID();
     }
 }

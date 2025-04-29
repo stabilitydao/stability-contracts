@@ -1,22 +1,34 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./base/LPStrategyBase.sol";
-import "./base/MerklStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/UniswapV3MathLib.sol";
-import "./libs/ALMPositionNameLib.sol";
-import "./libs/GRMFLib.sol";
-import "../integrations/gamma/IUniProxy.sol";
-import "../integrations/gamma/IHypervisor.sol";
-import "../integrations/uniswapv3/IUniswapV3Pool.sol";
-import "../core/libs/CommonLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {LPStrategyBase, ILPStrategy, StrategyBase, IStrategy, IERC165} from "./base/LPStrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IControllable} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
+import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
+import {GRMFLib} from "./libs/GRMFLib.sol";
+import {StrategyLib} from "./libs/StrategyLib.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IUniProxy} from "../integrations/gamma/IUniProxy.sol";
+import {IHypervisor} from "../integrations/gamma/IHypervisor.sol";
+import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
 
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
-/// @dev 2.0.0: oRETRO transmutation through CASH flash loan
+/// Changelog
+///   2.5.0: decrease code size
+///   2.4.0: decrease code size
+///   2.3.0: getCustomVaultFee support
+///   2.2.1: LPStrategyBase 1.0.3
+///   2.2.0: FarmingStrategyBase 1.1.2
+///   2.1.0: add MerklStrategyBase
+///   2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
 contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -26,20 +38,13 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.4.0";
+    string public constant VERSION = "2.5.0";
 
     uint internal constant _PRECISION = 1e36;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.GammaRetroFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GAMMARETROFARMSTRATEGY_STORAGE_LOCATION =
         0x46595ab865e543d547ad8669c6b3d688cf90b51012c63b16ac16869cad017f00;
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       CUSTOM ERRORS                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    error NotFlashPool();
-    error PairReentered();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -93,44 +98,9 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
 
     // Call back function, called by the pair during our flashloan.
     function uniswapV3FlashCallback(uint, uint fee1, bytes calldata) external {
-        GRMFLib.GammaRetroFarmStrategyStorage storage $ = _getGammaRetroStorage();
-        address flashPool = $.flashPool;
-        address paymentToken = $.paymentToken;
-        address oToken = _getFarmingStrategyBaseStorage()._rewardAssets[0];
-        address uToken = GRMFLib.getOtherTokenFromPool($.oPool, oToken);
-        address _platform = platform();
-
-        if (msg.sender != flashPool) {
-            revert NotFlashPool();
-        }
-        if (!$.flashOn) {
-            revert PairReentered();
-        }
-
-        // Exercise the oToken
-        uint paymentTokenAmount = IERC20(paymentToken).balanceOf(address(this));
-        uint oTokenAmt = IERC20(oToken).balanceOf(address(this));
-
-        //slither-disable-next-line unused-return
-        IOToken(oToken).exercise(oTokenAmt, paymentTokenAmount, address(this));
-
-        // Swap underlying to payment token
-        address swapper = IPlatform(_platform).swapper();
-
-        ISwapper.PoolData[] memory route = new ISwapper.PoolData[](1);
-        route[0].pool = $.uToPaymentTokenPool;
-        route[0].ammAdapter = IPlatform(_platform).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy;
-        route[0].tokenIn = uToken;
-        route[0].tokenOut = paymentToken;
-        ISwapper(swapper).swapWithRoute(
-            route, GRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
+        GRMFLib.uniswapV3FlashCallback(
+            platform(), ammAdapterId(), _getGammaRetroStorage(), _getFarmingStrategyBaseStorage(), fee1
         );
-
-        // Pay off our loan
-        uint pairDebt = paymentTokenAmount + fee1;
-        IERC20(paymentToken).safeTransfer(flashPool, pairDebt);
-
-        $.flashOn = false;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -174,39 +144,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
+        return GRMFLib.initVariants(platform_, strategyLogicId(), ammAdapterId());
     }
 
     /// @inheritdoc IStrategy
@@ -237,7 +175,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
-        return _generateDescription(farm, $lp.ammAdapter);
+        return GRMFLib.generateDescription(farm, $lp.ammAdapter);
     }
 
     /// @inheritdoc IStrategy
@@ -393,13 +331,6 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     /// @dev proportion of 1e18
     function _getProportion0(address pool_) internal view returns (uint) {
         return GRMFLib.getProportion0(pool_, _getStrategyBaseStorage()._underlying);
-    }
-
-    function _generateDescription(
-        IFactory.Farm memory farm,
-        IAmmAdapter _ammAdapter
-    ) internal view returns (string memory) {
-        return GRMFLib.generateDescription(farm, _ammAdapter);
     }
 
     function _getGammaRetroStorage() private pure returns (GRMFLib.GammaRetroFarmStrategyStorage storage $) {

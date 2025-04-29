@@ -74,6 +74,16 @@ library CommonLib {
         formattedApr = string.concat(Strings.toString(aprInt), delimiter, Strings.toString(aprFraction), "%");
     }
 
+    function formatAprInt(int apr) external pure returns (string memory formattedApr) {
+        int aprInt = apr * 100 / int(ConstantsLib.DENOMINATOR);
+        int aprFraction = (apr - aprInt * int(ConstantsLib.DENOMINATOR) / 100) / 10;
+        string memory delimiter = ".";
+        if (aprFraction < 10 || aprFraction > -10) {
+            delimiter = ".0";
+        }
+        formattedApr = string.concat(i2s2(aprInt), delimiter, i2s(aprFraction), "%");
+    }
+
     function implodeSymbols(
         address[] memory assets,
         string memory delimiter
@@ -159,7 +169,14 @@ library CommonLib {
         return Strings.toString(num);
     }
 
-    function i2s(int num) external pure returns (string memory) {
+    function i2s(int num) public pure returns (string memory) {
         return Strings.toString(num > 0 ? uint(num) : uint(-num));
+    }
+
+    function i2s2(int num) public pure returns (string memory) {
+        if (num >= 0) {
+            return Strings.toString(uint(num));
+        }
+        return string.concat("-", Strings.toString(uint(-num)));
     }
 }

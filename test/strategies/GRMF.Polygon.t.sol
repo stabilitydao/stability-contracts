@@ -22,7 +22,8 @@ contract GammaRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
                 id: StrategyIdLib.GAMMA_RETRO_MERKL_FARM,
                 pool: address(0),
                 farmId: farmId,
-                underlying: address(0)
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }
@@ -31,10 +32,10 @@ contract GammaRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
         deal(PolygonLib.TOKEN_oRETRO, currentStrategy, 10e18);
 
         // cover flash swap callback reverts
-        vm.expectRevert(GammaRetroMerklFarmStrategy.NotFlashPool.selector);
+        vm.expectRevert(GRMFLib.NotFlashPool.selector);
         GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
 
-        vm.expectRevert(GammaRetroMerklFarmStrategy.PairReentered.selector);
+        vm.expectRevert(GRMFLib.PairReentered.selector);
         vm.prank(PolygonLib.POOL_RETRO_USDCe_CASH_100);
         GammaRetroMerklFarmStrategy(currentStrategy).uniswapV3FlashCallback(0, 0, "");
     }

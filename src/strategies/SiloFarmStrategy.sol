@@ -1,15 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "../integrations/silo/ISiloIncentivesController.sol";
-import "../integrations/silo/ISilo.sol";
-import "../integrations/silo/ISiloConfig.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {
+    FarmingStrategyBase,
+    StrategyBase,
+    IFarmingStrategy,
+    IStrategy,
+    IFactory,
+    IControllable,
+    StrategyLib,
+    IPlatform
+} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
+import {ISilo} from "../integrations/silo/ISilo.sol";
+import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
+///   1.0.2: FarmingStrategyBase 1.3.3
 ///   1.0.1: claimRevenue bugfix
 ///   1.0.3: getSpecificName update
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -20,7 +34,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.0.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -292,6 +306,6 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     function _getMarketId() internal view returns (uint marketId) {
         IFactory.Farm memory farm = _getFarm();
-        marketId = ISiloConfig(ISilo(farm.addresses[1]).siloConfig()).SILO_ID();
+        marketId = ISiloConfig(ISilo(farm.addresses[1]).config()).SILO_ID();
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 /// @title Simple ERC-1967 upgradeable proxy implementation
 abstract contract UpgradeableProxy {
@@ -16,10 +16,9 @@ abstract contract UpgradeableProxy {
     }
 
     /// @dev Post deploy initialisation for compatability with EIP-1167 factory
-    function _init(address _logic) internal {
-        // nosemgrep
+    function _init(address logic) internal {
         require(_implementation() == address(0), "Already inited");
-        _setImplementation(_logic);
+        _setImplementation(logic);
     }
 
     /// @dev Returns the current implementation address.
@@ -42,7 +41,6 @@ abstract contract UpgradeableProxy {
     function _setImplementation(address newImplementation) private {
         if (newImplementation.code.length == 0) revert ImplementationIsNotContract();
         bytes32 slot = _IMPLEMENTATION_SLOT;
-        // solhint-disable-next-line no-inline-assembly
         //slither-disable-next-line assembly
         assembly {
             sstore(slot, newImplementation)

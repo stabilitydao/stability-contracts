@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../../chains/SonicLib.sol";
+import "../../chains/sonic/SonicLib.sol";
 import "../base/UniversalTest.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
 
@@ -11,32 +11,26 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
     RebalanceHelper public rebalanceHelper;
 
     constructor() {
-        vm.rollFork(5838000); // Jan-30-2025 12:11:36 AM +UTC
-
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.5 hours;
 
-        makePoolVolumePriceImpactTolerance = 20_000;
-        poolVolumeSwapAmount0MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 100; // 500k
-        poolVolumeSwapAmount1MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_WETH] = 150; // 650k
-        poolVolumeSwapAmount0MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 80;
-        poolVolumeSwapAmount1MultiplierForPool[SonicLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 40;
+        makePoolVolumePriceImpactTolerance = 34_000;
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 500; // 500k
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 650; // 650k
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 800;
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 400;
 
         rebalanceHelper = new RebalanceHelper();
     }
 
     function testASF() public universalTest {
-        _addStrategy(23); // wS_WETH 3000
-        _addStrategy(24); // wS_WETH 1500
-        _addStrategy(25); // wS_BRUSH 3000
-        _addStrategy(26); // wS_BRUSH 1500
-        _addStrategy(27);
-        _addStrategy(28);
+        _addStrategy(25); // wS_WETH 3000
+        _addStrategy(26); // wS_WETH 1500
+        _addStrategy(27); // wS_USDC 3000
+        _addStrategy(28); // wS_USDC 1500
         _addStrategy(29);
         _addStrategy(30);
-        _addStrategy(31);
-        _addStrategy(33);
     }
 
     function _rebalance() internal override {
@@ -79,7 +73,13 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.ALM_SHADOW_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({
+                id: StrategyIdLib.ALM_SHADOW_FARM,
+                pool: address(0),
+                farmId: farmId,
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
+            })
         );
     }
 }

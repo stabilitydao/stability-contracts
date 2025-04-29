@@ -581,4 +581,11 @@ interface IBVault {
         uint protocolSwapFeePercentage,
         bytes memory userData
     ) external returns (uint bptIn, uint[] memory amountsOut);
+
+    function flashLoan(
+        address recipient,
+        address[] memory tokens,
+        uint[] memory amounts,
+        bytes memory userData
+    ) external;
 }

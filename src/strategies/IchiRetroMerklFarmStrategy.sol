@@ -1,18 +1,38 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "./base/LPStrategyBase.sol";
-import "./base/MerklStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/IRMFLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../integrations/ichi/IICHIVault.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {
+    LPStrategyBase,
+    ILPStrategy,
+    IStrategy,
+    IERC165,
+    StrategyBase,
+    VaultTypeLib,
+    LPStrategyLib
+} from "./base/LPStrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {
+    FarmingStrategyBase,
+    IFarmingStrategy,
+    IControllable,
+    IFactory,
+    IPlatform,
+    StrategyLib
+} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {IRMFLib, IOToken, CommonLib} from "./libs/IRMFLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IICHIVault} from "../integrations/ichi/IICHIVault.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on Retro
-/// @dev 2.0.0: oRETRO transmutation through CASH flash loan
+/// Changelog
+///   2.5.0: decrease code size
+///   2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
 contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -22,7 +42,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.4.0";
+    string public constant VERSION = "2.5.0";
 
     uint internal constant _PRECISION = 10 ** 18;
 
@@ -194,39 +214,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = IRMFLib.generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
+        return IRMFLib.initVariants(platform_, strategyLogicId(), ammAdapterId());
     }
 
     /// @inheritdoc IStrategy

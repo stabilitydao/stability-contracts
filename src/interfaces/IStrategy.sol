@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @dev Core interface of strategy logic
 interface IStrategy is IERC165 {
@@ -96,12 +96,12 @@ interface IStrategy is IERC165 {
     /// @dev Last APR of earned USD amount registered by HardWork
     ///      ONLY FOR OFF-CHAIN USE.
     ///      Not trusted asset price can be manipulated.
-    /// @return APR with 18 decimals. 1e18 - 100%.
+    /// @return APR with 5 decimals. 100_000 - 100% APR, 9_955 - 9.96% APR.
     function lastApr() external view returns (uint);
 
     /// @dev Last APR of compounded assets registered by HardWork.
     ///      Can be used on-chain.
-    /// @return APR with 18 decimals. 1e18 - 100%.
+    /// @return APR with 5 decimals. 100_000 - 100% APR, 9_955 - 9.96% APR.
     function lastAprCompound() external view returns (uint);
 
     /// @notice Calculation of consumed amounts and liquidity/underlying value for provided strategy assets and amounts.

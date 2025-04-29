@@ -1,18 +1,33 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./base/LPStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../integrations/convex/IConvexRewardPool.sol";
-import "../integrations/convex/IBooster.sol";
-import "../integrations/curve/IStableSwapViews.sol";
-import "../integrations/curve/IStableSwapNG.sol";
-import "../integrations/curve/IStableSwapNGPool.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
+import {LPStrategyBase, ILPStrategy, VaultTypeLib} from "./base/LPStrategyBase.sol";
+import {
+    FarmingStrategyBase,
+    IFarmingStrategy,
+    IStrategy,
+    StrategyBase,
+    IFactory,
+    IControllable,
+    IERC165,
+    StrategyLib,
+    IPlatform
+} from "./base/FarmingStrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IConvexRewardPool} from "../integrations/convex/IConvexRewardPool.sol";
+import {IBooster} from "../integrations/convex/IBooster.sol";
+import {IStableSwapViews} from "../integrations/curve/IStableSwapViews.sol";
+import {IStableSwapNG} from "../integrations/curve/IStableSwapNG.sol";
+import {IStableSwapNGPool} from "../integrations/curve/IStableSwapNGPool.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 
 /// @title Staking Curve LP to Convex
+/// Changelog:
+///   1.4.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
 contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -22,7 +37,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CurveConvexFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION =

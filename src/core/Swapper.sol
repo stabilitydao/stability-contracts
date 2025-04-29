@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./base/Controllable.sol";
-import "../interfaces/ISwapper.sol";
-import "../interfaces/IAmmAdapter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @notice On-chain price quoter and swapper. It works by predefined routes using AMM adapters.
 /// @dev Inspired by TetuLiquidator
+/// Changelog:
+///   1.2.0: support long routes up to 8 hops
+///   1.1.0: support long routes up to 6 hops
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -21,9 +26,9 @@ contract Swapper is Controllable, ISwapper {
     //region ----- Constants -----
 
     /// @dev Version of Swapper implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.2.0";
 
-    uint public constant ROUTE_LENGTH_MAX = 5;
+    uint public constant ROUTE_LENGTH_MAX = 8;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Swapper")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant SWAPPER_STORAGE_LOCATION =
@@ -452,6 +457,147 @@ contract Swapper is Controllable, ISwapper {
             route[3] = poolDataOut2;
             route[4] = poolDataOut;
             return (_cutRoute(route, 5), "");
+        }
+
+        // --- POOL3 for in
+        PoolData memory poolDataIn3 = $.pools[poolDataIn2.tokenOut];
+        if (poolDataIn3.pool == address(0)) {
+            return (_cutRoute(route, 0), "L: Not found pool for tokenIn3");
+        }
+
+        route[2] = poolDataIn3;
+        if (poolDataIn3.tokenOut == tokenOut) {
+            return (_cutRoute(route, 3), "");
+        }
+
+        if (poolDataIn3.tokenOut == poolDataOut.tokenIn) {
+            route[3] = poolDataOut;
+            return (_cutRoute(route, 4), "");
+        }
+
+        if (poolDataIn3.tokenOut == poolDataOut2.tokenIn) {
+            route[3] = poolDataOut2;
+            route[4] = poolDataOut;
+            return (_cutRoute(route, 5), "");
+        }
+
+        // --- POOL3 for out
+        // find the largest pool for token out 2
+        PoolData memory poolDataOut3 = $.pools[poolDataOut2.tokenIn];
+        if (poolDataOut3.pool == address(0)) {
+            return (_cutRoute(route, 0), "L: Not found pool for tokenOut3");
+        }
+
+        // need to swap directions for tokenOut3 pool
+        (poolDataOut3.tokenIn, poolDataOut3.tokenOut) = (poolDataOut3.tokenOut, poolDataOut3.tokenIn);
+
+        // if we can swap between largest pools the route is ended
+        if (poolDataIn.tokenOut == poolDataOut3.tokenIn) {
+            route[1] = poolDataOut3;
+            route[2] = poolDataOut2;
+            route[3] = poolDataOut;
+            return (_cutRoute(route, 4), "");
+        }
+
+        if (poolDataIn2.tokenOut == poolDataOut3.tokenIn) {
+            route[2] = poolDataOut3;
+            route[3] = poolDataOut2;
+            route[4] = poolDataOut;
+            return (_cutRoute(route, 5), "");
+        }
+
+        if (poolDataIn3.tokenOut == poolDataOut3.tokenIn) {
+            route[3] = poolDataOut3;
+            route[4] = poolDataOut2;
+            route[5] = poolDataOut;
+            return (_cutRoute(route, 6), "");
+        }
+
+        if (tokenIn == poolDataOut3.tokenIn) {
+            route[0] = poolDataOut3;
+            route[1] = poolDataOut2;
+            route[2] = poolDataOut;
+            return (_cutRoute(route, 3), "");
+        }
+
+        // --- POOL4 for in
+        PoolData memory poolDataIn4 = $.pools[poolDataIn3.tokenOut];
+        if (poolDataIn4.pool == address(0)) {
+            return (_cutRoute(route, 0), "L: Not found pool for tokenIn4");
+        }
+
+        route[3] = poolDataIn4;
+        if (poolDataIn4.tokenOut == tokenOut) {
+            return (_cutRoute(route, 4), "");
+        }
+
+        if (poolDataIn4.tokenOut == poolDataOut.tokenIn) {
+            route[4] = poolDataOut;
+            return (_cutRoute(route, 5), "");
+        }
+
+        if (poolDataIn4.tokenOut == poolDataOut2.tokenIn) {
+            route[4] = poolDataOut2;
+            route[5] = poolDataOut;
+            return (_cutRoute(route, 6), "");
+        }
+
+        if (poolDataIn4.tokenOut == poolDataOut3.tokenIn) {
+            route[4] = poolDataOut3;
+            route[5] = poolDataOut2;
+            route[6] = poolDataOut;
+            return (_cutRoute(route, 7), "");
+        }
+
+        // --- POOL4 for out
+        // find the largest pool for token out 3
+        PoolData memory poolDataOut4 = $.pools[poolDataOut3.tokenIn];
+        if (poolDataOut4.pool == address(0)) {
+            return (_cutRoute(route, 0), "L: Not found pool for tokenOut4");
+        }
+
+        // need to swap directions for tokenOut3 pool
+        (poolDataOut4.tokenIn, poolDataOut4.tokenOut) = (poolDataOut4.tokenOut, poolDataOut4.tokenIn);
+
+        // if we can swap between largest pools the route is ended
+        if (poolDataIn.tokenOut == poolDataOut4.tokenIn) {
+            route[1] = poolDataOut4;
+            route[2] = poolDataOut3;
+            route[3] = poolDataOut2;
+            route[4] = poolDataOut;
+            return (_cutRoute(route, 5), "");
+        }
+
+        if (poolDataIn2.tokenOut == poolDataOut4.tokenIn) {
+            route[2] = poolDataOut4;
+            route[3] = poolDataOut3;
+            route[4] = poolDataOut2;
+            route[5] = poolDataOut;
+            return (_cutRoute(route, 6), "");
+        }
+
+        if (poolDataIn3.tokenOut == poolDataOut4.tokenIn) {
+            route[3] = poolDataOut4;
+            route[4] = poolDataOut3;
+            route[5] = poolDataOut2;
+            route[6] = poolDataOut;
+            return (_cutRoute(route, 7), "");
+        }
+
+        if (poolDataIn4.tokenOut == poolDataOut4.tokenIn) {
+            route[4] = poolDataOut4;
+            route[5] = poolDataOut3;
+            route[6] = poolDataOut2;
+            route[7] = poolDataOut;
+            return (_cutRoute(route, 8), "");
+        }
+
+        if (tokenIn == poolDataOut4.tokenIn) {
+            route[0] = poolDataOut4;
+            route[1] = poolDataOut3;
+            route[2] = poolDataOut2;
+            route[3] = poolDataOut;
+            return (_cutRoute(route, 4), "");
         }
 
         // We are not handling other cases such as:

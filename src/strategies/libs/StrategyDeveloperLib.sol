@@ -65,8 +65,17 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.ALM_SHADOW_FARM)) {
             return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
         }
-        if (CommonLib.eq(strategyId, StrategyIdLib.SILO)) {
-            return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
+        if (CommonLib.eq(strategyId, StrategyIdLib.SILO_LEVERAGE)) {
+            return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
+        }
+        if (CommonLib.eq(strategyId, StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
+            return 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
+        }
+        if (CommonLib.eq(strategyId, StrategyIdLib.GAMMA_EQUALIZER_FARM)) {
+            return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
+        }
+        if (CommonLib.eq(strategyId, StrategyIdLib.ICHI_EQUALIZER_FARM)) {
+            return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
         }
         return address(0);
     }

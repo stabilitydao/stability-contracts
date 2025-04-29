@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SonicLib} from "../../chains/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
@@ -33,10 +33,10 @@ contract ASFUpgrade1Test is Test {
 
     function testASFBugfix1() public {
         // check that depositAssets reverts and proportions are incorrect
-        deal(SonicLib.TOKEN_wS, address(this), 10e18);
-        deal(SonicLib.TOKEN_USDC, address(this), 10e6);
-        IERC20(SonicLib.TOKEN_wS).approve(vault, type(uint).max);
-        IERC20(SonicLib.TOKEN_USDC).approve(vault, type(uint).max);
+        deal(SonicConstantsLib.TOKEN_wS, address(this), 10e18);
+        deal(SonicConstantsLib.TOKEN_USDC, address(this), 10e6);
+        IERC20(SonicConstantsLib.TOKEN_wS).approve(vault, type(uint).max);
+        IERC20(SonicConstantsLib.TOKEN_USDC).approve(vault, type(uint).max);
         address[] memory assets = IStrategy(STRATEGY).assets();
         uint[] memory amounts = new uint[](2);
         amounts[0] = 10e18;
@@ -64,7 +64,7 @@ contract ASFUpgrade1Test is Test {
         factory.upgradeStrategyProxy(STRATEGY);
 
         proportions = IStrategy(STRATEGY).getAssetsProportions();
-        console.log(proportions[0], proportions[1]);
+        //console.log(proportions[0], proportions[1]);
 
         IVault(vault).depositAssets(assets, amounts, 0, address(this));
     }

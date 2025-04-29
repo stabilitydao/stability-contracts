@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {StrategyBase} from "./base/StrategyBase.sol";
-import {LPStrategyBase} from "./base/LPStrategyBase.sol";
-import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
-import {StrategyLib} from "./libs/StrategyLib.sol";
+import {LPStrategyBase, StrategyBase, ILPStrategy, IStrategy} from "./base/LPStrategyBase.sol";
+import {FarmingStrategyBase, StrategyLib, IFarmingStrategy} from "./base/FarmingStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
-import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
-import {ILPStrategy} from "../interfaces/ILPStrategy.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
@@ -25,6 +19,8 @@ import {ISolidlyPool} from "../integrations/solidly/ISolidlyPool.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 
 /// @title Earn Equalizer gauge rewards by classic LPs
+/// Changelog:
+///   1.1.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
 contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -34,7 +30,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

@@ -21,7 +21,13 @@ contract CurveConvexFarmStrategyTest is PolygonSetup, UniversalTest {
 
     function _addStrategy(uint farmId) internal {
         strategies.push(
-            Strategy({id: StrategyIdLib.CURVE_CONVEX_FARM, pool: address(0), farmId: farmId, underlying: address(0)})
+            Strategy({
+                id: StrategyIdLib.CURVE_CONVEX_FARM,
+                pool: address(0),
+                farmId: farmId,
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
+            })
         );
     }
 }

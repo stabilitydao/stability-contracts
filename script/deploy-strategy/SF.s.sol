@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Script.sol";
-import "../../src/strategies/SwapXFarmStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 
 contract DeploySF is Script {
     function run() external {

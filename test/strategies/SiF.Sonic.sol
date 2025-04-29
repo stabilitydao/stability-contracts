@@ -5,14 +5,9 @@ import "../base/chains/SonicSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract SiloFarmStrategyTest is SonicSetup, UniversalTest {
-    constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(5916871); // Jan-30-2025 04:32:17 PM +UTC
-    }
-
     function testSiFSonic() public universalTest {
         _addStrategy(22);
-        _addStrategy(32);
+        _addStrategy(23);
     }
 
     function _addStrategy(uint farmId) internal {
@@ -20,8 +15,9 @@ contract SiloFarmStrategyTest is SonicSetup, UniversalTest {
             Strategy({
                 id: StrategyIdLib.SILO_FARM,
                 pool: address(0),
-                farmId: farmId, // chains/SonicLib.sol
-                underlying: address(0)
+                farmId: farmId, // chains/sonic/SonicLib.sol
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }

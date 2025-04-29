@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../../core/libs/ConstantsLib.sol";
-import "../../core/libs/VaultTypeLib.sol";
-import "../../core/libs/CommonLib.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IVault.sol";
-import "../../interfaces/IVaultManager.sol";
-import "../../interfaces/IStrategyLogic.sol";
-import "../../interfaces/IFactory.sol";
-import "../../interfaces/IPriceReader.sol";
-import "../../interfaces/ISwapper.sol";
-import "../../interfaces/ILPStrategy.sol";
-import "../../interfaces/IFarmingStrategy.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
+import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
+import {CommonLib} from "../../core/libs/CommonLib.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IVault} from "../../interfaces/IVault.sol";
+import {IVaultManager} from "../../interfaces/IVaultManager.sol";
+import {IStrategyLogic} from "../../interfaces/IStrategyLogic.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
+import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
+import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 
 library StrategyLib {
     using SafeERC20 for IERC20;
 
-    /// @dev Reward pools may have low liquidity and 1% fees
+    /// @dev Reward pools may have low liquidity and up to 2% fees
     uint internal constant SWAP_REWARDS_PRICE_IMPACT_TOLERANCE = 7_000;
 
     struct ExtractFeesVars {
@@ -62,6 +64,7 @@ library StrategyLib {
         for (uint i; i < len; ++i) {
             IERC20(farm.rewardAssets[i]).forceApprove(swapper, type(uint).max);
         }
+        $._rewardsOnBalance = new uint[](len);
     }
 
     function transferAssets(
@@ -84,7 +87,6 @@ library StrategyLib {
     function extractFees(
         address platform,
         address vault,
-        string memory _id,
         address[] memory assets_,
         uint[] memory amounts_
     ) external returns (uint[] memory amountsRemaining) {
@@ -100,20 +102,19 @@ library StrategyLib {
             amountEcosystem: 0
         });
 
-        (vars.feePlatform, vars.feeShareVaultManager, vars.feeShareStrategyLogic, vars.feeShareEcosystem) =
-            vars.platform.getFees();
+        (vars.feePlatform,,,) = vars.platform.getFees();
         try vars.platform.getCustomVaultFee(vault) returns (uint vaultCustomFee) {
             if (vaultCustomFee != 0) {
                 vars.feePlatform = vaultCustomFee;
             }
         } catch {}
 
-        address vaultManagerReceiver =
-            IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
+        //address vaultManagerReceiver =
+        //    IVaultManager(vars.platform.vaultManager()).getRevenueReceiver(IVault(vault).tokenId());
         //slither-disable-next-line unused-return
-        uint strategyLogicTokenId = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id))).tokenId;
-        address strategyLogicReceiver =
-            IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
+        //uint strategyLogicTokenId = IFactory(vars.platform.factory()).strategyLogicConfig(keccak256(bytes(_id))).tokenId;
+        //address strategyLogicReceiver =
+        //    IStrategyLogic(vars.platform.strategyLogic()).getRevenueReceiver(strategyLogicTokenId);
         uint len = assets_.length;
         amountsRemaining = new uint[](len);
         // nosemgrep
@@ -123,7 +124,14 @@ library StrategyLib {
             vars.amountPlatform = Math.min(vars.amountPlatform, balance(assets_[i]));
 
             if (vars.amountPlatform > 0) {
-                // VaultManager amount
+                try vars.platform.revenueRouter() returns (address revenueReceiver) {
+                    IERC20(assets_[i]).forceApprove(revenueReceiver, vars.amountPlatform);
+                    IRevenueRouter(revenueReceiver).processFeeAsset(assets_[i], vars.amountPlatform);
+                } catch {
+                    // can be only in old strategy upgrade tests
+                }
+
+                /*// VaultManager amount
                 vars.amountVaultManager = vars.amountPlatform * vars.feeShareVaultManager / ConstantsLib.DENOMINATOR;
 
                 // StrategyLogic amount
@@ -150,7 +158,8 @@ library StrategyLib {
                 }
                 emit IStrategy.ExtractFees(
                     vars.amountVaultManager, vars.amountStrategyLogic, vars.amountEcosystem, multisigAmount
-                );
+                );*/
+
                 amountsRemaining[i] = amounts_[i] - vars.amountPlatform;
                 amountsRemaining[i] = Math.min(amountsRemaining[i], balance(assets_[i]));
             }
@@ -223,6 +232,13 @@ library StrategyLib {
         return earned * 1e18 * ConstantsLib.DENOMINATOR * uint(365) / tvl / (duration * 1e18 / 1 days);
     }
 
+    function computeAprInt(uint tvl, int earned, uint duration) public pure returns (int) {
+        if (tvl == 0 || duration == 0) {
+            return 0;
+        }
+        return earned * int(1e18) * int(ConstantsLib.DENOMINATOR) * int(365) / int(tvl) / int(duration * 1e18 / 1 days);
+    }
+
     function assetsAmountsWithBalances(
         address[] memory assets_,
         uint[] memory amounts_
@@ -244,6 +260,36 @@ library StrategyLib {
                 break;
             }
         }
+    }
+
+    function isPositiveAmountInArray(uint[] memory amounts) external pure returns (bool) {
+        uint len = amounts.length;
+        for (uint i; i < len; ++i) {
+            if (amounts[i] != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function swap(address platform, address tokenIn, address tokenOut, uint amount) external returns (uint amountOut) {
+        uint outBalanceBefore = balance(tokenOut);
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, 1000);
+        amountOut = balance(tokenOut) - outBalanceBefore;
+    }
+
+    function swap(
+        address platform,
+        address tokenIn,
+        address tokenOut,
+        uint amount,
+        uint priceImpactTolerance
+    ) external returns (uint amountOut) {
+        uint outBalanceBefore = balance(tokenOut);
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
+        amountOut = balance(tokenOut) - outBalanceBefore;
     }
 
     // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {

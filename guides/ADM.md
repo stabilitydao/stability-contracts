@@ -4,6 +4,12 @@
 
 ### Manual HardWork
 
+#### Sonic
+
+```shell
+cast send -r sonic --gas-limit 15000000 --account DedicatedServerMsgSender 0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701 'call(address[])' [0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224]
+```
+
 #### Polygon
 
 ```shell
@@ -62,7 +68,7 @@ function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitP
 ```
 </details>
 
-* [Factory polygonscan](https://polygonscan.com/address/0xa14EaAE76890595B3C7ea308dAEBB93863480EAD#writeProxyContract)
+* [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
 * Connect operator wallet
 * `4. setStrategyAvailableInitParams (0x6c2713a3)`
 * fill params
@@ -98,6 +104,10 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * Solidly (Equalizer, SwapX classic): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
 * AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
 * UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
+* ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
+* BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
+* BalancerWeighted: 0x7D6641cf68E5169c11d91266D3E410130dE70B9E
+* Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
@@ -134,7 +144,6 @@ function setStrategyLogicConfig(StrategyLogicConfig memory config, address devel
 * Connect operator wallet
 * `8. setStrategyLogicConfig`
 * fill
-
 
 ## Multisig actions
 
@@ -226,3 +235,25 @@ Call it via Safe Transaction Builder:
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
 * Upgrade vault's strategy [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
+
+### Init contest gems rewards
+
+Use `IMerkleDistributor.setupCampaign`.
+
+1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+2. `0x0391aBDCFaB86947d93f9dd032955733B639416b` (MerkleDistributor)
+3. Enter ABI: `[{"type": "function", "name": "setupCampaign", "inputs": [{"name": "campaignId", "type": "string", "internalType": "string"}, {"name": "token", "type": "address", "internalType": "address"}, {"name": "totalAmount", "type": "uint256", "internalType": "uint256"}, {"name": "merkleRoot", "type": "bytes32", "internalType": "bytes32"}, {"name": "mint", "type": "bool", "internalType": "bool"}], "outputs": [], "stateMutability": "nonpayable"}]`
+4. campignId: `y<num>`
+5. token: `0x9A08cD5691E009cC72E2A4d8e7F2e6EE14E96d6d`
+6. totalAmount: `900000000000000000000000`
+7. merkleRoot: `<copy>`
+8. mint: `true`
+
+### Upgrade platform
+
+Use `IPlatform.announcePlatformUpgrade`
+
+1. [New Transaction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+2. `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
+3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
+4. Fill

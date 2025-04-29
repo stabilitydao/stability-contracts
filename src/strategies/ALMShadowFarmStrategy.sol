@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -24,7 +24,9 @@ import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
 /// @title Earn Shadow gauge rewards by Stability ALM
 /// Changelog:
-///   1.1.1: ALMStrategyBase 1.1.1: Not need re-balance when cant move range
+///   1.1.4: FarmingStrategyBase 1.3.3
+///   1.1.3: FarmingStrategyBase 1.3.2: refreshFarmingAssets bugfix
+///   1.1.2: ALMStrategyBase 1.1.1: Not need re-balance when cant move range
 ///   1.1.1: LPStrategyBase._swapForDepositProportion use try..catch
 ///   1.1.0: Fill-Up algo deposits to base range only; improved description
 /// @author Alien Deployer (https://github.com/a17)
@@ -36,7 +38,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.2";
+    string public constant VERSION = "1.1.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

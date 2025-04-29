@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/adapters/SolidlyAdapter.sol";
+import {Script} from "forge-std/Script.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 
 contract DeploySolidlyAdapterReal is Script {
     address public constant PLATFORM = 0xB7838d447deece2a9A5794De0f342B47d0c1B9DC;
@@ -11,11 +11,9 @@ contract DeploySolidlyAdapterReal is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new SolidlyAdapter()));
         SolidlyAdapter(address(proxy)).init(PLATFORM);
-
         vm.stopBroadcast();
     }
 

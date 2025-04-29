@@ -23,5 +23,8 @@ library StrategyIdLib {
     string internal constant SWAPX_FARM = "SwapX Farm";
     string internal constant SILO_FARM = "Silo Farm";
     string internal constant ALM_SHADOW_FARM = "ALM Shadow Farm";
-    string internal constant SILO = "Silo";
+    string internal constant SILO_LEVERAGE = "Silo Leverage";
+    string internal constant SILO_ADVANCED_LEVERAGE = "Silo Advanced Leverage";
+    string internal constant GAMMA_EQUALIZER_FARM = "Gamma Equalizer Farm";
+    string internal constant ICHI_EQUALIZER_FARM = "Ichi Equalizer Farm";
 }

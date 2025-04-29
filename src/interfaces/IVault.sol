@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "./IStrategy.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IStrategy} from "./IStrategy.sol";
 
 /// @notice Vault core interface.
 /// Derived implementations can be effective for building tokenized vaults with single or multiple underlying liquidity mining position.
