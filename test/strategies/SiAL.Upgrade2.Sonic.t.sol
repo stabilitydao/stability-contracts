@@ -31,7 +31,8 @@ contract SiALUpgrade2Test is Test {
     }
 
     function testSiALUpgrade() public {
-        address user = address(1);
+        address user1 = address(1);
+        address user2 = address(2);
 
         // ----------------- deploy new impl and upgrade
         _upgrade();
@@ -56,13 +57,19 @@ contract SiALUpgrade2Test is Test {
         assertApproxEqAbs(ltv, 80_00, 1000);
 
         // ----------------- deposit large amount
-        _depositForUser(user, 100_000e6);
-        ltv = _showHealth("After deposit");
+        _depositForUser(user2, 1_000e6);
+        ltv = _showHealth("After deposit 2");
+
+        _depositForUser(user1, 100_000e6);
+        ltv = _showHealth("After deposit 1");
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
-        _withdrawAllForUser(user);
-        ltv = _showHealth("After withdraw");
+        _withdrawAllForUser(user1);
+        ltv = _showHealth("After withdraw 1");
+
+//        _withdrawAllForUser(user2);
+//        ltv = _showHealth("After withdraw 2");
     }
 
 //region -------------------------- Auxiliary functions
@@ -75,7 +82,9 @@ contract SiALUpgrade2Test is Test {
         console.log("collateralAmount", collateralAmount);
         console.log("debtAmount", debtAmount);
         console.log("targetLeveragePercent", targetLeveragePercent);
-        return ltv;
+        console.log("Total amount in strategy", strategy.total());
+
+    return ltv;
     }
 
     function _depositForUser(address user, uint depositAmount) internal {

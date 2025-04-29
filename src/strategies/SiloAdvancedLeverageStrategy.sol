@@ -1,29 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "../../lib/forge-std/src/console.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
-import {StrategyBase} from "./base/StrategyBase.sol";
-import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
-import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
-import {StrategyLib} from "./libs/StrategyLib.sol";
-import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IBVault} from "../integrations/balancer/IBVault.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
-import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
-import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
-import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
-import {IBVault} from "../integrations/balancer/IBVault.sol";
+import {ISilo} from "../integrations/silo/ISilo.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
+import {StrategyBase} from "./base/StrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {StrategyLib} from "./libs/StrategyLib.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
@@ -303,6 +304,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        console.log("_depositAssets", amounts[0]);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.tempAction = CurrentAction.Deposit;
         LeverageLendingAddresses memory v = LeverageLendingAddresses({
@@ -313,19 +315,25 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         });
         address[] memory _assets = assets();
         uint valueWas = StrategyLib.balance(_assets[0]) + SiloAdvancedLib.calcTotal(v);
+        console.log("_depositAssets.valueWas", valueWas);
 
         (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
+        console.log("_depositAssets.targetLeverage", targetLeverage);
 
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amounts[0] * targetLeverage / INTERNAL_PRECISION;
+        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
         // not sure that its right way, but its working
         flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+        console.log("_depositAssets.depositParam0", $.depositParam0);
+        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
 
         IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
 
         uint valueNow = StrategyLib.balance(_assets[0]) + SiloAdvancedLib.calcTotal(v);
+        console.log("_depositAssets.valueNow", valueNow);
 
         if (valueNow > valueWas) {
             //console.log('deposit profit', valueNow - valueWas);
@@ -334,13 +342,18 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             //console.log('deposit loss', valueWas - valueNow);
             value = amounts[0] - (valueWas - valueNow);
         }
+        console.log("_depositAssets.balance-B", StrategyLib.balance(v.borrowAsset));
+        console.log("_depositAssets.value (delta)", value);
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        console.log("$base.total before", $base.total);
         $base.total += value;
+        console.log("$base.total after", $base.total);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.value", value);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.tempAction = CurrentAction.Withdraw;
         LeverageLendingAddresses memory v = LeverageLendingAddresses({
@@ -352,24 +365,34 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         amountsOut = new uint[](1);
 
         uint valueWas = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
+        console.log("_withdrawAssets.valueWas", valueWas);
 
+        (,, uint leverage,,,) = health(); //todo
         (uint maxLtv, uint maxLeverage,) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
+        console.log("_withdrawAssets.maxLtv", maxLtv);
+        console.log("_withdrawAssets.maxLeverage", maxLeverage, leverage);
 
         (uint priceCtoB,) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
+        console.log("_withdrawAssets.priceCtoB", priceCtoB);
 
         {
-            uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
+            uint collateralAmountToWithdraw = value * leverage /*todo: maxLeverage. Probably targetLeverage?*/ / INTERNAL_PRECISION;
+            console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
             flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18) * priceCtoB / 1e18;
+            console.log("_withdrawAssets.flashAmounts[0]", flashAmounts[0]);
             address[] memory flashAssets = new address[](1);
             flashAssets[0] = $.borrowAsset;
             IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
         }
 
         uint valueNow = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
+        console.log("_withdrawAssets.valueNow.C", valueNow);
+        console.log("_withdrawAssets.balance-B", StrategyLib.balance(v.borrowAsset));
 
         uint bal = StrategyLib.balance(v.collateralAsset);
+        console.log("_withdrawAssets.bal.C", bal);
         if (valueWas > valueNow) {
             //console.log('withdraw loss', valueWas - valueNow);
             amountsOut[0] = Math.min(value - (valueWas - valueNow), bal);
@@ -377,13 +400,17 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             //console.log('withdraw profit', valueNow - valueWas);
             amountsOut[0] = Math.min(value + (valueNow - valueWas), bal);
         }
+        console.log("_withdrawAssets.amountsOut[0]", amountsOut[0]);
 
         if (receiver != address(this)) {
+            console.log("transfer C to user", amountsOut[0]);
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        console.log("$base.total.before", $base.total);
         $base.total -= value;
+        console.log("$base.total.after", $base.total);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
