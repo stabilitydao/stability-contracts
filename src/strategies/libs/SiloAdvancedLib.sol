@@ -235,6 +235,7 @@ library SiloAdvancedLib {
 
         collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
+        console.log("ltv", ltv);
         console.log("collateralAmount", collateralAmount);
         console.log("debtAmount", debtAmount);
 

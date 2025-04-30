@@ -387,6 +387,9 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         uint valueWas = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
         console.log("_withdrawAssets.valueWas", valueWas);
 
+        (uint ltv,,,,,) = health();
+        console.log("_withdrawAssets.ltv", ltv);
+
         (uint maxLtv, uint maxLeverage, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
         console.log("_withdrawAssets.maxLtv", maxLtv);
         console.log("_withdrawAssets.maxLeverage", maxLeverage);
@@ -396,11 +399,11 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("_withdrawAssets.priceCtoB", priceCtoB);
 
         {
-            uint collateralAmountToWithdraw = value * (targetLeverage /*TODO: + INTERNAL_PRECISION */) / INTERNAL_PRECISION;
+            uint collateralAmountToWithdraw = value * targetLeverage /** TODO: leverage? */ / INTERNAL_PRECISION;
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18)
+            flashAmounts[0] = collateralAmountToWithdraw * ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
                 * priceCtoB
                 * (10**IERC20Metadata(v.borrowAsset).decimals())
                 / 1e18 // priceCtoB has decimals 1e18
