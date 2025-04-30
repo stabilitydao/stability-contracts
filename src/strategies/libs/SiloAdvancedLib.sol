@@ -242,14 +242,15 @@ library SiloAdvancedLib {
         (uint _realTvl,) = realTvl(platform, $);
         (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
         uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
-        leverage = collateralUsd * INTERNAL_PRECISION / _realTvl;
+
+        leverage = _realTvl == 0 ? 0 : collateralUsd * INTERNAL_PRECISION / _realTvl;
+
         console.log("_realTvl", _realTvl);
         console.log("collateralPrice", collateralPrice);
         console.log("collateralUsd", collateralUsd);
         console.log("leverage", leverage);
 
         targetLeveragePercent = $.targetLeveragePercent;
-
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
     }
 
@@ -277,7 +278,13 @@ library SiloAdvancedLib {
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
-        uint newDebtAmount = newCollateralValue * newLtv / INTERNAL_PRECISION * priceCtoB / 1e18;
+        uint newDebtAmount = newCollateralValue * newLtv
+            * priceCtoB
+            * (10**IERC20Metadata(v.borrowAsset).decimals())
+            / INTERNAL_PRECISION
+            / (10**IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
+
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
         uint[] memory flashAmounts = new uint[](1);
@@ -321,6 +328,8 @@ library SiloAdvancedLib {
         uint borrowAssetUsd = borrowedAmount * borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
         tvl = collateralUsd - borrowAssetUsd;
         trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
+        console.log("collateralPrice", collateralPrice);
+        console.log("borrowAssetPrice", borrowAssetPrice);
         console.log("collateralAmount", collateralAmount);
         console.log("collateralUsd", collateralUsd);
         console.log("borrowAssetUsd", borrowAssetUsd);
@@ -362,14 +371,22 @@ library SiloAdvancedLib {
         ISiloConfig.ConfigData memory config = ISiloConfig(configContract).getConfig(lendingVault);
         maxLtv = config.maxLtv;
         maxLeverage = 1e18 * INTERNAL_PRECISION / (1e18 - maxLtv);
+        console.log("maxLeverage", maxLeverage);
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
+        console.log("targetLeverage", targetLeverage);
     }
 
     function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
         console.log("calcTotal");
         (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
         console.log("priceBtoC", priceBtoC);
-        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
+        console.log("borrow decimals", IERC20Metadata(v.borrowAsset).decimals());
+        console.log("collateral decimals", IERC20Metadata(v.collateralAsset).decimals());
+        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault)
+            * (10**IERC20Metadata(v.collateralAsset).decimals())
+            * priceBtoC
+            / (10**IERC20Metadata(v.borrowAsset).decimals())
+            / 1e18; // priceBtoC has decimals 18
         console.log("borrowedAmountPricedInCollateral", borrowedAmountPricedInCollateral);
         console.log("totalCollateral", totalCollateral(v.lendingVault));
         console.log("calcTotal", totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral);

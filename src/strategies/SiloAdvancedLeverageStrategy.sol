@@ -313,22 +313,17 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             lendingVault: $.lendingVault,
             borrowingVault: $.borrowingVault
         });
+        console.log("collateralAsset", v.collateralAsset);
+        console.log("borrowAsset", v.borrowAsset);
+        console.log("lendingVault", v.lendingVault);
+        console.log("borrowingVault", v.borrowingVault);
         address[] memory _assets = assets();
         uint valueWas = StrategyLib.balance(_assets[0]) + SiloAdvancedLib.calcTotal(v);
         console.log("_depositAssets.valueWas", valueWas);
 
-        (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
-        console.log("_depositAssets.targetLeverage", targetLeverage);
-
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
-        uint[] memory flashAmounts = new uint[](1);
-        flashAmounts[0] = amounts[0] * targetLeverage / INTERNAL_PRECISION;
-        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
-        // not sure that its right way, but its working
-        flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
-        console.log("_depositAssets.depositParam0", $.depositParam0);
-        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
+        uint[] memory flashAmounts = _getDepositFlashAmount($, v, amounts[0]);
 
         IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
 
@@ -351,6 +346,31 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("$base.total after", $base.total);
     }
 
+    function _getDepositFlashAmount(
+        LeverageLendingBaseStorage storage $,
+        LeverageLendingAddresses memory v,
+        uint amount
+    ) internal view returns (uint[] memory flashAmounts) {
+        (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
+        console.log("_depositAssets.targetLeverage", targetLeverage);
+
+        (uint priceCtoB, ) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
+        console.log("_depositAssets.priceCtoB", priceCtoB);
+
+        flashAmounts = new uint[](1);
+        flashAmounts[0] = amount
+            * priceCtoB
+            * (10**IERC20Metadata(v.borrowAsset).decimals())
+            * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION
+            / 1e18 // priceCtoB has decimals 1e18
+            / (10**IERC20Metadata(v.collateralAsset).decimals());
+        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
+        // not sure that its right way, but its working
+        flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+        console.log("_depositAssets.depositParam0", $.depositParam0);
+        console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
+    }
+
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         console.log("_withdrawAssets.value", value);
@@ -367,20 +387,24 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         uint valueWas = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
         console.log("_withdrawAssets.valueWas", valueWas);
 
-        (,, uint leverage,,,) = health(); //todo
-        (uint maxLtv, uint maxLeverage,) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
+        (uint maxLtv, uint maxLeverage, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
         console.log("_withdrawAssets.maxLtv", maxLtv);
-        console.log("_withdrawAssets.maxLeverage", maxLeverage, leverage);
+        console.log("_withdrawAssets.maxLeverage", maxLeverage);
+        console.log("_withdrawAssets.targetLeverage", targetLeverage);
 
         (uint priceCtoB,) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
         console.log("_withdrawAssets.priceCtoB", priceCtoB);
 
         {
-            uint collateralAmountToWithdraw = value * leverage /*todo: maxLeverage. Probably targetLeverage?*/ / INTERNAL_PRECISION;
+            uint collateralAmountToWithdraw = value * (targetLeverage /*TODO: + INTERNAL_PRECISION */) / INTERNAL_PRECISION;
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18) * priceCtoB / 1e18;
+            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18)
+                * priceCtoB
+                * (10**IERC20Metadata(v.borrowAsset).decimals())
+                / 1e18 // priceCtoB has decimals 1e18
+                / (10**IERC20Metadata(v.collateralAsset).decimals());
             console.log("_withdrawAssets.flashAmounts[0]", flashAmounts[0]);
             address[] memory flashAssets = new address[](1);
             flashAssets[0] = $.borrowAsset;
