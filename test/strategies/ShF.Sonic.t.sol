@@ -16,8 +16,14 @@ contract ShadowFarmStrategyTest is SonicSetup, UniversalTest {
 
     function testShF() public universalTest {
         _addStrategy(42);
-        // _addStrategy(43);
-        // _addStrategy(44);
+        _addStrategy(43);
+        _addStrategy(44);
+        _addStrategy(45);
+        _addStrategy(46);
+        _addStrategy(47);
+        // _addStrategy(48);
+        // _addStrategy(49);
+        // _addStrategy(50);
     }
 
     function _addStrategy(uint farmId) internal {
