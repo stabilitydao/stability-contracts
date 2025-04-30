@@ -45,6 +45,11 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
             deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
             IERC20(SonicConstantsLib.TOKEN_USDC).approve(aurumPool, amount);
             IPoolMinimal(aurumPool).supply(SonicConstantsLib.TOKEN_USDC, amount, address(this), 0);
+        } else if (token == SonicConstantsLib.TOKEN_aSonUSDC) {
+            address lendingPool = 0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3;
+            deal(SonicConstantsLib.TOKEN_USDC, address(this), amount * 3);
+            IERC20(SonicConstantsLib.TOKEN_USDC).approve(lendingPool, amount);
+            IPoolMinimal(lendingPool).supply(SonicConstantsLib.TOKEN_USDC, amount, address(this), 0);
         } else {
             deal(token, to, amount);
         }

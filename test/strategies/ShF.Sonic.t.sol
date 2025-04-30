@@ -10,20 +10,20 @@ contract ShadowFarmStrategyTest is SonicSetup, UniversalTest {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(22729698); // Apr-27-2025 09:21:40 PM +UTC
         depositedSharesCheckDelimiter = 100;
-        makePoolVolume = false;
+        //makePoolVolume = false;
         makePoolVolumePriceImpactTolerance = 10_000;
     }
 
     function testShF() public universalTest {
         _addStrategy(42);
-        _addStrategy(43);
-        _addStrategy(44);
+        //_addStrategy(43);
+        //_addStrategy(44);
         _addStrategy(45);
         _addStrategy(46);
         _addStrategy(47);
-        // _addStrategy(48);
-        // _addStrategy(49);
-        // _addStrategy(50);
+        _addStrategy(48);
+        //_addStrategy(49);
+        _addStrategy(50);
     }
 
     function _addStrategy(uint farmId) internal {
