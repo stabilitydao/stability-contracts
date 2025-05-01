@@ -302,6 +302,10 @@ library SonicConstantsLib {
     // address public constant ICHI_EQUALIZER_VAULT_GATEWAY = 0x4c8c0D2Ca19a97896AA9135449e6d6471a53FC5f;
     // address public constant ICHI_EQUALIZER_VAULT_DEPLOYER = 0x0b2a31D95B1a4c8b1e772599ffcB8875FB4e2d33;
 
+    // Euler
+    address public constant EULER_MERKL_USDC_MEV_Capital = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
+    address public constant EULER_MERKL_USDC_Re7_Labs = 0x3D9e5462A940684073EED7e4a13d19AE0Dcd13bc;
+
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
     address public constant SHADOW_ROUTER = 0x1D368773735ee1E678950B7A97bcA2CafB330CDc;

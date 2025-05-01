@@ -27,4 +27,5 @@ library StrategyIdLib {
     string internal constant SILO_ADVANCED_LEVERAGE = "Silo Advanced Leverage";
     string internal constant GAMMA_EQUALIZER_FARM = "Gamma Equalizer Farm";
     string internal constant ICHI_EQUALIZER_FARM = "Ichi Equalizer Farm";
+    string internal constant EULER_MERKL_FARM = "Euler Merkl Farm";
 }

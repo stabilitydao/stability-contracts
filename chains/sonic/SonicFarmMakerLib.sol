@@ -58,6 +58,24 @@ library SonicFarmMakerLib {
         return farm;
     }
 
+    function _makeEulerMerklFarm(
+        address vault
+        // address[] memory rewardAssets
+    ) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = vault;
+        farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
+        address[] memory rewardAssets = new address[](2); 
+        farm.rewardAssets = rewardAssets;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
+        farm.addresses[1] = vault;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
     function _makeGammaEqualizerFarm(
         address hypervisor,
         uint preset,
