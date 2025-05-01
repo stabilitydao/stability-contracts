@@ -206,7 +206,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](39);
+        pools = new ISwapper.AddPoolData[](40);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS);
@@ -258,12 +258,11 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_bUSDCe20, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
-        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_GEMS, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_GEMS, SonicConstantsLib.TOKEN_wS);
-        // pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_aSonUSDC_xUSD, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_xUSD, SonicConstantsLib.TOKEN_aUSDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_SNAKE, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SNAKE, SonicConstantsLib.TOKEN_wS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_FA, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_FA, SonicConstantsLib.TOKEN_wS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_USDC_STBL, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC);
-        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_GEMS_wS, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_GEMS, SonicConstantsLib.TOKEN_wS);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_GEMS, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_GEMS, SonicConstantsLib.TOKEN_wS);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_aSonUSDC_xUSD, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_xUSD, SonicConstantsLib.TOKEN_aSonUSDC);
         //endregion ----- Pools ----
     }
 
