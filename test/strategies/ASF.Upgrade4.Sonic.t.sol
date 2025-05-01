@@ -117,8 +117,7 @@ contract ASFUpgrade4Test is Test {
 
         // Rebalance
         if (IALM(STRATEGY).needRebalance()) {
-            (bool[] memory burns, IALM.NewPosition[] memory mints) =
-                rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
+            (bool[] memory burns, IALM.NewPosition[] memory mints) = rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
             IALM(STRATEGY).rebalance(burns, mints);
         } else {
             console.log("Strategy does not require rebalance");
@@ -167,8 +166,7 @@ contract ASFUpgrade4Test is Test {
 
         // Rebalance
         if (IALM(STRATEGY).needRebalance()) {
-            (bool[] memory burns, IALM.NewPosition[] memory mints) =
-                rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
+            (bool[] memory burns, IALM.NewPosition[] memory mints) = rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
             IALM(STRATEGY).rebalance(burns, mints);
         } else {
             console.log("Strategy does not require rebalance");
@@ -178,11 +176,10 @@ contract ASFUpgrade4Test is Test {
         assertEq(positions.length, 2, "No limit positions after rebalance");
         // Make volume to another rebalance
         _swap(pool, ammAdapter, assets, 1e25);
-        
+
         // Rebalance
         if (IALM(STRATEGY).needRebalance()) {
-            (bool[] memory burns, IALM.NewPosition[] memory mints) =
-                rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
+            (bool[] memory burns, IALM.NewPosition[] memory mints) = rebalanceHelper.calcRebalanceArgs(STRATEGY, 10);
             IALM(STRATEGY).rebalance(burns, mints);
         } else {
             console.log("Strategy does not require rebalance");
@@ -193,12 +190,7 @@ contract ASFUpgrade4Test is Test {
         assertNotEq(positions[1].tickUpper, positionsAfter[1].tickUpper, "Limit position is not rebalanced");
     }
 
-    function _swap(
-        address pool,
-        address ammAdapter,
-        address[] memory assets_,
-        uint amount0
-    ) internal {
+    function _swap(address pool, address ammAdapter, address[] memory assets_, uint amount0) internal {
         ISwapper.PoolData[] memory poolData = new ISwapper.PoolData[](1);
         poolData[0].pool = pool;
         poolData[0].ammAdapter = ammAdapter;
