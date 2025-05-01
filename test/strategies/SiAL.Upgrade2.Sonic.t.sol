@@ -49,30 +49,32 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- check current state
-        uint ltv = _showHealth(strategy, "Initial state");
+        uint ltv = _showHealth(strategy, "!!!Initial state");
 
         // ----------------- restore LTV to 80%
-        console.log("Rebalance to 80%");
+        console.log("!!!Rebalance to 80%");
 
         vm.startPrank(multisig);
         strategy.rebalanceDebt(80_00);
         vm.stopPrank();
 
-        ltv = _showHealth(strategy, "After rebalanceDebt");
+        ltv = _showHealth(strategy, "!!!After rebalanceDebt");
 
         assertApproxEqAbs(ltv, 80_00, 1000);
 
         // ----------------- deposit large amount
-        _depositForUser(vault, address(strategy), user2, 1_000e6);
-        ltv = _showHealth(strategy, "After deposit 2");
+//        _depositForUser(vault, address(strategy), user2, 1_000e6);
+//        ltv = _showHealth(strategy, "After deposit 2");
 
+        console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        ltv = _showHealth(strategy, "After deposit 1");
+        ltv = _showHealth(strategy, "!!!After deposit 1");
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
+        console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        ltv = _showHealth(strategy, "After withdraw 1");
+        ltv = _showHealth(strategy, "!!!After withdraw 1");
     }
 
     /// @notice #247: decimals 6:18

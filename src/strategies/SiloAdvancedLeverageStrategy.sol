@@ -220,6 +220,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
+        console.log("!!!_rebalanceDebt", newLtv);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         return SiloAdvancedLib.rebalanceDebt(platform(), newLtv, $);
     }
@@ -304,7 +305,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
-        console.log("_depositAssets", amounts[0]);
+        console.log("!!!_depositAssets", amounts[0]);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.tempAction = CurrentAction.Deposit;
         LeverageLendingAddresses memory v = LeverageLendingAddresses({
@@ -366,14 +367,15 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             / (10**IERC20Metadata(v.collateralAsset).decimals());
         console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
         // not sure that its right way, but its working
-        flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+        // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+
         console.log("_depositAssets.depositParam0", $.depositParam0);
         console.log("_depositAssets.flashAmounts[0]", flashAmounts[0]);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets.value", value);
+        console.log("!!!_withdrawAssets.value", value);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.tempAction = CurrentAction.Withdraw;
         LeverageLendingAddresses memory v = LeverageLendingAddresses({
@@ -400,10 +402,12 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
 
         {
             uint collateralAmountToWithdraw = value * targetLeverage /** TODO: leverage? */ / INTERNAL_PRECISION;
+            // uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
+
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = collateralAmountToWithdraw * ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
+            flashAmounts[0] = collateralAmountToWithdraw * ltv / INTERNAL_PRECISION // maxLtv / 1e18  // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
                 * priceCtoB
                 * (10**IERC20Metadata(v.borrowAsset).decimals())
                 / 1e18 // priceCtoB has decimals 1e18

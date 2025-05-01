@@ -56,7 +56,7 @@ library SiloAdvancedLib {
         uint amount,
         uint feeAmount
     ) external {
-        console.log("receiveFlashLoan msg.signer", msg.sender);
+        console.log("receiveFlashLoan");
 
         // token is borrow asset (USDC/WETH/wS)
         address collateralAsset = $.collateralAsset;
