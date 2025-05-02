@@ -21,12 +21,16 @@ import {IWETH} from "../../integrations/weth/IWETH.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
+import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
 
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
+
+    uint public constant FLASH_LOAN_KIND_BALANCER_V2 = 0;
+    uint public constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
 
     // mint wanS by wS
     address internal constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -306,7 +310,7 @@ library SiloAdvancedLib {
             flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
         }
 
-        IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
+        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
         (resultLtv,,,,,) = health(platform, $);
@@ -478,4 +482,35 @@ library SiloAdvancedLib {
 
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
     }
+
+    /// @dev Get flash loan and execute {receiveFlashLoan}
+    function requestFlashLoan(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address[] memory flashAssets,
+        uint256[] memory flashAmounts
+    ) internal {
+        address vault = $.flashLoanVault;
+        uint flashLoanKind = $.flashLoanKind;
+
+        if (flashLoanKind == SiloAdvancedLib.FLASH_LOAN_KIND_BALANCER_V3) {
+            console.log("requestFlashLoan.1");
+            // fee amount are always 0,  flash loan in balancer v3 is free
+            bytes memory data = abi.encodeWithSignature(
+                "receiveFlashLoanV3(address,uint256,bytes)",
+                flashAssets[0],
+                flashAmounts[0],
+                bytes("") // no user data
+            );
+
+            console.log("requestFlashLoan.2");
+            IVaultMainV3(payable(vault)).unlock(data);
+
+            console.log("requestFlashLoan.3");
+        } else {
+            console.log("requestFlashLoan.4");
+            // FLASH_LOAN_KIND_BALANCER_V2: paid
+            IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
+        }
+    }
+
 }

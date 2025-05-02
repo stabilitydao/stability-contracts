@@ -23,6 +23,7 @@ interface IControllable {
     error NotTheOwner();
     error ETHTransferFailed();
     error IncorrectInitParams();
+    error InsufficientBalance();
     //endregion -- Custom Errors -----
 
     event ContractInitialized(address platform, uint ts, uint block);

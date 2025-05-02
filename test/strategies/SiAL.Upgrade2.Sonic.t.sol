@@ -16,11 +16,17 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 /// @notice #254: Fix decreasing LTV on exits
 contract SiALUpgrade2Test is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+
     /// @notice #254: LTV is decreasing on exit
     address public constant STRATEGY = 0x636364e3B21B17007E4e0b527F5C345c35064F16; // C-PT-aSonUSDC-14AUG2025-SAL
+
     /// @notice #247: deposit is not possible because the assets has different decimals
     address public constant STRATEGY2 = 0x61B6A56d9b3BAf6611e6E338B424B57221e6C91B; // C-PT-wstkscUSD-29MAY2025-SAL
+
     address public constant PT_AAVE_SONIC_USD = 0x930441Aa7Ab17654dF5663781CA0C02CC17e6643; // decimals 6
+
+    address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+    uint internal constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
 
     address public multisig;
     IFactory public factory;
@@ -37,7 +43,7 @@ contract SiALUpgrade2Test is Test {
     function testSiALUpgrade1() public {
         console.log("testSiALUpgrade");
         address user1 = address(1);
-        address user2 = address(2);
+        // address user2 = address(2);
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(STRATEGY);
@@ -86,14 +92,20 @@ contract SiALUpgrade2Test is Test {
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(STRATEGY2);
-        _upgradeVault(vault);
-
+        _upgradeVault(vault); // todo remove - we need it for console logs only (?)
 
         // ----------------- access to the strategy
         vm.prank(multisig);
         SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(STRATEGY2));
         _adjustParams(strategy);
         vm.stopPrank();
+
+        // ----------------- set up free balancer v3 flash loan
+
+        // current flash loand vault is 0xBA12222222228d8Ba445958a75a0704d566BF2C8
+        // we need to get Frax USD
+        _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
+
 
         // ----------------- check current state
         uint ltv = _showHealth(strategy, "!!!Initial state");
@@ -225,6 +237,15 @@ contract SiALUpgrade2Test is Test {
         params[0] = 10000;
         vm.prank(multisig);
         strategy.setUniversalParams(params);
+    }
+
+    function _setFlashLoanVault(SiloAdvancedLeverageStrategy strategy, address vault, uint kind) internal {
+        uint[] memory params = strategy.getUniversalParams();
+        params[10] = kind;
+        vm.prank(multisig);
+        strategy.setUniversalParams(params);
+        vm.prank(multisig);
+        strategy.setFlashLoanVault(vault);
     }
 
 //endregion -------------------------- Auxiliary functions

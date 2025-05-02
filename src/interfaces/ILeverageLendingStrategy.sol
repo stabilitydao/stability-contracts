@@ -12,6 +12,7 @@ interface ILeverageLendingStrategy {
     event LeverageLendingHealth(uint ltv, uint leverage);
     event TargetLeveragePercent(uint value);
     event UniversalParams(uint[] params);
+    event ChangeFlashLoanVault(address vault);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -53,6 +54,8 @@ interface ILeverageLendingStrategy {
         uint swapPriceImpactTolerance0;
         /// @dev Swap price impact tolerance on re-balance debt
         uint swapPriceImpactTolerance1;
+        /// @notice Flash loan kind. 0 - balancer v2 (paid), 1 - balancer v3 (free)
+        uint flashLoanKind;
     }
 
     struct LeverageLendingStrategyBaseInitParams {

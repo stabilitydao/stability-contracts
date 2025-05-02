@@ -93,7 +93,14 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.decreaseLtvParam1 = params[7];
         $.swapPriceImpactTolerance0 = params[8];
         $.swapPriceImpactTolerance1 = params[9];
+        $.flashLoanKind = params[10];
         emit UniversalParams(params);
+    }
+
+    function setFlashLoanVault(address flashLoanVault_) external onlyOperator {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        $.flashLoanVault = flashLoanVault_;
+        emit ChangeFlashLoanVault(flashLoanVault_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
