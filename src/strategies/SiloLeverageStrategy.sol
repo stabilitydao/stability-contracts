@@ -150,8 +150,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         return SiloLib.realTvl(platform(), $);
     }
 
-    /// @inheritdoc ILeverageLendingStrategy
-    function realSharePrice() public view returns (uint sharePrice, bool trusted) {
+    function _realSharePrice() internal override view returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl();
         uint totalSupply = IERC20(vault()).totalSupply();
@@ -290,7 +289,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
             int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
             (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
-            (uint sharePrice,) = realSharePrice();
+            (uint sharePrice,) = _realSharePrice();
             emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
         }
 

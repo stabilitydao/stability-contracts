@@ -29,6 +29,7 @@ library SiloAdvancedLib {
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
+    /// @dev Variants of flashLoanKind
     uint public constant FLASH_LOAN_KIND_BALANCER_V2 = 0;
     uint public constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
 
@@ -497,7 +498,7 @@ library SiloAdvancedLib {
         address vault = $.flashLoanVault;
         uint flashLoanKind = $.flashLoanKind;
 
-        if (flashLoanKind == SiloAdvancedLib.FLASH_LOAN_KIND_BALANCER_V3) {
+        if (flashLoanKind == FLASH_LOAN_KIND_BALANCER_V3) {
             console.log("requestFlashLoan.1");
             // fee amount are always 0,  flash loan in balancer v3 is free
             bytes memory data = abi.encodeWithSignature(

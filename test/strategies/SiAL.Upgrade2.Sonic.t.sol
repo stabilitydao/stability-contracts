@@ -240,12 +240,8 @@ contract SiALUpgrade2Test is Test {
     }
 
     function _setFlashLoanVault(SiloAdvancedLeverageStrategy strategy, address vault, uint kind) internal {
-        uint[] memory params = strategy.getUniversalParams();
-        params[10] = kind;
         vm.prank(multisig);
-        strategy.setUniversalParams(params);
-        vm.prank(multisig);
-        strategy.setFlashLoanVault(vault);
+        strategy.setFlashLoanVault(vault, kind);
     }
 
 //endregion -------------------------- Auxiliary functions

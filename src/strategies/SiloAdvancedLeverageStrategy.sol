@@ -143,7 +143,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
 
     function getUniversalParams() external view returns (uint[] memory params) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        params = new uint[](11);
+        params = new uint[](10);
         params[0] = $.depositParam0;
         params[1] = $.depositParam1;
         params[2] = $.withdrawParam0;
@@ -154,7 +154,6 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         params[7] = $.decreaseLtvParam1;
         params[8] = $.swapPriceImpactTolerance0;
         params[9] = $.swapPriceImpactTolerance1;
-        params[10] = $.flashLoanKind;
     }
 
     /// @inheritdoc IStrategy
@@ -217,8 +216,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         return SiloAdvancedLib.realTvl(platform(), $);
     }
 
-    /// @inheritdoc ILeverageLendingStrategy
-    function realSharePrice() public view returns (uint sharePrice, bool trusted) {
+    function _realSharePrice() internal override view returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl();
         uint totalSupply = IERC20(vault()).totalSupply();
@@ -320,7 +318,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
             int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
             (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
-            (uint sharePrice,) = realSharePrice();
+            (uint sharePrice,) = _realSharePrice();
             emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
         }
 
