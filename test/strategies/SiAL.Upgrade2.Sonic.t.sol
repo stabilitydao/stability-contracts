@@ -104,7 +104,7 @@ contract SiALUpgrade2Test is Test {
 
         // current flash loand vault is 0xBA12222222228d8Ba445958a75a0704d566BF2C8
         // we need to get Frax USD
-        _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
+        // !TODO _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
 
 
         // ----------------- check current state

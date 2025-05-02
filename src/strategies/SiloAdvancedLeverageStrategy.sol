@@ -91,7 +91,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
 
     receive() external payable {}
 
-    //region ----------------------------------- Flash loans
+    //region ----------------------------------- Flash loan
     /// @inheritdoc IFlashLoanRecipient
     /// @dev Support of FLASH_LOAN_KIND_BALANCER_V2
     function receiveFlashLoan(
@@ -134,7 +134,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("receiveFlashLoanV3.5");
     }
 
-    //endregion ----------------------------------- Flash loans
+    //endregion ----------------------------------- Flash loan
 
     //region ----------------------------------- View
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -133,13 +133,18 @@ library SiloAdvancedLib {
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
             console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
 
-            console.log("----- swap C=>B", Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
             // swap
             StrategyLib.swap(
                 platform,
                 collateralAsset,
                 token,
-                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
+                _estimateCollateraAmountToRepay(
+                    platform,
+                    amount + feeAmount,
+                    collateralAsset,
+                    token,
+                    tempCollateralAmount
+                ),
                 swapPriceImpactTolerance0
             );
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
@@ -513,4 +518,24 @@ library SiloAdvancedLib {
         }
     }
 
+    function _estimateCollateraAmountToRepay(
+        address platform,
+        uint amountToRepay,
+        address collateralAsset,
+        address token,
+        uint tempCollateralAmount
+    ) internal view returns (uint) {
+        // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
+        // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
+
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+
+        // 10% for price impact and slippage
+        uint minCollateralToSwap = swapper.getPrice(token, collateralAsset, amountToRepay) * 110/100;
+        console.log("amountToRepay", amountToRepay);
+        console.log("minCollateralToSwap", minCollateralToSwap);
+        console.log("collateralToSwap", Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
+        console.log("----- swap C=>B", Math.min(minCollateralToSwap, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))));
+        return Math.min(minCollateralToSwap, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
+    }
 }
