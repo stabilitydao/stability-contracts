@@ -22,6 +22,8 @@ import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
+import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
+import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -32,6 +34,7 @@ library SiloAdvancedLib {
     /// @dev Variants of flashLoanKind
     uint public constant FLASH_LOAN_KIND_BALANCER_V2 = 0;
     uint public constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
+    uint public constant FLASH_LOAN_KIND_UNISWAP_V3 = 2;
 
     // mint wanS by wS
     address internal constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -139,7 +142,7 @@ library SiloAdvancedLib {
                 platform,
                 collateralAsset,
                 token,
-                _estimateCollateraAmountToRepay(
+                _estimateCollateralAmountToRepay(
                     platform,
                     amount + feeAmount,
                     collateralAsset,
@@ -512,14 +515,27 @@ library SiloAdvancedLib {
             IVaultMainV3(payable(vault)).unlock(data);
 
             console.log("requestFlashLoan.3");
-        } else {
+        } else if (flashLoanKind == FLASH_LOAN_KIND_UNISWAP_V3) {
+            // ensure that the vault has available amount
+            require(IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance());
+
             console.log("requestFlashLoan.4");
+            bool isToken0 = IUniswapV3PoolImmutables(vault).token0() == flashAssets[0];
+            IUniswapV3PoolActions(vault).flash(
+                address(this),
+                isToken0 ? flashAmounts[0] : 0,
+                isToken0 ? 0 : flashAmounts[0],
+                abi.encode(flashAssets[0], flashAmounts[0], isToken0)
+            );
+            console.log("requestFlashLoan.5");
+        } else {
+            console.log("requestFlashLoan.6");
             // FLASH_LOAN_KIND_BALANCER_V2: paid
             IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
         }
     }
 
-    function _estimateCollateraAmountToRepay(
+    function _estimateCollateralAmountToRepay(
         address platform,
         uint amountToRepay,
         address collateralAsset,

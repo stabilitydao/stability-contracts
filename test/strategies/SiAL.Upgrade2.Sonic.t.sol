@@ -26,14 +26,18 @@ contract SiALUpgrade2Test is Test {
     address public constant PT_AAVE_SONIC_USD = 0x930441Aa7Ab17654dF5663781CA0C02CC17e6643; // decimals 6
 
     address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+    address public constant SHADOW_POOL_FRXUSD_SCUSD = 0xf28c748091FdaB86d5120aB359fCb471dAA6467d;
+
     uint internal constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
+    uint internal constant FLASH_LOAN_KIND_UNISWAP_V3 = 2;
 
     address public multisig;
     IFactory public factory;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
+        // vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
+        vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -105,7 +109,7 @@ contract SiALUpgrade2Test is Test {
         // current flash loand vault is 0xBA12222222228d8Ba445958a75a0704d566BF2C8
         // we need to get Frax USD
         // !TODO _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
-
+        _setFlashLoanVault(strategy, SHADOW_POOL_FRXUSD_SCUSD, FLASH_LOAN_KIND_UNISWAP_V3);
 
         // ----------------- check current state
         uint ltv = _showHealth(strategy, "!!!Initial state");
@@ -116,7 +120,7 @@ contract SiALUpgrade2Test is Test {
         ltv = _showHealth(strategy, "!!!After deposit 2");
 
         console.log("!!!Deposit user1");
-        _depositForUser(vault, address(strategy), user1, 10e6);
+        _depositForUser(vault, address(strategy), user1, 1000e6);
         ltv = _showHealth(strategy, "!!!After deposit 1");
 
         // ----------------- withdraw all
@@ -177,7 +181,7 @@ contract SiALUpgrade2Test is Test {
         console.log("targetLeveragePercent", targetLeveragePercent);
         console.log("Total amount in strategy", strategy.total());
 
-    return ltv;
+        return ltv;
     }
 
     function _depositForUser(address vault, address strategy, address user, uint depositAmount) internal {

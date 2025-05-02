@@ -18,6 +18,7 @@ import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
+import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -33,7 +34,7 @@ import {StrategyLib} from "./libs/StrategyLib.sol";
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
-contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
+contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient, IUniswapV3FlashCallback {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -114,7 +115,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         // sender is vault, it's checked inside receiveFlashLoan
         IVaultMainV3 vault = IVaultMainV3(payable(msg.sender));
 
-        // ensure that the vault has availalbe amount
+        // ensure that the vault has available amount
         require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
 
         console.log("receiveFlashLoanV3.2", amount, IERC20(token).balanceOf(address(vault)));
@@ -134,6 +135,17 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("receiveFlashLoanV3.5");
     }
 
+    function uniswapV3FlashCallback(
+        uint256 fee0,
+        uint256 fee1,
+        bytes calldata userData
+    ) external {
+        // sender is the pool, it's checked inside receiveFlashLoan
+        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    }
     //endregion ----------------------------------- Flash loan
 
     //region ----------------------------------- View
@@ -260,6 +272,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         return SiloAdvancedLib.rebalanceDebt(platform(), newLtv, $);
     }
 
+    //region ----------------------------------- Strategy base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -349,6 +362,11 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             lendingVault: $.lendingVault,
             borrowingVault: $.borrowingVault
         });
+        console.log("collateral balance", IERC20Metadata($.collateralAsset).balanceOf(address(this)));
+        console.log("borrow balance", IERC20Metadata($.borrowAsset).balanceOf(address(this)));
+        console.log("totalCollateral", SiloAdvancedLib.totalCollateral($.lendingVault));
+        console.log("totalDebt", SiloAdvancedLib.totalDebt($.borrowingVault));
+
         console.log("collateralAsset", v.collateralAsset);
         console.log("borrowAsset", v.borrowAsset);
         console.log("lendingVault", v.lendingVault);
@@ -480,6 +498,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         $base.total -= value;
         console.log("$base.total.after", $base.total);
     }
+    //endregion ----------------------------------- Strategy base
 
     //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
