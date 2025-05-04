@@ -31,7 +31,7 @@ contract SiloStrategy is ERC4626StrategyBase {
         if (addresses.length != 3 || nums.length != 0 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
-        __ERC4626StrategyBase_init(StrategyIdLib.SILO_FARM, addresses[0], addresses[1], addresses[2]);
+        __ERC4626StrategyBase_init(StrategyIdLib.SILO, addresses[0], addresses[1], addresses[2]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -40,7 +40,7 @@ contract SiloStrategy is ERC4626StrategyBase {
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.SILO_FARM;
+        return StrategyIdLib.SILO;
     }
 
     /// @inheritdoc IStrategy
@@ -126,10 +126,9 @@ contract SiloStrategy is ERC4626StrategyBase {
 
     function _genDesc(address silo) internal view returns (string memory) {
         return string.concat(
-            "Earn ",
-            " and supply APR by lending ",
+            "Earn by lending ",
             IERC20Metadata(ISilo(silo).asset()).symbol(),
-            " to Silo V2 ",
+            " to Silo V2 market with ID ",
             CommonLib.u2s(_getMarketId(silo))
         );
     }

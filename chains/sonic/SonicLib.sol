@@ -27,6 +27,7 @@ import {ALMPositionNameLib} from "../../src/strategies/libs/ALMPositionNameLib.s
 import {ALMLib} from "../../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
@@ -163,6 +164,10 @@ library SonicLib {
         p.initNums[0] = 87_00;
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
+        p.initAddresses = new address[](2);
+        p.initAddresses[0] = SonicConstantsLib.SILO_VAULT_8_USDC;
+        p.initAddresses[1] = SonicConstantsLib.SILO_VAULT_8_wS;
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -182,6 +187,7 @@ library SonicLib {
         );
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
