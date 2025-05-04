@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./base/ERC4626StrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "../integrations/silo/ISiloIncentivesController.sol";
-import "../integrations/silo/ISilo.sol";
-import "../integrations/silo/ISiloConfig.sol";
-import "../interfaces/IControllable.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {CommonLib} from "src/core/libs/CommonLib.sol";
-import "../interfaces/IFactory.sol";
+import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
+import {ISilo} from "../integrations/silo/ISilo.sol";
+import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @title Earns APR by lending assets on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
