@@ -432,6 +432,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         console.log("!!!_withdrawAssets.value", value);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $.tempAction = CurrentAction.Withdraw;
         LeverageLendingAddresses memory v = LeverageLendingAddresses({
             collateralAsset: $.collateralAsset,
@@ -456,7 +457,9 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("_withdrawAssets.priceCtoB", priceCtoB);
 
         {
-            uint collateralAmountToWithdraw = value * targetLeverage /** TODO: leverage? */ / INTERNAL_PRECISION;
+            uint collateralAmountToWithdraw = value == $base.total // todo far from ideal..
+                ? value * maxLeverage / INTERNAL_PRECISION
+                : value * targetLeverage / INTERNAL_PRECISION;
             // uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
 
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
@@ -493,7 +496,6 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         console.log("$base.total.before", $base.total);
         $base.total -= value;
         console.log("$base.total.after", $base.total);
