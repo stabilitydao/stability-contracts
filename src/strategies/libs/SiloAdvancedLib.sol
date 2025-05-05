@@ -114,9 +114,9 @@ library SiloAdvancedLib {
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
             console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
 
+            console.log("----- repay B", amount);
             // repay debt
             ISilo($.borrowingVault).repay(amount, address(this));
-            console.log("----- repay B", amount);
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
             console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
 
@@ -138,18 +138,13 @@ library SiloAdvancedLib {
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
             console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
 
+            console.log('swap C=>B', Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
             // swap
             StrategyLib.swap(
                 platform,
                 collateralAsset,
                 token,
-                _estimateCollateralAmountToRepay(
-                    platform,
-                    amount + feeAmount,
-                    collateralAsset,
-                    token,
-                    tempCollateralAmount
-                ),
+                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
                 swapPriceImpactTolerance0
             );
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
@@ -279,7 +274,9 @@ library SiloAdvancedLib {
         collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
         console.log("ltv", ltv);
-        console.log("collateralAmount", collateralAmount);
+        console.log("collateralAmount balance", StrategyLib.balance(collateralAsset));
+        console.log("totalCollateral lending vault", totalCollateral(lendingVault));
+        console.log("collateralAmount total", collateralAmount);
         console.log("debtAmount", debtAmount);
 
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());

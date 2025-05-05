@@ -60,7 +60,8 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- check current state
-        uint ltv = _showHealth(strategy, "!!!Initial state");
+        address collateralAsset = IStrategy(strategy).assets()[0];
+        _showHealth(strategy, "!!!Initial state");
 
         // ----------------- restore LTV to 80%
         console.log("!!!Rebalance to 80%");
@@ -69,9 +70,9 @@ contract SiALUpgrade2Test is Test {
         strategy.rebalanceDebt(80_00, 0);
         vm.stopPrank();
 
-        ltv = _showHealth(strategy, "!!!After rebalanceDebt");
+        uint ltvAfterRebalance = _showHealth(strategy, "!!!After rebalanceDebt");
 
-        assertApproxEqAbs(ltv, 80_00, 1000);
+        assertApproxEqAbs(ltvAfterRebalance, 80_00, 1001);
 
         // ----------------- deposit large amount
 //        _depositForUser(vault, address(strategy), user2, 1_000e6);
@@ -79,13 +80,20 @@ contract SiALUpgrade2Test is Test {
 
         console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        ltv = _showHealth(strategy, "!!!After deposit 1");
+        uint ltvAfterDeposit = _showHealth(strategy, "!!!After deposit 1");
+        // assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 1002);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        ltv = _showHealth(strategy, "!!!After withdraw 1");
+        uint ltvFinal = _showHealth(strategy, "!!!After withdraw 1");
+
+        // assertApproxEqAbs(ltvAfterRebalance, ltvFinal, 1003);
+
+        console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+
+        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 100_000e6, 10e6);
     }
 
     /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL
@@ -97,7 +105,7 @@ contract SiALUpgrade2Test is Test {
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(STRATEGY2);
-        _upgradeVault(vault); // todo remove - we need it for console logs only (?)
+        // _upgradeVault(vault);
 
         // ----------------- access to the strategy
         vm.prank(multisig);
@@ -107,28 +115,52 @@ contract SiALUpgrade2Test is Test {
 
         // ----------------- set up free balancer v3 flash loan
 
-        // current flash loand vault is 0xBA12222222228d8Ba445958a75a0704d566BF2C8
+        // current flash loan vault is 0xBA12222222228d8Ba445958a75a0704d566BF2C8
         // we need to get Frax USD
         // !TODO _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
         _setFlashLoanVault(strategy, SHADOW_POOL_FRXUSD_SCUSD, FLASH_LOAN_KIND_UNISWAP_V3);
 
         // ----------------- check current state
-        uint ltv = _showHealth(strategy, "!!!Initial state");
+        _showHealth(strategy, "!!!Initial state");
 
         // ----------------- deposit large amount
+        address collateralAsset = IStrategy(strategy).assets()[0];
+
         console.log("!!!Deposit user2");
         _depositForUser(vault, address(strategy), user2, 2e6);
-        ltv = _showHealth(strategy, "!!!After deposit 2");
+        uint ltvAfterDeposit2 = _showHealth(strategy, "!!!After deposit 2");
 
         console.log("!!!Deposit user1");
         _depositForUser(vault, address(strategy), user1, 1000e6);
-        ltv = _showHealth(strategy, "!!!After deposit 1");
+        uint ltvAfterDeposit1 = _showHealth(strategy, "!!!After deposit 1");
+        assertApproxEqAbs(ltvAfterDeposit2, ltvAfterDeposit1, 100);
 
-        // ----------------- withdraw all
-        vm.roll(block.number + 6);
+        // ----------------- user1: withdraw half
         console.log("!!!Withdraw user1");
+        vm.roll(block.number + 6);
+        console.log("Balance", IERC20(vault).balanceOf(user1));
+        _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * 4 / 5);
+        uint ltvAfterWithdraw1 = _showHealth(strategy, "!!!After withdraw 1 half");
+
+        // ----------------- user1: withdraw all
+        vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user1);
-        ltv = _showHealth(strategy, "!!!After withdraw 1");
+        uint ltvAfterWithdraw1all = _showHealth(strategy, "!!!After withdraw 1 all");
+
+        // ----------------- user2: withdraw all
+        console.log("!!!Withdraw user2");
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(vault, address(strategy), user2);
+        /*uint ltvAfterWithdraw2 = */_showHealth(strategy, "!!!After withdraw 2 all");
+
+        console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
+        console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
+        console.log("ltvAfterDeposit2", ltvAfterDeposit2);
+        console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+        console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
+
+        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 1000e6, 5e6);
+        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user2), 2e6, 0.1e6);
 
         console.log("done");
     }
@@ -203,6 +235,12 @@ contract SiALUpgrade2Test is Test {
         IVault(vault).withdrawAssets(assets, bal, new uint[](1));
     }
 
+    function _withdrawForUser(address vault, address strategy, address user, uint amount) internal {
+        address[] memory assets = IStrategy(strategy).assets();
+        vm.prank(user);
+        IVault(vault).withdrawAssets(assets, amount, new uint[](1));
+    }
+
     function _upgradeStrategy(address strategyAddress) internal {
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
         vm.prank(multisig);
@@ -245,11 +283,11 @@ contract SiALUpgrade2Test is Test {
     }
 
     function _setFlashLoanVault(SiloAdvancedLeverageStrategy strategy, address vault, uint kind) internal {
-        vm.prank(multisig);
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[10] = kind;
         addresses[0] = vault;
 
+        vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
     }
 
