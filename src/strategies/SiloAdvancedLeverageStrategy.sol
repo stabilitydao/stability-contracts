@@ -84,6 +84,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         // Swap price impact tolerance
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
+        $.withdrawParam0 = INTERNAL_PRECISION;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -465,8 +466,9 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = collateralAmountToWithdraw * ltv / INTERNAL_PRECISION // maxLtv / 1e18  // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
+            flashAmounts[0] = collateralAmountToWithdraw * maxLtv / 1e18  // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
                 * priceCtoB
+            // todo use withdrawParam0
                 * (10**IERC20Metadata(v.borrowAsset).decimals())
                 / 1e18 // priceCtoB has decimals 1e18
                 / (10**IERC20Metadata(v.collateralAsset).decimals());

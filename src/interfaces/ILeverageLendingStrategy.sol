@@ -93,7 +93,7 @@ interface ILeverageLendingStrategy {
     /// @notice Re-balance debt
     /// @param newLtv Target LTV after re-balancing with 4 decimals. 90_00 is 90%.
     /// @return resultLtv LTV after re-balance. For static calls.
-    /// @return resultSharePrice Share price after applyting rebalance debt
+    /// @return resultSharePrice Share price after applying rebalance debt
     function rebalanceDebt(uint newLtv) external returns (uint resultLtv, uint resultSharePrice);
 
     /// @notice Change target leverage percent
