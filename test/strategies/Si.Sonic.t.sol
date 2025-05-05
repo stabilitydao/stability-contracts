@@ -11,8 +11,16 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 
 contract SiloStrategyTest is SonicSetup, UniversalTest {
+    constructor() {
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC
+    }
+
     function testSiloSonic() public universalTest {
         _addStrategy(SonicConstantsLib.SILO_VAULT_8_USDC);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_27_USDC);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_51_wS);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_31_WBTC);
     }
 
     function _addStrategy(address strategyInitAddress) internal {

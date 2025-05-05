@@ -9,6 +9,7 @@ library SonicConstantsLib {
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant TOKEN_wETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
+    address public constant TOKEN_wBTC = 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c;
     address public constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address public constant TOKEN_stS = 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955;
     address public constant TOKEN_BEETS = 0x2D0E0814E62D80056181F5cd932274405966e4f0;
@@ -139,6 +140,7 @@ library SonicConstantsLib {
     address public constant POOL_SHADOW_CL_scETH_stkscETH_250 = 0x286Cc998298d9D0242C9ad30cdB587E0b2f59f22;
     address public constant POOL_SHADOW_CL_USDC_EGGS = 0x66A8289bdD968D1157eB1a608f60a87759632cd6;
     address public constant POOL_SHADOW_CL_x33_SHADOW = 0xBB528A050a3b3b998a9651F893Fa46162967A04C;
+    address public constant POOL_SHADOW_CL_WBTC_WETH = 0x6B19C48449cE9dE4254A883749257Be5da660BFB;
     // address public constant POOL_EQUALIZER_wS_USDC = 0xb1BC4B830FCbA2184B92e15b9133c41160518038;
     // address public constant POOL_EQUALIZER_WETH_wS = 0x81ACF1C9BCC452b634D6DA33DB3f8D96e2CD1c73;
     // address public constant POOL_EQUALIZER_USDC_WETH = 0xfe809A1D337Bdfc98B77A1067e3819f66d8AD23F;
@@ -294,7 +296,9 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_37_PT_wstkscUSD_29MAY = 0x854475b78880767e246163031b5bE44f14426c26;
     address public constant SILO_VAULT_37_frxUSD = 0xdA14A41DbdA731F03A94cb722191639DD22b35b2;
     address public constant SILO_VAULT_8_USDC = 0x4E216C15697C1392fE59e1014B009505E05810Df;
-    address public constant SILO_VAULT_8_wS = 0xE223C8e92AA91e966CA31d5C6590fF7167E25801;
+    address public constant SILO_VAULT_27_USDC = 0x7e88AE5E50474A48deA4c42a634aA7485e7CaA62;
+    address public constant SILO_VAULT_51_wS = 0xC92E96acb616476Ed117f263Fa68Ce21F6D554D3;
+    address public constant SILO_VAULT_31_WBTC = 0x0588651eE0B84b3CA8035a69d60fF18c0263DF71;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;

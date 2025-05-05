@@ -164,9 +164,11 @@ library SonicLib {
         p.initNums[0] = 87_00;
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
-        p.initAddresses = new address[](2);
+        p.initAddresses = new address[](4);
         p.initAddresses[0] = SonicConstantsLib.SILO_VAULT_8_USDC;
-        p.initAddresses[1] = SonicConstantsLib.SILO_VAULT_8_wS;
+        p.initAddresses[1] = SonicConstantsLib.SILO_VAULT_27_USDC;
+        p.initAddresses[2] = SonicConstantsLib.SILO_VAULT_51_wS;
+        p.initAddresses[3] = SonicConstantsLib.SILO_VAULT_31_WBTC;
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
         //endregion -- Add strategy available init params -----
 
@@ -210,7 +212,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](35);
+        pools = new ISwapper.AddPoolData[](36);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS);
@@ -262,6 +264,7 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_bUSDCe20, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH);
         //endregion ----- Pools ----
     }
 

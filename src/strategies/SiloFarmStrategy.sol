@@ -23,9 +23,9 @@ import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
+///   1.0.3: getSpecificName update
 ///   1.0.2: FarmingStrategyBase 1.3.3
 ///   1.0.1: claimRevenue bugfix
-///   1.0.3: getSpecificName update
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;

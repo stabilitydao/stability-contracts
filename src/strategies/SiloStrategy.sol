@@ -16,8 +16,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 
-/// @title Earns APR by lending assets on Silo V2
+/// @title Lend asset on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// Changelog:
+///     1.0.1: rename title
 contract SiloStrategy is ERC4626StrategyBase {
     using SafeERC20 for IERC20;
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,7 +27,7 @@ contract SiloStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
