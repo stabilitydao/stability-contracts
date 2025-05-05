@@ -37,13 +37,14 @@ contract SiALUpgrade2Test is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
-        vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
+        // vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
+        vm.rollFork(24504011); // May-05-2025 11:38:28 AM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
     }
 
-    /// @notice #254
+    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL
     function testSiALUpgrade1() public {
         console.log("testSiALUpgrade");
         address user1 = address(1);
@@ -65,7 +66,7 @@ contract SiALUpgrade2Test is Test {
         console.log("!!!Rebalance to 80%");
 
         vm.startPrank(multisig);
-        strategy.rebalanceDebt(80_00);
+        strategy.rebalanceDebt(80_00, 0);
         vm.stopPrank();
 
         ltv = _showHealth(strategy, "!!!After rebalanceDebt");
@@ -87,7 +88,7 @@ contract SiALUpgrade2Test is Test {
         ltv = _showHealth(strategy, "!!!After withdraw 1");
     }
 
-    /// @notice #247: decimals 6:18
+    /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL
     function testSiALUpgrade2() public {
         console.log("testSiALUpgrade2");
         address user1 = address(1);
@@ -237,15 +238,19 @@ contract SiALUpgrade2Test is Test {
     }
 
     function _adjustParams(SiloAdvancedLeverageStrategy strategy) internal {
-        uint[] memory params = strategy.getUniversalParams();
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[0] = 10000;
         vm.prank(multisig);
-        strategy.setUniversalParams(params);
+        strategy.setUniversalParams(params, addresses);
     }
 
     function _setFlashLoanVault(SiloAdvancedLeverageStrategy strategy, address vault, uint kind) internal {
         vm.prank(multisig);
-        strategy.setFlashLoanVault(vault, kind);
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+        params[10] = kind;
+        addresses[0] = vault;
+
+        strategy.setUniversalParams(params, addresses);
     }
 
 //endregion -------------------------- Auxiliary functions

@@ -563,7 +563,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     // decrease LTV
                     (uint ltv,, uint leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     uint rebalanceDebtTarget = ltv - 10_00;
-                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget, 0); // 0 = minSharePrice
                     (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     console.log(
                         string.concat(
@@ -578,7 +578,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     );
                     // increase LTV
                     rebalanceDebtTarget = ltv + 10_00;
-                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget, 0); // 0 = minSharePrice
                     (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     console.log(
                         string.concat(

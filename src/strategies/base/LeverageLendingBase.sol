@@ -60,7 +60,9 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc ILeverageLendingStrategy
-    function rebalanceDebt(uint newLtv) external returns (uint resultLtv, uint resultSharePrice) {
+    function rebalanceDebt(uint newLtv, uint minSharePrice) external returns (uint resultLtv, uint resultSharePrice) {
+        minSharePrice; // todo use below
+
         IPlatform _platform = IPlatform(platform());
         IHardWorker hardworker = IHardWorker(_platform.hardWorker());
         address rebalancer = _platform.rebalancer();
@@ -88,7 +90,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     }
 
     /// @inheritdoc ILeverageLendingStrategy
-    function setUniversalParams(uint[] memory params) external onlyOperator {
+    function setUniversalParams(uint[] memory params, address[] memory addresses) external onlyOperator {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.depositParam0 = params[0];
         $.depositParam1 = params[1];
@@ -100,17 +102,12 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.decreaseLtvParam1 = params[7];
         $.swapPriceImpactTolerance0 = params[8];
         $.swapPriceImpactTolerance1 = params[9];
-        emit UniversalParams(params);
-    }
+        $.flashLoanKind = params[10];
 
-    /// @notice Set flash loan vault
-    /// @param flashLoanVault_ Adress of the new vault
-    /// @param flashLoanKind Kind of the new vault: see FLASH_LOAN_KIND_BALANCER_V2
-    function setFlashLoanVault(address flashLoanVault_, uint flashLoanKind) external onlyOperator {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        $.flashLoanVault = flashLoanVault_;
-        $.flashLoanKind = flashLoanKind;
-        emit ChangeFlashLoanVault(flashLoanVault_);
+        $.flashLoanVault = addresses[0];
+
+        emit UniversalParams(params);
+        emit UniversalAddresses(addresses);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -153,6 +150,25 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /// @inheritdoc IStrategy
     function getRevenue() external pure virtual returns (address[] memory assets_, uint[] memory amounts) {}
 
+    /// @inheritdoc ILeverageLendingStrategy
+    function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        params = new uint[](11);
+        params[0] = $.depositParam0;
+        params[1] = $.depositParam1;
+        params[2] = $.withdrawParam0;
+        params[3] = $.withdrawParam1;
+        params[4] = $.increaseLtvParam0;
+        params[5] = $.increaseLtvParam1;
+        params[6] = $.decreaseLtvParam0;
+        params[7] = $.decreaseLtvParam1;
+        params[8] = $.swapPriceImpactTolerance0;
+        params[9] = $.swapPriceImpactTolerance1;
+        params[10] = $.flashLoanKind;
+
+        addresses = new address[](1);
+        addresses[0] = $.flashLoanVault;
+    }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

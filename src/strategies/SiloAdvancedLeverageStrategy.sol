@@ -19,6 +19,7 @@ import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
+import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -34,7 +35,11 @@ import {StrategyLib} from "./libs/StrategyLib.sol";
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
-contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient, IUniswapV3FlashCallback {
+contract SiloAdvancedLeverageStrategy
+is LeverageLendingBase,
+IFlashLoanRecipient,
+IUniswapV3FlashCallback,
+IBalancerV3FlashCallback {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -84,7 +89,7 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         // Swap price impact tolerance
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
-        $.withdrawParam0 = INTERNAL_PRECISION;
+        $.withdrawParam0 = 100_00;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -153,21 +158,6 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function getUniversalParams() external view returns (uint[] memory params) {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        params = new uint[](10);
-        params[0] = $.depositParam0;
-        params[1] = $.depositParam1;
-        params[2] = $.withdrawParam0;
-        params[3] = $.withdrawParam1;
-        params[4] = $.increaseLtvParam0;
-        params[5] = $.increaseLtvParam1;
-        params[6] = $.decreaseLtvParam0;
-        params[7] = $.decreaseLtvParam1;
-        params[8] = $.swapPriceImpactTolerance0;
-        params[9] = $.swapPriceImpactTolerance1;
-    }
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
@@ -367,6 +357,8 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
         console.log("borrow balance", IERC20Metadata($.borrowAsset).balanceOf(address(this)));
         console.log("totalCollateral", SiloAdvancedLib.totalCollateral($.lendingVault));
         console.log("totalDebt", SiloAdvancedLib.totalDebt($.borrowingVault));
+        console.log("borrow decimals", IERC20Metadata(v.borrowAsset).decimals());
+        console.log("collateral decimals", IERC20Metadata(v.collateralAsset).decimals());
 
         console.log("collateralAsset", v.collateralAsset);
         console.log("borrowAsset", v.borrowAsset);
@@ -464,13 +456,15 @@ contract SiloAdvancedLeverageStrategy is LeverageLendingBase, IFlashLoanRecipien
             // uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
 
             console.log("_withdrawAssets.collateralAmountToWithdraw", collateralAmountToWithdraw);
+            uint withdrawParam0 = $.withdrawParam0;
             $.tempCollateralAmount = collateralAmountToWithdraw;
             uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = collateralAmountToWithdraw * maxLtv / 1e18  // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // maxLtv / 1e18 // ltv / INTERNAL_PRECISION // TODO: (maxLtv) / 1e18)   ???
+            flashAmounts[0] = collateralAmountToWithdraw * maxLtv / 1e18
                 * priceCtoB
-            // todo use withdrawParam0
+                * (withdrawParam0 == 0 ? INTERNAL_PRECISION : withdrawParam0)
                 * (10**IERC20Metadata(v.borrowAsset).decimals())
                 / 1e18 // priceCtoB has decimals 1e18
+                / INTERNAL_PRECISION // withdrawParam0
                 / (10**IERC20Metadata(v.collateralAsset).decimals());
             console.log("_withdrawAssets.flashAmounts[0]", flashAmounts[0]);
             address[] memory flashAssets = new address[](1);

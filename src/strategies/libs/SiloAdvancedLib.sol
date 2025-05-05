@@ -315,7 +315,7 @@ library SiloAdvancedLib {
             borrowingVault: $.borrowingVault
         });
 
-        uint tvlPricedInCollateralAsset = calcTotal(v);
+        uint tvlPricedInCollateralAsset = StrategyLib.balance(v.collateralAsset) + calcTotal(v);
 
         // here is the math that works:
         // collateral_value - debt_value = real_TVL
@@ -432,8 +432,6 @@ library SiloAdvancedLib {
         console.log("calcTotal");
         (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
         console.log("priceBtoC", priceBtoC);
-        console.log("borrow decimals", IERC20Metadata(v.borrowAsset).decimals());
-        console.log("collateral decimals", IERC20Metadata(v.collateralAsset).decimals());
         uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault)
             * (10**IERC20Metadata(v.collateralAsset).decimals())
             * priceBtoC

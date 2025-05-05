@@ -12,7 +12,7 @@ interface ILeverageLendingStrategy {
     event LeverageLendingHealth(uint ltv, uint leverage);
     event TargetLeveragePercent(uint value);
     event UniversalParams(uint[] params);
-    event ChangeFlashLoanVault(address vault);
+    event UniversalAddresses(address[] addresses);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -94,18 +94,20 @@ interface ILeverageLendingStrategy {
     /// @param newLtv Target LTV after re-balancing with 4 decimals. 90_00 is 90%.
     /// @return resultLtv LTV after re-balance. For static calls.
     /// @return resultSharePrice Share price after applying rebalance debt
-    function rebalanceDebt(uint newLtv) external returns (uint resultLtv, uint resultSharePrice);
+    function rebalanceDebt(uint newLtv, uint minSharePrice) external returns (uint resultLtv, uint resultSharePrice);
 
     /// @notice Change target leverage percent
     /// @param value Value with 4 decimals, 90_00 is 90%.
     function setTargetLeveragePercent(uint value) external;
 
     /// @notice Change universal configurable params
-    function setUniversalParams(uint[] memory params) external;
+    function setUniversalParams(uint[] memory params, address[] memory addresses) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @notice Get universal configurable params
+    function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses);
 
     /// @notice Difference between collateral and debt
     /// @return tvl USD amount of user deposited assets
