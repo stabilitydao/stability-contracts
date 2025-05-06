@@ -80,14 +80,14 @@ contract SiALUpgrade2Test is Test {
 
         console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        uint ltvAfterDeposit = _showHealth(strategy, "!!!After deposit 1");
+        /* uint ltvAfterDeposit = */ _showHealth(strategy, "!!!After deposit 1");
         // assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 1002);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        uint ltvFinal = _showHealth(strategy, "!!!After withdraw 1");
+        /* uint ltvFinal = */ _showHealth(strategy, "!!!After withdraw 1");
 
         // assertApproxEqAbs(ltvAfterRebalance, ltvFinal, 1003);
 
@@ -220,7 +220,7 @@ contract SiALUpgrade2Test is Test {
             console.log("!!!Withdraw ALL");
             _withdrawAllForUser(vault, address(strategy), user1);
 
-            uint ltvFinal = _showHealth(strategy, "!!!After withdraw all");
+            /* uint ltvFinal = */_showHealth(strategy, "!!!After withdraw all");
 
             console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
             console.log("User balance", IERC20(collateralAsset).balanceOf(user1));
