@@ -10,11 +10,13 @@ import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
 /// @title ALM re-balancing helper that calculate args for rebalance() call
 /// Changelog:
+///   1.1.0: calcRebalanceArgs utilize burnOldPositions for fill-up positions
 ///   1.0.2: calcRebalanceArgs bugfix
 ///   1.0.1: calcRebalanceArgs bugfix
 /// @author Alien Deployer (https://github.com/a17)
+/// @author 0xalpha0123 (https://github.com/0xalpha0123)
 contract RebalanceHelper {
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.1.0";
     uint internal constant SLIPPAGE_PRECISION = 100_000;
 
     struct CalcRebalanceVars {
@@ -32,12 +34,13 @@ contract RebalanceHelper {
     /// @notice Calculate new position arguments for ALM re-balancing
     /// @param strategy Address of ALM strategy
     /// @param slippage Slippage check. 50_000 - 50%, 1_000 - 1%, 100 - 0.1%, 1 - 0.001%
-    /// @return burnOldPositions Burn old positions or not. Zero length mean burn all.
+    /// @return burnOldPositions Burn old positions or not.
     /// @return mintNewPositions New positions data
     function calcRebalanceArgs(
         address strategy,
         uint slippage
     ) external view returns (bool[] memory burnOldPositions, IALM.NewPosition[] memory mintNewPositions) {
+        // Validate strategy interface
         if (!IERC165(strategy).supportsInterface(type(IALM).interfaceId)) {
             revert IALM.NotALM();
         }
@@ -46,9 +49,15 @@ contract RebalanceHelper {
             revert IALM.NotNeedRebalance();
         }
 
+        // Initialize variables using CalcRebalanceVars struct
         CalcRebalanceVars memory v;
 
-        burnOldPositions = new bool[](0);
+        uint positionsLength = IALM(strategy).positions().length;
+        burnOldPositions = new bool[](positionsLength); // Initialize burnOldPositions array
+        for (uint i = 0; i < positionsLength; i++) {
+            burnOldPositions[i] = false;
+        }
+        // Retrieve strategy preset and positions
         // slither-disable-next-line unused-return
         (v.algoId,,, v.params) = IALM(strategy).preset();
         v.pool = ILPStrategy(strategy).pool();
@@ -59,12 +68,15 @@ contract RebalanceHelper {
         (, uint[] memory amounts) = IStrategy(strategy).assetsAmounts();
         int24[] memory ticks = new int24[](2);
 
+        // Handle ALGO_FILL_UP logic
         if (v.algoId == ALMLib.ALGO_FILL_UP) {
             // check if out of range
             IALM.Position memory oldBasePosition = IALM(strategy).positions()[0];
+            // Determine if base position needs rebalancing
             if (tick > oldBasePosition.tickUpper || tick < oldBasePosition.tickLower) {
                 // out of range: 1 new position with single asset
                 mintNewPositions = new IALM.NewPosition[](1);
+                burnOldPositions[0] = true;
                 if (tick > oldBasePosition.tickUpper) {
                     int24 tickDistance = tick - oldBasePosition.tickUpper;
                     //slither-disable-next-line divide-before-multiply
@@ -96,6 +108,8 @@ contract RebalanceHelper {
             } else {
                 // 2 new positions
                 mintNewPositions = new IALM.NewPosition[](2);
+                if (burnOldPositions.length > 0) burnOldPositions[0] = true;
+                if (burnOldPositions.length > 1) burnOldPositions[1] = true;
                 (mintNewPositions[0].tickLower, mintNewPositions[0].tickUpper) =
                     ALMLib.calcFillUpBaseTicks(tick, v.params[0], tickSpacing);
 
@@ -108,11 +122,13 @@ contract RebalanceHelper {
                 mintNewPositions[0].minAmount0 = amountsConsumed[0] - amountsConsumed[0] * slippage / SLIPPAGE_PRECISION;
                 mintNewPositions[0].minAmount1 = amountsConsumed[1] - amountsConsumed[1] * slippage / SLIPPAGE_PRECISION;
 
-                // calc fill-up
+                // Calculate remaining asset amounts for fill-up position
                 uint[] memory amountsRemaining = new uint[](2);
                 amountsRemaining[0] = amounts[0] - amountsConsumed[0];
                 amountsRemaining[1] = amounts[1] - amountsConsumed[1];
                 //bool intDiv = tick / tickSpacing * tickSpacing == tick;
+
+                // Calculate fill-up ticks on both sides of the current price
                 v.fillUpTicksLowerSide = new int24[](2);
                 v.fillUpTicksLowerSide[0] = mintNewPositions[0].tickLower;
                 //slither-disable-next-line divide-before-multiply
@@ -123,6 +139,8 @@ contract RebalanceHelper {
                 v.fillUpTicksUpperSide[0] =
                     tick > 0 ? (tick / tickSpacing * tickSpacing + tickSpacing) : (tick / tickSpacing * tickSpacing);
                 v.fillUpTicksUpperSide[1] = mintNewPositions[0].tickUpper;
+
+                // Compare liquidity for both sides
                 (v.fillUpLiquidityLowerSide, v.fillUpAmountsConsumedLowerSide) =
                     adapter.getLiquidityForAmounts(v.pool, amountsRemaining, v.fillUpTicksLowerSide);
                 (v.fillUpLiquidityUpperSide, v.fillUpAmountsConsumedUpperSide) =

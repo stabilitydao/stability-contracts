@@ -65,10 +65,14 @@ library ALMLib {
     ) external view returns (bool need) {
         if ($.algoId == ALGO_FILL_UP) {
             uint len = $.positions.length;
+            // Check if positions exist
             if (len == 0) {
                 return false;
             }
 
+            int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
+
+            // Base Position Rebalancing Logic
             int24 halfRange = $.params[0] / 2;
             int24 halfTriggerRange = $.params[1] / 2;
             int24 oldTickLower = $.positions[0].tickLower;
@@ -78,9 +82,9 @@ library ALMLib {
             bool fillUpRebalanceTrigger =
                 (currentTick > oldMedianTick + halfTriggerRange) || (currentTick < oldMedianTick - halfTriggerRange);
             bool outOfRange = currentTick < oldTickLower || currentTick > oldTickUpper;
+
             bool cantMoveRange = false;
             if (outOfRange) {
-                int24 tickSpacing = getUniswapV3TickSpacing(_$_.pool);
                 int24 tickDistance =
                     currentTick > oldTickUpper ? currentTick - oldTickUpper : oldTickLower - currentTick;
                 tickDistance = tickDistance / tickSpacing * tickSpacing;
@@ -89,8 +93,32 @@ library ALMLib {
                 }
             }
 
-            return !cantMoveRange && fillUpRebalanceTrigger;
+            if (!cantMoveRange && fillUpRebalanceTrigger) {
+                return true;
+            }
+
+            // Limit Position Rebalancing Logic
+            if (len > 1) {
+                int24 limitTickLower = $.positions[1].tickLower;
+                int24 limitTickUpper = $.positions[1].tickUpper;
+                // Check if moving the range is feasible
+                int24 tickDistance;
+                if (currentTick < limitTickLower) {
+                    tickDistance = (limitTickLower - currentTick) / tickSpacing * tickSpacing;
+                } else if (currentTick > limitTickUpper) {
+                    tickDistance = (currentTick - limitTickUpper) / tickSpacing * tickSpacing;
+                } else {
+                    tickDistance = 0; // No movement needed
+                }
+
+                // If tickDistance is zero, moving the range is not feasible
+                if (tickDistance != 0) {
+                    return true;
+                }
+            }
         }
+
+        return false;
     }
 
     function getAlgoNamyById(uint algoId) public pure returns (string memory) {
