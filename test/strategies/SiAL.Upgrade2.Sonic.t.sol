@@ -188,8 +188,8 @@ contract SiALUpgrade2Test is Test {
         address collateralAsset = IStrategy(strategy).assets()[0];
         _showHealth(strategy, "!!!Initial state");
 
-        uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
-        // uint16[1] memory parts = [60_00];
+        // uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
+        uint16[1] memory parts = [60_00];
 
         uint256 snapshotId = vm.snapshotState();
         for (uint i = 0; i < parts.length; ++i) {

@@ -27,6 +27,7 @@ import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
+import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
@@ -66,6 +67,15 @@ IBalancerV3FlashCallback {
         uint withdrawParam1;
     }
 
+    struct WithdrawIncLtvLocal {
+        uint xUsd;
+        uint priceCtoB;
+        int a;
+        int b;
+        int cQuad;
+        int det2;
+        int leverageNew;
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -427,7 +437,6 @@ IBalancerV3FlashCallback {
         console.log("_withdrawAssets.valueNow.C", valueNow);
         console.log("_withdrawAssets.balance-B", StrategyLib.balance(v.borrowAsset));
         console.log("_withdrawAssets.bal.C", bal);
-
         amountsOut = new uint[](1);
         if (state.valueWas > valueNow) {
             //console.log('withdraw loss', valueWas - valueNow);
@@ -523,9 +532,11 @@ IBalancerV3FlashCallback {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
+        console.log("_withdrawFromLendingVault.value", value);
         (,,uint leverage,,,) = health();
 
         if (0 == SiloAdvancedLib.totalDebt(v.borrowingVault)) {
+            console.log("_withdrawFromLendingVault.A");
             // zero debt, positive collateral - we can just withdraw required amount
             uint collateral = SiloAdvancedLib.totalCollateral(v.lendingVault);
             if (collateral != 0) {
@@ -537,10 +548,11 @@ IBalancerV3FlashCallback {
                 );
             }
         } else {
+            console.log("_withdrawFromLendingVault.B.value", value);
             uint valueToWithdraw = value;
             if (leverage < state.targetLeverage && state.targetLeverage > 1) {
                 // Can we increase the debt without increasing collateral?
-                (uint collateralPrice,, uint collateralUsd, uint borrowAssetUsd, ) = SiloAdvancedLib.getAmountsInUsd(
+                SiloAdvancedLib.CollateralDebtState memory debtState = SiloAdvancedLib.getDebtState(
                     platform(),
                     v.lendingVault,
                     v.collateralAsset,
@@ -548,10 +560,15 @@ IBalancerV3FlashCallback {
                     v.borrowingVault
                 );
 
-                uint addDebtUsd = borrowAssetUsd < collateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                    ? collateralUsd * (state.targetLeverage - 1) / state.targetLeverage - borrowAssetUsd
+                uint addDebtUsd = debtState.borrowAssetUsd
+                    < debtState.collateralUsd * (state.targetLeverage - 1) / state.targetLeverage
+                    ? debtState.collateralUsd * (state.targetLeverage - 1) / state.targetLeverage
+                        - debtState.borrowAssetUsd
                     : 0;
-                uint valueInUsd = value * collateralPrice / (10**IERC20Metadata(v.collateralAsset).decimals());
+                uint valueInUsd = value * debtState.collateralPrice
+                    / (10**IERC20Metadata(v.collateralAsset).decimals());
+                console.log("_withdrawFromLendingVault.addDebtUsd", addDebtUsd);
+                console.log("_withdrawFromLendingVault.valueInUsd", valueInUsd);
 
                 // We can increase debt, but we shouldn't increase it too fast
                 // so, let's limit the increasing by x2
@@ -559,7 +576,11 @@ IBalancerV3FlashCallback {
                 // But swaps are unpredictable, so let's try to get more collateral i.e. x1.5
                 // todo 150_00 and 2 => to constant? to universal param?
                 if (150_00 * valueInUsd / INTERNAL_PRECISION < addDebtUsd / 2) {
-                    // todo
+                    console.log("_withdrawFromLendingVault.C");
+                    if (_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)) {
+                        console.log("_withdrawFromLendingVault.D");
+                        valueToWithdraw = 0;
+                    }
                 }
             }
 
@@ -579,6 +600,7 @@ IBalancerV3FlashCallback {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
+        console.log("_withdrawReduceLeverage.value", value);
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
@@ -602,6 +624,80 @@ IBalancerV3FlashCallback {
         SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
     }
 
+    function _withdrawThroughIncreasingLtv(
+        LeverageLendingBaseStorage storage $,
+        LeverageLendingAddresses memory v,
+        StateBeforeWithdraw memory state,
+        SiloAdvancedLib.CollateralDebtState memory debtState,
+        uint value,
+        uint leverage
+    ) internal returns (bool) {
+        WithdrawIncLtvLocal memory p;
+        // L_initial - current leverage
+        // ltv = max ltv
+        // X - collateral amount to withdraw
+        // L_new = new leverage (it must be > current leverage)
+        // C_add - new required collateral = L_new * X
+        // D_inc - increment of the debt = ltv * C_add = ltv * L_new * X
+        // C_new = new collateral = C - X + C_add
+        // D_new = new debt = D + D_inc
+        // The math:
+        //      L_new = C_new / (C_new - D_new)
+        //      L_new = (C - X + L_new * X) / (C - X - D + L_new * X - ltv * L_new * X)
+        //      L_new^2 * [X * (1 - ltv)] + L_new * (C - D - 2X) - (C - X) = 0
+        // Solve square equation
+        //      A = X (1 - ltv), B = C - D - 2X, C_quad = -(C - X)
+        //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
+        // Ensure that L_new > L_initial and L_new < L_max
+        //      C_add = L_new * X
+        //      D_inc = ltv * C_add
+        p.xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        (p.priceCtoB, ) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
+        p.a = int(p.xUsd * (1e18 - state.maxLtv) / 1e18);
+        p.b = int(debtState.collateralUsd) - int(debtState.borrowAssetUsd) - int(2 * p.xUsd);
+        p.cQuad = -(int(debtState.collateralUsd) - int(p.xUsd));
+        p.det2 = p.b * p.b - 4 * p.a * p.cQuad;
+        if (p.det2 < 0) return false; // let's use default withdraw procedure
+        p.leverageNew = (-p.b + int(Math.sqrt(uint(p.det2)))) * 1e18 / (2 * p.a);
+        console.log("value", value);
+        console.log("leverage", leverage);
+        console.log("priceCtoB", p.priceCtoB);
+        console.log("x", p.xUsd);
+        console.log("a");console.logInt(p.a);
+        console.log("b");console.logInt(p.b);
+        console.log("cQuad");console.logInt(p.cQuad);
+        console.log("det2");console.logInt(p.det2);
+        console.log("leverageNew");console.logInt(p.leverageNew);
+
+        if (p.leverageNew < 0
+            || uint(p.leverageNew) > state.maxLeverage * 1e18 / INTERNAL_PRECISION
+            || uint(p.leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
+        ) {
+            console.log("state.maxLeverage", state.maxLeverage);
+            console.log("leverage * 1e18 / INTERNAL_PRECISION", leverage * 1e18 / INTERNAL_PRECISION);
+            return false;  // use default withdraw procedure
+        }
+
+        uint debtDiff = (value * uint(p.leverageNew)) * state.maxLtv
+            * p.priceCtoB
+            * (10**IERC20Metadata(v.borrowAsset).decimals())
+            / 1e18 // ltv
+            / 1e18 // leverageNew
+            / (10**IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
+        console.log("newDebtAmount", debtDiff);
+
+        address[] memory flashAssets = new address[](1);
+        flashAssets[0] = v.borrowAsset;
+        uint[] memory flashAmounts = new uint[](1);
+
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
+
+        flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
+        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
+
+        return true;
+    }
 
     function _getStateBeforeWithdraw(
         LeverageLendingBaseStorage storage $,

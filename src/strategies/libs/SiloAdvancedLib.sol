@@ -57,6 +57,16 @@ library SiloAdvancedLib {
     address internal constant TELLER_stkscUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
     address internal constant TOKEN_wstkscUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
 
+    struct CollateralDebtState {
+        uint collateralPrice;
+        uint borrowAssetPrice;
+        uint collateralUsd;
+        uint borrowAssetUsd;
+        uint collateralAmount;
+        uint debtAmount;
+        bool trusted;
+    }
+
     function receiveFlashLoan(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -373,52 +383,50 @@ library SiloAdvancedLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         console.log("realTvl");
-        uint collateralUsd;
-        uint borrowAssetUsd;
-        (,, collateralUsd, borrowAssetUsd, trusted) = getAmountsInUsd(
+        SiloAdvancedLib.CollateralDebtState memory debtState = getDebtState(
             platform,
             $.lendingVault,
             $.collateralAsset,
             $.borrowAsset,
             $.borrowingVault
         );
-        tvl = collateralUsd - borrowAssetUsd;
+        tvl = debtState.collateralUsd - debtState.borrowAssetUsd;
+        trusted = debtState.trusted;
         console.log("tvl", tvl);
     }
 
-    function getAmountsInUsd(
+    function getDebtState(
         address platform,
         address lendingVault,
         address collateralAsset,
         address borrowAsset,
         address borrowingVault
-    ) public view returns (
-        uint collateralPrice,
-        uint borrowAssetPrice,
-        uint collateralUsd,
-        uint borrowAssetUsd,
-        bool trusted
-    ) {
+    ) public view returns (CollateralDebtState memory data) {
         bool collateralPriceTrusted;
         bool borrowAssetPriceTrusted;
 
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
 
-        uint collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
-        (collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
+        data.collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
+        (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
+        data.collateralUsd = data.collateralAmount * data.collateralPrice
+            / 10 ** IERC20Metadata(collateralAsset).decimals();
 
-        (borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
-        borrowAssetUsd = totalDebt(borrowingVault) * borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
+        data.debtAmount = totalDebt(borrowingVault);
+        (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
+        data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice
+            / 10 ** IERC20Metadata(borrowAsset).decimals();
 
-        trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+        data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
 
-        console.log("collateralPrice", collateralPrice);
-        console.log("borrowAssetPrice", borrowAssetPrice);
-        console.log("collateralAmount", collateralAmount);
-        console.log("debtAmount", totalDebt(borrowingVault));
-        console.log("collateralUsd", collateralUsd);
-        console.log("borrowAssetUsd", borrowAssetUsd);
+        console.log("collateralPrice", data.collateralPrice);
+        console.log("borrowAssetPrice", data.borrowAssetPrice);
+        console.log("collateralAmount", data.collateralAmount);
+        console.log("debtAmount", data.debtAmount);
+        console.log("collateralUsd", data.collateralUsd);
+        console.log("borrowAssetUsd", data.borrowAssetUsd);
+
+        return data;
     }
 
     function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
