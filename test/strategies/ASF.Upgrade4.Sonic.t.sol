@@ -34,7 +34,6 @@ contract ASFUpgrade4Test is Test {
         vm.rollFork(6420000); // Feb-03-2025 04:09:12 PM +UTC
 
         vault = IStrategy(STRATEGY).vault();
-        // multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         multisig = IPlatform(PLATFORM).multisig();
         factory = IFactory(IPlatform(PLATFORM).factory());
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
