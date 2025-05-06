@@ -10,11 +10,13 @@ import {ALMLib} from "../strategies/libs/ALMLib.sol";
 
 /// @title ALM re-balancing helper that calculate args for rebalance() call
 /// Changelog:
+///   1.1.0: calcRebalanceArgs utilize burnOldPositions for fill-up positions
 ///   1.0.2: calcRebalanceArgs bugfix
 ///   1.0.1: calcRebalanceArgs bugfix
 /// @author Alien Deployer (https://github.com/a17)
+/// @author 0xalpha0123 (https://github.com/0xalpha0123)
 contract RebalanceHelper {
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.1.0";
     uint internal constant SLIPPAGE_PRECISION = 100_000;
 
     struct CalcRebalanceVars {
