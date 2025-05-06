@@ -127,9 +127,17 @@ library SiloAdvancedLib {
                 console.log('collateralAmountTotal', collateralAmountTotal);
                 collateralAmountTotal -= collateralAmountTotal / 1000;
                 console.log('collateralAmountTotal', collateralAmountTotal);
-                console.log("----- withdraw C", Math.min(tempCollateralAmount, collateralAmountTotal));
+                console.log("----- withdraw C", _estimateCollateralAmountToRepay(platform, collateralAmountTotal, collateralAsset, token, tempCollateralAmount));
+
                 ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
+                    // Math.min(tempCollateralAmount, collateralAmountTotal),
+                    _estimateCollateralAmountToRepay(
+                        platform,
+                        collateralAmountTotal,
+                        collateralAsset,
+                        token,
+                        tempCollateralAmount
+                    ),
                     address(this),
                     address(this),
                     ISilo.CollateralType.Collateral
@@ -365,24 +373,52 @@ library SiloAdvancedLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         console.log("realTvl");
-        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
-        address lendingVault = $.lendingVault;
-        address collateralAsset = $.collateralAsset;
-        address borrowAsset = $.borrowAsset;
-        uint collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
-        (uint collateralPrice, bool CollateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
-        uint borrowedAmount = totalDebt($.borrowingVault);
-        (uint borrowAssetPrice, bool borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
-        uint borrowAssetUsd = borrowedAmount * borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
+        uint collateralUsd;
+        uint borrowAssetUsd;
+        (,, collateralUsd, borrowAssetUsd, trusted) = getAmountsInUsd(
+            platform,
+            $.lendingVault,
+            $.collateralAsset,
+            $.borrowAsset,
+            $.borrowingVault
+        );
         tvl = collateralUsd - borrowAssetUsd;
-        trusted = CollateralPriceTrusted && borrowAssetPriceTrusted;
+        console.log("tvl", tvl);
+    }
+
+    function getAmountsInUsd(
+        address platform,
+        address lendingVault,
+        address collateralAsset,
+        address borrowAsset,
+        address borrowingVault
+    ) public view returns (
+        uint collateralPrice,
+        uint borrowAssetPrice,
+        uint collateralUsd,
+        uint borrowAssetUsd,
+        bool trusted
+    ) {
+        bool collateralPriceTrusted;
+        bool borrowAssetPriceTrusted;
+
+        IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
+
+        uint collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
+        (collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
+        collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
+
+        (borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
+        borrowAssetUsd = totalDebt(borrowingVault) * borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
+
+        trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+
         console.log("collateralPrice", collateralPrice);
         console.log("borrowAssetPrice", borrowAssetPrice);
         console.log("collateralAmount", collateralAmount);
+        console.log("debtAmount", totalDebt(borrowingVault));
         console.log("collateralUsd", collateralUsd);
         console.log("borrowAssetUsd", borrowAssetUsd);
-        console.log("tvl", tvl);
     }
 
     function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
