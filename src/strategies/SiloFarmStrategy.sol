@@ -19,9 +19,11 @@ import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
+import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
+///   1.0.3: getSpecificName update
 ///   1.0.2: FarmingStrategyBase 1.3.3
 ///   1.0.1: claimRevenue bugfix
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -88,8 +90,8 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
 
     /// @inheritdoc IStrategy
-    function getSpecificName() external pure override returns (string memory, bool) {
-        return ("", false);
+    function getSpecificName() external view override returns (string memory, bool) {
+        return (CommonLib.u2s(_getMarketId()), true);
     }
 
     /// @inheritdoc IStrategy
@@ -141,7 +143,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc IFarmingStrategy
     function farmMechanics() external pure returns (string memory) {
-        return FarmMechanicsLib.CLASSIC;
+        return FarmMechanicsLib.AUTO;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -297,7 +299,13 @@ contract SiloFarmStrategy is FarmingStrategyBase {
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " and supply APR by lending ",
             IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
-            " to Silo V2"
+            " to Silo V2 ",
+            CommonLib.u2s(_getMarketId())
         );
+    }
+
+    function _getMarketId() internal view returns (uint marketId) {
+        IFactory.Farm memory farm = _getFarm();
+        marketId = ISiloConfig(ISilo(farm.addresses[1]).config()).SILO_ID();
     }
 }
