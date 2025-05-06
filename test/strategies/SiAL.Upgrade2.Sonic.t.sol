@@ -44,7 +44,7 @@ contract SiALUpgrade2Test is Test {
         multisig = IPlatform(PLATFORM).multisig();
     }
 
-    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL
+    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Rebalance, deposit 100_000, withdraw ALL
     function testSiALUpgrade1() public {
         console.log("testSiALUpgrade");
         address user1 = address(1);
@@ -80,14 +80,14 @@ contract SiALUpgrade2Test is Test {
 
         console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        uint ltvAfterDeposit = _showHealth(strategy, "!!!After deposit 1");
+        /* uint ltvAfterDeposit = */ _showHealth(strategy, "!!!After deposit 1");
         // assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 1002);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        uint ltvFinal = _showHealth(strategy, "!!!After withdraw 1");
+        /* uint ltvFinal = */ _showHealth(strategy, "!!!After withdraw 1");
 
         // assertApproxEqAbs(ltvAfterRebalance, ltvFinal, 1003);
 
@@ -96,7 +96,8 @@ contract SiALUpgrade2Test is Test {
         assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 100_000e6, 10e6);
     }
 
-    /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL
+    /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL.
+    /// Deposit user 2, Deposit user 1, withdraw part 1, withdraw all 1, withdraw all 2
     function testSiALUpgrade2() public {
         console.log("testSiALUpgrade2");
         address user1 = address(1);
@@ -165,8 +166,72 @@ contract SiALUpgrade2Test is Test {
         console.log("done");
     }
 
-    /// @notice #247: decimals 18:18
+    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Deposit 100_000, withdraw half, withdraw all
     function testSiALUpgrade3() public {
+        console.log("testSiALUpgrade");
+        address user1 = address(1);
+        // address user2 = address(2);
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(STRATEGY);
+
+        // ----------------- access to the strategy
+        vm.prank(multisig);
+        address vault = IStrategy(STRATEGY).vault();
+        SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(STRATEGY));
+        vm.stopPrank();
+
+        // ----------------- set up the strategy
+        _setWithdrawParam1(strategy, 200_00); // withdraw 200% and deposit 100% back
+
+        // ----------------- check current state
+        address collateralAsset = IStrategy(strategy).assets()[0];
+        _showHealth(strategy, "!!!Initial state");
+
+        // uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
+        uint16[1] memory parts = [60_00];
+
+        uint256 snapshotId = vm.snapshotState();
+        for (uint i = 0; i < parts.length; ++i) {
+            bool reverted = vm.revertToState(snapshotId);
+            assertTrue(reverted, "Failed to revert to snapshot");
+
+            // ----------------- user1: deposit large amount
+            console.log("!!!START deposit");
+            console.log("PART", parts[i]);
+            _depositForUser(vault, address(strategy), user1, 10_000e6);
+            _showHealth(strategy, "!!!After deposit 1");
+
+            // ----------------- user1: withdraw partly
+            vm.roll(block.number + 6);
+            console.log("!!!Withdraw1");
+            _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * parts[i] / 100_00);
+            _showHealth(strategy, "!!!After withdraw 1");
+
+            if (parts[i] < 50_00) {
+                vm.roll(block.number + 6);
+                console.log("!!!Withdraw2");
+                _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * parts[i] / 100_00);
+                _showHealth(strategy, "!!!After withdraw 2");
+            }
+
+            // ----------------- user1: withdraw all
+            vm.roll(block.number + 6);
+            console.log("!!!Withdraw ALL");
+            _withdrawAllForUser(vault, address(strategy), user1);
+
+            /* uint ltvFinal = */_showHealth(strategy, "!!!After withdraw all");
+
+            console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+            console.log("User balance", IERC20(collateralAsset).balanceOf(user1));
+//            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
+//            assertLe(ltvFinal, 92_00); // maxLTV = 0.92
+        }
+    }
+
+
+    /// @notice #247: decimals 18:18
+    function testSiALUpgradeTODO() public {
         console.log("testSiALUpgrade3");
         address user1 = address(1);
         address user2 = address(2);
@@ -291,5 +356,12 @@ contract SiALUpgrade2Test is Test {
         strategy.setUniversalParams(params, addresses);
     }
 
+    /// @notice withdrawParams1 increases withdraw amount (rest is deposited back after withdraw)
+    function _setWithdrawParam1(SiloAdvancedLeverageStrategy strategy, uint withdrawParams1) internal {
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+        params[3] = withdrawParams1;
+        vm.prank(multisig);
+        strategy.setUniversalParams(params, addresses);
+    }
 //endregion -------------------------- Auxiliary functions
 }

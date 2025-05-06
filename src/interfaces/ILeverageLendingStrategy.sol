@@ -86,6 +86,13 @@ interface ILeverageLendingStrategy {
         IncreaseLtv
     }
 
+    enum FlashLoanKind {
+        /// @notice Balancer V2
+        Default_0,
+        BalancerV3_1,
+        UniswapV3_2
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
