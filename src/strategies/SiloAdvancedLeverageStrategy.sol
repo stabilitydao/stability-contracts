@@ -35,11 +35,12 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
-contract SiloAdvancedLeverageStrategy
-is LeverageLendingBase,
-IFlashLoanRecipient,
-IUniswapV3FlashCallback,
-IBalancerV3FlashCallback {
+contract SiloAdvancedLeverageStrategy is
+    LeverageLendingBase,
+    IFlashLoanRecipient,
+    IUniswapV3FlashCallback,
+    IBalancerV3FlashCallback
+{
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -117,7 +118,7 @@ IBalancerV3FlashCallback {
     /// @dev Support of FLASH_LOAN_KIND_BALANCER_V3
     /// @param token Token of flash loan
     /// @param amount Required amount of the flash loan
-    function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/) external {
+    function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
         // sender is vault, it's checked inside receiveFlashLoan
         IVaultMainV3 vault = IVaultMainV3(payable(msg.sender));
 
@@ -137,11 +138,7 @@ IBalancerV3FlashCallback {
         vault.settle(token, amount);
     }
 
-    function uniswapV3FlashCallback(
-        uint256 fee0,
-        uint256 fee1,
-        bytes calldata userData
-    ) external {
+    function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 
@@ -215,7 +212,7 @@ IBalancerV3FlashCallback {
         return SiloAdvancedLib.realTvl(platform(), $);
     }
 
-    function _realSharePrice() internal override view returns (uint sharePrice, bool trusted) {
+    function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl();
         uint totalSupply = IERC20(vault()).totalSupply();
@@ -413,7 +410,6 @@ IBalancerV3FlashCallback {
                 _deposit($, v, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
             }
         }
-
     }
     //endregion ----------------------------------- Strategy base
 
@@ -422,11 +418,7 @@ IBalancerV3FlashCallback {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _deposit(
-        LeverageLendingBaseStorage storage $,
-        LeverageLendingAddresses memory v,
-        uint amount
-    ) internal {
+    function _deposit(LeverageLendingBaseStorage storage $, LeverageLendingAddresses memory v, uint amount) internal {
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = v.borrowAsset;
         uint[] memory flashAmounts = _getDepositFlashAmount($, v, amount);
@@ -442,15 +434,12 @@ IBalancerV3FlashCallback {
     ) internal view returns (uint[] memory flashAmounts) {
         (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
 
-        (uint priceCtoB, ) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
+        (uint priceCtoB,) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
 
         flashAmounts = new uint[](1);
-        flashAmounts[0] = amount
-            * priceCtoB
-            * (10**IERC20Metadata(v.borrowAsset).decimals())
-            * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION
-            / 1e18 // priceCtoB has decimals 1e18
-            / (10**IERC20Metadata(v.collateralAsset).decimals());
+        flashAmounts[0] = amount * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+            * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
+            / (10 ** IERC20Metadata(v.collateralAsset).decimals());
         // not sure that its right way, but its working
         // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
     }

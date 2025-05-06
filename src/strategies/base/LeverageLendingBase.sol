@@ -74,7 +74,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         }
 
         resultLtv = _rebalanceDebt(newLtv);
-        (resultSharePrice, ) = _realSharePrice();
+        (resultSharePrice,) = _realSharePrice();
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -213,7 +213,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
 
     function _rebalanceDebt(uint newLtv) internal virtual returns (uint resultLtv);
 
-    function _realSharePrice() internal virtual view returns (uint sharePrice, bool trusted);
+    function _realSharePrice() internal view virtual returns (uint sharePrice, bool trusted);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

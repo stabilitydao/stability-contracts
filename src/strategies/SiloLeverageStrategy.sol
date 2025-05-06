@@ -150,7 +150,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         return SiloLib.realTvl(platform(), $);
     }
 
-    function _realSharePrice() internal override view returns (uint sharePrice, bool trusted) {
+    function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl();
         uint totalSupply = IERC20(vault()).totalSupply();
