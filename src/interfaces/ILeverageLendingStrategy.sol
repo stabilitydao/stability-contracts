@@ -83,7 +83,10 @@ interface ILeverageLendingStrategy {
         Deposit,
         Withdraw,
         DecreaseLtv,
-        IncreaseLtv
+        /// @notice All available balances are used
+        IncreaseLtv,
+        /// @notice Amounts of collateral and borrow that can be used are limited through temp vars
+        IncreaseLtvLimited
     }
 
     enum FlashLoanKind {

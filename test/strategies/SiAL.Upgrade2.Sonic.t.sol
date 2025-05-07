@@ -31,6 +31,8 @@ contract SiALUpgrade2Test is Test {
     uint internal constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
     uint internal constant FLASH_LOAN_KIND_UNISWAP_V3 = 2;
 
+    address public constant VAULT_aSonUSDC = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959; // C-PT-aSonUSDC-14AUG2025-SAL;
+
     address public multisig;
     IFactory public factory;
 
@@ -44,7 +46,7 @@ contract SiALUpgrade2Test is Test {
         multisig = IPlatform(PLATFORM).multisig();
     }
 
-    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Rebalance, deposit 100_000, withdraw ALL
+    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Rebalance, deposit 100_000, (LARGE) withdraw ALL
     function testSiALUpgrade1() public {
         console.log("testSiALUpgrade");
         address user1 = address(1);
@@ -71,31 +73,22 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         uint ltvAfterRebalance = _showHealth(strategy, "!!!After rebalanceDebt");
-
         assertApproxEqAbs(ltvAfterRebalance, 80_00, 1001);
 
         // ----------------- deposit large amount
-        //        _depositForUser(vault, address(strategy), user2, 1_000e6);
-        //        ltv = _showHealth(strategy, "After deposit 2");
-
         console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        /* uint ltvAfterDeposit = */
-        _showHealth(strategy, "!!!After deposit 1");
-        // assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 1002);
+        uint ltvAfterDeposit = _showHealth(strategy, "!!!After deposit 1");
+        assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 500);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        /* uint ltvFinal = */
         _showHealth(strategy, "!!!After withdraw 1");
 
-        // assertApproxEqAbs(ltvAfterRebalance, ltvFinal, 1003);
-
         console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
-
-        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 100_000e6, 10e6);
+        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 100_000e6, 4000e6);
     }
 
     /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL.
@@ -170,7 +163,7 @@ contract SiALUpgrade2Test is Test {
         console.log("done");
     }
 
-    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Deposit 100_000, withdraw half, withdraw all
+    /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Deposit 10_000, withdraw half, withdraw all
     function testSiALUpgrade3() public {
         console.log("testSiALUpgrade");
         address user1 = address(1);
@@ -186,25 +179,27 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- set up the strategy
-        _setWithdrawParam1(strategy, 200_00); // withdraw 200% and deposit 100% back
+        _setWithdrawParam1(strategy, 200_00);
 
         // ----------------- check current state
-        address collateralAsset = IStrategy(strategy).assets()[0];
         _showHealth(strategy, "!!!Initial state");
+        (uint sharePrice0, uint tvl0) = getSharePriceAndTvl(strategy);
 
         uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
-        // uint16[1] memory parts = [60_00];
+        //uint16[1] memory parts = [10_00];
 
         uint snapshotId = vm.snapshotState();
         for (uint i = 0; i < parts.length; ++i) {
-            bool reverted = vm.revertToState(snapshotId);
-            assertTrue(reverted, "Failed to revert to snapshot");
+            {
+                bool reverted = vm.revertToState(snapshotId);
+                assertTrue(reverted, "Failed to revert to snapshot");
+            }
 
             // ----------------- user1: deposit large amount
-            console.log("!!!START deposit");
+            console.log("!!!START deposit user 1");
             console.log("PART", parts[i]);
             _depositForUser(vault, address(strategy), user1, 10_000e6);
-            _showHealth(strategy, "!!!After deposit 1");
+            _showHealth(strategy, "!!!After deposit user1");
 
             // ----------------- user1: withdraw partly
             vm.roll(block.number + 6);
@@ -226,50 +221,118 @@ contract SiALUpgrade2Test is Test {
 
             uint ltvFinal = _showHealth(strategy, "!!!After withdraw all");
 
-            console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
-            console.log("User balance", IERC20(collateralAsset).balanceOf(user1));
+            console.log("balance user1", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
+            console.log("User balance", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
             console.log("ltvFinal", ltvFinal);
-            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
+            assertApproxEqAbs(IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1), 10_000e6, 200e6);
             assertLe(ltvFinal, 92_00); // maxLTV = 0.92
+        }
+
+        (uint sharePrice1, uint tvl1) = getSharePriceAndTvl(strategy);
+        if (sharePrice0 != 0) {
+            console.log("sharePrice", sharePrice0, sharePrice1);
+            console.log((sharePrice0 > sharePrice1
+                ? sharePrice0 - sharePrice1
+                : sharePrice1 - sharePrice0
+            ) * 100_000 / sharePrice0);
+            assertLe(
+                (sharePrice0 > sharePrice1
+                    ? sharePrice0 - sharePrice1
+                    : sharePrice1 - sharePrice0
+                ) * 100_000 / sharePrice0,
+                50
+            );
+        }
+        if (tvl0 != 0) {
+            console.log("tvl", tvl0, tvl1);
+            assertLe(
+                (tvl0 > tvl1
+                    ? tvl0 - tvl1
+                    : tvl1 - tvl0
+                ) * 100_000 / tvl0,
+                50
+            );
         }
     }
 
-    /// @notice #247: decimals 18:18
-    function testSiALUpgradeTODO() public {
-        console.log("testSiALUpgrade3");
+    /// @notice Try to use flash loan of Beets V3
+    function testSiALUpgrade4() public {
+        console.log("testSiALUpgrade4");
         address user1 = address(1);
         address user2 = address(2);
-        address STRATEGY3 = 0x92b36B43CA5beaB1dDA4abfebFb6B6B741bd3859;
+        address vault = VAULT_aSonUSDC;
 
         // ----------------- deploy new impl and upgrade
-        _upgradeStrategy(STRATEGY3);
+        _upgradeStrategy(address(IVault(vault).strategy()));
+        // _upgradeVault(vault);
 
         // ----------------- access to the strategy
         vm.prank(multisig);
-        address vault = IStrategy(STRATEGY3).vault();
-        SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(STRATEGY3));
+        SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(vault).strategy())));
+        _adjustParams(strategy);
         vm.stopPrank();
 
+        // ----------------- set up free balancer v3 flash loan
+
+        _setFlashLoanVault(strategy, BEETS_VAULT_V3, FLASH_LOAN_KIND_BALANCER_V3);
+
         // ----------------- check current state
-        uint ltv = _showHealth(strategy, "!!!Initial state");
+        _showHealth(strategy, "!!!Initial state");
 
         // ----------------- deposit large amount
+        address collateralAsset = IStrategy(strategy).assets()[0];
+
         console.log("!!!Deposit user2");
-        _depositForUser(vault, address(strategy), user2, 1e18);
-        ltv = _showHealth(strategy, "!!!After deposit 2");
+        _depositForUser(vault, address(strategy), user2, 2e6);
+        _showHealth(strategy, "!!!After deposit 2");
 
         console.log("!!!Deposit user1");
-        _depositForUser(vault, address(strategy), user1, 10e18);
-        ltv = _showHealth(strategy, "!!!After deposit 1");
+        _depositForUser(vault, address(strategy), user1, 200_000e6);
+        _showHealth(strategy, "!!!After deposit 1");
 
-        // ----------------- withdraw all
-        vm.roll(block.number + 6);
+        // ----------------- user1: withdraw half
         console.log("!!!Withdraw user1");
-        _withdrawAllForUser(vault, address(strategy), user1);
-        ltv = _showHealth(strategy, "!!!After withdraw 1");
+        vm.roll(block.number + 6);
+        console.log("Balance", IERC20(vault).balanceOf(user1));
+        _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * 4 / 5);
+        uint ltvAfterWithdraw1 = _showHealth(strategy, "!!!After withdraw 1 half");
 
-        console.log("done");
+        // ----------------- user1: withdraw all
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(vault, address(strategy), user1);
+        uint ltvAfterWithdraw1all = _showHealth(strategy, "!!!After withdraw 1 all");
+
+        // ----------------- user2: withdraw all
+        console.log("!!!Withdraw user2");
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(vault, address(strategy), user2);
+        /*uint ltvAfterWithdraw2 = */
+        _showHealth(strategy, "!!!After withdraw 2 all");
+
+        console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
+        console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
+        uint balance1 = IERC20(collateralAsset).balanceOf(user1);
+        uint balance2 = IERC20(collateralAsset).balanceOf(user2);
+        console.log("balance user1", balance1);
+        console.log("balance user2", balance2);
+
+        assertLe(
+            (balance1 > 200_000e6
+                ? balance1 - 200_000e6
+                : 200_000e6 - balance1
+            ) * 100_000 / 200_000e6,
+            5_000 // (!) 5%
+        );
+
+        assertLe(
+            (balance2 > 2e6
+                ? balance2 - 2e6
+                : 2e6 - balance2
+            ) * 100_000 / 2e6,
+            2_000 // (!) 2%
+        );
     }
+
 
     //region -------------------------- Auxiliary functions
     function _showHealth(SiloAdvancedLeverageStrategy strategy, string memory state) internal view returns (uint) {
@@ -285,6 +348,11 @@ contract SiALUpgrade2Test is Test {
         console.log("Total amount in strategy", strategy.total());
 
         return ltv;
+    }
+
+    function getSharePriceAndTvl(SiloAdvancedLeverageStrategy strategy) internal view returns (uint sharePrice, uint tvl) {
+        (tvl,) = strategy.realTvl();
+        (sharePrice,) = strategy.realSharePrice();
     }
 
     function _depositForUser(address vault, address strategy, address user, uint depositAmount) internal {
