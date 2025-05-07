@@ -100,6 +100,7 @@ contract SiALUpgrade2Test is Test {
 
     /// @notice #247: decimals 6:18: C-PT-wstkscUSD-29MAY2025-SAL.
     /// Deposit user 2, Deposit user 1, withdraw part 1, withdraw all 1, withdraw all 2
+    // Try to use flash loan of Uniswap V3
     function testSiALUpgrade2() public {
         console.log("testSiALUpgrade2");
         address user1 = address(1);
@@ -191,8 +192,8 @@ contract SiALUpgrade2Test is Test {
         address collateralAsset = IStrategy(strategy).assets()[0];
         _showHealth(strategy, "!!!Initial state");
 
-        // uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
-        uint16[1] memory parts = [60_00];
+        uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
+        // uint16[1] memory parts = [60_00];
 
         uint snapshotId = vm.snapshotState();
         for (uint i = 0; i < parts.length; ++i) {
@@ -223,13 +224,13 @@ contract SiALUpgrade2Test is Test {
             console.log("!!!Withdraw ALL");
             _withdrawAllForUser(vault, address(strategy), user1);
 
-            /* uint ltvFinal = */
-            _showHealth(strategy, "!!!After withdraw all");
+            uint ltvFinal = _showHealth(strategy, "!!!After withdraw all");
 
             console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
             console.log("User balance", IERC20(collateralAsset).balanceOf(user1));
-            //            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
-            //            assertLe(ltvFinal, 92_00); // maxLTV = 0.92
+            console.log("ltvFinal", ltvFinal);
+            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
+            assertLe(ltvFinal, 92_00); // maxLTV = 0.92
         }
     }
 
