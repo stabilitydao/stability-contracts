@@ -38,7 +38,8 @@ contract SiALUpgradeTest is Test {
 
         factory.upgradeStrategyProxy(STRATEGY);
 
-        (uint[] memory params, address[] memory addresses) = SiloAdvancedLeverageStrategy(payable(STRATEGY)).getUniversalParams();
+        (uint[] memory params, address[] memory addresses) =
+            SiloAdvancedLeverageStrategy(payable(STRATEGY)).getUniversalParams();
         //console.log(params[0]);
         params[0] = 90_00;
         vm.prank(multisig);

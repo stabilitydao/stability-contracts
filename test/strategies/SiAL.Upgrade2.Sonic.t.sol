@@ -75,19 +75,21 @@ contract SiALUpgrade2Test is Test {
         assertApproxEqAbs(ltvAfterRebalance, 80_00, 1001);
 
         // ----------------- deposit large amount
-//        _depositForUser(vault, address(strategy), user2, 1_000e6);
-//        ltv = _showHealth(strategy, "After deposit 2");
+        //        _depositForUser(vault, address(strategy), user2, 1_000e6);
+        //        ltv = _showHealth(strategy, "After deposit 2");
 
         console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
-        /* uint ltvAfterDeposit = */ _showHealth(strategy, "!!!After deposit 1");
+        /* uint ltvAfterDeposit = */
+        _showHealth(strategy, "!!!After deposit 1");
         // assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 1002);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
-        /* uint ltvFinal = */ _showHealth(strategy, "!!!After withdraw 1");
+        /* uint ltvFinal = */
+        _showHealth(strategy, "!!!After withdraw 1");
 
         // assertApproxEqAbs(ltvAfterRebalance, ltvFinal, 1003);
 
@@ -152,7 +154,8 @@ contract SiALUpgrade2Test is Test {
         console.log("!!!Withdraw user2");
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user2);
-        /*uint ltvAfterWithdraw2 = */_showHealth(strategy, "!!!After withdraw 2 all");
+        /*uint ltvAfterWithdraw2 = */
+        _showHealth(strategy, "!!!After withdraw 2 all");
 
         console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
         console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
@@ -191,7 +194,7 @@ contract SiALUpgrade2Test is Test {
         // uint16[6] memory parts = [1_00, 10_00, 40_00, 60_00, 80_00, 99_99];
         uint16[1] memory parts = [60_00];
 
-        uint256 snapshotId = vm.snapshotState();
+        uint snapshotId = vm.snapshotState();
         for (uint i = 0; i < parts.length; ++i) {
             bool reverted = vm.revertToState(snapshotId);
             assertTrue(reverted, "Failed to revert to snapshot");
@@ -220,15 +223,15 @@ contract SiALUpgrade2Test is Test {
             console.log("!!!Withdraw ALL");
             _withdrawAllForUser(vault, address(strategy), user1);
 
-            /* uint ltvFinal = */_showHealth(strategy, "!!!After withdraw all");
+            /* uint ltvFinal = */
+            _showHealth(strategy, "!!!After withdraw all");
 
             console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
             console.log("User balance", IERC20(collateralAsset).balanceOf(user1));
-//            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
-//            assertLe(ltvFinal, 92_00); // maxLTV = 0.92
+            //            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 10_000e6, 20e6);
+            //            assertLe(ltvFinal, 92_00); // maxLTV = 0.92
         }
     }
-
 
     /// @notice #247: decimals 18:18
     function testSiALUpgradeTODO() public {
@@ -267,10 +270,11 @@ contract SiALUpgrade2Test is Test {
         console.log("done");
     }
 
-//region -------------------------- Auxiliary functions
+    //region -------------------------- Auxiliary functions
     function _showHealth(SiloAdvancedLeverageStrategy strategy, string memory state) internal view returns (uint) {
         console.log(state);
-        (uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) = strategy.health();
+        (uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
+            strategy.health();
         console.log("ltv", ltv);
         console.log("maxLtv", maxLtv);
         console.log("leverage", leverage);
@@ -363,5 +367,5 @@ contract SiALUpgrade2Test is Test {
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
     }
-//endregion -------------------------- Auxiliary functions
+    //endregion -------------------------- Auxiliary functions
 }

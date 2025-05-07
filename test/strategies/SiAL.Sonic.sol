@@ -20,7 +20,6 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALSonic() public universalTest {
-
         //_addStrategy(SonicConstantsLib.SILO_VAULT_22_wOS, SonicConstantsLib.SILO_VAULT_22_wS, 86_90);
         _addStrategy(SonicConstantsLib.SILO_VAULT_23_wstkscUSD, SonicConstantsLib.SILO_VAULT_23_USDC, 88_00);
         // _addStrategy(SonicConstantsLib.SILO_VAULT_26_wstkscETH, SonicConstantsLib.SILO_VAULT_26_wETH, 90_00);
