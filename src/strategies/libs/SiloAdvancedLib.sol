@@ -1,28 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {StrategyLib} from "./StrategyLib.sol";
-import {ISilo} from "../../integrations/silo/ISilo.sol";
-import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
-import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
-import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
-import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IControllable} from "../../interfaces/IControllable.sol";
-import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {IWETH} from "../../integrations/weth/IWETH.sol";
+import "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
-import {ITeller} from "../../interfaces/ITeller.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
-import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
+import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
+import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
+import {ISilo} from "../../integrations/silo/ISilo.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {ITeller} from "../../interfaces/ITeller.sol";
 import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
+import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
+import {IWETH} from "../../integrations/weth/IWETH.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyLib} from "./StrategyLib.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -270,25 +271,22 @@ library SiloAdvancedLib {
         uint newDebtAmount = newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
-        address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.borrowAsset;
-        uint[] memory flashAmounts = new uint[](1);
-
+        uint debtDiff;
         if (newLtv < ltv) {
             // need decrease debt and collateral
             $.tempAction = ILeverageLendingStrategy.CurrentAction.DecreaseLtv;
 
-            uint debtDiff = debtAmount - newDebtAmount;
-            flashAmounts[0] = debtDiff;
+            debtDiff = debtAmount - newDebtAmount;
 
             $.tempCollateralAmount = (collateralAmount - newCollateralValue) * $.decreaseLtvParam0 / INTERNAL_PRECISION;
         } else {
             // need increase debt and collateral
             $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
 
-            uint debtDiff = newDebtAmount - debtAmount;
-            flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
+            debtDiff = (newDebtAmount - debtAmount) * $.increaseLtvParam0 / INTERNAL_PRECISION;
         }
+
+        (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(debtDiff, v.borrowAsset);
 
         SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -518,14 +516,115 @@ library SiloAdvancedLib {
         return Math.min(minCollateralToSwap, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
     }
 
+    //region ------------------------------------- Deposit
+    function depositAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        uint amount,
+        address asset
+    ) external returns (uint value) {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloAdvancedLib.getLeverageLendingAddresses($);
+
+        uint valueWas = StrategyLib.balance(asset) + calcTotal(v);
+        _deposit($, v, amount);
+        uint valueNow = StrategyLib.balance(asset) + calcTotal(v);
+
+        if (valueNow > valueWas) {
+            //console.log('deposit profit', valueNow - valueWas);
+            value = amount + (valueNow - valueWas);
+        } else {
+            //console.log('deposit loss', valueWas - valueNow);
+            value = amount - (valueWas - valueNow);
+        }
+
+        $base.total += value;
+    }
+
+    function _deposit(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        uint amountToDeposit
+    ) internal {
+        (address[] memory flashAssets, uint[] memory flashAmounts) =
+            _getFlashLoanAmounts(_getDepositFlashAmount($, v, amountToDeposit), v.borrowAsset);
+
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
+        requestFlashLoan($, flashAssets, flashAmounts);
+    }
+
+    function _getDepositFlashAmount(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        uint amountToDeposit
+    ) internal view returns (uint flashAmount) {
+        (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+
+        return amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+            * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
+            / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        // not sure that its right way, but its working
+        // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
+    }
+
+    //endregion ------------------------------------- Deposit
+
     //region ------------------------------------- Withdraw
+    /// @dev The strategy uses withdrawParam0 and withdrawParam1
+    ///     - withdrawParam0 is used to correct auto calculated flashAmount
+    ///     - withdrawParam1 is used to correct value asked by the user, to be able to withdraw more than user wants
+    ///                      Rest amount is deposited back (such trick allows to fix reduced leverage/ltv)
+    function withdrawAssets(
+        address platform,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        uint value,
+        address receiver
+    ) external returns (uint[] memory amountsOut) {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        SiloAdvancedLib.StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
+
+        // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
+        if (value > state.collateralBalanceStrategy) {
+            withdrawFromLendingVault(platform, $, v, state, value - state.collateralBalanceStrategy);
+        }
+
+        // ---------------------- Transfer required amount to the user, update base.total
+        uint bal = StrategyLib.balance(v.collateralAsset);
+        uint valueNow = bal + calcTotal(v);
+
+        amountsOut = new uint[](1);
+        if (state.valueWas > valueNow) {
+            //console.log('withdraw loss', valueWas - valueNow);
+            amountsOut[0] = Math.min(value - (state.valueWas - valueNow), bal);
+        } else {
+            //console.log('withdraw profit', valueNow - valueWas);
+            amountsOut[0] = Math.min(value + (valueNow - state.valueWas), bal);
+        }
+
+        if (receiver != address(this)) {
+            IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
+        }
+
+        $base.total -= value;
+
+        // ---------------------- Deposit the amount ~ value
+        if (state.withdrawParam1 > INTERNAL_PRECISION) {
+            uint balance = StrategyLib.balance(v.collateralAsset);
+            if (balance != 0) {
+                SiloAdvancedLib._deposit($, v, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
+            }
+        }
+    }
+
     function withdrawFromLendingVault(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         StateBeforeWithdraw memory state,
         uint value
-    ) external {
+    ) internal {
         (,, uint leverage,,,) = health(platform, $);
 
         SiloAdvancedLib.CollateralDebtState memory debtState =
@@ -645,13 +744,10 @@ library SiloAdvancedLib {
             / 1e18 // leverageNew
             / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
-        address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.borrowAsset;
-        uint[] memory flashAmounts = new uint[](1);
+        (address[] memory flashAssets, uint[] memory flashAmounts) =
+            _getFlashLoanAmounts(debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION, v.borrowAsset);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
-
-        flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
         SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         return true;
@@ -661,7 +757,7 @@ library SiloAdvancedLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v
-    ) internal view returns (StateBeforeWithdraw memory state) {
+    ) public view returns (StateBeforeWithdraw memory state) {
         state.collateralBalanceStrategy = StrategyLib.balance(v.collateralAsset);
         state.valueWas = state.collateralBalanceStrategy + calcTotal(v);
         (state.ltv,,,,,) = health(platform, $);
@@ -676,4 +772,29 @@ library SiloAdvancedLib {
     }
 
     //endregion ------------------------------------- Withdraw
+
+    //region ------------------------------------- Internal
+    function _getFlashLoanAmounts(
+        uint borrowAmount,
+        address borrowAsset
+    ) internal view returns (address[] memory flashAssets, uint[] memory flashAmounts) {
+        flashAssets = new address[](1);
+        flashAssets[0] = borrowAsset;
+        flashAmounts = new uint[](1);
+        flashAmounts[0] = borrowAmount;
+    }
+
+    function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+        internal
+        view
+        returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)
+    {
+        return ILeverageLendingStrategy.LeverageLendingAddresses({
+            collateralAsset: $.collateralAsset,
+            borrowAsset: $.borrowAsset,
+            lendingVault: $.lendingVault,
+            borrowingVault: $.borrowingVault
+        });
+    }
+    //endregion ------------------------------------- Internal
 }

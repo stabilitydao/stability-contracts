@@ -30,6 +30,7 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.0.0 TODO
 ///   1.1.2: realApr bugfix, emergency withdraw fix
 ///   1.1.1: use LeverageLendingBase 1.1.1; decrease size
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
@@ -285,12 +286,7 @@ contract SiloAdvancedLeverageStrategy is
         __amounts = new uint[](1);
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        LeverageLendingAddresses memory v = LeverageLendingAddresses({
-            collateralAsset: $.collateralAsset,
-            borrowAsset: $.borrowAsset,
-            lendingVault: $.lendingVault,
-            borrowingVault: $.borrowingVault
-        });
+        LeverageLendingAddresses memory v = SiloAdvancedLib.getLeverageLendingAddresses($);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
         uint totalWas = $base.total;
@@ -337,30 +333,9 @@ contract SiloAdvancedLeverageStrategy is
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        $.tempAction = CurrentAction.Deposit;
-        LeverageLendingAddresses memory v = LeverageLendingAddresses({
-            collateralAsset: $.collateralAsset,
-            borrowAsset: $.borrowAsset,
-            lendingVault: $.lendingVault,
-            borrowingVault: $.borrowingVault
-        });
-        address[] memory _assets = assets();
-
-        uint valueWas = StrategyLib.balance(_assets[0]) + SiloAdvancedLib.calcTotal(v);
-        _deposit($, v, amounts[0]);
-
-        uint valueNow = StrategyLib.balance(_assets[0]) + SiloAdvancedLib.calcTotal(v);
-
-        if (valueNow > valueWas) {
-            //console.log('deposit profit', valueNow - valueWas);
-            value = amounts[0] + (valueNow - valueWas);
-        } else {
-            //console.log('deposit loss', valueWas - valueNow);
-            value = amounts[0] - (valueWas - valueNow);
-        }
-
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        $base.total += value;
+        address[] memory _assets = assets();
+        return SiloAdvancedLib.depositAssets($, $base, amounts[0], _assets[0]);
     }
 
     /// @inheritdoc StrategyBase
@@ -371,45 +346,7 @@ contract SiloAdvancedLeverageStrategy is
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        LeverageLendingAddresses memory v = LeverageLendingAddresses({
-            collateralAsset: $.collateralAsset,
-            borrowAsset: $.borrowAsset,
-            lendingVault: $.lendingVault,
-            borrowingVault: $.borrowingVault
-        });
-        SiloAdvancedLib.StateBeforeWithdraw memory state = SiloAdvancedLib._getStateBeforeWithdraw(platform(), $, v);
-
-        // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
-        if (value > state.collateralBalanceStrategy) {
-            SiloAdvancedLib.withdrawFromLendingVault(platform(), $, v, state, value - state.collateralBalanceStrategy);
-        }
-
-        // ---------------------- Transfer required amount to the user, update base.total
-        uint valueNow = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
-        uint bal = StrategyLib.balance(v.collateralAsset);
-
-        amountsOut = new uint[](1);
-        if (state.valueWas > valueNow) {
-            //console.log('withdraw loss', valueWas - valueNow);
-            amountsOut[0] = Math.min(value - (state.valueWas - valueNow), bal);
-        } else {
-            //console.log('withdraw profit', valueNow - valueWas);
-            amountsOut[0] = Math.min(value + (valueNow - state.valueWas), bal);
-        }
-
-        if (receiver != address(this)) {
-            IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
-        }
-
-        $base.total -= value;
-
-        // ---------------------- Deposit the amount ~ value
-        if (state.withdrawParam1 > INTERNAL_PRECISION) {
-            uint balance = StrategyLib.balance(v.collateralAsset);
-            if (balance != 0) {
-                _deposit($, v, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
-            }
-        }
+        return SiloAdvancedLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
     //endregion ----------------------------------- Strategy base
 
@@ -417,32 +354,6 @@ contract SiloAdvancedLeverageStrategy is
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _deposit(LeverageLendingBaseStorage storage $, LeverageLendingAddresses memory v, uint amount) internal {
-        address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.borrowAsset;
-        uint[] memory flashAmounts = _getDepositFlashAmount($, v, amount);
-
-        $.tempAction = CurrentAction.Deposit;
-        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
-    }
-
-    function _getDepositFlashAmount(
-        LeverageLendingBaseStorage storage $,
-        LeverageLendingAddresses memory v,
-        uint amount
-    ) internal view returns (uint[] memory flashAmounts) {
-        (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
-
-        (uint priceCtoB,) = SiloAdvancedLib.getPrices(v.lendingVault, v.borrowingVault);
-
-        flashAmounts = new uint[](1);
-        flashAmounts[0] = amount * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
-            * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
-            / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-        // not sure that its right way, but its working
-        // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
-    }
 
     function _generateDescription(
         address lendingVault,
