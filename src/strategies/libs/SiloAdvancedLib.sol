@@ -57,8 +57,11 @@ library SiloAdvancedLib {
     struct CollateralDebtState {
         uint collateralPrice;
         uint borrowAssetPrice;
-        uint collateralUsd;
+        /// @notice Collateral in lending vault + collateral on the strategy balance, in USD
+        uint totalCollateralUsd;
         uint borrowAssetUsd;
+        uint collateralBalance;
+        /// @notice Amount of collateral in the lending vault
         uint collateralAmount;
         uint debtAmount;
         bool trusted;
@@ -408,7 +411,7 @@ library SiloAdvancedLib {
         console.log("realTvl");
         SiloAdvancedLib.CollateralDebtState memory debtState =
             getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
-        tvl = debtState.collateralUsd - debtState.borrowAssetUsd;
+        tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
         console.log("tvl", tvl);
     }
@@ -425,10 +428,11 @@ library SiloAdvancedLib {
 
         IPriceReader priceReader = IPriceReader(IPlatform(platform).priceReader());
 
-        data.collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
+        data.collateralAmount = totalCollateral(lendingVault);
+        data.collateralBalance = StrategyLib.balance(collateralAsset);
         (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        data.collateralUsd =
-            data.collateralAmount * data.collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
+        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance)
+            * data.collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
 
         data.debtAmount = totalDebt(borrowingVault);
         (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
@@ -438,9 +442,10 @@ library SiloAdvancedLib {
 
         console.log("collateralPrice", data.collateralPrice);
         console.log("borrowAssetPrice", data.borrowAssetPrice);
+        console.log("collateralBalance", data.collateralBalance);
         console.log("collateralAmount", data.collateralAmount);
         console.log("debtAmount", data.debtAmount);
-        console.log("collateralUsd", data.collateralUsd);
+        console.log("collateralUsd", data.totalCollateralUsd);
         console.log("borrowAssetUsd", data.borrowAssetUsd);
 
         return data;
@@ -690,6 +695,7 @@ library SiloAdvancedLib {
         console.log("borrowingVault", v.borrowingVault);
         console.log("flashLoanVault", $.flashLoanVault);
         console.log("flashLoanKind", $.flashLoanKind);
+        console.log("strategy", address(this));
 
         (address[] memory flashAssets, uint[] memory flashAmounts) =
             _getFlashLoanAmounts(_getDepositFlashAmount($, v, amountToDeposit), v.borrowAsset);
@@ -734,6 +740,8 @@ library SiloAdvancedLib {
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
         if (value > state.collateralBalanceStrategy) {
+            console.log("value", value);
+            console.log("value", state.collateralBalanceStrategy);
             // it's too dangerous to ask value - state.collateralBalanceStrategy
             // because current balance is used in multiple places inside receiveFlashLoan
             // so we ask to withdraw full required amount
@@ -780,18 +788,28 @@ library SiloAdvancedLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
-        console.log("withdrawFromLendingVault");
+        console.log("withdrawFromLendingVault", value);
         (,, uint leverage,,,) = health(platform, $);
 
         SiloAdvancedLib.CollateralDebtState memory debtState =
             getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
 
         if (0 == debtState.debtAmount) {
-            console.log("withdrawFromLendingVault.case 1");
             // zero debt, positive collateral - we can just withdraw required amount
-            if (debtState.collateralAmount != 0) {
+            uint amountToWithdraw = Math.min(value > debtState.collateralBalance
+                ? value - debtState.collateralBalance
+                : 0,
+                debtState.collateralAmount
+            );
+            console.log("withdrawFromLendingVault.case 1");
+            console.log("value", value);
+            console.log("collateralBalance", debtState.collateralBalance);
+            console.log("amountToWithdraw", amountToWithdraw);
+            console.log("debtState.collateralAmount", debtState.collateralAmount);
+            if (amountToWithdraw != 0) {
+                console.log("withdraw C", amountToWithdraw);
                 ISilo(v.lendingVault).withdraw(
-                    Math.min(value, debtState.collateralAmount),
+                    amountToWithdraw,
                     address(this),
                     address(this),
                     ISilo.CollateralType.Collateral
@@ -803,8 +821,8 @@ library SiloAdvancedLib {
             if (leverage < state.targetLeverage && state.targetLeverage > 1) {
                 // Can we increase the debt without increasing collateral?
                 uint addDebtUsd = debtState.borrowAssetUsd
-                    < debtState.collateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                    ? debtState.collateralUsd * (state.targetLeverage - 1) / state.targetLeverage - debtState.borrowAssetUsd
+                    < debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage
+                    ? debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage - debtState.borrowAssetUsd
                     : 0;
                 uint valueInUsd =
                     value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
@@ -932,8 +950,8 @@ library SiloAdvancedLib {
         uint xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
 
         int a = int(xUsd * (1e18 - state.maxLtv) / 1e18);
-        int b = int(debtState.collateralUsd) - int(debtState.borrowAssetUsd) - int(2 * xUsd);
-        int cQuad = -(int(debtState.collateralUsd) - int(xUsd));
+        int b = int(debtState.totalCollateralUsd) - int(debtState.borrowAssetUsd) - int(2 * xUsd);
+        int cQuad = -(int(debtState.totalCollateralUsd) - int(xUsd));
 
         int det2 = b * b - 4 * a * cQuad;
         if (det2 < 0) return 0;

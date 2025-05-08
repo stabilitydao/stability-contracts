@@ -24,9 +24,9 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
 //        _addStrategy(SonicConstantsLib.SILO_VAULT_23_wstkscUSD, SonicConstantsLib.SILO_VAULT_23_USDC, 88_00);
 //         _addStrategy(SonicConstantsLib.SILO_VAULT_26_wstkscETH, SonicConstantsLib.SILO_VAULT_26_wETH, 90_00);
 //         _addStrategy(SonicConstantsLib.SILO_VAULT_25_wanS, SonicConstantsLib.SILO_VAULT_25_wS, 90_00);
-//         _addStrategy(SonicConstantsLib.SILO_VAULT_46_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_46_scUSD, 60_00);
-//         _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY, SonicConstantsLib.SILO_VAULT_40_wS, 65_00);
-        _addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_wstkscUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_frxUSD, 65_00);
+         _addStrategy(SonicConstantsLib.SILO_VAULT_46_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_46_scUSD, 60_00);
+         _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY, SonicConstantsLib.SILO_VAULT_40_wS, 65_00);
+//        _addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_wstkscUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_frxUSD, 65_00);
     }
 
     function _addStrategy(

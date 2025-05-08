@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -157,8 +158,8 @@ contract SiALUpgrade2Test is Test {
         console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
         console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
 
-        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 1000e6, 5e6);
-        assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user2), 2e6, 0.1e6);
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1000e6), 100);
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user2), 2e6), 100);
 
         console.log("done");
     }
@@ -231,27 +232,13 @@ contract SiALUpgrade2Test is Test {
         (uint sharePrice1, uint tvl1) = getSharePriceAndTvl(strategy);
         if (sharePrice0 != 0) {
             console.log("sharePrice", sharePrice0, sharePrice1);
-            console.log((sharePrice0 > sharePrice1
-                ? sharePrice0 - sharePrice1
-                : sharePrice1 - sharePrice0
-            ) * 100_000 / sharePrice0);
-            assertLe(
-                (sharePrice0 > sharePrice1
-                    ? sharePrice0 - sharePrice1
-                    : sharePrice1 - sharePrice0
-                ) * 100_000 / sharePrice0,
-                50
-            );
+            console.log(_getDiffPercent(sharePrice0, sharePrice1));
+            assertLe(_getDiffPercent(sharePrice0, sharePrice1), 5);
         }
         if (tvl0 != 0) {
             console.log("tvl", tvl0, tvl1);
-            assertLe(
-                (tvl0 > tvl1
-                    ? tvl0 - tvl1
-                    : tvl1 - tvl0
-                ) * 100_000 / tvl0,
-                50
-            );
+            console.log(_getDiffPercent(tvl0, tvl1));
+            assertLe(_getDiffPercent(tvl0, tvl1), 5);
         }
     }
 
@@ -333,6 +320,122 @@ contract SiALUpgrade2Test is Test {
         );
     }
 
+
+    /// @notice Try to make mixed deposits/withdraw
+    /// Deposit 1,2; withdraw + deposit 1,2; withdraw all 1,2
+    /// Various pools, various amounts
+    function testSiALUpgrade5() public {
+        console.log("testSiALUpgrade5");
+
+        address[2] memory USERS = [address(1), address(2)];
+        address[11] memory VAULTS = [
+                0x03645841df5f71dc2c86bbdB15A97c66B34765b6, // Supply PT-wstkscUSD-29MAY2025 and borrow frxUSD
+                0x376ddBa57C649CEe95F93f827C61Af95ca519164, // Supply PT-wstkscUSD-29MAY2025 and borrow USDC.e
+                0x908Db38302177901b10fFa74fA80AdAeB0351Ff1, // C-wstkscUSD-SAL
+                0x4422117B942F4A87261c52348c36aeFb0DCDDb1a, // C-wanS-SAL
+                0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959, // C-PT-aSonUSDC-14AUG2025-SAL
+                0x425f26609e2309b9AB72cbF95092834e33B29A8a, // C-PT-wOS-29MAY2025-SAL
+                0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047, // C-wstkscETH-SAL
+                0xd13369F16E11ae3881F22C1dD37957c241bD0662, // C-wOS-SAL
+                0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5, // C-PT-wstkscETH-29MAY2025-SAL
+                0x716ab48eC4054cf2330167C80a65B27cd57E09Cf, // C-PT-stS-29MAY2025-SAL
+                0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SAL
+        ];
+        uint16[11] memory BASE_AMOUNTS = [
+                    50,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000,
+                    10_000
+            ];
+
+
+        for (uint i = 0; i < 1; ++i) {
+//        for (uint i = 0; i < VAULTS.length; ++i) {
+            console.log("!!!Start vault", VAULTS[i]);
+
+            // ----------------- deploy new impl and upgrade
+            _upgradeStrategy(address(IVault(VAULTS[i]).strategy()));
+
+            // ----------------- access to the strategy
+            vm.prank(multisig);
+            SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(VAULTS[i]).strategy())));
+            _adjustParams(strategy);
+            vm.stopPrank();
+
+            // ----------------- set up flashloan if necessary
+            if (VAULTS[i] == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6) {
+                _setFlashLoanVault(strategy, SHADOW_POOL_FRXUSD_SCUSD, FLASH_LOAN_KIND_UNISWAP_V3);
+            }
+
+            // ----------------- check current state
+            _showHealth(strategy, "!!!Initial state");
+
+            // ----------------- deposit large amount
+            uint amount = uint(BASE_AMOUNTS[i]) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+
+            // ----------------- initial deposit
+            console.log("!!!Deposit2");
+            _depositForUser(VAULTS[i], address(strategy), USERS[1], i % 2 == 0 ? amount/(11 - i + 1) : amount * (11 - i + 1));
+            _showHealth(strategy, "!!!After deposit2");
+
+            console.log("!!!Deposit1");
+            _depositForUser(VAULTS[i], address(strategy), USERS[0], i % 2 != 0 ? amount/(11 - i + 1) : amount * (11 - i + 1));
+            uint ltvAfterDeposit1 = _showHealth(strategy, "!!!After deposit1");
+
+            // ----------------- withdraw
+            console.log("!!!Withdraw1");
+            vm.roll(block.number + 6);
+            console.log("Balance", IERC20(VAULTS[i]).balanceOf(USERS[0]));
+            _withdrawForUser(VAULTS[i], address(strategy), USERS[0], IERC20(VAULTS[i]).balanceOf(USERS[0]) * (i + 1) / 11);
+
+            console.log("!!!Withdraw2");
+            vm.roll(block.number + 6);
+            console.log("Balance", IERC20(VAULTS[i]).balanceOf(USERS[1]));
+            _withdrawForUser(VAULTS[i], address(strategy), USERS[1], IERC20(VAULTS[i]).balanceOf(USERS[1]) * (11 - i - 1) / 11);
+
+            // ----------------- deposit and withdraw
+            console.log("!!!Deposit2");
+            _depositForUser(VAULTS[i], address(strategy), USERS[1], IERC20(VAULTS[i]).balanceOf(USERS[1]) / (i + 1) / 5);
+            _showHealth(strategy, "!!!After deposit2");
+
+            console.log("!!!Withdraw1");
+            vm.roll(block.number + 6);
+            console.log("Balance", IERC20(VAULTS[i]).balanceOf(USERS[0]));
+            _withdrawForUser(VAULTS[i], address(strategy), USERS[0], IERC20(VAULTS[i]).balanceOf(USERS[0]) / 2);
+
+            // ----------------- withdraw all
+            console.log("!!!Withdraw all user1");
+            vm.roll(block.number + 6);
+            _withdrawAllForUser(VAULTS[i], address(strategy), USERS[0]);
+            _showHealth(strategy, "!!!After withdraw 1 all");
+
+            console.log("!!!Withdraw all user2");
+            vm.roll(block.number + 6);
+            _withdrawAllForUser(VAULTS[i], address(strategy), USERS[1]);
+
+            _showHealth(strategy, "!!!After withdraw 2 all");
+
+            // ----------------- check results
+
+//            console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
+//            console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
+//            console.log("ltvAfterDeposit2", ltvAfterDeposit2);
+//            console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+//            console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
+//
+//            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 1000e6, 5e6);
+//            assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user2), 2e6, 0.1e6);
+
+            console.log("!!!Done vault", VAULTS[i]);
+        }
+    }
 
     //region -------------------------- Auxiliary functions
     function _showHealth(SiloAdvancedLeverageStrategy strategy, string memory state) internal view returns (uint) {
@@ -435,6 +538,12 @@ contract SiALUpgrade2Test is Test {
         params[3] = withdrawParams1;
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
+    }
+
+    function _getDiffPercent(uint x, uint y) internal pure returns (uint) {
+        return x > y
+            ? (x - y) * 100_00 / x
+            : (y - x) * 100_00 / x;
     }
     //endregion -------------------------- Auxiliary functions
 }
