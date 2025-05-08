@@ -600,7 +600,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                  NO EMPTY HARDWORKS                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
-                    console.log("!!!UT-doHardWork!");
                     vm.startPrank(address(vars.hardWorker));
                     vm.expectRevert(abi.encodeWithSelector(IStrategy.NotReadyForHardWork.selector));
                     IVault(vars.vault).doHardWork();
@@ -610,7 +609,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                      ADD REWARDS                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!UT-AddRewards");
                 _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -637,7 +635,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                        WITHDRAW ALL                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!UT-WithdrawALL");
                 uint totalWas = strategy.total();
                 vm.roll(block.number + 6);
                 IVault(vars.vault).withdrawAssets(

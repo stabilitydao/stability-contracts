@@ -305,18 +305,12 @@ contract SiALUpgrade2Test is Test {
         console.log("balance user2", balance2);
 
         assertLe(
-            (balance1 > 200_000e6
-                ? balance1 - 200_000e6
-                : 200_000e6 - balance1
-            ) * 100_000 / 200_000e6,
+            (balance1 > 200_000e6 ? balance1 - 200_000e6 : 200_000e6 - balance1) * 100_000 / 200_000e6,
             5_000 // (!) 5%
         );
 
         assertLe(
-            (balance2 > 2e6
-                ? balance2 - 2e6
-                : 2e6 - balance2
-            ) * 100_000 / 2e6,
+            (balance2 > 2e6 ? balance2 - 2e6 : 2e6 - balance2) * 100_000 / 2e6,
             2_000 // (!) 2%
         );
     }
@@ -329,35 +323,30 @@ contract SiALUpgrade2Test is Test {
 
         address[2] memory USERS = [address(1), address(2)];
         address[4] memory VAULTS = [
-                0x4422117B942F4A87261c52348c36aeFb0DCDDb1a, // C-wanS-SAL
-                0xd13369F16E11ae3881F22C1dD37957c241bD0662, // C-wOS-SAL
-                0x03645841df5f71dc2c86bbdB15A97c66B34765b6, // Supply PT-wstkscUSD-29MAY2025 and borrow frxUSD
-                0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959 // C-PT-aSonUSDC-14AUG2025-SAL
-            // 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf, // C-PT-stS-29MAY2025-SAL
-            // 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2, // C-PT-wstkscETH-29MAY2025-SAL
+            0x4422117B942F4A87261c52348c36aeFb0DCDDb1a, // C-wanS-SAL
+            0xd13369F16E11ae3881F22C1dD37957c241bD0662, // C-wOS-SAL
+            0x03645841df5f71dc2c86bbdB15A97c66B34765b6, // Supply PT-wstkscUSD-29MAY2025 and borrow frxUSD
+            0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959 // C-PT-aSonUSDC-14AUG2025-SAL
+                // 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf, // C-PT-stS-29MAY2025-SAL
+                // 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2, // C-PT-wstkscETH-29MAY2025-SAL
                 // 0x376ddBa57C649CEe95F93f827C61Af95ca519164, // Supply PT-wstkscUSD-29MAY2025 and borrow USDC.e
                 // 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1, // C-wstkscUSD-SAL
                 // 0x425f26609e2309b9AB72cbF95092834e33B29A8a, // C-PT-wOS-29MAY2025-SAL
-        // 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047, // C-wstkscETH-SAL
-        // 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5, // C-PT-wstkscETH-29MAY2025-SAL
+                // 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047, // C-wstkscETH-SAL
+                // 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5, // C-PT-wstkscETH-29MAY2025-SAL
         ];
-        uint16[4] memory BASE_AMOUNTS = [
-                    10_000,
-                    10_000,
-                    50,
-                    10_000
-            // 10_000,
-            // 10_000,
-                    // 10_000,
-                    //10_000,
-                    //10_000,
-                    //10_000,
-                    //10_000,
-            ];
-
+        uint16[4] memory BASE_AMOUNTS = [10_000, 10_000, 50, 10_000
+        // 10_000,
+        // 10_000,
+        // 10_000,
+        //10_000,
+        //10_000,
+        //10_000,
+        //10_000,
+        ];
 
         uint snapshotId = vm.snapshotState();
-//        for (uint i = 0; i < 1; ++i) {
+        //        for (uint i = 0; i < 1; ++i) {
         for (uint i = 0; i < VAULTS.length; ++i) {
             uint[2] memory deposited = [uint(0), uint(0)];
 
@@ -369,7 +358,8 @@ contract SiALUpgrade2Test is Test {
 
             // ----------------- access to the strategy
             vm.prank(multisig);
-            SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(VAULTS[i]).strategy())));
+            SiloAdvancedLeverageStrategy strategy =
+                SiloAdvancedLeverageStrategy(payable(address(IVault(VAULTS[i]).strategy())));
             _adjustParams(strategy);
             vm.stopPrank();
 
@@ -386,24 +376,28 @@ contract SiALUpgrade2Test is Test {
 
             // ----------------- initial deposit
             console.log("!!!deposit2");
-            deposited[1] += _depositForUser(VAULTS[i], address(strategy), USERS[1], i % 2 == 0 ? amount/(11 - i + 1) : amount * (11 - i + 1));
+            deposited[1] += _depositForUser(
+                VAULTS[i], address(strategy), USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
+            );
             _showHealth(strategy, "!!!After deposit2");
 
             console.log("!!!deposit1");
-            deposited[0] += _depositForUser(VAULTS[i], address(strategy), USERS[0], i % 2 != 0 ? amount/(11 - i + 1) : amount * (11 - i + 1));
+            deposited[0] += _depositForUser(
+                VAULTS[i], address(strategy), USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
+            );
             _showHealth(strategy, "!!!After deposit1");
 
             // ----------------- withdraw
             console.log("!!!withdraw1");
             vm.roll(block.number + 6);
-            _withdrawForUser(VAULTS[i], address(strategy), USERS[0], IERC20(VAULTS[i]).balanceOf(USERS[0]) * 15/100);
+            _withdrawForUser(VAULTS[i], address(strategy), USERS[0], IERC20(VAULTS[i]).balanceOf(USERS[0]) * 15 / 100);
             _showHealth(strategy, "!!!After withdraw1");
             console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
             console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
             console.log("!!!withdraw2");
             vm.roll(block.number + 6);
-            _withdrawForUser(VAULTS[i], address(strategy), USERS[1], IERC20(VAULTS[i]).balanceOf(USERS[1]) * 95/100);
+            _withdrawForUser(VAULTS[i], address(strategy), USERS[1], IERC20(VAULTS[i]).balanceOf(USERS[1]) * 95 / 100);
             _showHealth(strategy, "!!!After withdraw2");
             console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
             console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
@@ -446,7 +440,6 @@ contract SiALUpgrade2Test is Test {
             console.log("user2", deposited[1], IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
             assertLe(_getDiffPercent(deposited[0], IERC20(strategy.assets()[0]).balanceOf(USERS[0])), 500); // 5%
             assertLe(_getDiffPercent(deposited[1], IERC20(strategy.assets()[0]).balanceOf(USERS[1])), 500); // 5%
-
         }
     }
 
@@ -462,19 +455,28 @@ contract SiALUpgrade2Test is Test {
         console.log("debtAmount", debtAmount);
         console.log("targetLeveragePercent", targetLeveragePercent);
         console.log("Total amount in strategy", strategy.total());
-        (uint sharePrice, ) = strategy.realSharePrice();
+        (uint sharePrice,) = strategy.realSharePrice();
         console.log("realSharePrice", sharePrice);
         console.log("strategyTotal", strategy.total());
 
         return ltv;
     }
 
-    function getSharePriceAndTvl(SiloAdvancedLeverageStrategy strategy) internal view returns (uint sharePrice, uint tvl) {
+    function getSharePriceAndTvl(SiloAdvancedLeverageStrategy strategy)
+        internal
+        view
+        returns (uint sharePrice, uint tvl)
+    {
         (tvl,) = strategy.realTvl();
         (sharePrice,) = strategy.realSharePrice();
     }
 
-    function _depositForUser(address vault, address strategy, address user, uint depositAmount) internal returns (uint){
+    function _depositForUser(
+        address vault,
+        address strategy,
+        address user,
+        uint depositAmount
+    ) internal returns (uint) {
         address[] memory assets = IStrategy(strategy).assets();
         console.log("deal", depositAmount);
         deal(assets[0], user, depositAmount + IERC20(assets[0]).balanceOf(user));
@@ -496,7 +498,9 @@ contract SiALUpgrade2Test is Test {
     }
 
     function _withdrawForUser(address vault, address strategy, address user, uint amount) internal {
-        console.log("_withdrawForUser", amount, IERC20(vault).balanceOf(user), Math.min(amount, IERC20(vault).balanceOf(user)));
+        console.log(
+            "_withdrawForUser", amount, IERC20(vault).balanceOf(user), Math.min(amount, IERC20(vault).balanceOf(user))
+        );
         address[] memory assets = IStrategy(strategy).assets();
         vm.prank(user);
         IVault(vault).withdrawAssets(
@@ -565,9 +569,7 @@ contract SiALUpgrade2Test is Test {
     }
 
     function _getDiffPercent(uint x, uint y) internal pure returns (uint) {
-        return x > y
-            ? (x - y) * 100_00 / x
-            : (y - x) * 100_00 / x;
+        return x > y ? (x - y) * 100_00 / x : (y - x) * 100_00 / x;
     }
     //endregion -------------------------- Auxiliary functions
 }

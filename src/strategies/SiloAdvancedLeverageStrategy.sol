@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../lib/forge-std/src/console.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
