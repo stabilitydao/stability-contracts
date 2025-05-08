@@ -50,7 +50,7 @@ contract SiALUpgrade2Test is Test {
 
     /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Rebalance, deposit 100_000, (LARGE) withdraw ALL
     function testSiALUpgrade1() public {
-        console.log("testSiALUpgrade");
+        //console.log("testSiALUpgrade");
         address user1 = address(1);
         // address user2 = address(2);
 
@@ -68,7 +68,7 @@ contract SiALUpgrade2Test is Test {
         _showHealth(strategy, "!!!Initial state");
 
         // ----------------- restore LTV to 80%
-        console.log("!!!Rebalance to 80%");
+        //console.log("!!!Rebalance to 80%");
 
         vm.startPrank(multisig);
         strategy.rebalanceDebt(80_00, 0);
@@ -78,18 +78,18 @@ contract SiALUpgrade2Test is Test {
         assertApproxEqAbs(ltvAfterRebalance, 80_00, 1001);
 
         // ----------------- deposit large amount
-        console.log("!!!Deposit");
+        //console.log("!!!Deposit");
         _depositForUser(vault, address(strategy), user1, 100_000e6);
         uint ltvAfterDeposit = _showHealth(strategy, "!!!After deposit 1");
         assertApproxEqAbs(ltvAfterRebalance, ltvAfterDeposit, 500);
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
-        console.log("!!!Withdraw");
+        //console.log("!!!Withdraw");
         _withdrawAllForUser(vault, address(strategy), user1);
         _showHealth(strategy, "!!!After withdraw 1");
 
-        console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+        //console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
         assertApproxEqAbs(IERC20(collateralAsset).balanceOf(user1), 100_000e6, 4000e6);
     }
 
@@ -97,7 +97,7 @@ contract SiALUpgrade2Test is Test {
     /// Deposit user 2, Deposit user 1, withdraw part 1, withdraw all 1, withdraw all 2
     // Try to use flash loan of Uniswap V3
     function testSiALUpgrade2() public {
-        console.log("testSiALUpgrade2");
+        //console.log("testSiALUpgrade2");
         address user1 = address(1);
         address user2 = address(2);
         address vault = IStrategy(STRATEGY2).vault();
@@ -125,49 +125,51 @@ contract SiALUpgrade2Test is Test {
         // ----------------- deposit large amount
         address collateralAsset = IStrategy(strategy).assets()[0];
 
-        console.log("!!!Deposit user2");
+        //console.log("!!!Deposit user2");
         _depositForUser(vault, address(strategy), user2, 2e6);
         uint ltvAfterDeposit2 = _showHealth(strategy, "!!!After deposit 2");
 
-        console.log("!!!Deposit user1");
+        //console.log("!!!Deposit user1");
         _depositForUser(vault, address(strategy), user1, 1000e6);
         uint ltvAfterDeposit1 = _showHealth(strategy, "!!!After deposit 1");
         assertApproxEqAbs(ltvAfterDeposit2, ltvAfterDeposit1, 100);
 
         // ----------------- user1: withdraw half
-        console.log("!!!Withdraw user1");
+        //console.log("!!!Withdraw user1");
         vm.roll(block.number + 6);
-        console.log("Balance", IERC20(vault).balanceOf(user1));
+        //console.log("Balance", IERC20(vault).balanceOf(user1));
         _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * 4 / 5);
-        uint ltvAfterWithdraw1 = _showHealth(strategy, "!!!After withdraw 1 half");
+        /*uint ltvAfterWithdraw1 = */
+        _showHealth(strategy, "!!!After withdraw 1 half");
 
         // ----------------- user1: withdraw all
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user1);
-        uint ltvAfterWithdraw1all = _showHealth(strategy, "!!!After withdraw 1 all");
+        /*uint ltvAfterWithdraw1all = */
+        _showHealth(strategy, "!!!After withdraw 1 all");
 
         // ----------------- user2: withdraw all
-        console.log("!!!Withdraw user2");
+        //console.log("!!!Withdraw user2");
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user2);
         /*uint ltvAfterWithdraw2 = */
         _showHealth(strategy, "!!!After withdraw 2 all");
 
-        console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
-        console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
-        console.log("ltvAfterDeposit2", ltvAfterDeposit2);
-        console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
-        console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
+        //console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
+        //console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
+        //console.log("ltvAfterDeposit2", ltvAfterDeposit2);
+        //console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
+        //console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
 
         assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1000e6), 100);
         assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user2), 2e6), 100);
 
-        console.log("done");
+        //console.log("done");
     }
 
     /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Deposit 10_000, withdraw half, withdraw all
     function testSiALUpgrade3() public {
-        console.log("testSiALUpgrade");
+        //console.log("testSiALUpgrade");
         address user1 = address(1);
         // address user2 = address(2);
 
@@ -198,54 +200,54 @@ contract SiALUpgrade2Test is Test {
             }
 
             // ----------------- user1: deposit large amount
-            console.log("!!!START deposit user 1");
-            console.log("PART", parts[i]);
+            //console.log("!!!START deposit user 1");
+            //console.log("PART", parts[i]);
             _depositForUser(vault, address(strategy), user1, 10_000e6);
             _showHealth(strategy, "!!!After deposit user1");
 
             // ----------------- user1: withdraw partly
             vm.roll(block.number + 6);
-            console.log("!!!Withdraw1");
+            //console.log("!!!Withdraw1");
             _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * parts[i] / 100_00);
             _showHealth(strategy, "!!!After withdraw 1");
 
             if (parts[i] < 50_00) {
                 vm.roll(block.number + 6);
-                console.log("!!!Withdraw2");
+                //console.log("!!!Withdraw2");
                 _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * parts[i] / 100_00);
                 _showHealth(strategy, "!!!After withdraw 2");
             }
 
             // ----------------- user1: withdraw all
             vm.roll(block.number + 6);
-            console.log("!!!Withdraw ALL");
+            //console.log("!!!Withdraw ALL");
             _withdrawAllForUser(vault, address(strategy), user1);
 
             uint ltvFinal = _showHealth(strategy, "!!!After withdraw all");
 
-            console.log("balance user1", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
-            console.log("User balance", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
-            console.log("ltvFinal", ltvFinal);
+            //console.log("balance user1", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
+            //console.log("User balance", IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1));
+            //console.log("ltvFinal", ltvFinal);
             assertApproxEqAbs(IERC20(IStrategy(strategy).assets()[0]).balanceOf(user1), 10_000e6, 200e6);
             assertLe(ltvFinal, 92_00); // maxLTV = 0.92
         }
 
         (uint sharePrice1, uint tvl1) = getSharePriceAndTvl(strategy);
         if (sharePrice0 != 0) {
-            console.log("sharePrice", sharePrice0, sharePrice1);
-            console.log(_getDiffPercent(sharePrice0, sharePrice1));
+            //console.log("sharePrice", sharePrice0, sharePrice1);
+            //console.log(_getDiffPercent(sharePrice0, sharePrice1));
             assertLe(_getDiffPercent(sharePrice0, sharePrice1), 5);
         }
         if (tvl0 != 0) {
-            console.log("tvl", tvl0, tvl1);
-            console.log(_getDiffPercent(tvl0, tvl1));
+            //console.log("tvl", tvl0, tvl1);
+            //console.log(_getDiffPercent(tvl0, tvl1));
             assertLe(_getDiffPercent(tvl0, tvl1), 5);
         }
     }
 
     /// @notice Try to use flash loan of Beets V3
     function testSiALUpgrade4() public {
-        console.log("testSiALUpgrade4");
+        //console.log("testSiALUpgrade4");
         address user1 = address(1);
         address user2 = address(2);
         address vault = VAULT_aSonUSDC;
@@ -270,39 +272,39 @@ contract SiALUpgrade2Test is Test {
         // ----------------- deposit large amount
         address collateralAsset = IStrategy(strategy).assets()[0];
 
-        console.log("!!!Deposit user2");
+        //console.log("!!!Deposit user2");
         _depositForUser(vault, address(strategy), user2, 2e6);
         _showHealth(strategy, "!!!After deposit 2");
 
-        console.log("!!!Deposit user1");
+        //console.log("!!!Deposit user1");
         _depositForUser(vault, address(strategy), user1, 200_000e6);
         _showHealth(strategy, "!!!After deposit 1");
 
         // ----------------- user1: withdraw half
-        console.log("!!!Withdraw user1");
+        //console.log("!!!Withdraw user1");
         vm.roll(block.number + 6);
-        console.log("Balance", IERC20(vault).balanceOf(user1));
+        //console.log("Balance", IERC20(vault).balanceOf(user1));
         _withdrawForUser(vault, address(strategy), user1, IERC20(vault).balanceOf(user1) * 4 / 5);
-        uint ltvAfterWithdraw1 = _showHealth(strategy, "!!!After withdraw 1 half");
+        //uint ltvAfterWithdraw1 = _showHealth(strategy, "!!!After withdraw 1 half");
 
         // ----------------- user1: withdraw all
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user1);
-        uint ltvAfterWithdraw1all = _showHealth(strategy, "!!!After withdraw 1 all");
+        //uint ltvAfterWithdraw1all = _showHealth(strategy, "!!!After withdraw 1 all");
 
         // ----------------- user2: withdraw all
-        console.log("!!!Withdraw user2");
+        //console.log("!!!Withdraw user2");
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user2);
         /*uint ltvAfterWithdraw2 = */
         _showHealth(strategy, "!!!After withdraw 2 all");
 
-        console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
-        console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
+        //console.log("ltvAfterWithdraw1", ltvAfterWithdraw1);
+        //console.log("ltvAfterWithdraw1all", ltvAfterWithdraw1all);
         uint balance1 = IERC20(collateralAsset).balanceOf(user1);
         uint balance2 = IERC20(collateralAsset).balanceOf(user2);
-        console.log("balance user1", balance1);
-        console.log("balance user2", balance2);
+        //console.log("balance user1", balance1);
+        //console.log("balance user2", balance2);
 
         assertLe(
             (balance1 > 200_000e6 ? balance1 - 200_000e6 : 200_000e6 - balance1) * 100_000 / 200_000e6,
@@ -319,7 +321,7 @@ contract SiALUpgrade2Test is Test {
     /// Deposit 1,2; withdraw + deposit 1,2; withdraw all 1,2
     /// Various pools, various amounts
     function testSiALUpgrade5() public {
-        console.log("testSiALUpgrade5");
+        //console.log("testSiALUpgrade5");
 
         address[2] memory USERS = [address(1), address(2)];
         address[4] memory VAULTS = [
@@ -351,7 +353,7 @@ contract SiALUpgrade2Test is Test {
             uint[2] memory deposited = [uint(0), uint(0)];
 
             vm.revertToState(snapshotId);
-            console.log("!!!Start vault", VAULTS[i]);
+            //console.log("!!!Start vault", VAULTS[i]);
 
             // ----------------- deploy new impl and upgrade
             _upgradeStrategy(address(IVault(VAULTS[i]).strategy()));
@@ -375,80 +377,83 @@ contract SiALUpgrade2Test is Test {
             uint amount = uint(BASE_AMOUNTS[i]) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
             // ----------------- initial deposit
-            console.log("!!!deposit2");
+            //console.log("!!!deposit2");
             deposited[1] += _depositForUser(
                 VAULTS[i], address(strategy), USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
             );
             _showHealth(strategy, "!!!After deposit2");
 
-            console.log("!!!deposit1");
+            //console.log("!!!deposit1");
             deposited[0] += _depositForUser(
                 VAULTS[i], address(strategy), USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
             );
             _showHealth(strategy, "!!!After deposit1");
 
             // ----------------- withdraw
-            console.log("!!!withdraw1");
+            //console.log("!!!withdraw1");
             vm.roll(block.number + 6);
             _withdrawForUser(VAULTS[i], address(strategy), USERS[0], IERC20(VAULTS[i]).balanceOf(USERS[0]) * 15 / 100);
             _showHealth(strategy, "!!!After withdraw1");
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
-            console.log("!!!withdraw2");
+            //console.log("!!!withdraw2");
             vm.roll(block.number + 6);
             _withdrawForUser(VAULTS[i], address(strategy), USERS[1], IERC20(VAULTS[i]).balanceOf(USERS[1]) * 95 / 100);
             _showHealth(strategy, "!!!After withdraw2");
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
             // ----------------- deposit and withdraw
-            console.log("!!!Deposit2");
+            //console.log("!!!Deposit2");
             deposited[1] += _depositForUser(VAULTS[i], address(strategy), USERS[1], amount / (i + 1));
             _showHealth(strategy, "!!!After deposit2");
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
-            console.log("!!!Withdraw1");
+            //console.log("!!!Withdraw1");
             vm.roll(block.number + 6);
-            console.log("Balance", IERC20(VAULTS[i]).balanceOf(USERS[0]));
+            //console.log("Balance", IERC20(VAULTS[i]).balanceOf(USERS[0]));
             _withdrawForUser(VAULTS[i], address(strategy), USERS[0], amount / 2);
             _showHealth(strategy, "!!!After Withdraw1");
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
             // ----------------- withdraw all
-            console.log("!!!Withdraw all user1");
+            //console.log("!!!Withdraw all user1");
             vm.roll(block.number + 6);
             _withdrawAllForUser(VAULTS[i], address(strategy), USERS[0]);
             _showHealth(strategy, "!!!After withdraw 1 all");
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
-            console.log("!!!Withdraw all user2");
+            //console.log("!!!Withdraw all user2");
             vm.roll(block.number + 6);
             _withdrawAllForUser(VAULTS[i], address(strategy), USERS[1]);
-            console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("balance user 1", IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("balance user 2", IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
 
             _showHealth(strategy, "!!!After withdraw 2 all");
 
             // ----------------- check results
 
-            console.log("!!!Done vault", VAULTS[i]);
-            console.log("user1", deposited[0], IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
-            console.log("user2", deposited[1], IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
+            //console.log("!!!Done vault", VAULTS[i]);
+            //console.log("user1", deposited[0], IERC20(strategy.assets()[0]).balanceOf(USERS[0]));
+            //console.log("user2", deposited[1], IERC20(strategy.assets()[0]).balanceOf(USERS[1]));
             assertLe(_getDiffPercent(deposited[0], IERC20(strategy.assets()[0]).balanceOf(USERS[0])), 500); // 5%
             assertLe(_getDiffPercent(deposited[1], IERC20(strategy.assets()[0]).balanceOf(USERS[1])), 500); // 5%
         }
     }
 
     //region -------------------------- Auxiliary functions
-    function _showHealth(SiloAdvancedLeverageStrategy strategy, string memory state) internal view returns (uint) {
-        console.log(state);
-        (uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
-            strategy.health();
-        console.log("ltv", ltv);
+    function _showHealth(
+        SiloAdvancedLeverageStrategy strategy,
+        string memory /*state*/
+    ) internal view returns (uint) {
+        //console.log(state);
+        //(uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
+        (uint ltv,,,,,) = strategy.health();
+        /*console.log("ltv", ltv);
         console.log("maxLtv", maxLtv);
         console.log("leverage", leverage);
         console.log("collateralAmount", collateralAmount);
@@ -457,7 +462,7 @@ contract SiALUpgrade2Test is Test {
         console.log("Total amount in strategy", strategy.total());
         (uint sharePrice,) = strategy.realSharePrice();
         console.log("realSharePrice", sharePrice);
-        console.log("strategyTotal", strategy.total());
+        console.log("strategyTotal", strategy.total());*/
 
         return ltv;
     }
@@ -478,7 +483,7 @@ contract SiALUpgrade2Test is Test {
         uint depositAmount
     ) internal returns (uint) {
         address[] memory assets = IStrategy(strategy).assets();
-        console.log("deal", depositAmount);
+        //console.log("deal", depositAmount);
         deal(assets[0], user, depositAmount + IERC20(assets[0]).balanceOf(user));
         vm.startPrank(user);
         IERC20(assets[0]).approve(vault, depositAmount);
@@ -497,10 +502,10 @@ contract SiALUpgrade2Test is Test {
         IVault(vault).withdrawAssets(assets, bal, new uint[](1));
     }
 
-    function _withdrawForUser(address vault, address strategy, address user, uint amount) internal {
-        console.log(
+    function _withdrawForUser(address vault, address strategy, address user, uint /*amount*/ ) internal {
+        /*console.log(
             "_withdrawForUser", amount, IERC20(vault).balanceOf(user), Math.min(amount, IERC20(vault).balanceOf(user))
-        );
+        );*/
         address[] memory assets = IStrategy(strategy).assets();
         vm.prank(user);
         IVault(vault).withdrawAssets(
