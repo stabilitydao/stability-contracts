@@ -339,8 +339,8 @@ library SiloAdvancedLib {
 
         console.log("health");
         console.log("ltv", ltv);
-        console.log("collateralAmount balance", StrategyLib.balance(collateralAsset));
-        console.log("totalCollateral lending vault", totalCollateral(lendingVault));
+        console.log("collateralAmountBalance", StrategyLib.balance(collateralAsset));
+        console.log("totalCollateralLendingVault", totalCollateral(lendingVault));
         console.log("collateralAmount total", collateralAmount);
         console.log("debtAmount", debtAmount);
         console.log("_realTvl", _realTvl);
@@ -442,7 +442,7 @@ library SiloAdvancedLib {
 
         console.log("collateralPrice", data.collateralPrice);
         console.log("borrowAssetPrice", data.borrowAssetPrice);
-        console.log("collateralBalance", data.collateralBalance);
+        console.log("balance collateral", data.collateralBalance);
         console.log("collateralAmount", data.collateralAmount);
         console.log("debtAmount", data.debtAmount);
         console.log("collateralUsd", data.totalCollateralUsd);
@@ -673,8 +673,11 @@ library SiloAdvancedLib {
             //console.log('deposit loss', valueWas - valueNow);
             value = amount - (valueWas - valueNow);
         }
+        console.log("valueNow", valueNow);
+        console.log("valueWas", valueWas);
 
         $base.total += value;
+        console.log("total", $base.total);
     }
 
     function _deposit(
@@ -770,6 +773,7 @@ library SiloAdvancedLib {
         }
 
         $base.total -= value;
+        console.log("total", $base.total);
 
         // ---------------------- Deposit the amount ~ value
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
@@ -837,8 +841,10 @@ library SiloAdvancedLib {
                 if (150_00 * valueInUsd / INTERNAL_PRECISION < addDebtUsd / 2) {
                     console.log("withdrawFromLendingVault.case 3");
                     if (_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)) {
+                        console.log("withdrawFromLendingVault.case 3.1");
                         valueToWithdraw = 0;
                     }
+                    console.log("withdrawFromLendingVault.case 3.2");
                 }
             }
 
@@ -890,23 +896,31 @@ library SiloAdvancedLib {
 
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
         console.log("_withdrawThroughIncreasingLtv");
+        console.log("value", value);
         int leverageNew = _calculateNewLeverage(v, state, debtState, value);
+        console.log("_withdrawThroughIncreasingLtv.2");
 
         if (
             leverageNew <= 0
             || uint(leverageNew) > state.maxLeverage * 1e18 / INTERNAL_PRECISION
             || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
         ) {
+            console.log("_withdrawThroughIncreasingLtv.false");
             return false; // use default withdraw
         }
+        console.log("_withdrawThroughIncreasingLtv.3");
 
         uint priceCtoB;
         (priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        console.log("_withdrawThroughIncreasingLtv.4");
 
         // --------- Calculate debt to add
-        uint debtDiff = (value * uint(leverageNew)) * state.maxLtv * priceCtoB
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18 // ltv
+        uint debtDiff = (value * uint(leverageNew))
             / 1e18 // leverageNew
+            * priceCtoB
+            * state.maxLtv
+            / 1e18 // ltv
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
         console.log("debtDiff", debtDiff);
 
@@ -947,16 +961,23 @@ library SiloAdvancedLib {
         // Solve square equation
         //      A = X (1 - ltv), B = C - D - 2X, C_quad = -(C - X)
         //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
+        console.log("_calculateNewLeverage", value);
         uint xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        console.log("xUsd", xUsd);
 
         int a = int(xUsd * (1e18 - state.maxLtv) / 1e18);
+        console.log("a");console.logInt(a);
         int b = int(debtState.totalCollateralUsd) - int(debtState.borrowAssetUsd) - int(2 * xUsd);
+        console.log("b");console.logInt(b);
         int cQuad = -(int(debtState.totalCollateralUsd) - int(xUsd));
+        console.log("cQuad");console.logInt(cQuad);
 
         int det2 = b * b - 4 * a * cQuad;
+        console.log("det2");console.logInt(det2);
         if (det2 < 0) return 0;
 
         leverageNew = (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
+        console.log("leverageNew");console.logInt(leverageNew);
 
         return leverageNew;
     }
@@ -1010,4 +1031,5 @@ library SiloAdvancedLib {
         return Math.min(amount, optionalLimit);
     }
     //endregion ------------------------------------- Internal
+
 }
