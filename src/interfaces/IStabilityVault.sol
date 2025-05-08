@@ -30,6 +30,9 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @notice Underlying assets
+    function assets() external view returns (address[] memory);
+
     /// @notice Immutable vault type ID
     function vaultType() external view returns (string memory);
 

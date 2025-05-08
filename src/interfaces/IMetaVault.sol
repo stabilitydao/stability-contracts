@@ -54,9 +54,6 @@ interface IMetaVault is IStabilityVault {
     /// @notice Vault price pegged currency
     function pegAsset() external view returns (address);
 
-    /// @notice Underlying assets
-    function assets() external view returns (address[] memory);
-
     /// @notice Used CVaults
     function vaults() external view returns (address[] memory);
 

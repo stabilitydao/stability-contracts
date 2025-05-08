@@ -14,7 +14,6 @@ import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMeta
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IVault, IStrategy} from "../../interfaces/IVault.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 
 /// @title Stability MetaVault implementation
@@ -71,8 +70,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint len = vaults_.length;
         EnumerableSet.AddressSet storage _assets = $.assets;
         for (uint i; i < len; ++i) {
-            IStrategy strategy = IVault(vaults_[i]).strategy();
-            address[] memory __assets = strategy.assets();
+            address[] memory __assets = IStabilityVault(vaults_[i]).assets();
             uint assetsLength = __assets.length;
             for (uint k; k < assetsLength; ++k) {
                 _assets.add(__assets[k]);
@@ -238,11 +236,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMetaVault
-    function assets() external view returns (address[] memory) {
-        return _getMetaVaultStorage().assets.values();
-    }
-
-    /// @inheritdoc IMetaVault
     function currentProportions() public view returns (uint[] memory proportions) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         address[] memory _vaults = $.vaults;
@@ -295,7 +288,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function assetsForDeposit() external view returns (address[] memory) {
-        return IVault(vaultForDeposit()).strategy().assets();
+        return IStabilityVault(vaultForDeposit()).assets();
     }
 
     /// @inheritdoc IMetaVault
@@ -323,7 +316,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function assetsForWithdraw() external view returns (address[] memory) {
-        return IVault(vaultForWithdraw()).strategy().assets();
+        return IStabilityVault(vaultForWithdraw()).assets();
     }
 
     /// @inheritdoc IMetaVault
@@ -339,6 +332,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     function vaults() external view returns (address[] memory) {
         return _getMetaVaultStorage().vaults;
+    }
+
+    /// @inheritdoc IStabilityVault
+    function assets() external view returns (address[] memory) {
+        return _getMetaVaultStorage().assets.values();
     }
 
     /// @inheritdoc IStabilityVault

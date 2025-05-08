@@ -24,6 +24,7 @@ import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
 ///   2.1.0: previewDepositAssetsWrite
 ///   2.0.0: use strategy.previewDepositAssetsWrite; hardWorkMintFeeCallback use platform.getCustomVaultFee
@@ -41,7 +42,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.2.0";
+    string public constant VERSION_VAULT_BASE = "2.3.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -299,6 +300,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IStabilityVault
+    function assets() external view returns (address[] memory) {
+        return _getVaultBaseStorage().strategy.assets();
+    }
+
     /// @inheritdoc IERC20Metadata
     function name() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
@@ -477,11 +483,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint totalValue_,
         uint[] memory amountsConsumed,
         uint minSharesOut,
-        address[] memory assets,
+        address[] memory assets_,
         address receiver
     ) internal returns (uint mintAmount) {
         uint initialShares;
-        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets);
+        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets_);
         uint _maxSupply = $.maxSupply;
         // nosemgrep
         if (_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply) {
@@ -505,7 +511,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint value_,
         uint totalValue_,
         uint[] memory amountsConsumed,
-        address[] memory assets
+        address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
@@ -515,7 +521,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
+            (mintAmount,,,) = priceReader.getAssetsPrice(assets_, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;

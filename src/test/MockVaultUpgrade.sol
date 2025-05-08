@@ -27,6 +27,8 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function initialize(VaultInitializationData memory vaultInitializationData) public initializer {}
 
+    function assets() external view returns (address[] memory) {}
+
     function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external {}
 
     function extra() external view returns (bytes32) {}
