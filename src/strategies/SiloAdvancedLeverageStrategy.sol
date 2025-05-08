@@ -30,12 +30,17 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
-///   2.0.0 TODO
+///   2.0.0:
+///     * bug: decreasing LTV on exits #254
+///     * bug: deposit logic must use oracle price #247
+///     * feat: return new share price by rebalanceDebt #256
+///     * feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.2: realApr bugfix, emergency withdraw fix
 ///   1.1.1: use LeverageLendingBase 1.1.1; decrease size
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Victor (https://github.com/dvpublic)
 contract SiloAdvancedLeverageStrategy is
     LeverageLendingBase,
     IFlashLoanRecipient,

@@ -13,17 +13,18 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
-///   1.1.2 #256 rebalanceDebt returns resultSharePrice; #268: add flashLoanKind and setFlashLoanVault
+///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.1: StrategyBase 2.1.3
 ///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Victor (https://github.com/dvpublic)
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.1.2";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.0";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
