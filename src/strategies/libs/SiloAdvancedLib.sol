@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../interfaces/IStrategy.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -73,10 +73,10 @@ library SiloAdvancedLib {
         uint maxLtv;
         uint maxLeverage;
         uint targetLeverage;
-        uint priceCtoB;
         uint collateralAmountToWithdraw;
         uint withdrawParam0;
         uint withdrawParam1;
+        uint priceCtoB;
     }
     //endregion ------------------------------------- Data types
 
