@@ -29,6 +29,7 @@ import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3Flash
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {IBVault} from "../integrations/balancer/IBVault.sol";
 import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
+import {console} from "forge-std/Test.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
@@ -95,6 +96,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         uint[] memory feeAmounts,
         bytes memory /*userData*/
     ) external {
+        console.log("IFlashLoanRecipient", msg.sender);
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
@@ -102,6 +104,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
 
     /// @inheritdoc IBalancerV3FlashCallback
     function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
+        console.log("receiveFlashLoanV3", msg.sender, amount);
         // sender is vault, it's checked inside receiveFlashLoan
         // we can use msg.sender below but $.flashLoanVault looks more safe
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
@@ -124,6 +127,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
 
     /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
+        console.log("uniswapV3FlashCallback", msg.sender);
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 
