@@ -33,7 +33,7 @@ contract SiLUpgradeTest2 is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(16296000); // Mar-27-2025 08:48:46 AM +UTC
-        vm.rollFork(25451535); // May-09-2025 07:45:24 AM +UTC
+        vm.rollFork(25503966); // May-09-2025 12:31:34 PM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -60,13 +60,13 @@ contract SiLUpgradeTest2 is Test {
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
 
         // ----------------- deposit & withdraw
-        _depositForUser(vault, strategyAddress, user1, 1_000e6);
+        _depositForUser(vault, strategyAddress, user1, 1_00e18);
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, strategyAddress, user1);
 
         // ----------------- check results
-        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e6));
-        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e6), 200); // 2%
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_00e18));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_00e18), 200); // 2%
     }
 
     /// @notice Check flash loan through Uniswap
@@ -90,13 +90,13 @@ contract SiLUpgradeTest2 is Test {
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
 
         // ----------------- deposit & withdraw
-        _depositForUser(vault, strategyAddress, user1, 1_000e6);
+        _depositForUser(vault, strategyAddress, user1, 1_000e18);
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, strategyAddress, user1);
 
         // ----------------- check results
-        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e6));
-        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e6), 200); // 2%
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e18));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e18), 200); // 2%
     }
 
     //region -------------------------- Auxiliary functions

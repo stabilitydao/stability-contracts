@@ -17,6 +17,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
+import {console} from "forge-std/Test.sol";
 
 library SiloLib {
     using SafeERC20 for IERC20;
@@ -47,6 +48,7 @@ library SiloLib {
             ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
 
             // swap
+            console.log("swap 1");
             StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
 
             // pay flash loan
@@ -81,6 +83,7 @@ library SiloLib {
             }
 
             // swap
+            console.log("swap 2", Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
             StrategyLib.swap(
                 platform, collateralAsset, token, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))
             );
@@ -89,7 +92,9 @@ library SiloLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
+            console.log("swap 3", StrategyLib.balance(token));
             StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token));
+            console.log("done");
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -100,6 +105,7 @@ library SiloLib {
             address lendingVault = $.lendingVault;
 
             // swap
+            console.log("swap 4");
             StrategyLib.swap(platform, token, $.borrowAsset, amount);
 
             // repay
@@ -125,6 +131,7 @@ library SiloLib {
             ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
 
             // swap
+            console.log("swap 5");
             StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
 
             // withdraw or supply if need

@@ -356,6 +356,8 @@ contract SiloLeverageStrategy is LeverageLendingBase,
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        console.log("collateral asset", $.collateralAsset);
+        console.log("borrow asset", $.borrowAsset);
         return SiloLib.depositAssets($, $base, assets(), amounts);
     }
 
