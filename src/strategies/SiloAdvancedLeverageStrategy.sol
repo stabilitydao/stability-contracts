@@ -40,7 +40,7 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 ///   1.1.0: improve deposit and IncreaseLtv mechanic; mint wanS, wstkscUSD, wstkscETH
 ///   1.0.1: initVariants bugfix
 /// @author Alien Deployer (https://github.com/a17)
-/// @author Victor (https://github.com/dvpublic)
+/// @author dvpublic (https://github.com/dvpublic)
 contract SiloAdvancedLeverageStrategy is
     LeverageLendingBase,
     IFlashLoanRecipient,

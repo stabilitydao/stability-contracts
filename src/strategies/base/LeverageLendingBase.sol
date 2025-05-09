@@ -17,7 +17,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 ///   1.1.1: StrategyBase 2.1.3
 ///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
 /// @author Alien Deployer (https://github.com/a17)
-/// @author Victor (https://github.com/dvpublic)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
