@@ -24,6 +24,7 @@ import {IWETH} from "../../integrations/weth/IWETH.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
+import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -298,7 +299,7 @@ library SiloAdvancedLib {
 
         (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(debtDiff, v.borrowAsset);
 
-        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
         (resultLtv,,,,,) = health(platform, $);
@@ -473,44 +474,6 @@ library SiloAdvancedLib {
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
     }
 
-    /// @dev Get flash loan and execute {receiveFlashLoan}
-    function requestFlashLoan(
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address[] memory flashAssets,
-        uint[] memory flashAmounts
-    ) internal {
-        address vault = $.flashLoanVault;
-        ILeverageLendingStrategy.FlashLoanKind flashLoanKind = ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind);
-
-        if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
-            // fee amount are always 0,  flash loan in balancer v3 is free
-            bytes memory data = abi.encodeWithSignature(
-                "receiveFlashLoanV3(address,uint256,bytes)",
-                flashAssets[0],
-                flashAmounts[0],
-                bytes("") // no user data
-            );
-
-            IVaultMainV3(payable(vault)).unlock(data);
-        } else if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2) {
-            // ensure that the vault has available amount
-            require(
-                IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance()
-            );
-
-            bool isToken0 = IUniswapV3PoolImmutables(vault).token0() == flashAssets[0];
-            IUniswapV3PoolActions(vault).flash(
-                address(this),
-                isToken0 ? flashAmounts[0] : 0,
-                isToken0 ? 0 : flashAmounts[0],
-                abi.encode(flashAssets[0], flashAmounts[0], isToken0)
-            );
-        } else {
-            // FLASH_LOAN_KIND_BALANCER_V2: paid
-            IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
-        }
-    }
-
     function _estimateCollateralAmountToRepay(
         address platform,
         uint amountToRepay,
@@ -560,7 +523,7 @@ library SiloAdvancedLib {
             _getFlashLoanAmounts(_getDepositFlashAmount($, v, amountToDeposit), v.borrowAsset);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
-        requestFlashLoan($, flashAssets, flashAmounts);
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
     }
 
     function _getDepositFlashAmount(
@@ -707,7 +670,7 @@ library SiloAdvancedLib {
 
         $.tempCollateralAmount = collateralAmountToWithdraw;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
-        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
     }
 
     /// @param value Full amount of the collateral asset that the user is asking to withdraw
@@ -743,7 +706,7 @@ library SiloAdvancedLib {
         // --------- Increase ltv: limit spending from both balances
         $.tempCollateralAmount = value * uint(leverageNew);
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
-        SiloAdvancedLib.requestFlashLoan($, flashAssets, flashAmounts);
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         // --------- Withdraw value from landing vault to the strategy balance
         ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Collateral);

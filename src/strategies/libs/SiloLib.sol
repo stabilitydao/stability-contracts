@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../integrations/balancer/IBVault.sol";
 import "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -17,6 +16,7 @@ import {ISilo} from "../../integrations/silo/ISilo.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
+import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 
 library SiloLib {
     using SafeERC20 for IERC20;
@@ -271,7 +271,7 @@ library SiloLib {
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
 
-        IBVault($.flashLoanVault).flashLoan(address(this), _assets, flashAmounts, "");
+        LeverageLendingLib.requestFlashLoan($, _assets, flashAmounts);
 
         uint valueNow = StrategyLib.balance(_assets[0]) + calcTotal(v);
 
