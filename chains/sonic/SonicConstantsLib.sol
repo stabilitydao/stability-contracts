@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 library SonicConstantsLib {
     // initial addresses
     address public constant MULTISIG = 0xF564EBaC1182578398E94868bea1AbA6ba339652;
+    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;

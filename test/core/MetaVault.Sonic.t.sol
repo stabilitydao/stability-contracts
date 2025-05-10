@@ -16,9 +16,10 @@ import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract MetaVaultSonicTest is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
     address public constant VAULT_C_USDC_S_8 = 0x96a8055090E87bfE18BdF3794E9D676F196EFd80;
     address public constant VAULT_C_USDC_S_27 = 0x2ebB3c7808B86f94dF9731AE830aB6ea8cB431d8;
@@ -83,32 +84,6 @@ contract MetaVaultSonicTest is Test {
             _deployMetaVaultStandalone(vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_);
 
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff)));
-    }
-
-    function _upgradeCVaults() internal {
-        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-
-        // deploy new impl and upgrade
-        address vaultImplementation = address(new CVault());
-        vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
-
-        factory.upgradeVaultProxy(VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_USDC);
-        factory.upgradeVaultProxy(VAULT_C_USDC_S_8);
-        factory.upgradeVaultProxy(VAULT_C_USDC_S_27);
-        factory.upgradeVaultProxy(VAULT_C_USDC_S_34);
-        factory.upgradeVaultProxy(VAULT_C_USDC_S_36);
-        factory.upgradeVaultProxy(VAULT_C_USDC_S_49);
     }
 
     function test_universal_metavault() public {
@@ -403,6 +378,32 @@ contract MetaVaultSonicTest is Test {
 
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
         assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
+    }
+
+    function _upgradeCVaults() internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        // deploy new impl and upgrade
+        address vaultImplementation = address(new CVault());
+        vm.prank(multisig);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: vaultImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: 1e10
+            })
+        );
+
+        factory.upgradeVaultProxy(VAULT_C_USDC_SiF);
+        factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_scUSD);
+        factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_8);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_27);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_34);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_36);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_49);
     }
 
     function _deployMetaVaultStandalone(
