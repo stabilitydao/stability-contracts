@@ -36,6 +36,7 @@
 * **XStaking** `0x17a7cf838a7c91de47552a9f65822b547f9a6997` [sonicscan](https://sonicscan.org/address/0x17a7cf838a7c91de47552a9f65822b547f9a6997)
 * **RevenueRouter** `0x23b8cc22c4c82545f4b451b11e2f17747a730810` [sonicscan](https://sonicscan.org/address/0x23b8cc22c4c82545f4b451b11e2f17747a730810)
 * **FeeTreasury** `0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039` [sonicscan](https://sonicscan.org/address/0xda9c8035aa67a8cf9bf5477e0d937f74566f9039)
+* **FeeTreasury** lending `0x3950b3a43fa0687561Bc5c8E32D2EE826D88a661` [sonicscan](https://sonicscan.org/address/0x3950b3a43fa0687561Bc5c8E32D2EE826D88a661)
 
 
 ## Polygon [137]

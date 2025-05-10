@@ -12,6 +12,8 @@ import "../../interfaces/IRVault.sol";
 
 /// @notice Rewarding managed vault.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
+/// Changelog:
+///   1.4.0: IStabilityVault
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author Jude (https://github.com/iammrjude)
@@ -21,7 +23,7 @@ contract RMVault is RVaultBase, IManagedVault {
     //region ----- Constants -----
 
     /// @dev Version of RMVault implementation
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 

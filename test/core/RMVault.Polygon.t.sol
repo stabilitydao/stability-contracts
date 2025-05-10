@@ -250,7 +250,7 @@ contract RMVaultTest is PolygonSetup {
         // vm.expectRevert(IRVault.RewardIsTooBig.selector);
         vault.notifyTargetRewardAmount(1, a);
 
-        vm.expectRevert(IVault.NotSupported.selector);
+        vm.expectRevert(IStabilityVault.NotSupported.selector);
         vault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 }

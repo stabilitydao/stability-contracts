@@ -7,6 +7,7 @@ import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract DeployXSTBLSystem is Script {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -23,7 +24,7 @@ contract DeployXSTBLSystem is Script {
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         Proxy feeTreasuryProxy = new Proxy();
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
-        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM);
+        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM, IPlatform(PLATFORM).multisig());
         XStaking(address(xStakingProxy)).initialize(PLATFORM, address(xSTBLProxy));
         XSTBL(address(xSTBLProxy)).initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy));
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xSTBLProxy), address(feeTreasuryProxy));

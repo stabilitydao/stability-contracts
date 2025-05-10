@@ -82,7 +82,7 @@ abstract contract FullMockSetup is MockSetup {
         proxy = new Proxy();
         proxy.initProxy(address(new FeeTreasury()));
         FeeTreasury feeTreasury = FeeTreasury(address(proxy));
-        feeTreasury.initialize(address(platform));
+        feeTreasury.initialize(address(platform), platform.multisig());
         revenueRouter.initialize(address(platform), address(0), address(feeTreasury));
 
         platform.setup(
