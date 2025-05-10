@@ -435,8 +435,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         for (uint i; i < len; ++i) {
             assetsOnBalance[i] = IERC20(_assets[i]).balanceOf(address(this));
         }
-        (uint assetsTvlUsd,,,bool trustedAssetsPrices) =
-            priceReader.getAssetsPrice(_assets, assetsOnBalance);
+        (uint assetsTvlUsd,,, bool trustedAssetsPrices) = priceReader.getAssetsPrice(_assets, assetsOnBalance);
         tvl_ += assetsTvlUsd;
         if (!trustedAssetsPrices) {
             notSafePrice = true;

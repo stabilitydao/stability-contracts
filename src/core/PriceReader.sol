@@ -10,6 +10,8 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 
 /// @dev Combining oracle and DeX spot prices
+/// Changelog:
+///     1.1.0: IPriceReader.getVaultPrice; IPriceReader.vaultsWithSafeSharePrice
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
