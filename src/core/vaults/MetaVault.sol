@@ -30,6 +30,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
+    /// @inheritdoc IMetaVault
+    uint public constant USD_THRESHOLD = 1e13;
+
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
 
@@ -57,6 +60,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     function initialize(
         address platform_,
+        string memory type_,
         address pegAsset_,
         string memory name_,
         string memory symbol_,
@@ -66,6 +70,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         __Controllable_init(platform_);
         __ReentrancyGuard_init();
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $._type = type_;
         $.vaults = vaults_;
         uint len = vaults_.length;
         EnumerableSet.AddressSet storage _assets = $.assets;
@@ -111,6 +116,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function addVault(address vault, uint[] memory newTargetProportions) external {
+
         // todo
     }
 
@@ -340,8 +346,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IStabilityVault
-    function vaultType() external pure returns (string memory) {
-        return VaultTypeLib.METAVAULT;
+    function vaultType() external view returns (string memory) {
+        return _getMetaVaultStorage()._type;
     }
 
     /// @inheritdoc IStabilityVault
@@ -508,6 +514,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         );
 
         uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
+
+        require(
+            usdToWithdraw > USD_THRESHOLD,
+            UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD)
+        );
+
         uint targetVaultSharesToWithdraw = usdToWithdraw * 1e18 / vaultSharePriceUsd;
 
         amountsOut = IStabilityVault(_targetVault).withdrawAssets(

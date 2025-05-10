@@ -20,6 +20,11 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
+    address public constant VAULT_C_USDC_S_8 = 0x96a8055090E87bfE18BdF3794E9D676F196EFd80;
+    address public constant VAULT_C_USDC_S_27 = 0x2ebB3c7808B86f94dF9731AE830aB6ea8cB431d8;
+    address public constant VAULT_C_USDC_S_34 = 0xd248c4b6Ec709FEeD32851A9F883AfeaC294aD30;
+    address public constant VAULT_C_USDC_S_36 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
+    address public constant VAULT_C_USDC_S_49 = 0xc33568559c8338581BB6914d6F2d024a063886E8;
     address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
     address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
 
@@ -27,29 +32,51 @@ contract MetaVaultSonicTest is Test {
     IPriceReader public priceReader;
 
     constructor() {
-        // Apr-21-2025 03:25:38 AM +UTC
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 21300000));
+        // May-10-2025 10:38:26 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 25729900));
     }
 
     function setUp() public {
         _upgradeCVaults();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+        string memory vaultType;
         address[] memory vaults_;
         uint[] memory proportions_;
 
-        metaVaults = new address[](1);
+        metaVaults = new address[](2);
 
-        // metaUSD with single lending + 2 Ichi LP vaults
-        vaults_ = new address[](3);
+        // metaUSDC: single USDC lending vaults
+        vaultType = VaultTypeLib.METAVAULT_SINGLE;
+        vaults_ = new address[](5);
         vaults_[0] = VAULT_C_USDC_SiF;
-        vaults_[1] = VAULT_C_USDC_scUSD_ISF_scUSD;
-        vaults_[2] = VAULT_C_USDC_scUSD_ISF_USDC;
-        proportions_ = new uint[](3);
-        proportions_[0] = 50e16;
-        proportions_[1] = 30e16;
+        vaults_[1] = VAULT_C_USDC_S_8;
+        vaults_[2] = VAULT_C_USDC_S_27;
+        vaults_[3] = VAULT_C_USDC_S_34;
+        vaults_[4] = VAULT_C_USDC_S_36;
+        proportions_ = new uint[](5);
+        proportions_[0] = 20e16;
+        proportions_[1] = 20e16;
         proportions_[2] = 20e16;
-        metaVaults[0] = _deployMetaVaultStandalone(address(0), "Stability metaUSD", "metaUSD", vaults_, proportions_);
+        proportions_[3] = 20e16;
+        proportions_[4] = 20e16;
+        metaVaults[0] =
+            _deployMetaVaultStandalone(vaultType, address(0), "Stability USDC", "metaUSDC", vaults_, proportions_);
+
+        // metaUSD: single metavault + lending + Ichi LP vaults
+        vaultType = VaultTypeLib.METAVAULT;
+        vaults_ = new address[](4);
+        vaults_[0] = metaVaults[0];
+        vaults_[1] = VAULT_C_USDC_SiF;
+        vaults_[2] = VAULT_C_USDC_scUSD_ISF_scUSD;
+        vaults_[3] = VAULT_C_USDC_scUSD_ISF_USDC;
+        proportions_ = new uint[](4);
+        proportions_[0] = 50e16;
+        proportions_[1] = 15e16;
+        proportions_[2] = 20e16;
+        proportions_[3] = 15e16;
+        metaVaults[1] =
+            _deployMetaVaultStandalone(vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_);
 
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff)));
     }
@@ -74,6 +101,11 @@ contract MetaVaultSonicTest is Test {
         factory.upgradeVaultProxy(VAULT_C_USDC_SiF);
         factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_scUSD);
         factory.upgradeVaultProxy(VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_8);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_27);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_34);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_36);
+        factory.upgradeVaultProxy(VAULT_C_USDC_S_49);
     }
 
     function test_universal_metavault() public {
@@ -210,10 +242,12 @@ contract MetaVaultSonicTest is Test {
                 console.log(
                     string.concat(
                         IERC20Metadata(metavault).symbol(),
-                        " [Vaults: ",
-                        CommonLib.u2s(IMetaVault(metavault).vaults().length),
-                        "]. Name: ",
+                        ". Name: ",
                         IERC20Metadata(metavault).name(),
+                        ". Assets: ",
+                        CommonLib.implodeSymbols(IStabilityVault(metavault).assets(), ", "),
+                        ". Vaults: ",
+                        CommonLib.implodeSymbols(IMetaVault(metavault).vaults(), ", "),
                         "."
                     )
                 );
@@ -226,6 +260,9 @@ contract MetaVaultSonicTest is Test {
             vm.roll(block.number + 6);
             {
                 uint maxWithdraw = IMetaVault(metavault).maxWithdrawAmountTx();
+                //console.log('user balance', IERC20(metavault).balanceOf(address(this)));
+
+                //console.log('max withdraw');
                 if (maxWithdraw < IERC20(metavault).balanceOf(address(this))) {
                     // revert when want withdraw more
                     vm.expectRevert(
@@ -236,10 +273,13 @@ contract MetaVaultSonicTest is Test {
                     IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw + 10, new uint[](assets.length));
 
                     // do max withdraw
+                    //console.log('do max withdraw');
                     IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw, new uint[](assets.length));
+                    //console.log('user balance', IERC20(metavault).balanceOf(address(this)));
 
                     vm.roll(block.number + 6);
                 }
+                //console.log('max withdraw done');
 
                 // reverts
                 uint withdrawAmount = 0;
@@ -247,7 +287,9 @@ contract MetaVaultSonicTest is Test {
                 IStabilityVault(metavault).withdrawAssets(
                     assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
                 );
+
                 withdrawAmount = IERC20(metavault).balanceOf(address(this));
+
                 vm.expectRevert();
                 IStabilityVault(metavault).withdrawAssets(
                     assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this)
@@ -258,9 +300,19 @@ contract MetaVaultSonicTest is Test {
                     assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this)
                 );
 
-                IStabilityVault(metavault).withdrawAssets(
-                    assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
-                );
+                if (IMetaVault(metavault).pegAsset() == address(0) && withdrawAmount < 1e13) {
+                    vm.expectRevert(
+                        abi.encodeWithSelector(IMetaVault.UsdAmountLessThreshold.selector, withdrawAmount, 1e13)
+                    );
+                    IStabilityVault(metavault).withdrawAssets(
+                        assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
+                    );
+                } else {
+                    //address vaultForWithdraw = IMetaVault(metavault).vaultForWithdraw();
+                    IStabilityVault(metavault).withdrawAssets(
+                        assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
+                    );
+                }
             }
         }
     }
@@ -271,20 +323,20 @@ contract MetaVaultSonicTest is Test {
         (uint price, bool trusted) = metavault.price();
         assertEq(price, 1e18);
         assertEq(trusted, true);
-        assertEq(metavault.vaults().length, 3);
-        assertEq(metavault.assets().length, 2);
+        assertEq(metavault.vaults().length, 5);
+        assertEq(metavault.assets().length, 1);
         assertEq(metavault.totalSupply(), 0);
         assertEq(metavault.balanceOf(address(this)), 0);
-        assertEq(metavault.targetProportions().length, 3);
-        assertEq(metavault.targetProportions()[0], 50e16);
-        assertEq(metavault.currentProportions().length, 3);
-        assertEq(metavault.currentProportions()[0], 50e16);
+        assertEq(metavault.targetProportions().length, 5);
+        assertEq(metavault.targetProportions()[0], 20e16);
+        assertEq(metavault.currentProportions().length, 5);
+        assertEq(metavault.currentProportions()[0], 20e16);
         assertEq(metavault.vaultForDeposit(), VAULT_C_USDC_SiF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
 
-        assertEq(IERC20Metadata(address(metavault)).name(), "Stability metaUSD");
-        assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSD");
+        assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSDC");
         assertEq(IERC20Metadata(address(metavault)).decimals(), 18);
 
         vm.expectRevert(IControllable.NotOperator.selector);
@@ -299,7 +351,7 @@ contract MetaVaultSonicTest is Test {
         uint[] memory newTargetProportions = new uint[](2);
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         metavault.setTargetProportions(newTargetProportions);
-        newTargetProportions = new uint[](3);
+        newTargetProportions = new uint[](5);
         vm.expectRevert(IMetaVault.IncorrectProportions.selector);
         metavault.setTargetProportions(newTargetProportions);
         newTargetProportions[0] = 2e17;
@@ -312,10 +364,11 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
 
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
-        assertEq(metavault.vaultType(), VaultTypeLib.METAVAULT);
+        assertEq(metavault.vaultType(), VaultTypeLib.METAVAULT_SINGLE);
     }
 
     function _deployMetaVaultStandalone(
+        string memory type_,
         address pegAsset,
         string memory name_,
         string memory symbol_,
@@ -325,7 +378,7 @@ contract MetaVaultSonicTest is Test {
         MetaVault implementation = new MetaVault();
         Proxy proxy = new Proxy();
         proxy.initProxy(address(implementation));
-        MetaVault(address(proxy)).initialize(PLATFORM, pegAsset, name_, symbol_, vaults_, proportions_);
+        MetaVault(address(proxy)).initialize(PLATFORM, type_, pegAsset, name_, symbol_, vaults_, proportions_);
         return address(proxy);
     }
 

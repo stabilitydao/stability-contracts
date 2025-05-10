@@ -85,9 +85,6 @@ interface IVault is IERC165, IStabilityVault {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Immutable vault type ID
-    function vaultType() external view returns (string memory);
-
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
     function getUniqueInitParamLength() external view returns (uint uniqueInitAddresses, uint uniqueInitNums);

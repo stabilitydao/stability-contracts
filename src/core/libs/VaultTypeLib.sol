@@ -6,4 +6,5 @@ library VaultTypeLib {
     string internal constant REWARDING = "Rewarding";
     string internal constant REWARDING_MANAGED = "Rewarding Managed";
     string internal constant METAVAULT = "MetaVault";
+    string internal constant METAVAULT_SINGLE = "MetaVault Single";
 }

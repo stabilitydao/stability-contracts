@@ -15,6 +15,8 @@ interface IMetaVault is IStabilityVault {
         /// @dev Flash loan exploit protection.
         ///      Prevents manipulations with deposit/transfer and withdraw/deposit in short time.
         mapping(address msgSender => uint blockNumber) lastTransferBlock;
+        /// @dev Immutable vault type ID
+        string _type;
         /// @inheritdoc IMetaVault
         address pegAsset;
         /// @inheritdoc IMetaVault
@@ -43,6 +45,7 @@ interface IMetaVault is IStabilityVault {
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    error UsdAmountLessThreshold(uint amountUsd, uint threshold);
     error MaxAmountForWithdrawPerTxReached(uint amount, uint maxAmount);
     error ZeroSharesToBurn(uint amountToWithdraw);
     error IncorrectProportions();
@@ -50,6 +53,9 @@ interface IMetaVault is IStabilityVault {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Not perform operations with value less than threshold
+    function USD_THRESHOLD() external view returns (uint);
 
     /// @notice Vault price pegged currency
     function pegAsset() external view returns (address);
@@ -99,6 +105,7 @@ interface IMetaVault is IStabilityVault {
     /// @notice Init after deploy
     function initialize(
         address platform_,
+        string memory type_,
         address pegAsset_,
         string memory name_,
         string memory symbol_,
