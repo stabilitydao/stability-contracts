@@ -413,15 +413,19 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IStabilityVault
     function tvl() public view returns (uint tvl_, bool trusted_) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        bool notSafePrice;
 
         // get deposited TVL of used vaults
         address[] memory _vaults = $.vaults;
         uint len = _vaults.length;
         for (uint i; i < len; ++i) {
-            (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
+            (uint vaultSharePrice, bool safe) = priceReader.getVaultPrice(_vaults[i]);
+            if (!safe) {
+                notSafePrice = true;
+            }
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            tvl_ += vaultSharesBalance * vaultTvl / vaultTotalSupply;
+            tvl_ += vaultSharePrice * vaultSharesBalance / 1e18;
         }
 
         // get TVL of assets on contract balance
@@ -431,11 +435,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         for (uint i; i < len; ++i) {
             assetsOnBalance[i] = IERC20(_assets[i]).balanceOf(address(this));
         }
-        (uint assetsTvlUsd,,,) =
-            IPriceReader(IPlatform(platform()).priceReader()).getAssetsPrice(_assets, assetsOnBalance);
+        (uint assetsTvlUsd,,,bool trustedAssetsPrices) =
+            priceReader.getAssetsPrice(_assets, assetsOnBalance);
         tvl_ += assetsTvlUsd;
+        if (!trustedAssetsPrices) {
+            notSafePrice = true;
+        }
 
-        trusted_ = true;
+        trusted_ = !notSafePrice;
     }
 
     /// @inheritdoc IERC20

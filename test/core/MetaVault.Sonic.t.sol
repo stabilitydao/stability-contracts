@@ -17,6 +17,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -32,10 +33,10 @@ contract MetaVaultSonicTest is Test {
 
     function setUp() public {
         multisig = IPlatform(PLATFORM).multisig();
-
-        _upgradeCVaults();
-
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradePriceReader();
+        _upgradeCVaults();
 
         string memory vaultType;
         address[] memory vaults_;
@@ -370,6 +371,18 @@ contract MetaVaultSonicTest is Test {
 
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
         assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
+    }
+
+    function _upgradePriceReader() internal {
+        address[] memory proxies = new address[](1);
+        proxies[0] = address(priceReader);
+        address[] memory implementations = new address[](1);
+        implementations[0] = address(new PriceReader());
+        vm.startPrank(multisig);
+        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
+        skip(1 days);
+        IPlatform(PLATFORM).upgrade();
+        vm.stopPrank();
     }
 
     function _upgradeCVaults() internal {
