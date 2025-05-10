@@ -15,6 +15,7 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
+import {CommonLib} from "../libs/CommonLib.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -80,6 +81,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             for (uint k; k < assetsLength; ++k) {
                 _assets.add(__assets[k]);
             }
+            emit AddVault(vaults_[i]);
         }
         $.targetProportions = proportions_;
         $.pegAsset = pegAsset_;
@@ -115,9 +117,35 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function addVault(address vault, uint[] memory newTargetProportions) external {
+    function addVault(address vault, uint[] memory newTargetProportions) external onlyGovernanceOrMultisig {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            // check vault
+            uint len = $.vaults.length;
+            for (uint i; i < len; ++i) {
+                if ($.vaults[i] == vault) {
+                    revert IMetaVault.IncorrectVault();
+                }
+            }
 
-        // todo
+            // check asset
+            address[] memory vaultAssets = IStabilityVault(vault).assets();
+            require(vaultAssets.length == 1, IncorrectVault());
+            require(vaultAssets[0] == $.assets.values()[0], IncorrectVault());
+
+            // check proportions
+            require(newTargetProportions.length == $.vaults.length + 1, IncorrectArrayLength());
+            _checkProportions(newTargetProportions);
+
+            // add
+            $.vaults.push(vault);
+            $.targetProportions = newTargetProportions;
+        } else {
+            revert NotSupported();
+        }
+
+        emit AddVault(vault);
+        emit TargetProportions(newTargetProportions);
     }
 
     /// @inheritdoc IStabilityVault
@@ -515,10 +543,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
 
-        require(
-            usdToWithdraw > USD_THRESHOLD,
-            UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD)
-        );
+        require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
 
         uint targetVaultSharesToWithdraw = usdToWithdraw * 1e18 / vaultSharePriceUsd;
 

@@ -13,6 +13,7 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     error WaitAFewBlocks();
     error ExceedSlippage(uint mintToUser, uint minToMint);
     error ExceedMaxSupply(uint maxSupply);
+    error NotSupported();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */

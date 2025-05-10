@@ -315,7 +315,7 @@ contract VaultTest is Test, FullMockSetup {
             })
         );
 
-        vm.expectRevert(IVault.NotSupported.selector);
+        vm.expectRevert(IStabilityVault.NotSupported.selector);
         rVault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 

@@ -39,6 +39,7 @@ interface IMetaVault is IStabilityVault {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event AddVault(address vault);
     event TargetProportions(uint[] proportions);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -49,6 +50,7 @@ interface IMetaVault is IStabilityVault {
     error MaxAmountForWithdrawPerTxReached(uint amount, uint maxAmount);
     error ZeroSharesToBurn(uint amountToWithdraw);
     error IncorrectProportions();
+    error IncorrectVault();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */

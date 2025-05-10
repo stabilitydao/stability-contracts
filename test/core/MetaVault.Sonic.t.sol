@@ -30,6 +30,7 @@ contract MetaVaultSonicTest is Test {
 
     address[] public metaVaults;
     IPriceReader public priceReader;
+    address public multisig;
 
     constructor() {
         // May-10-2025 10:38:26 AM +UTC
@@ -37,9 +38,12 @@ contract MetaVaultSonicTest is Test {
     }
 
     function setUp() public {
+        multisig = IPlatform(PLATFORM).multisig();
+
         _upgradeCVaults();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
         string memory vaultType;
         address[] memory vaults_;
         uint[] memory proportions_;
@@ -47,7 +51,7 @@ contract MetaVaultSonicTest is Test {
         metaVaults = new address[](2);
 
         // metaUSDC: single USDC lending vaults
-        vaultType = VaultTypeLib.METAVAULT_SINGLE;
+        vaultType = VaultTypeLib.MULTIVAULT;
         vaults_ = new address[](5);
         vaults_[0] = VAULT_C_USDC_SiF;
         vaults_[1] = VAULT_C_USDC_S_8;
@@ -83,7 +87,6 @@ contract MetaVaultSonicTest is Test {
 
     function _upgradeCVaults() internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-        address multisig = IPlatform(PLATFORM).multisig();
 
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
@@ -317,7 +320,67 @@ contract MetaVaultSonicTest is Test {
         }
     }
 
-    function test_empty_metavault() public {
+    function test_metavault_management() public {
+        IMetaVault metavault = IMetaVault(metaVaults[0]);
+
+        // setName, setSymbol
+        vm.expectRevert(IControllable.NotOperator.selector);
+        metavault.setName("new name");
+        vm.prank(multisig);
+        metavault.setName("new name");
+        assertEq(IERC20Metadata(address(metavault)).name(), "new name");
+        vm.prank(multisig);
+        metavault.setSymbol("new symbol");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "new symbol");
+
+        // change proportions
+        uint[] memory newTargetProportions = new uint[](2);
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        newTargetProportions = new uint[](5);
+        vm.expectRevert(IMetaVault.IncorrectProportions.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        newTargetProportions[0] = 2e17;
+        newTargetProportions[1] = 3e17;
+        newTargetProportions[2] = 5e17;
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        metavault.setTargetProportions(newTargetProportions);
+        vm.prank(multisig);
+        metavault.setTargetProportions(newTargetProportions);
+        assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
+
+        // add vault
+        address vault = VAULT_C_USDC_scUSD_ISF_scUSD;
+        newTargetProportions = new uint[](3);
+
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        metavault.addVault(vault, newTargetProportions);
+
+        vm.startPrank(multisig);
+        vm.expectRevert(IMetaVault.IncorrectVault.selector);
+        metavault.addVault(vault, newTargetProportions);
+
+        vault = VAULT_C_USDC_S_49;
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        metavault.addVault(vault, newTargetProportions);
+
+        newTargetProportions = new uint[](6);
+        vm.expectRevert(IMetaVault.IncorrectProportions.selector);
+        metavault.addVault(vault, newTargetProportions);
+
+        newTargetProportions[0] = 1e18;
+        vault = VAULT_C_USDC_S_8;
+        vm.expectRevert(IMetaVault.IncorrectVault.selector);
+        metavault.addVault(vault, newTargetProportions);
+
+        vault = VAULT_C_USDC_S_49;
+        metavault.addVault(vault, newTargetProportions);
+        vm.stopPrank();
+
+        assertEq(IMetaVault(metavault).vaults()[5], VAULT_C_USDC_S_49);
+    }
+
+    function test_metavault_view_methods() public view {
         IMetaVault metavault = IMetaVault(metaVaults[0]);
         assertEq(metavault.pegAsset(), address(0));
         (uint price, bool trusted) = metavault.price();
@@ -334,37 +397,12 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.vaultForDeposit(), VAULT_C_USDC_SiF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
-
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
         assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSDC");
         assertEq(IERC20Metadata(address(metavault)).decimals(), 18);
 
-        vm.expectRevert(IControllable.NotOperator.selector);
-        metavault.setName("new name");
-        vm.prank(IPlatform(PLATFORM).multisig());
-        metavault.setName("new name");
-        assertEq(IERC20Metadata(address(metavault)).name(), "new name");
-        vm.prank(IPlatform(PLATFORM).multisig());
-        metavault.setSymbol("new symbol");
-        assertEq(IERC20Metadata(address(metavault)).symbol(), "new symbol");
-
-        uint[] memory newTargetProportions = new uint[](2);
-        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-        metavault.setTargetProportions(newTargetProportions);
-        newTargetProportions = new uint[](5);
-        vm.expectRevert(IMetaVault.IncorrectProportions.selector);
-        metavault.setTargetProportions(newTargetProportions);
-        newTargetProportions[0] = 2e17;
-        newTargetProportions[1] = 3e17;
-        newTargetProportions[2] = 5e17;
-        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
-        metavault.setTargetProportions(newTargetProportions);
-        vm.prank(IPlatform(PLATFORM).multisig());
-        metavault.setTargetProportions(newTargetProportions);
-        assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
-
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
-        assertEq(metavault.vaultType(), VaultTypeLib.METAVAULT_SINGLE);
+        assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
     }
 
     function _deployMetaVaultStandalone(

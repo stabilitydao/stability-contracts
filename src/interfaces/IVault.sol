@@ -21,7 +21,6 @@ interface IVault is IERC165, IStabilityVault {
     error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
     error StrategyZeroDeposit();
-    error NotSupported();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
