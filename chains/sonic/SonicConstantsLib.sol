@@ -7,6 +7,16 @@ library SonicConstantsLib {
     address public constant MULTISIG = 0xF564EBaC1182578398E94868bea1AbA6ba339652;
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
+    // Vaults
+    address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
+    address public constant VAULT_C_USDC_S_8 = 0x96a8055090E87bfE18BdF3794E9D676F196EFd80;
+    address public constant VAULT_C_USDC_S_27 = 0x2ebB3c7808B86f94dF9731AE830aB6ea8cB431d8;
+    address public constant VAULT_C_USDC_S_34 = 0xd248c4b6Ec709FEeD32851A9F883AfeaC294aD30;
+    address public constant VAULT_C_USDC_S_36 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
+    address public constant VAULT_C_USDC_S_49 = 0xc33568559c8338581BB6914d6F2d024a063886E8;
+    address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
+    address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
+
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant TOKEN_wETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;

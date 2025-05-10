@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./base/Controllable.sol";
-import "../interfaces/IPriceReader.sol";
-import "../interfaces/IOracleAdapter.sol";
-import "../interfaces/ISwapper.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable, IPlatform} from "./base/Controllable.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
+import {IOracleAdapter} from "../interfaces/IOracleAdapter.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 
 /// @dev Combining oracle and DeX spot prices
 /// @author Alien Deployer (https://github.com/a17)
@@ -18,7 +19,7 @@ contract PriceReader is Controllable, IPriceReader {
     //region ----- Constants -----
 
     /// @dev Version of PriceReader implementation
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.PriceReader")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PRICEREADER_STORAGE_LOCATION =
@@ -31,6 +32,7 @@ contract PriceReader is Controllable, IPriceReader {
     /// @custom:storage-location erc7201:stability.PriceReader
     struct PriceReaderStorage {
         EnumerableSet.AddressSet _adapters;
+        EnumerableSet.AddressSet safeSharePrice;
     }
 
     //endregion ----- Storage -----
@@ -48,6 +50,7 @@ contract PriceReader is Controllable, IPriceReader {
         emit AdapterAdded(adapter_);
     }
 
+    /// @inheritdoc IPriceReader
     function removeAdapter(address adapter_) external onlyOperator {
         PriceReaderStorage storage $ = _getStorage();
         if (!$._adapters.remove(adapter_)) {
@@ -57,12 +60,35 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
+    function addSafeSharePrices(address[] memory vaults) external onlyOperator {
+        PriceReaderStorage storage $ = _getStorage();
+        uint len = vaults.length;
+        for (uint i; i < len; ++i) {
+            if (!$.safeSharePrice.add(vaults[i])) {
+                revert AlreadyExist();
+            }
+            emit VaultWithSafeSharePriceAdded(vaults[i]);
+        }
+    }
+
+    /// @inheritdoc IPriceReader
+    function removeSafeSharePrices(address[] memory vaults) external onlyOperator {
+        PriceReaderStorage storage $ = _getStorage();
+        uint len = vaults.length;
+        for (uint i; i < len; ++i) {
+            if (!$.safeSharePrice.remove(vaults[i])) {
+                revert NotExist();
+            }
+            emit VaultWithSafeSharePriceRemoved(vaults[i]);
+        }
+    }
+
+    /// @inheritdoc IPriceReader
     //slither-disable-next-line calls-loop
     function getPrice(address asset) public view returns (uint price, bool trusted) {
         PriceReaderStorage storage $ = _getStorage();
         address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
-        // nosemgrep
         for (uint i; i < len; ++i) {
             //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
@@ -73,13 +99,10 @@ contract PriceReader is Controllable, IPriceReader {
 
         if (len > 0) {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-            // nosemgrep
             for (uint j; j < len; ++j) {
                 IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
                 address[] memory oracleAssets = oracleAdapter.assets();
-                // nosemgrep
                 uint oracleAssetsLen = oracleAssets.length;
-                // nosemgrep
                 for (uint i; i < oracleAssetsLen; ++i) {
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
@@ -103,6 +126,21 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     /// @inheritdoc IPriceReader
+    function getVaultPrice(address vault) external view returns (uint price, bool safe) {
+        PriceReaderStorage storage $ = _getStorage();
+        bool safeSharePrice = $.safeSharePrice.contains(vault);
+        (uint vaultOnChainPrice, bool trustedAssetPrice) = IStabilityVault(vault).price();
+        if (safeSharePrice) {
+            return (vaultOnChainPrice, trustedAssetPrice);
+        }
+
+        // todo get vault price from internal oracle and return as safe
+        // ...
+
+        return (vaultOnChainPrice, false);
+    }
+
+    /// @inheritdoc IPriceReader
     function getAssetsPrice(
         address[] memory assets_,
         uint[] memory amounts_
@@ -113,7 +151,6 @@ contract PriceReader is Controllable, IPriceReader {
         assetAmountPrice = new uint[](len);
         assetPrice = new uint[](len);
         bool _trusted;
-        // nosemgrep
         for (uint i; i < len; ++i) {
             (assetPrice[i], _trusted) = getPrice(assets_[i]);
             if (!_trusted) {
@@ -135,6 +172,12 @@ contract PriceReader is Controllable, IPriceReader {
     function adapters() external view returns (address[] memory) {
         PriceReaderStorage storage $ = _getStorage();
         return $._adapters.values();
+    }
+
+    /// @inheritdoc IPriceReader
+    function vaultsWithSafeSharePrice() external view returns (address[] memory vaults) {
+        PriceReaderStorage storage $ = _getStorage();
+        return $.safeSharePrice.values();
     }
 
     function adaptersLength() external view returns (uint) {
