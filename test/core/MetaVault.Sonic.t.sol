@@ -18,10 +18,13 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-
+    IMetaVaultFactory public metaVaultFactory;
     address[] public metaVaults;
     IPriceReader public priceReader;
     address public multisig;
@@ -37,6 +40,10 @@ contract MetaVaultSonicTest is Test {
 
         _upgradePriceReader();
         _upgradeCVaults();
+        _deployMetaVaultFactory();
+        _upgradePlatform();
+        _setupMetaVaultFactory();
+        _setupImplementations();
 
         string memory vaultType;
         address[] memory vaults_;
@@ -58,8 +65,9 @@ contract MetaVaultSonicTest is Test {
         proportions_[2] = 20e16;
         proportions_[3] = 20e16;
         proportions_[4] = 20e16;
-        metaVaults[0] =
-            _deployMetaVaultStandalone(vaultType, address(0), "Stability USDC", "metaUSDC", vaults_, proportions_);
+        metaVaults[0] = _deployMetaVaultByMetaVaultFactory(
+            vaultType, address(0), "Stability USDC", "metaUSDC", vaults_, proportions_
+        );
 
         // metaUSD: single metavault + lending + Ichi LP vaults
         vaultType = VaultTypeLib.METAVAULT;
@@ -409,6 +417,48 @@ contract MetaVaultSonicTest is Test {
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_36);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_49);
+    }
+
+    function _upgradePlatform() internal {
+        address[] memory proxies = new address[](1);
+        proxies[0] = PLATFORM;
+        address[] memory implementations = new address[](1);
+        implementations[0] = address(new Platform());
+        vm.startPrank(multisig);
+        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.1-alpha", proxies, implementations);
+        skip(1 days);
+        IPlatform(PLATFORM).upgrade();
+        vm.stopPrank();
+    }
+
+    function _deployMetaVaultFactory() internal {
+        Proxy proxy = new Proxy();
+        proxy.initProxy(address(new MetaVaultFactory()));
+        metaVaultFactory = IMetaVaultFactory(address(proxy));
+        metaVaultFactory.initialize(PLATFORM);
+    }
+
+    function _setupMetaVaultFactory() internal {
+        vm.prank(multisig);
+        Platform(PLATFORM).setupMetaVaultFactory(address(metaVaultFactory));
+    }
+
+    function _setupImplementations() internal {
+        address metaVaultImplementation = address(new MetaVault());
+        vm.prank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(metaVaultImplementation);
+    }
+
+    function _deployMetaVaultByMetaVaultFactory(
+        string memory type_,
+        address pegAsset,
+        string memory name_,
+        string memory symbol_,
+        address[] memory vaults_,
+        uint[] memory proportions_
+    ) internal returns (address metaVaultProxy) {
+        vm.prank(multisig);
+        return metaVaultFactory.deployMetaVault("0x00", type_, pegAsset, name_, symbol_, vaults_, proportions_);
     }
 
     function _deployMetaVaultStandalone(

@@ -3,10 +3,15 @@ pragma solidity ^0.8.28;
 
 import {Controllable, IControllable} from "./base/Controllable.sol";
 import {IMetaVaultFactory} from "../interfaces/IMetaVaultFactory.sol";
+import {IMetaProxy} from "../interfaces/IMetaProxy.sol";
+import {MetaVaultProxy} from "./proxy/MetaVaultProxy.sol";
+import {IMetaVault, EnumerableSet} from "../interfaces/IMetaVault.sol";
 
-/// @title Factory for deploying MetaVaults, MultiVaults and wrappers
+/// @title Factory of MetaVaults and WrappedMetaVaults
 /// @author Alien Deployer (https://github.com/a17)
 contract MetaVaultFactory is Controllable, IMetaVaultFactory {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -35,7 +40,27 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     function setMetaVaultImplementation(address newImplementation) external onlyGovernanceOrMultisig {
         MetaVaultFactoryStorage storage $ = _getStorage();
         $.metaVaultImplementation = newImplementation;
-        emit NewImplementation(newImplementation);
+        emit NewMetaVaultImplementation(newImplementation);
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function deployMetaVault(
+        bytes32 salt,
+        string memory type_,
+        address pegAsset_,
+        string memory name_,
+        string memory symbol_,
+        address[] memory vaults_,
+        uint[] memory proportions_
+    ) external onlyOperator returns (address proxy) {
+        proxy = address(new MetaVaultProxy{salt: salt}());
+        IMetaProxy(proxy).initProxy();
+        IMetaVault(proxy).initialize(platform(), type_, pegAsset_, name_, symbol_, vaults_, proportions_);
+
+        MetaVaultFactoryStorage storage $ = _getStorage();
+        $.metaVaults.add(proxy);
+
+        emit NewMetaVault(proxy, type_, pegAsset_, name_, symbol_, vaults_, proportions_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -45,6 +70,25 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     /// @inheritdoc IMetaVaultFactory
     function metaVaultImplementation() external view returns (address) {
         return _getStorage().metaVaultImplementation;
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function getMetaVaultProxyInitCodeHash() external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(type(MetaVaultProxy).creationCode));
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function getCreate2Address(
+        bytes32 salt,
+        bytes32 initCodeHash,
+        address thisAddress
+    ) external pure returns (address) {
+        return address(uint160(uint(keccak256(abi.encodePacked(bytes1(0xff), thisAddress, salt, initCodeHash)))));
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function metaVaults() external view returns (address[] memory) {
+        return _getStorage().metaVaults.values();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

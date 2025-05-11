@@ -1,13 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 interface IMetaVaultFactory {
-    event NewImplementation(address implementation);
+    event NewMetaVaultImplementation(address implementation);
+    event NewMetaVault(
+        address metaVault,
+        string type_,
+        address pegAsset_,
+        string name_,
+        string symbol_,
+        address[] vaults_,
+        uint[] proportions_
+    );
 
     /// @custom:storage-location erc7201:stability.MetaVaultFactory
     struct MetaVaultFactoryStorage {
         /// @inheritdoc IMetaVaultFactory
         address metaVaultImplementation;
+        /// @inheritdoc IMetaVaultFactory
+        EnumerableSet.AddressSet metaVaults;
     }
 
     /// @notice Initialize proxied contract
@@ -17,7 +30,43 @@ interface IMetaVaultFactory {
     /// @param newImplementation Address of new deployed MetaVault implementation
     function setMetaVaultImplementation(address newImplementation) external;
 
+    /// @notice Deploy new MetaVault
+    /// @param salt Salt to get CREATE2 deployment address
+    /// @param type_ MetaVault type
+    /// @param pegAsset_ Asset to peg price. 0x00 is USD.
+    /// @param name_ Name of vault
+    /// @param symbol_ Symbol of vault
+    /// @param vaults_ Underling vaults
+    /// @param proportions_ Underling proportions
+    /// @return proxy Address of deployed MetaVaultProxy contract
+    function deployMetaVault(
+        bytes32 salt,
+        string memory type_,
+        address pegAsset_,
+        string memory name_,
+        string memory symbol_,
+        address[] memory vaults_,
+        uint[] memory proportions_
+    ) external returns (address proxy);
+
     /// @notice Get address of MetaVault implementation
     /// @return MetaVault implementation address
     function metaVaultImplementation() external view returns (address);
+
+    /// @dev Get CREATE2 address
+    /// @param salt Provided salt for CREATE2
+    /// @param initCodeHash Hash of contract creationCode
+    /// @param thisAddress Address of this factory
+    /// @return Future deployment address
+    function getCreate2Address(
+        bytes32 salt,
+        bytes32 initCodeHash,
+        address thisAddress
+    ) external pure returns (address);
+
+    /// @dev Get keccak256 hash of MetaVaultProxy creationCode for CREATE2
+    function getMetaVaultProxyInitCodeHash() external view returns (bytes32);
+
+    /// @notice Deployed MetaVaults
+    function metaVaults() external view returns (address[] memory);
 }
