@@ -6,7 +6,7 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {MetaVaultFactory, IMetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
+import {MetaVaultFactory, IMetaVaultFactory, IControllable} from "../../src/core/MetaVaultFactory.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 
 contract MetaVaultFactoryTest is Test {
@@ -22,8 +22,9 @@ contract MetaVaultFactoryTest is Test {
     function setUp() public {
         multisig = IPlatform(PLATFORM).multisig();
 
-        _upgradePlatform();
         _deployMetaVaultFactory();
+        _upgradePlatform();
+        _setupMetaVaultFactory();
         _setupImplementations();
 
         // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVaultFactory")) - 1)) & ~bytes32(uint256(0xff)));
@@ -43,6 +44,14 @@ contract MetaVaultFactoryTest is Test {
         skip(1 days);
         IPlatform(PLATFORM).upgrade();
         vm.stopPrank();
+    }
+
+    function _setupMetaVaultFactory() internal {
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        Platform(PLATFORM).setupMetaVaultFactory(address(metaVaultFactory));
+        vm.prank(multisig);
+        Platform(PLATFORM).setupMetaVaultFactory(address(metaVaultFactory));
+        assertEq(IPlatform(PLATFORM).metaVaultFactory(), address(metaVaultFactory));
     }
 
     function _deployMetaVaultFactory() internal {

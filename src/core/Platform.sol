@@ -16,12 +16,19 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IVaultManager} from "../interfaces/IVaultManager.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {MetaVault} from "./vaults/MetaVault.sol";
 
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings, allows plaform upgrades etc.
 ///         ┏┓┏┳┓┏┓┳┓┳┓ ┳┏┳┓┓┏  ┏┓┓ ┏┓┏┳┓┏┓┏┓┳┓┳┳┓
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
+/// Changelog:
+///   1.4.0: IPlatform.metaVaultFactory()
+///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
+///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
+///   1.1.0: custom vault fee
+///   1.0.1: can work without buildingPermitToken
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -35,7 +42,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -126,6 +133,8 @@ contract Platform is Controllable, IPlatform {
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
+        /// @inheritdoc IPlatform
+        address metaVaultFactory;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -435,6 +444,12 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         emit RevenueRouter(revenueRouter_);
         $.revenueRouter = revenueRouter_;
+    }
+
+    function setupMetaVaultFactory(address metaVaultFactory_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit MetaVaultFactory(metaVaultFactory_);
+        $.metaVaultFactory = metaVaultFactory_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -748,6 +763,11 @@ contract Platform is Controllable, IPlatform {
     function revenueRouter() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.revenueRouter;
+    }
+
+    /// @inheritdoc IPlatform
+    function metaVaultFactory() external view returns (address) {
+        return _getStorage().metaVaultFactory;
     }
 
     /// @inheritdoc IPlatform
