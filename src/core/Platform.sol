@@ -16,7 +16,6 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IVaultManager} from "../interfaces/IVaultManager.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {MetaVault} from "./vaults/MetaVault.sol";
 
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings, allows plaform upgrades etc.
