@@ -73,19 +73,24 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     }
 
     /// @inheritdoc IMetaVaultFactory
-    function deployWrapper(
-        bytes32 salt,
-        address metaVault
-    ) external onlyOperator returns (address proxy) {
+    function deployWrapper(bytes32 salt, address metaVault) external onlyOperator returns (address proxy) {
         proxy = address(new WrappedMetaVaultProxy{salt: salt}());
         IMetaProxy(proxy).initProxy();
         IWrappedMetaVault(proxy).initialize(platform(), metaVault);
 
         MetaVaultFactoryStorage storage $ = _getStorage();
-        require ($.wrapper[metaVault] == address(0), AlreadyExist());
+        require($.wrapper[metaVault] == address(0), AlreadyExist());
         $.wrapper[metaVault] = proxy;
 
         emit NewWrappedMetaVault(proxy, metaVault);
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function upgradeMetaProxies(address[] memory metaProxies) external onlyOperator {
+        uint len = metaProxies.length;
+        for (uint i; i < len; ++i) {
+            IMetaProxy(metaProxies[i]).upgrade();
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

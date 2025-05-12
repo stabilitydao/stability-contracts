@@ -10,10 +10,13 @@ import {IMetaProxy} from "../../src/interfaces/IMetaProxy.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {MetaVaultFactory, IMetaVaultFactory, IControllable} from "../../src/core/MetaVaultFactory.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
+import {MockMetaVaultUpgrade} from "../../src/test/MockMetaVaultUpgrade.sol";
+import {MockWrappedMetaVaultUpgrade} from "../../src/test/MockWrappedMetaVaultUpgrade.sol";
 
 contract MetaVaultFactoryTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -37,15 +40,15 @@ contract MetaVaultFactoryTest is Test {
         // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVaultFactory")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
-    function test_deployMetaVault() public {
+    function test_deployMetaVault_and_wrapper() public {
         bytes32 salt = "0x0101";
         bytes32 metaVaultInitCodeHash = metaVaultFactory.getMetaVaultProxyInitCodeHash();
         address predictedProxyAddress =
             metaVaultFactory.getCreate2Address(salt, metaVaultInitCodeHash, address(metaVaultFactory));
-        console.log(string.concat("CREATE2 salt:    ", string(abi.encodePacked(salt))) );
+        console.log(string.concat("CREATE2 salt:    ", string(abi.encodePacked(salt))));
         console.log(string.concat("InitCodeHash:    ", Strings.toHexString(uint(metaVaultInitCodeHash), 32)));
         // console.logBytes32(metaVaultInitCodeHash); same result
-        console.log(string.concat("Factory address: ", Strings.toHexString(address (metaVaultFactory))));
+        console.log(string.concat("Factory address: ", Strings.toHexString(address(metaVaultFactory))));
         console.log(string.concat("Target address:  ", Strings.toHexString(predictedProxyAddress)));
         address[] memory vaults_ = new address[](3);
         vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SiF;
@@ -66,19 +69,26 @@ contract MetaVaultFactoryTest is Test {
 
         bytes32 wrappedMetaVaultInitCodeHash = metaVaultFactory.getWrappedMetaVaultProxyInitCodeHash();
         predictedProxyAddress =
-                            metaVaultFactory.getCreate2Address(salt, wrappedMetaVaultInitCodeHash, address(metaVaultFactory));
+            metaVaultFactory.getCreate2Address(salt, wrappedMetaVaultInitCodeHash, address(metaVaultFactory));
         vm.prank(multisig);
-        address wrappedMetaVault = metaVaultFactory.deployWrapper(
-            salt, metaVault
-        );
+        address wrappedMetaVault = metaVaultFactory.deployWrapper(salt, metaVault);
         assertEq(wrappedMetaVault, predictedProxyAddress);
         assertEq(metaVaultFactory.wrapper(metaVault), wrappedMetaVault);
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
         vm.prank(multisig);
-        metaVaultFactory.deployWrapper(
-            "0x0102", metaVault
-        );
+        metaVaultFactory.deployWrapper("0x0102", metaVault);
+
+        vm.startPrank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(address(new MockMetaVaultUpgrade()));
+        metaVaultFactory.setWrappedMetaVaultImplementation(address(new MockWrappedMetaVaultUpgrade()));
+        address[] memory metaProxies = new address[](2);
+        metaProxies[0] = metaVault;
+        metaProxies[1] = wrappedMetaVault;
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
+        vm.stopPrank();
+        assertEq(CommonLib.eq(IControllable(metaVault).VERSION(), "99.0.1"), true);
+        assertEq(CommonLib.eq(IControllable(wrappedMetaVault).VERSION(), "99.0.0"), true);
     }
 
     function test_MetaVaultFactory_deployment() public view {
@@ -153,17 +163,14 @@ contract MetaVaultFactoryTest is Test {
     }
 
     function _bytes32ToStr(bytes32 _bytes32) internal pure returns (string memory) {
-
         // string memory str = string(_bytes32);
         // TypeError: Explicit type conversion not allowed from "bytes32" to "string storage pointer"
         // thus we should fist convert bytes32 to bytes (to dynamically-sized byte array)
 
         bytes memory bytesArray = new bytes(32);
-        for (uint256 i; i < 32; i++) {
+        for (uint i; i < 32; i++) {
             bytesArray[i] = _bytes32[i];
         }
         return string(bytesArray);
     }
-
 }
-
