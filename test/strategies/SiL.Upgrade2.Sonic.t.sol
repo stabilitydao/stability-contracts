@@ -33,10 +33,41 @@ contract SiLUpgradeTest2 is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(16296000); // Mar-27-2025 08:48:46 AM +UTC
-        vm.rollFork(25503966); // May-09-2025 12:31:34 PM +UTC
+        // vm.rollFork(25503966); // May-09-2025 12:31:34 PM +UTC
+        vm.rollFork(26185073); // May-12-2025 07:02:55 AM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
+    }
+
+    /// @notice Check flash loan through Balancer v2
+    function testSiLUpgrade0() public {
+        address user1 = address(1);
+
+        vm.prank(multisig);
+        address vault = VAULT2;
+        address strategyAddress = address(IVault(vault).strategy());
+
+        uint amount = 200_000e18;
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+        vm.stopPrank();
+
+        // ----------------- check current state
+        address collateralAsset = IStrategy(strategyAddress).assets()[0];
+
+        // ----------------- deposit & withdraw
+        _depositForUser(vault, strategyAddress, user1, amount);
+        vm.roll(block.number + 6);
+
+        _withdrawAllForUser(vault, strategyAddress, user1);
+        vm.roll(block.number + 6);
+
+
+        // ----------------- check results
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
     }
 
     /// @notice Check flash loan through BEETS
@@ -46,6 +77,7 @@ contract SiLUpgradeTest2 is Test {
         vm.prank(multisig);
         address vault = VAULT2;
         address strategyAddress = address(IVault(vault).strategy());
+        uint amount = 1_00e18;
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(strategyAddress);
@@ -60,13 +92,13 @@ contract SiLUpgradeTest2 is Test {
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
 
         // ----------------- deposit & withdraw
-        _depositForUser(vault, strategyAddress, user1, 1_00e18);
+        _depositForUser(vault, strategyAddress, user1, amount);
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, strategyAddress, user1);
 
         // ----------------- check results
-        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_00e18));
-        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_00e18), 200); // 2%
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
     }
 
     /// @notice Check flash loan through Uniswap
@@ -76,6 +108,8 @@ contract SiLUpgradeTest2 is Test {
         vm.prank(multisig);
         address vault = VAULT1;
         address strategyAddress = address(IVault(vault).strategy());
+        // uint amount = 1_00e18;
+        uint amount = 10000e18;
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(strategyAddress);
@@ -90,25 +124,73 @@ contract SiLUpgradeTest2 is Test {
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
 
         // ----------------- deposit & withdraw
-        _depositForUser(vault, strategyAddress, user1, 1_000e18);
+        _depositForUser(vault, strategyAddress, user1, amount);
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, strategyAddress, user1);
 
         // ----------------- check results
-        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e18));
-        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1_000e18), 200); // 2%
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
+    }
+
+    /// @notice Deposit
+    function testSiLUpgrade4() public {
+        address user1 = address(1);
+
+        vm.prank(multisig);
+        address vault = VAULT2;
+        address strategyAddress = address(IVault(vault).strategy());
+
+        uint amount = 10_000e18;
+        uint COUNT = 2;
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+
+        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+        vm.stopPrank();
+
+        _setFlashLoanVault(strategy, SHADOW_POOL_S_STS, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+
+        // ----------------- check current state
+        address collateralAsset = IStrategy(strategyAddress).assets()[0];
+
+        for (uint i = 0; i < COUNT; ++i) {
+            // ----------------- deposit & withdraw
+            _depositForUser(vault, strategyAddress, user1, amount);
+            vm.roll(block.number + 6);
+            _showHealth(strategy, "After deposit");
+        }
+
+        if (COUNT > 1) {
+            for (uint i = 0; i < COUNT - 1; ++i) {
+                _withdrawForUser(vault, strategyAddress, user1, amount);
+                vm.roll(block.number + 6);
+                _showHealth(strategy, "After withdraw");
+            }
+        }
+
+        console.log("!!!Withdraw ALL");
+        _withdrawAllForUser(vault, strategyAddress, user1);
+        _showHealth(strategy, "After withdraw all");
+        vm.roll(block.number + 6);
+
+
+        // ----------------- check results
+        console.log(IERC20(collateralAsset).balanceOf(user1), COUNT*amount, _getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), COUNT*amount), 200); // 2%
     }
 
     //region -------------------------- Auxiliary functions
 
     function _showHealth(
         SiloLeverageStrategy strategy,
-        string memory /*state*/
+        string memory state
     ) internal view returns (uint) {
-        //console.log(state);
-        //(uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
-        (uint ltv,,,,,) = strategy.health();
-        /*console.log("ltv", ltv);
+        console.log(state);
+        (uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent)
+            = strategy.health();
+        console.log("ltv", ltv);
         console.log("maxLtv", maxLtv);
         console.log("leverage", leverage);
         console.log("collateralAmount", collateralAmount);
@@ -117,7 +199,7 @@ contract SiLUpgradeTest2 is Test {
         console.log("Total amount in strategy", strategy.total());
         (uint sharePrice,) = strategy.realSharePrice();
         console.log("realSharePrice", sharePrice);
-        console.log("strategyTotal", strategy.total());*/
+        console.log("strategyTotal", strategy.total());
 
         return ltv;
     }

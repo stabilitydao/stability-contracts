@@ -358,6 +358,8 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         console.log("collateral asset", $.collateralAsset);
         console.log("borrow asset", $.borrowAsset);
+        console.log("!!!depositAssets", amounts[0]);SiloLib.health(platform(), $);
+
         return SiloLib.depositAssets($, $base, assets(), amounts);
     }
 
