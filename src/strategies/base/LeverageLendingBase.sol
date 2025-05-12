@@ -13,16 +13,18 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
+///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.1: StrategyBase 2.1.3
 ///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
 /// @author Alien Deployer (https://github.com/a17)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.1.1";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.0";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
@@ -59,7 +61,9 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc ILeverageLendingStrategy
-    function rebalanceDebt(uint newLtv) external returns (uint resultLtv) {
+    function rebalanceDebt(uint newLtv, uint minSharePrice) external returns (uint resultLtv, uint resultSharePrice) {
+        minSharePrice; // todo use below
+
         IPlatform _platform = IPlatform(platform());
         IHardWorker hardworker = IHardWorker(_platform.hardWorker());
         address rebalancer = _platform.rebalancer();
@@ -71,6 +75,12 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         }
 
         resultLtv = _rebalanceDebt(newLtv);
+        (resultSharePrice,) = _realSharePrice();
+    }
+
+    /// @inheritdoc ILeverageLendingStrategy
+    function realSharePrice() external view returns (uint sharePrice, bool trusted) {
+        return _realSharePrice();
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -81,7 +91,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     }
 
     /// @inheritdoc ILeverageLendingStrategy
-    function setUniversalParams(uint[] memory params) external onlyOperator {
+    function setUniversalParams(uint[] memory params, address[] memory addresses) external onlyOperator {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.depositParam0 = params[0];
         $.depositParam1 = params[1];
@@ -93,7 +103,12 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.decreaseLtvParam1 = params[7];
         $.swapPriceImpactTolerance0 = params[8];
         $.swapPriceImpactTolerance1 = params[9];
+        $.flashLoanKind = params[10];
+
+        $.flashLoanVault = addresses[0];
+
         emit UniversalParams(params);
+        emit UniversalAddresses(addresses);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -136,6 +151,25 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /// @inheritdoc IStrategy
     function getRevenue() external pure virtual returns (address[] memory assets_, uint[] memory amounts) {}
 
+    /// @inheritdoc ILeverageLendingStrategy
+    function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        params = new uint[](11);
+        params[0] = $.depositParam0;
+        params[1] = $.depositParam1;
+        params[2] = $.withdrawParam0;
+        params[3] = $.withdrawParam1;
+        params[4] = $.increaseLtvParam0;
+        params[5] = $.increaseLtvParam1;
+        params[6] = $.decreaseLtvParam0;
+        params[7] = $.decreaseLtvParam1;
+        params[8] = $.swapPriceImpactTolerance0;
+        params[9] = $.swapPriceImpactTolerance1;
+        params[10] = $.flashLoanKind;
+
+        addresses = new address[](1);
+        addresses[0] = $.flashLoanVault;
+    }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -179,6 +213,8 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal virtual returns (uint resultLtv);
+
+    function _realSharePrice() internal view virtual returns (uint sharePrice, bool trusted);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */

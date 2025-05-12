@@ -12,6 +12,7 @@ interface ILeverageLendingStrategy {
     event LeverageLendingHealth(uint ltv, uint leverage);
     event TargetLeveragePercent(uint value);
     event UniversalParams(uint[] params);
+    event UniversalAddresses(address[] addresses);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -53,6 +54,8 @@ interface ILeverageLendingStrategy {
         uint swapPriceImpactTolerance0;
         /// @dev Swap price impact tolerance on re-balance debt
         uint swapPriceImpactTolerance1;
+        /// @notice Flash loan kind. 0 - balancer v2 (paid), 1 - balancer v3 (free)
+        uint flashLoanKind;
     }
 
     struct LeverageLendingStrategyBaseInitParams {
@@ -80,7 +83,17 @@ interface ILeverageLendingStrategy {
         Deposit,
         Withdraw,
         DecreaseLtv,
-        IncreaseLtv
+        /// @notice All available balances are used
+        IncreaseLtv,
+        /// @notice Amounts of collateral and borrow that can be used are limited through temp vars
+        IncreaseLtvLimited
+    }
+
+    enum FlashLoanKind {
+        /// @notice Balancer V2
+        Default_0,
+        BalancerV3_1,
+        UniswapV3_2
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -90,18 +103,21 @@ interface ILeverageLendingStrategy {
     /// @notice Re-balance debt
     /// @param newLtv Target LTV after re-balancing with 4 decimals. 90_00 is 90%.
     /// @return resultLtv LTV after re-balance. For static calls.
-    function rebalanceDebt(uint newLtv) external returns (uint resultLtv);
+    /// @return resultSharePrice Share price after applying rebalance debt
+    function rebalanceDebt(uint newLtv, uint minSharePrice) external returns (uint resultLtv, uint resultSharePrice);
 
     /// @notice Change target leverage percent
     /// @param value Value with 4 decimals, 90_00 is 90%.
     function setTargetLeveragePercent(uint value) external;
 
     /// @notice Change universal configurable params
-    function setUniversalParams(uint[] memory params) external;
+    function setUniversalParams(uint[] memory params, address[] memory addresses) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @notice Get universal configurable params
+    function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses);
 
     /// @notice Difference between collateral and debt
     /// @return tvl USD amount of user deposited assets

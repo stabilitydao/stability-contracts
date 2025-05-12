@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {StrategyLib} from "./StrategyLib.sol";
-import {ISilo} from "../../integrations/silo/ISilo.sol";
-import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
-import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
-import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
-import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
+import "../../integrations/balancer/IBVault.sol";
+import "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
+import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
+import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
+import {ISilo} from "../../integrations/silo/ISilo.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyLib} from "./StrategyLib.sol";
 
 library SiloLib {
     using SafeERC20 for IERC20;
@@ -236,7 +238,7 @@ library SiloLib {
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
     }
 
-    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) external view returns (uint) {
+    function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
         (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
         uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault) * priceBtoC / 1e18;
         return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
@@ -249,4 +251,58 @@ library SiloLib {
     function totalDebt(address borrowingVault) public view returns (uint) {
         return ISilo(borrowingVault).maxRepay(address(this));
     }
+
+    //region ------------------------------------- Deposit
+    function depositAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        address[] memory _assets,
+        uint[] memory amounts
+    ) external returns (uint value) {
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        uint valueWas = StrategyLib.balance(_assets[0]) + calcTotal(v);
+
+        (uint maxLtv,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+
+        uint[] memory flashAmounts = new uint[](1);
+        flashAmounts[0] = amounts[0] * targetLeverage / INTERNAL_PRECISION;
+
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
+
+        IBVault($.flashLoanVault).flashLoan(address(this), _assets, flashAmounts, "");
+
+        uint valueNow = StrategyLib.balance(_assets[0]) + calcTotal(v);
+
+        if (valueNow > valueWas) {
+            // deposit profit
+            value = amounts[0] + (valueNow - valueWas);
+        } else {
+            // deposit loss
+            value = amounts[0] - (valueWas - valueNow);
+        }
+
+        $base.total += value;
+    }
+    //endregion ------------------------------------- Deposit
+
+    //region ------------------------------------- Withdraw
+
+    //endregion ------------------------------------- Withdraw
+
+    //region ------------------------------------- Internal
+    function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+        internal
+        view
+        returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)
+    {
+        return ILeverageLendingStrategy.LeverageLendingAddresses({
+            collateralAsset: $.collateralAsset,
+            borrowAsset: $.borrowAsset,
+            lendingVault: $.lendingVault,
+            borrowingVault: $.borrowingVault
+        });
+    }
+    //endregion ------------------------------------- Internal
 }

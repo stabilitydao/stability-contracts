@@ -27,6 +27,7 @@ import {ALMPositionNameLib} from "../../src/strategies/libs/ALMPositionNameLib.s
 import {ALMLib} from "../../src/strategies/libs/ALMLib.sol";
 import {GammaUniswapV3MerklFarmStrategy} from "../../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
@@ -164,6 +165,12 @@ library SonicLib {
         p.initNums[0] = 87_00;
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ADVANCED_LEVERAGE, p);
+        p.initAddresses = new address[](4);
+        p.initAddresses[0] = SonicConstantsLib.SILO_VAULT_8_USDC;
+        p.initAddresses[1] = SonicConstantsLib.SILO_VAULT_27_USDC;
+        p.initAddresses[2] = SonicConstantsLib.SILO_VAULT_51_wS;
+        p.initAddresses[3] = SonicConstantsLib.SILO_VAULT_31_WBTC;
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -183,6 +190,7 @@ library SonicLib {
         );
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.SHADOW_FARM, address(new ShadowFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
@@ -206,7 +214,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](40);
+        pools = new ISwapper.AddPoolData[](41);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS);
@@ -258,6 +266,7 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_bUSDCe20, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_SNAKE, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SNAKE, SonicConstantsLib.TOKEN_wS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wS_FA, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_FA, SonicConstantsLib.TOKEN_wS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_USDC_STBL, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC);
