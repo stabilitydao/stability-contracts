@@ -18,6 +18,7 @@ import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
+import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -45,7 +46,8 @@ contract SiloAdvancedLeverageStrategy is
     LeverageLendingBase,
     IFlashLoanRecipient,
     IUniswapV3FlashCallback,
-    IBalancerV3FlashCallback
+    IBalancerV3FlashCallback,
+    IAlgebraFlashCallback
 {
     using SafeERC20 for IERC20;
 
@@ -145,6 +147,14 @@ contract SiloAdvancedLeverageStrategy is
     }
 
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
+        // sender is the pool, it's checked inside receiveFlashLoan
+        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    }
+
+    function algebraFlashCallback(uint256 fee0, uint256 fee1, bytes calldata userData) external {
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 

@@ -492,8 +492,11 @@ library SiloAdvancedLib {
             );
 
             IVaultMainV3(payable(vault)).unlock(data);
-        } else if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2) {
-            // ensure that the vault has available amount
+        } else if (
+            flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
+            || flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
+        ) {
+            // ensure that the pool has available amount
             require(
                 IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance()
             );
@@ -505,8 +508,6 @@ library SiloAdvancedLib {
                 isToken0 ? 0 : flashAmounts[0],
                 abi.encode(flashAssets[0], flashAmounts[0], isToken0)
             );
-        } else if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3) {
-            // todo
         } else {
             // FLASH_LOAN_KIND_BALANCER_V2: paid
             IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
