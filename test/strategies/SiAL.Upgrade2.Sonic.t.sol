@@ -33,7 +33,7 @@ contract SiALUpgrade2Test is Test {
 
     address public constant VAULT_aSonUSDC = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959; // C-PT-aSonUSDC-14AUG2025-SAL;
 
-    address public constant ALGEBRA_POOL_FRXUSD_SCUSD = 0x63a66Dd60b0F2812249802477adA8a890A030Eca;
+    address public constant ALGEBRA_POOL_FRXUSD_SFRXUSD = 0x7d709a567BA2fdBbB92E94E5fE74b9cbbc590835;
 
     address public multisig;
     IFactory public factory;
@@ -43,7 +43,7 @@ contract SiALUpgrade2Test is Test {
         // vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
         // vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
         // vm.rollFork(24504011); // May-05-2025 11:38:28 AM +UTC
-        vm.rollFork(26234080); // May-12-2025 11:33:59 AM +UTC
+        vm.rollFork(26249931); // May-12-2025 01:01:38 PM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -53,7 +53,7 @@ contract SiALUpgrade2Test is Test {
     function testSiALUpgrade1() public {
         //console.log("testSiALUpgrade");
         address user1 = address(1);
-        uint amount = 30_000e6;
+        uint amount = 20_000e6;
         // address user2 = address(2);
 
         // ----------------- deploy new impl and upgrade
@@ -132,7 +132,7 @@ contract SiALUpgrade2Test is Test {
         uint ltvAfterDeposit2 = _showHealth(strategy, "!!!After deposit 2");
 
         //console.log("!!!Deposit user1");
-        _depositForUser(vault, address(strategy), user1, 1000e6);
+        _depositForUser(vault, address(strategy), user1, 100e6);
         uint ltvAfterDeposit1 = _showHealth(strategy, "!!!After deposit 1");
         assertApproxEqAbs(ltvAfterDeposit2, ltvAfterDeposit1, 100);
 
@@ -163,7 +163,7 @@ contract SiALUpgrade2Test is Test {
         //console.log("balance user1", IERC20(collateralAsset).balanceOf(user1));
         //console.log("balance user2", IERC20(collateralAsset).balanceOf(user2));
 
-        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 1000e6), 100);
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), 100e6), 100);
         assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user2), 2e6), 100);
 
         //console.log("done");
@@ -333,16 +333,16 @@ contract SiALUpgrade2Test is Test {
             0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959 // C-PT-aSonUSDC-14AUG2025-SAL
         ];
         uint16[3] memory BASE_AMOUNTS = [
-                1000,
+                100,
                 // 5000,
-                50,
-                5_000
+                uint16(1),
+                uint16(100)
         ];
 
         uint snapshotId = vm.snapshotState();
         //        for (uint i = 0; i < 1; ++i) {
         for (uint i = 0; i < VAULTS.length; ++i) {
-            console.log(i);
+            console.log("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS", i);
             uint[2] memory deposited = [uint(0), uint(0)];
 
             vm.revertToState(snapshotId);
@@ -432,7 +432,7 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- set up flash loan
-        _setFlashLoanVault(strategy, ALGEBRA_POOL_FRXUSD_SCUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3));
+        _setFlashLoanVault(strategy, ALGEBRA_POOL_FRXUSD_SFRXUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3));
 
         // ----------------- check current state
         _showHealth(strategy, "!!!Initial state");
@@ -463,9 +463,10 @@ contract SiALUpgrade2Test is Test {
     //region -------------------------- Auxiliary functions
     function _showHealth(
         SiloAdvancedLeverageStrategy strategy,
-        string memory /*state*/
+        string memory state
     ) internal view returns (uint) {
-        //console.log(state);
+        state;
+        // console.log(state);
         //(uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
         (uint ltv,,,,,) = strategy.health();
         /*console.log("ltv", ltv);
