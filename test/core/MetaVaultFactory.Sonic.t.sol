@@ -12,6 +12,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {MetaVaultFactory, IMetaVaultFactory, IControllable} from "../../src/core/MetaVaultFactory.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 
 contract MetaVaultFactoryTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -61,6 +62,7 @@ contract MetaVaultFactoryTest is Test {
 
     function test_MetaVaultFactory_deployment() public view {
         assertNotEq(metaVaultFactory.metaVaultImplementation(), address(0));
+        assertNotEq(metaVaultFactory.wrappedMetaVaultImplementation(), address(0));
     }
 
     function _upgradePlatform() internal {
@@ -96,6 +98,11 @@ contract MetaVaultFactoryTest is Test {
         metaVaultFactory.setMetaVaultImplementation(metaVaultImplementation);
         vm.prank(multisig);
         metaVaultFactory.setMetaVaultImplementation(metaVaultImplementation);
+        address wrappedMetaVaultImplementation = address(new WrappedMetaVault());
+        vm.expectRevert();
+        metaVaultFactory.setWrappedMetaVaultImplementation(wrappedMetaVaultImplementation);
+        vm.prank(multisig);
+        metaVaultFactory.setWrappedMetaVaultImplementation(wrappedMetaVaultImplementation);
     }
 
     function _upgradeCVaults() internal {

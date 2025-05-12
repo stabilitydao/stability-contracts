@@ -44,6 +44,13 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     }
 
     /// @inheritdoc IMetaVaultFactory
+    function setWrappedMetaVaultImplementation(address newImplementation) external onlyGovernanceOrMultisig {
+        MetaVaultFactoryStorage storage $ = _getStorage();
+        $.wrappedMetaVaultImplementation = newImplementation;
+        emit NewWrappedMetaVaultImplementation(newImplementation);
+    }
+
+    /// @inheritdoc IMetaVaultFactory
     function deployMetaVault(
         bytes32 salt,
         string memory type_,
@@ -70,6 +77,11 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     /// @inheritdoc IMetaVaultFactory
     function metaVaultImplementation() external view returns (address) {
         return _getStorage().metaVaultImplementation;
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function wrappedMetaVaultImplementation() external view returns (address) {
+        return _getStorage().wrappedMetaVaultImplementation;
     }
 
     /// @inheritdoc IMetaVaultFactory

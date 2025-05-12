@@ -5,6 +5,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 interface IMetaVaultFactory {
     event NewMetaVaultImplementation(address implementation);
+    event NewWrappedMetaVaultImplementation(address implementation);
     event NewMetaVault(
         address metaVault,
         string type_,
@@ -20,6 +21,8 @@ interface IMetaVaultFactory {
         /// @inheritdoc IMetaVaultFactory
         address metaVaultImplementation;
         /// @inheritdoc IMetaVaultFactory
+        address wrappedMetaVaultImplementation;
+        /// @inheritdoc IMetaVaultFactory
         EnumerableSet.AddressSet metaVaults;
     }
 
@@ -29,6 +32,10 @@ interface IMetaVaultFactory {
     /// @notice Update MetaVault implementation address
     /// @param newImplementation Address of new deployed MetaVault implementation
     function setMetaVaultImplementation(address newImplementation) external;
+
+    /// @notice Update Wrapped MetaVault implementation address
+    /// @param newImplementation Address of new deployed Wrapped MetaVault implementation
+    function setWrappedMetaVaultImplementation(address newImplementation) external;
 
     /// @notice Deploy new MetaVault
     /// @param salt Salt to get CREATE2 deployment address
@@ -52,6 +59,10 @@ interface IMetaVaultFactory {
     /// @notice Get address of MetaVault implementation
     /// @return MetaVault implementation address
     function metaVaultImplementation() external view returns (address);
+
+    /// @notice Get address of Wrapped MetaVault implementation
+    /// @return Wrapped MetaVault implementation address
+    function wrappedMetaVaultImplementation() external view returns (address);
 
     /// @dev Get CREATE2 address
     /// @param salt Provided salt for CREATE2
