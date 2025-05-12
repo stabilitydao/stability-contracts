@@ -505,6 +505,8 @@ library SiloAdvancedLib {
                 isToken0 ? 0 : flashAmounts[0],
                 abi.encode(flashAssets[0], flashAmounts[0], isToken0)
             );
+        } else if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3) {
+            // todo
         } else {
             // FLASH_LOAN_KIND_BALANCER_V2: paid
             IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
