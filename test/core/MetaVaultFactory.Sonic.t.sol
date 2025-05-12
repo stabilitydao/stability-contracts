@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -37,11 +38,15 @@ contract MetaVaultFactoryTest is Test {
     }
 
     function test_deployMetaVault() public {
-        bytes32 salt = "0x01";
-
-        bytes32 initCodeHash = metaVaultFactory.getMetaVaultProxyInitCodeHash();
+        bytes32 salt = "0x0101";
+        bytes32 metaVaultInitCodeHash = metaVaultFactory.getMetaVaultProxyInitCodeHash();
         address predictedProxyAddress =
-            metaVaultFactory.getCreate2Address(salt, initCodeHash, address(metaVaultFactory));
+            metaVaultFactory.getCreate2Address(salt, metaVaultInitCodeHash, address(metaVaultFactory));
+        console.log(string.concat("CREATE2 salt:    ", string(abi.encodePacked(salt))) );
+        console.log(string.concat("InitCodeHash:    ", Strings.toHexString(uint(metaVaultInitCodeHash), 32)));
+        // console.logBytes32(metaVaultInitCodeHash); same result
+        console.log(string.concat("Factory address: ", Strings.toHexString(address (metaVaultFactory))));
+        console.log(string.concat("Target address:  ", Strings.toHexString(predictedProxyAddress)));
         address[] memory vaults_ = new address[](3);
         vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SiF;
         vaults_[1] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
@@ -58,6 +63,22 @@ contract MetaVaultFactoryTest is Test {
 
         assertEq(metaVaultFactory.metaVaults()[0], metaVault);
         assertEq(metaVaultFactory.metaVaultImplementation(), IMetaProxy(metaVault).implementation());
+
+        bytes32 wrappedMetaVaultInitCodeHash = metaVaultFactory.getWrappedMetaVaultProxyInitCodeHash();
+        predictedProxyAddress =
+                            metaVaultFactory.getCreate2Address(salt, wrappedMetaVaultInitCodeHash, address(metaVaultFactory));
+        vm.prank(multisig);
+        address wrappedMetaVault = metaVaultFactory.deployWrapper(
+            salt, metaVault
+        );
+        assertEq(wrappedMetaVault, predictedProxyAddress);
+        assertEq(metaVaultFactory.wrapper(metaVault), wrappedMetaVault);
+
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
+        vm.prank(multisig);
+        metaVaultFactory.deployWrapper(
+            "0x0102", metaVault
+        );
     }
 
     function test_MetaVaultFactory_deployment() public view {
@@ -130,4 +151,19 @@ contract MetaVaultFactoryTest is Test {
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_36);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_49);
     }
+
+    function _bytes32ToStr(bytes32 _bytes32) internal pure returns (string memory) {
+
+        // string memory str = string(_bytes32);
+        // TypeError: Explicit type conversion not allowed from "bytes32" to "string storage pointer"
+        // thus we should fist convert bytes32 to bytes (to dynamically-sized byte array)
+
+        bytes memory bytesArray = new bytes(32);
+        for (uint256 i; i < 32; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
+
 }
+

@@ -15,6 +15,10 @@ interface IMetaVaultFactory {
         address[] vaults_,
         uint[] proportions_
     );
+    event NewWrappedMetaVault(
+        address wrappedMetaVault,
+        address metaVault
+    );
 
     /// @custom:storage-location erc7201:stability.MetaVaultFactory
     struct MetaVaultFactoryStorage {
@@ -24,6 +28,8 @@ interface IMetaVaultFactory {
         address wrappedMetaVaultImplementation;
         /// @inheritdoc IMetaVaultFactory
         EnumerableSet.AddressSet metaVaults;
+        /// @inheritdoc IMetaVaultFactory
+        mapping (address metaVault => address wrappedMetaVault) wrapper;
     }
 
     /// @notice Initialize proxied contract
@@ -56,6 +62,15 @@ interface IMetaVaultFactory {
         uint[] memory proportions_
     ) external returns (address proxy);
 
+    /// @notice Deploy new WrappedMetaVault
+    /// @param salt Salt to get CREATE2 deployment address
+    /// @param metaVault MetaVault wrapped
+    /// @return proxy Address of deployed WrappedMetaVaultProxy contract
+    function deployWrapper(
+        bytes32 salt,
+        address metaVault
+    ) external returns (address proxy);
+
     /// @notice Get address of MetaVault implementation
     /// @return MetaVault implementation address
     function metaVaultImplementation() external view returns (address);
@@ -78,6 +93,12 @@ interface IMetaVaultFactory {
     /// @dev Get keccak256 hash of MetaVaultProxy creationCode for CREATE2
     function getMetaVaultProxyInitCodeHash() external view returns (bytes32);
 
+    /// @dev Get keccak256 hash of WrappedMetaVaultProxy creationCode for CREATE2
+    function getWrappedMetaVaultProxyInitCodeHash() external view returns (bytes32);
+
     /// @notice Deployed MetaVaults
     function metaVaults() external view returns (address[] memory);
+
+    /// @notice Wrapper of MetaVault
+    function wrapper(address metaVault) external view returns (address);
 }

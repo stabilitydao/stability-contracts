@@ -7,12 +7,12 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IMetaVaultFactory} from "../../interfaces/IMetaVaultFactory.sol";
 import {IMetaProxy} from "../../interfaces/IMetaProxy.sol";
 
-/// @title EIP1967 Upgradeable proxy implementation for MetaVaults
+/// @title EIP1967 Upgradeable proxy implementation for Wrapped MetaVaults
 ///         ┏┓┏┳┓┏┓┳┓┳┓ ┳┏┳┓┓┏  ┏┓┓ ┏┓┏┳┓┏┓┏┓┳┓┳┳┓
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// @author Alien Deployer (https://github.com/a17)
-contract MetaVaultProxy is UpgradeableProxy, IMetaProxy {
+contract WrappedMetaVaultProxy is UpgradeableProxy, IMetaProxy {
     /// @inheritdoc IMetaProxy
     function initProxy() external {
         _init(_getImplementation());
@@ -30,6 +30,6 @@ contract MetaVaultProxy is UpgradeableProxy, IMetaProxy {
     }
 
     function _getImplementation() internal view returns (address) {
-        return IMetaVaultFactory(msg.sender).metaVaultImplementation();
+        return IMetaVaultFactory(msg.sender).wrappedMetaVaultImplementation();
     }
 }

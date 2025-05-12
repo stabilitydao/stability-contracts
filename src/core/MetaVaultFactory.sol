@@ -6,6 +6,8 @@ import {IMetaVaultFactory} from "../interfaces/IMetaVaultFactory.sol";
 import {IMetaProxy} from "../interfaces/IMetaProxy.sol";
 import {MetaVaultProxy} from "./proxy/MetaVaultProxy.sol";
 import {IMetaVault, EnumerableSet} from "../interfaces/IMetaVault.sol";
+import {WrappedMetaVaultProxy} from "./proxy/WrappedMetaVaultProxy.sol";
+import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Factory of MetaVaults and WrappedMetaVaults
 /// @author Alien Deployer (https://github.com/a17)
@@ -70,6 +72,22 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
         emit NewMetaVault(proxy, type_, pegAsset_, name_, symbol_, vaults_, proportions_);
     }
 
+    /// @inheritdoc IMetaVaultFactory
+    function deployWrapper(
+        bytes32 salt,
+        address metaVault
+    ) external onlyOperator returns (address proxy) {
+        proxy = address(new WrappedMetaVaultProxy{salt: salt}());
+        IMetaProxy(proxy).initProxy();
+        IWrappedMetaVault(proxy).initialize(platform(), metaVault);
+
+        MetaVaultFactoryStorage storage $ = _getStorage();
+        require ($.wrapper[metaVault] == address(0), AlreadyExist());
+        $.wrapper[metaVault] = proxy;
+
+        emit NewWrappedMetaVault(proxy, metaVault);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -90,6 +108,11 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     }
 
     /// @inheritdoc IMetaVaultFactory
+    function getWrappedMetaVaultProxyInitCodeHash() external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(type(WrappedMetaVaultProxy).creationCode));
+    }
+
+    /// @inheritdoc IMetaVaultFactory
     function getCreate2Address(
         bytes32 salt,
         bytes32 initCodeHash,
@@ -101,6 +124,11 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     /// @inheritdoc IMetaVaultFactory
     function metaVaults() external view returns (address[] memory) {
         return _getStorage().metaVaults.values();
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function wrapper(address metaVault) external view returns (address) {
+        return _getStorage().wrapper[metaVault];
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
