@@ -358,7 +358,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         console.log("collateral asset", $.collateralAsset);
         console.log("borrow asset", $.borrowAsset);
-        console.log("!!!depositAssets", amounts[0]);SiloLib.health(platform(), $);
+        console.log("!!!depositAssets", amounts[0]);
 
         return SiloLib.depositAssets($, $base, assets(), amounts);
     }
@@ -366,41 +366,9 @@ contract SiloLeverageStrategy is LeverageLendingBase,
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        $.tempAction = CurrentAction.Withdraw;
-        LeverageLendingAddresses memory v = SiloLib.getLeverageLendingAddresses($);
-        amountsOut = new uint[](1);
-
-        uint valueWas = StrategyLib.balance(v.collateralAsset) + SiloLib.calcTotal(v);
-
-        (uint maxLtv, uint maxLeverage,) = SiloLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
-
-        (uint priceCtoB,) = SiloLib.getPrices(v.lendingVault, v.borrowingVault);
-
-        {
-            uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
-            $.tempCollateralAmount = collateralAmountToWithdraw;
-            uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18) * priceCtoB / 1e18;
-            address[] memory flashAssets = new address[](1);
-            flashAssets[0] = $.borrowAsset;
-            LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
-        }
-
-        uint valueNow = StrategyLib.balance(v.collateralAsset) + SiloLib.calcTotal(v);
-
-        uint bal = StrategyLib.balance(v.collateralAsset);
-        if (valueWas > valueNow) {
-            //console.log('withdraw loss', valueWas - valueNow);
-            amountsOut[0] = Math.min(value - (valueWas - valueNow), bal);
-        } else {
-            //console.log('withdraw profit', valueNow - valueWas);
-            amountsOut[0] = Math.min(value + (valueNow - valueWas), bal);
-        }
-
-        IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
-
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        $base.total -= value;
+        console.log("!!!withdrawAssets", value);
+        return SiloLib.withdrawAssets($, $base, value, receiver);
     }
     //endregion ---------------- Strategy base
 

@@ -382,7 +382,57 @@ library SiloLib {
     //endregion ------------------------------------- Deposit
 
     //region ------------------------------------- Withdraw
+    function withdrawAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base,
+        uint value,
+        address receiver
+    ) internal returns (uint[] memory amountsOut) {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        amountsOut = new uint[](1);
 
+        uint valueWas = StrategyLib.balance(v.collateralAsset) + calcTotal(v);
+
+        (uint maxLtv, uint maxLeverage,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+
+        {
+            uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
+            $.tempCollateralAmount = collateralAmountToWithdraw;
+            uint[] memory flashAmounts = new uint[](1);
+            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18) * priceCtoB / 1e18;
+            address[] memory flashAssets = new address[](1);
+            flashAssets[0] = $.borrowAsset;
+            console.log("collateralAmountToWithdraw", collateralAmountToWithdraw);
+            console.log("flashAssets C", flashAssets[0]);
+
+            $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
+            LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
+        }
+
+        uint valueNow = StrategyLib.balance(v.collateralAsset) + calcTotal(v);
+
+        console.log("valueWas", valueWas);
+        console.log("valueNow", valueNow);
+        console.log("value", value);
+
+        uint bal = StrategyLib.balance(v.collateralAsset);
+        if (valueWas > valueNow) {
+            //console.log('withdraw loss', valueWas - valueNow);
+            amountsOut[0] = Math.min(value - (valueWas - valueNow), bal);
+        } else {
+            //console.log('withdraw profit', valueNow - valueWas);
+            amountsOut[0] = Math.min(value + (valueNow - valueWas), bal);
+        }
+        console.log("bal", bal);
+        console.log("transfer C", amountsOut[0]);
+
+        IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
+
+        $base.total -= value;
+        console.log("$base.total ", $base.total);
+    }
     //endregion ------------------------------------- Withdraw
 
     //region ------------------------------------- Internal

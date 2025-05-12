@@ -10,6 +10,7 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract SiLUpgradeTest2 is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -142,7 +143,7 @@ contract SiLUpgradeTest2 is Test {
         address strategyAddress = address(IVault(vault).strategy());
 
         uint amount = 10_000e18;
-        uint COUNT = 2;
+        uint COUNT = 10;
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(strategyAddress);
@@ -151,29 +152,29 @@ contract SiLUpgradeTest2 is Test {
         vm.stopPrank();
 
         _setFlashLoanVault(strategy, SHADOW_POOL_S_STS, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+        _showHealth(strategy, "Initial state");
 
         // ----------------- check current state
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
 
         for (uint i = 0; i < COUNT; ++i) {
             // ----------------- deposit & withdraw
+            console.log("User assets before", IERC20(vault).balanceOf(user1));
             _depositForUser(vault, strategyAddress, user1, amount);
             vm.roll(block.number + 6);
             _showHealth(strategy, "After deposit");
+            console.log("User assets after", IERC20(vault).balanceOf(user1));
+
+            // _withdrawForUser(vault, strategyAddress, user1, amount);
+            _withdrawAllForUser(vault, strategyAddress, user1);
+            vm.roll(block.number + 6);
+            _showHealth(strategy, "After withdraw");
         }
 
-        if (COUNT > 1) {
-            for (uint i = 0; i < COUNT - 1; ++i) {
-                _withdrawForUser(vault, strategyAddress, user1, amount);
-                vm.roll(block.number + 6);
-                _showHealth(strategy, "After withdraw");
-            }
-        }
-
-        console.log("!!!Withdraw ALL");
-        _withdrawAllForUser(vault, strategyAddress, user1);
-        _showHealth(strategy, "After withdraw all");
-        vm.roll(block.number + 6);
+//        console.log("!!!Withdraw ALL");
+//        _withdrawAllForUser(vault, strategyAddress, user1);
+//        _showHealth(strategy, "After withdraw all");
+//        vm.roll(block.number + 6);
 
 
         // ----------------- check results
@@ -248,15 +249,15 @@ contract SiLUpgradeTest2 is Test {
         IVault(vault).withdrawAssets(assets, bal, new uint[](1));
     }
 
-    function _withdrawForUser(address vault, address strategy, address user, uint /*amount*/ ) internal {
-        /*console.log(
+    function _withdrawForUser(address vault, address strategy, address user, uint amount) internal {
+        console.log(
             "_withdrawForUser", amount, IERC20(vault).balanceOf(user), Math.min(amount, IERC20(vault).balanceOf(user))
-        );*/
+        );
         address[] memory assets = IStrategy(strategy).assets();
         vm.prank(user);
         IVault(vault).withdrawAssets(
             assets,
-            1e18, //Math.min(amount, IERC20(vault).balanceOf(user)),
+            Math.min(amount, IERC20(vault).balanceOf(user)),
             new uint[](1)
         );
     }

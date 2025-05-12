@@ -650,6 +650,7 @@ library SiloAdvancedLib {
         require(ltv <= state.maxLtv, IControllable.IncorrectLtv(ltv));
     }
 
+    /// @notice Default withdraw procedure (leverage is a bit decreased)
     function _withdrawReduceLeverage(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
