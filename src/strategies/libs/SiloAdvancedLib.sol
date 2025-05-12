@@ -138,29 +138,32 @@ library SiloAdvancedLib {
                 console.log("----- withdraw C", Math.min(tempCollateralAmount, collateralAmountTotal));
                 ISilo(lendingVault).withdraw(
                     Math.min(tempCollateralAmount, collateralAmountTotal),
-                    // todo
-                    //                    _estimateCollateralAmountToRepay(
-                    //                        platform, collateralAmountTotal, collateralAsset, token, tempCollateralAmount
-                    //                    ),
                     address(this),
                     address(this),
                     ISilo.CollateralType.Collateral
                 );
                 console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
                 console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
-                console.log('swap C=>B', Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
+                // console.log('swap C=>B', Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
+                console.log('swap C=>B', _estimateCollateralAmountToRepay(platform, amount + feeAmount, collateralAsset, token, tempCollateralAmount));
 
             }
 
             // swap
             console.log("receiveFlashLoan.4");
-            StrategyLib.swap(
-                platform,
-                collateralAsset,
-                token,
-                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
-                swapPriceImpactTolerance0
-            );
+            {
+//                uint balanceBorrow = IERC20(token).balanceOf(address(this));
+//                if (balanceBorrow < amount + feeAmount) {
+                    StrategyLib.swap(
+                        platform,
+                        collateralAsset,
+                        token,
+                        //TODO _estimateCollateralAmountToRepay(platform, amount + feeAmount, collateralAsset, token, tempCollateralAmount),
+                         Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
+                        swapPriceImpactTolerance0
+                    );
+//                }
+            }
             console.log('Balance collateral', IERC20(collateralAsset).balanceOf(address(this)));
             console.log('Balance borrow', IERC20(token).balanceOf(address(this)));
             console.log("----- pay flash loan B", amount + feeAmount);
@@ -582,6 +585,9 @@ library SiloAdvancedLib {
 
         // 10% for price impact and slippage
         uint minCollateralToSwap = swapper.getPrice(token, collateralAsset, amountToRepay) * 110 / 100;
+        console.log("minCollateralToSwap", minCollateralToSwap);
+        console.log("tempCollateralAmount", tempCollateralAmount);
+        console.log("balance",  StrategyLib.balance(collateralAsset));
 
         return Math.min(minCollateralToSwap, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
     }

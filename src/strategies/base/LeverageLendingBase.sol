@@ -13,6 +13,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
+///   1.2.1: rebalanceDebt reverts if result share price less #277
 ///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.1: StrategyBase 2.1.3
 ///   1.1.0: targetLeveragePercent setup in strategy initializer; 8 universal configurable params
@@ -62,8 +63,6 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
 
     /// @inheritdoc ILeverageLendingStrategy
     function rebalanceDebt(uint newLtv, uint minSharePrice) external returns (uint resultLtv, uint resultSharePrice) {
-        minSharePrice; // todo use below
-
         IPlatform _platform = IPlatform(platform());
         IHardWorker hardworker = IHardWorker(_platform.hardWorker());
         address rebalancer = _platform.rebalancer();
@@ -76,6 +75,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
 
         resultLtv = _rebalanceDebt(newLtv);
         (resultSharePrice,) = _realSharePrice();
+        if (resultSharePrice < minSharePrice) revert IControllable.TooLowValue(resultSharePrice);
     }
 
     /// @inheritdoc ILeverageLendingStrategy

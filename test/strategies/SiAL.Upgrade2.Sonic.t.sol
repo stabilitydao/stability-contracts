@@ -7,6 +7,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
@@ -73,7 +74,17 @@ contract SiALUpgrade2Test is Test {
         //console.log("!!!Rebalance to 80%");
 
         vm.startPrank(multisig);
-        strategy.rebalanceDebt(80_00, 0);
+        (uint sharePrice,) = strategy.realSharePrice();
+
+        try strategy.rebalanceDebt(80_00, sharePrice * 101 / 100) {
+            fail();
+        } catch (bytes memory lowLevelData) {
+            if (!(lowLevelData.length >= 4 && bytes4(lowLevelData) == IControllable.TooLowValue.selector)) {
+                fail();
+            }
+        }
+
+        strategy.rebalanceDebt(80_00, sharePrice * 90 / 100);
         vm.stopPrank();
 
         uint ltvAfterRebalance = _showHealth(strategy, "!!!After rebalanceDebt");

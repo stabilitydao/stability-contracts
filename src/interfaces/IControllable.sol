@@ -25,6 +25,7 @@ interface IControllable {
     error IncorrectInitParams();
     error InsufficientBalance();
     error IncorrectLtv(uint ltv);
+    error TooLowValue(uint value);
     //endregion -- Custom Errors -----
 
     event ContractInitialized(address platform, uint ts, uint block);

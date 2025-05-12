@@ -31,6 +31,7 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.0.1: +support of algebra-v4 flash loan #276; *use LeverageLendingBase 1.2.1 #277
 ///   2.0.0:
 ///     * bug: decreasing LTV on exits #254
 ///     * bug: deposit logic must use oracle price #247
@@ -56,7 +57,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "2.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
