@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {ERC721EnumerableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -19,6 +21,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 /// @dev The contract manages assets that agents can interact with
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
+    using SafeERC20 for IERC20Metadata;
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     //region ----- Constants -----
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
@@ -31,11 +36,11 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     /// @custom:storage-location erc7201:stability.AgentOSStorage
     struct AgentOSStorage {
         IERC20Metadata paymentToken;
-        address[] activePredictionAssets;
         string _baseTokenURI;
+        EnumerableSet.AddressSet assets;
         mapping(uint => AgentParams) agentParams;
         mapping(Job => uint) mintCosts;
-        mapping(address => Asset) assets;
+        mapping(Job => uint) jobFees;
     }
 
     function init(address platform_, address paymentToken_) public initializer {
@@ -46,38 +51,57 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     }
 
     /// @inheritdoc IAgentOS
-    function mint(Job job, Disclosure disclosure, string memory name) public returns (uint) {
+    function mint(Job job, Disclosure disclosure, AgentStatus agentStatus, string memory name) public returns (uint) {
         AgentOSStorage storage $ = _getStorage();
-        if ($.paymentToken.balanceOf(_msgSender()) < $.mintCosts[job]) revert InsufficientPayment();
-        if ($.paymentToken.allowance(_msgSender(), address(this)) < $.mintCosts[job]) revert InsufficientPayment();
-        $.paymentToken.transferFrom(_msgSender(), address(this), $.mintCosts[job]);
-
+        $.paymentToken.safeTransferFrom(_msgSender(), address(this), $.mintCosts[job]);
         uint tokenId = _getNextTokenId();
         _mint(_msgSender(), tokenId);
+        $.agentParams[tokenId] = AgentParams({
+            job: job,
+            disclosure: disclosure,
+            agentStatus: AgentStatus.AWAITING,
+            name: name,
+            lastWorkedAt: 0
+        });
 
-        $.agentParams[tokenId] =
-            AgentParams({job: job, disclosure: disclosure, name: name, isActive: true, lastWorkedAt: 0});
-
-        emit AgentCreated(tokenId, job, disclosure, name);
+        emit AgentCreated(tokenId, job, disclosure, agentStatus, name);
         return tokenId;
     }
 
     /// @inheritdoc IAgentOS
-    function work(uint tokenId, string memory data) public {
+    function work(uint tokenId, Job job, string memory data) public {
         AgentOSStorage storage $ = _getStorage();
         if (ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         if (
             ownerOf(tokenId) != _msgSender() && getApproved(tokenId) != _msgSender()
                 && !isApprovedForAll(ownerOf(tokenId), _msgSender())
         ) revert NotOwnerOrApproved();
-        if (!$.agentParams[tokenId].isActive) revert AgentNotActive();
+        AgentStatus agentStatus = $.agentParams[tokenId].agentStatus;
+        if (agentStatus == AgentStatus.AWAITING || agentStatus == AgentStatus.MAINTENANCE) revert AgentNotActive();
+        uint jobFee = $.jobFees[job];
+        if (jobFee <= 0) revert InsufficientPayment();
+        $.paymentToken.safeTransferFrom(_msgSender(), address(this), jobFee);
+
         // TODO: Add logic to work function
         $.agentParams[tokenId].lastWorkedAt = block.timestamp;
-        emit AgentWorked(tokenId, data);
+        emit AgentWorked(tokenId, job, data);
+    }
+
+    function setJobFee(Job job, uint jobFee) public onlyOperator {
+        AgentOSStorage storage $ = _getStorage();
+        $.jobFees[job] = jobFee;
+        emit AgentJobFeeSetted(job, jobFee);
     }
 
     /// @inheritdoc IAgentOS
-    function updateMintCost(Job job, uint cost) public onlyOperator {
+    function setAgentStatus(uint tokenId, AgentStatus agentStatus) public onlyOperator {
+        AgentOSStorage storage $ = _getStorage();
+        $.agentParams[tokenId].agentStatus = agentStatus;
+        emit AgentStatusUpdated(tokenId, agentStatus);
+    }
+
+    /// @inheritdoc IAgentOS
+    function setMintCost(Job job, uint cost) public onlyOperator {
         AgentOSStorage storage $ = _getStorage();
         $.mintCosts[job] = cost;
         emit MintCostUpdated(job, cost);
@@ -96,69 +120,25 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     }
 
     /// @inheritdoc IAgentOS
-    function addAsset(address tokenAddress, string memory symbol) public onlyOperator {
+    function addAsset(address tokenAddress) public onlyOperator {
         AgentOSStorage storage $ = _getStorage();
-        if (tokenAddress == address(0)) revert InvalidTokenAddress();
-        if (bytes(symbol).length == 0) revert InvalidSymbol();
-        if ($.assets[tokenAddress].isActive) revert AssetAlreadyActive();
-
-        $.assets[tokenAddress] =
-            Asset({tokenAddress: tokenAddress, symbol: symbol, isActive: true, lastUpdated: block.timestamp});
-
-        $.activePredictionAssets.push(tokenAddress);
-        emit AssetAdded(tokenAddress, symbol);
+        if (!$.assets.add(tokenAddress)) revert AssetAlreadyActive();
+        $.assets.add(tokenAddress);
+        emit AssetAdded(tokenAddress);
     }
 
     /// @inheritdoc IAgentOS
     function removeAsset(address tokenAddress) public onlyOperator {
         AgentOSStorage storage $ = _getStorage();
-        if (!$.assets[tokenAddress].isActive) revert AssetNotActive();
-
-        $.assets[tokenAddress].isActive = false;
-        $.assets[tokenAddress].lastUpdated = block.timestamp;
-        for (uint i = 0; i < $.activePredictionAssets.length; i++) {
-            if ($.activePredictionAssets[i] == tokenAddress) {
-                $.activePredictionAssets[i] = $.activePredictionAssets[$.activePredictionAssets.length - 1];
-                $.activePredictionAssets.pop();
-                break;
-            }
-        }
-
+        if (!$.assets.remove(tokenAddress)) revert AssetNotActive();
+        $.assets.remove(tokenAddress);
         emit AssetRemoved(tokenAddress);
     }
 
     /// @inheritdoc IAgentOS
-    function updateAssetStatus(address tokenAddress, bool isActive) public onlyOperator {
+    function getAllAssets() external view returns (address[] memory) {
         AgentOSStorage storage $ = _getStorage();
-        if ($.assets[tokenAddress].tokenAddress == address(0)) {
-            revert AssetNotFound();
-        }
-        if ($.assets[tokenAddress].isActive == isActive) {
-            revert StatusAlreadySet();
-        }
-
-        $.assets[tokenAddress].isActive = isActive;
-        $.assets[tokenAddress].lastUpdated = block.timestamp;
-
-        if (isActive) {
-            $.activePredictionAssets.push(tokenAddress);
-        } else {
-            for (uint i = 0; i < $.activePredictionAssets.length; i++) {
-                if ($.activePredictionAssets[i] == tokenAddress) {
-                    $.activePredictionAssets[i] = $.activePredictionAssets[$.activePredictionAssets.length - 1];
-                    $.activePredictionAssets.pop();
-                    break;
-                }
-            }
-        }
-
-        emit AssetStatusUpdated(tokenAddress, isActive);
-    }
-
-    /// @inheritdoc IAgentOS
-    function getActiveAssets() public view returns (address[] memory) {
-        AgentOSStorage storage $ = _getStorage();
-        return $.activePredictionAssets;
+        return $.assets.values();
     }
 
     /// @inheritdoc IAgentOS
