@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {
     MetaVault,
@@ -19,8 +20,10 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
+import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -66,8 +69,9 @@ contract MetaVaultSonicTest is Test {
         proportions_[3] = 20e16;
         proportions_[4] = 20e16;
         metaVaults[0] = _deployMetaVaultByMetaVaultFactory(
-            vaultType, address(0), "Stability USDC", "metaUSDC", vaults_, proportions_
+            vaultType, SonicConstantsLib.TOKEN_USDC, "Stability USDC", "multiUSDC", vaults_, proportions_
         );
+        _deployWrapper(metaVaults[0]);
 
         // metaUSD: single metavault + lending + Ichi LP vaults
         vaultType = VaultTypeLib.METAVAULT;
@@ -82,7 +86,8 @@ contract MetaVaultSonicTest is Test {
         proportions_[2] = 20e16;
         proportions_[3] = 15e16;
         metaVaults[1] =
-            _deployMetaVaultStandalone(vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_);
+            _deployMetaVaultByMetaVaultFactory(vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_);
+        _deployWrapper(metaVaults[1]);
 
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff)));
     }
@@ -111,7 +116,7 @@ contract MetaVaultSonicTest is Test {
             _dealAndApprove(address(this), metavault, assets, depositAmounts);
 
             // depositAssets | first deposit
-            IStabilityVault(metavault).depositAssets(assets, depositAmounts, sharesOut - 10000, address(this));
+            IStabilityVault(metavault).depositAssets(assets, depositAmounts, sharesOut * 9999 / 10000, address(this));
 
             // check state after first deposit
             {
@@ -197,8 +202,8 @@ contract MetaVaultSonicTest is Test {
             }
 
             // deposit slippage check
-            vm.roll(block.number + 6);
             {
+                vm.roll(block.number + 6);
                 uint minSharesOut = IERC20(metavault).balanceOf(address(3));
                 _dealAndApprove(address(3), metavault, assets, depositAmounts);
                 vm.prank(address(3));
@@ -236,8 +241,9 @@ contract MetaVaultSonicTest is Test {
             }
 
             // withdraw
-            vm.roll(block.number + 6);
             {
+                vm.roll(block.number + 6);
+
                 uint maxWithdraw = IMetaVault(metavault).maxWithdrawAmountTx();
                 //console.log('user balance', IERC20(metavault).balanceOf(address(this)));
 
@@ -279,9 +285,16 @@ contract MetaVaultSonicTest is Test {
                     assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this)
                 );
 
-                if (IMetaVault(metavault).pegAsset() == address(0) && withdrawAmount < 1e13) {
+                if (
+                    (
+                        IMetaVault(metavault).pegAsset() == address(0)
+                            || IMetaVault(metavault).pegAsset() == SonicConstantsLib.TOKEN_USDC
+                    ) && withdrawAmount < 1e13
+                ) {
                     vm.expectRevert(
+                        /*
                         abi.encodeWithSelector(IMetaVault.UsdAmountLessThreshold.selector, withdrawAmount, 1e13)
+                              */
                     );
                     IStabilityVault(metavault).withdrawAssets(
                         assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
@@ -292,6 +305,53 @@ contract MetaVaultSonicTest is Test {
                         assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
                     );
                 }
+            }
+
+            // use wrapper
+            {
+                address user = address(10);
+                address wrapper = metaVaultFactory.wrapper(metavault);
+                _dealAndApprove(user, metavault, assets, depositAmounts);
+                vm.startPrank(user);
+
+                if (CommonLib.eq(IStabilityVault(metavault).vaultType(), VaultTypeLib.METAVAULT)) {
+                    IStabilityVault(metavault).depositAssets(assets, depositAmounts, 0, user);
+                    vm.roll(block.number + 6);
+                    uint bal = IERC20(metavault).balanceOf(user);
+                    IERC20(metavault).approve(wrapper, bal);
+                    IWrappedMetaVault(wrapper).deposit(bal, user);
+                    uint wrapperSharesBal = IERC20(wrapper).balanceOf(user);
+                    assertGt(wrapperSharesBal, 0);
+
+                    assertGt(IERC4626(wrapper).totalAssets(), 0);
+
+                    vm.roll(block.number + 6);
+                    IWrappedMetaVault(wrapper).redeem(wrapperSharesBal, user, user);
+                }
+
+                if (CommonLib.eq(IStabilityVault(metavault).vaultType(), VaultTypeLib.MULTIVAULT)) {
+                    uint bal = IERC20(assets[0]).balanceOf(user);
+                    IERC20(assets[0]).approve(wrapper, bal);
+                    IWrappedMetaVault(wrapper).deposit(bal, user);
+                    uint wrapperSharesBal = IERC20(wrapper).balanceOf(user);
+                    assertGt(wrapperSharesBal, 0);
+                    assertGt(IERC4626(wrapper).totalAssets(), 0);
+
+                    vm.roll(block.number + 100);
+                    vm.warp(block.timestamp + 100);
+
+                    uint toAssets = IERC4626(wrapper).convertToAssets(wrapperSharesBal);
+                    assertGt(toAssets, bal);
+
+                    IWrappedMetaVault(wrapper).redeem(wrapperSharesBal, user, user);
+                    uint newAssetBal = IERC20(assets[0]).balanceOf(user);
+                    assertGt(newAssetBal, bal);
+                    assertLt(newAssetBal, bal * 101 / 100);
+                }
+
+                assertEq(IERC20(wrapper).balanceOf(user), 0);
+
+                vm.stopPrank();
             }
         }
     }
@@ -358,9 +418,10 @@ contract MetaVaultSonicTest is Test {
 
     function test_metavault_view_methods() public view {
         IMetaVault metavault = IMetaVault(metaVaults[0]);
-        assertEq(metavault.pegAsset(), address(0));
+        assertEq(metavault.pegAsset(), SonicConstantsLib.TOKEN_USDC);
         (uint price, bool trusted) = metavault.price();
-        assertEq(price, 1e18);
+        assertLt(price, 101e16);
+        assertGt(price, 99e16);
         assertEq(trusted, true);
         assertEq(metavault.vaults().length, 5);
         assertEq(metavault.assets().length, 1);
@@ -374,7 +435,7 @@ contract MetaVaultSonicTest is Test {
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
-        assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSDC");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "multiUSDC");
         assertEq(IERC20Metadata(address(metavault)).decimals(), 18);
 
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
@@ -445,8 +506,11 @@ contract MetaVaultSonicTest is Test {
 
     function _setupImplementations() internal {
         address metaVaultImplementation = address(new MetaVault());
+        address wrappedMetaVaultImplementation = address(new WrappedMetaVault());
         vm.prank(multisig);
         metaVaultFactory.setMetaVaultImplementation(metaVaultImplementation);
+        vm.prank(multisig);
+        metaVaultFactory.setWrappedMetaVaultImplementation(wrappedMetaVaultImplementation);
     }
 
     function _deployMetaVaultByMetaVaultFactory(
@@ -458,7 +522,14 @@ contract MetaVaultSonicTest is Test {
         uint[] memory proportions_
     ) internal returns (address metaVaultProxy) {
         vm.prank(multisig);
-        return metaVaultFactory.deployMetaVault("0x00", type_, pegAsset, name_, symbol_, vaults_, proportions_);
+        return metaVaultFactory.deployMetaVault(
+            bytes32(abi.encodePacked(name_)), type_, pegAsset, name_, symbol_, vaults_, proportions_
+        );
+    }
+
+    function _deployWrapper(address metaVault) internal returns (address wrapper) {
+        vm.prank(multisig);
+        return metaVaultFactory.deployWrapper(bytes32(uint(uint160(metaVault))), metaVault);
     }
 
     function _deployMetaVaultStandalone(

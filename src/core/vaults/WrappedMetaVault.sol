@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {
     ERC4626Upgradeable,
+    IERC4626,
     IERC20,
     IERC20Metadata
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -12,10 +13,13 @@ import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
+import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
 /// @title Wrapped rebase MetaVault
 /// @author Alien Deployer (https://github.com/a17)
 contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault {
+    using SafeERC20 for IERC20;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -59,16 +63,26 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*                       ERC4626 HOOKS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function totalAssets() public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        if ($.isMulti) {
+            return IMetaVault($.metaVault).balanceOf(address(this)) / 10 ** (18 - decimals());
+        }
+        return super.totalAssets();
+    }
+
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
+            address _metaVault = $.metaVault;
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = assets;
-            SafeERC20.safeTransferFrom(IERC20(_assets[0]), caller, address(this), assets);
+            IERC20(_assets[0]).safeTransferFrom(caller, address(this), assets);
             _mint(receiver, shares);
-            IStabilityVault($.metaVault).depositAssets(_assets, amountsMax, 0, address(this));
+            IERC20(_assets[0]).forceApprove(_metaVault, assets);
+            IStabilityVault(_metaVault).depositAssets(_assets, amountsMax, 0, address(this));
             emit Deposit(caller, receiver, assets, shares);
         } else {
             super._deposit(caller, receiver, assets, shares);
@@ -83,7 +97,13 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             }
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
-            IStabilityVault($.metaVault).withdrawAssets(_assets, assets, new uint[](1), receiver, address(this));
+            IStabilityVault($.metaVault).withdrawAssets(
+                _assets,
+                assets * 10 ** (18 - IERC20Metadata(asset()).decimals()),
+                new uint[](1),
+                receiver,
+                address(this)
+            );
             _burn(owner, shares);
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {
