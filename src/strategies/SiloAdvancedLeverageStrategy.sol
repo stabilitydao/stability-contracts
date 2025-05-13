@@ -30,6 +30,7 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.0.1: refactoring, fix comments
 ///   2.0.0:
 ///     * bug: decreasing LTV on exits #254
 ///     * bug: deposit logic must use oracle price #247
@@ -54,7 +55,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "2.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -120,13 +121,12 @@ contract SiloAdvancedLeverageStrategy is
         SiloAdvancedLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
     }
 
-    /// @notice This callback is called inside IVaultMainV3.unlock (balancer v3)
-    /// @dev Support of FLASH_LOAN_KIND_BALANCER_V3
-    /// @param token Token of flash loan
-    /// @param amount Required amount of the flash loan
+    /// @inheritdoc IBalancerV3FlashCallback
     function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
         // sender is vault, it's checked inside receiveFlashLoan
-        IVaultMainV3 vault = IVaultMainV3(payable(msg.sender));
+        // we can use msg.sender below but $.flashLoanVault looks more safe
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
 
         // ensure that the vault has available amount
         require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
@@ -135,7 +135,6 @@ contract SiloAdvancedLeverageStrategy is
         vault.sendTo(token, address(this), amount);
 
         // Flash loan is performed upon deposit and withdrawal
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, 0); // assume that flash loan is free, fee is 0
 
         // return flash loan back to the vault
@@ -144,6 +143,7 @@ contract SiloAdvancedLeverageStrategy is
         vault.settle(token, amount);
     }
 
+    /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));

@@ -23,17 +23,29 @@ import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.s
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
+import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
+import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
+import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {IBVault} from "../integrations/balancer/IBVault.sol";
+import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
+import {console} from "forge-std/Test.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
-///   1.1.3: Move depositAssets impl to SiloLib to reduce size, use LeverageLendingBase 1.1.2
+///   2.0.0:
+///     * feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #257
+///   1.1.3: Move depositAssets impl to SiloLib to reduce size, use LeverageLendingBase 1.1.2, #269
 ///   1.1.2: realApr bugfix
 ///   1.1.1: use LeverageLendingBase 1.1.1
 ///   1.1.0: use LeverageLendingBase 1.1.0
 /// @author Alien Deployer (https://github.com/a17)
-contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
+/// @author dvpublic (https://github.com/dvpublic)
+contract SiloLeverageStrategy is LeverageLendingBase,
+    IFlashLoanRecipient,
+    IUniswapV3FlashCallback,
+    IBalancerV3FlashCallback
+{
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -41,7 +53,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.3";
+    string public constant VERSION = "2.0.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -72,6 +84,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
     }
 
+    //region ---------------- Callbacks (flash loan)
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -83,11 +96,48 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         uint[] memory feeAmounts,
         bytes memory /*userData*/
     ) external {
+        console.log("IFlashLoanRecipient", msg.sender);
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
     }
 
+    /// @inheritdoc IBalancerV3FlashCallback
+    function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
+        console.log("receiveFlashLoanV3", msg.sender, amount);
+        // sender is vault, it's checked inside receiveFlashLoan
+        // we can use msg.sender below but $.flashLoanVault looks more safe
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
+
+        // ensure that the vault has available amount
+        require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
+
+        // receive flash loan from the vault
+        vault.sendTo(token, address(this), amount);
+
+        // Flash loan is performed upon deposit and withdrawal
+        SiloLib.receiveFlashLoan(platform(), $, token, amount, 0); // assume that flash loan is free, fee is 0
+
+        // return flash loan back to the vault
+        // assume that the amount was transferred back to the vault inside receiveFlashLoan()
+        // we need only to register this transferring
+        vault.settle(token, amount);
+    }
+
+    /// @inheritdoc IUniswapV3FlashCallback
+    function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
+        console.log("uniswapV3FlashCallback", msg.sender);
+        // sender is the pool, it's checked inside receiveFlashLoan
+        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        SiloLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    }
+
+    //endregion ---------------- Callbacks (flash loan)
+
+    //region ---------------- View
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -182,6 +232,7 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         return _getDepositAndBorrowAprs($.helper, $.lendingVault, $.borrowingVault);
     }
+    //endregion ---------------- View
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   LEVERAGE LENDING BASE                    */
@@ -222,12 +273,13 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
             $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
         }
 
-        IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
+        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         $.tempAction = CurrentAction.None;
         (resultLtv,,,,,) = health();
     }
 
+    //region ---------------- Strategy base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -304,49 +356,23 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        console.log("collateral asset", $.collateralAsset);
+        console.log("borrow asset", $.borrowAsset);
+        console.log("!!!depositAssets", amounts[0]);
+
         return SiloLib.depositAssets($, $base, assets(), amounts);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        $.tempAction = CurrentAction.Withdraw;
-        LeverageLendingAddresses memory v = SiloLib.getLeverageLendingAddresses($);
-        amountsOut = new uint[](1);
-
-        uint valueWas = StrategyLib.balance(v.collateralAsset) + SiloLib.calcTotal(v);
-
-        (uint maxLtv, uint maxLeverage,) = SiloLib.getLtvData(v.lendingVault, $.targetLeveragePercent);
-
-        (uint priceCtoB,) = SiloLib.getPrices(v.lendingVault, v.borrowingVault);
-
-        {
-            uint collateralAmountToWithdraw = value * maxLeverage / INTERNAL_PRECISION;
-            $.tempCollateralAmount = collateralAmountToWithdraw;
-            uint[] memory flashAmounts = new uint[](1);
-            flashAmounts[0] = (collateralAmountToWithdraw * maxLtv / 1e18) * priceCtoB / 1e18;
-            address[] memory flashAssets = new address[](1);
-            flashAssets[0] = $.borrowAsset;
-            IBVault($.flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
-        }
-
-        uint valueNow = StrategyLib.balance(v.collateralAsset) + SiloLib.calcTotal(v);
-
-        uint bal = StrategyLib.balance(v.collateralAsset);
-        if (valueWas > valueNow) {
-            //console.log('withdraw loss', valueWas - valueNow);
-            amountsOut[0] = Math.min(value - (valueWas - valueNow), bal);
-        } else {
-            //console.log('withdraw profit', valueNow - valueWas);
-            amountsOut[0] = Math.min(value + (valueNow - valueWas), bal);
-        }
-
-        IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
-
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        $base.total -= value;
+        console.log("!!!withdrawAssets", value);
+        return SiloLib.withdrawAssets($, $base, value, receiver);
     }
+    //endregion ---------------- Strategy base
 
+    //region ---------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -382,4 +408,5 @@ contract SiloLeverageStrategy is LeverageLendingBase, IFlashLoanRecipient {
         depositApr = ISiloLens(lens).getDepositAPR(lendingVault) * ConstantsLib.DENOMINATOR / 1e18;
         borrowApr = ISiloLens(lens).getBorrowAPR(debtVault) * ConstantsLib.DENOMINATOR / 1e18;
     }
+    //endregion ---------------- Internal logic
 }
