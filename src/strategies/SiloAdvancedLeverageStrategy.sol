@@ -160,7 +160,7 @@ contract SiloAdvancedLeverageStrategy is
         SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
     }
 
-    function algebraFlashCallback(uint256 fee0, uint256 fee1, bytes calldata userData) external {
+    function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 

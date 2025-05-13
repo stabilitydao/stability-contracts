@@ -120,7 +120,9 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- set up free flash loan
-        _setFlashLoanVault(strategy, ALGEBRA_POOL_FRXUSD_SFRXUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3));
+        _setFlashLoanVault(
+            strategy, ALGEBRA_POOL_FRXUSD_SFRXUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+        );
 
         // ----------------- check current state
         _showHealth(strategy, "!!!Initial state");
@@ -262,8 +264,8 @@ contract SiALUpgrade2Test is Test {
         uint balance1 = IERC20(collateralAsset).balanceOf(user1);
         uint balance2 = IERC20(collateralAsset).balanceOf(user2);
 
-//        console.log("balance1", balance1);
-//        console.log("balance2", balance2);
+        //        console.log("balance1", balance1);
+        //        console.log("balance2", balance2);
         assertLe(
             (balance1 > 50_000e6 ? balance1 - 50_000e6 : 50_000e6 - balance1) * 100_000 / 50_000e6,
             4_000 // (!) 4%
@@ -287,10 +289,10 @@ contract SiALUpgrade2Test is Test {
             0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959 // C-PT-aSonUSDC-14AUG2025-SAL
         ];
         uint16[3] memory BASE_AMOUNTS = [
-                100,
-                // 100,
-                uint16(10),
-                uint16(10000)
+            100,
+            // 100,
+            uint16(10),
+            uint16(10000)
         ];
 
         uint snapshotId = vm.snapshotState();
@@ -312,7 +314,9 @@ contract SiALUpgrade2Test is Test {
 
             // ----------------- set up flashloan if necessary
             if (VAULTS[i] == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6) {
-                _setFlashLoanVault(strategy, SHADOW_POOL_FRXUSD_SCUSD, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+                _setFlashLoanVault(
+                    strategy, SHADOW_POOL_FRXUSD_SCUSD, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+                );
             }
 
             // ----------------- check current state
@@ -383,7 +387,9 @@ contract SiALUpgrade2Test is Test {
         vm.stopPrank();
 
         // ----------------- set up flash loan
-        _setFlashLoanVault(strategy, ALGEBRA_POOL_FRXUSD_SFRXUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3));
+        _setFlashLoanVault(
+            strategy, ALGEBRA_POOL_FRXUSD_SFRXUSD, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+        );
 
         // ----------------- check current state
         _showHealth(strategy, "!!!Initial state");
@@ -412,10 +418,7 @@ contract SiALUpgrade2Test is Test {
     }
 
     //region -------------------------- Auxiliary functions
-    function _showHealth(
-        SiloAdvancedLeverageStrategy strategy,
-        string memory state
-    ) internal view returns (uint) {
+    function _showHealth(SiloAdvancedLeverageStrategy strategy, string memory state) internal view returns (uint) {
         state;
         // console.log(state);
         //(uint ltv, uint maxLtv, uint leverage, uint collateralAmount, uint debtAmount, uint targetLeveragePercent) =
@@ -468,7 +471,7 @@ contract SiALUpgrade2Test is Test {
         IVault(vault).withdrawAssets(assets, bal, new uint[](1));
     }
 
-    function _withdrawForUser(address vault, address strategy, address user, uint amount ) internal {
+    function _withdrawForUser(address vault, address strategy, address user, uint amount) internal {
         uint amountToPay = Math.min(amount, IERC20(vault).balanceOf(user));
         address[] memory assets = IStrategy(strategy).assets();
         vm.prank(user);
