@@ -79,7 +79,7 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
         AgentStatus agentStatus = $.agentParams[tokenId].agentStatus;
         if (agentStatus == AgentStatus.AWAITING || agentStatus == AgentStatus.MAINTENANCE) revert AgentNotActive();
         uint jobFee = $.jobFees[job];
-        if (jobFee <= 0) revert InsufficientPayment();
+        if (jobFee == 0) revert IncorrectZeroArgument();
         $.paymentToken.safeTransferFrom(_msgSender(), address(this), jobFee);
 
         // TODO: Add logic to work function
