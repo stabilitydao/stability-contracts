@@ -75,7 +75,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
 
         resultLtv = _rebalanceDebt(newLtv);
         (resultSharePrice,) = _realSharePrice();
-        if (resultSharePrice < minSharePrice) revert IControllable.TooLowValue(resultSharePrice);
+        require(resultSharePrice >= minSharePrice, IControllable.TooLowValue(resultSharePrice));
     }
 
     /// @inheritdoc ILeverageLendingStrategy
