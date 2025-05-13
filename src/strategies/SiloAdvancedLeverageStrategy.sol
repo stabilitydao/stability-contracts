@@ -31,7 +31,12 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
-///   2.0.1: +support of algebra-v4 flash loan #276; *use LeverageLendingBase 1.2.1 #277
+///   2.1.0:
+///     + support of algebra-v4 flash loan #276
+///     * reduce amount of swap in withdraw
+///     * use withdrawParam0 in deposit to fit result leverage
+///     * check ltv on exit of deposit
+///     * use LeverageLendingBase 1.2.1 #277
 ///   2.0.0:
 ///     * bug: decreasing LTV on exits #254
 ///     * bug: deposit logic must use oracle price #247
@@ -351,7 +356,7 @@ contract SiloAdvancedLeverageStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
-        value = SiloAdvancedLib.depositAssets($, $base, amounts[0], _assets[0]);
+        value = SiloAdvancedLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
     }
 
     /// @inheritdoc StrategyBase
