@@ -111,17 +111,18 @@ contract AgentOSTest is Test, MockSetup {
         agentOS.setBaseURI(newBaseURI);
     }
 
-    function testFail_WorkWithInactiveAgent() public {
+    function test_RevertIf_WorkWithInactiveAgent() public {
         vm.startPrank(user);
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 1 ether);
         uint tokenId =
             agentOS.mint(IAgentOS.Job.PREDICTOR, IAgentOS.Disclosure.PUBLIC, IAgentOS.AgentStatus.AWAITING, "TestAgent");
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 0.1 ether);
+        vm.expectRevert();
         agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
         vm.stopPrank();
     }
 
-    function testFail_WorkWithInsufficientPayment() public {
+    function test_RevertIf_WorkWithInsufficientPayment() public {
         vm.startPrank(user);
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 1 ether);
         uint tokenId =
@@ -130,6 +131,7 @@ contract AgentOSTest is Test, MockSetup {
         vm.prank(operator);
         agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
         vm.startPrank(user);
+        vm.expectRevert();
         agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
         vm.stopPrank();
     }
