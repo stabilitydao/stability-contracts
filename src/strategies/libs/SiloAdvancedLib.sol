@@ -140,6 +140,9 @@ library SiloAdvancedLib {
                 swapPriceImpactTolerance0
             );
 
+            // explicit error for the case when _estimateSwapAmount gives incorrect amount
+            require(IERC20(token).balanceOf(address(this)) >= amount + feeAmount, IControllable.InsufficientBalance());
+
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
