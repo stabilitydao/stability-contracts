@@ -10,12 +10,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {Controllable, IControllable} from "../base/Controllable.sol";
-import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMetaVault.sol";
+import {CommonLib} from "../libs/CommonLib.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
+import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMetaVault.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
-import {CommonLib} from "../libs/CommonLib.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -32,7 +32,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     string public constant VERSION = "1.0.0";
 
     /// @inheritdoc IMetaVault
-    uint public constant USD_THRESHOLD = 1e13;
+    uint public constant USD_THRESHOLD = 1e16;
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
@@ -91,27 +91,71 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         MODIFIERS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @dev Marks a function as only callable by the owner.
+    modifier onlyAllowedOperator() virtual {
+        _requiredAllowedOperator();
+        _;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMetaVault
-    function setTargetProportions(uint[] memory newTargetProportions) external {
+    function setTargetProportions(uint[] memory newTargetProportions) external onlyAllowedOperator {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
         _checkProportions(newTargetProportions);
-        _requiredAllowedOperator(platform());
         $.targetProportions = newTargetProportions;
         emit TargetProportions(newTargetProportions);
     }
 
     /// @inheritdoc IMetaVault
     function rebalance(
-        uint[] memory withdrawAmounts,
-        uint[] memory depositAmounts
-    ) external returns (uint proportions, uint cost) {
-        _requiredAllowedOperator(platform());
+        uint[] memory withdrawShares,
+        uint[] memory depositAmountsProportions
+    ) external onlyAllowedOperator returns (uint[] memory proportions, int cost) {
+        _checkProportions(depositAmountsProportions);
 
-        // todo
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        uint len = $.vaults.length;
+        require(
+            len == withdrawShares.length && len == depositAmountsProportions.length,
+            IControllable.IncorrectArrayLength()
+        );
+
+        (uint tvlBefore,) = tvl();
+
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            address[] memory _assets = $.assets.values();
+            for (uint i; i < len; ++i) {
+                if (withdrawShares[i] != 0) {
+                    IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
+                    require (depositAmountsProportions[i] == 0, IncorrectRebalanceArgs());
+                }
+            }
+            uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
+            for (uint i; i < len; ++i) {
+                address vault = $.vaults[i];
+                uint[] memory amountsMax = new uint[](1);
+                amountsMax[0] = depositAmountsProportions[i] * totalToDeposit / 1e18;
+                if (amountsMax[0] != 0) {
+                    IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
+                    IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
+                    require (withdrawShares[i] == 0, IncorrectRebalanceArgs());
+                }
+            }
+        } else {
+            revert NotSupported();
+        }
+
+        (uint tvlAfter,) = tvl();
+        cost = int(tvlBefore) - int(tvlAfter);
+        proportions = currentProportions();
+        emit Rebalance(withdrawShares, depositAmountsProportions, cost);
     }
 
     /// @inheritdoc IMetaVault
@@ -147,8 +191,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function emitAPR() external returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration) {
-        _requiredAllowedOperator(platform());
+    function emitAPR()
+        external
+        onlyAllowedOperator
+        returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration)
+    {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         uint storedTime;
         (sharePrice, apr, lastStoredSharePrice, storedTime) = internalSharePrice();
@@ -659,7 +706,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return earned * int(1e18) * 100_000 * int(365) / int(tvl_) / int(duration * 1e18 / 1 days);
     }
 
-    function _requiredAllowedOperator(address _platform) internal view {
+    function _requiredAllowedOperator() internal view {
+        address _platform = platform();
         require(
             IPlatform(_platform).isOperator(msg.sender)
                 || IHardWorker(IPlatform(_platform).hardWorker()).dedicatedServerMsgSender(msg.sender),

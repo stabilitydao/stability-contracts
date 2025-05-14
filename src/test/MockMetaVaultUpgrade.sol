@@ -56,7 +56,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function setTargetProportions(uint[] memory) external {}
 
     /// @inheritdoc IMetaVault
-    function rebalance(uint[] memory, uint[] memory) external returns (uint proportions, uint cost) {}
+    function rebalance(uint[] memory, uint[] memory) external returns (uint[] memory proportions, int cost) {}
 
     /// @inheritdoc IMetaVault
     function addVault(address, uint[] memory) external {}

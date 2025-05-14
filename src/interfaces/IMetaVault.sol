@@ -42,6 +42,7 @@ interface IMetaVault is IStabilityVault {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event APR(uint sharePrice, int apr, uint lastStoredSharePrice, uint duration);
+    event Rebalance(uint[] withdrawShares, uint[] depositAmountsProportions, int cost);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);
 
@@ -53,6 +54,7 @@ interface IMetaVault is IStabilityVault {
     error MaxAmountForWithdrawPerTxReached(uint amount, uint maxAmount);
     error ZeroSharesToBurn(uint amountToWithdraw);
     error IncorrectProportions();
+    error IncorrectRebalanceArgs();
     error IncorrectVault();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -112,11 +114,15 @@ interface IMetaVault is IStabilityVault {
     /// @return duration Duration of last tracked period
     function emitAPR() external returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration);
 
-    /// @notice Single asset re-balancing
+    /// @notice MetaVault re-balancing
+    /// @param withdrawShares Shares to withdraw from vaults
+    /// @param depositAmountsProportions Proportions to deposit
+    /// @return proportions Result proportions
+    /// @return cost Re-balance cost in USD
     function rebalance(
-        uint[] memory withdrawAmounts,
-        uint[] memory depositAmounts
-    ) external returns (uint proportions, uint cost);
+        uint[] memory withdrawShares,
+        uint[] memory depositAmountsProportions
+    ) external returns (uint[] memory proportions, int cost);
 
     /// @notice Set new target proportions
     function setTargetProportions(uint[] memory newTargetProportions) external;

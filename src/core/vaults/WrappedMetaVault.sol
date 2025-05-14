@@ -8,6 +8,7 @@ import {
     IERC20Metadata
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Controllable, IControllable} from "../base/Controllable.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
@@ -59,10 +60,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         return _getWrappedMetaVaultStorage().metaVault;
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       ERC4626 HOOKS                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
+    /// @inheritdoc IERC4626
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
@@ -70,6 +68,36 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         }
         return super.totalAssets();
     }
+
+    /// @inheritdoc IERC4626
+    function maxRedeem(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxShares) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        uint maxUserShares = super.maxRedeem(owner);
+        if ($.isMulti) {
+            uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
+            maxVaultWithdrawAmountTx /= 10 ** (18 - IERC20Metadata(asset()).decimals());
+            uint maxVaultWithdrawShares = convertToShares(maxVaultWithdrawAmountTx);
+            maxShares = Math.min(maxUserShares, maxVaultWithdrawShares);
+        } else {
+            maxShares = maxUserShares;
+        }
+    }
+
+    /// @inheritdoc IERC4626
+    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        uint maxUserWithdraw = super.maxWithdraw(owner);
+        if ($.isMulti) {
+            uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
+            maxVaultWithdrawAmountTx /= 10 ** (18 - IERC20Metadata(asset()).decimals());
+            return Math.min(maxUserWithdraw, maxVaultWithdrawAmountTx);
+        }
+        return maxUserWithdraw;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       ERC4626 HOOKS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();

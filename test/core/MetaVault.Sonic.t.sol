@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {
     MetaVault,
@@ -127,8 +128,7 @@ contract MetaVaultSonicTest is Test {
                 if (IMetaVault(metavault).pegAsset() == address(0)) {
                     assertEq(balance, IERC20(metavault).totalSupply());
                 }
-                (uint sharePrice, int apr, uint lastStoredSharePrice, uint storedTime) =
-                    IMetaVault(metavault).internalSharePrice();
+                (uint sharePrice,,,) = IMetaVault(metavault).internalSharePrice();
                 assertGt(sharePrice, 9e17);
                 assertLt(sharePrice, 11e17);
             }
@@ -265,6 +265,28 @@ contract MetaVaultSonicTest is Test {
                 assertEq(liveSharePrice, sharePrice);
             }
 
+            // rebalance
+            {
+                if (CommonLib.eq(IStabilityVault(metavault).vaultType(), VaultTypeLib.MULTIVAULT)) {
+                    uint[] memory proportions = IMetaVault(metavault).currentProportions();
+                    if (proportions.length == 5) {
+                        uint[] memory withdrawShares = new uint[](5);
+                        withdrawShares[0] = IERC20(IMetaVault(metavault).vaults()[0]).balanceOf(metavault) / 10;
+                        withdrawShares[1] = IERC20(IMetaVault(metavault).vaults()[0]).balanceOf(metavault) / 3;
+                        withdrawShares[2] = IERC20(IMetaVault(metavault).vaults()[2]).balanceOf(metavault) / 4;
+                        uint[] memory depositAmountsProportions = new uint[](5);
+                        depositAmountsProportions[3] = 4e17;
+                        depositAmountsProportions[4] = 6e17;
+                        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+                        IMetaVault(metavault).rebalance(withdrawShares, depositAmountsProportions);
+
+                        vm.prank(multisig);
+                        IMetaVault(metavault).rebalance(withdrawShares, depositAmountsProportions);
+                        proportions = IMetaVault(metavault).currentProportions();
+                    }
+                }
+            }
+
             // withdraw
             {
                 vm.roll(block.number + 6);
@@ -283,9 +305,7 @@ contract MetaVaultSonicTest is Test {
                     IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw + 10, new uint[](assets.length));
 
                     // do max withdraw
-                    //console.log('do max withdraw');
                     IStabilityVault(metavault).withdrawAssets(assets, maxWithdraw, new uint[](assets.length));
-                    //console.log('user balance', IERC20(metavault).balanceOf(address(this)));
 
                     vm.roll(block.number + 6);
                 }
@@ -314,7 +334,7 @@ contract MetaVaultSonicTest is Test {
                     (
                         IMetaVault(metavault).pegAsset() == address(0)
                             || IMetaVault(metavault).pegAsset() == SonicConstantsLib.TOKEN_USDC
-                    ) && withdrawAmount < 1e13
+                    ) && withdrawAmount < 1e16
                 ) {
                     vm.expectRevert(
                         /*
@@ -368,14 +388,15 @@ contract MetaVaultSonicTest is Test {
                     uint toAssets = IERC4626(wrapper).convertToAssets(wrapperSharesBal);
                     assertGt(toAssets, bal);
 
-                    IWrappedMetaVault(wrapper).redeem(wrapperSharesBal, user, user);
+                    uint maxWithdraw = IERC4626(wrapper).maxWithdraw(user);
+                    IWrappedMetaVault(wrapper).redeem(
+                        Math.min(wrapperSharesBal, IERC4626(wrapper).maxRedeem(user)), user, user
+                    );
                     uint newAssetBal = IERC20(assets[0]).balanceOf(user);
-                    assertGt(newAssetBal, bal);
-                    assertLt(newAssetBal, bal * 101 / 100);
+                    assertGe(newAssetBal + 1, Math.min(bal, maxWithdraw), "mv-u-2.5");
+                    assertLt(newAssetBal, bal * 1001 / 1000, "mv-u-2.6");
+                    assertLe(IERC20(wrapper).balanceOf(user), bal / 10000, "mv-u-3");
                 }
-
-                assertEq(IERC20(wrapper).balanceOf(user), 0, "mv-u-3");
-
                 vm.stopPrank();
             }
         }
@@ -396,6 +417,12 @@ contract MetaVaultSonicTest is Test {
 
         // change proportions
         uint[] memory newTargetProportions = new uint[](2);
+
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        metavault.setTargetProportions(newTargetProportions);
+
+        vm.startPrank(multisig);
+
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         metavault.setTargetProportions(newTargetProportions);
         newTargetProportions = new uint[](5);
@@ -404,11 +431,9 @@ contract MetaVaultSonicTest is Test {
         newTargetProportions[0] = 2e17;
         newTargetProportions[1] = 3e17;
         newTargetProportions[2] = 5e17;
-        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
-        metavault.setTargetProportions(newTargetProportions);
-        vm.prank(multisig);
         metavault.setTargetProportions(newTargetProportions);
         assertEq(metavault.targetProportions()[2], newTargetProportions[2]);
+        vm.stopPrank();
 
         // add vault
         address vault = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
