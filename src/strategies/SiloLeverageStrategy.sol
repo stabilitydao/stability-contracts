@@ -273,7 +273,12 @@ contract SiloLeverageStrategy is LeverageLendingBase,
             $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
         }
 
-        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
+        LeverageLendingLib.requestFlashLoan(
+            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
+            $.flashLoanVault,
+            flashAssets,
+            flashAmounts
+        );
 
         $.tempAction = CurrentAction.None;
         (resultLtv,,,,,) = health();
@@ -368,7 +373,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         console.log("!!!withdrawAssets", value);
-        return SiloLib.withdrawAssets($, $base, value, receiver);
+        return SiloLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
     //endregion ---------------- Strategy base
 

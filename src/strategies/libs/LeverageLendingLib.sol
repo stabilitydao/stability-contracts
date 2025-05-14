@@ -27,9 +27,20 @@ library LeverageLendingLib {
     address[] memory flashAssets,
     uint[] memory flashAmounts
   ) internal {
-    address vault = $.flashLoanVault;
-    ILeverageLendingStrategy.FlashLoanKind flashLoanKind = ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind);
+    return requestFlashLoan(
+      ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
+      $.flashLoanVault,
+      flashAssets,
+      flashAmounts
+    );
+  }
 
+  function requestFlashLoan(
+    ILeverageLendingStrategy.FlashLoanKind flashLoanKind,
+    address flashLoanVault,
+    address[] memory flashAssets,
+    uint[] memory flashAmounts
+  ) internal {
     if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
       // --------------- Flash loan of Balancer v3, free. The strategy should support IBalancerV3FlashCallback
       // fee amount are always 0, flash loan in balancer v3 is free
@@ -40,16 +51,16 @@ library LeverageLendingLib {
         bytes("") // no user data
       );
 
-      IVaultMainV3(payable(vault)).unlock(data);
+      IVaultMainV3(payable(flashLoanVault)).unlock(data);
     } else if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2) {
       // --------------- Flash loan Uniswap V3. The strategy should support IUniswapV3FlashCallback
       // ensure that the vault has available amount
       require(
-        IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance()
+        IERC20(flashAssets[0]).balanceOf(address(flashLoanVault)) >= flashAmounts[0], IControllable.InsufficientBalance()
       );
 
-      bool isToken0 = IUniswapV3PoolImmutables(vault).token0() == flashAssets[0];
-      IUniswapV3PoolActions(vault).flash(
+      bool isToken0 = IUniswapV3PoolImmutables(flashLoanVault).token0() == flashAssets[0];
+      IUniswapV3PoolActions(flashLoanVault).flash(
         address(this),
         isToken0 ? flashAmounts[0] : 0,
         isToken0 ? 0 : flashAmounts[0],
@@ -57,8 +68,7 @@ library LeverageLendingLib {
       );
     } else {
       // --------------- Default flash loan Balancer v2, paid. The strategy should support IFlashLoanRecipient
-      IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
+      IBVault(flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
     }
   }
-
 }

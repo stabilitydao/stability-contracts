@@ -641,7 +641,7 @@ library SiloAdvancedLib {
             }
 
             if (valueToWithdraw != 0) {
-                _withdrawReduceLeverage($, v, state, valueToWithdraw);
+                _defaultWithdraw($, v, state, valueToWithdraw);
             }
         }
 
@@ -651,7 +651,7 @@ library SiloAdvancedLib {
     }
 
     /// @notice Default withdraw procedure (leverage is a bit decreased)
-    function _withdrawReduceLeverage(
+    function _defaultWithdraw(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         StateBeforeWithdraw memory state,
