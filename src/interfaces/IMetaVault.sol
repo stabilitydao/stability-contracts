@@ -41,7 +41,7 @@ interface IMetaVault is IStabilityVault {
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event APR(uint sharePrice, int apr, uint lastStoredSharePrice, uint duration);
+    event APR(uint sharePrice, int apr, uint lastStoredSharePrice, uint duration, uint tvl);
     event Rebalance(uint[] withdrawShares, uint[] depositAmountsProportions, int cost);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);

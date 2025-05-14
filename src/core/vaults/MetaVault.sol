@@ -200,7 +200,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         duration = block.timestamp - storedTime;
         $.storedSharePrice = sharePrice;
         $.storedTime = block.timestamp;
-        emit APR(sharePrice, apr, lastStoredSharePrice, duration);
+        (uint _tvl,) = tvl();
+        emit APR(sharePrice, apr, lastStoredSharePrice, duration, _tvl);
     }
 
     /// @inheritdoc IStabilityVault
