@@ -93,7 +93,8 @@ interface ILeverageLendingStrategy {
         /// @notice Balancer V2
         Default_0,
         BalancerV3_1,
-        UniswapV3_2
+        UniswapV3_2,
+        AlgebraV4_3
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
