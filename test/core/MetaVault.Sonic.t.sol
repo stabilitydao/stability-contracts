@@ -486,7 +486,7 @@ contract MetaVaultSonicTest is Test {
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
-        assertEq(IERC20Metadata(address(metavault)).symbol(), "multiUSDC");
+        assertEq(IERC20Metadata(address(metavault)).symbol(), "metaUSDC");
         assertEq(IERC20Metadata(address(metavault)).decimals(), 18);
 
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
