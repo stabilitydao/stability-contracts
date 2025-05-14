@@ -162,7 +162,7 @@ contract VicunaStrategy is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+    function _depositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amount;
     }
@@ -186,7 +186,7 @@ contract VicunaStrategy is StrategyBase {
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
         internal
-        view
+        pure
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
@@ -199,7 +199,7 @@ contract VicunaStrategy is StrategyBase {
     function _previewDepositAssets(
         address[] memory, /*assets_*/
         uint[] memory amountsMax
-    ) internal view override returns (uint[] memory amountsConsumed, uint value) {
+    ) internal pure override returns (uint[] memory amountsConsumed, uint value) {
         return _previewDepositAssets(amountsMax);
     }
 
@@ -229,7 +229,7 @@ contract VicunaStrategy is StrategyBase {
         amountsOut[0] = amountOut;
 
         IERC20(depositedAsset).safeTransfer(receiver, amountOut);
-        $.totalSupplied -= value; // TODO: make sure `value` is not greater than `totalSupplied`
+        $.totalSupplied -= value;
     }
 
     /// @inheritdoc StrategyBase
@@ -249,6 +249,7 @@ contract VicunaStrategy is StrategyBase {
     /// @inheritdoc StrategyBase
     function _claimRevenue()
         internal
+        view
         override
         returns (
             address[] memory __assets,
@@ -274,11 +275,10 @@ contract VicunaStrategy is StrategyBase {
     }
 
     function _getRevenue(address u) internal view returns (address[] memory __assets, uint[] memory amounts) {
-        // StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        // __assets = $base._assets;
+        VicunaStrategyStorage storage $ = _getStorage();
         __assets = assets();
         amounts = new uint[](1);
-        amounts[0] = StrategyLib.balance(u); // TODO: It is supposed to be the currentBalance minus balanceBefore. OR currentBalance minus deposited amount
+        amounts[0] = StrategyLib.balance(u) - $.totalSupplied;
     }
 
     function _getStorage() internal pure returns (VicunaStrategyStorage storage $) {
