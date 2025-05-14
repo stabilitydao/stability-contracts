@@ -4,12 +4,13 @@ pragma solidity ^0.8.28;
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {Controllable, IControllable} from "./Controllable.sol";
 import {ConstantsLib} from "../libs/ConstantsLib.sol";
 import {VaultStatusLib} from "../libs/VaultStatusLib.sol";
 import {VaultBaseLib} from "../libs/VaultBaseLib.sol";
-import {IVault} from "../../interfaces/IVault.sol";
+import {IVault, IStabilityVault} from "../../interfaces/IVault.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
@@ -18,11 +19,12 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 
-/// @notice Base vault implementation.
+/// @notice Base vault implementation for compounders and harvesters.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
 ///         Start price of vault share is $1.
-/// @dev Used by all vault implementations (CVault, RVault, etc)
+/// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
 ///   2.1.0: previewDepositAssetsWrite
 ///   2.0.0: use strategy.previewDepositAssetsWrite; hardWorkMintFeeCallback use platform.getCustomVaultFee
@@ -40,7 +42,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.2.0";
+    string public constant VERSION_VAULT_BASE = "2.3.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -177,14 +179,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit MaxSupply(maxShares);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function setName(string calldata newName) external onlyOperator {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.changedName = newName;
         emit VaultName(newName);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function setSymbol(string calldata newSymbol) external onlyOperator {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.changedSymbol = newSymbol;
@@ -195,7 +197,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function depositAssets(
         address[] memory assets_,
         uint[] memory amountsMax,
@@ -262,7 +264,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit DepositAssets(receiver, assets_, v.amountsConsumed, v.mintAmount);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function withdrawAssets(
         address[] memory assets_,
         uint amountShares,
@@ -271,7 +273,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return _withdrawAssets(assets_, amountShares, minAssetAmountsOut, msg.sender, msg.sender);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function withdrawAssets(
         address[] memory assets_,
         uint amountShares,
@@ -298,7 +300,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function name() public view override returns (string memory) {
+    /// @inheritdoc IStabilityVault
+    function assets() external view returns (address[] memory) {
+        return _getVaultBaseStorage().strategy.assets();
+    }
+
+    /// @inheritdoc IERC20Metadata
+    function name() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         string memory changedName = $.changedName;
         if (bytes(changedName).length > 0) {
@@ -307,7 +315,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return super.name();
     }
 
-    function symbol() public view override returns (string memory) {
+    /// @inheritdoc IERC20Metadata
+    function symbol() public view override(ERC20Upgradeable, IERC20Metadata) returns (string memory) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         string memory changedSymbol = $.changedSymbol;
         if (bytes(changedSymbol).length > 0) {
@@ -321,12 +330,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return interfaceId == type(IVault).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function vaultType() external view returns (string memory) {
         return _getVaultBaseStorage()._type;
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function price() external view returns (uint price_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
@@ -340,7 +349,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function tvl() public view returns (uint tvl_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
@@ -349,7 +358,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
 
-    /// @inheritdoc IVault
+    /// @inheritdoc IStabilityVault
     function previewDepositAssets(
         address[] memory assets_,
         uint[] memory amountsMax
@@ -474,11 +483,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint totalValue_,
         uint[] memory amountsConsumed,
         uint minSharesOut,
-        address[] memory assets,
+        address[] memory assets_,
         address receiver
     ) internal returns (uint mintAmount) {
         uint initialShares;
-        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets);
+        (mintAmount, initialShares) = _calcMintShares(totalSupply_, value_, totalValue_, amountsConsumed, assets_);
         uint _maxSupply = $.maxSupply;
         // nosemgrep
         if (_maxSupply != 0 && mintAmount + totalSupply_ > _maxSupply) {
@@ -502,7 +511,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint value_,
         uint totalValue_,
         uint[] memory amountsConsumed,
-        address[] memory assets
+        address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
@@ -512,7 +521,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // its setting sharePrice to 1e18
             IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
             //slither-disable-next-line unused-return
-            (mintAmount,,,) = priceReader.getAssetsPrice(assets, amountsConsumed);
+            (mintAmount,,,) = priceReader.getAssetsPrice(assets_, amountsConsumed);
 
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;

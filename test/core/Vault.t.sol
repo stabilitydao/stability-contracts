@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Test, console} from "forge-std/Test.sol";
@@ -10,7 +10,7 @@ import "../../src/strategies/libs/StrategyIdLib.sol";
 import "../../src/test/MockStrategy.sol";
 import "../../src/test/MockAmmAdapter.sol";
 import "../base/FullMockSetup.sol";
-import "../../src/interfaces/IVault.sol";
+import {IVault, IStabilityVault} from "../../src/interfaces/IVault.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
@@ -146,7 +146,7 @@ contract VaultTest is Test, FullMockSetup {
         assertGt(shares, 0);
         assertEq(shares, sharesOut);
 
-        vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
+        vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
         vault.withdrawAssets(assets, shares / 2, new uint[](2));
 
         // underlying token deposit
@@ -315,7 +315,7 @@ contract VaultTest is Test, FullMockSetup {
             })
         );
 
-        vm.expectRevert(IVault.NotSupported.selector);
+        vm.expectRevert(IStabilityVault.NotSupported.selector);
         rVault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 

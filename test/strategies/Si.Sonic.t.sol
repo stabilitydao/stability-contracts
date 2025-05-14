@@ -13,7 +13,8 @@ import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 contract SiloStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC
+        //vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC
+        vm.rollFork(26826000); // May-14-2025 09:16:16 PM +UTC
     }
 
     function testSiloSonic() public universalTest {

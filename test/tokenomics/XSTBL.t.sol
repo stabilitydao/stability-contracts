@@ -26,7 +26,7 @@ contract XSTBLTest is Test, MockSetup {
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         Proxy feeTreasuryProxy = new Proxy();
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
-        FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform));
+        FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform), platform.multisig());
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
         XSTBL(address(xSTBLProxy)).initialize(
             address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
