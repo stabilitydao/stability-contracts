@@ -125,10 +125,6 @@ library SiloAdvancedLib {
                 collateralAmountTotal -= collateralAmountTotal / 1000;
                 ISilo(lendingVault).withdraw(
                     Math.min(tempCollateralAmount, collateralAmountTotal),
-                    // todo
-                    //                    _estimateCollateralAmountToRepay(
-                    //                        platform, collateralAmountTotal, collateralAsset, token, tempCollateralAmount
-                    //                    ),
                     address(this),
                     address(this),
                     ISilo.CollateralType.Collateral
@@ -140,9 +136,13 @@ library SiloAdvancedLib {
                 platform,
                 collateralAsset,
                 token,
-                Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
+                _estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0),
+                // Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
                 swapPriceImpactTolerance0
             );
+
+            // explicit error for the case when _estimateSwapAmount gives incorrect amount
+            require(IERC20(token).balanceOf(address(this)) >= amount + feeAmount, IControllable.InsufficientBalance());
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
@@ -474,26 +474,73 @@ library SiloAdvancedLib {
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
     }
 
-    function _estimateCollateralAmountToRepay(
+    /// @dev Get flash loan and execute {receiveFlashLoan}
+    function requestFlashLoan(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address[] memory flashAssets,
+        uint[] memory flashAmounts
+    ) internal {
+        address vault = $.flashLoanVault;
+        ILeverageLendingStrategy.FlashLoanKind flashLoanKind = ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind);
+
+        if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
+            // fee amount are always 0,  flash loan in balancer v3 is free
+            bytes memory data = abi.encodeWithSignature(
+                "receiveFlashLoanV3(address,uint256,bytes)",
+                flashAssets[0],
+                flashAmounts[0],
+                bytes("") // no user data
+            );
+
+            IVaultMainV3(payable(vault)).unlock(data);
+        } else if (
+            // assume here that Algebra uses exactly same API as UniswapV3
+            flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
+                || flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
+        ) {
+            // ensure that the pool has available amount
+            require(
+                IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance()
+            );
+
+            bool isToken0 = IUniswapV3PoolImmutables(vault).token0() == flashAssets[0];
+            IUniswapV3PoolActions(vault).flash(
+                address(this),
+                isToken0 ? flashAmounts[0] : 0,
+                isToken0 ? 0 : flashAmounts[0],
+                abi.encode(flashAssets[0], flashAmounts[0], isToken0)
+            );
+        } else {
+            // FLASH_LOAN_KIND_BALANCER_V2: paid
+            IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
+        }
+    }
+
+    /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
+    /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
+    function _estimateSwapAmount(
         address platform,
         uint amountToRepay,
         address collateralAsset,
         address token,
-        uint tempCollateralAmount
+        uint priceImpactTolerance
     ) internal view returns (uint) {
         // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
         // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
 
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
 
-        // 10% for price impact and slippage
-        uint minCollateralToSwap = swapper.getPrice(token, collateralAsset, amountToRepay) * 110 / 100;
+        // we use higher (x2) price impact then required for safety
+        uint minCollateralToSwap =
+            swapper.getPrice(token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000); // priceImpactTolerance has its own denominator
 
-        return Math.min(minCollateralToSwap, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
+        return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
     }
 
     //region ------------------------------------- Deposit
     function depositAssets(
+        address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IStrategy.StrategyBaseStorage storage $base,
         uint amount,
@@ -512,6 +559,10 @@ library SiloAdvancedLib {
         }
 
         $base.total += value;
+
+        // ensure that result LTV doesn't exceed max
+        (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        _ensureLtvValid($, platform, maxLtv);
     }
 
     function _deposit(
@@ -537,7 +588,9 @@ library SiloAdvancedLib {
 
         return amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
-            / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+            // depositParam0 is used to move result leverage to targetValue.
+            // Otherwise result leverage is higher the target value because of swap losses
+            * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
         // not sure that its right way, but its working
         // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
     }
@@ -591,6 +644,9 @@ library SiloAdvancedLib {
                 SiloAdvancedLib._deposit($, v, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
             }
         }
+
+        // ensure that result LTV doesn't exceed max
+        _ensureLtvValid($, platform, state.maxLtv);
     }
 
     function withdrawFromLendingVault(
@@ -644,10 +700,6 @@ library SiloAdvancedLib {
                 _defaultWithdraw($, v, state, valueToWithdraw);
             }
         }
-
-        // ensure that result LTV doesn't exceed max
-        (uint ltv,,,,,) = health(platform, $);
-        require(ltv <= state.maxLtv, IControllable.IncorrectLtv(ltv));
     }
 
     /// @notice Default withdraw procedure (leverage is a bit decreased)
@@ -772,6 +824,17 @@ library SiloAdvancedLib {
     //endregion ------------------------------------- Withdraw
 
     //region ------------------------------------- Internal
+
+    /// @notice ensure that result LTV doesn't exceed max
+    function _ensureLtvValid(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address platform,
+        uint maxLtv
+    ) internal view {
+        (uint ltv,,,,,) = health(platform, $);
+        require(ltv <= maxLtv, IControllable.IncorrectLtv(ltv));
+    }
+
     function _getFlashLoanAmounts(
         uint borrowAmount,
         address borrowAsset

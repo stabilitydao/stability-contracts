@@ -292,7 +292,7 @@ library SiloLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         console.log("realTvl");
-        SiloAdvancedLib.CollateralDebtState memory debtState =
+        CollateralDebtState memory debtState =
                         getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
@@ -448,7 +448,7 @@ library SiloLib {
         address receiver
     ) internal returns (uint[] memory amountsOut) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
-        SiloAdvancedLib.StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
+        StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
         if (value > state.collateralBalanceStrategy) {
@@ -485,7 +485,9 @@ library SiloLib {
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
             uint balance = StrategyLib.balance(v.collateralAsset);
             if (balance != 0) {
-                SiloLib._deposit($, v, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
+                address[] memory assets = new address[](1);
+                assets[0] = v.collateralAsset;
+                SiloLib._deposit($, v, assets, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
             }
         }
     }
@@ -499,7 +501,7 @@ library SiloLib {
     ) internal {
         (,, uint leverage,,,) = health(platform, $);
 
-        SiloAdvancedLib.CollateralDebtState memory debtState = getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
+        CollateralDebtState memory debtState = getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
 
         if (0 == debtState.debtAmount) {
             // zero debt, positive collateral - we can just withdraw required amount
@@ -571,7 +573,7 @@ library SiloLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         StateBeforeWithdraw memory state,
-        SiloAdvancedLib.CollateralDebtState memory debtState,
+        CollateralDebtState memory debtState,
         uint value,
         uint leverage
     ) internal returns (bool) {
@@ -612,8 +614,8 @@ library SiloLib {
     /// @notice Calculate result leverage in assumption that we increase leverage and extract {value} of collateral
     function _calculateNewLeverage(
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
-        SiloAdvancedLib.StateBeforeWithdraw memory state,
-        SiloAdvancedLib.CollateralDebtState memory debtState,
+        StateBeforeWithdraw memory state,
+        CollateralDebtState memory debtState,
         uint value
     ) internal view returns (int leverageNew) {
         // L_initial - current leverage

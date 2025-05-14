@@ -18,6 +18,7 @@ import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
+import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -30,8 +31,13 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
-///   2.0.2: refactoring
-///   2.0.1: refactoring, fix comments
+///   2.1.2: refactoring
+///   2.1.0:
+///     + support of algebra-v4 flash loan #276
+///     * reduce amount of swap in withdraw
+///     * use withdrawParam0 in deposit to fit result leverage
+///     * check ltv on exit of deposit
+///     * use LeverageLendingBase 1.2.1 #277
 ///   2.0.0:
 ///     * bug: decreasing LTV on exits #254
 ///     * bug: deposit logic must use oracle price #247
@@ -47,7 +53,8 @@ contract SiloAdvancedLeverageStrategy is
     LeverageLendingBase,
     IFlashLoanRecipient,
     IUniswapV3FlashCallback,
-    IBalancerV3FlashCallback
+    IBalancerV3FlashCallback,
+    IAlgebraFlashCallback
 {
     using SafeERC20 for IERC20;
 
@@ -56,7 +63,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.2";
+    string public constant VERSION = "2.1.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -146,6 +153,14 @@ contract SiloAdvancedLeverageStrategy is
 
     /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
+        // sender is the pool, it's checked inside receiveFlashLoan
+        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    }
+
+    function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         // sender is the pool, it's checked inside receiveFlashLoan
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 
@@ -341,7 +356,7 @@ contract SiloAdvancedLeverageStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
-        value = SiloAdvancedLib.depositAssets($, $base, amounts[0], _assets[0]);
+        value = SiloAdvancedLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
     }
 
     /// @inheritdoc StrategyBase
