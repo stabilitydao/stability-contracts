@@ -94,7 +94,7 @@ abstract contract DeployCore {
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new FeeTreasury()));
         vars.feeTreasury = FeeTreasury(address(vars.proxy));
-        vars.feeTreasury.initialize(address(vars.platform));
+        vars.feeTreasury.initialize(address(vars.platform), vars.platform.multisig());
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new RevenueRouter()));
         vars.revenueRouter = RevenueRouter(address(vars.proxy));
