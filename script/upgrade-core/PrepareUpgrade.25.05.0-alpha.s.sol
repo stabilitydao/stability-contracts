@@ -17,21 +17,20 @@ contract PrepareUpgrade11 is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // CVault 1.6.0: IStabilityVault
-        //        new CVault();
+        new CVault();
 
         // Platform 1.4.0: IPlatform.metaVaultFactory()
-        //        new Platform();
+        new Platform();
 
         // PriceReader 1.1.0: IPriceReader.getVaultPrice; IPriceReader.vaultsWithSafeSharePrice
-        //        new PriceReader();
+        new PriceReader();
 
         // FeeTreasury 1.1.0: assets, harvest, fixes
-        //        new FeeTreasury();
+        new FeeTreasury();
 
         // MetaVaultFactory 1.0.0
-        //        new MetaVaultFactory();
         Proxy proxy = new Proxy();
-        proxy.initProxy(0x8edF2A8B981757cFa58Ba163b82A877f09D9C830);
+        proxy.initProxy(address(new MetaVaultFactory()));
         MetaVaultFactory(address(proxy)).initialize(PLATFORM);
         vm.stopBroadcast();
     }

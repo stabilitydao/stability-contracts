@@ -6,6 +6,7 @@ library SonicConstantsLib {
     // initial addresses
     address public constant MULTISIG = 0xF564EBaC1182578398E94868bea1AbA6ba339652;
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant METAVAULT_FACTORY = 0xa190302880acF9deCC4447363640f589000EF601;
 
     // Vaults
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
