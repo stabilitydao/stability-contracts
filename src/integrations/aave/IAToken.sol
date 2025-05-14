@@ -41,5 +41,9 @@ interface IAToken {
 
   function nonces(address owner) external view returns (uint);
 
+  function balanceOf(address account) external view returns (uint);
+
+  function scaledBalanceOf(address user) external view returns (uint);
+
   function rescueTokens(address token, address to, uint amount) external;
 }
