@@ -33,12 +33,15 @@ interface IMetaVault is IStabilityVault {
         mapping(address owner => mapping(address spender => uint allowance)) allowance;
         uint totalShares;
         mapping(address => uint) shareBalance;
+        uint storedSharePrice;
+        uint storedTime;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event APR(uint sharePrice, int apr, uint lastStoredSharePrice, uint duration);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);
 
@@ -88,9 +91,26 @@ interface IMetaVault is IStabilityVault {
     /// @notice Maximum withdraw amount for next withdraw TX
     function maxWithdrawAmountTx() external view returns (uint);
 
+    /// @notice Show internal share prices
+    /// @return sharePrice Current internal share price
+    /// @return apr Current APR
+    /// @return storedSharePrice Stored internal share price
+    /// @return storedTime Time when stored
+    function internalSharePrice()
+        external
+        view
+        returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Update stored internal share price and emit APR
+    /// @return sharePrice Current internal share price
+    /// @return apr APR for last period
+    /// @return lastStoredSharePrice Last stored internal share price
+    /// @return duration Duration of last tracked period
+    function emitAPR() external returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration);
 
     /// @notice Single asset re-balancing
     function rebalance(

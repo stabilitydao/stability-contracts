@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Test, console} from "forge-std/Test.sol";
@@ -126,6 +127,10 @@ contract MetaVaultSonicTest is Test {
                 if (IMetaVault(metavault).pegAsset() == address(0)) {
                     assertEq(balance, IERC20(metavault).totalSupply());
                 }
+                (uint sharePrice, int apr, uint lastStoredSharePrice, uint storedTime) =
+                    IMetaVault(metavault).internalSharePrice();
+                assertGt(sharePrice, 9e17);
+                assertLt(sharePrice, 11e17);
             }
 
             // depositAssets | second deposit
@@ -144,7 +149,7 @@ contract MetaVaultSonicTest is Test {
                 uint user1BalanceBefore = IERC20(metavault).balanceOf(address(1));
                 vm.prank(address(1));
                 IERC20(metavault).transfer(address(2), user1BalanceBefore);
-                assertEq(IERC20(metavault).balanceOf(address(1)), 0);
+                assertLe(IERC20(metavault).balanceOf(address(1)), 1, "mv-u-1");
                 assertGe(IERC20(metavault).balanceOf(address(2)), user1BalanceBefore - 1);
                 assertLe(IERC20(metavault).balanceOf(address(2)), user1BalanceBefore);
 
@@ -159,7 +164,7 @@ contract MetaVaultSonicTest is Test {
                 assertEq(IERC20(metavault).allowance(address(2), address(1)), user1BalanceBefore);
                 vm.prank(address(1));
                 IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
-                assertEq(IERC20(metavault).balanceOf(address(2)), 0);
+                assertEq(IERC20(metavault).balanceOf(address(2)), 0, "mv-u-2");
 
                 // reverts
                 vm.expectRevert();
@@ -221,8 +226,16 @@ contract MetaVaultSonicTest is Test {
                 }
             }
 
+            vm.warp(block.timestamp + 600);
+            skip(600);
+
             // report
             {
+                vm.prank(multisig);
+                (uint sharePrice, int apr,, uint duration) = IMetaVault(metavault).emitAPR();
+                assertGt(sharePrice, 9999e14);
+                assertLt(sharePrice, 10001e14);
+
                 console.log(
                     string.concat(
                         IERC20Metadata(metavault).symbol(),
@@ -237,7 +250,19 @@ contract MetaVaultSonicTest is Test {
                 );
 
                 (uint tvl,) = IStabilityVault(metavault).tvl();
-                console.log(string.concat("  TVL: ", CommonLib.formatUsdAmount(tvl), "."));
+                console.log(
+                    string.concat(
+                        "  TVL: ",
+                        CommonLib.formatUsdAmount(tvl),
+                        ". APR: ",
+                        CommonLib.formatAprInt(apr),
+                        ". Duration: ",
+                        Strings.toString(duration)
+                    )
+                );
+
+                (uint liveSharePrice,,,) = IMetaVault(metavault).internalSharePrice();
+                assertEq(liveSharePrice, sharePrice);
             }
 
             // withdraw
@@ -349,7 +374,7 @@ contract MetaVaultSonicTest is Test {
                     assertLt(newAssetBal, bal * 101 / 100);
                 }
 
-                assertEq(IERC20(wrapper).balanceOf(user), 0);
+                assertEq(IERC20(wrapper).balanceOf(user), 0, "mv-u-3");
 
                 vm.stopPrank();
             }

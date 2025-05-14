@@ -67,6 +67,9 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /// @inheritdoc IStabilityVault
     function setSymbol(string calldata newSymbol) external {}
 
+    /// @inheritdoc IMetaVault
+    function emitAPR() external returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration) {}
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -96,6 +99,13 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IMetaVault
+    function internalSharePrice()
+        public
+        view
+        returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime)
+    {}
 
     /// @inheritdoc IMetaVault
     function currentProportions() public view returns (uint[] memory) {}

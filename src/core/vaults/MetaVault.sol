@@ -99,11 +99,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
         _checkProportions(newTargetProportions);
-        IPlatform _platform = IPlatform(platform());
-        require(
-            _platform.isOperator(msg.sender) || IHardWorker(_platform.hardWorker()).dedicatedServerMsgSender(msg.sender),
-            IControllable.IncorrectMsgSender()
-        );
+        _requiredAllowedOperator(platform());
         $.targetProportions = newTargetProportions;
         emit TargetProportions(newTargetProportions);
     }
@@ -113,6 +109,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] memory withdrawAmounts,
         uint[] memory depositAmounts
     ) external returns (uint proportions, uint cost) {
+        _requiredAllowedOperator(platform());
+
         // todo
     }
 
@@ -146,6 +144,18 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         emit AddVault(vault);
         emit TargetProportions(newTargetProportions);
+    }
+
+    /// @inheritdoc IMetaVault
+    function emitAPR() external returns (uint sharePrice, int apr, uint lastStoredSharePrice, uint duration) {
+        _requiredAllowedOperator(platform());
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        uint storedTime;
+        (sharePrice, apr, lastStoredSharePrice, storedTime) = internalSharePrice();
+        duration = block.timestamp - storedTime;
+        $.storedSharePrice = sharePrice;
+        $.storedTime = block.timestamp;
+        emit APR(sharePrice, apr, lastStoredSharePrice, duration);
     }
 
     /// @inheritdoc IStabilityVault
@@ -184,12 +194,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         v.len = assets_.length;
         v.balanceBefore = new uint[](v.len);
         v.amountsConsumed = new uint[](v.len);
-        (uint targetVaultTvlBefore,) = IStabilityVault(v.targetVault).tvl();
         for (uint i; i < v.len; ++i) {
             IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
             v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
             IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
         }
+        uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
         IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
         for (uint i; i < v.len; ++i) {
             v.amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
@@ -198,24 +208,33 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 IERC20(assets_[i]).safeTransfer(msg.sender, refund);
             }
         }
-        (uint targetVaultTvlAfter,) = IStabilityVault(v.targetVault).tvl();
-        uint depositedTvl = targetVaultTvlAfter - targetVaultTvlBefore;
-        uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
-        uint sharesToCreate;
-        if (v.totalSharesBefore == 0) {
-            sharesToCreate = balanceOut;
-        } else {
-            sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
+
+        {
+            (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
+            uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
+            uint depositedTvl = (targetVaultSharesAfter - targetVaultSharesBefore) * targetVaultPrice / 1e18;
+            uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
+            uint sharesToCreate;
+            if (v.totalSharesBefore == 0) {
+                sharesToCreate = balanceOut;
+            } else {
+                sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
+            }
+
+            _mint($, receiver, sharesToCreate, balanceOut);
+
+            if (balanceOut < minSharesOut) {
+                revert ExceedSlippage(balanceOut, minSharesOut);
+            }
+            // todo dead shares
+
+            emit DepositAssets(receiver, assets_, v.amountsConsumed, balanceOut);
         }
 
-        _mint($, receiver, sharesToCreate, balanceOut);
-
-        if (balanceOut < minSharesOut) {
-            revert ExceedSlippage(balanceOut, minSharesOut);
+        if ($.storedTime == 0) {
+            $.storedTime = block.timestamp;
+            ($.storedSharePrice,,,) = internalSharePrice();
         }
-        // todo dead shares
-
-        emit DepositAssets(receiver, assets_, v.amountsConsumed, balanceOut);
     }
 
     /// @inheritdoc IStabilityVault
@@ -366,6 +385,26 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     function vaults() external view returns (address[] memory) {
         return _getMetaVaultStorage().vaults;
+    }
+
+    /// @inheritdoc IMetaVault
+    function internalSharePrice()
+        public
+        view
+        returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime)
+    {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        uint _totalSupply = totalSupply();
+        uint totalShares = $.totalShares;
+        if (totalShares == 0) {
+            return (0, 0, 0, 0);
+        }
+        sharePrice = _totalSupply * 1e18 / totalShares;
+        storedSharePrice = $.storedSharePrice;
+        storedTime = $.storedTime;
+        if (storedTime != 0) {
+            apr = _computeApr(sharePrice, int(sharePrice) - int(storedSharePrice), block.timestamp - storedTime);
+        }
     }
 
     /// @inheritdoc IStabilityVault
@@ -611,6 +650,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             require(currentAllowance >= amount, ERC20InsufficientAllowance(spender, currentAllowance, amount));
             $.allowance[owner][spender] = currentAllowance - amount;
         }
+    }
+
+    function _computeApr(uint tvl_, int earned, uint duration) internal pure returns (int) {
+        if (tvl_ == 0 || duration == 0) {
+            return 0;
+        }
+        return earned * int(1e18) * 100_000 * int(365) / int(tvl_) / int(duration * 1e18 / 1 days);
+    }
+
+    function _requiredAllowedOperator(address _platform) internal view {
+        require(
+            IPlatform(_platform).isOperator(msg.sender)
+                || IHardWorker(IPlatform(_platform).hardWorker()).dedicatedServerMsgSender(msg.sender),
+            IControllable.IncorrectMsgSender()
+        );
     }
 
     function _getMetaVaultStorage() internal pure returns (MetaVaultStorage storage $) {
