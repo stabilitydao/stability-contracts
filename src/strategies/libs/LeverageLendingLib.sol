@@ -21,6 +21,8 @@ import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUnisw
 library LeverageLendingLib {
   using SafeERC20 for IERC20;
 
+  uint constant internal PRICE_IMPACT_DENOMINATOR = 100_000;
+
   /// @dev Get flash loan. Proper callback will be called in the strategy (depends on the kind of the flash loan)
   function requestFlashLoan(
     ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -71,4 +73,5 @@ library LeverageLendingLib {
       IBVault(flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
     }
   }
+
 }

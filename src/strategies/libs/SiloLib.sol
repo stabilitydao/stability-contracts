@@ -67,6 +67,7 @@ library SiloLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
+            //  flash amount is collateral
             console.log('Do Deposit');
             console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
             console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
@@ -125,6 +126,7 @@ library SiloLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
+            // flash is in borrow asset
             console.log('Do Withdraw');
             console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
             console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
@@ -620,18 +622,19 @@ library SiloLib {
     ) internal view returns (int leverageNew) {
         // L_initial - current leverage
         // ltv = max ltv
+        // alpha = (1 - swap price impact)
         // X - collateral amount to withdraw
         // L_new = new leverage (it must be > current leverage)
-        // C_add - new required collateral = L_new * X
+        // C_add - new required collateral = L_new * X * ltv * alpha
         // D_inc - increment of the debt = ltv * C_add = ltv * L_new * X
         // C_new = new collateral = C - X + C_add
         // D_new = new debt = D + D_inc
         // The math:
         //      L_new = C_new / (C_new - D_new)
-        //      L_new = (C - X + L_new * X) / (C - X - D + L_new * X - ltv * L_new * X)
+        //      L_new = (C - X + L_new * X * ltv * alpha) / (C - X + L_new * X * ltv * alpha - D - ltv * L_new * X)
         //      L_new^2 * [X * (1 - ltv)] + L_new * (C - D - 2X) - (C - X) = 0
         // Solve square equation
-        //      A = X (1 - ltv), B = C - D - 2X, C_quad = -(C - X)
+        //      A = X * ltv * (alpha - 1), B = C - D - X - X * ltv * alpha, C_quad = -(C - X)
         //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
         uint xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
 
