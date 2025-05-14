@@ -35,18 +35,19 @@ contract MetaVaultSonicTest is Test {
     address public multisig;
 
     constructor() {
-        // May-10-2025 10:38:26 AM +UTC
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 25729900));
+        // May-14-2025 10:14:19 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 26834601));
     }
 
     function setUp() public {
         multisig = IPlatform(PLATFORM).multisig();
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+        metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        _upgradePriceReader();
-        _upgradeCVaults();
-        _deployMetaVaultFactory();
-        _upgradePlatform();
+        // _upgradePriceReader();
+        // _upgradeCVaults();
+        //_deployMetaVaultFactory();
+        // _upgradePlatform();
         _setupMetaVaultFactory();
         _setupImplementations();
 
@@ -71,7 +72,7 @@ contract MetaVaultSonicTest is Test {
         proportions_[3] = 20e16;
         proportions_[4] = 20e16;
         metaVaults[0] = _deployMetaVaultByMetaVaultFactory(
-            vaultType, SonicConstantsLib.TOKEN_USDC, "Stability USDC", "multiUSDC", vaults_, proportions_
+            vaultType, SonicConstantsLib.TOKEN_USDC, "Stability USDC", "metaUSDC", vaults_, proportions_
         );
         _deployWrapper(metaVaults[0]);
 
@@ -492,7 +493,7 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
     }
 
-    function _upgradePriceReader() internal {
+    /*function _upgradePriceReader() internal {
         address[] memory proxies = new address[](1);
         proxies[0] = address(priceReader);
         address[] memory implementations = new address[](1);
@@ -502,9 +503,9 @@ contract MetaVaultSonicTest is Test {
         skip(1 days);
         IPlatform(PLATFORM).upgrade();
         vm.stopPrank();
-    }
+    }*/
 
-    function _upgradeCVaults() internal {
+    /*function _upgradeCVaults() internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         // deploy new impl and upgrade
@@ -528,9 +529,9 @@ contract MetaVaultSonicTest is Test {
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_36);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_49);
-    }
+    }*/
 
-    function _upgradePlatform() internal {
+    /*function _upgradePlatform() internal {
         address[] memory proxies = new address[](1);
         proxies[0] = PLATFORM;
         address[] memory implementations = new address[](1);
@@ -540,14 +541,14 @@ contract MetaVaultSonicTest is Test {
         skip(1 days);
         IPlatform(PLATFORM).upgrade();
         vm.stopPrank();
-    }
+    }*/
 
-    function _deployMetaVaultFactory() internal {
+    /*function _deployMetaVaultFactory() internal {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new MetaVaultFactory()));
         metaVaultFactory = IMetaVaultFactory(address(proxy));
         metaVaultFactory.initialize(PLATFORM);
-    }
+    }*/
 
     function _setupMetaVaultFactory() internal {
         vm.prank(multisig);
@@ -582,7 +583,7 @@ contract MetaVaultSonicTest is Test {
         return metaVaultFactory.deployWrapper(bytes32(uint(uint160(metaVault))), metaVault);
     }
 
-    function _deployMetaVaultStandalone(
+    /*function _deployMetaVaultStandalone(
         string memory type_,
         address pegAsset,
         string memory name_,
@@ -595,7 +596,7 @@ contract MetaVaultSonicTest is Test {
         proxy.initProxy(address(implementation));
         MetaVault(address(proxy)).initialize(PLATFORM, type_, pegAsset, name_, symbol_, vaults_, proportions_);
         return address(proxy);
-    }
+    }*/
 
     function _getAmountsForDeposit(
         uint usdValue,

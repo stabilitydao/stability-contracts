@@ -8,6 +8,12 @@ library SonicConstantsLib {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant METAVAULT_FACTORY = 0xa190302880acF9deCC4447363640f589000EF601;
 
+    // MetaVaults
+    address public constant METAVAULT_metaUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
+    address public constant WRAPPED_METAVAULT_metaUSD = 0xAaAaaAAac311D0572Bffb4772fe985A750E88805;
+    address public constant METAVAULT_metaUSDC = 0x22222222780038f8817b3dE825a070225e6d9874;
+    address public constant WRAPPED_METAVAULT_metaUSDC = 0xEEEEEEE6d95E55A468D32FeB5d6648754d10A967;
+
     // Vaults
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
     address public constant VAULT_C_USDC_S_8 = 0x96a8055090E87bfE18BdF3794E9D676F196EFd80;
