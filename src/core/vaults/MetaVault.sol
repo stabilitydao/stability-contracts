@@ -134,7 +134,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             for (uint i; i < len; ++i) {
                 if (withdrawShares[i] != 0) {
                     IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
-                    require (depositAmountsProportions[i] == 0, IncorrectRebalanceArgs());
+                    require(depositAmountsProportions[i] == 0, IncorrectRebalanceArgs());
                 }
             }
             uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
@@ -145,7 +145,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 if (amountsMax[0] != 0) {
                     IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
                     IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
-                    require (withdrawShares[i] == 0, IncorrectRebalanceArgs());
+                    require(withdrawShares[i] == 0, IncorrectRebalanceArgs());
                 }
             }
         } else {
