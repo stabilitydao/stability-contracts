@@ -5,6 +5,8 @@ import {Test, console} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {AgentOS} from "../../src/agentos/AgentOS.sol";
 import {IAgentOS} from "../../src/interfaces/IAgentOS.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
@@ -176,9 +178,15 @@ contract AgentOSTest is Test, MockSetup {
     }
 
     function testGetAgentParams_RevertIf_TokenDoesNotExist() public {
-        vm.startPrank(user);
+        vm.startPrank(operator);
         vm.expectRevert();
         agentOS.getAgentParams(type(uint).max);
         vm.stopPrank();
+    }
+
+    function testErc165() public view {
+        assertEq(agentOS.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(agentOS.supportsInterface(type(IControllable).interfaceId), true);
+        assertEq(agentOS.supportsInterface(type(IAgentOS).interfaceId), true);
     }
 }
