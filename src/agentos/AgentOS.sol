@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {ERC721EnumerableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -20,7 +21,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 /// @dev Agents can be configured with different disclosure levels (PUBLIC, PRIVATE)
 /// @dev The contract manages assets that agents can interact with
 /// @author 0xhokugava (https://github.com/0xhokugava)
-contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
+contract AgentOS is Controllable, ERC721EnumerableUpgradeable, ReentrancyGuardUpgradeable, IAgentOS {
     using SafeERC20 for IERC20Metadata;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -69,7 +70,7 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     }
 
     /// @inheritdoc IAgentOS
-    function work(uint tokenId, Job job, string memory data) public {
+    function work(uint tokenId, Job job, string memory data) public nonReentrant {
         AgentOSStorage storage $ = _getStorage();
         if (
             ownerOf(tokenId) != _msgSender() && getApproved(tokenId) != _msgSender()
@@ -122,7 +123,6 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     function addAsset(address tokenAddress) public onlyOperator {
         AgentOSStorage storage $ = _getStorage();
         if (!$.assets.add(tokenAddress)) revert AssetAlreadyActive();
-        $.assets.add(tokenAddress);
         emit AssetAdded(tokenAddress);
     }
 
@@ -130,7 +130,6 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     function removeAsset(address tokenAddress) public onlyOperator {
         AgentOSStorage storage $ = _getStorage();
         if (!$.assets.remove(tokenAddress)) revert AssetNotActive();
-        $.assets.remove(tokenAddress);
         emit AssetRemoved(tokenAddress);
     }
 
