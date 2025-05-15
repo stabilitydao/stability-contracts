@@ -28,6 +28,9 @@ contract SiLUpgradeTest2 is Test {
     uint internal constant FLASH_LOAN_KIND_BALANCER_V3 = 1;
     uint internal constant FLASH_LOAN_KIND_UNISWAP_V3 = 2;
 
+    address public constant ALGEBRA_WS_USDC_POOL = 0x5C4B7d607aAF7B5CDE9F09b5F03Cf3b5c923AEEa;
+    address public constant ALGEBRA_USDC_STS_POOL = 0x5DDbeF774488cc68266d5F15bFB08eaA7cd513F9;
+
     address public multisig;
     IFactory public factory;
 
@@ -73,12 +76,14 @@ contract SiLUpgradeTest2 is Test {
 
     /// @notice Check flash loan through BEETS
     function testSiLUpgrade1() public {
+        // collateral asset: 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38 // wS
+        // borrow asset: 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955 // stS
         address user1 = address(1);
 
         vm.prank(multisig);
         address vault = VAULT2;
         address strategyAddress = address(IVault(vault).strategy());
-        uint amount = 1_00e18;
+        uint amount = 10e18;
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(strategyAddress);
@@ -87,7 +92,12 @@ contract SiLUpgradeTest2 is Test {
         vm.stopPrank();
 
         // ----------------- use flash loan through Balancer v3
-        _setFlashLoanVault(strategy, BEETS_VAULT_V3, uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1));
+        _setFlashLoanVault(
+            strategy,
+            BEETS_VAULT_V3,
+            address(0),
+            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+        );
 
         // ----------------- check current state
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
@@ -104,6 +114,8 @@ contract SiLUpgradeTest2 is Test {
 
     /// @notice Check flash loan through Uniswap
     function testSiLUpgrade2() public {
+        // collateral asset: 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38 // wS
+        // borrow asset: 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955 // stS
         address user1 = address(1);
 
         vm.prank(multisig);
@@ -119,7 +131,51 @@ contract SiLUpgradeTest2 is Test {
         vm.stopPrank();
 
         // ----------------- use flash loan through Uniswap V3
-        _setFlashLoanVault(strategy, SHADOW_POOL_S_STS, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+        _setFlashLoanVault(
+            strategy,
+            SHADOW_POOL_S_STS,
+            address(0),
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        );
+
+        // ----------------- check current state
+        address collateralAsset = IStrategy(strategyAddress).assets()[0];
+
+        // ----------------- deposit & withdraw
+        _depositForUser(vault, strategyAddress, user1, amount);
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(vault, strategyAddress, user1);
+
+        // ----------------- check results
+        console.log(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount));
+        assertLe(_getDiffPercent(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
+    }
+
+    /// @notice Check flash loan through Algebra v4, use two different pools
+    function testSiLUpgrade3() public {
+        // collateral asset: 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38 // wS
+        // borrow asset: 0xE5DA20F15420aD15DE0fa650600aFc998bbE3955 // stS
+        address user1 = address(1);
+
+        vm.prank(multisig);
+        address vault = VAULT2;
+        address strategyAddress = address(IVault(vault).strategy());
+        // uint amount = 1_00e18;
+        uint amount = 100e18;
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+
+        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+        vm.stopPrank();
+
+        // ----------------- use flash loan through Uniswap V3
+        _setFlashLoanVault(
+            strategy,
+            ALGEBRA_WS_USDC_POOL,
+            ALGEBRA_USDC_STS_POOL,
+            uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+        );
 
         // ----------------- check current state
         address collateralAsset = IStrategy(strategyAddress).assets()[0];
@@ -151,7 +207,12 @@ contract SiLUpgradeTest2 is Test {
         SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
         vm.stopPrank();
 
-        _setFlashLoanVault(strategy, SHADOW_POOL_S_STS, uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2));
+        _setFlashLoanVault(
+            strategy,
+            SHADOW_POOL_S_STS,
+            address(0),
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        );
         _showHealth(strategy, "Initial state");
 
         // ----------------- check current state
@@ -262,10 +323,11 @@ contract SiLUpgradeTest2 is Test {
         );
     }
 
-    function _setFlashLoanVault(SiloLeverageStrategy strategy, address vault, uint kind) internal {
+    function _setFlashLoanVault(SiloLeverageStrategy strategy, address vaultC, address vaultB, uint kind) internal {
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[10] = kind;
-        addresses[0] = vault;
+        addresses[0] = vaultC;
+        addresses[1] = vaultB;
 
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);

@@ -93,6 +93,8 @@ library SiloAdvancedLib {
         uint amount,
         uint feeAmount
     ) external {
+        console.log("receiveFlashLoan.1");
+
         // token is borrow asset (USDC/WETH/wS)
         address collateralAsset = $.collateralAsset;
         address flashLoanVault = $.flashLoanVault;
@@ -479,48 +481,6 @@ library SiloAdvancedLib {
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
     }
 
-    /// @dev Get flash loan and execute {receiveFlashLoan}
-    function requestFlashLoan(
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address[] memory flashAssets,
-        uint[] memory flashAmounts
-    ) internal {
-        address vault = $.flashLoanVault;
-        ILeverageLendingStrategy.FlashLoanKind flashLoanKind = ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind);
-
-        if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
-            // fee amount are always 0,  flash loan in balancer v3 is free
-            bytes memory data = abi.encodeWithSignature(
-                "receiveFlashLoanV3(address,uint256,bytes)",
-                flashAssets[0],
-                flashAmounts[0],
-                bytes("") // no user data
-            );
-
-            IVaultMainV3(payable(vault)).unlock(data);
-        } else if (
-            // assume here that Algebra uses exactly same API as UniswapV3
-            flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
-                || flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
-        ) {
-            // ensure that the pool has available amount
-            require(
-                IERC20(flashAssets[0]).balanceOf(address(vault)) >= flashAmounts[0], IControllable.InsufficientBalance()
-            );
-
-            bool isToken0 = IUniswapV3PoolImmutables(vault).token0() == flashAssets[0];
-            IUniswapV3PoolActions(vault).flash(
-                address(this),
-                isToken0 ? flashAmounts[0] : 0,
-                isToken0 ? 0 : flashAmounts[0],
-                abi.encode(flashAssets[0], flashAmounts[0], isToken0)
-            );
-        } else {
-            // FLASH_LOAN_KIND_BALANCER_V2: paid
-            IBVault(vault).flashLoan(address(this), flashAssets, flashAmounts, "");
-        }
-    }
-
     /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
     /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
     function _estimateSwapAmount(
@@ -551,11 +511,13 @@ library SiloAdvancedLib {
         uint amount,
         address asset
     ) external returns (uint value) {
+        console.log("depositAssets.1");
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloAdvancedLib.getLeverageLendingAddresses($);
 
         uint valueWas = StrategyLib.balance(asset) + calcTotal(v);
         _deposit($, v, amount);
         uint valueNow = StrategyLib.balance(asset) + calcTotal(v);
+        console.log("depositAssets.2");
 
         if (valueNow > valueWas) {
             value = amount + (valueNow - valueWas);
@@ -575,11 +537,16 @@ library SiloAdvancedLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint amountToDeposit
     ) internal {
-        (address[] memory flashAssets, uint[] memory flashAmounts) =
-            _getFlashLoanAmounts(_getDepositFlashAmount($, v, amountToDeposit), v.borrowAsset);
+        console.log("_deposit.1");
+        uint borrowAmount = _getDepositFlashAmount($, v, amountToDeposit);
+        console.log("_deposit.2");
+        (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, v.borrowAsset);
 
+        console.log("_deposit.3");
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
+
+        console.log("_deposit.4");
     }
 
     function _getDepositFlashAmount(
@@ -587,10 +554,12 @@ library SiloAdvancedLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint amountToDeposit
     ) internal view returns (uint flashAmount) {
+        console.log("_getDepositFlashAmount.1");
         (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
+        console.log("_getDepositFlashAmount.2");
         return amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
             // depositParam0 is used to move result leverage to targetValue.
@@ -858,6 +827,7 @@ library SiloAdvancedLib {
         flashAssets[0] = borrowAsset;
         flashAmounts = new uint[](1);
         flashAmounts[0] = borrowAmount;
+        console.log("_getFlashLoanAmounts", flashAmounts[0]);
     }
 
     function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)

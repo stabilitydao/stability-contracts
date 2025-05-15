@@ -426,6 +426,8 @@ library SiloLib {
         uint[] memory amounts
     ) external returns (uint value) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        console.log("collateralAsset", v.collateralAsset);
+        console.log("borrowAsset", v.borrowAsset);
         uint valueWas = StrategyLib.balance(_assets[0]) + calcTotal(v);
         _deposit($, v, _assets, amounts[0]);
         uint valueNow = StrategyLib.balance(_assets[0]) + calcTotal(v);
@@ -796,5 +798,7 @@ library SiloLib {
             ? universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1
             : $.flashLoanVault;
     }
+
+
     //endregion ------------------------------------- Internal
 }

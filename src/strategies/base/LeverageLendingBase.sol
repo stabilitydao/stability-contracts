@@ -169,7 +169,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         params[9] = $.swapPriceImpactTolerance1;
         params[10] = $.flashLoanKind;
 
-        addresses = new address[](1);
+        addresses = new address[](2);
         addresses[0] = $.flashLoanVault;
         addresses[1] = $.universalAddress1;
     }

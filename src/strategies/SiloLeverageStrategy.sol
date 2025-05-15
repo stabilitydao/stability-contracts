@@ -27,6 +27,7 @@ import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
+import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBVault} from "../integrations/balancer/IBVault.sol";
 import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
 import {console} from "forge-std/Test.sol";
@@ -46,7 +47,8 @@ import {console} from "forge-std/Test.sol";
 contract SiloLeverageStrategy is LeverageLendingBase,
     IFlashLoanRecipient,
     IUniswapV3FlashCallback,
-    IBalancerV3FlashCallback
+    IBalancerV3FlashCallback,
+    IAlgebraFlashCallback
 {
     using SafeERC20 for IERC20;
 
@@ -129,12 +131,13 @@ contract SiloLeverageStrategy is LeverageLendingBase,
 
     /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
-        console.log("uniswapV3FlashCallback", msg.sender);
         // sender is the pool, it's checked inside receiveFlashLoan
-        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+        _uniswapV3FlashCallback(fee0, fee1, userData);
+    }
 
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
+        // sender is the pool, it's checked inside receiveFlashLoan
+        _uniswapV3FlashCallback(fee0, fee1, userData);
     }
 
     //endregion ---------------- Callbacks (flash loan)
@@ -415,5 +418,14 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         depositApr = ISiloLens(lens).getDepositAPR(lendingVault) * ConstantsLib.DENOMINATOR / 1e18;
         borrowApr = ISiloLens(lens).getBorrowAPR(debtVault) * ConstantsLib.DENOMINATOR / 1e18;
     }
+
+    function _uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) internal {
+        // sender is the pool, it's checked inside receiveFlashLoan
+        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
+
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        SiloLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+    }
+
     //endregion ---------------- Internal logic
 }
