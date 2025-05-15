@@ -149,7 +149,7 @@ contract AgentOSTest is Test, MockSetup {
         vm.prank(operator);
         agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
         vm.startPrank(user);
-        uint256 nonexistentTokenId = 666;
+        uint nonexistentTokenId = 666;
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 0.1 ether);
         vm.expectRevert();
         agentOS.work(nonexistentTokenId, IAgentOS.Job.PREDICTOR, "test data");
@@ -179,7 +179,8 @@ contract AgentOSTest is Test, MockSetup {
         vm.stopPrank();
 
         vm.prank(operator);
-        agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);vm.startPrank(operator);
+        agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
+        vm.startPrank(operator);
         agentOS.setJobFee(IAgentOS.Job.PREDICTOR, 0 ether);
         vm.stopPrank();
 
@@ -207,7 +208,7 @@ contract AgentOSTest is Test, MockSetup {
 
     function testGetAgentParams_RevertIf_TokenDoesNotExist() public {
         vm.startPrank(operator);
-        uint256 nonexistentTokenId = 666;
+        uint nonexistentTokenId = 666;
         vm.expectRevert();
         agentOS.getAgentParams(nonexistentTokenId);
         vm.stopPrank();
