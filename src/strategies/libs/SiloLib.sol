@@ -27,15 +27,14 @@ library SiloLib {
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
-    /// @notice Scaling factor for fixed-point arithmetic (e.g., 1.0 is represented as 1e18).
-    uint private constant scale = 1e18;
-
     /// @notice Price impact tolerance. Denominator is 100_000.
     uint private constant PRICE_IMPACT_TOLERANCE = 1000;
 
     uint private constant MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS = 20;
 
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
+
+    uint private constant SEARCH_LEVERAGE_TOLERANCE = 1e16; // 0.01 tolerance scaled by 1e18
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -476,7 +475,7 @@ library SiloLib {
         IStrategy.StrategyBaseStorage storage $base,
         uint value,
         address receiver
-    ) internal returns (uint[] memory amountsOut) {
+    ) external returns (uint[] memory amountsOut) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
         StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
 
@@ -597,7 +596,17 @@ library SiloLib {
         uint leverage
     ) internal returns (bool) {
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
-        int leverageNew = int(_calculateNewLeverage(v, state, debtState, value));
+        uint d = (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        LeverageCalcParams memory config = LeverageCalcParams({
+            xWithdrawAmount: value * debtState.collateralPrice / d,
+            currentCollateralAmount: debtState.totalCollateralUsd,
+            currentDebtAmount: debtState.borrowAssetUsd,
+            initialBalanceC: state.collateralBalanceStrategy * debtState.collateralPrice / d,
+            alphaScaled: 1e18 * (PRICE_IMPACT_DENOMINATOR - PRICE_IMPACT_TOLERANCE) / PRICE_IMPACT_DENOMINATOR,
+            betaRateScaled: 0 // assume no flash fee
+        });
+
+        int leverageNew = int(calculateNewLeverage(config, state.ltv, state.maxLtv));
 
         if (
             leverageNew <= 0
@@ -654,30 +663,19 @@ library SiloLib {
     /// All percentage/rate parameters (ltvScaled, alphaScaled, betaRateScaled) are expected to be scaled by the 'scale' constant.
     /// Amounts (xWithdrawAmount, currentCollateralAmount, etc.) are expected in USD.
     /// Leverage values are also handled as scaled integers.
-    /// @param value Amount of collateral to withdraw, in collateral asset
+    /// @param ltv Current value of LTV
+    /// @param maxLtv Max allowed LTV
     /// @return resultLeverage The calculated result leverage, decimals INTERNAL_PRECISION
-    function _calculateNewLeverage(
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
-        StateBeforeWithdraw memory state,
-        CollateralDebtState memory debtState,
-        uint value
-    ) internal view returns (uint resultLeverage) {
-        uint d = (10 ** IERC20Metadata(v.collateralAsset).decimals());
-        LeverageCalcParams memory config = LeverageCalcParams({
-            xWithdrawAmount: value * debtState.collateralPrice / d,
-            currentCollateralAmount: debtState.totalCollateralUsd,
-            currentDebtAmount: debtState.borrowAssetUsd,
-            initialBalanceC: state.collateralBalanceStrategy * debtState.collateralPrice / d,
-            alphaScaled: 1e18 * (PRICE_IMPACT_DENOMINATOR - PRICE_IMPACT_TOLERANCE) / PRICE_IMPACT_DENOMINATOR,
-            betaRateScaled: 0 // assume no flash fee
-        });
-
+    function calculateNewLeverage(
+        LeverageCalcParams memory config,
+        uint ltv,
+        uint maxLtv
+    ) public pure returns (uint resultLeverage) {
         uint optimalLeverage = _findEquilibriumLeverage(
             config,
-            1e18 / (1e18 - state.ltv), // current leverage is the low bound for the leverage search range
-            1e18 / (1e18 - state.maxLtv), // upper bound for the leverage search range
-            MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS,
-            1e16 // 0.01 tolerance scaled by 'scale'
+            1e18 * 1e18 / (1e18 - ltv), // current leverage is the low bound for the leverage search range
+            1e18 * 1e18 / (1e18 - maxLtv), // upper bound for the leverage search range
+            SEARCH_LEVERAGE_TOLERANCE
         );
 
         return optimalLeverage == 0
@@ -688,8 +686,8 @@ library SiloLib {
     /// @dev Internal function to calculate resulting leverage for a given `leverageNewScaled`.
     /// Mirrors the corrected Python `full_leverage_calculation`.
     /// @param config The configuration parameters.
-    /// @param leverageNewScaled The guessed new leverage, scaled by `scale`.
-    /// @return resultLeverageScaled The calculated resulting leverage, scaled by `scale`.
+    /// @param leverageNewScaled The guessed new leverage, scaled 1e18
+    /// @return resultLeverageScaled The calculated resulting leverage, scaled by 1e18
     function _fullLeverageCalculation(
         LeverageCalcParams memory config,
         uint leverageNewScaled
@@ -697,9 +695,8 @@ library SiloLib {
         if (leverageNewScaled == 0) {
             return 0;
         }
-
         // F = L_new * config.xWithdrawAmount (collateral amount borrowed via flash loan)
-        uint fAmount = (leverageNewScaled * config.xWithdrawAmount) / scale;
+        uint fAmount = (leverageNewScaled * config.xWithdrawAmount) / 1e18;
 
         // New collateral amount after applying all operations
         // C_new = CC + F + C_delta - X, C_delta = C1 - F1 (can be negative)
@@ -708,8 +705,8 @@ library SiloLib {
         int cNew = int(config.currentCollateralAmount)
             + int(fAmount)
             + (
-                int(config.initialBalanceC + fAmount * config.alphaScaled / scale)
-                - int(fAmount + (fAmount * config.betaRateScaled) / scale)
+                int(config.initialBalanceC + fAmount * config.alphaScaled / 1e18)
+                - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)
             )
             - int(config.xWithdrawAmount);
 
@@ -726,40 +723,46 @@ library SiloLib {
         }
 
         // resultLeverageScaled = new collateral / (new collateral - new debt)
-        return (uint(cNew) * scale) / (uint(cNew) - dNewAmount);
+        return (uint(cNew) * 1e18) / (uint(cNew) - dNewAmount);
     }
 
     /// @notice Finds the equilibrium leverage using an iterative binary search approach.
     /// @param config The configuration parameters.
-    /// @param maxIter Maximum number of iterations for the search.
-    /// @param low The lower bound for the leverage search range, scaled by `scale` (e.g., 1.0 * scale).
-    /// @param high The upper bound for the leverage search range, scaled by `scale` (e.g., 50.0 * scale).
+    /// @param lowScaled The lower bound for the leverage search range, decimals 18
+    /// @param highScaled The upper bound for the leverage search range, decimals 18
     /// @param toleranceScaled The tolerance for convergence, scaled by `scale` (e.g., for 0.01 tolerance, pass 0.01 * scale = 1e16).
-    /// @return equilibriumLeverage The equilibrium leverage found, scaled by `scale`. Returns 0 if not converged or an error occurred during calculation.
+    /// @return equilibriumLeverage The equilibrium leverage found. Decimals are equal to the decimals of low/high.
+    /// Returns 0 if not converged or an error occurred during calculation.
     function _findEquilibriumLeverage(
         LeverageCalcParams memory config,
-        uint256 maxIter,
-        uint low,
-        uint high,
+        uint lowScaled,
+        uint highScaled,
         uint toleranceScaled
-    ) internal pure returns (uint256 equilibriumLeverage) {
+    ) internal pure returns (uint equilibriumLeverage) {
+        console.log("low", lowScaled);
+        console.log("high", highScaled);
+        console.log("toleranceScaled", toleranceScaled);
         // Binary search boundaries
         uint iterCount = 0;
 
         // Binary search loop
-        while (iterCount < maxIter) {
-            uint mid = (low + high) / 2;
+        while (iterCount < MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS) {
+            uint mid = (lowScaled + highScaled) / 2;
+            console.log("mid", mid);
 
             // Call the leverage calculation function
-            uint resLeverage = _fullLeverageCalculation(config, mid);
+            uint resLeverageScaled = _fullLeverageCalculation(config, mid);
 
             // Check if we've converged
-            if ((resLeverage > mid ? resLeverage - mid : mid - resLeverage) < toleranceScaled) {
+            uint delta = (resLeverageScaled > mid ? resLeverageScaled - mid : mid - resLeverageScaled);
+            console.log("delta, resLeverage, mid", delta, resLeverageScaled, mid);
+            if (delta < toleranceScaled) {
+                console.log("result mid", mid, iterCount);
                 return mid;
-            } else if (resLeverage > mid) {
-                low = mid;
+            } else if (resLeverageScaled > mid) {
+                lowScaled = mid;
             } else {
-                high = mid;
+                highScaled = mid;
             }
 
             iterCount++;

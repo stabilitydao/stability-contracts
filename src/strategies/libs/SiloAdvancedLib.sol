@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
+
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
@@ -767,7 +769,7 @@ library SiloAdvancedLib {
         uint borrowAssetUsd,
         uint priceImpactTolerance,
         uint xUsd
-    ) internal pure returns (uint leverageNew) {
+    ) public pure returns (uint leverageNew) {
         // L_initial - current leverage
         // alpha = (1 - priceImpactTolerance), 18 decimals
         // X - collateral amount to withdraw
@@ -785,23 +787,33 @@ library SiloAdvancedLib {
         // Solve linear equation (alpha = 1)
         //      L_new = (C - X) / (C - X - D - X)
         int alpha = int(1e18 * (PRICE_IMPACT_DENOMINATOR - priceImpactTolerance) / PRICE_IMPACT_DENOMINATOR);
+        console.log("alpha");console.logInt(alpha);
+        console.log("totalCollateralUsd", totalCollateralUsd);
+        console.log("borrowAssetUsd", borrowAssetUsd);
+        console.log("xUsd", xUsd);
 
         if (priceImpactTolerance == 0) {
             // solve linear equation
             int num = (int(totalCollateralUsd) - int(xUsd));
             int denum = (int(totalCollateralUsd) - int(xUsd) - int(borrowAssetUsd) - int(xUsd));
+            console.log("num");console.logInt(num);
+            console.log("denum");console.logInt(denum);
             return denum == 0 || (num / denum < 0)
                 ? uint(0)
                 : uint(num * int(INTERNAL_PRECISION) / denum);
         } else {
-            int a = int(xUsd) * (alpha - 1e18);
+            int a = int(xUsd) * (alpha - 1e18) / 1e18;
             int b = int(totalCollateralUsd) - int(borrowAssetUsd) - int(xUsd) - int(xUsd) * int(alpha) / 1e18;
             int cQuad = -(int(totalCollateralUsd) - int(xUsd));
+            console.log("a");console.logInt(a);
+            console.log("b");console.logInt(b);
+            console.log("cQuad");console.logInt(cQuad);
 
             int det2 = b * b - 4 * a * cQuad;
+            console.log("det2");console.logInt(det2);
             if (det2 < 0) return 0;
 
-            int ret = int(INTERNAL_PRECISION) * (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
+            int ret = int(INTERNAL_PRECISION) * (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a) / 1e18;
             return ret < 0 ? 0 : uint(ret);
         }
     }
