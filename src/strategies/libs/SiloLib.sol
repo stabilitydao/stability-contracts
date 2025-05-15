@@ -19,12 +19,23 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {StrategyLib} from "./StrategyLib.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {console} from "forge-std/Test.sol";
+import {SupportsInterfaceWithLookupMock} from "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 library SiloLib {
     using SafeERC20 for IERC20;
 
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
+
+    /// @notice Scaling factor for fixed-point arithmetic (e.g., 1.0 is represented as 1e18).
+    uint private constant scale = 1e18;
+
+    /// @notice Price impact tolerance. Denominator is 100_000.
+    uint private constant PRICE_IMPACT_TOLERANCE = 1000;
+
+    uint private constant MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS = 20;
+
+    uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -52,6 +63,23 @@ library SiloLib {
         uint withdrawParam1;
         uint priceCtoB;
     }
+
+    /// @notice Defines the configuration parameters for leverage calculation.
+    struct LeverageCalcParams {
+        /// @notice Amount of collateral to withdraw (in USD).
+        uint xWithdrawAmount;
+        /// @notice Current collateral in the user's strategy (in USD).
+        uint currentCollateralAmount;
+        /// @notice Current debt (in USD).
+        uint currentDebtAmount;
+        /// @notice Initial balance of collateral asset available, in USD.
+        uint initialBalanceC;
+        /// @notice Swap efficiency factor (0...1], scaled by `scale` (e.g., 0.9998 is 0.9998 * scale).
+        uint alphaScaled;
+        /// @notice Flash loan fee rate, scaled by `scale` (e.g., for a 0.2% fee, the rate is 0.002, which would be passed as 2e15 if scale is 1e18).
+        uint betaRateScaled;
+    }
+
     //endregion ------------------------------------- Data types
 
     function receiveFlashLoan(
@@ -61,7 +89,7 @@ library SiloLib {
         uint amount,
         uint feeAmount
     ) external {
-        address flashLoanVault = $.flashLoanVault;
+        address flashLoanVault = _getFlashLoanAddress($, token);
         if (msg.sender != flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
         }
@@ -218,7 +246,7 @@ library SiloLib {
 
             // swap
             console.log("swap 5");
-            StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
+            StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount, PRICE_IMPACT_TOLERANCE);
 
             // withdraw or supply if need
             uint bal = StrategyLib.balance(token);
@@ -430,13 +458,13 @@ library SiloLib {
 
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amountToDeposit * targetLeverage / INTERNAL_PRECISION;
-        console.log("flashAmountsC", flashAmounts[0]);
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
         $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
-        console.log("tempBorrowAmount", $.tempBorrowAmount);
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
+        console.log("flashAmountC", flashAmounts[0]);
+        console.log("tempBorrowAmount", $.tempBorrowAmount);
         LeverageLendingLib.requestFlashLoan($, _assets, flashAmounts);
     }
     //endregion ------------------------------------- Deposit
@@ -517,31 +545,11 @@ library SiloLib {
                 );
             }
         } else {
-            uint valueToWithdraw = value;
-            if (leverage < state.targetLeverage && state.targetLeverage > 1) {
-                // Can we increase the debt without increasing collateral?
-                uint addDebtUsd = debtState.borrowAssetUsd
-                < debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                    ? debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                    - debtState.borrowAssetUsd
-                    : 0;
-                uint valueInUsd =
-                    value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-
-                // We can increase debt, but we shouldn't increase it too fast
-                // so, let's limit the increasing by x2
-                // We need to get collateral value valueInUsd
-                // But swaps are unpredictable, so let's try to get more collateral i.e. x1.5
-                // todo 150_00 and 2 => to constant? to universal param?
-                if (150_00 * valueInUsd / INTERNAL_PRECISION < addDebtUsd / 2) {
-                    if (_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)) {
-                        valueToWithdraw = 0;
-                    }
-                }
-            }
-
-            if (valueToWithdraw != 0) {
-                _defaultWithdraw($, v, state, valueToWithdraw);
+            if (leverage >= state.targetLeverage
+                // todo possibility to disable call of _withdrawThroughIncreasingLtv
+                || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
+            ) {
+                _defaultWithdraw($, v, state, value);
             }
         }
     }
@@ -565,9 +573,18 @@ library SiloLib {
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = $.borrowAsset;
 
+        address universalAddress1 = $.universalAddress1;
+
         $.tempCollateralAmount = collateralAmountToWithdraw;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
-        LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
+        console.log("tempCollateralAmount", $.tempCollateralAmount);
+        console.log("flashAmountsB", flashAmounts[0]);
+        LeverageLendingLib.requestFlashLoanExplicit(
+            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
+            universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1,
+            flashAssets,
+            flashAmounts
+        );
     }
 
     /// @param value Full amount of the collateral asset that the user is asking to withdraw
@@ -580,10 +597,11 @@ library SiloLib {
         uint leverage
     ) internal returns (bool) {
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
-        int leverageNew = _calculateNewLeverage(v, state, debtState, value);
+        int leverageNew = int(_calculateNewLeverage(v, state, debtState, value));
 
         if (
-            leverageNew <= 0 || uint(leverageNew) > state.maxLeverage * 1e18 / INTERNAL_PRECISION
+            leverageNew <= 0
+            || uint(leverageNew) > state.targetLeverage * 1e18 / INTERNAL_PRECISION
             || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
         ) {
             return false; // use default withdraw
@@ -592,18 +610,18 @@ library SiloLib {
         uint priceCtoB;
         (priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
-        // --------- Calculate debt to add
-        uint debtDiff = (value * uint(leverageNew)) / 1e18 // leverageNew
-            * priceCtoB * state.maxLtv / 1e18 // ltv
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
-
+        // --------- Calculate required flash amount of collateral
         address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.borrowAsset;
+        flashAssets[0] = v.collateralAsset;
         uint[] memory flashAmounts = new uint[](1);
-        flashAmounts[0] = debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION;
+        flashAmounts[0] = value * uint(leverageNew) / INTERNAL_PRECISION;
 
-        // --------- Increase ltv: limit spending from both balances
-        $.tempCollateralAmount = value * uint(leverageNew);
+        // --------- Increase ltv
+        $.tempBorrowAmount = flashAmounts[0] * priceCtoB // no multiplication on ltv here
+            * priceCtoB
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+            / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -611,43 +629,6 @@ library SiloLib {
         ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Collateral);
 
         return true;
-    }
-
-    /// @notice Calculate result leverage in assumption that we increase leverage and extract {value} of collateral
-    function _calculateNewLeverage(
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
-        StateBeforeWithdraw memory state,
-        CollateralDebtState memory debtState,
-        uint value
-    ) internal view returns (int leverageNew) {
-        // L_initial - current leverage
-        // ltv = max ltv
-        // alpha = (1 - swap price impact)
-        // X - collateral amount to withdraw
-        // L_new = new leverage (it must be > current leverage)
-        // C_add - new required collateral = L_new * X * ltv * alpha
-        // D_inc - increment of the debt = ltv * C_add = ltv * L_new * X
-        // C_new = new collateral = C - X + C_add
-        // D_new = new debt = D + D_inc
-        // The math:
-        //      L_new = C_new / (C_new - D_new)
-        //      L_new = (C - X + L_new * X * ltv * alpha) / (C - X + L_new * X * ltv * alpha - D - ltv * L_new * X)
-        //      L_new^2 * [X * (1 - ltv)] + L_new * (C - D - 2X) - (C - X) = 0
-        // Solve square equation
-        //      A = X * ltv * (alpha - 1), B = C - D - X - X * ltv * alpha, C_quad = -(C - X)
-        //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
-        uint xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-
-        int a = int(xUsd * (1e18 - state.maxLtv) / 1e18);
-        int b = int(debtState.totalCollateralUsd) - int(debtState.borrowAssetUsd) - int(2 * xUsd);
-        int cQuad = -(int(debtState.totalCollateralUsd) - int(xUsd));
-
-        int det2 = b * b - 4 * a * cQuad;
-        if (det2 < 0) return 0;
-
-        leverageNew = (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
-
-        return leverageNew;
     }
 
     function _getStateBeforeWithdraw(
@@ -667,6 +648,126 @@ library SiloLib {
 
         return state;
     }
+
+
+    /// @notice Calculates equilibrium leverage using an iterative approach.
+    /// All percentage/rate parameters (ltvScaled, alphaScaled, betaRateScaled) are expected to be scaled by the 'scale' constant.
+    /// Amounts (xWithdrawAmount, currentCollateralAmount, etc.) are expected in USD.
+    /// Leverage values are also handled as scaled integers.
+    /// @param value Amount of collateral to withdraw, in collateral asset
+    /// @return resultLeverage The calculated result leverage, decimals INTERNAL_PRECISION
+    function _calculateNewLeverage(
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        StateBeforeWithdraw memory state,
+        CollateralDebtState memory debtState,
+        uint value
+    ) internal view returns (uint resultLeverage) {
+        uint d = (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        LeverageCalcParams memory config = LeverageCalcParams({
+            xWithdrawAmount: value * debtState.collateralPrice / d,
+            currentCollateralAmount: debtState.totalCollateralUsd,
+            currentDebtAmount: debtState.borrowAssetUsd,
+            initialBalanceC: state.collateralBalanceStrategy * debtState.collateralPrice / d,
+            alphaScaled: 1e18 * (PRICE_IMPACT_DENOMINATOR - PRICE_IMPACT_TOLERANCE) / PRICE_IMPACT_DENOMINATOR,
+            betaRateScaled: 0 // assume no flash fee
+        });
+
+        uint optimalLeverage = _findEquilibriumLeverage(
+            config,
+            1e18 / (1e18 - state.ltv), // current leverage is the low bound for the leverage search range
+            1e18 / (1e18 - state.maxLtv), // upper bound for the leverage search range
+            MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS,
+            1e16 // 0.01 tolerance scaled by 'scale'
+        );
+
+        return optimalLeverage == 0
+            ? 0
+            : INTERNAL_PRECISION * _fullLeverageCalculation(config, optimalLeverage) / 1e18;
+    }
+
+    /// @dev Internal function to calculate resulting leverage for a given `leverageNewScaled`.
+    /// Mirrors the corrected Python `full_leverage_calculation`.
+    /// @param config The configuration parameters.
+    /// @param leverageNewScaled The guessed new leverage, scaled by `scale`.
+    /// @return resultLeverageScaled The calculated resulting leverage, scaled by `scale`.
+    function _fullLeverageCalculation(
+        LeverageCalcParams memory config,
+        uint leverageNewScaled
+    ) internal pure returns (uint resultLeverageScaled) {
+        if (leverageNewScaled == 0) {
+            return 0;
+        }
+
+        // F = L_new * config.xWithdrawAmount (collateral amount borrowed via flash loan)
+        uint fAmount = (leverageNewScaled * config.xWithdrawAmount) / scale;
+
+        // New collateral amount after applying all operations
+        // C_new = CC + F + C_delta - X, C_delta = C1 - F1 (can be negative)
+        // C1 = config.initialBalanceC + F * ltv * alpha (collateral balance on hand after swap)
+        // F1 = total to return for flash loan = F + F_delta, where F_delta = beta_rate * F (flash fee)
+        int cNew = int(config.currentCollateralAmount)
+            + int(fAmount)
+            + (
+                int(config.initialBalanceC + fAmount * config.alphaScaled / scale)
+                - int(fAmount + (fAmount * config.betaRateScaled) / scale)
+            )
+            - int(config.xWithdrawAmount);
+
+        if (cNew < 0) {
+            return 0; // Resulting cNewAmount would be negative
+        }
+
+        // New debt = initial debt + F * ltv
+        uint dNewAmount = config.currentDebtAmount + fAmount;
+
+        // Check for insolvency: cNewAmount must be greater than dNewAmount for positive, defined leverage.
+        if (uint(cNew) <= dNewAmount) {
+            return 0; // Leverage is undefined, zero, or not positive
+        }
+
+        // resultLeverageScaled = new collateral / (new collateral - new debt)
+        return (uint(cNew) * scale) / (uint(cNew) - dNewAmount);
+    }
+
+    /// @notice Finds the equilibrium leverage using an iterative binary search approach.
+    /// @param config The configuration parameters.
+    /// @param maxIter Maximum number of iterations for the search.
+    /// @param low The lower bound for the leverage search range, scaled by `scale` (e.g., 1.0 * scale).
+    /// @param high The upper bound for the leverage search range, scaled by `scale` (e.g., 50.0 * scale).
+    /// @param toleranceScaled The tolerance for convergence, scaled by `scale` (e.g., for 0.01 tolerance, pass 0.01 * scale = 1e16).
+    /// @return equilibriumLeverage The equilibrium leverage found, scaled by `scale`. Returns 0 if not converged or an error occurred during calculation.
+    function _findEquilibriumLeverage(
+        LeverageCalcParams memory config,
+        uint256 maxIter,
+        uint low,
+        uint high,
+        uint toleranceScaled
+    ) internal pure returns (uint256 equilibriumLeverage) {
+        // Binary search boundaries
+        uint iterCount = 0;
+
+        // Binary search loop
+        while (iterCount < maxIter) {
+            uint mid = (low + high) / 2;
+
+            // Call the leverage calculation function
+            uint resLeverage = _fullLeverageCalculation(config, mid);
+
+            // Check if we've converged
+            if ((resLeverage > mid ? resLeverage - mid : mid - resLeverage) < toleranceScaled) {
+                return mid;
+            } else if (resLeverage > mid) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+
+            iterCount++;
+        }
+
+        return 0;
+    }
+
     //endregion ------------------------------------- Withdraw
 
     //region ------------------------------------- Internal
@@ -681,6 +782,16 @@ library SiloLib {
             lendingVault: $.lendingVault,
             borrowingVault: $.borrowingVault
         });
+    }
+
+    function _getFlashLoanAddress(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        address token
+    ) internal view returns (address) {
+        address universalAddress1 = $.universalAddress1;
+        return token == $.borrowAsset
+            ? universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1
+            : $.flashLoanVault;
     }
     //endregion ------------------------------------- Internal
 }

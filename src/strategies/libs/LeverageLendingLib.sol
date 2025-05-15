@@ -29,7 +29,7 @@ library LeverageLendingLib {
     address[] memory flashAssets,
     uint[] memory flashAmounts
   ) internal {
-    return requestFlashLoan(
+    return requestFlashLoanExplicit(
       ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
       $.flashLoanVault,
       flashAssets,
@@ -37,7 +37,8 @@ library LeverageLendingLib {
     );
   }
 
-  function requestFlashLoan(
+  /// @dev ALlow to specify vault explicitly, i.e. in SiL where borrow asset is taken from different flash loan vault
+  function requestFlashLoanExplicit(
     ILeverageLendingStrategy.FlashLoanKind flashLoanKind,
     address flashLoanVault,
     address[] memory flashAssets,

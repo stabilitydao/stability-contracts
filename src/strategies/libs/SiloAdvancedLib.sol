@@ -32,6 +32,9 @@ library SiloAdvancedLib {
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
+    /// @notice 1000 is 1%
+    uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
+
     // mint wanS by wS
     address internal constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address internal constant ANGLES_VAULT = 0xe5203Be1643465b3c0De28fd2154843497Ef4269;
@@ -673,31 +676,11 @@ library SiloAdvancedLib {
                 );
             }
         } else {
-            uint valueToWithdraw = value;
-            if (leverage < state.targetLeverage && state.targetLeverage > 1) {
-                // Can we increase the debt without increasing collateral?
-                uint addDebtUsd = debtState.borrowAssetUsd
-                    < debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                    ? debtState.totalCollateralUsd * (state.targetLeverage - 1) / state.targetLeverage
-                        - debtState.borrowAssetUsd
-                    : 0;
-                uint valueInUsd =
-                    value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-
-                // We can increase debt, but we shouldn't increase it too fast
-                // so, let's limit the increasing by x2
-                // We need to get collateral value valueInUsd
-                // But swaps are unpredictable, so let's try to get more collateral i.e. x1.5
-                // todo 150_00 and 2 => to constant? to universal param?
-                if (150_00 * valueInUsd / INTERNAL_PRECISION < addDebtUsd / 2) {
-                    if (_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)) {
-                        valueToWithdraw = 0;
-                    }
-                }
-            }
-
-            if (valueToWithdraw != 0) {
-                _defaultWithdraw($, v, state, valueToWithdraw);
+            if (leverage >= state.targetLeverage
+                // todo possibility to disable call of _withdrawThroughIncreasingLtv
+                || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
+            ) {
+                _defaultWithdraw($, v, state, value);
             }
         }
     }
@@ -736,11 +719,17 @@ library SiloAdvancedLib {
         uint leverage
     ) internal returns (bool) {
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
-        int leverageNew = _calculateNewLeverage(v, state, debtState, value);
+        int leverageNew = int(_calculateNewLeverage(
+            debtState.totalCollateralUsd,
+            debtState.borrowAssetUsd,
+            $.swapPriceImpactTolerance1, // use same MAX price impact as in the code processed IncreaseLtv
+            value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+        ));
 
         if (
-            leverageNew <= 0 || uint(leverageNew) > state.maxLeverage * 1e18 / INTERNAL_PRECISION
-                || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
+            leverageNew <= 0
+            || uint(leverageNew) > state.targetLeverage * 1e18 / INTERNAL_PRECISION
+            || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
         ) {
             return false; // use default withdraw
         }
@@ -749,15 +738,17 @@ library SiloAdvancedLib {
         (priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
         // --------- Calculate debt to add
-        uint debtDiff = (value * uint(leverageNew)) / 1e18 // leverageNew
-            * priceCtoB * state.maxLtv / 1e18 // ltv
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
+        uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
+        uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+            / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
 
         (address[] memory flashAssets, uint[] memory flashAmounts) =
             _getFlashLoanAmounts(debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION, v.borrowAsset);
 
         // --------- Increase ltv: limit spending from both balances
-        $.tempCollateralAmount = value * uint(leverageNew);
+        $.tempCollateralAmount = requiredCollateral;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -768,95 +759,50 @@ library SiloAdvancedLib {
     }
 
     /// @notice Calculate result leverage in assumption that we increase leverage and extract {value} of collateral
-    function _calculateNewLeverage( // todo remove
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
-        SiloAdvancedLib.StateBeforeWithdraw memory state,
-        SiloAdvancedLib.CollateralDebtState memory debtState,
-        uint value
-    ) internal view returns (int leverageNew) {
-        // Formula below doesn't take into account current collateral balance, it assume that the balance is 0
-        // If the balance > 0 result leverage will be lower TODO take it into account?
-
-        // L_initial - current leverage
-        // ltv = max ltv
-        // alpha = (1 - swap price impact)
-        // X - collateral amount to withdraw
-        // L_new = new leverage (it must be > current leverage)
-        // D_inc - increment of the debt = L_new * X * ltv
-        // C_add - new required collateral = D_inc * alpha
-        // C_new = new collateral = C - X + C_add
-        // D_new = new debt = D + D_inc
-        // The math:
-        //      L_new = C_new / (C_new - D_new)
-        //      L_new^2 * [X * ltv * (alpha - 1)] + L_new * (C - X - D - X * ltv * alpha) + (-C + X) = 0
-        // Solve square equation (alpha < 1)
-        //      A = X * ltv * (alpha - 1), B = C - D - X - X * ltv * alpha, C_quad = -(C - X)
-        //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
-        // Solve linear equation (alpha = 1)
-        //      L_new = (C - X) / (C - X - D - X * ltv)
-        uint xUsd = value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-
-        int a = int(xUsd * (1e18 - state.maxLtv) / 1e18);
-        int b = int(debtState.totalCollateralUsd) - int(debtState.borrowAssetUsd) - int(2 * xUsd);
-        int cQuad = -(int(debtState.totalCollateralUsd) - int(xUsd));
-
-        int det2 = b * b - 4 * a * cQuad;
-        if (det2 < 0) return 0;
-
-        leverageNew = (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
-
-        return leverageNew;
-    }
-
-    /// @notice Calculate result leverage in assumption that we increase leverage and extract {value} of collateral
-    /// @param priceImpactTolerance Price impact tolerance. Denominator is 100_000.
-    function calculateNewLeverage(
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
-        uint maxLtv,
-        uint collateralPrice,
+    /// @param xUsd Value of collateral in USD that we need to transfer to the user
+    /// @param priceImpactTolerance Price impact tolerance. Denominator is {PRICE_IMPACT_DENOMINATOR}.
+    /// @return leverageNew New leverage with 4 decimals or 0
+    function _calculateNewLeverage(
         uint totalCollateralUsd,
         uint borrowAssetUsd,
         uint priceImpactTolerance,
-        uint value
-    ) internal view returns (int leverageNew) {
+        uint xUsd
+    ) internal pure returns (uint leverageNew) {
         // L_initial - current leverage
-        // ltv = max ltv
-        // alpha = (1 - priceImpactTolerance)
+        // alpha = (1 - priceImpactTolerance), 18 decimals
         // X - collateral amount to withdraw
         // L_new = new leverage (it must be > current leverage)
-        // D_inc - increment of the debt = L_new * X * ltv
+        // D_inc - increment of the debt = L_new * X
         // C_add - new required collateral = D_inc * alpha
         // C_new = new collateral = C - X + C_add
         // D_new = new debt = D + D_inc
         // The math:
         //      L_new = C_new / (C_new - D_new)
-        //      L_new^2 * [X * ltv * (alpha - 1)] + L_new * (C - X - D - X * ltv * alpha) + (-C + X) = 0
+        //      L_new^2 * [X * (alpha - 1)] + L_new * (C - X - D - X * alpha) + (-C + X) = 0
         // Solve square equation (alpha < 1)
-        //      A = X * ltv * (alpha - 1), B = C - D - X - X * ltv * alpha, C_quad = -(C - X)
+        //      A = X * (alpha - 1), B = C - D - X - X * alpha, C_quad = -(C - X)
         //      L_new = [-B + sqrt(B^2 - 4*A*C_quad)] / 2 A
         // Solve linear equation (alpha = 1)
-        //      L_new = (C - X) / (C - X - D - X * ltv)
-        uint xUsd = value * collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-        uint alpha = 1000 - priceImpactTolerance;
+        //      L_new = (C - X) / (C - X - D - X)
+        int alpha = int(1e18 * (PRICE_IMPACT_DENOMINATOR - priceImpactTolerance) / PRICE_IMPACT_DENOMINATOR);
 
         if (priceImpactTolerance == 0) {
             // solve linear equation
             int num = (int(totalCollateralUsd) - int(xUsd));
-            int denum = (int(totalCollateralUsd) - int(xUsd) - int(borrowAssetUsd) - int(xUsd) * int(maxLtv) / 1e18);
+            int denum = (int(totalCollateralUsd) - int(xUsd) - int(borrowAssetUsd) - int(xUsd));
             return denum == 0 || (num / denum < 0)
-                ? 0
-                : uint(num / denum);
+                ? uint(0)
+                : uint(num * int(INTERNAL_PRECISION) / denum);
         } else {
-            int a = int(xUsd * maxLtv * (alpha - PRICE_IMPACT_DENOMINATOR) / 1e18 / PRICE_IMPACT_DENOMINATOR);
-            int b = int(totalCollateralUsd) - int(borrowAssetUsd) - int(xUsd) - int(xUsd) * int(maxLtv) * int(alpha) / 1e18 / PRICE_IMPACT_DENOMINATOR;
+            int a = int(xUsd) * (alpha - 1e18);
+            int b = int(totalCollateralUsd) - int(borrowAssetUsd) - int(xUsd) - int(xUsd) * int(alpha) / 1e18;
             int cQuad = -(int(totalCollateralUsd) - int(xUsd));
 
             int det2 = b * b - 4 * a * cQuad;
             if (det2 < 0) return 0;
 
-            leverageNew = (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
-
-            return leverageNew;
+            int ret = int(INTERNAL_PRECISION) * (-b + int(Math.sqrt(uint(det2)))) * 1e18 / (2 * a);
+            return ret < 0 ? 0 : uint(ret);
         }
     }
 

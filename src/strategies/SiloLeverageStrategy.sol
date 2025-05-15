@@ -34,7 +34,9 @@ import {console} from "forge-std/Test.sol";
 /// @title Silo V2 leverage strategy
 /// Changelog:
 ///   2.0.0:
-///     * feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #257
+///     * feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #257, use universalAddress1 as flashLoanVault for borrow asset
+///     * Change logic of withdraw: add deposit at the end and possibility to withdraw through increasing LTV
+///     * use LeverageLendingBase 1.2.2
 ///   1.1.3: Move depositAssets impl to SiloLib to reduce size, use LeverageLendingBase 1.1.2, #269
 ///   1.1.2: realApr bugfix
 ///   1.1.1: use LeverageLendingBase 1.1.1
@@ -273,7 +275,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
             $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
         }
 
-        LeverageLendingLib.requestFlashLoan(
+        LeverageLendingLib.requestFlashLoanExplicit(
             ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
             $.flashLoanVault,
             flashAssets,

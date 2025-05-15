@@ -13,6 +13,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
+///   1.2.2: add universalAddress1 to universal params
 ///   1.2.1: rebalanceDebt reverts if result share price less #277
 ///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.1: StrategyBase 2.1.3
@@ -25,7 +26,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.0";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.2";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
@@ -106,6 +107,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.flashLoanKind = params[10];
 
         $.flashLoanVault = addresses[0];
+        $.universalAddress1 = addresses[1];
 
         emit UniversalParams(params);
         emit UniversalAddresses(addresses);
@@ -154,7 +156,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /// @inheritdoc ILeverageLendingStrategy
     function getUniversalParams() external view returns (uint[] memory params, address[] memory addresses) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        params = new uint[](11);
+        params = new uint[](12);
         params[0] = $.depositParam0;
         params[1] = $.depositParam1;
         params[2] = $.withdrawParam0;
@@ -169,6 +171,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
 
         addresses = new address[](1);
         addresses[0] = $.flashLoanVault;
+        addresses[1] = $.universalAddress1;
     }
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */

@@ -56,6 +56,8 @@ interface ILeverageLendingStrategy {
         uint swapPriceImpactTolerance1;
         /// @notice Flash loan kind. 0 - balancer v2 (paid), 1 - balancer v3 (free)
         uint flashLoanKind;
+        /// @dev Universal address 1. SiL uses it to store flash loan vault address for borrow asset
+        address universalAddress1;
     }
 
     struct LeverageLendingStrategyBaseInitParams {
