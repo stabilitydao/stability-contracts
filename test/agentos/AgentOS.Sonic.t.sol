@@ -141,23 +141,6 @@ contract AgentOSTest is Test, MockSetup {
         vm.stopPrank();
     }
 
-    function testWork_RevertIf_TokenDoesNotExist() public {
-        vm.startPrank(user);
-        IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 1 ether);
-        uint tokenId =
-            agentOS.mint(IAgentOS.Job.PREDICTOR, IAgentOS.Disclosure.PUBLIC, IAgentOS.AgentStatus.AWAITING, "TestAgent");
-        vm.stopPrank();
-        vm.prank(operator);
-        agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
-        vm.startPrank(user);
-        IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 0.1 ether);
-        vm.stopPrank();
-        vm.startPrank(user2);
-        vm.expectRevert();
-        agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
-        vm.stopPrank();
-    }
-
     function testWork_RevertIf_NotOwnerOrApproved() public {
         vm.startPrank(user);
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 1 ether);
@@ -204,14 +187,6 @@ contract AgentOSTest is Test, MockSetup {
         vm.startPrank(user);
         vm.expectRevert();
         agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
-        vm.stopPrank();
-    }
-
-    function testGetAgentParams_RevertIf_TokenDoesNotExist() public {
-        vm.startPrank(user);
-        uint nonexistentTokenId = 666;
-        vm.expectRevert();
-        agentOS.getAgentParams(nonexistentTokenId);
         vm.stopPrank();
     }
 

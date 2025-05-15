@@ -71,7 +71,6 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     /// @inheritdoc IAgentOS
     function work(uint tokenId, Job job, string memory data) public {
         AgentOSStorage storage $ = _getStorage();
-        if (ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         if (
             ownerOf(tokenId) != _msgSender() && getApproved(tokenId) != _msgSender()
                 && !isApprovedForAll(ownerOf(tokenId), _msgSender())
@@ -144,7 +143,6 @@ contract AgentOS is Controllable, ERC721EnumerableUpgradeable, IAgentOS {
     /// @inheritdoc IAgentOS
     function getAgentParams(uint tokenId) public view returns (AgentParams memory) {
         AgentOSStorage storage $ = _getStorage();
-        if (ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         return $.agentParams[tokenId];
     }
 
