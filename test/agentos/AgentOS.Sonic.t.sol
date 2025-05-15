@@ -15,6 +15,7 @@ contract AgentOSTest is Test, MockSetup {
     AgentOS public agentOS;
     address public operator;
     address public user;
+    address public user2;
     uint public constant INITIAL_BALANCE = 100_000 ether;
 
     constructor() {
@@ -149,10 +150,11 @@ contract AgentOSTest is Test, MockSetup {
         vm.prank(operator);
         agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
         vm.startPrank(user);
-        uint nonexistentTokenId = 666;
         IERC20Metadata(SonicConstantsLib.TOKEN_STBL).approve(address(agentOS), 0.1 ether);
+        vm.stopPrank();
+        vm.startPrank(user2);
         vm.expectRevert();
-        agentOS.work(nonexistentTokenId, IAgentOS.Job.PREDICTOR, "test data");
+        agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
         vm.stopPrank();
     }
 
@@ -165,7 +167,6 @@ contract AgentOSTest is Test, MockSetup {
         vm.prank(operator);
         agentOS.setAgentStatus(tokenId, IAgentOS.AgentStatus.ACTIVE);
         vm.startPrank(user);
-
         vm.expectRevert();
         agentOS.work(tokenId, IAgentOS.Job.PREDICTOR, "test data");
         vm.stopPrank();
@@ -207,7 +208,7 @@ contract AgentOSTest is Test, MockSetup {
     }
 
     function testGetAgentParams_RevertIf_TokenDoesNotExist() public {
-        vm.startPrank(operator);
+        vm.startPrank(user);
         uint nonexistentTokenId = 666;
         vm.expectRevert();
         agentOS.getAgentParams(nonexistentTokenId);
