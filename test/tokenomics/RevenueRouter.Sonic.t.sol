@@ -117,7 +117,7 @@ contract RevenueRouterTestSonic is Test {
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         Proxy feeTreasuryProxy = new Proxy();
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
-        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM);
+        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM, IPlatform(PLATFORM).multisig());
         XStaking(address(xStakingProxy)).initialize(PLATFORM, address(xSTBLProxy));
         XSTBL(address(xSTBLProxy)).initialize(PLATFORM, STBL, address(xStakingProxy), address(revenueRouterProxy));
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(xSTBLProxy), address(feeTreasuryProxy));
@@ -132,7 +132,7 @@ contract RevenueRouterTestSonic is Test {
         revenueRouterProxy.initProxy(address(new RevenueRouter()));
         Proxy feeTreasuryProxy = new Proxy();
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
-        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM);
+        FeeTreasury(address(feeTreasuryProxy)).initialize(PLATFORM, IPlatform(PLATFORM).multisig());
         RevenueRouter(address(revenueRouterProxy)).initialize(PLATFORM, address(0), address(feeTreasuryProxy));
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);

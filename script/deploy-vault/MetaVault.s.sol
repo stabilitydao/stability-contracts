@@ -2,13 +2,13 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 
-contract DeployCVault is Script {
+contract DeployMetaVault is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new CVault();
+        new MetaVault();
         vm.stopBroadcast();
     }
 
