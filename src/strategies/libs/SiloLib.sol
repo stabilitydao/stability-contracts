@@ -89,10 +89,12 @@ library SiloLib {
         uint amount,
         uint feeAmount
     ) external {
+        console.log("SiloLib.receiveFlashLoan.1");
         address flashLoanVault = _getFlashLoanAddress($, token);
         if (msg.sender != flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
         }
+        console.log("SiloLib.receiveFlashLoan.2");
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
             //  flash amount is collateral
@@ -234,15 +236,20 @@ library SiloLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.IncreaseLtv) {
+            console.log("SiloLib.IncreaseLtv.1");
             // tokens[0] is collateral asset
             uint tempBorrowAmount = $.tempBorrowAmount;
             address lendingVault = $.lendingVault;
+            console.log("SiloLib.IncreaseLtv.tempBorrowAmount", tempBorrowAmount);
 
+            console.log("SiloLib.IncreaseLtv.2");
             // supply
             ISilo($.lendingVault).deposit(amount, address(this), ISilo.CollateralType.Collateral);
+            console.log("SiloLib.IncreaseLtv.3", amount);
 
             // borrow
             ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
+            console.log("SiloLib.IncreaseLtv.4", tempBorrowAmount);
 
             // swap
             console.log("swap 5");
@@ -560,6 +567,10 @@ library SiloLib {
                 );
             }
         } else {
+            console.log("withdrawFromLendingVault.leverage", leverage);
+            console.log("withdrawFromLendingVault.targetLeverage", state.targetLeverage);
+            console.log("withdrawFromLendingVault.withdrawParam2", state.withdrawParam2);
+            console.log("targetLeverageAdjusted", state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION);
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
             if (leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
                 || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
@@ -576,6 +587,7 @@ library SiloLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
+        console.log("!!!_defaultWithdraw");
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
@@ -611,6 +623,7 @@ library SiloLib {
         uint value,
         uint leverage
     ) internal returns (bool) {
+        console.log("!!!_withdrawThroughIncreasingLtv");
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
         uint d = (10 ** IERC20Metadata(v.collateralAsset).decimals());
         LeverageCalcParams memory config = LeverageCalcParams({
@@ -623,11 +636,14 @@ library SiloLib {
         });
 
         int leverageNew = int(calculateNewLeverage(config, state.ltv, state.maxLtv));
+        console.log("leverageNew", leverageNew);
+        console.log("state.targetLeverage", state.targetLeverage);
+        console.log("leverage", leverage);
 
         if (
             leverageNew <= 0
-            || uint(leverageNew) > state.targetLeverage * 1e18 / INTERNAL_PRECISION
-            || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
+            || uint(leverageNew) > state.targetLeverage
+            || uint(leverageNew) < leverage
         ) {
             return false; // use default withdraw
         }
@@ -640,13 +656,14 @@ library SiloLib {
         flashAssets[0] = v.collateralAsset;
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = value * uint(leverageNew) / INTERNAL_PRECISION;
+        console.log("flashAmounts[0]", flashAmounts[0]);
 
         // --------- Increase ltv
         $.tempBorrowAmount = flashAmounts[0] * priceCtoB // no multiplication on ltv here
-            * priceCtoB
             * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / (10 ** IERC20Metadata(v.collateralAsset).decimals())
             / 1e18; // priceCtoB has decimals 18
+        console.log("$.tempBorrowAmount", $.tempBorrowAmount);
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -694,10 +711,12 @@ library SiloLib {
             1e18 * 1e18 / (1e18 - maxLtv), // upper bound for the leverage search range
             SEARCH_LEVERAGE_TOLERANCE
         );
+        console.log("optimalLeverage", optimalLeverage);
 
-        return optimalLeverage == 0
+        resultLeverage = optimalLeverage == 0
             ? 0
             : INTERNAL_PRECISION * _fullLeverageCalculation(config, optimalLeverage) / 1e18;
+        console.log("resultLeverage", resultLeverage);
     }
 
     /// @dev Internal function to calculate resulting leverage for a given `leverageNewScaled`.
@@ -756,25 +775,19 @@ library SiloLib {
         uint highScaled,
         uint toleranceScaled
     ) internal pure returns (uint equilibriumLeverage) {
-        console.log("low", lowScaled);
-        console.log("high", highScaled);
-        console.log("toleranceScaled", toleranceScaled);
         // Binary search boundaries
         uint iterCount = 0;
 
         // Binary search loop
         while (iterCount < MAX_COUNT_LEVERAGE_SEARCH_ITERATIONS) {
             uint mid = (lowScaled + highScaled) / 2;
-            console.log("mid", mid);
 
             // Call the leverage calculation function
             uint resLeverageScaled = _fullLeverageCalculation(config, mid);
 
             // Check if we've converged
             uint delta = (resLeverageScaled > mid ? resLeverageScaled - mid : mid - resLeverageScaled);
-            console.log("delta, resLeverage, mid", delta, resLeverageScaled, mid);
             if (delta < toleranceScaled) {
-                console.log("result mid", mid, iterCount);
                 return mid;
             } else if (resLeverageScaled > mid) {
                 lowScaled = mid;

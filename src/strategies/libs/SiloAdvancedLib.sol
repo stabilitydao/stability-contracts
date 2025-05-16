@@ -646,6 +646,10 @@ library SiloAdvancedLib {
         if (receiver != address(this)) {
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
+        console.log("value", value);
+        console.log("valueWas", state.valueWas);
+        console.log("valueNow", valueNow);
+        console.log("transfer C", amountsOut[0]);
 
         $base.total -= value;
 
@@ -756,8 +760,8 @@ library SiloAdvancedLib {
 
         if (
             leverageNew <= 0
-            || uint(leverageNew) > state.targetLeverage * 1e18 / INTERNAL_PRECISION
-            || uint(leverageNew) < leverage * 1e18 / INTERNAL_PRECISION
+            || uint(leverageNew) > state.targetLeverage
+            || uint(leverageNew) < leverage
         ) {
             console.log("_withdrawThroughIncreasingLtv.2");
             return false; // use default withdraw
