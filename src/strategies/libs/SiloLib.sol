@@ -60,6 +60,7 @@ library SiloLib {
         uint collateralAmountToWithdraw;
         uint withdrawParam0;
         uint withdrawParam1;
+        uint withdrawParam2;
         uint priceCtoB;
     }
 
@@ -514,12 +515,25 @@ library SiloLib {
 
         // ---------------------- Deposit the amount ~ value
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
-            uint balance = StrategyLib.balance(v.collateralAsset);
-            if (balance != 0) {
-                address[] memory assets = new address[](1);
-                assets[0] = v.collateralAsset;
-                SiloLib._deposit($, v, assets, Math.min(state.withdrawParam1 * value / INTERNAL_PRECISION, balance));
-            }
+            _depositAfterWithdraw($, v, state.withdrawParam1, value);
+        }
+    }
+
+    function _depositAfterWithdraw(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        uint withdrawParam1,
+        uint value
+    ) internal {
+        uint balance = StrategyLib.balance(v.collateralAsset);
+        console.log("!!!Deposit after withdraw", balance);
+
+        // workaround dust problems and error LessThenThreshold
+        uint maxAmountToWithdraw = withdrawParam1 * value / INTERNAL_PRECISION;
+        if (balance > maxAmountToWithdraw * 100 / INTERNAL_PRECISION) {
+            address[] memory assets = new address[](1);
+            assets[0] = v.collateralAsset;
+            SiloLib._deposit($, v, assets, Math.min(maxAmountToWithdraw, balance));
         }
     }
 
@@ -546,8 +560,8 @@ library SiloLib {
                 );
             }
         } else {
-            if (leverage >= state.targetLeverage
-                // todo possibility to disable call of _withdrawThroughIncreasingLtv
+            // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
+            if (leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
                 || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
             ) {
                 _defaultWithdraw($, v, state, value);
@@ -654,6 +668,7 @@ library SiloLib {
         (state.priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         state.withdrawParam0 = $.withdrawParam0;
         state.withdrawParam1 = $.withdrawParam1;
+        state.withdrawParam2 = $.withdrawParam2;
         if (state.withdrawParam0 == 0) state.withdrawParam0 = 100_00;
         if (state.withdrawParam1 == 0) state.withdrawParam1 = 100_00;
 

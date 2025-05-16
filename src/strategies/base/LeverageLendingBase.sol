@@ -13,7 +13,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
-///   1.2.2: add universalAddress1 to universal params
+///   1.2.2: add universalAddress1 and withdrawParam2 to universal params
 ///   1.2.1: rebalanceDebt reverts if result share price less #277
 ///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
 ///   1.1.1: StrategyBase 2.1.3
@@ -105,6 +105,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         $.swapPriceImpactTolerance0 = params[8];
         $.swapPriceImpactTolerance1 = params[9];
         $.flashLoanKind = params[10];
+        $.withdrawParam2 = params[11];
 
         $.flashLoanVault = addresses[0];
         $.universalAddress1 = addresses[1];
@@ -168,6 +169,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         params[8] = $.swapPriceImpactTolerance0;
         params[9] = $.swapPriceImpactTolerance1;
         params[10] = $.flashLoanKind;
+        params[11] = $.withdrawParam2;
 
         addresses = new address[](2);
         addresses[0] = $.flashLoanVault;
