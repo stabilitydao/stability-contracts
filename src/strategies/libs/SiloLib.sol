@@ -17,7 +17,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
-import {SupportsInterfaceWithLookupMock} from "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
+import {SupportsInterfaceWithLookupMock} from
+    "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 library SiloLib {
     using SafeERC20 for IERC20;
@@ -283,10 +284,7 @@ library SiloLib {
         }
 
         LeverageLendingLib.requestFlashLoanExplicit(
-            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
-            $.flashLoanVault,
-            flashAssets,
-            flashAmounts
+            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind), $.flashLoanVault, flashAssets, flashAmounts
         );
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
@@ -298,7 +296,7 @@ library SiloLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         CollateralDebtState memory debtState =
-                        getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+            getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
     }
@@ -491,7 +489,8 @@ library SiloLib {
     ) internal {
         (,, uint leverage,,,) = health(platform, $);
 
-        CollateralDebtState memory debtState = getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
+        CollateralDebtState memory debtState =
+            getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
 
         if (0 == debtState.debtAmount) {
             // zero debt, positive collateral - we can just withdraw required amount
@@ -506,8 +505,9 @@ library SiloLib {
             }
         } else {
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
-            if (leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
-                || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
+            if (
+                leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
+                    || !_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
             ) {
                 _defaultWithdraw($, v, state, value);
             }
@@ -567,11 +567,7 @@ library SiloLib {
 
         int leverageNew = int(calculateNewLeverage(config, state.ltv, state.maxLtv));
 
-        if (
-            leverageNew <= 0
-            || uint(leverageNew) > state.targetLeverage
-            || uint(leverageNew) < leverage
-        ) {
+        if (leverageNew <= 0 || uint(leverageNew) > state.targetLeverage || uint(leverageNew) < leverage) {
             return false; // use default withdraw
         }
 
@@ -586,9 +582,7 @@ library SiloLib {
 
         // --------- Increase ltv
         $.tempBorrowAmount = flashAmounts[0] * priceCtoB // no multiplication on ltv here
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals())
-            / (10 ** IERC20Metadata(v.collateralAsset).decimals())
-            / 1e18; // priceCtoB has decimals 18
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -617,7 +611,6 @@ library SiloLib {
         return state;
     }
 
-
     /// @notice Calculates equilibrium leverage using an iterative approach.
     /// All percentage/rate parameters (ltvScaled, alphaScaled, betaRateScaled) are expected to be scaled by the 'scale' constant.
     /// Amounts (xWithdrawAmount, currentCollateralAmount, etc.) are expected in USD.
@@ -637,9 +630,8 @@ library SiloLib {
             SEARCH_LEVERAGE_TOLERANCE
         );
 
-        resultLeverage = optimalLeverage == 0
-            ? 0
-            : INTERNAL_PRECISION * _fullLeverageCalculation(config, optimalLeverage) / 1e18;
+        resultLeverage =
+            optimalLeverage == 0 ? 0 : INTERNAL_PRECISION * _fullLeverageCalculation(config, optimalLeverage) / 1e18;
     }
 
     /// @dev Internal function to calculate resulting leverage for a given `leverageNewScaled`.
@@ -661,13 +653,11 @@ library SiloLib {
         // C_new = CC + F + C_delta - X, C_delta = C1 - F1 (can be negative)
         // C1 = config.initialBalanceC + F * ltv * alpha (collateral balance on hand after swap)
         // F1 = total to return for flash loan = F + F_delta, where F_delta = beta_rate * F (flash fee)
-        int cNew = int(config.currentCollateralAmount)
-            + int(fAmount)
+        int cNew = int(config.currentCollateralAmount) + int(fAmount)
             + (
                 int(config.initialBalanceC + fAmount * config.alphaScaled / 1e18)
-                - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)
-            )
-            - int(config.xWithdrawAmount);
+                    - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)
+            ) - int(config.xWithdrawAmount);
 
         if (cNew < 0) {
             return 0; // Resulting cNewAmount would be negative
@@ -749,7 +739,6 @@ library SiloLib {
             ? universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1
             : $.flashLoanVault;
     }
-
 
     //endregion ------------------------------------- Internal
 }

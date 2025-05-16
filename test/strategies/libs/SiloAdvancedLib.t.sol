@@ -10,54 +10,42 @@ contract SiloAdvancedLibUnitTests is Test {
         // Set up any necessary state or variables here
     }
 
-  function testCalculateNewLeverageSquareEq() pure public {
-    uint totalCollateralUsd = 1_711_884e6;
-    uint ltv = 8712;
-    uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
-    uint priceImpactTolerance = 1000;
-    uint xUsd = 2_000e6;
+    function testCalculateNewLeverageSquareEq() public pure {
+        uint totalCollateralUsd = 1_711_884e6;
+        uint ltv = 8712;
+        uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
+        uint priceImpactTolerance = 1000;
+        uint xUsd = 2_000e6;
 
-    uint leverageNew = SiloAdvancedLib._calculateNewLeverage(
-      totalCollateralUsd,
-      borrowAssetUsd,
-      priceImpactTolerance,
-      xUsd
-    );
+        uint leverageNew =
+            SiloAdvancedLib._calculateNewLeverage(totalCollateralUsd, borrowAssetUsd, priceImpactTolerance, xUsd);
 
-    assertApproxEqAbs(leverageNew, 79032, 1);
-  }
+        assertApproxEqAbs(leverageNew, 79032, 1);
+    }
 
-  function testCalculateNewLeverageLinearEq() pure public {
-    uint totalCollateralUsd = 1_711_884e6;
-    uint ltv = 8712;
-    uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
-    uint priceImpactTolerance = 0;
-    uint xUsd = 2_000e6;
+    function testCalculateNewLeverageLinearEq() public pure {
+        uint totalCollateralUsd = 1_711_884e6;
+        uint ltv = 8712;
+        uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
+        uint priceImpactTolerance = 0;
+        uint xUsd = 2_000e6;
 
-    uint leverageNew = SiloAdvancedLib._calculateNewLeverage(
-      totalCollateralUsd,
-      borrowAssetUsd,
-      priceImpactTolerance,
-      xUsd
-    );
+        uint leverageNew =
+            SiloAdvancedLib._calculateNewLeverage(totalCollateralUsd, borrowAssetUsd, priceImpactTolerance, xUsd);
 
-    assertApproxEqAbs(leverageNew, 78982, 1);
-  }
+        assertApproxEqAbs(leverageNew, 78982, 1);
+    }
 
-  function testCalculateNewLeverageLinearEqZeroLeverage() pure public {
-    uint totalCollateralUsd = 1_711_884e6;
-    uint ltv = 8712;
-    uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
-    uint priceImpactTolerance = 0;
-    uint xUsd = totalCollateralUsd + 1;
+    function testCalculateNewLeverageLinearEqZeroLeverage() public pure {
+        uint totalCollateralUsd = 1_711_884e6;
+        uint ltv = 8712;
+        uint borrowAssetUsd = totalCollateralUsd * ltv / 10_000;
+        uint priceImpactTolerance = 0;
+        uint xUsd = totalCollateralUsd + 1;
 
-    uint leverageNew = SiloAdvancedLib._calculateNewLeverage(
-      totalCollateralUsd,
-      borrowAssetUsd,
-      priceImpactTolerance,
-      xUsd
-    );
+        uint leverageNew =
+            SiloAdvancedLib._calculateNewLeverage(totalCollateralUsd, borrowAssetUsd, priceImpactTolerance, xUsd);
 
-    assertApproxEqAbs(leverageNew, 0, 1);
-  }
+        assertApproxEqAbs(leverageNew, 0, 1);
+    }
 }

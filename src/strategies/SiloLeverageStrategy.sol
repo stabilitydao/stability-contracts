@@ -42,7 +42,8 @@ import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
 ///   1.1.0: use LeverageLendingBase 1.1.0
 /// @author Alien Deployer (https://github.com/a17)
 /// @author dvpublic (https://github.com/dvpublic)
-contract SiloLeverageStrategy is LeverageLendingBase,
+contract SiloLeverageStrategy is
+    LeverageLendingBase,
     IFlashLoanRecipient,
     IUniswapV3FlashCallback,
     IBalancerV3FlashCallback,

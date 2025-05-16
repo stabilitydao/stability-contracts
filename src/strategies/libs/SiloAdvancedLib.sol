@@ -649,8 +649,9 @@ library SiloAdvancedLib {
             }
         } else {
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
-            if (leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
-                || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
+            if (
+                leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
+                    || !_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
             ) {
                 _defaultWithdraw($, v, state, value);
             }
@@ -691,18 +692,16 @@ library SiloAdvancedLib {
         uint leverage
     ) internal returns (bool) {
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
-        int leverageNew = int(_calculateNewLeverage(
-            debtState.totalCollateralUsd,
-            debtState.borrowAssetUsd,
-            $.swapPriceImpactTolerance1, // use same MAX price impact as in the code processed IncreaseLtv
-            value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals())
-        ));
+        int leverageNew = int(
+            _calculateNewLeverage(
+                debtState.totalCollateralUsd,
+                debtState.borrowAssetUsd,
+                $.swapPriceImpactTolerance1, // use same MAX price impact as in the code processed IncreaseLtv
+                value * debtState.collateralPrice / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            )
+        );
 
-        if (
-            leverageNew <= 0
-            || uint(leverageNew) > state.targetLeverage
-            || uint(leverageNew) < leverage
-        ) {
+        if (leverageNew <= 0 || uint(leverageNew) > state.targetLeverage || uint(leverageNew) < leverage) {
             return false; // use default withdraw
         }
 
@@ -712,9 +711,7 @@ library SiloAdvancedLib {
         // --------- Calculate debt to add
         uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
         uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals())
-            / (10 ** IERC20Metadata(v.collateralAsset).decimals())
-            / 1e18; // priceCtoB has decimals 18
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
         (address[] memory flashAssets, uint[] memory flashAmounts) =
             _getFlashLoanAmounts(debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION, v.borrowAsset);
@@ -762,9 +759,7 @@ library SiloAdvancedLib {
             // solve linear equation
             int num = (int(totalCollateralUsd) - int(xUsd));
             int denum = (int(totalCollateralUsd) - int(xUsd) - int(borrowAssetUsd) - int(xUsd));
-            return denum == 0 || (num / denum < 0)
-                ? uint(0)
-                : uint(num * int(INTERNAL_PRECISION) / denum);
+            return denum == 0 || (num / denum < 0) ? uint(0) : uint(num * int(INTERNAL_PRECISION) / denum);
         } else {
             int a = int(xUsd) * (alpha - 1e18) / 1e18;
             int b = int(totalCollateralUsd) - int(borrowAssetUsd) - int(xUsd) - int(xUsd) * int(alpha) / 1e18;

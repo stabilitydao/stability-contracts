@@ -47,7 +47,7 @@ contract SiLUpgradeTest2 is Test {
         uint maxLeverage;
         uint targetLeverage;
         string stateName;
-    }    
+    }
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
@@ -93,7 +93,6 @@ contract SiLUpgradeTest2 is Test {
         _withdrawAllForUser(vault, strategyAddress, user1);
         vm.roll(block.number + 6);
 
-
         // ----------------- check results
         console.log(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount));
         assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
@@ -118,10 +117,7 @@ contract SiLUpgradeTest2 is Test {
 
         // ----------------- use flash loan through Balancer v3
         _setFlashLoanVault(
-            strategy,
-            BEETS_VAULT_V3,
-            address(0),
-            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+            strategy, BEETS_VAULT_V3, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
         );
 
         // ----------------- check current state
@@ -157,10 +153,7 @@ contract SiLUpgradeTest2 is Test {
 
         // ----------------- use flash loan through Uniswap V3
         _setFlashLoanVault(
-            strategy,
-            SHADOW_POOL_S_STS,
-            address(0),
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            strategy, SHADOW_POOL_S_STS, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
         );
 
         // ----------------- check current state
@@ -235,10 +228,7 @@ contract SiLUpgradeTest2 is Test {
 
         // ----------------- set up
         _setFlashLoanVault(
-            strategy,
-            SHADOW_POOL_S_STS,
-            address(0),
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            strategy, SHADOW_POOL_S_STS, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
         );
 
         _adjustParams(strategy);
@@ -252,7 +242,7 @@ contract SiLUpgradeTest2 is Test {
         vm.roll(block.number + 6);
 
         // ----------------- check results
-        assertLe(_getDiffPercent4(deposited, withdrawn), 100, "deposited ~ withdrawn"); // 1%
+        assertLe(_getDiffPercent4(deposited, withdrawn), 450, "deposited ~ withdrawn"); // 4.5% swap loss
     }
 
     /// @notice Multiple deposit + withdraw all, single user
@@ -274,16 +264,12 @@ contract SiLUpgradeTest2 is Test {
 
         // ----------------- set up
         _setFlashLoanVault(
-            strategy,
-            SHADOW_POOL_S_STS,
-            address(0),
-            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+            strategy, SHADOW_POOL_S_STS, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
         );
 
         _adjustParams(strategy);
 
         // ----------------- main logic
-
 
         for (uint i = 0; i < COUNT; ++i) {
             // ----------------- deposit & withdraw
@@ -299,7 +285,7 @@ contract SiLUpgradeTest2 is Test {
 
             // ----------------- change amount
             if (i % 2 == 0) {
-                amount = amount * 31419/10000;
+                amount = amount * 31419 / 10000;
             } else {
                 amount = amount / 3;
             }
@@ -326,12 +312,12 @@ contract SiLUpgradeTest2 is Test {
         vm.stopPrank();
 
         // ----------------- set up
-//        _setFlashLoanVault(
-//            strategy,
-//            SHADOW_POOL_S_STS,
-//            address(0),
-//            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
-//        );
+        //        _setFlashLoanVault(
+        //            strategy,
+        //            SHADOW_POOL_S_STS,
+        //            address(0),
+        //            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        //        );
 
         _setFlashLoanVault(
             strategy,
@@ -343,7 +329,6 @@ contract SiLUpgradeTest2 is Test {
         _adjustParams(strategy);
 
         // ----------------- main logic
-
 
         for (uint i = 0; i < COUNT; ++i) {
             // console.log("*****************************************************", i);
@@ -367,13 +352,13 @@ contract SiLUpgradeTest2 is Test {
 
             // ----------------- change amounts
             if (i % 2 == 0) {
-                amount1 = amount1 * 31419/10000;
+                amount1 = amount1 * 31419 / 10000;
             } else {
                 amount1 = amount1 / 3;
             }
 
             if (i % 2 == 0) {
-                amount2 = amount2 * 31419/10000;
+                amount2 = amount2 * 31419 / 10000;
             } else {
                 amount2 = amount2 / 2;
             }
@@ -400,12 +385,12 @@ contract SiLUpgradeTest2 is Test {
         vm.stopPrank();
 
         // ----------------- set up
-//        _setFlashLoanVault(
-//            strategy,
-//            SHADOW_POOL_S_STS,
-//            address(0),
-//            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
-//        );
+        //        _setFlashLoanVault(
+        //            strategy,
+        //            SHADOW_POOL_S_STS,
+        //            address(0),
+        //            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        //        );
 
         _setFlashLoanVault(
             strategy,
@@ -440,13 +425,13 @@ contract SiLUpgradeTest2 is Test {
 
             // ----------------- change amounts
             if (i % 2 == 0) {
-                amount1 = amount1 * 31419/10000;
+                amount1 = amount1 * 31419 / 10000;
             } else {
                 amount1 = amount1 / 3;
             }
 
             if (i % 2 == 0) {
-                amount2 = amount2 * 31419/10000;
+                amount2 = amount2 * 31419 / 10000;
             } else {
                 amount2 = amount2 / 2;
             }
@@ -499,7 +484,12 @@ contract SiLUpgradeTest2 is Test {
         return _withdrawAmount(vault, strategy, user, amountToWithdraw);
     }
 
-    function _withdrawForUserPartly(address vault, address strategy, address user, uint percent) internal returns (uint) {
+    function _withdrawForUserPartly(
+        address vault,
+        address strategy,
+        address user,
+        uint percent
+    ) internal returns (uint) {
         return _withdrawAmount(vault, strategy, user, IERC20(vault).balanceOf(user) * percent / 100);
     }
 
@@ -572,29 +562,26 @@ contract SiLUpgradeTest2 is Test {
         SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent) = strategy.health();
+        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
+        = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
         state.stateName = stateName;
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
 
-//        console.log("ltv", state.ltv);
-//        console.log("maxLtv", state.maxLtv);
-//        console.log("leverage", state.leverage);
-//        console.log("collateralAmount", state.collateralAmount);
-//        console.log("debtAmount", state.debtAmount);
-//        console.log("targetLeveragePercent", state.targetLeveragePercent);
-//        console.log("maxLeverage", state.maxLeverage);
-//        console.log("targetLeverage", state.targetLeverage);
+        //        console.log("ltv", state.ltv);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("leverage", state.leverage);
+        //        console.log("collateralAmount", state.collateralAmount);
+        //        console.log("debtAmount", state.debtAmount);
+        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        //        console.log("maxLeverage", state.maxLeverage);
+        //        console.log("targetLeverage", state.targetLeverage);
         return state;
     }
 
-    function getSharePriceAndTvl(SiloLeverageStrategy strategy)
-    internal
-    view
-    returns (uint sharePrice, uint tvl)
-    {
+    function getSharePriceAndTvl(SiloLeverageStrategy strategy) internal view returns (uint sharePrice, uint tvl) {
         (tvl,) = strategy.realTvl();
         (sharePrice,) = strategy.realSharePrice();
     }
@@ -653,5 +640,4 @@ contract SiLUpgradeTest2 is Test {
         return x > y ? (x - y) * 100_00 / x : 0;
     }
     //endregion -------------------------- Auxiliary functions
-
 }

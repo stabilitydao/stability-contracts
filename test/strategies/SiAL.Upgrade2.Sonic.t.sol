@@ -407,13 +407,11 @@ contract SiALUpgrade2Test is Test {
             uint amount = uint(BASE_AMOUNTS[i]) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
             // ----------------- initial deposit
-            depositedWithdrawn[1] += _depositForUser(
-                VAULTS[i], USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
-            );
+            depositedWithdrawn[1] +=
+                _depositForUser(VAULTS[i], USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
 
-            depositedWithdrawn[0] += _depositForUser(
-                VAULTS[i], USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1)
-            );
+            depositedWithdrawn[0] +=
+                _depositForUser(VAULTS[i], USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
 
             // ----------------- withdraw
             vm.roll(block.number + 6);
@@ -479,7 +477,12 @@ contract SiALUpgrade2Test is Test {
         return _withdrawAmount(vault, strategy, user, amountToWithdraw);
     }
 
-    function _withdrawForUserPartly(address vault, address strategy, address user, uint percent) internal returns (uint) {
+    function _withdrawForUserPartly(
+        address vault,
+        address strategy,
+        address user,
+        uint percent
+    ) internal returns (uint) {
         return _withdrawAmount(vault, strategy, user, IERC20(vault).balanceOf(user) * percent / 100);
     }
 
@@ -552,28 +555,29 @@ contract SiALUpgrade2Test is Test {
         SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent) = strategy.health();
+        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
+        = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
         state.stateName = stateName;
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
 
-//        console.log("ltv", state.ltv);
-//        console.log("maxLtv", state.maxLtv);
-//        console.log("leverage", state.leverage);
-//        console.log("collateralAmount", state.collateralAmount);
-//        console.log("debtAmount", state.debtAmount);
-//        console.log("targetLeveragePercent", state.targetLeveragePercent);
-//        console.log("maxLeverage", state.maxLeverage);
-//        console.log("targetLeverage", state.targetLeverage);
+        //        console.log("ltv", state.ltv);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("leverage", state.leverage);
+        //        console.log("collateralAmount", state.collateralAmount);
+        //        console.log("debtAmount", state.debtAmount);
+        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        //        console.log("maxLeverage", state.maxLeverage);
+        //        console.log("targetLeverage", state.targetLeverage);
         return state;
     }
 
     function getSharePriceAndTvl(SiloAdvancedLeverageStrategy strategy)
-    internal
-    view
-    returns (uint sharePrice, uint tvl)
+        internal
+        view
+        returns (uint sharePrice, uint tvl)
     {
         (tvl,) = strategy.realTvl();
         (sharePrice,) = strategy.realSharePrice();
