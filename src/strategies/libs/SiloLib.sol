@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../../lib/forge-std/src/console.sol";
 import "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -18,7 +17,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
-import {console} from "forge-std/Test.sol";
 import {SupportsInterfaceWithLookupMock} from "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 library SiloLib {
@@ -89,67 +87,30 @@ library SiloLib {
         uint amount,
         uint feeAmount
     ) external {
-        console.log("SiloLib.receiveFlashLoan.1");
         address flashLoanVault = _getFlashLoanAddress($, token);
         if (msg.sender != flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
         }
-        console.log("SiloLib.receiveFlashLoan.2");
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
             //  flash amount is collateral
-            console.log('Do Deposit');
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
-            console.log("deposit C", amount);
-
             // token is collateral asset
             uint tempBorrowAmount = $.tempBorrowAmount;
 
             // supply
             ISilo($.lendingVault).deposit(amount, address(this), ISilo.CollateralType.Collateral);
 
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
-            console.log("borrow", tempBorrowAmount);
-
             // borrow
             ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
 
             // swap
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
-            console.log("swap B=>C", tempBorrowAmount);
             StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount);
-
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
-            console.log("pay flashloan C", amount + feeAmount);
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
-            console.log("deposit C", StrategyLib.balance(token));
-
             // supply remaining balance
             ISilo($.lendingVault).deposit(StrategyLib.balance(token), address(this), ISilo.CollateralType.Collateral);
-
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("Real collateral", totalCollateral($.lendingVault));
-            console.log("Real debt", totalDebt($.borrowingVault));
 
             // reset temp vars
             $.tempBorrowAmount = 0;
@@ -157,17 +118,9 @@ library SiloLib {
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
             // flash is in borrow asset
-            console.log('Do Withdraw');
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-
             // token is borrow asset
             address collateralAsset = $.collateralAsset;
             uint tempCollateralAmount = $.tempCollateralAmount;
-
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("repay C", amount);
 
             // repay debt
             ISilo($.borrowingVault).repay(amount, address(this));
@@ -178,10 +131,6 @@ library SiloLib {
                 uint collateralAmountTotal = totalCollateral(lendingVault);
                 collateralAmountTotal -= collateralAmountTotal / 1000;
 
-                console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-                console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-                console.log("withdraw", Math.min(tempCollateralAmount, collateralAmountTotal));
-
                 ISilo(lendingVault).withdraw(
                     Math.min(tempCollateralAmount, collateralAmountTotal),
                     address(this),
@@ -191,25 +140,15 @@ library SiloLib {
             }
 
             // swap
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("swap C=>B", Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)));
             StrategyLib.swap(
                 platform, collateralAsset, token, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))
             );
 
             // pay flash loan
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("pay flashloan C", amount + feeAmount);
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
-            console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("swap B=>C", StrategyLib.balance(token));
             StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token));
-            console.log("done");
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -220,7 +159,6 @@ library SiloLib {
             address lendingVault = $.lendingVault;
 
             // swap
-            console.log("swap 4");
             StrategyLib.swap(platform, token, $.borrowAsset, amount);
 
             // repay
@@ -235,23 +173,17 @@ library SiloLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.IncreaseLtv) {
-            console.log("SiloLib.IncreaseLtv.1");
             // tokens[0] is collateral asset
             uint tempBorrowAmount = $.tempBorrowAmount;
             address lendingVault = $.lendingVault;
-            console.log("SiloLib.IncreaseLtv.tempBorrowAmount", tempBorrowAmount);
 
-            console.log("SiloLib.IncreaseLtv.2");
             // supply
             ISilo($.lendingVault).deposit(amount, address(this), ISilo.CollateralType.Collateral);
-            console.log("SiloLib.IncreaseLtv.3", amount);
 
             // borrow
             ISilo($.borrowingVault).borrow(tempBorrowAmount, address(this), address(this));
-            console.log("SiloLib.IncreaseLtv.4", tempBorrowAmount);
 
             // swap
-            console.log("swap 5");
             StrategyLib.swap(platform, $.borrowAsset, token, tempBorrowAmount, PRICE_IMPACT_TOLERANCE);
 
             // withdraw or supply if need
@@ -310,29 +242,65 @@ library SiloLib {
         targetLeveragePercent = $.targetLeveragePercent;
 
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
+    }
 
-        console.log("health");
-        console.log("ltv", ltv);
-        console.log("collateralAmountBalance", StrategyLib.balance(collateralAsset));
-        console.log("totalCollateralLendingVault", totalCollateral(lendingVault));
-        console.log("collateralAmount total", collateralAmount);
-        console.log("debtAmount", debtAmount);
-        console.log("_realTvl", _realTvl);
-        console.log("collateralPrice", collateralPrice);
-        console.log("collateralUsd", collateralUsd);
-        console.log("leverage", leverage);
+    function rebalanceDebt(
+        address platform,
+        uint newLtv,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) external returns (uint resultLtv) {
+        (uint ltv, uint maxLtv,, uint collateralAmount,,) = health(platform, $);
+
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+
+        uint tvlPricedInCollateralAsset = calcTotal(v);
+
+        // here is the math that works:
+        // collateral_value - debt_value = real_TVL
+        // debt_value * PRECISION / collateral_value = LTV
+        // ---
+        // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
+
+        uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
+        address[] memory flashAssets = new address[](1);
+        flashAssets[0] = v.collateralAsset;
+        uint[] memory flashAmounts = new uint[](1);
+
+        if (newLtv < ltv) {
+            $.tempAction = ILeverageLendingStrategy.CurrentAction.DecreaseLtv;
+
+            // need decrease debt and collateral
+            uint collateralDiff = collateralAmount - newCollateralValue;
+            flashAmounts[0] = collateralDiff;
+        } else {
+            $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
+
+            // need increase debt and collateral
+            uint collateralDiff = newCollateralValue - collateralAmount;
+            (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+            flashAmounts[0] = collateralDiff;
+            $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
+        }
+
+        LeverageLendingLib.requestFlashLoanExplicit(
+            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
+            $.flashLoanVault,
+            flashAssets,
+            flashAmounts
+        );
+
+        $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
+        (resultLtv,,,,,) = health(platform, $);
     }
 
     function realTvl(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
-        console.log("realTvl");
         CollateralDebtState memory debtState =
                         getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
-        console.log("tvl", tvl);
     }
 
     function getDebtState(
@@ -358,16 +326,6 @@ library SiloLib {
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
-
-
-        console.log("collateralPrice", data.collateralPrice);
-        console.log("borrowAssetPrice", data.borrowAssetPrice);
-        console.log("collateralAmount", data.collateralAmount);
-        console.log("collateralBalance", data.collateralBalance);
-        console.log("totalCollateral", data.collateralAmount + data.collateralBalance);
-        console.log("debtAmount", data.debtAmount);
-        console.log("collateralUsd", data.totalCollateralUsd);
-        console.log("borrowAssetUsd", data.borrowAssetUsd);
 
         return data;
     }
@@ -405,10 +363,6 @@ library SiloLib {
         maxLtv = config.maxLtv;
         maxLeverage = 1e18 * INTERNAL_PRECISION / (1e18 - maxLtv);
         targetLeverage = maxLeverage * targetLeveragePercent / INTERNAL_PRECISION;
-
-        console.log("maxLtv", maxLtv);
-        console.log("maxLeverage", maxLeverage);
-        console.log("targetLeverage", targetLeverage);
     }
 
     function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
@@ -433,13 +387,9 @@ library SiloLib {
         uint[] memory amounts
     ) external returns (uint value) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
-        console.log("collateralAsset", v.collateralAsset);
-        console.log("borrowAsset", v.borrowAsset);
         uint valueWas = StrategyLib.balance(_assets[0]) + calcTotal(v);
         _deposit($, v, _assets, amounts[0]);
         uint valueNow = StrategyLib.balance(_assets[0]) + calcTotal(v);
-        console.log("valueWas", valueWas);
-        console.log("valueNow", valueNow);
 
         if (valueNow > valueWas) {
             // deposit profit
@@ -448,10 +398,8 @@ library SiloLib {
             // deposit loss
             value = amounts[0] - (valueWas - valueNow);
         }
-        console.log("value", value);
 
         $base.total += value;
-        console.log("$base.total", $base.total);
     }
 
     /// @param _assets [collateral asset]
@@ -466,14 +414,11 @@ library SiloLib {
 
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amountToDeposit * targetLeverage / INTERNAL_PRECISION;
-        console.log("targetLeverage", targetLeverage);
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
         $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
-        console.log("flashAmountC", flashAmounts[0]);
-        console.log("tempBorrowAmount", $.tempBorrowAmount);
         LeverageLendingLib.requestFlashLoan($, _assets, flashAmounts);
     }
     //endregion ------------------------------------- Deposit
@@ -507,18 +452,12 @@ library SiloLib {
         } else {
             amountsOut[0] = Math.min(value + (valueNow - state.valueWas), bal);
         }
-        console.log("bal", bal);
-        console.log("transfer C", amountsOut[0]);
-        console.log("valueWas", state.valueWas);
-        console.log("valueNow", valueNow);
-        console.log("value", value);
 
         if (receiver != address(this)) {
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
         $base.total -= value;
-        console.log("$base.total ", $base.total);
 
         // ---------------------- Deposit the amount ~ value
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
@@ -533,7 +472,6 @@ library SiloLib {
         uint value
     ) internal {
         uint balance = StrategyLib.balance(v.collateralAsset);
-        console.log("!!!Deposit after withdraw", balance);
 
         // workaround dust problems and error LessThenThreshold
         uint maxAmountToWithdraw = withdrawParam1 * value / INTERNAL_PRECISION;
@@ -567,10 +505,6 @@ library SiloLib {
                 );
             }
         } else {
-            console.log("withdrawFromLendingVault.leverage", leverage);
-            console.log("withdrawFromLendingVault.targetLeverage", state.targetLeverage);
-            console.log("withdrawFromLendingVault.withdrawParam2", state.withdrawParam2);
-            console.log("targetLeverageAdjusted", state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION);
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
             if (leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
                 || ! _withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
@@ -587,7 +521,6 @@ library SiloLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
-        console.log("!!!_defaultWithdraw");
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
@@ -604,8 +537,6 @@ library SiloLib {
 
         $.tempCollateralAmount = collateralAmountToWithdraw;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
-        console.log("tempCollateralAmount", $.tempCollateralAmount);
-        console.log("flashAmountsB", flashAmounts[0]);
         LeverageLendingLib.requestFlashLoanExplicit(
             ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
             universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1,
@@ -623,7 +554,6 @@ library SiloLib {
         uint value,
         uint leverage
     ) internal returns (bool) {
-        console.log("!!!_withdrawThroughIncreasingLtv");
         // --------- Calculate new leverage after deposit {value} with target leverage and withdraw {value} on balance
         uint d = (10 ** IERC20Metadata(v.collateralAsset).decimals());
         LeverageCalcParams memory config = LeverageCalcParams({
@@ -636,9 +566,6 @@ library SiloLib {
         });
 
         int leverageNew = int(calculateNewLeverage(config, state.ltv, state.maxLtv));
-        console.log("leverageNew", leverageNew);
-        console.log("state.targetLeverage", state.targetLeverage);
-        console.log("leverage", leverage);
 
         if (
             leverageNew <= 0
@@ -656,14 +583,12 @@ library SiloLib {
         flashAssets[0] = v.collateralAsset;
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = value * uint(leverageNew) / INTERNAL_PRECISION;
-        console.log("flashAmounts[0]", flashAmounts[0]);
 
         // --------- Increase ltv
         $.tempBorrowAmount = flashAmounts[0] * priceCtoB // no multiplication on ltv here
             * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / (10 ** IERC20Metadata(v.collateralAsset).decimals())
             / 1e18; // priceCtoB has decimals 18
-        console.log("$.tempBorrowAmount", $.tempBorrowAmount);
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -711,12 +636,10 @@ library SiloLib {
             1e18 * 1e18 / (1e18 - maxLtv), // upper bound for the leverage search range
             SEARCH_LEVERAGE_TOLERANCE
         );
-        console.log("optimalLeverage", optimalLeverage);
 
         resultLeverage = optimalLeverage == 0
             ? 0
             : INTERNAL_PRECISION * _fullLeverageCalculation(config, optimalLeverage) / 1e18;
-        console.log("resultLeverage", resultLeverage);
     }
 
     /// @dev Internal function to calculate resulting leverage for a given `leverageNewScaled`.

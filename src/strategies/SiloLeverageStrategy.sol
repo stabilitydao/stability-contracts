@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../lib/forge-std/src/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -30,7 +29,6 @@ import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3Fl
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBVault} from "../integrations/balancer/IBVault.sol";
 import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
-import {console} from "forge-std/Test.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
@@ -100,7 +98,6 @@ contract SiloLeverageStrategy is LeverageLendingBase,
         uint[] memory feeAmounts,
         bytes memory /*userData*/
     ) external {
-        console.log("IFlashLoanRecipient", msg.sender);
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
@@ -108,7 +105,6 @@ contract SiloLeverageStrategy is LeverageLendingBase,
 
     /// @inheritdoc IBalancerV3FlashCallback
     function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
-        console.log("receiveFlashLoanV3", msg.sender, amount);
         // sender is vault, it's checked inside receiveFlashLoan
         // we can use msg.sender below but $.flashLoanVault looks more safe
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
@@ -244,49 +240,7 @@ contract SiloLeverageStrategy is LeverageLendingBase,
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
-        (uint ltv, uint maxLtv,, uint collateralAmount,,) = health();
-
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        LeverageLendingAddresses memory v = SiloLib.getLeverageLendingAddresses($);
-
-        uint tvlPricedInCollateralAsset = SiloLib.calcTotal(v);
-
-        // here is the math that works:
-        // collateral_value - debt_value = real_TVL
-        // debt_value * PRECISION / collateral_value = LTV
-        // ---
-        // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
-
-        uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        address[] memory flashAssets = new address[](1);
-        flashAssets[0] = v.collateralAsset;
-        uint[] memory flashAmounts = new uint[](1);
-
-        if (newLtv < ltv) {
-            $.tempAction = CurrentAction.DecreaseLtv;
-
-            // need decrease debt and collateral
-            uint collateralDiff = collateralAmount - newCollateralValue;
-            flashAmounts[0] = collateralDiff;
-        } else {
-            $.tempAction = CurrentAction.IncreaseLtv;
-
-            // need increase debt and collateral
-            uint collateralDiff = newCollateralValue - collateralAmount;
-            (uint priceCtoB,) = SiloLib.getPrices(v.lendingVault, v.borrowingVault);
-            flashAmounts[0] = collateralDiff;
-            $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
-        }
-
-        LeverageLendingLib.requestFlashLoanExplicit(
-            ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
-            $.flashLoanVault,
-            flashAssets,
-            flashAmounts
-        );
-
-        $.tempAction = CurrentAction.None;
-        (resultLtv,,,,,) = health();
+        return SiloLib.rebalanceDebt(platform(), newLtv, _getLeverageLendingBaseStorage());
     }
 
     //region ---------------- Strategy base
@@ -366,9 +320,6 @@ contract SiloLeverageStrategy is LeverageLendingBase,
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        console.log("collateral asset", $.collateralAsset);
-        console.log("borrow asset", $.borrowAsset);
-        console.log("!!!depositAssets", amounts[0]);
 
         return SiloLib.depositAssets($, $base, assets(), amounts);
     }
@@ -377,7 +328,6 @@ contract SiloLeverageStrategy is LeverageLendingBase,
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        console.log("!!!withdrawAssets", value);
         return SiloLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
     //endregion ---------------- Strategy base

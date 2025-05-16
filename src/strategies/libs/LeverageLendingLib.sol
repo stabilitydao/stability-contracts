@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
-
 import "../../integrations/balancer/IBVault.sol";
 import "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -46,9 +44,7 @@ library LeverageLendingLib {
     address[] memory flashAssets,
     uint[] memory flashAmounts
   ) internal {
-    console.log("flashLoanVault", flashLoanVault);
     if (flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1) {
-      console.log("requestFlashLoanExplicit.1");
       // --------------- Flash loan of Balancer v3, free. The strategy should support IBalancerV3FlashCallback
       // fee amount are always 0, flash loan in balancer v3 is free
       bytes memory data = abi.encodeWithSignature(
@@ -64,7 +60,6 @@ library LeverageLendingLib {
       flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
       || flashLoanKind == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
     ) {
-      console.log("requestFlashLoanExplicit.2", flashAssets[0], flashAmounts[0]);
       // --------------- Flash loan Uniswap V3. The strategy should support IUniswapV3FlashCallback
       // ensure that the vault has available amount
       require(
@@ -79,7 +74,6 @@ library LeverageLendingLib {
         abi.encode(flashAssets[0], flashAmounts[0], isToken0)
       );
     } else {
-      console.log("requestFlashLoanExplicit.3");
       // --------------- Default flash loan Balancer v2, paid. The strategy should support IFlashLoanRecipient
       IBVault(flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");
     }
