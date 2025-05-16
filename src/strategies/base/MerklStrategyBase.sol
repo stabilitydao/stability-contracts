@@ -41,11 +41,13 @@ abstract contract MerklStrategyBase is StrategyBase, IMerklStrategy {
         address[] memory users = new address[](len);
         uint[] memory balanceBefore = new uint[](len);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             balanceBefore[i] = IERC20(tokens[i]).balanceOf(address(this));
             users[i] = address(this);
         }
         IMerklDistributor(distributor).claim(users, tokens, amounts, proofs);
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line calls-loop
             uint got = IERC20(tokens[i]).balanceOf(address(this)) - balanceBefore[i];
             IERC20(tokens[i]).safeTransfer(multisig, got);
         }
