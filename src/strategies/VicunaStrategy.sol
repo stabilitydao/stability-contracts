@@ -39,7 +39,7 @@ contract VicunaStrategy is StrategyBase {
 
     /// @custom:storage-location erc7201:stability.VicunaStrategy
     struct VicunaStrategyStorage {
-        uint totalSupplied;
+        uint initialDeposit;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -158,7 +158,7 @@ contract VicunaStrategy is StrategyBase {
         address[] memory _assets = assets();
         IPool(aToken.POOL()).supply(_assets[0], amounts[0], address(this), 0);
         value = StrategyLib.balance(address(aToken)) - initialValue;
-        $.totalSupplied += amounts[0];
+        $.initialDeposit += amounts[0];
     }
 
     /// @inheritdoc StrategyBase
@@ -229,7 +229,7 @@ contract VicunaStrategy is StrategyBase {
         amountsOut[0] = amountOut;
 
         IERC20(depositedAsset).safeTransfer(receiver, amountOut);
-        $.totalSupplied -= value;
+        $.initialDeposit -= value;
     }
 
     /// @inheritdoc StrategyBase
@@ -278,7 +278,7 @@ contract VicunaStrategy is StrategyBase {
         VicunaStrategyStorage storage $ = _getStorage();
         __assets = assets();
         amounts = new uint[](1);
-        amounts[0] = StrategyLib.balance(u) - $.totalSupplied;
+        amounts[0] = StrategyLib.balance(u) - $.initialDeposit;
     }
 
     function _getStorage() internal pure returns (VicunaStrategyStorage storage $) {
