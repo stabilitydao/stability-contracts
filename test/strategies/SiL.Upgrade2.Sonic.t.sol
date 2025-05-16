@@ -218,6 +218,44 @@ contract SiLUpgradeTest2 is Test {
 
     //region -------------------------- Deposit and withdrawAll
     /// @notice Multiple deposit + withdraw all, single user
+    function testSiLUpgradeSingleDepositWithdrawAllSingleUser() public {
+        address user1 = address(1);
+
+        vm.prank(multisig);
+        address vault = VAULT2;
+        address strategyAddress = address(IVault(vault).strategy());
+
+        uint amount = 10_000e18;
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+
+        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+        vm.stopPrank();
+
+        // ----------------- set up
+        _setFlashLoanVault(
+            strategy,
+            SHADOW_POOL_S_STS,
+            address(0),
+            uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+        );
+
+        _adjustParams(strategy);
+
+        // ----------------- deposit & withdraw
+        uint deposited = _depositForUser(vault, user1, amount);
+        vm.roll(block.number + 6);
+
+        // _withdrawForUser(vault, strategyAddress, user1, amount);
+        uint withdrawn = _withdrawAllForUser(vault, strategyAddress, user1);
+        vm.roll(block.number + 6);
+
+        // ----------------- check results
+        assertLe(_getDiffPercent4(deposited, withdrawn), 100, "deposited ~ withdrawn"); // 1%
+    }
+
+    /// @notice Multiple deposit + withdraw all, single user
     function testSiLUpgradeMultipleDepositWithdrawAllSingleUser() public {
         address user1 = address(1);
 

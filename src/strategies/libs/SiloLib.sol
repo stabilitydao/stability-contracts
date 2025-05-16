@@ -160,7 +160,6 @@ library SiloLib {
             console.log('Do Withdraw');
             console.log('Balance collateral', IERC20(token).balanceOf(address(this)));
             console.log('Balance borrow', IERC20($.borrowAsset).balanceOf(address(this)));
-            console.log("deposit C", amount);
 
             // token is borrow asset
             address collateralAsset = $.collateralAsset;
@@ -467,6 +466,7 @@ library SiloLib {
 
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = amountToDeposit * targetLeverage / INTERNAL_PRECISION;
+        console.log("targetLeverage", targetLeverage);
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 

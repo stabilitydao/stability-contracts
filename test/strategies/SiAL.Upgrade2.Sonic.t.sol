@@ -229,7 +229,7 @@ contract SiALUpgrade2Test is Test {
 
     //region -------------------------- Check deposit and withdraw
     /// @notice #254: C-PT-aSonUSDC-14AUG2025-SAL. Rebalance, deposit large amount, withdraw ALL
-    function testSiALUpgrade1() public {
+    function testSiALUpgradeRebalanceDepositWithdraw() public {
         address user1 = address(1);
         uint amount = 40_000e6;
 
@@ -262,16 +262,36 @@ contract SiALUpgrade2Test is Test {
         strategy.rebalanceDebt(80_00, sharePrice * 90 / 100);
         vm.stopPrank();
 
-        _getHealth(vault, "!!!After rebalanceDebt");
-
         // ----------------- deposit large amount
         _depositForUser(vault, user1, amount);
-        _getHealth(vault, "!!!After deposit 1");
 
         // ----------------- withdraw all
         vm.roll(block.number + 6);
         _withdrawAllForUser(vault, address(strategy), user1);
-        _getHealth(vault, "!!!After withdraw 1");
+
+        assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount), 500);
+    }
+
+    function testSiALUpgradeSimpleDepositWithdraw() public {
+        address vault = IStrategy(STRATEGY).vault();
+
+        address user1 = address(1);
+        uint amount = 10_000e6;
+
+        // ----------------- deploy new impl and upgrade
+        SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(STRATEGY));
+        _upgradeStrategy(STRATEGY);
+        _adjustParams(strategy);
+
+        // ----------------- check current state
+        address collateralAsset = IStrategy(strategy).assets()[0];
+
+        // ----------------- deposit amount
+        _depositForUser(vault, user1, amount);
+
+        // ----------------- withdraw all
+        vm.roll(block.number + 6);
+        _withdrawAllForUser(vault, address(strategy), user1);
 
         assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount), 500);
     }
