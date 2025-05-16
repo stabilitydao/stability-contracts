@@ -440,6 +440,51 @@ contract SiALUpgrade2Test is Test {
         }
     }
 
+//    /// @notice TODO: Withdraw directly from strategy balance without changing collateral/debt
+//    function testSiLUpgradeWithdrawFromBalance() public {
+//        address user1 = address(1);
+//
+//        vm.prank(multisig);
+//        address vault = VAULT2;
+//
+//        // todo deploy new vault and new strategy
+//        address strategyAddress = address(IVault(vault).strategy());
+//
+//        uint amount = 10_000e18;
+//
+//        // ----------------- deploy new impl and upgrade
+//        _upgradeStrategy(strategyAddress);
+//
+//        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+//        vm.stopPrank();
+//
+//        // ----------------- set up
+//        _setFlashLoanVault(
+//            strategy, SHADOW_POOL_S_STS, address(0), uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+//        );
+//
+//        _adjustParams(strategy);
+//
+//        // ----------------- deposit
+//        uint deposited = _depositForUser(vault, user1, amount);
+//        vm.roll(block.number + 6);
+//
+//        // ----------------- put enough amount to withdraw on the strategy balance
+//        address[] memory assets = IStrategy(IVault(vault).strategy()).assets();
+//        deal(assets[0], address(strategy), deposited * 2);
+//
+//        State memory stateBefore = _getHealth(vault, "!!!Before withdraw");
+//        uint withdrawn = _withdrawAllForUser(vault, strategyAddress, user1);
+//        vm.roll(block.number + 6);
+//        State memory stateAfter = _getHealth(vault, "!!!Before withdraw");
+//
+//        assertEq(stateBefore.collateralAmount, stateAfter.collateralAmount);
+//        assertEq(stateBefore.debtAmount, stateAfter.debtAmount);
+//
+//        // ----------------- check results
+//        assertLe(_getDiffPercent4(deposited, withdrawn), 450, "deposited ~ withdrawn"); // 4.5% swap loss
+//    }
+
     //endregion -------------------------- Check deposit and withdraw
 
     //region -------------------------- Deposit withdraw routines
