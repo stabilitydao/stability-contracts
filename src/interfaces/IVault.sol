@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IStrategy} from "./IStrategy.sol";
+import {IStabilityVault} from "./IStabilityVault.sol";
 
 /// @notice Vault core interface.
 /// Derived implementations can be effective for building tokenized vaults with single or multiple underlying liquidity mining position.
@@ -10,34 +11,23 @@ import {IStrategy} from "./IStrategy.sol";
 /// Vaults can be used for active concentrated liquidity management and market making.
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
-interface IVault is IERC165 {
+interface IVault is IERC165, IStabilityVault {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error NotEnoughBalanceToPay();
     error FuseTrigger();
-    error ExceedSlippage(uint mintToUser, uint minToMint);
     error ExceedSlippageExactAsset(address asset, uint mintToUser, uint minToMint);
-    error ExceedMaxSupply(uint maxSupply);
     error NotEnoughAmountToInitSupply(uint mintAmount, uint initialShares);
-    error WaitAFewBlocks();
     error StrategyZeroDeposit();
-    error NotSupported();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    event DepositAssets(address indexed account, address[] assets, uint[] amounts, uint mintAmount);
-    event WithdrawAssets(
-        address indexed sender, address indexed owner, address[] assets, uint sharesAmount, uint[] amountsOut
-    );
     event HardWorkGas(uint gasUsed, uint gasCost, bool compensated);
     event DoHardWorkOnDepositChanged(bool oldValue, bool newValue);
-    event MaxSupply(uint maxShares);
-    event VaultName(string newName);
-    event VaultSymbol(string newSymbol);
     event MintFees(
         uint vaultManagerReceiverFee,
         uint strategyLogicReceiverFee,
@@ -94,9 +84,6 @@ interface IVault is IERC165 {
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Immutable vault type ID
-    function vaultType() external view returns (string memory);
-
     /// @return uniqueInitAddresses Return required unique init addresses
     /// @return uniqueInitNums Return required unique init nums
     function getUniqueInitParamLength() external view returns (uint uniqueInitAddresses, uint uniqueInitNums);
@@ -119,31 +106,6 @@ interface IVault is IERC165 {
 
     /// @dev Trigger doHardwork on invest action. Enabled by default.
     function doHardWorkOnDeposit() external view returns (bool);
-
-    /// @dev USD price of share with 18 decimals.
-    ///      ONLY FOR OFF-CHAIN USE.
-    ///      Not trusted vault share price can be manipulated.
-    /// @return price_ Price of 1e18 shares with 18 decimals precision
-    /// @return trusted True means oracle price, false means AMM spot price
-    function price() external view returns (uint price_, bool trusted);
-
-    /// @dev USD price of assets managed by strategy with 18 decimals
-    ///      ONLY FOR OFF-CHAIN USE.
-    ///      Not trusted TVL can be manipulated.
-    /// @return tvl_ Total USD value of final assets in vault
-    /// @return trusted True means TVL calculated based only on oracle prices, false means AMM spot price was used.
-    function tvl() external view returns (uint tvl_, bool trusted);
-
-    /// @dev Calculation of consumed amounts, shares amount and liquidity/underlying value for provided available amounts of strategy assets
-    /// @param assets_ Assets suitable for vault strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
-    /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
-    /// @return amountsConsumed Amounts of strategy assets that can be deposited by providing amountsMax
-    /// @return sharesOut Amount of vault shares that will be minted
-    /// @return valueOut Liquidity value or underlying token amount that will be received by the strategy
-    function previewDepositAssets(
-        address[] memory assets_,
-        uint[] memory amountsMax
-    ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut);
 
     /// @notice All available data on the latest declared APR (annual percentage rate)
     /// @return totalApr Total APR of investing money to vault. 18 decimals: 1e18 - +100% per year.
@@ -176,46 +138,6 @@ interface IVault is IERC165 {
     /// Only strategy can call this
     function hardWorkMintFeeCallback(address[] memory revenueAssets, uint[] memory revenueAmounts) external;
 
-    /// @dev Deposit final assets (pool assets) to the strategy and minting of vault shares.
-    ///      If the strategy interacts with a pool or farms through an underlying token, then it will be minted.
-    ///      Emits a {DepositAssets} event with consumed amounts.
-    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
-    /// @param amountsMax Available amounts of assets_ that user wants to invest in vault
-    /// @param minSharesOut Slippage tolerance. Minimal shares amount which must be received by user.
-    /// @param receiver Receiver of deposit. If receiver is zero address, receiver is msg.sender.
-    function depositAssets(
-        address[] memory assets_,
-        uint[] memory amountsMax,
-        uint minSharesOut,
-        address receiver
-    ) external;
-
-    /// @dev Burning shares of vault and obtaining strategy assets.
-    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
-    /// @param amountShares Shares amount for burning
-    /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
-    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
-    function withdrawAssets(
-        address[] memory assets_,
-        uint amountShares,
-        uint[] memory minAssetAmountsOut
-    ) external returns (uint[] memory);
-
-    /// @dev Burning shares of vault and obtaining strategy assets.
-    /// @param assets_ Assets suitable for the strategy. Can be strategy assets, underlying asset or specific set of assets depending on strategy logic.
-    /// @param amountShares Shares amount for burning
-    /// @param minAssetAmountsOut Slippage tolerance. Minimal amounts of strategy assets that user must receive.
-    /// @param receiver Receiver of assets
-    /// @param owner Owner of vault shares
-    /// @return Amount of assets for withdraw. It's related to assets_ one-by-one.
-    function withdrawAssets(
-        address[] memory assets_,
-        uint amountShares,
-        uint[] memory minAssetAmountsOut,
-        address receiver,
-        address owner
-    ) external returns (uint[] memory);
-
     /// @dev Setting of vault capacity
     /// @param maxShares If totalSupply() exceeds this value, deposits will not be possible
     function setMaxSupply(uint maxShares) external;
@@ -231,10 +153,4 @@ interface IVault is IERC165 {
 
     /// @dev Calling the strategy HardWork by operator with optional compensation for spent gas from the vault balance
     function doHardWork() external;
-
-    /// @dev Changing ERC20 name of vault
-    function setName(string calldata newName) external;
-
-    /// @dev Changing ERC20 symbol of vault
-    function setSymbol(string calldata newSymbol) external;
 }

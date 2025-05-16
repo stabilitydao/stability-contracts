@@ -6,13 +6,13 @@
 
 * **Platform** `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
 * **Factory** `0xc184a3ecca684f2621c903a7943d85fa42f56671` [sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671)
+* **MetaVaultFactory** `0xa190302880acF9deCC4447363640f589000EF601` [sonicscan](https://sonicscan.org/address/0xa190302880acF9deCC4447363640f589000EF601)
 * **PriceReader** `0x422025182dd83a610bfa8b20550dcccdf94dc549` [sonicscan](https://sonicscan.org/address/0x422025182dd83a610bfa8b20550dcccdf94dc549)
-* **Wwapper** `0xe52fcf607a8328106723804de1ef65da512771be` [sonicscan](https://sonicscan.org/address/0xe52fcf607a8328106723804de1ef65da512771be)
+* **Swapper** `0xe52fcf607a8328106723804de1ef65da512771be` [sonicscan](https://sonicscan.org/address/0xe52fcf607a8328106723804de1ef65da512771be)
 * **HardWorker** `0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701` [sonicscan](https://sonicscan.org/address/0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701)
-* **CaultManager** `0x589a504f2ee9d054b483c700fa814863d639381e` [sonicscan](https://sonicscan.org/address/0x589a504f2ee9d054b483c700fa814863d639381e)
+* **VaultManager** `0x589a504f2ee9d054b483c700fa814863d639381e` [sonicscan](https://sonicscan.org/address/0x589a504f2ee9d054b483c700fa814863d639381e)
 * **StrategyLogic** `0xe0e71b484bb20e37d18ab51fb60c32dec778478a` [sonicscan](https://sonicscan.org/address/0xe0e71b484bb20e37d18ab51fb60c32dec778478a)
 * **Zap** `0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d` [sonicscan](https://sonicscan.org/address/0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d)
-
 
 ### Periphery
 
