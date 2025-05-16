@@ -66,6 +66,7 @@ interface IPlatform {
     event Rebalancer(address rebalancer_);
     event Bridge(address bridge_);
     event RevenueRouter(address revenueRouter_);
+    event MetaVaultFactory(address metaVaultFactory);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -178,6 +179,10 @@ interface IPlatform {
     /// @notice Platform revenue distributor
     /// @return Address of the revenue distributor proxy
     function revenueRouter() external view returns (address);
+
+    /// @notice Factory of MetaVaults
+    /// @return Address of the MetaVault factory
+    function metaVaultFactory() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
