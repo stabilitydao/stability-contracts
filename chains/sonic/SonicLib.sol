@@ -35,6 +35,7 @@ import {GammaEqualizerFarmStrategy} from "../../src/strategies/GammaEqualizerFar
 import {IchiEqualizerFarmStrategy} from "../../src/strategies/IchiEqualizerFarmStrategy.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
+import {VicunaStrategy} from "../../src/strategies/VicunaStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -120,20 +121,22 @@ library SonicLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](6);
+            address[] memory tokenIn = new address[](7);
             tokenIn[0] = SonicConstantsLib.TOKEN_wS;
             tokenIn[1] = SonicConstantsLib.TOKEN_stS;
             tokenIn[2] = SonicConstantsLib.TOKEN_BEETS;
             tokenIn[3] = SonicConstantsLib.TOKEN_EQUAL;
             tokenIn[4] = SonicConstantsLib.TOKEN_USDC;
             tokenIn[5] = SonicConstantsLib.TOKEN_DIAMONDS;
-            uint[] memory thresholdAmount = new uint[](6);
+            tokenIn[6] = SonicConstantsLib.TOKEN_USDT;
+            uint[] memory thresholdAmount = new uint[](7);
             thresholdAmount[0] = 1e12;
             thresholdAmount[1] = 1e16;
             thresholdAmount[2] = 1e10;
             thresholdAmount[3] = 1e12;
             thresholdAmount[4] = 1e4;
             thresholdAmount[5] = 1e15;
+            thresholdAmount[6] = 1e4;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -170,6 +173,17 @@ library SonicLib {
         p.initAddresses[2] = SonicConstantsLib.SILO_VAULT_51_wS;
         p.initAddresses[3] = SonicConstantsLib.SILO_VAULT_31_WBTC;
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
+        p.initAddresses = new address[](7);
+        p.initAddresses[0] = SonicConstantsLib.VICUNA_SONIC_wS;
+        p.initAddresses[1] = SonicConstantsLib.VICUNA_SONIC_USDC;
+        p.initAddresses[2] = SonicConstantsLib.VICUNA_SONIC_scUSD;
+        p.initAddresses[3] = SonicConstantsLib.VICUNA_SONIC_WETH;
+        p.initAddresses[4] = SonicConstantsLib.VICUNA_SONIC_USDT;
+        p.initAddresses[5] = SonicConstantsLib.VICUNA_SONIC_wOS;
+        p.initAddresses[6] = SonicConstantsLib.VICUNA_SONIC_stS;
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.VICUNA, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -190,6 +204,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.VICUNA, address(new VicunaStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
