@@ -17,6 +17,8 @@ import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
+/// Changelog:
+///   1.1.0: IStabilityVault.lastBlockDefenseDisabled()
 /// @author Alien Deployer (https://github.com/a17)
 contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IMetaVault {
     using SafeERC20 for IERC20;
@@ -27,7 +29,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e16;
@@ -216,6 +218,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         $.symbol = newSymbol;
         emit VaultSymbol(newSymbol);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function setLastBlockDefenseDisabled(bool isDisabled) external onlyGovernanceOrMultisig {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $.lastBlockDefenseDisabled = isDisabled;
+        emit LastBlockDefenseDisabled(isDisabled);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -529,6 +538,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         trusted_ = !notSafePrice;
     }
 
+    /// @inheritdoc IStabilityVault
+    function lastBlockDefenseDisabled() external view returns(bool) {
+        return _getMetaVaultStorage().lastBlockDefenseDisabled;
+    }
+
     /// @inheritdoc IERC20
     function totalSupply() public view returns (uint _tvl) {
         // totalSupply is balance of peg asset
@@ -582,18 +596,22 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
-        $.lastTransferBlock[from] = block.number;
-        $.lastTransferBlock[to] = block.number;
+        if (!$.lastBlockDefenseDisabled) {
+            $.lastTransferBlock[from] = block.number;
+            $.lastTransferBlock[to] = block.number;
+        }
         emit Transfer(from, to, amount);
     }
 
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
         _checkLastBlockProtection($, owner);
-        $.lastTransferBlock[owner] = block.number;
+        if (!$.lastBlockDefenseDisabled) {
+            $.lastTransferBlock[owner] = block.number;
+        }
     }
 
     function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view {
-        if ($.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
+        if (!$.lastBlockDefenseDisabled && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
         }
     }

@@ -24,6 +24,7 @@ import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
 ///   2.1.0: previewDepositAssetsWrite
@@ -42,7 +43,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.3.0";
+    string public constant VERSION_VAULT_BASE = "2.4.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -191,6 +192,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         $.changedSymbol = newSymbol;
         emit VaultSymbol(newSymbol);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function setLastBlockDefenseDisabled(bool isDisabled) external onlyGovernanceOrMultisig {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        $.lastBlockDefenseDisabled = isDisabled;
+        emit LastBlockDefenseDisabled(isDisabled);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -368,6 +376,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (amountsConsumed, valueOut) = _strategy.previewDepositAssets(assets_, amountsMax);
         //slither-disable-next-line unused-return
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
+    }
+
+    /// @inheritdoc IStabilityVault
+    function lastBlockDefenseDisabled() external view returns(bool) {
+        return _getVaultBaseStorage().lastBlockDefenseDisabled;
     }
 
     /// @inheritdoc IVault
@@ -604,16 +617,20 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     function _beforeWithdraw(VaultBaseStorage storage $, address owner) internal {
-        if ($.withdrawRequests[owner] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
-            revert WaitAFewBlocks();
+        if (!$.lastBlockDefenseDisabled) {
+            if ($.withdrawRequests[owner] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
+                revert WaitAFewBlocks();
+            }
+            $.withdrawRequests[owner] = block.number;
         }
-        $.withdrawRequests[owner] = block.number;
     }
 
     function _update(address from, address to, uint value) internal virtual override {
         super._update(from, to, value);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
-        $.withdrawRequests[from] = block.number;
-        $.withdrawRequests[to] = block.number;
+        if (!$.lastBlockDefenseDisabled) {
+            $.withdrawRequests[from] = block.number;
+            $.withdrawRequests[to] = block.number;
+        }
     }
 }
