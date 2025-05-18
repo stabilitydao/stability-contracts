@@ -100,7 +100,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function lastBlockDefenseDisabled() external view returns(bool) {}
+    function lastBlockDefenseDisabled() external view returns (bool) {}
 
     function setLastBlockDefenseDisabled(bool isDisabled) external {}
 

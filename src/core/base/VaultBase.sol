@@ -379,7 +379,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IStabilityVault
-    function lastBlockDefenseDisabled() external view returns(bool) {
+    function lastBlockDefenseDisabled() external view returns (bool) {
         return _getVaultBaseStorage().lastBlockDefenseDisabled;
     }
 

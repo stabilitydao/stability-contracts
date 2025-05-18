@@ -539,7 +539,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IStabilityVault
-    function lastBlockDefenseDisabled() external view returns(bool) {
+    function lastBlockDefenseDisabled() external view returns (bool) {
         return _getMetaVaultStorage().lastBlockDefenseDisabled;
     }
 

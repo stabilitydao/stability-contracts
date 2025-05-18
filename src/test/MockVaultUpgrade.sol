@@ -27,7 +27,7 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function initialize(VaultInitializationData memory vaultInitializationData) public initializer {}
 
-    function lastBlockDefenseDisabled() external view returns(bool) {}
+    function lastBlockDefenseDisabled() external view returns (bool) {}
 
     function setLastBlockDefenseDisabled(bool isDisabled) external {}
 

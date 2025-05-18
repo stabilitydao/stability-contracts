@@ -62,7 +62,7 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     function tvl() external view returns (uint tvl_, bool trusted);
 
     /// @dev Minimum 6 blocks between deposit and withdraw check disabled
-    function lastBlockDefenseDisabled() external view returns(bool);
+    function lastBlockDefenseDisabled() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -116,5 +116,4 @@ interface IStabilityVault is IERC20, IERC20Metadata {
 
     /// @dev Enable or disable last block check
     function setLastBlockDefenseDisabled(bool isDisabled) external;
-
 }
