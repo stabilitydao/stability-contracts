@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
@@ -36,5 +37,10 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
                 strategyInitNums: new uint[](0)
             })
         );
+    }
+
+    function _preHardWork() internal override {
+        console.log("ROLL");
+        vm.roll(block.number + 100_000);
     }
 }
