@@ -165,6 +165,24 @@ Call it via Safe Transaction Builder:
 `
 </details>
 
+### Set WrappedMetaVault config
+
+Use `IMetaVaultFactory.setWrappedMetaVaultImplementation` method.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `0xa190302880acF9deCC4447363640f589000EF601`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setWrappedMetaVaultImplementation","inputs": [{"name": "newImplementation","type": "address","internalType": "address"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
 ### Set vault config
 
 Use `IFactory.setVaultConfig` method.
@@ -275,7 +293,6 @@ Use `IPlatform.announcePlatformUpgrade`
 2. `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
 3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
 4. Fill
-
 
 ### Disable last block defense
 

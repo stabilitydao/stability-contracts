@@ -12,6 +12,7 @@ import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 
+/// @dev MetaVault 1.1.0
 contract MetaVaultSonicUpgrade1 is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IStabilityVault public metaVault;
