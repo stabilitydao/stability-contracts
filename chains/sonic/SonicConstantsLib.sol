@@ -334,13 +334,13 @@ library SonicConstantsLib {
 
     // Vicuna
     // address public constant VICUNA_POOL = 0xaa1C02a83362BcE106dFf6eB65282fE8B97A1665;
-    address public constant VICUNA_SONIC_wS = 0x9E581fC9181f99c3c4DAB344B91C55DaEb9413fe;
-    address public constant VICUNA_SONIC_USDC = 0xF224CB039F2B5909197c019b1972E62d7fdCdA0f;
-    address public constant VICUNA_SONIC_scUSD = 0xF9f65F8c6566d71C5966a0a1852cEd1Eb978bafb;
-    address public constant VICUNA_SONIC_WETH = 0xA1241Ce1fBB74Ff37D5c73dcB84326766C3852C0;
-    address public constant VICUNA_SONIC_USDT = 0xb401dc6D04fd6D3993345dE2858065ddC9a36b79;
-    address public constant VICUNA_SONIC_wOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
-    address public constant VICUNA_SONIC_stS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
+    address public constant STABILITY_SONIC_wS = 0x9E581fC9181f99c3c4DAB344B91C55DaEb9413fe;
+    address public constant STABILITY_SONIC_USDC = 0xF224CB039F2B5909197c019b1972E62d7fdCdA0f;
+    address public constant STABILITY_SONIC_scUSD = 0xF9f65F8c6566d71C5966a0a1852cEd1Eb978bafb;
+    address public constant STABILITY_SONIC_WETH = 0xA1241Ce1fBB74Ff37D5c73dcB84326766C3852C0;
+    address public constant STABILITY_SONIC_USDT = 0xb401dc6D04fd6D3993345dE2858065ddC9a36b79;
+    address public constant STABILITY_SONIC_wOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
+    address public constant STABILITY_SONIC_stS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
