@@ -17,6 +17,8 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
 /// @title Wrapped rebase MetaVault
+/// Changelog:
+///   1.0.1: fix withdraw to pass Balancer ERC4626 test
 /// @author Alien Deployer (https://github.com/a17)
 contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault {
     using SafeERC20 for IERC20;
@@ -26,7 +28,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.WrappedMetaVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant _WRAPPED_METAVAULT_STORAGE_LOCATION =
@@ -127,7 +129,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             _assets[0] = asset();
             IStabilityVault($.metaVault).withdrawAssets(
                 _assets,
-                assets * 10 ** (18 - IERC20Metadata(asset()).decimals()),
+                (assets + 1) * 10 ** (18 - IERC20Metadata(asset()).decimals()),
                 new uint[](1),
                 receiver,
                 address(this)

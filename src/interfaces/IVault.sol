@@ -58,6 +58,8 @@ interface IVault is IERC165, IStabilityVault {
         string changedName;
         /// @dev Changed ERC20 symbol
         string changedSymbol;
+        /// @inheritdoc IStabilityVault
+        bool lastBlockDefenseDisabled;
     }
 
     /// @title Vault Initialization Data

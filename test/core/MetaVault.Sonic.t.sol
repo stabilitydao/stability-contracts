@@ -444,19 +444,20 @@ contract MetaVaultSonicTest is Test {
         metavault.addVault(vault, newTargetProportions);
 
         vm.startPrank(multisig);
-        vm.expectRevert(IMetaVault.IncorrectVault.selector);
-        metavault.addVault(vault, newTargetProportions);
 
-        vault = SonicConstantsLib.VAULT_C_USDC_S_49;
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         metavault.addVault(vault, newTargetProportions);
 
         newTargetProportions = new uint[](6);
+
         vm.expectRevert(IMetaVault.IncorrectProportions.selector);
         metavault.addVault(vault, newTargetProportions);
 
         newTargetProportions[0] = 1e18;
         vault = SonicConstantsLib.VAULT_C_USDC_S_8;
+        vm.expectRevert(IMetaVault.IncorrectVault.selector);
+        metavault.addVault(vault, newTargetProportions);
+
         vm.expectRevert(IMetaVault.IncorrectVault.selector);
         metavault.addVault(vault, newTargetProportions);
 
