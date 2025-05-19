@@ -276,7 +276,6 @@ Use `IPlatform.announcePlatformUpgrade`
 3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
 4. Fill
 
-
 ### Disable last block defense
 
 Use `IStabilityVault.setLastBlockDefenseDisabled` method for target vaults.
