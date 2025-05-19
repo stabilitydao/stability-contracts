@@ -19,6 +19,7 @@ import {StrategyLib} from "./libs/StrategyLib.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
+import {AaveLib} from "./libs/AaveLib.sol";
 
 /// @title Earns APR by lending assets on Vicuna
 /// @author Jude (https://github.com/iammrjude)
@@ -46,6 +47,7 @@ contract AaveStrategy is StrategyBase {
         uint initialDeposit; // todo remove
         /// @notice Last CVault.price()
         uint lastPrice;
+        address atoken;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -59,7 +61,8 @@ contract AaveStrategy is StrategyBase {
         }
         address[] memory _assets = new address[](1);
         _assets[0] = IAToken(addresses[2]).UNDERLYING_ASSET_ADDRESS();
-        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE, addresses[1], _assets, addresses[2], type(uint).max);
+        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE, addresses[1], _assets, address(0), type(uint).max);
+        _getStorage().atoken = addresses[2];
 
         IERC20(_assets[0]).forceApprove(IAToken(addresses[2]).POOL(), type(uint).max);
     }
@@ -76,8 +79,8 @@ contract AaveStrategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        return _generateDescription($base._underlying);
+        AaveStrategyStorage storage $ = _getStorage();
+        return AaveLib.generateDescription($.atoken);
     }
 
     /// @inheritdoc IStrategy
@@ -88,8 +91,10 @@ contract AaveStrategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        return (IERC20Metadata($base._underlying).symbol(), true);
+        AaveStrategyStorage storage $ = _getStorage();
+        address atoken = $.atoken;
+        string memory shortAddr = AaveLib.shortAddress(IAToken(atoken).POOL());
+        return (string.concat(IERC20Metadata(atoken).symbol(), " ", shortAddr), true);
     }
 
     /// @inheritdoc IStrategy
@@ -112,7 +117,7 @@ contract AaveStrategy is StrategyBase {
         nums = new uint[](0);
         ticks = new int24[](0);
         for (uint i; i < len; ++i) {
-            variants[i] = _generateDescription(params.initAddresses[i]);
+            variants[i] = AaveLib.generateDescription(params.initAddresses[i]);
             addresses[i] = params.initAddresses[i];
         }
     }
@@ -124,9 +129,9 @@ contract AaveStrategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function total() public view override returns (uint) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        console.log("total", StrategyLib.balance($base._underlying));
-        return StrategyLib.balance($base._underlying);
+        AaveStrategyStorage storage $ = _getStorage();
+        console.log("total", StrategyLib.balance($.atoken));
+        return StrategyLib.balance($.atoken);
     }
 
     /// @inheritdoc IStrategy
@@ -138,9 +143,9 @@ contract AaveStrategy is StrategyBase {
     /// @inheritdoc IStrategy
     function getRevenue() public view override returns (address[] memory assets_, uint[] memory amounts) {
         console.log("getRevenue");
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        uint newPrice = _getSharePrice($base._underlying);
-        (assets_, amounts) = _getRevenue(newPrice, $base._underlying);
+        AaveStrategyStorage storage $ = _getStorage();
+        uint newPrice = _getSharePrice($.atoken);
+        (assets_, amounts) = _getRevenue(newPrice, $.atoken);
     }
 
     /// @inheritdoc IStrategy
@@ -158,14 +163,14 @@ contract AaveStrategy is StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    function consoleDebug(string memory s, uint amount) internal {
+    function consoleDebug(string memory s, uint amount) view internal {
         AaveStrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         console.log(s, amount);
         console.log("vault.totalSupply", IVault($base.vault).totalSupply());
         console.log("total", total());
         console.log("lastPrice", $.lastPrice);
-        console.log("current price", _getSharePrice($base._underlying));
+        console.log("current price", _getSharePrice($.atoken));
         (uint tvl,) = IVault($base.vault).tvl();
         console.log("tvl", tvl);
         {(uint price,) = IVault($base.vault).price(); console.log("_depositAssets.vault.price", price);}
@@ -175,11 +180,10 @@ contract AaveStrategy is StrategyBase {
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
         AaveStrategyStorage storage $ = _getStorage();
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
         consoleDebug("!!!!!!!!!!!!depositBefore", amounts[0]);
 
-        IAToken aToken = IAToken($base._underlying);
+        IAToken aToken = IAToken($.atoken);
         address[] memory _assets = assets();
 
         uint initialValue = StrategyLib.balance(address(aToken));
@@ -187,7 +191,7 @@ contract AaveStrategy is StrategyBase {
         value = StrategyLib.balance(address(aToken)) - initialValue;
 
         if ($.lastPrice == 0) {
-            $.lastPrice = _getSharePrice($base._underlying);
+            $.lastPrice = _getSharePrice($.atoken);
             console.log("lastPrice-pre-calculated", $.lastPrice);
         }
         consoleDebug("!!!!!!!!!!!!depositAfter", 0);
@@ -270,8 +274,8 @@ contract AaveStrategy is StrategyBase {
         consoleDebug("!!!!!!!!!!!withdrawBefore", value);
         amountsOut = new uint[](1);
 
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        IAToken aToken = IAToken($base._underlying);
+        AaveStrategyStorage storage $ = _getStorage();
+        IAToken aToken = IAToken($.atoken);
         address depositedAsset = aToken.UNDERLYING_ASSET_ADDRESS(); // todo can we use assets[0] instead?
 
         address[] memory _assets = assets();
@@ -298,9 +302,10 @@ contract AaveStrategy is StrategyBase {
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        AaveStrategyStorage storage $ = _getStorage();
         assets_ = $base._assets;
         amounts_ = new uint[](1);
-        amounts_[0] = StrategyLib.balance($base._underlying);
+        amounts_[0] = StrategyLib.balance($.atoken);
         console.log("_assetsAmounts", amounts_[0]);
     }
 
@@ -316,11 +321,10 @@ contract AaveStrategy is StrategyBase {
         )
     {
         consoleDebug("!!!!!!!!!!!!!!!beforeClaim", 0);
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         AaveStrategyStorage storage $ = _getStorage();
 
-        uint newPrice = _getSharePrice($base._underlying);
-        (__assets, __amounts) = _getRevenue(newPrice, $base._underlying);
+        uint newPrice = _getSharePrice($.atoken);
+        (__assets, __amounts) = _getRevenue(newPrice, $.atoken);
         $.lastPrice = newPrice;
 
         __rewardAssets = new address[](0);
@@ -333,12 +337,6 @@ contract AaveStrategy is StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _generateDescription(address aToken) internal view returns (string memory) {
-        //slither-disable-next-line calls-loop
-        return
-            string.concat("Supply ", IERC20Metadata(IAToken(aToken).UNDERLYING_ASSET_ADDRESS()).symbol(), " to AAVE ");
-    }
 
     function _getRevenue(uint newPrice, address u) internal view returns (address[] memory __assets, uint[] memory amounts) {
         console.log("_getRevenue.newPrice", newPrice);

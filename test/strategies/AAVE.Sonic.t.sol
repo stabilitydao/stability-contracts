@@ -4,11 +4,13 @@ pragma solidity ^0.8.28;
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {console, Test} from "forge-std/Test.sol";
+import "../../src/interfaces/IStrategy.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(22116484); // Apr-25-2025 01:47:21 AM +UTC
+        // vm.rollFork(22116484); // Apr-25-2025 01:47:21 AM +UTC
+        vm.rollFork(28001684); // May-19-2025 01:21:46 PM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -39,8 +41,9 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
         );
     }
 
-    function _preHardWork() internal override {
-        console.log("ROLL");
-        vm.roll(block.number + 100_000);
+    function _preDeposit() internal override {
+        console.log("!!!!!START!!!!!!", IStrategy(currentStrategy).description());
+        (string memory name,) = IStrategy(currentStrategy).getSpecificName();
+        console.log("!!!!!START4!!!!!!", name);
     }
 }
