@@ -20,8 +20,8 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.1 hours;
-//        console.log("erc7201:stability.AaveStrategy");
-//        console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff)));
+        //        console.log("erc7201:stability.AaveStrategy");
+        //        console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
     function testAaveStrategy() public universalTest {
@@ -48,76 +48,74 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
         );
     }
 
-//    function _preDeposit() internal override {
-//        console.log("!!!!!START!!!!!!", IStrategy(currentStrategy).description());
-//        (string memory name,) = IStrategy(currentStrategy).getSpecificName();
-//        console.log("!!!!!START4!!!!!!", name);
-//
-//        address user1 = address(1);
-//        address user2 = address(2);
-//
-//        uint amount1 = 1000e18;
-//        uint amount2 = 1500e18;
-//
-//        address vault = IStrategy(currentStrategy).vault();
-//
-//        console.log("!!!!!!!!!!!!! deposit user1", amount1);
-//        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
-//        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
-//        uint deposited1 = _depositForUser(vault, user1, amount1);
-//        vm.warp(block.timestamp + 9 hours);
-//        vm.roll(block.number + 100_000);
-//        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
-//        console.log("Vault total supply", IERC20(vault).totalSupply());
-//
-//        console.log("!!!!!!!!!!!!! deposit user2", amount2);
-//        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
-//        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
-//        uint deposited2 = _depositForUser(vault, user2, amount2);
-//        vm.warp(block.timestamp + 9 hours);
-//        vm.roll(block.number + 100_000);
-//        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
-//        console.log("Vault total supply", IERC20(vault).totalSupply());
-//
-//
-//        TestStrategiesVars memory vars;
-//        vars.hardWorker = IHardWorker(platform.hardWorker());
-//        vm.startPrank(platform.governance());
-//        vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
-//        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-//        vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
-//        vm.stopPrank();
-//        vars.vaultsForHardWork = new address[](1);
-//
-//        vars.apr = 0;
-//        vars.aprCompound = 0;
-//        vars.earned = 0;
-//        vars.duration = 0;
-//        vm.recordLogs();
-//        vars.hardWorker.call(vars.vaultsForHardWork);
-//
-//        console.log("!!!!!!!!!!!!! withdraw user1", IERC20(vault).balanceOf(user1));
-//        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
-//        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
-//        uint withdrawn1 = _withdrawAllForUser(vault, currentStrategy, user1);
-//        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
-//        console.log("Vault total supply", IERC20(vault).totalSupply());
-//
-//        console.log("!!!!!!!!!!!!! withdraw user2", IERC20(vault).balanceOf(user2));
-//        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
-//        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
-//        uint withdrawn2 = _withdrawAllForUser(vault, currentStrategy, user2);
-//
-//        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
-//        console.log("Vault total supply", IERC20(vault).totalSupply());
-//
-//
-//        console.log("deposited1", deposited1);
-//        console.log("deposited2", deposited2);
-//        console.log("withdrawn1", withdrawn1);
-//        console.log("withdrawn2", withdrawn2);
-//        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FINISH");
-//    }
-
-
+    //    function _preDeposit() internal override {
+    //        console.log("!!!!!START!!!!!!", IStrategy(currentStrategy).description());
+    //        (string memory name,) = IStrategy(currentStrategy).getSpecificName();
+    //        console.log("!!!!!START4!!!!!!", name);
+    //
+    //        address user1 = address(1);
+    //        address user2 = address(2);
+    //
+    //        uint amount1 = 1000e18;
+    //        uint amount2 = 1500e18;
+    //
+    //        address vault = IStrategy(currentStrategy).vault();
+    //
+    //        console.log("!!!!!!!!!!!!! deposit user1", amount1);
+    //        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
+    //        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
+    //        uint deposited1 = _depositForUser(vault, user1, amount1);
+    //        vm.warp(block.timestamp + 9 hours);
+    //        vm.roll(block.number + 100_000);
+    //        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
+    //        console.log("Vault total supply", IERC20(vault).totalSupply());
+    //
+    //        console.log("!!!!!!!!!!!!! deposit user2", amount2);
+    //        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
+    //        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
+    //        uint deposited2 = _depositForUser(vault, user2, amount2);
+    //        vm.warp(block.timestamp + 9 hours);
+    //        vm.roll(block.number + 100_000);
+    //        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
+    //        console.log("Vault total supply", IERC20(vault).totalSupply());
+    //
+    //
+    //        TestStrategiesVars memory vars;
+    //        vars.hardWorker = IHardWorker(platform.hardWorker());
+    //        vm.startPrank(platform.governance());
+    //        vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
+    //        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
+    //        vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
+    //        vm.stopPrank();
+    //        vars.vaultsForHardWork = new address[](1);
+    //
+    //        vars.apr = 0;
+    //        vars.aprCompound = 0;
+    //        vars.earned = 0;
+    //        vars.duration = 0;
+    //        vm.recordLogs();
+    //        vars.hardWorker.call(vars.vaultsForHardWork);
+    //
+    //        console.log("!!!!!!!!!!!!! withdraw user1", IERC20(vault).balanceOf(user1));
+    //        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
+    //        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
+    //        uint withdrawn1 = _withdrawAllForUser(vault, currentStrategy, user1);
+    //        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
+    //        console.log("Vault total supply", IERC20(vault).totalSupply());
+    //
+    //        console.log("!!!!!!!!!!!!! withdraw user2", IERC20(vault).balanceOf(user2));
+    //        console.log("balance vault user1", IERC20(vault).balanceOf(user1));
+    //        console.log("balance vault user2", IERC20(vault).balanceOf(user2));
+    //        uint withdrawn2 = _withdrawAllForUser(vault, currentStrategy, user2);
+    //
+    //        {(uint tvl,) = IVault(vault).tvl(); console.log("Vault tvl", tvl);}
+    //        console.log("Vault total supply", IERC20(vault).totalSupply());
+    //
+    //
+    //        console.log("deposited1", deposited1);
+    //        console.log("deposited2", deposited2);
+    //        console.log("withdrawn1", withdrawn1);
+    //        console.log("withdrawn2", withdrawn2);
+    //        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FINISH");
+    //    }
 }

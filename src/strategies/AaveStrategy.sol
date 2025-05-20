@@ -178,8 +178,8 @@ contract AaveStrategy is StrategyBase {
 
     /// @inheritdoc StrategyBase
     function _liquidateRewards(
-        address /*exchangeAsset*/,
-        address[] memory /*rewardAssets_*/,
+        address, /*exchangeAsset*/
+        address[] memory, /*rewardAssets_*/
         uint[] memory /*rewardAmounts_*/
     ) internal override returns (uint earnedExchangeAsset) {
         // do nothing
@@ -187,7 +187,7 @@ contract AaveStrategy is StrategyBase {
 
     /// @inheritdoc StrategyBase
     function _processRevenue(
-        address[] memory /*assets_*/,
+        address[] memory, /*assets_*/
         uint[] memory /*amountsRemaining*/
     ) internal override returns (bool needCompound) {
         // do nothing
@@ -283,7 +283,10 @@ contract AaveStrategy is StrategyBase {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getRevenue(uint newPrice, address u) internal view returns (address[] memory __assets, uint[] memory amounts) {
+    function _getRevenue(
+        uint newPrice,
+        address u
+    ) internal view returns (address[] memory __assets, uint[] memory amounts) {
         AaveStrategyStorage storage $ = _getStorage();
         __assets = assets();
         amounts = new uint[](1);
@@ -298,7 +301,6 @@ contract AaveStrategy is StrategyBase {
         uint scaledBalance = aToken.scaledTotalSupply();
         return scaledBalance == 0 ? 0 : aToken.totalSupply() * 1e18 / scaledBalance;
     }
-
 
     function _getStorage() internal pure returns (AaveStrategyStorage storage $) {
         //slither-disable-next-line assembly
