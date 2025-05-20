@@ -13,6 +13,8 @@ library SonicConstantsLib {
     address public constant WRAPPED_METAVAULT_metaUSD = 0xAaAaaAAac311D0572Bffb4772fe985A750E88805;
     address public constant METAVAULT_metaUSDC = 0x22222222780038f8817b3dE825a070225e6d9874;
     address public constant WRAPPED_METAVAULT_metaUSDC = 0xEEEEEEE6d95E55A468D32FeB5d6648754d10A967;
+    address public constant METAVAULT_metascUSD = 0x33333333C480194b5B651987b7D00B20dDCbd287;
+    address public constant WRAPPED_METAVAULT_metascUSD = 0xccccCCcca9FC69a2b32408730011EdB3205A93A1;
 
     // Vaults
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
@@ -23,6 +25,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_S_49 = 0xc33568559c8338581BB6914d6F2d024a063886E8;
     address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
     address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
+    address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;

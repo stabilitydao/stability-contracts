@@ -29,3 +29,6 @@ report/
 
 # VSCodeCounter extension
 .VSCodeCounter
+
+# Coverage reports
+coverage-html/
