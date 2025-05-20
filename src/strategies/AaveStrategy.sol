@@ -318,10 +318,10 @@ contract AaveStrategy is StrategyBase {
 
     function _getSharePrice(address u) internal view returns (uint) {
         IAToken aToken = IAToken(u);
+        uint scaledBalance = aToken.scaledBalanceOf(address(this));
         console.log("AAVE balance", aToken.balanceOf(address(this)));
         console.log("AAVE scaledBalanceOf", aToken.scaledBalanceOf(address(this)));
         console.log("Share price", scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance);
-        uint scaledBalance = aToken.scaledBalanceOf(address(this));
         return scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance;
     }
 
