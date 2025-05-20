@@ -282,6 +282,18 @@ contract AaveStrategy is StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    function _getStorage() internal pure returns (AaveStrategyStorage storage $) {
+        //slither-disable-next-line assembly
+        assembly {
+            $.slot := AAVE_STRATEGY_STORAGE_LOCATION
+        }
+    }
+
+    function _getSharePrice(address u) internal view returns (uint) {
+        IAToken aToken = IAToken(u);
+        uint scaledBalance = aToken.scaledTotalSupply();
+        return scaledBalance == 0 ? 0 : aToken.totalSupply() * 1e18 / scaledBalance;
+    }
 
     function _getRevenue(
         uint newPrice,
@@ -293,19 +305,6 @@ contract AaveStrategy is StrategyBase {
         uint oldPrice = $.lastSharePrice;
         if (newPrice > oldPrice && oldPrice != 0) {
             amounts[0] = StrategyLib.balance(u) * newPrice * (newPrice - oldPrice) / oldPrice / 1e18;
-        }
-    }
-
-    function _getSharePrice(address u) internal view returns (uint) {
-        IAToken aToken = IAToken(u);
-        uint scaledBalance = aToken.scaledTotalSupply();
-        return scaledBalance == 0 ? 0 : aToken.totalSupply() * 1e18 / scaledBalance;
-    }
-
-    function _getStorage() internal pure returns (AaveStrategyStorage storage $) {
-        //slither-disable-next-line assembly
-        assembly {
-            $.slot := AAVE_STRATEGY_STORAGE_LOCATION
         }
     }
     //endregion ----------------------- Internal logic
