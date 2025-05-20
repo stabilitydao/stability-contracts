@@ -20,8 +20,9 @@ import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
 import {AaveLib} from "./libs/AaveLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-/// @title Earns APR by lending assets on Vicuna
+/// @title Earns APR by lending assets on AAVE
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
 contract AaveStrategy is StrategyBase {
@@ -128,8 +129,13 @@ contract AaveStrategy is StrategyBase {
     /// @inheritdoc IStrategy
     function total() public view override returns (uint) {
         AaveStrategyStorage storage $ = _getStorage();
-        console.log("total", StrategyLib.balance($.aToken));
-        return StrategyLib.balance($.aToken);
+        IAToken aToken = IAToken($.aToken);
+
+        uint scaled = aToken.scaledBalanceOf(address(this));
+        uint pricePerShare = _getSharePrice($.aToken);
+
+        console.log("total", scaled * pricePerShare / 1e18);
+        return scaled * pricePerShare / 1e18;
     }
 
     /// @inheritdoc IStrategy
@@ -172,14 +178,15 @@ contract AaveStrategy is StrategyBase {
         IAToken aToken = IAToken($.aToken);
         address[] memory _assets = assets();
 
-        uint initialValue = StrategyLib.balance(address(aToken));
+        uint scaledBefore = aToken.scaledBalanceOf(address(this));
         IPool(aToken.POOL()).supply(_assets[0], amounts[0], address(this), 0);
-        value = StrategyLib.balance(address(aToken)) - initialValue;
+        value = aToken.scaledBalanceOf(address(this)) - scaledBefore;
 
         if ($.lastSharePrice == 0) {
             $.lastSharePrice = _getSharePrice($.aToken);
             console.log("lastPrice-pre-calculated", $.lastSharePrice);
         }
+        console.log("_depositAssets returns", value);
         consoleDebug("!!!!!!!!!!!!depositAfter", 0);
     }
 
@@ -208,20 +215,26 @@ contract AaveStrategy is StrategyBase {
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
         internal
-        pure
+        view
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
+        AaveStrategyStorage storage $ = _getStorage();
+        uint pricePerShare = _getSharePrice($.aToken);
+
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
-        value = amountsMax[0];
+
+        value = pricePerShare == 0 ? 0 : amountsMax[0] * 1e18 / pricePerShare;
+        console.log("_previewDepositAssets.amountsMax[0]", amountsMax[0]);
+        console.log("_previewDepositAssets.value", value);
     }
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(
         address[] memory, /*assets_*/
         uint[] memory amountsMax
-    ) internal pure override returns (uint[] memory amountsConsumed, uint value) {
+    ) internal view override returns (uint[] memory amountsConsumed, uint value) {
         return _previewDepositAssets(amountsMax);
     }
 
@@ -241,24 +254,28 @@ contract AaveStrategy is StrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets.internal", value, receiver);
+        console.log("_withdrawAssets.internal", value);
         consoleDebug("!!!!!!!!!!!withdrawBefore", value);
         amountsOut = new uint[](1);
 
         AaveStrategyStorage storage $ = _getStorage();
         IAToken aToken = IAToken($.aToken);
-        address depositedAsset = aToken.UNDERLYING_ASSET_ADDRESS(); // todo can we use assets[0] instead?
+        address asset = aToken.UNDERLYING_ASSET_ADDRESS(); // todo can we use assets[0] instead?
 
         address[] memory _assets = assets();
 
-        uint initialValue = StrategyLib.balance(depositedAsset);
-        IPool(aToken.POOL()).withdraw(_assets[0], value, address(this));
-        uint amountOut = StrategyLib.balance(depositedAsset) - initialValue;
+        uint initialValue = StrategyLib.balance(asset);
+        uint amount = value * _getSharePrice($.aToken) / 1e18;
+        console.log("_withdrawAssets.value", value);
+        console.log("_withdrawAssets.amount", amount);
+        console.log("_withdrawAssets.scaledBalanceOf", aToken.scaledBalanceOf(address(this)));
+        console.log("_withdrawAssets.balanceOf", aToken.balanceOf(address(this)));
+        uint amountToWithdraw = Math.min(amount, aToken.scaledBalanceOf(address(this)));
+        IPool(aToken.POOL()).withdraw(_assets[0], amountToWithdraw, address(this));
+        amountsOut[0] = StrategyLib.balance(asset) - initialValue;
 
-        amountsOut[0] = amountOut;
-
-        IERC20(depositedAsset).safeTransfer(receiver, amountOut);
-        console.log("_withdrawAssets.safeTransfer", amountOut);
+        console.log("_withdrawAssets.safeTransfer", amountsOut[0]);
+        IERC20(asset).safeTransfer(receiver, amountsOut[0]);
 
         consoleDebug("!!!!!!!!!!!!!withdrawAfter", 0);
     }
@@ -318,10 +335,11 @@ contract AaveStrategy is StrategyBase {
 
     function _getSharePrice(address u) internal view returns (uint) {
         IAToken aToken = IAToken(u);
+        uint scaledBalance = aToken.scaledBalanceOf(address(this));
+
         console.log("AAVE balance", aToken.balanceOf(address(this)));
         console.log("AAVE scaledBalanceOf", aToken.scaledBalanceOf(address(this)));
         console.log("Share price", scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance);
-        uint scaledBalance = aToken.scaledBalanceOf(address(this));
         return scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance;
     }
 
