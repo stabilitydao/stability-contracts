@@ -4,32 +4,34 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {UniversalTest2, StrategyIdLib} from "../base/UniversalTest2.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import "../../src/interfaces/IStrategy.sol";
 
-contract AaveStrategyTestSonic is SonicSetup, UniversalTest2 {
+contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(22116484); // Apr-25-2025 01:47:21 AM +UTC
-        vm.rollFork(28001684); // May-19-2025 01:21:46 PM +UTC
+        vm.rollFork(28222973); // May-20-2025 10:56:04 AM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.1 hours;
+//        console.log("erc7201:stability.AaveStrategy");
+//        console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
     function testAaveStrategy() public universalTest {
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_wS);
-        //_addStrategy(SonicConstantsLib.STABILITY_SONIC_USDC);
-//        _addStrategy(SonicConstantsLib.STABILITY_SONIC_scUSD);
-//        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WETH);
-//        _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDT);
-//        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wOS);
-//        _addStrategy(SonicConstantsLib.STABILITY_SONIC_stS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDC);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_scUSD);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WETH);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDT);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wOS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_stS);
     }
 
     function _addStrategy(address aToken) internal {

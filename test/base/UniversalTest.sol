@@ -461,7 +461,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                         HARDWORK 0                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! hardwork 0");
                 assertEq(strategy.isReadyForHardWork(), true, "Not ready for HardWork");
                 vm.txGasPrice(15e10); // 150gwei
                 {
@@ -601,7 +600,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                  NO EMPTY HARDWORKS                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! not empty hardworks");
                 if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM)) {
                     vm.startPrank(address(vars.hardWorker));
                     vm.expectRevert(abi.encodeWithSelector(IStrategy.NotReadyForHardWork.selector));
@@ -612,13 +610,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                      ADD REWARDS                           */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! add rewards");
                 _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*           CLAIM REWARDS FROM REWARDING VAULTS              */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! claim rewards");
                 if (vars.isRVault || vars.isRMVault) {
                     address rewardToken = vars.isRVault ? vars.allowedBBTokens[0] : platform.targetExchangeAsset();
                     uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
@@ -640,7 +636,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                        WITHDRAW ALL                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! withdraw all");
                 uint totalWas = strategy.total();
                 vm.roll(block.number + 6);
                 IVault(vars.vault).withdrawAssets(
@@ -650,19 +645,16 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                console.log("!!!!!!!!!!! UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT");
                 if (
                     !CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.TRIDENT_PEARL_FARM)
                         || strategies[i].farmId == 0
                 ) {
                     address underlying = strategy.underlying();
                     if (underlying != address(0)) {
-                        console.log("!!!!!!!!!! 1");
                         address tempVault = vars.vault;
                         address[] memory underlyingAssets = new address[](1);
                         underlyingAssets[0] = underlying;
                         uint[] memory underlyingAmounts = new uint[](1);
-                        console.log("!!!!!!!!!! 2");
 
                         // first other user need to deposit to not hold vault only with dead shares
                         underlyingAmounts[0] = totalWas / 100;
@@ -671,7 +663,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
                         vm.stopPrank();
-                        console.log("!!!!!!!!!! 3");
 
                         _skip(7200, strategies[i].farmId);
 
@@ -680,7 +671,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         deal(underlying, address(this), totalWas);
                         assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                         IERC20(underlying).approve(tempVault, totalWas);
-                        console.log("!!!!!!!!!! 4");
 
                         underlyingAmounts[0] = totalWas;
                         (, uint sharesOut, uint valueOut) =
@@ -692,7 +682,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             assertGt(strategy.lastHardWork(), lastHw, "HardWork not happened");
                             assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
                         }
-                        console.log("!!!!!!!!!! 5");
 
                         assertEq(IERC20(underlying).balanceOf(address(this)), 0);
 
@@ -715,7 +704,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                                 "previewDepositAssets by underlying: vault balance too small"
                             );
                         }
-                        console.log("!!!!!!!!!! 6");
 
                         uint[] memory minAmounts = new uint[](1);
                         minAmounts[0] = totalWas - totalWas / 10000;
@@ -726,7 +714,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         assertGe(IERC20(underlying).balanceOf(address(this)), minAmounts[0], "U2");
                         assertLe(IERC20(underlying).balanceOf(address(this)), totalWas + 10);
                     } else {
-                        console.log("!!!!!!!!!! 7");
                         {
                             vm.expectRevert(abi.encodeWithSelector(IControllable.NotVault.selector));
                             strategy.depositUnderlying(18);
