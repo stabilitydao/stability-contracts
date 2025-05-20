@@ -46,4 +46,8 @@ interface IAToken {
   function scaledBalanceOf(address user) external view returns (uint);
 
   function rescueTokens(address token, address to, uint amount) external;
+
+  function scaledTotalSupply() external view returns (uint256);
+
+  function totalSupply() external view returns (uint256);
 }

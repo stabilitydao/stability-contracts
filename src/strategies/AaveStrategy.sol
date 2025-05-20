@@ -172,15 +172,16 @@ contract AaveStrategy is StrategyBase {
         IAToken aToken = IAToken($.aToken);
         address[] memory _assets = assets();
 
-        uint initialValue = StrategyLib.balance(address(aToken));
-        IPool(aToken.POOL()).supply(_assets[0], amounts[0], address(this), 0);
-        value = StrategyLib.balance(address(aToken)) - initialValue;
+        value = amounts[0];
+        if (value != 0) {
+            IPool(aToken.POOL()).supply(_assets[0], amounts[0], address(this), 0);
 
-        if ($.lastSharePrice == 0) {
-            $.lastSharePrice = _getSharePrice($.aToken);
-            console.log("lastPrice-pre-calculated", $.lastSharePrice);
+            if ($.lastSharePrice == 0) {
+                $.lastSharePrice = _getSharePrice(address(aToken));
+                console.log("lastPrice-pre-calculated", $.lastSharePrice);
+            }
+            consoleDebug("!!!!!!!!!!!!depositAfter", 0);
         }
-        consoleDebug("!!!!!!!!!!!!depositAfter", 0);
     }
 
     /// @inheritdoc StrategyBase
@@ -318,11 +319,11 @@ contract AaveStrategy is StrategyBase {
 
     function _getSharePrice(address u) internal view returns (uint) {
         IAToken aToken = IAToken(u);
-        uint scaledBalance = aToken.scaledBalanceOf(address(this));
-        console.log("AAVE balance", aToken.balanceOf(address(this)));
-        console.log("AAVE scaledBalanceOf", aToken.scaledBalanceOf(address(this)));
+        uint scaledBalance = aToken.scaledTotalSupply();
+        console.log("AAVE total supply", aToken.totalSupply());
+        console.log("AAVE scaledBalance", scaledBalance);
         console.log("Share price", scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance);
-        return scaledBalance == 0 ? 0 : aToken.balanceOf(address(this)) * 1e18 / scaledBalance;
+        return scaledBalance == 0 ? 0 : aToken.totalSupply() * 1e18 / scaledBalance;
     }
 
 
