@@ -45,5 +45,7 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
         console.log("!!!!!START!!!!!!", IStrategy(currentStrategy).description());
         (string memory name,) = IStrategy(currentStrategy).getSpecificName();
         console.log("!!!!!START4!!!!!!", name);
+
+        // two users
     }
 }
