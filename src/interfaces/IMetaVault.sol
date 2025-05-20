@@ -31,10 +31,16 @@ interface IMetaVault is IStabilityVault {
         string symbol;
         /// @inheritdoc IERC20
         mapping(address owner => mapping(address spender => uint allowance)) allowance;
+        /// @dev Total internal shares
         uint totalShares;
+        /// @dev Internal user balances
         mapping(address => uint) shareBalance;
+        /// @dev Stored share price to track MetaVault APR
         uint storedSharePrice;
+        /// @dev Last time APR emitted
         uint storedTime;
+        /// @inheritdoc IStabilityVault
+        bool lastBlockDefenseDisabled;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

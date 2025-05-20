@@ -26,6 +26,7 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     event MaxSupply(uint maxShares);
     event VaultName(string newName);
     event VaultSymbol(string newSymbol);
+    event LastBlockDefenseDisabled(bool isDisabled);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -59,6 +60,9 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     /// @return tvl_ Total USD value of final assets in vault
     /// @return trusted True means TVL calculated based only on oracle prices, false means AMM spot price was used.
     function tvl() external view returns (uint tvl_, bool trusted);
+
+    /// @dev Minimum 6 blocks between deposit and withdraw check disabled
+    function lastBlockDefenseDisabled() external view returns (bool);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -109,4 +113,7 @@ interface IStabilityVault is IERC20, IERC20Metadata {
 
     /// @dev Changing ERC20 symbol of vault
     function setSymbol(string calldata newSymbol) external;
+
+    /// @dev Enable or disable last block check
+    function setLastBlockDefenseDisabled(bool isDisabled) external;
 }

@@ -37,6 +37,15 @@
 * **RevenueRouter** `0x23b8cc22c4c82545f4b451b11e2f17747a730810` [sonicscan](https://sonicscan.org/address/0x23b8cc22c4c82545f4b451b11e2f17747a730810)
 * **FeeTreasury** `0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039` [sonicscan](https://sonicscan.org/address/0xda9c8035aa67a8cf9bf5477e0d937f74566f9039)
 
+### AMM adapters
+
+* Solidly (Equalizer, SwapX classic, Shadow classic): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
+* AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
+* UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
+* ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
+* BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
+* BalancerWeighted: 0x7D6641cf68E5169c11d91266D3E410130dE70B9E
+* Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
 
 ## Polygon [137]
 
