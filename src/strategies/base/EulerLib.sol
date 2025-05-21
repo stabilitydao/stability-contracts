@@ -5,14 +5,14 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
-import {IEulerVault} from "../../integrations/euler/IEulerVault.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 library EulerLib {
     function generateDescription(address eulerVault) internal view returns (string memory) {
         //slither-disable-next-line calls-loop
         return string.concat(
             "Earn by lending ",
-            IERC20Metadata(IEulerVault(eulerVault).asset()).symbol(),
+            IERC20Metadata(IERC4626(eulerVault).asset()).symbol(),
             " to Euler market ",
             shortAddress(eulerVault)
         );

@@ -171,9 +171,8 @@ library SonicLib {
         p.initAddresses[2] = SonicConstantsLib.SILO_VAULT_51_wS;
         p.initAddresses[3] = SonicConstantsLib.SILO_VAULT_31_WBTC;
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
-        p.initAddresses = new address[](2);
-        p.initAddresses[0] = SonicConstantsLib.EULER_VAULT_wS;
-        p.initAddresses[1] = SonicConstantsLib.EULER_VAULT_USDC;
+        p.initAddresses = new address[](1);
+        p.initAddresses[0] = SonicConstantsLib.EULER_VAULT_wS_Re7;
         // todo more markets?
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
