@@ -36,6 +36,7 @@ import {IchiEqualizerFarmStrategy} from "../../src/strategies/IchiEqualizerFarmS
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -173,6 +174,12 @@ library SonicLib {
         p.initAddresses[2] = SonicConstantsLib.SILO_VAULT_51_wS;
         p.initAddresses[3] = SonicConstantsLib.SILO_VAULT_31_WBTC;
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
+        p.initAddresses = new address[](1);
+        p.initAddresses[0] = SonicConstantsLib.EULER_VAULT_wS_Re7;
+        // todo more markets?
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.EULER, p);
         p.initAddresses = new address[](7);
         p.initAddresses[0] = SonicConstantsLib.STABILITY_SONIC_wS;
         p.initAddresses[1] = SonicConstantsLib.STABILITY_SONIC_USDC;
@@ -204,6 +211,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
