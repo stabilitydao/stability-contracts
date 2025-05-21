@@ -35,6 +35,7 @@ import {GammaEqualizerFarmStrategy} from "../../src/strategies/GammaEqualizerFar
 import {IchiEqualizerFarmStrategy} from "../../src/strategies/IchiEqualizerFarmStrategy.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
+import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
@@ -121,20 +122,22 @@ library SonicLib {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             swapper.addBlueChipsPools(bcPools, false);
             swapper.addPools(pools, false);
-            address[] memory tokenIn = new address[](6);
+            address[] memory tokenIn = new address[](7);
             tokenIn[0] = SonicConstantsLib.TOKEN_wS;
             tokenIn[1] = SonicConstantsLib.TOKEN_stS;
             tokenIn[2] = SonicConstantsLib.TOKEN_BEETS;
             tokenIn[3] = SonicConstantsLib.TOKEN_EQUAL;
             tokenIn[4] = SonicConstantsLib.TOKEN_USDC;
             tokenIn[5] = SonicConstantsLib.TOKEN_DIAMONDS;
-            uint[] memory thresholdAmount = new uint[](6);
+            tokenIn[6] = SonicConstantsLib.TOKEN_USDT;
+            uint[] memory thresholdAmount = new uint[](7);
             thresholdAmount[0] = 1e12;
             thresholdAmount[1] = 1e16;
             thresholdAmount[2] = 1e10;
             thresholdAmount[3] = 1e12;
             thresholdAmount[4] = 1e4;
             thresholdAmount[5] = 1e15;
+            thresholdAmount[6] = 1e4;
             swapper.setThresholds(tokenIn, thresholdAmount);
             LogDeployLib.logSetupSwapper(platform, showLog);
         }
@@ -177,6 +180,17 @@ library SonicLib {
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.EULER, p);
+        p.initAddresses = new address[](7);
+        p.initAddresses[0] = SonicConstantsLib.STABILITY_SONIC_wS;
+        p.initAddresses[1] = SonicConstantsLib.STABILITY_SONIC_USDC;
+        p.initAddresses[2] = SonicConstantsLib.STABILITY_SONIC_scUSD;
+        p.initAddresses[3] = SonicConstantsLib.STABILITY_SONIC_WETH;
+        p.initAddresses[4] = SonicConstantsLib.STABILITY_SONIC_USDT;
+        p.initAddresses[5] = SonicConstantsLib.STABILITY_SONIC_wOS;
+        p.initAddresses[6] = SonicConstantsLib.STABILITY_SONIC_stS;
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -198,6 +212,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -220,8 +235,9 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](36);
+        pools = new ISwapper.AddPoolData[](37);
         uint i;
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BEETS_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BEETS, SonicConstantsLib.TOKEN_stS);
