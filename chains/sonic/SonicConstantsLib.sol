@@ -85,6 +85,7 @@ library SonicConstantsLib {
     address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
+    address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -171,6 +172,7 @@ library SonicConstantsLib {
     address public constant POOL_PENDLE_PT_wstkscUSD_29MAY2025 = 0x6e4e95FaB7db1f0524b4b0a05F0b9c96380b7Dfa;
     address public constant POOL_PENDLE_PT_wstkscETH_29MAY2025 = 0xd14117baf6EC5D12BE68CD06e763A4B82C9B6d1D;
     address public constant POOL_PENDLE_PT_wOS_29MAY2025 = 0x4E82347Bc41CFD5d62cEF483C7f0a739a8158963;
+    address public constant POOL_SHADOW_CL_USDC_USDT = 0x9053fE060f412ad5677f934F89e07524343eE8E7;
 
     // ALMs
     address public constant ALM_ICHI_SWAPX_SACRA_wS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -332,6 +334,16 @@ library SonicConstantsLib {
     // ICHI
     // address public constant ICHI_EQUALIZER_VAULT_GATEWAY = 0x4c8c0D2Ca19a97896AA9135449e6d6471a53FC5f;
     // address public constant ICHI_EQUALIZER_VAULT_DEPLOYER = 0x0b2a31D95B1a4c8b1e772599ffcB8875FB4e2d33;
+
+    // Vicuna
+    // address public constant VICUNA_POOL = 0xaa1C02a83362BcE106dFf6eB65282fE8B97A1665;
+    address public constant STABILITY_SONIC_wS = 0x9E581fC9181f99c3c4DAB344B91C55DaEb9413fe;
+    address public constant STABILITY_SONIC_USDC = 0xF224CB039F2B5909197c019b1972E62d7fdCdA0f;
+    address public constant STABILITY_SONIC_scUSD = 0xF9f65F8c6566d71C5966a0a1852cEd1Eb978bafb;
+    address public constant STABILITY_SONIC_WETH = 0xA1241Ce1fBB74Ff37D5c73dcB84326766C3852C0;
+    address public constant STABILITY_SONIC_USDT = 0xb401dc6D04fd6D3993345dE2858065ddC9a36b79;
+    address public constant STABILITY_SONIC_wOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
+    address public constant STABILITY_SONIC_stS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
 
     // Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
