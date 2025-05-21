@@ -296,7 +296,7 @@ Use `IPlatform.announcePlatformUpgrade`
 
 ### Disable last block defense
 
-Use `IStabilityVault.setLastBlockDefenseDisabled` method for target vaults.
+Use `IStabilityVault.setLastBlockDefenseDisabled` method for each target vault.
 
 Call it via Safe Transaction Builder:
 
@@ -309,5 +309,23 @@ Call it via Safe Transaction Builder:
 
 `
 [{"type": "function","name": "setLastBlockDefenseDisabled","inputs": [{"name": "isDisabled","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+### Disable doHardWorkOnDeposit
+
+Use `IVault.setDoHardWorkOnDeposit` method for each target vault.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `<vault address>`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setDoHardWorkOnDeposit","inputs": [{"name": "value","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
 `
 </details>
