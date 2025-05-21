@@ -21,7 +21,7 @@ SLoC: 1624
 
 ## 2024.05.0-alpha CVault critical scope
 
-[release 24.05.0-alpha](https://github.com/stabilitydao/stability-contracts/releases/tag/v24.05.0-alpha)
+[release 24.01.1-alpha](https://github.com/stabilitydao/stability-contracts/releases/tag/v24.01.1-alpha)
 
 LoC: 521
 
