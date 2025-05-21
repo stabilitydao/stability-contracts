@@ -348,4 +348,18 @@ library SonicConstantsLib {
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
+    // Euler
+    address public constant EULER_VAULT_USDC = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
+    address public constant EULER_VAULT_scETH = 0x0806af1762Bdd85B167825ab1a64E31CF9497038;
+    address public constant EULER_VAULT_wstkscETH = 0x05d57366B862022F76Fe93316e81E9f24218bBfC;
+    address public constant EULER_VAULT_xUSD = 0xdEBdAB749330bb976fD10dc52f9A452aaF029028;
+    address public constant EULER_VAULT_scUSD_MEV = 0xB38D431e932fEa77d1dF0AE0dFE4400c97e597B8;
+    address public constant EULER_VAULT_scUSD_Re7 = 0xeEb1DC1Ca7ffC5b54aD1cc4c1088Db4E5657Cb6c;
+    address public constant EULER_VAULT_PT_wstkscUSD_29MAY2025_Re7 = 0x8537a336fC74EA742527E8300175A7b07a108c9E;
+    address public constant EULER_VAULT_PT_wstkscUSD_29MAY2025_MEV = 0xF6E2ddf7a149C171E591C8d58449e371E6dc7570;
+    address public constant EULER_VAULT_wS = 0x90a804D316A06E00755444D56b9eF52e5C4F4D73;
+    address public constant EULER_VAULT_WETH = 0xa5cd24d9792F4F131f5976Af935A505D19c8Db2b;
+    // todo more addresses: https://app.euler.finance/?network=sonic
+
 }

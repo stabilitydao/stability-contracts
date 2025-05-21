@@ -80,6 +80,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.SILO)) {
             return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.EULER)) {
+            return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
+        }
         return address(0);
     }
 }
