@@ -323,7 +323,20 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_49_USDC = 0xa18a8f100f2c976044f2f84fae1eE9f807Ae7893;
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
-    address public constant SILO_MANAGED_VAULT_USDC = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260;
+
+    // Silo managed vaults
+    /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
+    address public constant SILO_MANAGED_VAULT_S_Varlamore = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
+    address public constant SILO_MANAGED_VAULT_USDC_Apostro = 0xcca902f2d3d265151f123d8ce8FdAc38ba9745ed;
+    address public constant SILO_MANAGED_VAULT_USDC_Re7 = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260; // todo remove duplicate
+    address public constant SILO_MANAGED_VAULT_scUSD_Re7 = 0x592D1e187729C76EfacC6dfFB9355bd7BF47B2a7;
+    address public constant SILO_MANAGED_VAULT_USDC_Varlamore = 0xF6F87073cF8929C206A77b0694619DC776F89885;
+    address public constant SILO_MANAGED_VAULT_USDC_Greenhouse = 0xf6bC16B79c469b94Cdd25F3e2334DD4FEE47A581;
+    address public constant SILO_MANAGED_VAULT_S_Greenhouse = 0x9D2192e40F8D215C628Ea9FcF067683720d82032;
+    address public constant SILO_MANAGED_VAULT_S_Apostro = 0x53F2B31FBE5deF59C8D6A33ad056A0261da40C83;
+    address public constant SILO_MANAGED_VAULT_stS_Re7 = 0xf136C06d23492Ff143afD9f5DC4E886224bA7050;
+    address public constant SILO_MANAGED_VAULT_S_Re7 = 0x011777671E371E38C3d198Ea315A4885F33ecA8f;
+    address public constant SILO_MANAGED_VAULT_scUSD_Varlamore = 0xb6A23cB29e512Df41876B28D7A848BD831f9c5Ba;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;

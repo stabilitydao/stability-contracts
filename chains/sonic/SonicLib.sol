@@ -35,6 +35,7 @@ import {GammaEqualizerFarmStrategy} from "../../src/strategies/GammaEqualizerFar
 import {IchiEqualizerFarmStrategy} from "../../src/strategies/IchiEqualizerFarmStrategy.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
+import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -190,6 +191,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
