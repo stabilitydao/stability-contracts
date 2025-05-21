@@ -81,7 +81,7 @@ library StrategyDeveloperLib {
             return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
         }
         if (CommonLib.eq(strategyId, StrategyIdLib.EULER)) {
-            return 0xF1dCce3a6c321176C62b71c091E3165CC9C3816E;
+            return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
         return address(0);
     }

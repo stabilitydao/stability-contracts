@@ -11,9 +11,9 @@ library EulerLib {
     function generateDescription(address eulerVault) internal view returns (string memory) {
         //slither-disable-next-line calls-loop
         return string.concat(
-            "Earn by lending ",
+            "Lend ",
             IERC20Metadata(IERC4626(eulerVault).asset()).symbol(),
-            " to Euler market ",
+            " on Euler market ",
             shortAddress(eulerVault)
         );
     }
