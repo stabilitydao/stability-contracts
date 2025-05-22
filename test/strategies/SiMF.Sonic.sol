@@ -8,10 +8,21 @@ import "../../src/integrations/silo/ISiloVault.sol";
 contract SiloManagedFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(28687311); // May-22-2025 07:13:50 AM +UTC
+        vm.rollFork(28738366); // May-22-2025 11:52:44 AM +UTC
     }
+
     function testSiMFSonic() public universalTest {
-        _addStrategy(42);
+        //        _addStrategy(42);
+        //        _addStrategy(43);
+        //        _addStrategy(44);
+        _addStrategy(45);
+        _addStrategy(46);
+        _addStrategy(47);
+        //        _addStrategy(48);
+        //        _addStrategy(49);
+        //        _addStrategy(50);
+        //        _addStrategy(51);
+        //        _addStrategy(52);
     }
 
     function _addStrategy(uint farmId) internal {
