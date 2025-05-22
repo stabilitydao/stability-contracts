@@ -25,7 +25,9 @@ library LegacyOZMath {
     /**
      * @dev Returns the largest of two numbers.
      */
+    /*
     function max(uint a, uint b) internal pure returns (uint) {
         return a > b ? a : b;
     }
+    */
 }

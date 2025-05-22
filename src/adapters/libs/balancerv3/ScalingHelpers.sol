@@ -46,9 +46,9 @@ library ScalingHelpers {
      * @param tokenRate The token rate scaling factor
      * @return result The final 18-decimal precision result, rounded up
      */
-    function toScaled18ApplyRateRoundUp(uint amount, uint scalingFactor, uint tokenRate) internal pure returns (uint) {
-        return (amount * scalingFactor).mulUp(tokenRate);
-    }
+    // function toScaled18ApplyRateRoundUp(uint amount, uint scalingFactor, uint tokenRate) internal pure returns (uint) {
+    //     return (amount * scalingFactor).mulUp(tokenRate);
+    // }
 
     /**
      * @notice Reverses the `scalingFactor` and `tokenRate` applied to `amount`.
@@ -76,11 +76,11 @@ library ScalingHelpers {
      * @param tokenRate The token rate scaling factor
      * @return result The final native decimal result, rounded up
      */
-    function toRawUndoRateRoundUp(uint amount, uint scalingFactor, uint tokenRate) internal pure returns (uint) {
-        // Do division last. Scaling factor is not a FP18, but a FP18 normalized by FP(1).
-        // `scalingFactor * tokenRate` is a precise FP18, so there is no rounding direction here.
-        return FixedPoint.divUp(amount, scalingFactor * tokenRate);
-    }
+    // function toRawUndoRateRoundUp(uint amount, uint scalingFactor, uint tokenRate) internal pure returns (uint) {
+    //     // Do division last. Scaling factor is not a FP18, but a FP18 normalized by FP(1).
+    //     // `scalingFactor * tokenRate` is a precise FP18, so there is no rounding direction here.
+    //     return FixedPoint.divUp(amount, scalingFactor * tokenRate);
+    // }
 
     /**
      * @notice Rounds up a rate informed by a rate provider.
