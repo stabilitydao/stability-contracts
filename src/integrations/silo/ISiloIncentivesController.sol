@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {IDistributionManager} from "./IDistributionManager.sol";
 
+/// @notice Actually it's interface of SiloIncentivesControllerGaugeLike
 interface ISiloIncentivesController is IDistributionManager {
     /**
      * @dev Claims reward for an user to the desired address, on all the assets of the lending pool,

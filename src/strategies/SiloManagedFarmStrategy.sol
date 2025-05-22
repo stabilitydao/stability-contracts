@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol"; // todo-dv
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {
 FarmingStrategyBase,
@@ -16,10 +17,10 @@ import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
-import {ISilo} from "../integrations/silo/ISilo.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
 /// @author dvpublic (https://github.com/dvpublic)
@@ -38,22 +39,25 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
 
   /// @inheritdoc IStrategy
   function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
+    console.log("SiloManagedFarmStrategy: initialize", addresses.length, nums.length, ticks.length);
     if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
       revert IControllable.IncorrectInitParams();
     }
+    console.log("SiloManagedFarmStrategy: initialize.2");
 
     IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
     if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
       revert IFarmingStrategy.BadFarm();
     }
+    console.log("SiloManagedFarmStrategy: initialize.3");
 
     address[] memory siloAssets = new address[](1);
-    ISilo siloVault = ISilo(farm.addresses[1]);
+    ISiloVault siloVault = ISiloVault(farm.addresses[1]);
     siloAssets[0] = siloVault.asset();
     __StrategyBase_init(addresses[0], StrategyIdLib.SILO_MANAGED_FARM, addresses[1], siloAssets, address(0), 0);
     __FarmingStrategyBase_init(addresses[0], nums[0]);
-    IERC20(siloAssets[0]).forceApprove(farm.addresses[1], type(uint).max);
-    IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
+    IERC20(siloAssets[0]).forceApprove(farm.addresses[0], type(uint).max);
+    // IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
   }
 
   /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -102,6 +106,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
   view
   returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
   {
+    console.log("initVariants");
     addresses = new address[](0);
     ticks = new int24[](0);
     IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
@@ -160,10 +165,10 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
   function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
     IFactory.Farm memory farm = _getFarm();
     StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-    ISilo siloVault = ISilo(farm.addresses[1]);
+    ISiloVault siloVault = ISiloVault(farm.addresses[1]);
     value = amounts[0];
     if (value > 0) {
-      siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
+      siloVault.deposit(value, address(this));
       $base.total += value;
     }
   }
@@ -182,12 +187,12 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     address receiver
   ) internal override returns (uint[] memory amountsOut) {
     IFactory.Farm memory farm = _getFarm();
-    ISilo siloVault = ISilo(farm.addresses[1]);
+    ISiloVault siloVault = ISiloVault(farm.addresses[1]);
     uint toWithdraw = value;
     if (address(this) == receiver) {
       toWithdraw--;
     }
-    siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
+    siloVault.withdraw(toWithdraw, receiver, address(this));
     amountsOut = new uint[](1);
     amountsOut[0] = value;
     StrategyBaseStorage storage $base = _getStrategyBaseStorage();
@@ -217,7 +222,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
       balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
     }
     IFactory.Farm memory farm = _getFarm();
-    ISilo siloVault = ISilo(farm.addresses[1]);
+    ISiloVault siloVault = ISiloVault(farm.addresses[1]);
     StrategyBaseStorage storage $base = _getStrategyBaseStorage();
     __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
     ISiloIncentivesController(farm.addresses[0]).claimRewards(address(this));
@@ -241,7 +246,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
       }
     }
     IFactory.Farm memory farm = _getFarm();
-    ISilo siloVault = ISilo(farm.addresses[1]);
+    ISiloVault siloVault = ISiloVault(farm.addresses[1]);
     StrategyBaseStorage storage $base = _getStrategyBaseStorage();
     $base.total = siloVault.convertToAssets(siloVault.balanceOf(address(this)));
     if (notZero) {
@@ -294,7 +299,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
       "Earn ",
       CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
       " and supply APR by lending ",
-      IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
+      IERC20Metadata(ISiloVault(farm.addresses[1]).asset()).symbol(),
       " to Silo V2 ",
       CommonLib.u2s(_getMarketId())
     );
@@ -302,6 +307,6 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
 
   function _getMarketId() internal view returns (uint marketId) {
     IFactory.Farm memory farm = _getFarm();
-    marketId = ISiloConfig(ISilo(farm.addresses[1]).config()).SILO_ID();
+    marketId = ISiloConfig(ISiloVault(farm.addresses[1]).config()).SILO_ID();
   }
 }

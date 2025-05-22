@@ -328,7 +328,7 @@ library SonicConstantsLib {
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
     address public constant SILO_MANAGED_VAULT_S_Varlamore = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
     address public constant SILO_MANAGED_VAULT_USDC_Apostro = 0xcca902f2d3d265151f123d8ce8FdAc38ba9745ed;
-    address public constant SILO_MANAGED_VAULT_USDC_Re7 = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260; // todo remove duplicate
+    address public constant SILO_MANAGED_VAULT_USDC_Re7 = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260;
     address public constant SILO_MANAGED_VAULT_scUSD_Re7 = 0x592D1e187729C76EfacC6dfFB9355bd7BF47B2a7;
     address public constant SILO_MANAGED_VAULT_USDC_Varlamore = 0xF6F87073cF8929C206A77b0694619DC776F89885;
     address public constant SILO_MANAGED_VAULT_USDC_Greenhouse = 0xf6bC16B79c469b94Cdd25F3e2334DD4FEE47A581;
