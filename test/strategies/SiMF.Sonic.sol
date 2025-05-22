@@ -11,7 +11,7 @@ contract SiloManagedFarmStrategyTest is SonicSetup, UniversalTest {
         vm.rollFork(28687311); // May-22-2025 07:13:50 AM +UTC
     }
     function testSiMFSonic() public universalTest {
-        _addStrategy(43);
+        _addStrategy(42);
     }
 
     function _addStrategy(uint farmId) internal {
