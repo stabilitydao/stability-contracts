@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
+import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
+import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
 import {
     FarmingStrategyBase,
     StrategyBase,
@@ -18,9 +21,9 @@ import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
-import {SharedLib} from "./libs/SharedLib.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
 /// @author dvpublic (https://github.com/dvpublic)
@@ -226,6 +229,15 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
 
         siloVault.claimRewards();
+
+        IVaultIncentivesModule vim = IVaultIncentivesModule(siloVault.INCENTIVES_MODULE());
+        address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
+
+        for (uint i; i < claimingLogics.length; ++i) {
+            IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
+            ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
+            c.claimRewards(address(this));
+        }
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }

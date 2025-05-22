@@ -204,11 +204,7 @@ library SonicFarmMakerLib {
         return farm;
     }
 
-    function _makeSiloManagedFarm(address managedVault) internal view returns (IFactory.Farm memory) {
-        IFactory.Farm memory farm;
-        farm.status = 0;
-        farm.strategyLogicId = StrategyIdLib.SILO_MANAGED_FARM;
-
+    function _getSiloManagedFarmRewards(address managedVault) internal view returns (address[] memory rewardAssets) {
         IVaultIncentivesModule vim = IVaultIncentivesModule(ISiloVault(managedVault).INCENTIVES_MODULE());
         address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
 
@@ -246,10 +242,25 @@ library SonicFarmMakerLib {
         }
 
         // temp => farm.rewardAssets, cut zero addresses
-        farm.rewardAssets = new address[](len);
+        rewardAssets = new address[](len);
         for (uint i; i < len; ++i) {
-            farm.rewardAssets[i] = temp[i];
+            rewardAssets[i] = temp[i];
         }
+
+        return rewardAssets;
+    }
+
+    function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_MANAGED_FARM;
+
+        // we can use getSiloManagedFarmRewards to auto-detect reward assets
+        // but some vaults return empty array (probably it's not empty on other blocks)
+        // according site info all managed vaults use same single reward token - SILO token
+        farm.rewardAssets = new address[](2);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
 
         farm.addresses = new address[](1);
         farm.addresses[0] = managedVault;
