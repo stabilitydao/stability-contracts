@@ -24,6 +24,7 @@ import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {EMFLib} from "./libs/EMFLib.sol";
 import {IEVault} from "../integrations/euler/IEVault.sol";
+import {console} from "forge-std/console.sol";
 
 /// @title Lend asset on Euler and earn Merkl rewards
 /// @author Jude (https://github.com/iammrjude)
@@ -84,12 +85,15 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
+        console.log("getRevenue.1");
         __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
         uint len = __assets.length;
         amounts = new uint[](len);
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(__assets[i]);
+            console.log("getRevenue", amounts[i]);
         }
+        console.log("getRevenue.2");
     }
 
     /// @inheritdoc IStrategy
@@ -120,13 +124,14 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         IFactory.Farm memory farm = _getFarm();
-        address asset = IEVault(farm.addresses[0]).asset();
+        address asset = IEVault(farm.addresses[1]).asset();
         string memory symbol = IERC20Metadata(asset).symbol();
         return (symbol, false);
     }
 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
+        console.log("description.1");
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return EMFLib.generateDescription(farm);
@@ -159,27 +164,33 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
-        return EMFLib.depositAssets(
+        console.log("_depositAssets.1");
+        value = EMFLib.depositAssets(
             amounts, claimRevenue, _getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm()
         );
+        console.log("_depositAssets.2");
     }
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        console.log("_depositUnderlying.1");
         return EMFLib.depositUnderlying(amount, _getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.1", value);
         return EMFLib.withdrawAssets(value, receiver, _getFarm(), _getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(
-        address[] memory assets_,
+        address[] memory /* assets_ */,
         uint value,
         address receiver
-    ) internal override returns (uint[] memory amountsOut) {}
+    ) internal override returns (uint[] memory amountsOut) {
+        return _withdrawAssets(value, receiver);
+    }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
@@ -197,8 +208,10 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
+        console.log("_claimRevenue.1");
         (__assets, __amounts, __rewardAssets, __rewardAmounts) =
             EMFLib._claimRevenue(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm());
+        console.log("_claimRevenue.2");
     }
 
     /// @inheritdoc StrategyBase
@@ -211,26 +224,33 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         override(StrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
+        console.log("_previewDepositAssets.1");
         (amountsConsumed, value) = EMFLib.previewDepositAssets(amountsMax, _getStrategyBaseStorage());
+        console.log("_previewDepositAssets.2");
     }
 
     function _previewDepositAssets(
-        address[] memory assets_,
+        address[] memory /* assets_ */,
         uint[] memory amountsMax
-    ) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {}
+    ) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
+        return _previewDepositAssets(amountsMax);
+    }
 
     /// @inheritdoc StrategyBase
     function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {
+        console.log("_previewDepositUnderlying.1");
         return EMFLib.previewDepositUnderlying(amount, _getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        console.log("_assetsAmounts.1");
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         assets_ = $base._assets;
         address u = $base._underlying;
         amounts_ = new uint[](1);
         amounts_[0] = IEVault(u).convertToAssets(IERC20(u).balanceOf(address(this)));
+        console.log("_assetsAmounts.2");
     }
 
     /// @inheritdoc StrategyBase

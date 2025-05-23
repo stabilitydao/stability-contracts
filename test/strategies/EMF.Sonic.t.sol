@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
@@ -26,5 +27,10 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
                 strategyInitNums: new uint[](0)
             })
         );
+    }
+
+    function _preHardWork() internal override {
+        // emulate rewards receiving (workaround difficulties with merkl claiming)
+        deal(SonicConstantsLib.TOKEN_rEUL, currentStrategy, 10e18);
     }
 }

@@ -61,13 +61,13 @@ library SonicFarmMakerLib {
     function _makeEulerMerklFarm(
         address vault
         // address[] memory rewardAssets
-    ) internal view returns (IFactory.Farm memory) {
+    ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
-        farm.pool = vault;
+        farm.pool = address(0);
         farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
-        address[] memory rewardAssets = new address[](2); 
-        farm.rewardAssets = rewardAssets;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_rEUL;
         farm.addresses = new address[](2);
         farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;

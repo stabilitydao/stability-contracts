@@ -86,6 +86,8 @@ library SonicConstantsLib {
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
+    address public constant TOKEN_rEUL = 0x09E6cab47B7199b9d3839A2C40654f246d518a80;
+    address public constant TOKEN_EUL = 0x8e15C8D399e86d4FD7B427D42f06c60cDD9397e7;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -378,6 +380,8 @@ library SonicConstantsLib {
     address public constant EULER_VAULT_wS_MEV = 0x90a804D316A06E00755444D56b9eF52e5C4F4D73;
     address public constant EULER_VAULT_wS_Re7 = 0x4c0AF5d6Bcb10B3C05FB5F3a846999a3d87534C7;
     address public constant EULER_VAULT_WETH_MEV = 0xa5cd24d9792F4F131f5976Af935A505D19c8Db2b;
-    // todo more addresses: https://app.euler.finance/?network=sonic
+    // more addresses: https://app.euler.finance/?network=sonic
+
+    address public constant POOL_SHADOW_CL_USDC_EUL = 0x6d3A3a6866794A0EDEdDF07b48aA744b393251be;
 
 }

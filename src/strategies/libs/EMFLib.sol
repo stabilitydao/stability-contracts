@@ -16,6 +16,7 @@ import {StrategyLib} from "./StrategyLib.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IMerklDistributor} from "../../integrations/merkl/IMerklDistributor.sol";
+import {console} from "forge-std/console.sol";
 
 /// @title Library for EMF strategy code splitting
 library EMFLib {
@@ -108,7 +109,7 @@ library EMFLib {
         IStrategy.StrategyBaseStorage storage $base
     ) external returns (uint[] memory amountsOut) {
         amountsOut = new uint[](1);
-        amountsOut[0] = IEVault(farm.addresses[0]).withdraw(value, receiver, address(this));
+        amountsOut[0] = IEVault(farm.addresses[1]).withdraw(value, receiver, address(this));
         $base.total -= value;
     }
 
@@ -118,7 +119,7 @@ library EMFLib {
         IFactory.Farm memory farm,
         IStrategy.StrategyBaseStorage storage $base
     ) external {
-        IERC20(farm.addresses[0]).safeTransfer(receiver, amount);
+        IERC20(farm.addresses[1]).safeTransfer(receiver, amount);
         $base.total -= amount;
     }
 
@@ -130,9 +131,9 @@ library EMFLib {
     function _claimRevenue(
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f,
         IStrategy.StrategyBaseStorage storage $base,
-        IFactory.Farm memory farm
+        IFactory.Farm memory /* farm */
     )
-        public
+        public // todo
         returns (
             address[] memory __assets,
             uint[] memory __amounts,
