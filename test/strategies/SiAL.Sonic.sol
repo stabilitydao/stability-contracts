@@ -34,9 +34,9 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
 
         // -------------------------- #295: new vaults 102, 103, 104, 95
         // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
-       _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_bscUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_bscUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
         // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
-       _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
         // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
         _addStrategy(SonicConstantsLib.SILO_VAULT_104_PT_bUSDC_17JUL, SonicConstantsLib.SILO_VAULT_104_USDC, 87_00);
         // max ltv = 90%, liquidation threshold = 95% => max leverage = 10

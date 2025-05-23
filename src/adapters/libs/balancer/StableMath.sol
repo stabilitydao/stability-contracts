@@ -141,41 +141,42 @@ library StableMath {
     // current balances, using the Newton-Raphson approximation.
     // The amplification parameter equals: A n^(n-1)
     // The invariant should be rounded up.
-    function _calcInGivenOut(
-        uint amplificationParameter,
-        uint[] memory balances,
-        uint tokenIndexIn,
-        uint tokenIndexOut,
-        uint tokenAmountOut,
-        uint invariant
-    ) internal pure returns (uint) {
-        /**
-         *
-         *     // inGivenOut token x for y - polynomial equation to solve                                                   //
-         *     // ax = amount in to calculate                                                                               //
-         *     // bx = balance token in                                                                                     //
-         *     // x = bx + ax (finalBalanceIn)                                                                              //
-         *     // D = invariant                                                D                     D^(n+1)                //
-         *     // A = amplification coefficient               x^2 + ( S - ----------  - D) * x -  ------------- = 0         //
-         *     // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
-         *     // S = sum of final balances but x                                                                           //
-         *     // P = product of final balances but x                                                                       //
-         *
-         */
+    // function _calcInGivenOut(
+    //     uint amplificationParameter,
+    //     uint[] memory balances,
+    //     uint tokenIndexIn,
+    //     uint tokenIndexOut,
+    //     uint tokenAmountOut,
+    //     uint invariant
+    // ) internal pure returns (uint) {
+    //     /**
+    //      *
+    //      *     // inGivenOut token x for y - polynomial equation to solve                                                   //
+    //      *     // ax = amount in to calculate                                                                               //
+    //      *     // bx = balance token in                                                                                     //
+    //      *     // x = bx + ax (finalBalanceIn)                                                                              //
+    //      *     // D = invariant                                                D                     D^(n+1)                //
+    //      *     // A = amplification coefficient               x^2 + ( S - ----------  - D) * x -  ------------- = 0         //
+    //      *     // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
+    //      *     // S = sum of final balances but x                                                                           //
+    //      *     // P = product of final balances but x                                                                       //
+    //      *
+    //      */
 
-        // Amount in, so we round up overall.
-        balances[tokenIndexOut] = balances[tokenIndexOut].sub(tokenAmountOut);
+    //     // Amount in, so we round up overall.
+    //     balances[tokenIndexOut] = balances[tokenIndexOut].sub(tokenAmountOut);
 
-        uint finalBalanceIn =
-            _getTokenBalanceGivenInvariantAndAllOtherBalances(amplificationParameter, balances, invariant, tokenIndexIn);
+    //     uint finalBalanceIn =
+    //         _getTokenBalanceGivenInvariantAndAllOtherBalances(amplificationParameter, balances, invariant, tokenIndexIn);
 
-        // No need to use checked arithmetic since `tokenAmountOut` was actually subtracted from the same balance right
-        // before calling `_getTokenBalanceGivenInvariantAndAllOtherBalances` which doesn't alter the balances array.
-        balances[tokenIndexOut] = balances[tokenIndexOut] + tokenAmountOut;
+    //     // No need to use checked arithmetic since `tokenAmountOut` was actually subtracted from the same balance right
+    //     // before calling `_getTokenBalanceGivenInvariantAndAllOtherBalances` which doesn't alter the balances array.
+    //     balances[tokenIndexOut] = balances[tokenIndexOut] + tokenAmountOut;
 
-        return finalBalanceIn.sub(balances[tokenIndexIn]).add(1);
-    }
+    //     return finalBalanceIn.sub(balances[tokenIndexIn]).add(1);
+    // }
 
+    /*
     function _calcBptOutGivenExactTokensIn(
         uint amp,
         uint[] memory balances,
@@ -232,7 +233,9 @@ library StableMath {
             return 0;
         }
     }
+    */
 
+    /*
     function _calcTokenInGivenExactBptOut(
         uint amp,
         uint[] memory balances,
@@ -271,12 +274,14 @@ library StableMath {
         // No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
         return nonTaxableAmount.add(taxableAmount.divUp(FixedPoint.ONE - swapFeePercentage));
     }
+    */
 
     /*
     Flow of calculations:
     amountsTokenOut -> amountsOutProportional ->
     amountOutPercentageExcess -> amountOutBeforeFee -> newInvariant -> amountBPTIn
     */
+    /*
     function _calcBptInGivenExactTokensOut(
         uint amp,
         uint[] memory balances,
@@ -329,7 +334,9 @@ library StableMath {
         // return amountBPTIn
         return bptTotalSupply.mulUp(invariantRatio.complement());
     }
+    */
 
+    /*
     function _calcTokenOutGivenExactBptIn(
         uint amp,
         uint[] memory balances,
@@ -369,74 +376,75 @@ library StableMath {
         // No need to use checked arithmetic for the swap fee, it is guaranteed to be lower than 50%
         return nonTaxableAmount.add(taxableAmount.mulDown(FixedPoint.ONE - swapFeePercentage));
     }
+    */
 
-    function _calcTokensOutGivenExactBptIn(
-        uint[] memory balances,
-        uint bptAmountIn,
-        uint bptTotalSupply
-    ) internal pure returns (uint[] memory) {
-        /**
-         *
-         *     // exactBPTInForTokensOut                                                                    //
-         *     // (per token)                                                                               //
-         *     // aO = tokenAmountOut             /        bptIn         \                                  //
-         *     // b = tokenBalance      a0 = b * | ---------------------  |                                 //
-         *     // bptIn = bptAmountIn             \     bptTotalSupply    /                                 //
-         *     // bpt = bptTotalSupply                                                                      //
-         *
-         */
+    // function _calcTokensOutGivenExactBptIn(
+    //     uint[] memory balances,
+    //     uint bptAmountIn,
+    //     uint bptTotalSupply
+    // ) internal pure returns (uint[] memory) {
+    //     /**
+    //      *
+    //      *     // exactBPTInForTokensOut                                                                    //
+    //      *     // (per token)                                                                               //
+    //      *     // aO = tokenAmountOut             /        bptIn         \                                  //
+    //      *     // b = tokenBalance      a0 = b * | ---------------------  |                                 //
+    //      *     // bptIn = bptAmountIn             \     bptTotalSupply    /                                 //
+    //      *     // bpt = bptTotalSupply                                                                      //
+    //      *
+    //      */
 
-        // Since we're computing an amount out, we round down overall. This means rounding down on both the
-        // multiplication and division.
+    //     // Since we're computing an amount out, we round down overall. This means rounding down on both the
+    //     // multiplication and division.
 
-        uint bptRatio = bptAmountIn.divDown(bptTotalSupply);
+    //     uint bptRatio = bptAmountIn.divDown(bptTotalSupply);
 
-        uint[] memory amountsOut = new uint[](balances.length);
-        for (uint i = 0; i < balances.length; i++) {
-            amountsOut[i] = balances[i].mulDown(bptRatio);
-        }
+    //     uint[] memory amountsOut = new uint[](balances.length);
+    //     for (uint i = 0; i < balances.length; i++) {
+    //         amountsOut[i] = balances[i].mulDown(bptRatio);
+    //     }
 
-        return amountsOut;
-    }
+    //     return amountsOut;
+    // }
 
     // The amplification parameter equals: A n^(n-1)
-    function _calcDueTokenProtocolSwapFeeAmount(
-        uint amplificationParameter,
-        uint[] memory balances,
-        uint lastInvariant,
-        uint tokenIndex,
-        uint protocolSwapFeePercentage
-    ) internal pure returns (uint) {
-        /**
-         *
-         *     // oneTokenSwapFee - polynomial equation to solve                                                            //
-         *     // af = fee amount to calculate in one token                                                                 //
-         *     // bf = balance of fee token                                                                                 //
-         *     // f = bf - af (finalBalanceFeeToken)                                                                        //
-         *     // D = old invariant                                            D                     D^(n+1)                //
-         *     // A = amplification coefficient               f^2 + ( S - ----------  - D) * f -  ------------- = 0         //
-         *     // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
-         *     // S = sum of final balances but f                                                                           //
-         *     // P = product of final balances but f                                                                       //
-         *
-         */
+    // function _calcDueTokenProtocolSwapFeeAmount(
+    //     uint amplificationParameter,
+    //     uint[] memory balances,
+    //     uint lastInvariant,
+    //     uint tokenIndex,
+    //     uint protocolSwapFeePercentage
+    // ) internal pure returns (uint) {
+    //     /**
+    //      *
+    //      *     // oneTokenSwapFee - polynomial equation to solve                                                            //
+    //      *     // af = fee amount to calculate in one token                                                                 //
+    //      *     // bf = balance of fee token                                                                                 //
+    //      *     // f = bf - af (finalBalanceFeeToken)                                                                        //
+    //      *     // D = old invariant                                            D                     D^(n+1)                //
+    //      *     // A = amplification coefficient               f^2 + ( S - ----------  - D) * f -  ------------- = 0         //
+    //      *     // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
+    //      *     // S = sum of final balances but f                                                                           //
+    //      *     // P = product of final balances but f                                                                       //
+    //      *
+    //      */
 
-        // Protocol swap fee amount, so we round down overall.
+    //     // Protocol swap fee amount, so we round down overall.
 
-        uint finalBalanceFeeToken = _getTokenBalanceGivenInvariantAndAllOtherBalances(
-            amplificationParameter, balances, lastInvariant, tokenIndex
-        );
+    //     uint finalBalanceFeeToken = _getTokenBalanceGivenInvariantAndAllOtherBalances(
+    //         amplificationParameter, balances, lastInvariant, tokenIndex
+    //     );
 
-        if (balances[tokenIndex] <= finalBalanceFeeToken) {
-            // This shouldn't happen outside of rounding errors, but have this safeguard nonetheless to prevent the Pool
-            // from entering a locked state in which joins and exits revert while computing accumulated swap fees.
-            return 0;
-        }
+    //     if (balances[tokenIndex] <= finalBalanceFeeToken) {
+    //         // This shouldn't happen outside of rounding errors, but have this safeguard nonetheless to prevent the Pool
+    //         // from entering a locked state in which joins and exits revert while computing accumulated swap fees.
+    //         return 0;
+    //     }
 
-        // Result is rounded down
-        uint accumulatedTokenSwapFees = balances[tokenIndex] - finalBalanceFeeToken;
-        return accumulatedTokenSwapFees.mulDown(protocolSwapFeePercentage);
-    }
+    //     // Result is rounded down
+    //     uint accumulatedTokenSwapFees = balances[tokenIndex] - finalBalanceFeeToken;
+    //     return accumulatedTokenSwapFees.mulDown(protocolSwapFeePercentage);
+    // }
 
     // Private functions
 
