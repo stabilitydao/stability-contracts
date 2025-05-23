@@ -28,5 +28,8 @@ library StrategyIdLib {
     string internal constant GAMMA_EQUALIZER_FARM = "Gamma Equalizer Farm";
     string internal constant ICHI_EQUALIZER_FARM = "Ichi Equalizer Farm";
     string internal constant SILO = "Silo";
+    string internal constant AAVE = "Aave";
+    string internal constant EULER = "Euler"; // https://euler.finance/
+    string internal constant SILO_MANAGED_FARM = "Silo Managed Farm";
     string internal constant SHADOW_FARM = "Shadow Farm";
 }

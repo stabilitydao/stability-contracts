@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Script} from "forge-std/Script.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 
-contract DeployCVaultSonic is Script {
+contract DeployCVault is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);

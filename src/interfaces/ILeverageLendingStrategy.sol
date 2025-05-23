@@ -39,8 +39,10 @@ interface ILeverageLendingStrategy {
         /// @dev Universal configurable param 1 for depositAssets
         uint depositParam1;
         /// @dev Universal configurable param 0 for withdrawAssets
+        /// @dev SiL, SiAL: withdrawParam0 allows to regulate flash amount in default withdraw
         uint withdrawParam0;
         /// @dev Universal configurable param 1 for withdrawAssets
+        /// @dev SiL, SiAL: withdrawParam1 allows to regulate/disable deposit after withdraw
         uint withdrawParam1;
         /// @dev Universal configurable param 0 for increase LTV
         uint increaseLtvParam0;
@@ -56,6 +58,11 @@ interface ILeverageLendingStrategy {
         uint swapPriceImpactTolerance1;
         /// @notice Flash loan kind. 0 - balancer v2 (paid), 1 - balancer v3 (free)
         uint flashLoanKind;
+        /// @dev Universal address 1. SiL uses it to store flash loan vault address for borrow asset
+        address universalAddress1;
+        /// @dev Universal configurable param 2 for withdrawAssets
+        /// @dev SiL, SiAL: withdrawParam1 allows to regulate withdraw-through-increasing-ltv
+        uint withdrawParam2;
     }
 
     struct LeverageLendingStrategyBaseInitParams {
@@ -93,7 +100,8 @@ interface ILeverageLendingStrategy {
         /// @notice Balancer V2
         Default_0,
         BalancerV3_1,
-        UniswapV3_2
+        UniswapV3_2,
+        AlgebraV4_3
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

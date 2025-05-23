@@ -23,6 +23,7 @@ library FixedPoint {
         return product / ONE;
     }
 
+    /*
     function mulUp(uint a, uint b) internal pure returns (uint result) {
         // Multiplication overflow protection is provided by Solidity 0.8.x.
         uint product = a * b;
@@ -33,6 +34,7 @@ library FixedPoint {
             result := mul(iszero(iszero(product)), add(div(sub(product, 1), ONE), 1))
         }
     }
+    */
 
     function divDown(uint a, uint b) internal pure returns (uint) {
         // Solidity 0.8 reverts with a Panic code (0x11) if the multiplication overflows.
@@ -42,11 +44,12 @@ library FixedPoint {
         return aInflated / b;
     }
 
-    function divUp(uint a, uint b) internal pure returns (uint result) {
-        return mulDivUp(a, ONE, b);
-    }
+    // function divUp(uint a, uint b) internal pure returns (uint result) {
+    //     return mulDivUp(a, ONE, b);
+    // }
 
     /// @dev Return (a * b) / c, rounding up.
+    /*
     function mulDivUp(uint a, uint b, uint c) internal pure returns (uint result) {
         // This check is required because Yul's `div` doesn't revert on c==0.
         if (c == 0) {
@@ -68,6 +71,7 @@ library FixedPoint {
             result := mul(iszero(iszero(product)), add(div(sub(product, 1), c), 1))
         }
     }
+    */
 
     /**
      * @dev Version of divUp when the input is raw (i.e., already "inflated"). For instance,
@@ -92,6 +96,7 @@ library FixedPoint {
      * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
      * the true value (that is, the error function expected - actual is always positive).
      */
+    /*
     function powDown(uint x, uint y) internal pure returns (uint) {
         // Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
         // and 80/20 Weighted Pools
@@ -115,11 +120,13 @@ library FixedPoint {
             }
         }
     }
+    */
 
     /**
      * @dev Returns x^y, assuming both are fixed point numbers, rounding up. The result is guaranteed to not be below
      * the true value (that is, the error function expected - actual is always negative).
      */
+    /*
     function powUp(uint x, uint y) internal pure returns (uint) {
         // Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
         // and 80/20 Weighted Pools
@@ -137,6 +144,7 @@ library FixedPoint {
             return raw + maxError;
         }
     }
+    */
 
     /**
      * @dev Returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
@@ -144,6 +152,7 @@ library FixedPoint {
      * Useful when computing the complement for values with some level of relative error, as it strips this error and
      * prevents intermediate negative values.
      */
+    /*
     function complement(uint x) internal pure returns (uint result) {
         // Equivalent to:
         // result = (x < ONE) ? (ONE - x) : 0
@@ -151,4 +160,5 @@ library FixedPoint {
             result := mul(lt(x, ONE), sub(ONE, x))
         }
     }
+    */
 }

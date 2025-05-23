@@ -7,4 +7,12 @@ interface IDistributionManager {
         bytes32 programId;
         address rewardToken;
     }
+
+    struct IncentiveProgramDetails {
+        uint256 index;
+        address rewardToken;
+        uint104 emissionPerSecond;
+        uint40 lastUpdateTimestamp;
+        uint40 distributionEnd;
+    }
 }

@@ -67,55 +67,55 @@ library StableMath {
      * @param balances The current balances
      * @return invariant The calculated invariant of the pool
      */
-    function computeInvariant(uint amplificationParameter, uint[] memory balances) internal pure returns (uint) {
-        /**
-         *
-         *     // invariant                                                                                 //
-         *     // D = invariant                                                  D^(n+1)                    //
-         *     // A = amplification coefficient      A  n^n S + D = A D n^n + -----------                   //
-         *     // S = sum of balances                                             n^n P                     //
-         *     // P = product of balances                                                                   //
-         *     // n = number of tokens                                                                      //
-         *
-         */
-        uint sum = 0; // S in the Curve version
-        uint numTokens = balances.length;
-        for (uint i = 0; i < numTokens; ++i) {
-            sum = sum + balances[i];
-        }
-        if (sum == 0) {
-            return 0;
-        }
+    // function computeInvariant(uint amplificationParameter, uint[] memory balances) internal pure returns (uint) {
+    //     /**
+    //      *
+    //      *     // invariant                                                                                 //
+    //      *     // D = invariant                                                  D^(n+1)                    //
+    //      *     // A = amplification coefficient      A  n^n S + D = A D n^n + -----------                   //
+    //      *     // S = sum of balances                                             n^n P                     //
+    //      *     // P = product of balances                                                                   //
+    //      *     // n = number of tokens                                                                      //
+    //      *
+    //      */
+    //     uint sum = 0; // S in the Curve version
+    //     uint numTokens = balances.length;
+    //     for (uint i = 0; i < numTokens; ++i) {
+    //         sum = sum + balances[i];
+    //     }
+    //     if (sum == 0) {
+    //         return 0;
+    //     }
 
-        uint prevInvariant; // Dprev in the Curve version
-        uint invariant = sum; // D in the Curve version
-        uint ampTimesTotal = amplificationParameter * numTokens; // Ann in the Curve version
+    //     uint prevInvariant; // Dprev in the Curve version
+    //     uint invariant = sum; // D in the Curve version
+    //     uint ampTimesTotal = amplificationParameter * numTokens; // Ann in the Curve version
 
-        for (uint i = 0; i < 255; ++i) {
-            uint D_P = invariant;
-            for (uint j = 0; j < numTokens; ++j) {
-                D_P = (D_P * invariant) / (balances[j] * numTokens);
-            }
+    //     for (uint i = 0; i < 255; ++i) {
+    //         uint D_P = invariant;
+    //         for (uint j = 0; j < numTokens; ++j) {
+    //             D_P = (D_P * invariant) / (balances[j] * numTokens);
+    //         }
 
-            prevInvariant = invariant;
+    //         prevInvariant = invariant;
 
-            invariant = ((((ampTimesTotal * sum) / AMP_PRECISION) + (D_P * numTokens)) * invariant)
-                / ((((ampTimesTotal - AMP_PRECISION) * invariant) / AMP_PRECISION) + ((numTokens + 1) * D_P));
+    //         invariant = ((((ampTimesTotal * sum) / AMP_PRECISION) + (D_P * numTokens)) * invariant)
+    //             / ((((ampTimesTotal - AMP_PRECISION) * invariant) / AMP_PRECISION) + ((numTokens + 1) * D_P));
 
-            unchecked {
-                // We are explicitly checking the magnitudes here, so can use unchecked math.
-                if (invariant > prevInvariant) {
-                    if (invariant - prevInvariant <= 1) {
-                        return invariant;
-                    }
-                } else if (prevInvariant - invariant <= 1) {
-                    return invariant;
-                }
-            }
-        }
+    //         unchecked {
+    //             // We are explicitly checking the magnitudes here, so can use unchecked math.
+    //             if (invariant > prevInvariant) {
+    //                 if (invariant - prevInvariant <= 1) {
+    //                     return invariant;
+    //                 }
+    //             } else if (prevInvariant - invariant <= 1) {
+    //                 return invariant;
+    //             }
+    //         }
+    //     }
 
-        revert StableInvariantDidNotConverge();
-    }
+    //     revert StableInvariantDidNotConverge();
+    // }
 
     /**
      * @notice Computes the required `amountOut` of tokenOut, for `tokenAmountIn` of tokenIn.
@@ -175,41 +175,41 @@ library StableMath {
      * @param invariant The current invariant
      * @return amountIn The calculated amount of tokenIn required for the swap
      */
-    function computeInGivenExactOut(
-        uint amplificationParameter,
-        uint[] memory balances,
-        uint tokenIndexIn,
-        uint tokenIndexOut,
-        uint tokenAmountOut,
-        uint invariant
-    ) internal pure returns (uint) {
-        /**
-         *
-         *     // inGivenExactOut token x for y - polynomial equation to solve                                              //
-         *     // ax = amount in to calculate                                                                               //
-         *     // bx = balance token in                                                                                     //
-         *     // x = bx + ax (finalBalanceIn)                                                                              //
-         *     // D = invariant                                                D                     D^(n+1)                //
-         *     // A = amplification coefficient               x^2 + ( S + ----------  - D) * x -  ------------- = 0         //
-         *     // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
-         *     // S = sum of final balances but x                                                                           //
-         *     // P = product of final balances but x                                                                       //
-         *
-         */
-        balances[tokenIndexOut] -= tokenAmountOut;
+    // function computeInGivenExactOut(
+    //     uint amplificationParameter,
+    //     uint[] memory balances,
+    //     uint tokenIndexIn,
+    //     uint tokenIndexOut,
+    //     uint tokenAmountOut,
+    //     uint invariant
+    // ) internal pure returns (uint) {
+    //     /**
+    //      *
+    //      *     // inGivenExactOut token x for y - polynomial equation to solve                                              //
+    //      *     // ax = amount in to calculate                                                                               //
+    //      *     // bx = balance token in                                                                                     //
+    //      *     // x = bx + ax (finalBalanceIn)                                                                              //
+    //      *     // D = invariant                                                D                     D^(n+1)                //
+    //      *     // A = amplification coefficient               x^2 + ( S + ----------  - D) * x -  ------------- = 0         //
+    //      *     // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
+    //      *     // S = sum of final balances but x                                                                           //
+    //      *     // P = product of final balances but x                                                                       //
+    //      *
+    //      */
+    //     balances[tokenIndexOut] -= tokenAmountOut;
 
-        // `computeBalance` rounds up.
-        uint finalBalanceIn = computeBalance(amplificationParameter, balances, invariant, tokenIndexIn);
+    //     // `computeBalance` rounds up.
+    //     uint finalBalanceIn = computeBalance(amplificationParameter, balances, invariant, tokenIndexIn);
 
-        // No need to use checked arithmetic since `tokenAmountOut` was actually subtracted from the same balance right
-        // before calling `computeBalance`, which doesn't alter the balances array.
-        unchecked {
-            balances[tokenIndexOut] += tokenAmountOut;
-        }
+    //     // No need to use checked arithmetic since `tokenAmountOut` was actually subtracted from the same balance right
+    //     // before calling `computeBalance`, which doesn't alter the balances array.
+    //     unchecked {
+    //         balances[tokenIndexOut] += tokenAmountOut;
+    //     }
 
-        // Amount in, so we round up overall.
-        return finalBalanceIn - balances[tokenIndexIn] + 1;
-    }
+    //     // Amount in, so we round up overall.
+    //     return finalBalanceIn - balances[tokenIndexIn] + 1;
+    // }
 
     /**
      * @notice Calculate the balance of a given token (at tokenIndex), given all other balances and the invariant.
