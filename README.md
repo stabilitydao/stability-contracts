@@ -22,7 +22,7 @@
 
 [<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/stabilitydao/stability-contracts?logo=solidity">](https://docs.soliditylang.org/en/)
 
-### 🏷️ Issues
+### 🏷️ Projects
 
 [🔨 Q2 2025 🧊 Stability BETA Development | CONTRACTS](https://github.com/orgs/stabilitydao/projects/9/views/6)
 
@@ -38,5 +38,7 @@
 * Core contracts and strategies use [SemVer](https://semver.org/) scheme **MAJOR.MINOR.PATCH**
 
 ## Audits
+
+[Scopes](./audits/scopes.md)
 
 * [Initial vault audit v24.01.1-alpha](audits/initial-audit-stability-platform-v24.01.1-alpha.md) | [critical scope](audits/scopes.md)
