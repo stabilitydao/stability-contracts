@@ -204,52 +204,6 @@ library SonicFarmMakerLib {
         return farm;
     }
 
-    function _getSiloManagedFarmRewards(address managedVault) internal view returns (address[] memory rewardAssets) {
-        IVaultIncentivesModule vim = IVaultIncentivesModule(ISiloVault(managedVault).INCENTIVES_MODULE());
-        address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
-
-        // get max possible amounts of rewards
-        uint len;
-        for (uint i; i < claimingLogics.length; ++i) {
-            IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
-            ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
-            string[] memory programsNames = c.getAllProgramsNames();
-            len += programsNames.length;
-        }
-
-        // generate list of rewards without duplicates but probably with zero addresses
-        address[] memory temp = new address[](len);
-        len = 0;
-        for (uint i; i < claimingLogics.length; ++i) {
-            IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
-            ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
-            string[] memory programsNames = c.getAllProgramsNames();
-            for (uint j; j < programsNames.length; ++j) {
-                bytes32 programId = c.getProgramId(programsNames[j]);
-                (, address rewardToken,,,) = c.incentivesPrograms(programId);
-                if (rewardToken != address(0)) {
-                    bool found;
-                    for (uint k; k < len; k++) {
-                        if (temp[k] == rewardToken) {
-                            found = true;
-                        }
-                    }
-                    if (! found) {
-                        temp[len++] = rewardToken;
-                    }
-                }
-            }
-        }
-
-        // temp => farm.rewardAssets, cut zero addresses
-        rewardAssets = new address[](len);
-        for (uint i; i < len; ++i) {
-            rewardAssets[i] = temp[i];
-        }
-
-        return rewardAssets;
-    }
-
     function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
