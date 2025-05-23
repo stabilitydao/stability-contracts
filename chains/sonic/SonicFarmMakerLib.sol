@@ -12,6 +12,7 @@ import {IHypervisor} from "../../src/integrations/gamma/IHypervisor.sol";
 import {IICHIVault} from "../../src/integrations/ichi/IICHIVault.sol";
 import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesController} from "../../src/integrations/silo/ISiloIncentivesController.sol";
+import {IGauge} from "../../src/integrations/shadow/IGauge.sol";
 import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
 import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
@@ -203,7 +204,7 @@ library SonicFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
-
+    
     function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
@@ -225,4 +226,18 @@ library SonicFarmMakerLib {
         return farm;
     }
 
+    function _makeShadowFarm(address gauge) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IGauge(gauge).stake();
+        farm.strategyLogicId = StrategyIdLib.SHADOW_FARM;
+        farm.rewardAssets = IGauge(gauge).rewardsList();
+        farm.addresses = new address[](3);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = SonicConstantsLib.SHADOW_ROUTER;
+        farm.addresses[2] = SonicConstantsLib.TOKEN_xSHADOW;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 }
