@@ -235,7 +235,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](38);
+        pools = new ISwapper.AddPoolData[](39);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
@@ -289,7 +289,8 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH);
-        pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_scUSD_14AUG2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, SonicConstantsLib.TOKEN_scUSD); // todo InvalidTokens
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_scUSD_14AUG2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, SonicConstantsLib.TOKEN_scUSD);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_PT_Silo_20_USDC_17JUL2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, SonicConstantsLib.TOKEN_USDC);
         //endregion ----- Pools ----
     }
 
