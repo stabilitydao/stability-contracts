@@ -141,6 +141,7 @@ library EMFLib {
             uint[] memory __rewardAmounts
         )
     {
+        console.log("EMFLib._claimRevenue.0");
         __assets = $base._assets;
         __amounts = new uint[](__assets.length);
         __rewardAssets = $f._rewardAssets;
@@ -155,6 +156,8 @@ library EMFLib {
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }
+        console.log("EMFLib._claimRevenue.end", __assets.length, __amounts.length);
+        console.log("EMFLib._claimRevenue.end2", __rewardAssets.length, __rewardAmounts.length);
     }
 
     function previewDepositAssets(

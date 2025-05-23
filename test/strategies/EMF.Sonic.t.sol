@@ -31,6 +31,6 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
     function _preHardWork() internal override {
         // emulate rewards receiving (workaround difficulties with merkl claiming)
-        deal(SonicConstantsLib.TOKEN_rEUL, currentStrategy, 10e18);
+        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 10e18);
     }
 }

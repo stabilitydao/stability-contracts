@@ -1,34 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {
-    FarmingStrategyBase,
-    StrategyBase,
-    StrategyLib,
-    IControllable,
-    IPlatform,
-    IFarmingStrategy,
-    IStrategy,
-    IFactory
+FarmingStrategyBase,
+StrategyBase,
+StrategyLib,
+IControllable,
+IPlatform,
+IFarmingStrategy,
+IStrategy,
+IFactory
 } from "./base/FarmingStrategyBase.sol";
-import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
-import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
-import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
-import {CommonLib} from "../core/libs/CommonLib.sol";
-import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
-import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
 import {EMFLib} from "./libs/EMFLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IEVault} from "../integrations/euler/IEVault.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {console} from "forge-std/console.sol";
 
 /// @title Lend asset on Euler and earn Merkl rewards
 /// @author Jude (https://github.com/iammrjude)
-contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
+/// @author dvpublic (https://github.com/dvpublic)
+contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC4626StrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -122,7 +124,13 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
+    function autoCompoundingByUnderlyingProtocol() public view virtual override returns (bool) {
+        return true;
+    }
+
+    /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
+        console.log("getSpecificName");
         IFactory.Farm memory farm = _getFarm();
         address asset = IEVault(farm.addresses[1]).asset();
         string memory symbol = IERC20Metadata(asset).symbol();
@@ -139,11 +147,13 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {
-        allowed = true;
+        console.log("isHardWorkOnDepositAllowed");
+        allowed = false;
     }
 
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external view returns (bool) {
+        console.log("isReadyForHardWork");
         return total() != 0;
     }
 
@@ -189,11 +199,13 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.2");
         return _withdrawAssets(value, receiver);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
+        console.log("_withdrawAssets.3");
         EMFLib.withdrawUnderlying(amount, receiver, _getFarm(), _getStrategyBaseStorage());
     }
 
@@ -257,5 +269,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function _processRevenue(
         address[] memory assets_,
         uint[] memory amountsRemaining
-    ) internal virtual override returns (bool needCompound) {}
+    ) internal virtual override returns (bool needCompound) {
+        console.log("_processRevenue");
+    }
 }

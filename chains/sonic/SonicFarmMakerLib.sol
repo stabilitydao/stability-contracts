@@ -71,7 +71,7 @@ library SonicFarmMakerLib {
         farm.pool = address(0);
         farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_rEUL;
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
         farm.addresses = new address[](2);
         farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;
