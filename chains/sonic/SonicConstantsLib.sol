@@ -87,6 +87,7 @@ library SonicConstantsLib {
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
+    address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -343,6 +344,8 @@ library SonicConstantsLib {
 
     address public constant POOL_SHADOW_CL_USDC_SILO = 0xBfaEDfb41b52F5965f4E1192Dd54319a878E115D;
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
+    address public constant POOL_ALGEBRA_beS_OS = 0x97fE831cC56da84321f404a300e2Be81b5bd668A;
+    address public constant POOL_UNISWAPV3_wOS_stS = 0xB6D833db433AeCE6AbD8128a61898a219a9c8148;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;

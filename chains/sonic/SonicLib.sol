@@ -236,7 +236,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](38);
+        pools = new ISwapper.AddPoolData[](39);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
@@ -290,8 +290,8 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_BeetsFragmentsS1_stS, AmmAdapterIdLib.BALANCER_WEIGHTED, SonicConstantsLib.TOKEN_BeetsFragmentsS1, SonicConstantsLib.TOKEN_stS);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH);
-        //pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_SILO, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_SILO, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wETH_SILO, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SILO, SonicConstantsLib.TOKEN_wETH);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_ALGEBRA_beS_OS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_beS, SonicConstantsLib.TOKEN_OS);
         //endregion ----- Pools ----
     }
 

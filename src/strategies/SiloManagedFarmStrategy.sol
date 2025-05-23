@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
+import {IDistributionManager} from "../integrations/silo/IDistributionManager.sol";
 import {
     FarmingStrategyBase,
     StrategyBase,
@@ -217,6 +218,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         __rewardAssets = $f._rewardAssets;
 
+        // ------------------- get current balance of all registered rewards
         uint rwLen = __rewardAssets.length;
         uint[] memory balanceBefore = new uint[](rwLen);
         __rewardAmounts = new uint[](rwLen);
@@ -224,10 +226,12 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
         }
 
+        // ------------------- calculate earned amounts
         ISiloVault siloVault = _getSiloVault();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
 
+        // ------------------- claim all available rewards
         siloVault.claimRewards();
 
         IVaultIncentivesModule vim = IVaultIncentivesModule(siloVault.INCENTIVES_MODULE());
@@ -236,8 +240,12 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         for (uint i; i < claimingLogics.length; ++i) {
             IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
             ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
+
+            //IDistributionManager.AccruedRewards[] memory accruedRewards =
             c.claimRewards(address(this));
         }
+
+        // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
         }
@@ -313,7 +321,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " and supply APR by lending ",
             IERC20Metadata(ISiloVault(farm.addresses[0]).asset()).symbol(),
-            " to Silo V2 ",
+            " to Silo managed vault",
             shortAddr
         );
     }
