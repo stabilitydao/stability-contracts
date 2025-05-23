@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SonicConstantsLib} from "./SonicConstantsLib.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IGaugeV3} from "../../src/integrations/shadow/IGaugeV3.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {IHypervisor} from "../../src/integrations/gamma/IHypervisor.sol";
-import {IGaugeEquivalent} from "../../src/integrations/equalizer/IGaugeEquivalent.sol";
-import {IGaugeV2} from "../../src/integrations/swapx/IGaugeV2.sol";
-import {IGaugeV2_CL} from "../../src/integrations/swapx/IGaugeV2_CL.sol";
-import {IICHIVault} from "../../src/integrations/ichi/IICHIVault.sol";
+import {ISiloIncentivesControllerForVault} from "../../src/integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IBalancerGauge} from "../../src/integrations/balancer/IBalancerGauge.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IGaugeEquivalent} from "../../src/integrations/equalizer/IGaugeEquivalent.sol";
+import {IGaugeV2_CL} from "../../src/integrations/swapx/IGaugeV2_CL.sol";
+import {IGaugeV2} from "../../src/integrations/swapx/IGaugeV2.sol";
+import {IGaugeV3} from "../../src/integrations/shadow/IGaugeV3.sol";
+import {IHypervisor} from "../../src/integrations/gamma/IHypervisor.sol";
+import {IICHIVault} from "../../src/integrations/ichi/IICHIVault.sol";
+import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesController} from "../../src/integrations/silo/ISiloIncentivesController.sol";
+import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
+import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
+import {SonicConstantsLib} from "./SonicConstantsLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
 /// @author Jude (https://github.com/iammrjude)
 library SonicFarmMakerLib {
@@ -217,4 +221,26 @@ library SonicFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_MANAGED_FARM;
+
+        // we can use getSiloManagedFarmRewards to auto-detect reward assets
+        // but some vaults return empty array (probably it's not empty on other blocks)
+        farm.rewardAssets = new address[](4);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
+        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
+
+        farm.addresses = new address[](1);
+        farm.addresses[0] = managedVault;
+
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
 }

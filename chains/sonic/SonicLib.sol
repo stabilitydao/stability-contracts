@@ -38,6 +38,7 @@ import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -177,7 +178,6 @@ library SonicLib {
         factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
         p.initAddresses = new address[](1);
         p.initAddresses[0] = SonicConstantsLib.EULER_VAULT_wS_Re7;
-        // todo more markets?
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.EULER, p);
@@ -215,6 +215,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -237,7 +238,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](38);
+        pools = new ISwapper.AddPoolData[](41);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
@@ -292,11 +293,14 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_aSonUSDC_wstkscUSD, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.TOKEN_wstkscUSD);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH); // 36
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_EUL, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_EUL, SonicConstantsLib.TOKEN_USDC); // 37
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_WBTC_WETH, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_wBTC, SonicConstantsLib.TOKEN_wETH);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wETH_SILO, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SILO, SonicConstantsLib.TOKEN_wETH);
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_ALGEBRA_beS_OS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_beS, SonicConstantsLib.TOKEN_OS);
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](44);
+        _farms = new IFactory.Farm[](52);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS);
@@ -343,10 +347,22 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeIchiEqualizerFarm(SonicConstantsLib.ALM_ICHI_EQUALIZER_wS_WETH, SonicConstantsLib.EQUALIZER_GAUGE_ICHI_wS_WETH);
         _farms[i++] = SonicFarmMakerLib._makeIchiEqualizerFarm(SonicConstantsLib.ALM_ICHI_EQUALIZER_WETH_wS, SonicConstantsLib.EQUALIZER_GAUGE_ICHI_WETH_wS);
         _farms[i++] = SonicFarmMakerLib._makeIchiEqualizerFarm(SonicConstantsLib.ALM_ICHI_EQUALIZER_USDC_WETH, SonicConstantsLib.EQUALIZER_GAUGE_ICHI_USDC_WETH);
-        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD); // farm 41
-        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD); // farm 42
-        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_MEV_Capital);
-        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_Re7_Labs);
+        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD); // farm 40
+        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD); // farm 41
+        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_MEV_Capital); //42
+        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_Re7_Labs); //43
+        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_bUSDCe20_wstkscUSD); // farm 44
+        _farms[i++] = SonicFarmMakerLib._makeIchiSwapXFarm(SonicConstantsLib.SWAPX_GAUGE_ICHI_aSonUSDC_wstkscUSD); // farm 45
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Varlamore); // farm 46
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_Apostro); // farm 47
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_Re7); // farm 48
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_scUSD_Re7); // farm 49
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_Varlamore); // farm 50
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_Greenhouse); // farm 51
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Greenhouse); // farm 52
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Apostro); // farm 53
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Re7); // farm 54
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_scUSD_Varlamore); // farm 5
     }
 
     function _makePoolData(

@@ -92,6 +92,7 @@ library LogExpMath {
      *
      * Reverts if ln(x) * y is smaller than `MIN_NATURAL_EXPONENT`, or larger than `MAX_NATURAL_EXPONENT`.
      */
+    /*
     function pow(uint x, uint y) internal pure returns (uint) {
         if (y == 0) {
             // We solve the 0^0 indetermination by making it equal one.
@@ -144,12 +145,14 @@ library LogExpMath {
 
         return uint(exp(logx_times_y));
     }
+    */
 
     /**
      * @dev Natural exponentiation (e^x) with signed 18 decimal fixed point exponent.
      *
      * Reverts if `x` is smaller than MIN_NATURAL_EXPONENT, or larger than `MAX_NATURAL_EXPONENT`.
      */
+    /*
     function exp(int x) internal pure returns (int) {
         if (!(x >= MIN_NATURAL_EXPONENT && x <= MAX_NATURAL_EXPONENT)) {
             revert InvalidExponent();
@@ -303,8 +306,10 @@ library LogExpMath {
             return negativeExponent ? (ONE_18 * ONE_18) / result : result;
         }
     }
+    */
 
     /// @dev Logarithm (log(arg, base), with signed 18 decimal fixed point base and argument.
+    /*
     function log(int arg, int base) internal pure returns (int) {
         // This performs a simple base change: log(arg, base) = ln(arg) / ln(base).
 
@@ -332,8 +337,10 @@ library LogExpMath {
             return (logArg * ONE_18) / logBase;
         }
     }
+    */
 
     /// @dev Natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
+    /*
     function ln(int a) internal pure returns (int) {
         // The real natural logarithm is not defined for negative numbers or zero.
         if (a <= 0) {
@@ -347,8 +354,10 @@ library LogExpMath {
             return _ln(a);
         }
     }
+    */
 
     /// @dev Internal natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
+    /*
     function _ln(int a) private pure returns (int) {
         // We avoid using recursion here because zkSync doesn't support it.
         bool negativeExponent = false;
@@ -494,6 +503,7 @@ library LogExpMath {
             return negativeExponent ? -result : result;
         }
     }
+    */
 
     /**
      * @dev Internal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
@@ -501,6 +511,7 @@ library LogExpMath {
      *
      * Should only be used if x is between LN_36_LOWER_BOUND and LN_36_UPPER_BOUND.
      */
+    /*
     function _ln_36(int x) private pure returns (int) {
         // Since ln(1) = 0, a value of x close to one will yield a very small result, which makes using 36 digits
         // worthwhile.
@@ -551,4 +562,5 @@ library LogExpMath {
             return seriesSum * 2;
         }
     }
+    */
 }
