@@ -110,7 +110,7 @@ library LogExpMath {
             // (downscaled) last 18 decimals.
             logx_times_y = ((ln_36_x / ONE_18) * y_int256 + ((ln_36_x % ONE_18) * y_int256) / ONE_18);
         } else {
-            logx_times_y = _ln(x_int256) * y_int256;
+            // logx_times_y = _ln(x_int256) * y_int256;
         }
         logx_times_y /= ONE_18;
 
@@ -267,6 +267,7 @@ library LogExpMath {
     /**
      * @dev Logarithm (log(arg, base), with signed 18 decimal fixed point base and argument.
      */
+    /*
     function log(int arg, int base) internal pure returns (int) {
         // This performs a simple base change: log(arg, base) = ln(arg) / ln(base).
 
@@ -290,10 +291,12 @@ library LogExpMath {
         // When dividing, we multiply by ONE_18 to arrive at a result with 18 decimal places
         return (logArg * ONE_18) / logBase;
     }
+    */
 
     /**
      * @dev Natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
      */
+    /*
     function ln(int a) internal pure returns (int) {
         // The real natural logarithm is not defined for negative numbers or zero.
         _require(a > 0, Errors.OUT_OF_BOUNDS);
@@ -303,10 +306,12 @@ library LogExpMath {
             return _ln(a);
         }
     }
+    */
 
     /**
      * @dev Internal natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
      */
+    /*
     function _ln(int a) private pure returns (int) {
         if (a < ONE_18) {
             // Since ln(a^k) = k * ln(a), we can compute ln(a) as ln(a) = ln((1/a)^(-1)) = - ln((1/a)). If a is less
@@ -440,6 +445,7 @@ library LogExpMath {
 
         return (sum + seriesSum) / 100;
     }
+    */
 
     /**
      * @dev Intrnal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,

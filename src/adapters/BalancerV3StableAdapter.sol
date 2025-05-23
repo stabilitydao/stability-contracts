@@ -23,7 +23,10 @@ import {StableMath} from "./libs/balancerv3/StableMath.sol";
 import {IPermit2} from "../integrations/permit2/IPermit2.sol";
 
 /// @title AMM adapter for Balancer V3 stable pools
+/// Changelog:
+///     1.0.1: refactor Balancer libs to improve coverage
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter {
     using SafeERC20 for IERC20;
 
@@ -32,7 +35,7 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
