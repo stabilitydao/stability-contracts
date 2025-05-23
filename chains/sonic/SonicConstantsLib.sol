@@ -86,6 +86,8 @@ library SonicConstantsLib {
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
+    address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
+    address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -325,7 +327,25 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_49_USDC = 0xa18a8f100f2c976044f2f84fae1eE9f807Ae7893;
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
-    address public constant SILO_MANAGED_VAULT_USDC = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260;
+
+    // Silo managed vaults
+    /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
+    address public constant SILO_MANAGED_VAULT_S_Varlamore = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
+    address public constant SILO_MANAGED_VAULT_USDC_Apostro = 0xcca902f2d3d265151f123d8ce8FdAc38ba9745ed;
+    address public constant SILO_MANAGED_VAULT_USDC_Re7 = 0xF75AE954D30217B4EE70DbFB33f04162aa3Cf260;
+    address public constant SILO_MANAGED_VAULT_scUSD_Re7 = 0x592D1e187729C76EfacC6dfFB9355bd7BF47B2a7;
+    address public constant SILO_MANAGED_VAULT_USDC_Varlamore = 0xF6F87073cF8929C206A77b0694619DC776F89885;
+    address public constant SILO_MANAGED_VAULT_USDC_Greenhouse = 0xf6bC16B79c469b94Cdd25F3e2334DD4FEE47A581;
+    address public constant SILO_MANAGED_VAULT_S_Greenhouse = 0x9D2192e40F8D215C628Ea9FcF067683720d82032;
+    address public constant SILO_MANAGED_VAULT_S_Apostro = 0x53F2B31FBE5deF59C8D6A33ad056A0261da40C83;
+    address public constant SILO_MANAGED_VAULT_stS_Re7 = 0xf136C06d23492Ff143afD9f5DC4E886224bA7050;
+    address public constant SILO_MANAGED_VAULT_S_Re7 = 0x011777671E371E38C3d198Ea315A4885F33ecA8f;
+    address public constant SILO_MANAGED_VAULT_scUSD_Varlamore = 0xb6A23cB29e512Df41876B28D7A848BD831f9c5Ba;
+
+    address public constant POOL_SHADOW_CL_USDC_SILO = 0xBfaEDfb41b52F5965f4E1192Dd54319a878E115D;
+    address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
+    address public constant POOL_ALGEBRA_beS_OS = 0x97fE831cC56da84321f404a300e2Be81b5bd668A;
+    address public constant POOL_UNISWAPV3_wOS_stS = 0xB6D833db433AeCE6AbD8128a61898a219a9c8148;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
