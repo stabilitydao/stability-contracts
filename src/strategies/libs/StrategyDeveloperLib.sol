@@ -77,8 +77,17 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.ICHI_EQUALIZER_FARM)) {
             return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.AAVE)) {
+            return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
+        }
         if (CommonLib.eq(strategyId, StrategyIdLib.EULER_MERKL_FARM)) {
             return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
+        }
+        if (CommonLib.eq(strategyId, StrategyIdLib.SILO)) {
+            return 0xa12C4Bbe4D6eD65285f05328Bca4462Bf4808E53;
+        }
+        if (CommonLib.eq(strategyId, StrategyIdLib.EULER)) {
+            return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
         return address(0);
     }

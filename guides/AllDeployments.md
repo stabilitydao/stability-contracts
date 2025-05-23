@@ -6,13 +6,13 @@
 
 * **Platform** `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` [sonicscan](https://sonicscan.org/address/0x4aca671a420eeb58ecafe83700686a2ad06b20d8)
 * **Factory** `0xc184a3ecca684f2621c903a7943d85fa42f56671` [sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671)
+* **MetaVaultFactory** `0xa190302880acF9deCC4447363640f589000EF601` [sonicscan](https://sonicscan.org/address/0xa190302880acF9deCC4447363640f589000EF601)
 * **PriceReader** `0x422025182dd83a610bfa8b20550dcccdf94dc549` [sonicscan](https://sonicscan.org/address/0x422025182dd83a610bfa8b20550dcccdf94dc549)
-* **Wwapper** `0xe52fcf607a8328106723804de1ef65da512771be` [sonicscan](https://sonicscan.org/address/0xe52fcf607a8328106723804de1ef65da512771be)
+* **Swapper** `0xe52fcf607a8328106723804de1ef65da512771be` [sonicscan](https://sonicscan.org/address/0xe52fcf607a8328106723804de1ef65da512771be)
 * **HardWorker** `0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701` [sonicscan](https://sonicscan.org/address/0x635b1f7dd7d0172533ba9fe5cfe2d83d9848f701)
-* **CaultManager** `0x589a504f2ee9d054b483c700fa814863d639381e` [sonicscan](https://sonicscan.org/address/0x589a504f2ee9d054b483c700fa814863d639381e)
+* **VaultManager** `0x589a504f2ee9d054b483c700fa814863d639381e` [sonicscan](https://sonicscan.org/address/0x589a504f2ee9d054b483c700fa814863d639381e)
 * **StrategyLogic** `0xe0e71b484bb20e37d18ab51fb60c32dec778478a` [sonicscan](https://sonicscan.org/address/0xe0e71b484bb20e37d18ab51fb60c32dec778478a)
 * **Zap** `0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d` [sonicscan](https://sonicscan.org/address/0x029dfd1a79e0ad9305d773fb8f3c01d8ef9b913d)
-
 
 ### Periphery
 
@@ -37,6 +37,15 @@
 * **RevenueRouter** `0x23b8cc22c4c82545f4b451b11e2f17747a730810` [sonicscan](https://sonicscan.org/address/0x23b8cc22c4c82545f4b451b11e2f17747a730810)
 * **FeeTreasury** `0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039` [sonicscan](https://sonicscan.org/address/0xda9c8035aa67a8cf9bf5477e0d937f74566f9039)
 
+### AMM adapters
+
+* Solidly (Equalizer, SwapX classic, Shadow classic): 0xe3374041f173ffcb0026a82c6eef94409f713cf9
+* AlgebraV4 (SwapX CL): 0xcb2dfcaec4F1a4c61c5D09100482109574E6b8C7
+* UniswapV3 (Shadow): 0xAf95468B1a624605bbFb862B0FB6e9C73Ad847b8
+* ERC4626: 0xB7192f4b8f741E21b9022D2F8Fd19Ca8c94E7774
+* BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
+* BalancerWeighted: 0x7D6641cf68E5169c11d91266D3E410130dE70B9E
+* Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
 
 ## Polygon [137]
 

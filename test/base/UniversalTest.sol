@@ -18,7 +18,7 @@ import "../../src/interfaces/IFactory.sol";
 import "../../src/interfaces/IStrategy.sol";
 import "../../src/interfaces/ILPStrategy.sol";
 import "../../src/interfaces/IStrategyLogic.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
+import {IVault, IStabilityVault} from "../../src/interfaces/IVault.sol";
 import {IRVault} from "../../src/interfaces/IRVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
@@ -563,7 +563,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     // decrease LTV
                     (uint ltv,, uint leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     uint rebalanceDebtTarget = ltv - 10_00;
-                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget, 0); // 0 = minSharePrice
                     (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     console.log(
                         string.concat(
@@ -578,7 +578,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     );
                     // increase LTV
                     rebalanceDebtTarget = ltv + 10_00;
-                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget);
+                    ILeverageLendingStrategy(address(strategy)).rebalanceDebt(rebalanceDebtTarget, 0); // 0 = minSharePrice
                     (ltv,, leverage,,,) = ILeverageLendingStrategy(address(strategy)).health();
                     console.log(
                         string.concat(
@@ -706,7 +706,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         uint[] memory minAmounts = new uint[](1);
                         minAmounts[0] = totalWas - totalWas / 10000;
-                        vm.expectRevert(abi.encodeWithSelector(IVault.WaitAFewBlocks.selector));
+                        vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);
                         vm.roll(block.number + 6);
                         IVault(tempVault).withdrawAssets(underlyingAssets, vaultBalance, minAmounts);

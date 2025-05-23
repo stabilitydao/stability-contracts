@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SonicLib} from "../../chains/sonic/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -15,7 +15,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
 contract SiloLeverageLendingStrategyDebugTest is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     //address public constant STRATEGY = 0x811002015AC45D551A3D962d8375A7B16Dede6BE; // S-stS
     address public constant STRATEGY = 0xfF9C35acDA4b136F71B1736B2BDFB5479f111C4A; // stS-S
     address public vault;
@@ -24,7 +24,6 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        //vm.rollFork(8340694);
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         factory = IFactory(IPlatform(IControllable(STRATEGY).platform()).factory());
@@ -34,8 +33,8 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
     function testSiloDepositWithdrawUsersImpact() public {
         address user1 = address(1);
         address user2 = address(2);
-        uint user1Deposit = 1_000e18;
-        uint user2Deposit = 10_000e18;
+        uint user1Deposit = 100e18;
+        uint user2Deposit = 1_000e18;
 
         uint originOracleSharePrice = _getOracledSharePrice();
 

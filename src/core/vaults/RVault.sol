@@ -11,6 +11,8 @@ import "../base/RVaultBase.sol";
 /// @notice Rewarding unmanaged vault.
 ///         Vault has 0% compound ratio, buy-back reward token and additional default boost reward tokens with default vesting duration.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
+/// Changelog:
+///   1.4.0: IStabilityVault
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author Jude (https://github.com/iammrjude)
@@ -20,7 +22,7 @@ contract RVault is RVaultBase {
     //region ----- Constants -----
 
     /// @dev Version of RVault implementation
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     uint public constant BB_TOKEN_DURATION = 86400 * 7;
 

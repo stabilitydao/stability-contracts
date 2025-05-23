@@ -8,6 +8,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
 contract SiloLeverageStrategyTest is SonicSetup, UniversalTest {
     constructor() {
+        vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

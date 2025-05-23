@@ -1,4 +1,4 @@
-# Platform Administration Guide V4
+# Platform Administration Guide V5
 
 ## Dedicated sender actions
 
@@ -147,11 +147,47 @@ function setStrategyLogicConfig(StrategyLogicConfig memory config, address devel
 
 ## Multisig actions
 
+### Set MetaVault config
+
+Use `IMetaVaultFactory.setMetaVaultImplementation` method.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `0xa190302880acF9deCC4447363640f589000EF601`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setMetaVaultImplementation","inputs": [{"name": "newImplementation","type": "address","internalType": "address"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+### Set WrappedMetaVault config
+
+Use `IMetaVaultFactory.setWrappedMetaVaultImplementation` method.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `0xa190302880acF9deCC4447363640f589000EF601`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setWrappedMetaVaultImplementation","inputs": [{"name": "newImplementation","type": "address","internalType": "address"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
 ### Set vault config
 
 Use `IFactory.setVaultConfig` method.
 
-View current building prices and vault type string IDs on [Factory](https://polygonscan.com/address/0xa14EaAE76890595B3C7ea308dAEBB93863480EAD#readProxyContract) `24. vaultTypes`
+View current building prices and vault type string IDs on [Factory](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#readProxyContract) `24. vaultTypes`
 
 <details>
     <summary>solidity</summary>
@@ -174,9 +210,9 @@ function setVaultConfig(VaultConfig memory vaultConfig_) external;
 
 Call it via Safe Transaction Builder:
 
-* [New transasction](https://app.safe.global/apps/open?safe=matic:0x36780E69D38c8b175761c6C5F8eD42E61ee490E9&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
 * Connect signer wallet
-* Address: 0xa14EaAE76890595B3C7ea308dAEBB93863480EAD
+* Address: `0xc184a3ECcA684F2621c903A7943D85fA42F56671`
 
 <details>
   <summary>ABI</summary>
@@ -257,3 +293,21 @@ Use `IPlatform.announcePlatformUpgrade`
 2. `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
 3. Enter ABI: `[{"type": "function","name": "announcePlatformUpgrade","inputs": [{"name": "newVersion","type": "string","internalType": "string"}, {"name": "proxies","type": "address[]","internalType": "address[]"}, {"name": "newImplementations","type": "address[]","internalType": "address[]"}],"outputs": [],"stateMutability": "nonpayable"}]`
 4. Fill
+
+### Disable last block defense
+
+Use `IStabilityVault.setLastBlockDefenseDisabled` method for target vaults.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `<vault address>`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setLastBlockDefenseDisabled","inputs": [{"name": "isDisabled","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
