@@ -20,14 +20,17 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
 
 /// @title AMM adapter for Balancer ComposableStable pools
+/// Changelog:
+///     1.0.1: refactor Balancer libs to improve coverage
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancerAdapter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerComposableStableAdapter")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STORAGE_LOCATION = 0x4235c883b69d0c060f4f9a2c87fa015d10166773b6a97be421a79340d62c1e00;

@@ -87,6 +87,7 @@ library FixedPoint {
      * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
      * the true value (that is, the error function expected - actual is always positive).
      */
+    /*
     function powDown(uint x, uint y) internal pure returns (uint) {
         uint raw = LogExpMath.pow(x, y);
         uint maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
@@ -97,6 +98,7 @@ library FixedPoint {
             return sub(raw, maxError);
         }
     }
+    */
 
     /**
      * @dev Returns x^y, assuming both are fixed point numbers, rounding up. The result is guaranteed to not be below
