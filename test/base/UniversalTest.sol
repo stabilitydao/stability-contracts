@@ -334,6 +334,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 for (uint j; j < assets.length; ++j) {
                     (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
 
+                    //console.log("!!!!", assets[j]);
                     require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
                 }
