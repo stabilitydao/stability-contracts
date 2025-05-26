@@ -16,6 +16,7 @@ import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
 import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {IGauge} from "../../src/integrations/shadow/IGauge.sol";
 
 /// @author Jude (https://github.com/iammrjude)
 library SonicFarmMakerLib {
@@ -220,6 +221,21 @@ library SonicFarmMakerLib {
         farm.addresses = new address[](1);
         farm.addresses[0] = managedVault;
 
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeShadowFarm(address gauge) internal view returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = IGauge(gauge).stake();
+        farm.strategyLogicId = StrategyIdLib.SHADOW_FARM;
+        farm.rewardAssets = IGauge(gauge).rewardsList();
+        farm.addresses = new address[](3);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = SonicConstantsLib.SHADOW_ROUTER;
+        farm.addresses[2] = SonicConstantsLib.TOKEN_xSHADOW;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

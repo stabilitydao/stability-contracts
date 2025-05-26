@@ -89,6 +89,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.SILO_MANAGED_FARM)) {
             return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.SHADOW_FARM)) {
+            return 0x9485879Ea033f6b2Cc1A5Cfd1C2c2bB2e7303C68;
+        }
         return address(0);
     }
 }
