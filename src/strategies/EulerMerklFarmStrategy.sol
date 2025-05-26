@@ -21,6 +21,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IEVault} from "../integrations/euler/IEVault.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
@@ -55,16 +56,11 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
             revert IFarmingStrategy.BadFarm();
         }
 
-        address[] memory _assets = new address[](1);
-        _assets[0] = IEVault(farm.addresses[1]).asset();
-        __StrategyBase_init(
-            addresses[0], StrategyIdLib.EULER_MERKL_FARM, addresses[1], _assets, farm.addresses[1], type(uint).max
-        );
-        IERC20(_assets[0]).forceApprove(farm.addresses[1], type(uint).max);
-
+        __ERC4626StrategyBase_init(StrategyIdLib.EULER_MERKL_FARM, addresses[0], addresses[1], farm.addresses[1]);
         __FarmingStrategyBase_init(addresses[0], nums[0]);
     }
 
+    //region ----------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -73,29 +69,19 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(MerklStrategyBase, FarmingStrategyBase)
+        override(MerklStrategyBase, FarmingStrategyBase, StrategyBase)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return
+            FarmingStrategyBase.supportsInterface(interfaceId)
+            || MerklStrategyBase.supportsInterface(interfaceId)
+            || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IFarmingStrategy
     function canFarm() external view override returns (bool) {
         IFactory.Farm memory farm = _getFarm();
         return farm.status == 0;
-    }
-
-    /// @inheritdoc IStrategy
-    function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {
-        console.log("getRevenue.1");
-        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
-        uint len = __assets.length;
-        amounts = new uint[](len);
-        for (uint i; i < len; ++i) {
-            amounts[i] = StrategyLib.balance(__assets[i]);
-            console.log("getRevenue", amounts[i]);
-        }
-        console.log("getRevenue.2");
     }
 
     /// @inheritdoc IStrategy
@@ -113,19 +99,9 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     }
 
     /// @inheritdoc IStrategy
-    function getAssetsProportions() external pure returns (uint[] memory proportions) {
-        proportions = EMFLib.getAssetsProportions();
-    }
-
-    /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
         //slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x965fff), bytes3(0x000000)));
-    }
-
-    /// @inheritdoc IStrategy
-    function autoCompoundingByUnderlyingProtocol() public view virtual override returns (bool) {
-        return true;
     }
 
     /// @inheritdoc IStrategy
@@ -151,125 +127,93 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         allowed = false;
     }
 
-    /// @inheritdoc IStrategy
-    function isReadyForHardWork() external view returns (bool) {
-        console.log("isReadyForHardWork");
-        return total() != 0;
-    }
-
     /// @inheritdoc IFarmingStrategy
     function farmMechanics() external pure returns (string memory) {
         return FarmMechanicsLib.MERKL;
     }
 
     /// @inheritdoc IStrategy
-    function supportedVaultTypes() external pure override(StrategyBase) returns (string[] memory types) {
-        types = new string[](1);
-        types[0] = VaultTypeLib.COMPOUNDING;
+    function autoCompoundingByUnderlyingProtocol() public view virtual
+    override (StrategyBase, ERC4626StrategyBase)
+    returns (bool) {
+        return true;
     }
 
+    function total() public view
+    override (StrategyBase, ERC4626StrategyBase)
+    returns (uint) {
+        return ERC4626StrategyBase.total();
+    }
+
+    /// @inheritdoc IStrategy
+    function isReadyForHardWork() external view override (ERC4626StrategyBase, IStrategy) virtual returns (bool isReady) {
+        (address[] memory __assets, uint[] memory amounts) = getRevenue();
+        isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
+        console.log("isReadyForHardWork", isReady, amounts[0], amounts.length);
+        return amounts[0] != 0; // todo
+    }
+
+    //endregion ----------------------- View functions
+
+    //region ----------------------- Strategy base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool claimRevenue) internal override returns (uint value) {
-        console.log("_depositAssets.1");
-        value = EMFLib.depositAssets(
-            amounts, claimRevenue, _getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm()
-        );
-        console.log("_depositAssets.2");
+    /// @inheritdoc ERC4626StrategyBase
+    function _depositUnderlying(uint amount) internal override (ERC4626StrategyBase, StrategyBase) returns (uint[] memory amountsConsumed) {
+        return ERC4626StrategyBase._depositUnderlying(amount);
     }
 
-    /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
-        console.log("_depositUnderlying.1");
-        return EMFLib.depositUnderlying(amount, _getStrategyBaseStorage());
+    /// @inheritdoc ERC4626StrategyBase
+    function _withdrawUnderlying(uint amount, address receiver) internal override (ERC4626StrategyBase, StrategyBase) {
+        ERC4626StrategyBase._withdrawUnderlying(amount, receiver);
     }
 
-    /// @inheritdoc StrategyBase
-    function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets.1", value);
-        return EMFLib.withdrawAssets(value, receiver, _getFarm(), _getStrategyBaseStorage());
-    }
-
-    /// @inheritdoc StrategyBase
-    function _withdrawAssets(
-        address[] memory /* assets_ */,
-        uint value,
-        address receiver
-    ) internal override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets.2");
-        return _withdrawAssets(value, receiver);
-    }
-
-    /// @inheritdoc StrategyBase
-    function _withdrawUnderlying(uint amount, address receiver) internal override {
-        console.log("_withdrawAssets.3");
-        EMFLib.withdrawUnderlying(amount, receiver, _getFarm(), _getStrategyBaseStorage());
+    /// @inheritdoc FarmingStrategyBase
+    function _liquidateRewards(
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_
+    ) internal override(ERC4626StrategyBase, FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
+        console.log("_liquidateRewards");
+        return FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
-        internal
-        override
-        returns (
-            address[] memory __assets,
-            uint[] memory __amounts,
-            address[] memory __rewardAssets,
-            uint[] memory __rewardAmounts
-        )
+    internal
+    override (ERC4626StrategyBase, StrategyBase)
+    returns (
+        address[] memory __assets,
+        uint[] memory __amounts,
+        address[] memory __rewardAssets,
+        uint[] memory __rewardAmounts
+    )
     {
-        console.log("_claimRevenue.1");
-        (__assets, __amounts, __rewardAssets, __rewardAmounts) =
-            EMFLib._claimRevenue(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm());
-        console.log("_claimRevenue.2");
+        ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        address u = __$__._underlying;
+        uint newSharePrice = _getSharePrice(u);
+        (__assets, __amounts) = _getRevenue(newSharePrice, u);
+        $.lastSharePrice = newSharePrice;
+        (__rewardAssets, __rewardAmounts) = _getRewards();
+        console.log("_claimRevenue", __amounts[0], __rewardAmounts[0]);
     }
+    //endregion ----------------------- Strategy base
 
-    /// @inheritdoc StrategyBase
-    function _compound() internal override {}
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INTERNAL LOGIC                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax)
-        internal
-        view
-        override(StrategyBase)
-        returns (uint[] memory amountsConsumed, uint value)
-    {
-        console.log("_previewDepositAssets.1");
-        (amountsConsumed, value) = EMFLib.previewDepositAssets(amountsMax, _getStrategyBaseStorage());
-        console.log("_previewDepositAssets.2");
-    }
 
-    function _previewDepositAssets(
-        address[] memory /* assets_ */,
-        uint[] memory amountsMax
-    ) internal view virtual override returns (uint[] memory amountsConsumed, uint value) {
-        return _previewDepositAssets(amountsMax);
-    }
-
-    /// @inheritdoc StrategyBase
-    function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {
-        console.log("_previewDepositUnderlying.1");
-        return EMFLib.previewDepositUnderlying(amount, _getStrategyBaseStorage());
-    }
-
-    /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        console.log("_assetsAmounts.1");
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        assets_ = $base._assets;
-        address u = $base._underlying;
-        amounts_ = new uint[](1);
-        amounts_[0] = IEVault(u).convertToAssets(IERC20(u).balanceOf(address(this)));
-        console.log("_assetsAmounts.2");
-    }
-
-    /// @inheritdoc StrategyBase
-    function _processRevenue(
-        address[] memory assets_,
-        uint[] memory amountsRemaining
-    ) internal virtual override returns (bool needCompound) {
-        console.log("_processRevenue");
+    function _getRewards() internal view returns (address[] memory __assets, uint[] memory amounts) {
+        // Merkl rewards: assume they are added on the balance automatically
+        __assets = _getFarmingStrategyBaseStorage()._rewardAssets;
+        uint len = __assets.length;
+        amounts = new uint[](len);
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(__assets[i]);
+        }
     }
 }

@@ -22,151 +22,32 @@ import {console} from "forge-std/console.sol";
 library EMFLib {
     using SafeERC20 for IERC20;
 
-    function initVariants(
-        address platform_,
-        string memory strategyLogicId
-    )
-        public
-        view
-        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(address platform_, string memory strategyLogicId) external view
+    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         addresses = new address[](0);
         ticks = new int24[](0);
-
         IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
         uint len = farms.length;
         //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
+        uint _total;
         for (uint i; i < len; ++i) {
-            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
-                ++localTtotal;
+                ++_total;
             }
         }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
+        variants = new string[](_total);
+        nums = new uint[](_total);
+        _total = 0;
         for (uint i; i < len; ++i) {
-            // nosemgrep
             IFactory.Farm memory farm = farms[i];
-            // nosemgrep
             if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = generateDescription(farm);
-                ++localTtotal;
+                nums[_total] = i;
+                variants[_total] = generateDescription(farm);
+                ++_total;
             }
         }
-    }
-
-    function depositAssets(
-        uint[] memory amounts,
-        bool claimRevenue,
-        IFarmingStrategy.FarmingStrategyBaseStorage storage $f,
-        IStrategy.StrategyBaseStorage storage $base,
-        IFactory.Farm memory farm
-    ) external returns (uint value) {
-        if (claimRevenue) {
-            (,,, uint[] memory rewardAmounts) = _claimRevenue($f, $base, farm);
-            uint len = rewardAmounts.length;
-            // nosemgrep
-            for (uint i; i < len; ++i) {
-                // nosemgrep
-                $f._rewardsOnBalance[i] += rewardAmounts[i];
-            }
-        }
-
-        value = IEVault($base._underlying).deposit(amounts[0], address(this));
-        $base.total += value;
-    }
-
-    function depositUnderlying(
-        uint amount,
-        IStrategy.StrategyBaseStorage storage $base
-    ) external returns (uint[] memory amountsConsumed) {
-        amountsConsumed = previewDepositUnderlying(amount, $base);
-        $base.total += amount;
-    }
-
-    function previewDepositUnderlying(
-        uint amount,
-        IStrategy.StrategyBaseStorage storage $base
-    ) public view returns (uint[] memory amountsConsumed) {
-        amountsConsumed = new uint[](1);
-        address u = $base._underlying;
-        amountsConsumed[0] = IEVault(u).convertToAssets(amount);
-    }
-
-    function withdrawAssets(
-        uint value,
-        address receiver,
-        IFactory.Farm memory farm,
-        IStrategy.StrategyBaseStorage storage $base
-    ) external returns (uint[] memory amountsOut) {
-        amountsOut = new uint[](1);
-        amountsOut[0] = IEVault(farm.addresses[1]).withdraw(value, receiver, address(this));
-        $base.total -= value;
-    }
-
-    function withdrawUnderlying(
-        uint amount,
-        address receiver,
-        IFactory.Farm memory farm,
-        IStrategy.StrategyBaseStorage storage $base
-    ) external {
-        IERC20(farm.addresses[1]).safeTransfer(receiver, amount);
-        $base.total -= amount;
-    }
-
-    function getAssetsProportions() external pure returns (uint[] memory proportions) {
-        proportions = new uint[](1);
-        proportions[0] = 1e18;
-    }
-
-    function _claimRevenue(
-        IFarmingStrategy.FarmingStrategyBaseStorage storage $f,
-        IStrategy.StrategyBaseStorage storage $base,
-        IFactory.Farm memory /* farm */
-    )
-        public // todo
-        returns (
-            address[] memory __assets,
-            uint[] memory __amounts,
-            address[] memory __rewardAssets,
-            uint[] memory __rewardAmounts
-        )
-    {
-        console.log("EMFLib._claimRevenue.0");
-        __assets = $base._assets;
-        __amounts = new uint[](__assets.length);
-        __rewardAssets = $f._rewardAssets;
-        uint rwLen = __rewardAssets.length;
-        uint[] memory balanceBefore = new uint[](rwLen);
-        __rewardAmounts = new uint[](rwLen);
-        for (uint i; i < rwLen; ++i) {
-            balanceBefore[i] = StrategyLib.balance(__rewardAssets[i]);
-        }
-        // call claim() here
-        // IMerklDistributor(farm.addresses[1]).claim(users, tokens, amounts, proofs);
-        for (uint i; i < rwLen; ++i) {
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
-        }
-        console.log("EMFLib._claimRevenue.end", __assets.length, __amounts.length);
-        console.log("EMFLib._claimRevenue.end2", __rewardAssets.length, __rewardAmounts.length);
-    }
-
-    function previewDepositAssets(
-        uint[] memory amountsMax,
-        IStrategy.StrategyBaseStorage storage $base
-    ) external view returns (uint[] memory amountsConsumed, uint value) {
-        amountsConsumed = new uint[](1);
-        amountsConsumed[0] = amountsMax[0];
-        value = IEVault($base._underlying).convertToShares(amountsMax[0]);
     }
 
     function generateDescription(IFactory.Farm memory farm) public view returns (string memory) {
