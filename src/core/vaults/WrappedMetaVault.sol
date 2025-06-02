@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -66,7 +67,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     function totalAssets() public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
-            return IMetaVault($.metaVault).balanceOf(address(this)) / 10 ** (18 - decimals());
+            uint decimalsOffset = 10 ** (18 - decimals());
+            return Math.mulDiv(IMetaVault($.metaVault).balanceOf(address(this)), 1, decimalsOffset, Math.Rounding.Floor);
         }
         return super.totalAssets();
     }
@@ -77,7 +79,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         uint maxUserShares = super.maxRedeem(owner);
         if ($.isMulti) {
             uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
-            maxVaultWithdrawAmountTx /= 10 ** (18 - IERC20Metadata(asset()).decimals());
+            uint decimalsOffset = 10 ** (18 - IERC20Metadata(asset()).decimals());
+            maxVaultWithdrawAmountTx = Math.mulDiv(maxVaultWithdrawAmountTx, 1, decimalsOffset, Math.Rounding.Floor);
             uint maxVaultWithdrawShares = convertToShares(maxVaultWithdrawAmountTx);
             maxShares = Math.min(maxUserShares, maxVaultWithdrawShares);
         } else {
@@ -91,7 +94,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         uint maxUserWithdraw = super.maxWithdraw(owner);
         if ($.isMulti) {
             uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
-            maxVaultWithdrawAmountTx /= 10 ** (18 - IERC20Metadata(asset()).decimals());
+            uint decimalsOffset = 10 ** (18 - IERC20Metadata(asset()).decimals());
+            maxVaultWithdrawAmountTx = Math.mulDiv(maxVaultWithdrawAmountTx, 1, decimalsOffset, Math.Rounding.Floor);
             return Math.min(maxUserWithdraw, maxVaultWithdrawAmountTx);
         }
         return maxUserWithdraw;
@@ -102,6 +106,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
+        console.log("_deposit.assets", assets);
+        console.log("_deposit.shares", shares);
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             address _metaVault = $.metaVault;
@@ -120,21 +126,41 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     function _withdraw(address caller, address receiver, address owner, uint assets, uint shares) internal override {
+        console.log("_withdraw.assets", assets);
+        console.log("_withdraw.shares", shares);
+        console.log("_convertToAssets(assets, Math.Rounding.Floor);", _convertToAssets(assets, Math.Rounding.Floor));
+        console.log("_convertToAssets(assets, Math.Rounding.Ceil);", _convertToAssets(assets, Math.Rounding.Ceil));
+
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             if (caller != owner) {
                 _spendAllowance(owner, caller, shares);
             }
+
+            _burn(owner, shares);
+
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
+            uint amountToRequestFromMeta = assets * 10**(18 - IERC20Metadata(asset()).decimals());
+
+            uint balanceBefore = IERC20(asset()).balanceOf(address(this));
+
             IStabilityVault($.metaVault).withdrawAssets(
                 _assets,
-                (assets + 1) * 10 ** (18 - IERC20Metadata(asset()).decimals()),
+                amountToRequestFromMeta,
                 new uint[](1),
-                receiver,
+                address(this),
                 address(this)
             );
-            _burn(owner, shares);
+
+            uint balanceAfter = IERC20(asset()).balanceOf(address(this));
+            uint actualAssetsReceived = balanceAfter - balanceBefore;
+            console.log("_withdraw.balanceBefore", balanceBefore);
+            console.log("_withdraw.balanceAfter", balanceAfter);
+            console.log("_withdraw.actualAssetsReceived", actualAssetsReceived);
+
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, actualAssetsReceived);
+
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {
             super._withdraw(caller, receiver, owner, assets, shares);

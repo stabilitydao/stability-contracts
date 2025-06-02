@@ -41,6 +41,7 @@ abstract contract ERC4626UniversalTest is Test {
     uint internal userInitialShares;
 
     function setUp() public virtual {
+        console.log("setUp.stat");
         setUpForkTestVariables();
         blockNumber = overrideBlockNumber != 0 ? overrideBlockNumber : 3842500;
         vm.label(address(wrapper), "wrapper");
@@ -74,6 +75,7 @@ abstract contract ERC4626UniversalTest is Test {
         vm.label(alice, "Alice");
         _initializeWallet(alice);
         _setupAllowance(alice);
+        console.log("setUp.end");
     }
 
     function testDeposit__Fork__Fuzz(uint amountToDeposit) public {
@@ -150,22 +152,38 @@ abstract contract ERC4626UniversalTest is Test {
         assertGe(previewedUnderlying, depositedUnderlying, "Previewed underlying is lower than converted deposited");
     }
 
-    function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+    // function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+    function testWithdraw__Fork(uint amountToWithdraw) public {
+        // uint amountToWithdraw = 319028283334; // floor is correct
+        uint amountToWithdraw = 489081330160; // ceil is correct
+
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
         // amountToWithdraw does not pass the amount deposited - a wei tolerance.
         amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
+        console.log("amountToWithdraw", amountToWithdraw);
+        console.log("userInitialUnderlying", userInitialUnderlying);
 
         uint convertedShares = wrapper.convertToShares(amountToWithdraw);
         uint previewedShares = wrapper.previewWithdraw(amountToWithdraw);
+        console.log("convertedShares", convertedShares);
+        console.log("previewedShares", previewedShares);
 
         uint balanceUnderlyingBefore = underlyingToken.balanceOf(user);
         uint balanceSharesBefore = wrapper.balanceOf(user);
+        console.log("balanceUnderlyingBefore", balanceUnderlyingBefore);
+        console.log("balanceSharesBefore", balanceSharesBefore);
 
         vm.prank(user);
         uint burnedShares = wrapper.withdraw(amountToWithdraw, user, user);
+        console.log("burnedShares", burnedShares);
 
         uint balanceUnderlyingAfter = underlyingToken.balanceOf(user);
         uint balanceSharesAfter = wrapper.balanceOf(user);
+        console.log("balanceUnderlyingAfter", balanceUnderlyingAfter);
+        console.log("balanceSharesAfter", balanceSharesAfter);
+
+        console.log("amountToWithdraw, balanceUnderlyingAfter - balanceUnderlyingBefore", amountToWithdraw, balanceUnderlyingAfter - balanceUnderlyingBefore);
+        console.log("balanceSharesBefore - burnedShares", balanceSharesBefore - burnedShares, balanceSharesAfter);
 
         assertEq(balanceUnderlyingAfter, balanceUnderlyingBefore + amountToWithdraw, "Withdraw is not EXACT_OUT");
         assertEq(balanceSharesAfter, balanceSharesBefore - burnedShares, "Withdraw burned shares do not match");

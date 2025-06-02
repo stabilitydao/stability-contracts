@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -179,13 +180,16 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         uint value,
         address receiver
     ) internal virtual override returns (uint[] memory amountsOut) {
+        console.log("ERC4626StrategyBase._withdrawAssets.value", value);
         amountsOut = new uint[](1);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));
+        console.log("ERC4626StrategyBase._withdrawAssets.amountsOut[0]", amountsOut[0]);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
+        console.log("ERC4626StrategyBase._withdrawUnderlying.amount", amount);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }

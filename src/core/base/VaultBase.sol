@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -18,6 +19,7 @@ import {IAprOracle} from "../../interfaces/IAprOracle.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @notice Base vault implementation for compounders and harvesters.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
@@ -37,6 +39,7 @@ import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -353,8 +356,11 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
-            price_ = _tvl * 1e18 / __totalSupply;
+            price_ = _tvl.mulDiv(1e18, __totalSupply, Math.Rounding.Floor);
         }
+//        console.log("VaultBase.tvl", _tvl);
+//        console.log("VaultBase.__totalSupply", __totalSupply);
+//        console.log("VaultBase.price_", price_);
     }
 
     /// @inheritdoc IStabilityVault
@@ -527,7 +533,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
-            mintAmount = value_ * totalSupply_ / totalValue_;
+            mintAmount = value_.mulDiv(totalSupply_, totalValue_, Math.Rounding.Floor);
             initialShares = 0; // hide warning
         } else {
             // calc mintAmount for USD amount of value
@@ -572,26 +578,30 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         IStrategy _strategy = $.strategy;
         uint localTotalSupply = totalSupply();
         uint totalValue = _strategy.total();
+        console.log("VaultBase._withdrawAssets.localTotalSupply", localTotalSupply);
+        console.log("VaultBase._withdrawAssets.totalValue", totalValue);
+        console.log("VaultBase._withdrawAssets.amountShares", amountShares);
 
         uint[] memory amountsOut;
 
         {
             address underlying = _strategy.underlying();
             // nosemgrep
-            bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
-
             // fuse is not triggered
             if (totalValue > 0) {
-                uint value = amountShares * totalValue / localTotalSupply;
-                if (isUnderlyingWithdrawal) {
+                uint value = amountShares.mulDiv(totalValue, localTotalSupply, Math.Rounding.Ceil);
+                console.log("VaultBase._withdrawAssets.value", value);
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
+                    console.log("balanceBefore", IERC20(assets_[0]).balanceOf(address(_strategy)));
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
+                    console.log("balanceAfter", IERC20(assets_[0]).balanceOf(address(_strategy)));
                 }
             } else {
-                if (isUnderlyingWithdrawal) {
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
@@ -614,6 +624,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit WithdrawAssets(msg.sender, owner, assets_, amountShares, amountsOut);
 
         return amountsOut;
+    }
+
+    function _isUnderlyingWithdrawal(address[] memory assets_, address underlying) internal pure returns (bool) {
+        return assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
     }
 
     function _beforeWithdraw(VaultBaseStorage storage $, address owner) internal {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -14,6 +15,7 @@ import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMeta
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -245,6 +247,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
+        console.log("MetaVault.depositAssets.assets", assets_[0]);
+        console.log("MetaVault.depositAssets.amountsMax", amountsMax[0]);
+
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
@@ -261,6 +266,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
             IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
         }
+        console.log("MetaVault.totalSupplyBefore", v.totalSupplyBefore);
+        console.log("MetaVault.totalSharesBefore", v.totalSharesBefore);
+        console.log("MetaVault.balanceBefore", v.balanceBefore[0]);
         uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
         IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
         for (uint i; i < v.len; ++i) {
@@ -271,10 +279,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             }
         }
 
+        console.log("MetaVault.amountsConsumed", v.amountsConsumed[0]);
+
+
         {
             (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
             uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
-            uint depositedTvl = (targetVaultSharesAfter - targetVaultSharesBefore) * targetVaultPrice / 1e18;
+            uint depositedTvl = Math.mulDiv(targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor);
             uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {
@@ -282,6 +293,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             } else {
                 sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
             }
+            console.log("MetaVault.targetVaultSharesAfter", targetVaultSharesAfter);
+            console.log("MetaVault.depositedTvl", depositedTvl);
+            console.log("MetaVault.balanceOut", balanceOut);
+            console.log("MetaVault.sharesToCreate", sharesToCreate);
 
             _mint($, receiver, sharesToCreate, balanceOut);
 
@@ -365,11 +380,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
             uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            vaultUsdValue[i] = vaultSharesBalance * vaultTvl / vaultTotalSupply;
+            vaultUsdValue[i] =  Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
-            proportions[i] = vaultUsdValue[i] * 1e18 / totalDepositedTvl;
+            proportions[i] = Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
         }
     }
 
@@ -461,7 +476,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (totalShares == 0) {
             return (0, 0, 0, 0);
         }
-        sharePrice = _totalSupply * 1e18 / totalShares;
+        sharePrice = Math.mulDiv(_totalSupply, 1e18, totalShares, Math.Rounding.Ceil);
         storedSharePrice = $.storedSharePrice;
         storedTime = $.storedTime;
         if (storedTime != 0) {
@@ -490,7 +505,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint targetVaultSharePrice,) = IStabilityVault(_targetVault).price();
         (amountsConsumed, targetVaultSharesOut, targetVaultStrategyValueOut) =
             IStabilityVault(_targetVault).previewDepositAssets(assets_, amountsMax);
-        uint usdOut = targetVaultSharePrice * targetVaultSharesOut / 1e18;
+        uint usdOut = Math.mulDiv(targetVaultSharePrice, targetVaultSharesOut, 1e18, Math.Rounding.Floor);
         sharesOut = _usdAmountToMetaVaultBalance(usdOut);
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         uint _totalShares = $.totalShares;
@@ -526,7 +541,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 notSafePrice = true;
             }
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            tvl_ += vaultSharePrice * vaultSharesBalance / 1e18;
+            tvl_ += Math.mulDiv(vaultSharePrice, vaultSharesBalance, 1e18, Math.Rounding.Floor);
         }
 
         // get TVL of assets on contract balance
@@ -555,7 +570,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // totalSupply is balance of peg asset
         (uint tvlUsd,) = tvl();
         (uint priceAsset,) = price();
-        return tvlUsd * 1e18 / priceAsset;
+        return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC20
@@ -565,7 +580,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_totalShares == 0) {
             return 0;
         }
-        return $.shareBalance[account] * totalSupply() / _totalShares;
+        return Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC20
@@ -630,6 +645,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
+        console.log("MetaVault._withdrawAssets.assets", assets_[0]);
+        console.log("MetaVault._withdrawAssets.amount", amount);
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
@@ -649,23 +666,30 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply());
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
+        console.log("MetaVault.sharesToBurn", sharesToBurn);
 
         address _targetVault = vaultForWithdraw();
+        console.log("MetaVault.targetVault", _targetVault);
         (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
         require(
             amount <= maxAmountToWithdrawFromVault,
             MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
         );
+        console.log("MetaVault.vaultSharePriceUsd", vaultSharePriceUsd);
+        console.log("MetaVault.maxAmountToWithdrawFromVault", maxAmountToWithdrawFromVault);
 
         uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
+        console.log("MetaVault.usdToWithdraw", usdToWithdraw);
 
         require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
 
-        uint targetVaultSharesToWithdraw = usdToWithdraw * 1e18 / vaultSharePriceUsd;
+        uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
+        console.log("MetaVault.targetVaultSharesToWithdraw", targetVaultSharesToWithdraw);
 
         amountsOut = IStabilityVault(_targetVault).withdrawAssets(
             assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
         );
+        console.log("MetaVault.amountsOut", amountsOut[0]);
 
         _burn($, owner, amount, sharesToBurn);
 
@@ -680,7 +704,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         returns (uint maxAmount, uint vaultSharePrice)
     {
         (vaultSharePrice,) = IStabilityVault(vault).price();
-        uint vaultUsd = vaultSharePrice * IERC20(vault).balanceOf(address(this)) / 1e18;
+        uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
     }
 
@@ -699,19 +723,19 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _usdAmountToMetaVaultBalance(uint usdAmount) internal view returns (uint) {
         (uint priceAsset,) = price();
-        return usdAmount * 1e18 / priceAsset;
+        return Math.mulDiv(usdAmount, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
     function _metaVaultBalanceToUsdAmount(uint amount) internal view returns (uint) {
         (uint priceAsset,) = price();
-        return amount * priceAsset / 1e18;
+        return Math.mulDiv(amount, priceAsset, 1e18, Math.Rounding.Ceil);
     }
 
     function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {
         if (totalSupply_ == 0) {
             return 0;
         }
-        return amount * totalShares_ / totalSupply_;
+        return Math.mulDiv(amount, totalShares_, totalSupply_, Math.Rounding.Floor);
     }
 
     function _spendAllowanceOrBlock(address owner, address spender, uint amount) internal {
