@@ -152,10 +152,11 @@ abstract contract ERC4626UniversalTest is Test {
         assertGe(previewedUnderlying, depositedUnderlying, "Previewed underlying is lower than converted deposited");
     }
 
-    // function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
-    function testWithdraw__Fork() public {
-        uint amountToWithdraw = 319028283334; // floor is correct
+    //function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+     function testWithdraw__Fork() public {
+        // uint amountToWithdraw = 319028283334; // floor is correct
         // uint amountToWithdraw = 489081330160; // ceil is correct
+        uint amountToWithdraw = 202017237993;
         console.log("testWithdraw__Fork", amountToWithdraw);
 
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure

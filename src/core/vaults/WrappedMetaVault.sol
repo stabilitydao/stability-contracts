@@ -132,35 +132,38 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         console.log("_convertToAssets(assets, Math.Rounding.Ceil);", _convertToAssets(assets, Math.Rounding.Ceil));
 
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+
         if ($.isMulti) {
             if (caller != owner) {
                 _spendAllowance(owner, caller, shares);
             }
 
-            _burn(owner, shares);
-
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
-            uint amountToRequestFromMeta = assets * 10**(18 - IERC20Metadata(asset()).decimals());
+            uint amountShares = assets * 10**(18 - IERC20Metadata(asset()).decimals());
 
             uint balanceBefore = IERC20(asset()).balanceOf(address(this));
 
             IStabilityVault($.metaVault).withdrawAssets(
                 _assets,
-                amountToRequestFromMeta,
+                amountShares,
                 new uint[](1),
-                address(this),
+                address(this), // withdraw to this contract
                 address(this)
             );
 
+            _burn(owner, shares);
+
+            // in some cases we can receive more than requested
+            // but we should send ony requested amount to receiver
             uint balanceAfter = IERC20(asset()).balanceOf(address(this));
-            uint actualAssetsReceived = balanceAfter - balanceBefore;
+            uint assetsToSend = Math.min(balanceAfter - balanceBefore, assets);
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, assetsToSend);
             console.log("_withdraw.balanceBefore", balanceBefore);
             console.log("_withdraw.balanceAfter", balanceAfter);
-            console.log("_withdraw.actualAssetsReceived", actualAssetsReceived);
-            console.log("_withdraw.min", Math.min(assets, actualAssetsReceived));
-
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, Math.min(assets, actualAssetsReceived));
+            console.log("_withdraw.actualAssetsReceived", balanceAfter - balanceBefore);
+            console.log("_withdraw.requested assets amount", assets);
+            console.log("_withdraw.min", assetsToSend);
 
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {

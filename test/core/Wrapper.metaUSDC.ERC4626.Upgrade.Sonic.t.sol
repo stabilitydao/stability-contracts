@@ -9,6 +9,11 @@ import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
 contract WrapperERC4626SonicTest is ERC4626UniversalTest {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -47,5 +52,51 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
             IVault(vaults[i]).setDoHardWorkOnDeposit(false);
         }
         vm.stopPrank();
+
+        _upgradeCVaults();
+        _upgradeStrategy(0x73B28fCEBED28D69b46B84D2C8784Ea8cCB3514d); //todo silo strategy of VAULT_C_USDC_S_27
+    }
+
+    function _upgradeCVaults() internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        // deploy new impl and upgrade
+        address vaultImplementation = address(new CVault());
+        vm.prank(multisig);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: vaultImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: 1e10
+            })
+        );
+
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
+    }
+
+    function _upgradeStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new SiloStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
     }
 }
