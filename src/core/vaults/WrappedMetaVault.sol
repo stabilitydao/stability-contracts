@@ -158,8 +158,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             console.log("_withdraw.balanceBefore", balanceBefore);
             console.log("_withdraw.balanceAfter", balanceAfter);
             console.log("_withdraw.actualAssetsReceived", actualAssetsReceived);
+            console.log("_withdraw.min", Math.min(assets, actualAssetsReceived));
 
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, actualAssetsReceived);
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, Math.min(assets, actualAssetsReceived));
 
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {

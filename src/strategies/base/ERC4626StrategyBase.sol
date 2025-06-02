@@ -183,14 +183,21 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         console.log("ERC4626StrategyBase._withdrawAssets.value", value);
         amountsOut = new uint[](1);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        console.log("ERC4626StrategyBase._withdrawAssets.totalAssets", IERC4626(__$__._underlying).totalAssets());
+        console.log("ERC4626StrategyBase._withdrawAssets.totalSupply", IERC4626(__$__._underlying).totalSupply());
+        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets", IERC4626(__$__._underlying).convertToAssets(value));
+        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1", IERC4626(__$__._underlying).convertToAssets(value + 1));
+        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1m", IERC4626(__$__._underlying).convertToAssets(value - 1));
         amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));
         console.log("ERC4626StrategyBase._withdrawAssets.amountsOut[0]", amountsOut[0]);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
-        console.log("ERC4626StrategyBase._withdrawUnderlying.amount", amount);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        console.log("ERC4626StrategyBase._withdrawUnderlying.amount", amount);
+        console.log("ERC4626StrategyBase._withdrawUnderlying.totalAssets", IERC4626(__$__._underlying).totalAssets());
+        console.log("ERC4626StrategyBase._withdrawUnderlying.totalSupply", IERC4626(__$__._underlying).totalSupply());
         IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }
 

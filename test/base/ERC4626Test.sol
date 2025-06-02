@@ -153,9 +153,10 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     // function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
-    function testWithdraw__Fork(uint amountToWithdraw) public {
-        // uint amountToWithdraw = 319028283334; // floor is correct
-        uint amountToWithdraw = 489081330160; // ceil is correct
+    function testWithdraw__Fork() public {
+        uint amountToWithdraw = 319028283334; // floor is correct
+        // uint amountToWithdraw = 489081330160; // ceil is correct
+        console.log("testWithdraw__Fork", amountToWithdraw);
 
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
         // amountToWithdraw does not pass the amount deposited - a wei tolerance.

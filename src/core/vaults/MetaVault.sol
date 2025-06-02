@@ -647,6 +647,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     ) internal returns (uint[] memory amountsOut) {
         console.log("MetaVault._withdrawAssets.assets", assets_[0]);
         console.log("MetaVault._withdrawAssets.amount", amount);
+        console.log("MetaVault._withdrawAssets.minAssetAmountsOut", minAssetAmountsOut[0]);
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
