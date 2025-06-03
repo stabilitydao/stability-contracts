@@ -7,7 +7,6 @@ import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
