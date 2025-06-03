@@ -16,6 +16,7 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 
 contract WrapperERC4626SonicTest is ERC4626UniversalTest {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -59,6 +60,7 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
+        _setZeroProportions(1, 3);
     }
 
     function _upgradeCVaults() internal {
@@ -81,14 +83,16 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
             SonicConstantsLib.VAULT_C_USDC_SiF,
             SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
             SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
-            SonicConstantsLib.VAULT_C_USDC_S_8,
-            SonicConstantsLib.VAULT_C_USDC_S_27
+            SonicConstantsLib.VAULT_C_USDC_S_34,
+            SonicConstantsLib.VAULT_C_USDC_S_36
         ];
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
-            if (CommonLib.eq(CVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
-                _upgradeSiloStrategy(address(CVault(payable(vaults[i])).strategy()));
+            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
+                _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
+                _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             }
         }
     }
@@ -111,5 +115,42 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         );
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeSiloFarmStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new SiloFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _setZeroProportions(uint fromIndex, uint toIndex) internal {
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        multisig = IPlatform(PLATFORM).multisig();
+
+        uint[] memory props = metaVault.targetProportions();
+        props[toIndex] += props[fromIndex];
+        props[fromIndex] = 0;
+
+        uint[] memory current = metaVault.currentProportions();
+        for (uint i; i < current.length; ++i) {
+            console.log("i, current", i, current[i], props[i]);
+        }
+
+        vm.prank(multisig);
+        metaVault.setTargetProportions(props);
     }
 }

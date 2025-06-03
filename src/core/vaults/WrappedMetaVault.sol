@@ -19,7 +19,9 @@ import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 /// @title Wrapped rebase MetaVault
 /// Changelog:
 ///   1.0.1: fix withdraw to pass Balancer ERC4626 test
+///   1.0.2: withdraw sends to receiver exact requested amount, not more; mulDiv is used - #300.
 /// @author Alien Deployer (https://github.com/a17)
+/// @author dvpublic (https://github.com/dvpublic)
 contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault {
     using SafeERC20 for IERC20;
 

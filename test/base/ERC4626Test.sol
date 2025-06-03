@@ -152,6 +152,11 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+        _testWithdraw(amountToWithdraw);
+    }
+
+    function testWithdraw__Fork() public {
+        uint amountToWithdraw = 2222222222222;
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
         // amountToWithdraw does not pass the amount deposited - a wei tolerance.
         amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
@@ -219,6 +224,38 @@ abstract contract ERC4626UniversalTest is Test {
         assertGe(withdrawnAssets, previewedAssets, "Previewed assets is lower than converted withdrawn");
     }
 
+    function _testWithdraw(uint amountToWithdraw) internal {
+        // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
+        // amountToWithdraw does not pass the amount deposited - a wei tolerance.
+        amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
+
+        uint convertedShares = wrapper.convertToShares(amountToWithdraw);
+        uint previewedShares = wrapper.previewWithdraw(amountToWithdraw);
+
+        uint balanceUnderlyingBefore = underlyingToken.balanceOf(user);
+        uint balanceSharesBefore = wrapper.balanceOf(user);
+
+        vm.prank(user);
+
+        uint burnedShares = wrapper.withdraw(amountToWithdraw, user, user);
+
+        uint balanceUnderlyingAfter = underlyingToken.balanceOf(user);
+        uint balanceSharesAfter = wrapper.balanceOf(user);
+
+        assertEq(balanceUnderlyingAfter, balanceUnderlyingBefore + amountToWithdraw, "Withdraw is not EXACT_OUT");
+        assertEq(balanceSharesAfter, balanceSharesBefore - burnedShares, "Withdraw burned shares do not match");
+        assertApproxEqAbs(
+            convertedShares, burnedShares, TOLERANCE, "Convert and actual operation difference is higher than tolerance"
+        );
+        assertApproxEqAbs(
+            previewedShares, burnedShares, TOLERANCE, "Preview and actual operation difference is higher than tolerance"
+        );
+
+        // Burn _at most_ previewed shares.
+        assertGe(previewedShares, burnedShares, "Previewed shares is lower than converted burned");
+    }
+
+    //region ----------------------------------- Auxiliary functions
     function _setupAllowance(address sender) private {
         vm.startPrank(sender);
         underlyingToken.forceApprove(address(wrapper), type(uint).max);
@@ -245,4 +282,5 @@ abstract contract ERC4626UniversalTest is Test {
     function setUpForkTestVariables() internal virtual;
 
     function _upgradeThings() internal virtual {}
+    //endregion ----------------------------------- Auxiliary functions
 }

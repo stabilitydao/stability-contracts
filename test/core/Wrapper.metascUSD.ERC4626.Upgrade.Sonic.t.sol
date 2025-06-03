@@ -8,9 +8,9 @@ import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -53,7 +53,6 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
-        //        _upgradeStrategy(0x6FFECd5BAC804aAae0BeD79596Af05841819d471); //todo strategy of VAULT_C_scUSD_Euler_Re7Labs
     }
 
     function _upgradeCVaults() internal {
@@ -81,8 +80,8 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
-            if (CommonLib.eq(CVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
-                _upgradeEulerStrategy(address(CVault(payable(vaults[i])).strategy()));
+            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
+                _upgradeEulerStrategy(address(IVault(payable(vaults[i])).strategy()));
             }
         }
     }

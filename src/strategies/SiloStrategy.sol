@@ -21,6 +21,7 @@ import {StrategyBase} from "./base/StrategyBase.sol";
 ///     1.0.1: _assetsAmounts uses previewRedeem to fix #300
 /// @title Lend asset on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// @author dvpublic (https://github.com/dvpublic)
 contract SiloStrategy is ERC4626StrategyBase {
     using SafeERC20 for IERC20;
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
