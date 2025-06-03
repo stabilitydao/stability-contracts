@@ -42,6 +42,11 @@ contract WrappedMetaVaultOracle is IAggregatorInterfaceMinimal {
         return int(wrapperSharePrice * metaVaultPrice / 1e28);
     }
 
+    /// @inheritdoc IAggregatorInterfaceMinimal
+    function decimals() external pure returns (uint8) {
+        return 8;
+    }
+
     function _eq(string memory a, string memory b) internal pure returns (bool) {
         return keccak256(bytes(a)) == keccak256(bytes(b));
     }

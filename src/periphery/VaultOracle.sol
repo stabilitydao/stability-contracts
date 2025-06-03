@@ -23,4 +23,9 @@ contract VaultOracle is IAggregatorInterfaceMinimal {
         (uint price,) = IVault(vault).price();
         return int(price / 10 ** 10);
     }
+
+    /// @inheritdoc IAggregatorInterfaceMinimal
+    function decimals() external pure returns (uint8) {
+        return 8;
+    }
 }

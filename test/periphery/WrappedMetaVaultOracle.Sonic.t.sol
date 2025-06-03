@@ -39,5 +39,7 @@ contract WrappedMetaVaultOracleSonic is Test {
         assertGt(price3, 1e8);
         assertLt(price3, 101e6);
         //console.logInt(price3);
+
+        assertEq(oracle1.decimals(), 8);
     }
 }
