@@ -19,7 +19,6 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {console} from "forge-std/Test.sol";
 
 /// @notice Base vault implementation for compounders and harvesters.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
@@ -580,8 +579,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         {
             address underlying = _strategy.underlying();
-            console.log("vault", address(this));
-            console.log("strategy", address(_strategy));
             // nosemgrep
             // fuse is not triggered
             if (totalValue > 0) {

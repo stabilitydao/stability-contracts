@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
+// import {Test, console} from "forge-std/Test.sol";
 import {ERC4626UniversalTest, IERC4626} from "../base/ERC4626Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
@@ -60,7 +60,19 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
-        _setZeroProportions(1, 3);
+
+        // to withdraw from requested subvault, i.e. 4
+        // increase it's proportions here, i.e. call _setProportions(1, 4);
+        // _setProportions(1, 4);
+
+        // ... and decrease it back in _doBeforeTest()
+        // i.e. call _setProportions(4, 1);
+
+        // as result, withdraw will be from 4th subvault
+    }
+
+    function _doBeforeTest(uint /* tag */ ) internal override {
+        // _setProportions(4, 1);
     }
 
     function _upgradeCVaults() internal {
@@ -81,8 +93,8 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
 
         address[5] memory vaults = [
             SonicConstantsLib.VAULT_C_USDC_SiF,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
+            SonicConstantsLib.VAULT_C_USDC_S_8,
+            SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,
             SonicConstantsLib.VAULT_C_USDC_S_36
         ];
@@ -137,20 +149,21 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _setZeroProportions(uint fromIndex, uint toIndex) internal {
+    function _setProportions(uint fromIndex, uint toIndex) internal {
         IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
         multisig = IPlatform(PLATFORM).multisig();
 
         uint[] memory props = metaVault.targetProportions();
-        props[toIndex] += props[fromIndex];
-        props[fromIndex] = 0;
-
-        uint[] memory current = metaVault.currentProportions();
-        for (uint i; i < current.length; ++i) {
-            console.log("i, current", i, current[i], props[i]);
-        }
+        props[toIndex] += props[fromIndex] - 2e16;
+        props[fromIndex] = 2e16;
 
         vm.prank(multisig);
         metaVault.setTargetProportions(props);
+
+        //        props = metaVault.targetProportions();
+        //        uint[] memory current = metaVault.currentProportions();
+        //        for (uint i; i < current.length; ++i) {
+        //            console.log("i, current, target", i, current[i], props[i]);
+        //        }
     }
 }

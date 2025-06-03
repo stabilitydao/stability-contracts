@@ -78,6 +78,7 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     function testDeposit__Fork__Fuzz(uint amountToDeposit) public {
+        _doBeforeTest(0);
         amountToDeposit = bound(amountToDeposit, minDeposit, userInitialUnderlying);
 
         uint convertedShares = wrapper.convertToShares(amountToDeposit);
@@ -108,6 +109,7 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     function testMint__Fork__Fuzz(uint amountToMint) public {
+        _doBeforeTest(1);
         // When user mints, a round up may occur and add some wei in the amount of underlying required to deposit.
         // This can cause the user to not have enough tokens to deposit.
         // So, the maximum amountToMint must be the initialShares (which is exactly the initialUnderlying, converted to
@@ -152,42 +154,12 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+        _doBeforeTest(2);
         _testWithdraw(amountToWithdraw);
     }
 
-    function testWithdraw__Fork() public {
-        uint amountToWithdraw = 2222222222222;
-        // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
-        // amountToWithdraw does not pass the amount deposited - a wei tolerance.
-        amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
-
-        uint convertedShares = wrapper.convertToShares(amountToWithdraw);
-        uint previewedShares = wrapper.previewWithdraw(amountToWithdraw);
-
-        uint balanceUnderlyingBefore = underlyingToken.balanceOf(user);
-        uint balanceSharesBefore = wrapper.balanceOf(user);
-
-        vm.prank(user);
-
-        uint burnedShares = wrapper.withdraw(amountToWithdraw, user, user);
-
-        uint balanceUnderlyingAfter = underlyingToken.balanceOf(user);
-        uint balanceSharesAfter = wrapper.balanceOf(user);
-
-        assertEq(balanceUnderlyingAfter, balanceUnderlyingBefore + amountToWithdraw, "Withdraw is not EXACT_OUT");
-        assertEq(balanceSharesAfter, balanceSharesBefore - burnedShares, "Withdraw burned shares do not match");
-        assertApproxEqAbs(
-            convertedShares, burnedShares, TOLERANCE, "Convert and actual operation difference is higher than tolerance"
-        );
-        assertApproxEqAbs(
-            previewedShares, burnedShares, TOLERANCE, "Preview and actual operation difference is higher than tolerance"
-        );
-
-        // Burn _at most_ previewed shares.
-        assertGe(previewedShares, burnedShares, "Previewed shares is lower than converted burned");
-    }
-
     function testRedeem__Fork__Fuzz(uint amountToRedeem) public {
+        _doBeforeTest(4);
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
         // amountToWithdraw does not pass the amount deposited - a wei tolerance.
         amountToRedeem = bound(amountToRedeem, minDeposit * underlyingToWrappedFactor, userInitialShares - TOLERANCE);
@@ -254,6 +226,11 @@ abstract contract ERC4626UniversalTest is Test {
         // Burn _at most_ previewed shares.
         assertGe(previewedShares, burnedShares, "Previewed shares is lower than converted burned");
     }
+
+    //region ----------------------------------- Virtual
+    function _doBeforeTest(uint /* tag */ ) internal virtual {}
+
+    //endregion ----------------------------------- Virtual
 
     //region ----------------------------------- Auxiliary functions
     function _setupAllowance(address sender) private {

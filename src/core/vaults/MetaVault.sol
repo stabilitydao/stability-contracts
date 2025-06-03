@@ -15,7 +15,6 @@ import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {console} from "forge-std/Test.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -655,7 +654,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         address _targetVault = vaultForWithdraw();
-        console.log("_targetVault", _targetVault);
         (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
         require(
             amount <= maxAmountToWithdrawFromVault,
