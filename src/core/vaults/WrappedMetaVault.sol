@@ -134,13 +134,12 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
-            uint amountShares = assets * 10 ** (18 - IERC20Metadata(asset()).decimals());
 
-            uint balanceBefore = IERC20(asset()).balanceOf(address(this));
+            uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
 
             IStabilityVault($.metaVault).withdrawAssets(
                 _assets,
-                amountShares,
+                assets * 10 ** (18 - IERC20Metadata(_assets[0]).decimals()),
                 new uint[](1),
                 address(this), // withdraw to this contract
                 address(this)
@@ -150,9 +149,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             // in some cases we can receive more than requested
             // but we should send ony requested amount to receiver
-            uint balanceAfter = IERC20(asset()).balanceOf(address(this));
+            uint balanceAfter = IERC20(_assets[0]).balanceOf(address(this));
             uint assetsToSend = Math.min(balanceAfter - balanceBefore, assets);
-            SafeERC20.safeTransfer(IERC20(asset()), receiver, assetsToSend);
+            SafeERC20.safeTransfer(IERC20(_assets[0]), receiver, assetsToSend);
 
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {
