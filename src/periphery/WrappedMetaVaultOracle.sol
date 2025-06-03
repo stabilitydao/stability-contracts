@@ -19,6 +19,7 @@ contract WrappedMetaVaultOracle is IAggregatorInterfaceMinimal {
 
     error NotTrustedPrice(address asset);
 
+    //slither-disable-next-line missing-zero-check
     constructor(address wrappedMetaVault_) {
         wrappedMetaVault = wrappedMetaVault_;
     }
@@ -28,18 +29,18 @@ contract WrappedMetaVaultOracle is IAggregatorInterfaceMinimal {
         address _wrappedMetaVault = wrappedMetaVault;
         address metaVault = IWrappedMetaVault(_wrappedMetaVault).metaVault();
         uint oneWrapperShare = 10 ** IERC20Metadata(_wrappedMetaVault).decimals();
-        uint wrapperSharePrice = 1e18 * IERC4626(_wrappedMetaVault).convertToAssets(oneWrapperShare) / oneWrapperShare;
+        uint wrapperSharePriceNotNormalized = IERC4626(_wrappedMetaVault).convertToAssets(oneWrapperShare);
         bool isMultiVault = _eq(IStabilityVault(metaVault).vaultType(), VaultTypeLib.MULTIVAULT);
         if (isMultiVault) {
             address _asset = IERC4626(_wrappedMetaVault).asset();
             IPlatform platform = IPlatform(IControllable(_wrappedMetaVault).platform());
             (uint assetPrice, bool trusted) = IPriceReader(platform.priceReader()).getPrice(_asset);
             require(trusted, NotTrustedPrice(_asset));
-            return int(wrapperSharePrice * assetPrice / 1e28);
+            return int(wrapperSharePriceNotNormalized * assetPrice / oneWrapperShare / 1e10);
         }
         (uint metaVaultPrice, bool isMetaVaultPrice) = IStabilityVault(metaVault).price();
         require(isMetaVaultPrice, NotTrustedPrice(metaVault));
-        return int(wrapperSharePrice * metaVaultPrice / 1e28);
+        return int(wrapperSharePriceNotNormalized * metaVaultPrice / oneWrapperShare / 1e10);
     }
 
     /// @inheritdoc IAggregatorInterfaceMinimal
