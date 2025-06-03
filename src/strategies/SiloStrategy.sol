@@ -15,7 +15,11 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {StrategyBase} from "./base/StrategyBase.sol";
 
+/// @notice SiloStrategy is a strategy for lending assets on Silo V2.
+/// Changelog:
+///     1.0.1: _assetsAmounts uses previewRedeem to fix #300
 /// @title Lend asset on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloStrategy is ERC4626StrategyBase {
@@ -25,7 +29,7 @@ contract SiloStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -95,6 +99,24 @@ contract SiloStrategy is ERC4626StrategyBase {
         return true;
     }
 
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        assets_ = __$__._assets;
+        address u = __$__._underlying;
+        amounts_ = new uint[](1);
+
+        // #300: _assetsAmounts is used to calculate prices and tvl
+        // these values are used in withdraw to estimate how much shares to burn
+        // convertToAssets in SilStrategy uses different rounding mode then previewRedeem
+        // only previewRedeem gives correct value
+
+        //amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
+        amounts_[0] = ISilo(u).previewRedeem(IERC20(u).balanceOf(address(this)));
+
+        console.log("ERC4626StrategyBase._assetsAmounts.amounts_[0]", amounts_[0]);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -122,12 +144,16 @@ contract SiloStrategy is ERC4626StrategyBase {
         amountsOut = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo silo = ISilo($base._underlying);
-        console.log("ERC4626StrategyBase._withdrawAssets.totalAssets", ISilo($base._underlying).totalAssets());
-        console.log("ERC4626StrategyBase._withdrawAssets.totalSupply", ISilo($base._underlying).totalSupply());
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets", ISilo($base._underlying).convertToAssets(value));
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1", ISilo($base._underlying).convertToAssets(value + 1));
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1m", ISilo($base._underlying).convertToAssets(value - 1));
-        console.log("ERC4626StrategyBase._withdrawAssets.previewRedeem", ISilo($base._underlying).previewRedeem(value));
+        console.log("SiloStrategy._withdrawAssets.silo", $base._underlying);
+        console.log("SiloStrategy._withdrawAssets.value", value);
+        console.log("SiloStrategy._withdrawAssets.totalAssets", silo.totalAssets());
+        console.log("SiloStrategy._withdrawAssets.totalSupply", silo.totalSupply());
+        console.log("SiloStrategy._withdrawAssets.convertToAssets", silo.convertToAssets(value));
+        console.log("SiloStrategy._withdrawAssets.convertToAssets1", silo.convertToAssets(value + 1));
+        console.log("SiloStrategy._withdrawAssets.convertToAssets1m", silo.convertToAssets(value - 1));
+        console.log("SiloStrategy._withdrawAssets.previewRedeem", silo.previewRedeem(value));
+        console.log("SiloStrategy._withdrawAssets.previewRedeem1", silo.previewRedeem(value + 1));
+        console.log("SiloStrategy._withdrawAssets.previewRedeem1m", silo.previewRedeem(value - 1));
         amountsOut[0] = silo.redeem(value, receiver, address(this));
     }
 

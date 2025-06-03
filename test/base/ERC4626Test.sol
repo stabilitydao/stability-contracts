@@ -7,6 +7,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPermit2} from "../../src/integrations/permit2/IPermit2.sol";
+import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 
 abstract contract ERC4626UniversalTest is Test {
     using SafeERC20 for IERC20;
@@ -152,11 +153,12 @@ abstract contract ERC4626UniversalTest is Test {
         assertGe(previewedUnderlying, depositedUnderlying, "Previewed underlying is lower than converted deposited");
     }
 
-    //function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
-     function testWithdraw__Fork() public {
+    function testWithdraw__Fork__Fuzz(uint amountToWithdraw) public {
+    // function testWithdraw__Fork() public {
+        // ISilo(0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64).accrueInterest(); // todo
         // uint amountToWithdraw = 319028283334; // floor is correct
         // uint amountToWithdraw = 489081330160; // ceil is correct
-        uint amountToWithdraw = 202017237993;
+      //  uint amountToWithdraw = 202017237993;
         console.log("testWithdraw__Fork", amountToWithdraw);
 
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
@@ -176,6 +178,7 @@ abstract contract ERC4626UniversalTest is Test {
         console.log("balanceSharesBefore", balanceSharesBefore);
 
         vm.prank(user);
+
         uint burnedShares = wrapper.withdraw(amountToWithdraw, user, user);
         console.log("burnedShares", burnedShares);
 

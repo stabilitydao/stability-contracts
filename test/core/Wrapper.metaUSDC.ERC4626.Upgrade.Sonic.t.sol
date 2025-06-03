@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Test, console} from "forge-std/Test.sol";
 import {ERC4626UniversalTest, IERC4626} from "../base/ERC4626Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
@@ -13,6 +14,7 @@ import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
 contract WrapperERC4626SonicTest is ERC4626UniversalTest {
@@ -26,12 +28,15 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
     function setUpForkTestVariables() internal override {
         network = "sonic";
         overrideBlockNumber = 27965000;
+        // overrideBlockNumber = 31484125; // Jun-03-2025 03:44:27 AM +UTC
 
         // Stability USDC
         wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
         // Donor of USDC.e
         underlyingDonor = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
         amountToDonate = 1e6 * 1e6;
+
+        minDeposit = 110; // avoid UsdAmountLessThreshold
     }
 
     function _upgradeThings() internal override {
@@ -54,7 +59,6 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
-        _upgradeStrategy(0x73B28fCEBED28D69b46B84D2C8784Ea8cCB3514d); //todo silo strategy of VAULT_C_USDC_S_27
     }
 
     function _upgradeCVaults() internal {
@@ -73,14 +77,23 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
+        address[5] memory vaults = [
+            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
+            SonicConstantsLib.VAULT_C_USDC_S_8,
+            SonicConstantsLib.VAULT_C_USDC_S_27
+        ];
+
+        for (uint i; i < vaults.length; i++) {
+            factory.upgradeVaultProxy(vaults[i]);
+            if (CommonLib.eq(CVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
+                _upgradeSiloStrategy(address(CVault(payable(vaults[i])).strategy()));
+            }
+        }
     }
 
-    function _upgradeStrategy(address strategyAddress) internal {
+    function _upgradeSiloStrategy(address strategyAddress) internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         address strategyImplementation = address(new SiloStrategy());

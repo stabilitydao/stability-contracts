@@ -356,7 +356,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
-            price_ = _tvl.mulDiv(1e18, __totalSupply, Math.Rounding.Floor);
+            price_ = Math.mulDiv(_tvl, 1e18, __totalSupply, Math.Rounding.Floor);
         }
 //        console.log("VaultBase.tvl", _tvl);
 //        console.log("VaultBase.__totalSupply", __totalSupply);
@@ -589,7 +589,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // nosemgrep
             // fuse is not triggered
             if (totalValue > 0) {
-                uint value = amountShares.mulDiv(totalValue, localTotalSupply, Math.Rounding.Ceil);
+                uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
                 console.log("VaultBase._withdrawAssets.value", value);
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);

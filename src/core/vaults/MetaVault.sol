@@ -704,9 +704,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         view
         returns (uint maxAmount, uint vaultSharePrice)
     {
+        console.log("MetaVault._maxAmountToWithdrawFromVault.vault", vault);
         (vaultSharePrice,) = IStabilityVault(vault).price();
+        console.log("MetaVault._maxAmountToWithdrawFromVault.vaultSharePrice", vaultSharePrice);
         uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
+        console.log("MetaVault._maxAmountToWithdrawFromVault.vaultUsd", vaultUsd);
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
+        console.log("MetaVault._maxAmountToWithdrawFromVault.maxAmount", maxAmount);
     }
 
     function _burn(MetaVaultStorage storage $, address account, uint amountToBurn, uint sharesToBurn) internal {
@@ -729,6 +733,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _metaVaultBalanceToUsdAmount(uint amount) internal view returns (uint) {
         (uint priceAsset,) = price();
+        console.log("_metaVaultBalanceToUsdAmount.price", priceAsset);
         return Math.mulDiv(amount, priceAsset, 1e18, Math.Rounding.Ceil);
     }
 

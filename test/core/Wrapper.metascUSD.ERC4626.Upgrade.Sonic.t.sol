@@ -14,6 +14,7 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
 contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -33,7 +34,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
         underlyingDonor = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
         amountToDonate = 1e6 * 1e6;
 
-        minDeposit = 110; // todo avoid UsdAmountLessThreshold
+        minDeposit = 110; // avoid UsdAmountLessThreshold
     }
 
     function _upgradeThings() internal override {
@@ -52,7 +53,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
-        _upgradeStrategy(0x6FFECd5BAC804aAae0BeD79596Af05841819d471); //todo strategy of VAULT_C_scUSD_Euler_Re7Labs
+//        _upgradeStrategy(0x6FFECd5BAC804aAae0BeD79596Af05841819d471); //todo strategy of VAULT_C_scUSD_Euler_Re7Labs
     }
 
     function _upgradeCVaults() internal {
@@ -71,22 +72,22 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_36);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_49);
+        address[4] memory vaults = [
+            SonicConstantsLib.VAULT_C_scUSD_S_46,
+            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
+            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital,
+            SonicConstantsLib.VAULT_C_USDC_Stability_StableJack
+        ];
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_scUSD_S_46);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_Stability_StableJack);
+        for (uint i; i < vaults.length; i++) {
+            factory.upgradeVaultProxy(vaults[i]);
+            if (CommonLib.eq(CVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
+                _upgradeEulerStrategy(address(CVault(payable(vaults[i])).strategy()));
+            }
+        }
     }
 
-    function _upgradeStrategy(address strategyAddress) internal {
+    function _upgradeEulerStrategy(address strategyAddress) internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         address strategyImplementation = address(new EulerStrategy());
