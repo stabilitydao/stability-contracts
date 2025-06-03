@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IAggregatorInterfaceMinimal} from "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
 import {IVault} from "../interfaces/IVault.sol";
@@ -22,5 +22,10 @@ contract VaultOracle is IAggregatorInterfaceMinimal {
         // slither-disable-next-line unused-return
         (uint price,) = IVault(vault).price();
         return int(price / 10 ** 10);
+    }
+
+    /// @inheritdoc IAggregatorInterfaceMinimal
+    function decimals() external pure returns (uint8) {
+        return 8;
     }
 }
