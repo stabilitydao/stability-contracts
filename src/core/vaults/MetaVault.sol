@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -247,9 +246,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
-        console.log("MetaVault.depositAssets.assets", assets_[0]);
-        console.log("MetaVault.depositAssets.amountsMax", amountsMax[0]);
-
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
@@ -266,9 +262,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
             IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
         }
-        console.log("MetaVault.totalSupplyBefore", v.totalSupplyBefore);
-        console.log("MetaVault.totalSharesBefore", v.totalSharesBefore);
-        console.log("MetaVault.balanceBefore", v.balanceBefore[0]);
         uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
         IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
         for (uint i; i < v.len; ++i) {
@@ -279,13 +272,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             }
         }
 
-        console.log("MetaVault.amountsConsumed", v.amountsConsumed[0]);
-
-
         {
             (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
             uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
-            uint depositedTvl = Math.mulDiv(targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor);
+            uint depositedTvl = Math.mulDiv(
+                targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
+            );
             uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {
@@ -293,10 +285,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             } else {
                 sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
             }
-            console.log("MetaVault.targetVaultSharesAfter", targetVaultSharesAfter);
-            console.log("MetaVault.depositedTvl", depositedTvl);
-            console.log("MetaVault.balanceOut", balanceOut);
-            console.log("MetaVault.sharesToCreate", sharesToCreate);
 
             _mint($, receiver, sharesToCreate, balanceOut);
 
@@ -380,7 +368,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
             uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            vaultUsdValue[i] =  Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
+            vaultUsdValue[i] = Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
@@ -645,9 +633,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
-        console.log("MetaVault._withdrawAssets.assets", assets_[0]);
-        console.log("MetaVault._withdrawAssets.amount", amount);
-        console.log("MetaVault._withdrawAssets.minAssetAmountsOut", minAssetAmountsOut[0]);
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
@@ -667,30 +652,23 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply());
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
-        console.log("MetaVault.sharesToBurn", sharesToBurn);
 
         address _targetVault = vaultForWithdraw();
-        console.log("MetaVault.targetVault", _targetVault);
         (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
         require(
             amount <= maxAmountToWithdrawFromVault,
             MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
         );
-        console.log("MetaVault.vaultSharePriceUsd", vaultSharePriceUsd);
-        console.log("MetaVault.maxAmountToWithdrawFromVault", maxAmountToWithdrawFromVault);
 
         uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
-        console.log("MetaVault.usdToWithdraw", usdToWithdraw);
 
         require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
 
         uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
-        console.log("MetaVault.targetVaultSharesToWithdraw", targetVaultSharesToWithdraw);
 
         amountsOut = IStabilityVault(_targetVault).withdrawAssets(
             assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
         );
-        console.log("MetaVault.amountsOut", amountsOut[0]);
 
         _burn($, owner, amount, sharesToBurn);
 
@@ -704,13 +682,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         view
         returns (uint maxAmount, uint vaultSharePrice)
     {
-        console.log("MetaVault._maxAmountToWithdrawFromVault.vault", vault);
         (vaultSharePrice,) = IStabilityVault(vault).price();
-        console.log("MetaVault._maxAmountToWithdrawFromVault.vaultSharePrice", vaultSharePrice);
         uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
-        console.log("MetaVault._maxAmountToWithdrawFromVault.vaultUsd", vaultUsd);
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
-        console.log("MetaVault._maxAmountToWithdrawFromVault.maxAmount", maxAmount);
     }
 
     function _burn(MetaVaultStorage storage $, address account, uint amountToBurn, uint sharesToBurn) internal {
@@ -733,7 +707,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _metaVaultBalanceToUsdAmount(uint amount) internal view returns (uint) {
         (uint priceAsset,) = price();
-        console.log("_metaVaultBalanceToUsdAmount.price", priceAsset);
         return Math.mulDiv(amount, priceAsset, 1e18, Math.Rounding.Ceil);
     }
 

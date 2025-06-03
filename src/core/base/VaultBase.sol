@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -39,7 +38,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @author JodsMigel (https://github.com/JodsMigel)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
-    using Math for uint256;
+    using Math for uint;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -358,9 +357,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (__totalSupply > 0) {
             price_ = Math.mulDiv(_tvl, 1e18, __totalSupply, Math.Rounding.Floor);
         }
-//        console.log("VaultBase.tvl", _tvl);
-//        console.log("VaultBase.__totalSupply", __totalSupply);
-//        console.log("VaultBase.price_", price_);
     }
 
     /// @inheritdoc IStabilityVault
@@ -578,9 +574,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         IStrategy _strategy = $.strategy;
         uint localTotalSupply = totalSupply();
         uint totalValue = _strategy.total();
-        console.log("VaultBase._withdrawAssets.localTotalSupply", localTotalSupply);
-        console.log("VaultBase._withdrawAssets.totalValue", totalValue);
-        console.log("VaultBase._withdrawAssets.amountShares", amountShares);
 
         uint[] memory amountsOut;
 
@@ -590,15 +583,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // fuse is not triggered
             if (totalValue > 0) {
                 uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
-                console.log("VaultBase._withdrawAssets.value", value);
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
-                    console.log("balanceBefore", IERC20(assets_[0]).balanceOf(address(_strategy)));
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
-                    console.log("balanceAfter", IERC20(assets_[0]).balanceOf(address(_strategy)));
                 }
             } else {
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {

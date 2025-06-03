@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
@@ -113,8 +112,6 @@ contract SiloStrategy is ERC4626StrategyBase {
 
         //amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
         amounts_[0] = ISilo(u).previewRedeem(IERC20(u).balanceOf(address(this)));
-
-        console.log("ERC4626StrategyBase._assetsAmounts.amounts_[0]", amounts_[0]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -144,16 +141,6 @@ contract SiloStrategy is ERC4626StrategyBase {
         amountsOut = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo silo = ISilo($base._underlying);
-        console.log("SiloStrategy._withdrawAssets.silo", $base._underlying);
-        console.log("SiloStrategy._withdrawAssets.value", value);
-        console.log("SiloStrategy._withdrawAssets.totalAssets", silo.totalAssets());
-        console.log("SiloStrategy._withdrawAssets.totalSupply", silo.totalSupply());
-        console.log("SiloStrategy._withdrawAssets.convertToAssets", silo.convertToAssets(value));
-        console.log("SiloStrategy._withdrawAssets.convertToAssets1", silo.convertToAssets(value + 1));
-        console.log("SiloStrategy._withdrawAssets.convertToAssets1m", silo.convertToAssets(value - 1));
-        console.log("SiloStrategy._withdrawAssets.previewRedeem", silo.previewRedeem(value));
-        console.log("SiloStrategy._withdrawAssets.previewRedeem1", silo.previewRedeem(value + 1));
-        console.log("SiloStrategy._withdrawAssets.previewRedeem1m", silo.previewRedeem(value - 1));
         amountsOut[0] = silo.redeem(value, receiver, address(this));
     }
 

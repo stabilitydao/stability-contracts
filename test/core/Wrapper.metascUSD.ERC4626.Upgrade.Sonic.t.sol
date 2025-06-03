@@ -53,7 +53,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
         vm.stopPrank();
 
         _upgradeCVaults();
-//        _upgradeStrategy(0x6FFECd5BAC804aAae0BeD79596Af05841819d471); //todo strategy of VAULT_C_scUSD_Euler_Re7Labs
+        //        _upgradeStrategy(0x6FFECd5BAC804aAae0BeD79596Af05841819d471); //todo strategy of VAULT_C_scUSD_Euler_Re7Labs
     }
 
     function _upgradeCVaults() internal {

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -181,37 +180,31 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         uint value,
         address receiver
     ) internal virtual override returns (uint[] memory amountsOut) {
-        console.log("ERC4626StrategyBase._withdrawAssets.value", value);
         amountsOut = new uint[](1);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        console.log("ERC4626StrategyBase._withdrawAssets.totalAssets", IERC4626(__$__._underlying).totalAssets());
-        console.log("ERC4626StrategyBase._withdrawAssets.totalSupply", IERC4626(__$__._underlying).totalSupply());
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets", IERC4626(__$__._underlying).convertToAssets(value));
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1", IERC4626(__$__._underlying).convertToAssets(value + 1));
-        console.log("ERC4626StrategyBase._withdrawAssets.convertToAssets1m", IERC4626(__$__._underlying).convertToAssets(value - 1));
         amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));
-        console.log("ERC4626StrategyBase._withdrawAssets.amountsOut[0]", amountsOut[0]);
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawUnderlying(uint amount, address receiver) internal override {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        console.log("ERC4626StrategyBase._withdrawUnderlying.amount", amount);
-        console.log("ERC4626StrategyBase._withdrawUnderlying.totalAssets", IERC4626(__$__._underlying).totalAssets());
-        console.log("ERC4626StrategyBase._withdrawUnderlying.totalSupply", IERC4626(__$__._underlying).totalSupply());
         IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }
 
     /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view virtual override returns (address[] memory assets_, uint[] memory amounts_) {
+    function _assetsAmounts()
+        internal
+        view
+        virtual
+        override
+        returns (address[] memory assets_, uint[] memory amounts_)
+    {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         assets_ = __$__._assets;
         address u = __$__._underlying;
         amounts_ = new uint[](1);
 
         amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
-
-        console.log("ERC4626StrategyBase._assetsAmounts.amounts_[0]", amounts_[0]);
     }
 
     /// @inheritdoc StrategyBase

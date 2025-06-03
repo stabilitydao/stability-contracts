@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -106,8 +105,6 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
-        console.log("_deposit.assets", assets);
-        console.log("_deposit.shares", shares);
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             address _metaVault = $.metaVault;
@@ -126,11 +123,6 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     function _withdraw(address caller, address receiver, address owner, uint assets, uint shares) internal override {
-        console.log("_withdraw.assets", assets);
-        console.log("_withdraw.shares", shares);
-        console.log("_convertToAssets(assets, Math.Rounding.Floor);", _convertToAssets(assets, Math.Rounding.Floor));
-        console.log("_convertToAssets(assets, Math.Rounding.Ceil);", _convertToAssets(assets, Math.Rounding.Ceil));
-
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
 
         if ($.isMulti) {
@@ -140,7 +132,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             address[] memory _assets = new address[](1);
             _assets[0] = asset();
-            uint amountShares = assets * 10**(18 - IERC20Metadata(asset()).decimals());
+            uint amountShares = assets * 10 ** (18 - IERC20Metadata(asset()).decimals());
 
             uint balanceBefore = IERC20(asset()).balanceOf(address(this));
 
@@ -159,11 +151,6 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             uint balanceAfter = IERC20(asset()).balanceOf(address(this));
             uint assetsToSend = Math.min(balanceAfter - balanceBefore, assets);
             SafeERC20.safeTransfer(IERC20(asset()), receiver, assetsToSend);
-            console.log("_withdraw.balanceBefore", balanceBefore);
-            console.log("_withdraw.balanceAfter", balanceAfter);
-            console.log("_withdraw.actualAssetsReceived", balanceAfter - balanceBefore);
-            console.log("_withdraw.requested assets amount", assets);
-            console.log("_withdraw.min", assetsToSend);
 
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {
