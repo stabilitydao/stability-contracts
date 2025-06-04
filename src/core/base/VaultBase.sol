@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
@@ -36,6 +37,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///   1.0.1: add receiver and owner args to withdrawAssets method
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
     using Math for uint;
@@ -45,7 +47,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.4.0";
+    string public constant VERSION_VAULT_BASE = "2.4.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
