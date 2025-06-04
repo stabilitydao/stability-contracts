@@ -259,5 +259,8 @@ abstract contract ERC4626UniversalTest is Test {
     function setUpForkTestVariables() internal virtual;
 
     function _upgradeThings() internal virtual {}
+
+    /// @notice Empty function to exclude this test from coverage
+    function test() public {}
     //endregion ----------------------------------- Auxiliary functions
 }
