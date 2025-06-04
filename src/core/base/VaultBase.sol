@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -526,6 +527,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint[] memory amountsConsumed,
         address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
+        console.log("_calcMintShares.totalSupply_", totalSupply_);
+        console.log("_calcMintShares.value_", value_);
+        console.log("_calcMintShares.totalValue_", totalValue_);
+        console.log("_calcMintShares.amountsConsumed.length", amountsConsumed.length);
+        console.log("_calcMintShares.amountsConsumed[0]", amountsConsumed[0]);
+//        console.log("_calcMintShares.amountsConsumed[1]", amountsConsumed[1]);
+
         if (totalSupply_ > 0) {
             mintAmount = value_ * totalSupply_ / totalValue_;
             initialShares = 0; // hide warning
@@ -536,12 +544,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             //slither-disable-next-line unused-return
             (mintAmount,,,) = priceReader.getAssetsPrice(assets_, amountsConsumed);
 
+            console.log("_calcMintShares.mintAmount", mintAmount);
             // initialShares for saving share price after full withdraw
             initialShares = _INITIAL_SHARES;
             if (mintAmount < initialShares * 1000) {
                 revert NotEnoughAmountToInitSupply(mintAmount, initialShares * 1000);
             }
             mintAmount -= initialShares;
+            console.log("_calcMintShares.mintAmount", mintAmount);
+            console.log("_calcMintShares.initialShares", initialShares);
         }
     }
 

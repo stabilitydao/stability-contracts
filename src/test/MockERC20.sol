@@ -22,4 +22,8 @@ contract MockERC20 is IMockERC20, ERC20Upgradeable {
     function decimals() public view override returns (uint8) {
         return _decimals;
     }
+
+    function changeDecimals(uint8 newDecimals) external {
+        _decimals = newDecimals;
+    }
 }

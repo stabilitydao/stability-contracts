@@ -57,11 +57,11 @@ contract SiALUpgrade2Test is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
         // vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
-        // vm.rollFork(24504011); // May-05-2025 11:38:28 AM +UTC
+        vm.rollFork(24504011); // May-05-2025 11:38:28 AM +UTC
         // vm.rollFork(26249931); // May-12-2025 01:01:38 PM +UTC
         // vm.rollFork(26428190); // May-13-2025 06:22:27 AM +UTC
-        // vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
-        vm.rollFork(28935050); // May-23-2025 06:06:36 AM +UTC
+        //vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
+        //vm.rollFork(28935050); // May-23-2025 06:06:36 AM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -79,7 +79,7 @@ contract SiALUpgrade2Test is Test {
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(STRATEGY2);
-        // _upgradeVault(vault);
+        _upgradeVault(vault);
 
         // ----------------- access to the strategy
         vm.prank(multisig);

@@ -331,6 +331,44 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.symbol(), newSymbol);
     }
 
+    function testFirstDeposit() public {
+        _initAll();
+
+        address[] memory assets = new address[](2);
+        assets[0] = address(tokenA);
+        assets[1] = address(tokenB);
+        console.log("TokenA decimals", IERC20Metadata(tokenA).decimals());
+
+        uint[] memory amounts = new uint[](2);
+        amounts[0] = 10e18;
+        amounts[1] = 10e6;
+
+        tokenA.mint(amounts[0] * 2);
+        tokenB.mint(amounts[1] * 2);
+        lp.mint(1e18);
+
+        tokenA.approve(address(vault), amounts[0] * 2);
+        tokenB.approve(address(vault), amounts[1] * 2);
+        lp.approve(address(vault), 1e18);
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(vault);
+        uint[] memory statuses = new uint[](1);
+        statuses[0] = 1;
+        factory.setVaultStatus(vaults, statuses);
+
+        amounts = new uint[](2);
+
+        amounts[0] = 10e18;
+        amounts[1] = 10e6;
+        vault.depositAssets(assets, amounts, 0, address(0));
+
+        vm.roll(block.number + 5);
+
+        uint shares = vault.balanceOf(address(this));
+        assertGt(shares, 0);
+    }
+
     function _initAll() internal {
         vm.expectRevert(IControllable.IncorrectInitParams.selector);
         vault.initialize(
