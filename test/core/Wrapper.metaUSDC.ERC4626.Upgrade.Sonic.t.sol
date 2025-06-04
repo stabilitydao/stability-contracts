@@ -37,7 +37,7 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         underlyingDonor = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
         amountToDonate = 1e6 * 1e6;
 
-        minDeposit = 110; // avoid UsdAmountLessThreshold
+        minDeposit = 100;
     }
 
     function _upgradeThings() internal override {
