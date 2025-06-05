@@ -9,16 +9,16 @@ import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
-contract WrapperERC4626SonicTest is ERC4626UniversalTest {
+contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
 
@@ -28,13 +28,12 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
 
     function setUpForkTestVariables() internal override {
         network = "sonic";
-        overrideBlockNumber = 27965000;
-        // overrideBlockNumber = 31484125; // Jun-03-2025 03:44:27 AM +UTC
+        overrideBlockNumber = 30141969;
 
-        // Stability USDC
-        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        // Stability scUSD
+        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
         // Donor of USDC.e
-        underlyingDonor = 0x578Ee1ca3a8E1b54554Da1Bf7C583506C4CD11c6;
+        underlyingDonor = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
         amountToDonate = 1e6 * 1e6;
 
         minDeposit = 100;
@@ -50,29 +49,25 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_metaUSDC;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC;
+        proxies[0] = SonicConstantsLib.METAVAULT_metascUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metascUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
-        address[] memory vaults = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).vaults();
-        for (uint i; i < vaults.length; ++i) {
-            IVault(vaults[i]).setDoHardWorkOnDeposit(false);
-        }
         vm.stopPrank();
 
         _upgradeCVaults();
 
-        // to withdraw from requested subvault, i.e. 4
-        // increase it's proportions here, i.e. call _setProportions(1, 4);
-        // _setProportions(1, 4);
+        // to withdraw from requested subvault, i.e. 2
+        // increase it's proportions here, i.e. call _setProportions(1, 2);
+        _setProportions(2, 0);
 
         // ... and decrease it back in _doBeforeTest()
-        // i.e. call _setProportions(4, 1);
+        // i.e. call _setProportions(2, 1);
 
-        // as result, withdraw will be from 4th subvault
+        // as result, withdraw will be from 2th subvault
     }
 
     function _doBeforeTest(uint /* tag */ ) internal override {
-        // _setProportions(4, 1);
+        _setProportions(0, 2);
     }
 
     function _upgradeCVaults() internal {
@@ -91,22 +86,40 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
             })
         );
 
-        address[5] memory vaults = [
-            SonicConstantsLib.VAULT_C_USDC_SiF,
-            SonicConstantsLib.VAULT_C_USDC_S_8,
-            SonicConstantsLib.VAULT_C_USDC_S_27,
-            SonicConstantsLib.VAULT_C_USDC_S_34,
-            SonicConstantsLib.VAULT_C_USDC_S_36
+        address[3] memory vaults = [
+            SonicConstantsLib.VAULT_C_scUSD_S_46,
+            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
+            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital
         ];
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
-            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
+            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
+                _upgradeEulerStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
-                _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             }
         }
+    }
+
+    function _upgradeEulerStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new EulerStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.EULER,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
     }
 
     function _upgradeSiloStrategy(address strategyAddress) internal {
@@ -129,28 +142,8 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _upgradeSiloFarmStrategy(address strategyAddress) internal {
-        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-
-        address strategyImplementation = address(new SiloFarmStrategy());
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
     function _setProportions(uint fromIndex, uint toIndex) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
         multisig = IPlatform(PLATFORM).multisig();
 
         uint[] memory props = metaVault.targetProportions();

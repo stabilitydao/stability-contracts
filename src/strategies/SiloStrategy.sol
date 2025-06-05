@@ -7,16 +7,20 @@ import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {StrategyBase} from "./base/StrategyBase.sol";
 
+/// @notice SiloStrategy is a strategy for lending assets on Silo V2.
+/// Changelog:
+///     1.0.1: _assetsAmounts uses previewRedeem to fix #300
 /// @title Lend asset on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// @author dvpublic (https://github.com/dvpublic)
 contract SiloStrategy is ERC4626StrategyBase {
     using SafeERC20 for IERC20;
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -24,7 +28,7 @@ contract SiloStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -92,6 +96,22 @@ contract SiloStrategy is ERC4626StrategyBase {
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
         return true;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        assets_ = __$__._assets;
+        address u = __$__._underlying;
+        amounts_ = new uint[](1);
+
+        // #300: _assetsAmounts is used to calculate prices and tvl
+        // these values are used in withdraw to estimate how much shares to burn
+        // convertToAssets in SilStrategy uses different rounding mode then previewRedeem
+        // only previewRedeem gives correct value
+
+        //amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
+        amounts_[0] = ISilo(u).previewRedeem(IERC20(u).balanceOf(address(this)));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

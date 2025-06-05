@@ -5,17 +5,13 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
-import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IVault} from "../../interfaces/IVault.sol";
 import {IVaultManager} from "../../interfaces/IVaultManager.sol";
-import {IStrategyLogic} from "../../interfaces/IStrategyLogic.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
-import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 

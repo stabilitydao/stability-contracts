@@ -18,12 +18,14 @@ import {IAprOracle} from "../../interfaces/IAprOracle.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @notice Base vault implementation for compounders and harvesters.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
@@ -35,15 +37,17 @@ import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 ///   1.0.1: add receiver and owner args to withdrawAssets method
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
+    using Math for uint;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.4.0";
+    string public constant VERSION_VAULT_BASE = "2.4.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -353,7 +357,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
-            price_ = _tvl * 1e18 / __totalSupply;
+            price_ = Math.mulDiv(_tvl, 1e18, __totalSupply, Math.Rounding.Floor);
         }
     }
 
@@ -527,7 +531,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
-            mintAmount = value_ * totalSupply_ / totalValue_;
+            mintAmount = value_.mulDiv(totalSupply_, totalValue_, Math.Rounding.Floor);
             initialShares = 0; // hide warning
         } else {
             // calc mintAmount for USD amount of value
@@ -578,12 +582,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         {
             address underlying = _strategy.underlying();
             // nosemgrep
-            bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
-
             // fuse is not triggered
             if (totalValue > 0) {
-                uint value = amountShares * totalValue / localTotalSupply;
-                if (isUnderlyingWithdrawal) {
+                uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
@@ -591,7 +593,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
                 }
             } else {
-                if (isUnderlyingWithdrawal) {
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
@@ -614,6 +616,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         emit WithdrawAssets(msg.sender, owner, assets_, amountShares, amountsOut);
 
         return amountsOut;
+    }
+
+    function _isUnderlyingWithdrawal(address[] memory assets_, address underlying) internal pure returns (bool) {
+        return assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
     }
 
     function _beforeWithdraw(VaultBaseStorage storage $, address owner) internal {

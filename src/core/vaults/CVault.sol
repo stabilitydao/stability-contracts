@@ -9,18 +9,25 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 /// @notice Tokenized 100% auto compounding vault with a single underlying liquidity mining position.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// Changelog:
+///   1.7.1: Use mulDiv - #300
 ///   1.7.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   1.6.0: IStabilityVault
+///   1.5.0: hardWorkMintFeeCallback use revenueRouter
+///   1.4.0: previewDepositAssetsWrite
+///   1.3.0: hardWorkMintFeeCallback
+///   1.2.0: doHardWorkOnDeposit fix
+///   1.1.0: setName, setSymbol
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 contract CVault is VaultBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.7.0";
+    string public constant VERSION = "1.7.1";
 
     uint internal constant _UNIQUE_INIT_ADDRESSES = 1;
 

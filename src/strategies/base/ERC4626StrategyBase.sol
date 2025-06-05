@@ -13,6 +13,7 @@ import {IStrategy} from "../../interfaces/IStrategy.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// Changelog:
+///     1.0.3: _assetsAmounts is virtual
 ///     1.0.2: _depositAssets and _withdrawAssets are virtual
 /// @author Alien Deployer (https://github.com/a17)
 /// @author 0xhokugava (https://github.com/0xhokugava)
@@ -24,7 +25,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.2";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.3";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
@@ -191,11 +192,18 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+    function _assetsAmounts()
+        internal
+        view
+        virtual
+        override
+        returns (address[] memory assets_, uint[] memory amounts_)
+    {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         assets_ = __$__._assets;
         address u = __$__._underlying;
         amounts_ = new uint[](1);
+
         amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
     }
 
