@@ -17,14 +17,14 @@ import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 /// @title Earns APR by lending assets on Euler.finance
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
-///     1.0.1: Use ERC4626StrategyBase 1.0.3 with fixed revenue formula - #304
+///     1.0.1: Use ERC4626StrategyBase 1.0.4 with fixed revenue formula - #304
 contract EulerStrategy is ERC4626StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.1"; // todo PR
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

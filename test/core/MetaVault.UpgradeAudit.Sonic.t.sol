@@ -84,7 +84,6 @@ contract MetaVaultSonicUpgradeAudit is Test {
 
         // ----------- get values of balanceOut
         snapshotId = vm.snapshotState();
-        uint totalSupplyBefore = metaVault.totalSupply();
         vm.recordLogs();
         metaVault.depositAssets(
             assets,
