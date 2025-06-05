@@ -18,6 +18,7 @@ import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.2.1: fix slippage check in deposit - #303
 ///   1.2.0: add vault to MetaVault; decrease USD_THRESHOLD to 1e14 (0.0001 USDC)
 ///   1.1.0: IStabilityVault.lastBlockDefenseDisabled()
 /// @author Alien Deployer (https://github.com/a17)
@@ -30,7 +31,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1"; // todo: PR
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e14;
@@ -285,8 +286,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
             _mint($, receiver, sharesToCreate, balanceOut);
 
-            if (balanceOut < minSharesOut) {
-                revert ExceedSlippage(balanceOut, minSharesOut);
+            if (sharesToCreate < minSharesOut) {
+                revert ExceedSlippage(sharesToCreate, minSharesOut);
             }
             // todo dead shares
 
