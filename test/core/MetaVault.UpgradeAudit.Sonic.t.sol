@@ -40,12 +40,12 @@ contract MetaVaultSonicUpgradeAudit is Test {
 
         // block 31972376, Jun-05-2025 06:49:31 AM +UTC
 
-//        targetVaultPrice 999724000000000000
-//        targetVaultSharesAfter 3364078307853266063192
-//        amountsMax 1000276076
-//        depositedTvl 999999999576624071218
-//        balanceOut 999999999576624071218
-//        sharesToCreate 999038573804442028789
+        //        targetVaultPrice 999724000000000000
+        //        targetVaultSharesAfter 3364078307853266063192
+        //        amountsMax 1000276076
+        //        depositedTvl 999999999576624071218
+        //        balanceOut 999999999576624071218
+        //        sharesToCreate 999038573804442028789
 
         // ----------- get values of sharesToCreate
         uint snapshotId = 0;
@@ -64,7 +64,7 @@ contract MetaVaultSonicUpgradeAudit is Test {
             try metaVault.depositAssets(
                 assets,
                 depositAmounts,
-                type(uint256).max, // revert ExceedSlippage
+                type(uint).max, // revert ExceedSlippage
                 address(this)
             ) {} catch (bytes memory reason) {
                 returnData = reason;
@@ -78,7 +78,7 @@ contract MetaVaultSonicUpgradeAudit is Test {
                 errorData[i] = returnData[i + 4];
             }
 
-            (sharesToCreate, ) = abi.decode(errorData, (uint, uint));
+            (sharesToCreate,) = abi.decode(errorData, (uint, uint));
             vm.revertToState(snapshotId);
         }
 
@@ -95,9 +95,8 @@ contract MetaVaultSonicUpgradeAudit is Test {
 
         bytes32 depositAssetsSignature = keccak256("DepositAssets(address,address[],uint256[],uint256)");
         for (uint i = 0; i < logs.length; i++) {
-
             if (logs[i].topics[0] == depositAssetsSignature) {
-                (, , balanceOut) = abi.decode(logs[i].data, (address[], uint[], uint));
+                (,, balanceOut) = abi.decode(logs[i].data, (address[], uint[], uint));
                 break;
             }
         }
@@ -173,5 +172,4 @@ contract MetaVaultSonicUpgradeAudit is Test {
         }
     }
     //endregion ------------------------------ Auxiliary Functions
-
 }

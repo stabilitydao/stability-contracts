@@ -3,12 +3,14 @@ pragma solidity ^0.8.28;
 
 // import {Test, console} from "forge-std/Test.sol";
 import {ERC4626UniversalTest, IERC4626} from "../base/ERC4626Test.sol";
+import {SlippageTestUtils} from "../base/SlippageTestUtils.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
@@ -18,7 +20,7 @@ import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 
-contract WrapperERC4626SonicTest is ERC4626UniversalTest {
+contract WrapperERC4626SonicTest is ERC4626UniversalTest, SlippageTestUtils {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
 
@@ -40,6 +42,44 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         minDeposit = 100;
     }
 
+    //region ---------------------- Tests for deposit/withdrawWithSlippage
+    function testDepositWithSlippage__Fork__Fuzz(uint amountToDeposit) public {
+        // see ERC4626UniversalTest.testDeposit__Fork__Fuzz
+        amountToDeposit = bound(amountToDeposit, minDeposit, userInitialUnderlying);
+
+        _testDepositWithSlippage(user, IWrappedMetaVault(address(wrapper)), amountToDeposit, underlyingToken, TOLERANCE);
+    }
+
+    function testMintWithSlippage__Fork__Fuzz(uint amountToMint) public {
+        // see ERC4626UniversalTest.testMint__Fork__Fuzz
+        amountToMint = bound(
+            amountToMint,
+            minDeposit * underlyingToWrappedFactor,
+            userInitialShares - (TOLERANCE * underlyingToWrappedFactor)
+        );
+
+        _testMintWithSlippage(user, IWrappedMetaVault(address(wrapper)), amountToMint, underlyingToken, TOLERANCE);
+    }
+
+    function testWithdrawWithSlippage__Fork__Fuzz(uint amountToWithdraw) public {
+        // see ERC4626UniversalTest._testWithdraw
+        amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
+
+        _testWithdrawWithSlippage(
+            user, IWrappedMetaVault(address(wrapper)), amountToWithdraw, underlyingToken, TOLERANCE
+        );
+    }
+
+    function testRedeemWithSlippage__Fork__Fuzz(uint amountToRedeem) public {
+        // see ERC4626UniversalTest.testRedeem__Fork__Fuzz
+        amountToRedeem = bound(amountToRedeem, minDeposit * underlyingToWrappedFactor, userInitialShares - TOLERANCE);
+
+        _testRedeemWithSlippage(user, IWrappedMetaVault(address(wrapper)), amountToRedeem, underlyingToken, TOLERANCE);
+    }
+
+    //endregion ---------------------- Tests for deposit/withdrawWithSlippage
+
+    //region ---------------------- Auxiliary functions
     function _upgradeThings() internal override {
         multisig = IPlatform(PLATFORM).multisig();
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
@@ -166,4 +206,5 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
     }
+    //endregion ---------------------- Auxiliary functions
 }
