@@ -20,6 +20,8 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 import {AaveLib} from "./libs/AaveLib.sol";
 
 /// @title Earns APR by lending assets on AAVE
+/// Changelog:
+///     1.0.1: fix revenue calculation - #304
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
 contract AaveStrategy is StrategyBase {
@@ -30,7 +32,7 @@ contract AaveStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1"; // todo PR
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_STRATEGY_STORAGE_LOCATION =
@@ -304,7 +306,11 @@ contract AaveStrategy is StrategyBase {
         amounts = new uint[](1);
         uint oldPrice = $.lastSharePrice;
         if (newPrice > oldPrice && oldPrice != 0) {
-            amounts[0] = StrategyLib.balance(u) * newPrice * (newPrice - oldPrice) / oldPrice / 1e18;
+            // deposited asset balance
+            uint scaledBalance = IAToken(u).scaledBalanceOf(address(this));
+
+            // share price already takes into account accumulated interest
+            amounts[0] = scaledBalance * (newPrice - oldPrice) / 1e18;
         }
     }
     //endregion ----------------------- Internal logic
