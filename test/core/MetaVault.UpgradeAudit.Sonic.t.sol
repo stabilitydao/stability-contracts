@@ -4,20 +4,14 @@ pragma solidity ^0.8.28;
 import {console, Test, Vm} from "forge-std/Test.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-
-import {SupportsInterfaceWithLookupMock} from
-    "../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 /// @dev Upgrade MetaVault after fixing the issues found in the audit
 contract MetaVaultSonicUpgradeAudit is Test {
