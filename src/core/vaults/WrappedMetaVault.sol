@@ -18,6 +18,7 @@ import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
 /// @title Wrapped rebase MetaVault
 /// Changelog:
+///   1.1.0: add deposit/mint/withdraw/redeem with slippage protection - #306
 ///   1.0.2: withdraw sends to receiver exact requested amount, not more; mulDiv is used - #300.
 ///   1.0.1: fix withdraw to pass Balancer ERC4626 test
 /// @author Alien Deployer (https://github.com/a17)
@@ -30,7 +31,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.1.0"; // todo PR
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.WrappedMetaVault")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _WRAPPED_METAVAULT_STORAGE_LOCATION =

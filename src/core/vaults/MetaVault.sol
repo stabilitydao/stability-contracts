@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -18,7 +19,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.2.3: fix slippage check in deposit - #303
+///   1.2.3: - fix slippage check in deposit - #303
+///          - check provided assets in deposit/withdrawAssets - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
 ///   1.2.1: use mulDiv - #300
 ///   1.2.0: add vault to MetaVault; decrease USD_THRESHOLD to 1e14 (0.0001 USDC)
@@ -105,6 +107,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _;
     }
 
+    //region --------------------------------- Restricted action
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -238,6 +241,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         emit LastBlockDefenseDisabled(isDisabled);
     }
 
+    //endregion --------------------------------- Restricted action
+
+    //region --------------------------------- User actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -260,11 +266,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         v.len = assets_.length;
         v.balanceBefore = new uint[](v.len);
         v.amountsConsumed = new uint[](v.len);
+
+        // ensure that provided assets correspond to the target vault
+        // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
+        _checkProvidedAssets(assets_, v.targetVault);
+
         for (uint i; i < v.len; ++i) {
             IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
             v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
             IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
         }
+
         uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
         IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
         for (uint i; i < v.len; ++i) {
@@ -288,6 +300,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             } else {
                 sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
             }
+            console.log("depositAssets.sharesToCreate", sharesToCreate);
+            console.log("balanceOut", balanceOut);
 
             _mint($, receiver, sharesToCreate, balanceOut);
 
@@ -351,7 +365,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _update($, from, to, amount);
         return true;
     }
+    //endregion --------------------------------- User actions
 
+    //region --------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -571,6 +587,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_totalShares == 0) {
             return 0;
         }
+//        console.log("account", account);
+//        console.log("totalSupply()", totalSupply());
+//        console.log("_totalShares()", _totalShares);
+//        console.log("$.shareBalance[account]", $.shareBalance[account]);
+//        console.log("MetaVault.balance", address(this), Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor));
         return Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor);
     }
 
@@ -594,7 +615,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function decimals() external pure returns (uint8) {
         return 18;
     }
+    //endregion --------------------------------- View functions
 
+    //region --------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -657,6 +680,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         address _targetVault = vaultForWithdraw();
+
+        // ensure that provided assets correspond to the target vault
+        // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
+        _checkProvidedAssets(assets_, _targetVault);
+
         (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
         require(
             amount <= maxAmountToWithdrawFromVault,
@@ -672,6 +700,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         amountsOut = IStabilityVault(_targetVault).withdrawAssets(
             assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
         );
+        console.log("withdrawAssets receiver", receiver);
+        console.log("withdrawAssets amountsOut", amountsOut[0]);
+        console.log("withdrawAssets sharesToBurn", sharesToBurn);
 
         _burn($, owner, amount, sharesToBurn);
 
@@ -697,6 +728,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _mint(MetaVaultStorage storage $, address account, uint mintShares, uint mintBalance) internal {
+        console.log("mint for", account, mintShares);
         require(account != address(0), ERC20InvalidReceiver(account));
         $.totalShares += mintShares;
         $.shareBalance[account] += mintShares;
@@ -751,4 +783,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             $.slot := _METAVAULT_STORAGE_LOCATION
         }
     }
+
+    /// @notice Ensures that the assets array corresponds to the assets of the given vault.
+    /// For simplicity we assume that the assets cannot be reordered.
+    function _checkProvidedAssets(address[] memory assets_, address vault) internal view {
+
+//        address[] memory assetsToCheck = IStabilityVault(vault).assets();
+//        if (assets_.length != assetsToCheck.length) {
+//            revert IControllable.IncorrectArrayLength();
+//        }
+//        for (uint i; i < assets_.length; ++i) {
+//            if (assets_[i] != assetsToCheck[i]) {
+//                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
+//            }
+//        }
+    }
+
+    //endregion --------------------------------- Internal logic
 }
