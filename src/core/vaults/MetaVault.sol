@@ -35,7 +35,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.3"; // todo PR
+    string public constant VERSION = "1.2.3";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;

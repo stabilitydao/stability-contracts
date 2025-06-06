@@ -16,7 +16,8 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 
-import {SupportsInterfaceWithLookupMock} from "../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
+import {SupportsInterfaceWithLookupMock} from
+    "../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 /// @dev Upgrade MetaVault after fixing the issues found in the audit
 contract MetaVaultSonicUpgradeAudit is Test {
@@ -232,8 +233,6 @@ contract MetaVaultSonicUpgradeAudit is Test {
             vm.prank(user);
             metaVault.depositAssets(assets, depositAmounts, 0, user);
         }
-
-
     }
 
     //region ------------------------------ Auxiliary Functions
