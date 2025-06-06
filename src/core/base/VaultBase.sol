@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -223,7 +222,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint minSharesOut,
         address receiver
     ) external virtual nonReentrant {
-        console.log("VaultBase.depositAssets");
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
@@ -269,13 +267,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
-                console.log("VaultBase.safeTransferFrom");
-                console.log("VaultBase.address(this)", address(this));
-                console.log("VaultBase.msg.sender", msg.sender);
-                console.log("VaultBase.address(v.strategy)", address(v.strategy));
-                console.log("VaultBase.v.amountsConsumed[i]", v.amountsConsumed[i]);
-                console.log("VaultBase.approve", IERC20(v.assets[i]).allowance(msg.sender, address(this)));
-                console.log("VaultBase.balance", IERC20(v.assets[i]).balanceOf(msg.sender));
                 IERC20(v.assets[i]).safeTransferFrom(msg.sender, address(v.strategy), v.amountsConsumed[i]);
             }
             v.value = v.strategy.depositAssets(v.amountsConsumed);
@@ -577,7 +568,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address receiver,
         address owner
     ) internal virtual returns (uint[] memory) {
-        console.log("VaultBase._withdrawAssets");
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, amountShares);
         }
@@ -612,10 +602,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
-                    console.log("VaultBase._withdrawAssets.value", value);
-                    console.log("VaultBase._withdrawAssets.receiver", receiver);
-                    console.log("VaultBase.address(_strategy)", address(_strategy));
-                    console.log("strategy balance", IERC20(assets_[0]).balanceOf(address(_strategy)));
                     // we should ensure that assets match to prevent incorrect slippage check below
                     _ensureAssetsCorrespondence(assets_, _strategy.assets());
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
@@ -673,14 +659,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /// @notice Ensures that the assets array corresponds to the assets of the strategy.
     /// For simplicity we assume that the assets cannot be reordered.
     function _ensureAssetsCorrespondence(address[] memory assets_, address[] memory assetsToCheck) internal pure {
-//        if (assets_.length != assetsToCheck.length) {
-//            revert IControllable.IncorrectArrayLength();
-//        }
-//        for (uint i; i < assets_.length; ++i) {
-//            if (assets_[i] != assetsToCheck[i]) {
-//                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
-//            }
-//        }
+        if (assets_.length != assetsToCheck.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
+        for (uint i; i < assets_.length; ++i) {
+            if (assets_[i] != assetsToCheck[i]) {
+                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
+            }
+        }
     }
     //endregion --------------------------------- Internal logic
 }

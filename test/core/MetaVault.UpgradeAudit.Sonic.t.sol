@@ -142,10 +142,8 @@ contract MetaVaultSonicUpgradeAudit is Test {
         }
     }
 
+    /// @notice #308: Test to reproduce issue #308 before changes, 3.1.5 in audit report
     function testMetaVaultReproduce308() public {
-        _upgradeMetaVault(address(metaVault));
-        _upgradeSubVaults();
-
         address user = makeAddr("user");
         address subMetaVault = metaVault.vaultForDeposit();
 
@@ -154,25 +152,13 @@ contract MetaVaultSonicUpgradeAudit is Test {
         uint[] memory depositAmounts = _getAmountsForDeposit(100, assets);
         _dealAndApprove(subMetaVault, address(1), assets, depositAmounts); // we don't need dealing
 
-
-        // --------------------- Assume that metavault give approve to subvault for required assets
+        // --------------------- Assume that metavaults give approve to subvaults for required assets
         vm.prank(address(metaVault));
         IERC20(assets[0]).approve(subMetaVault, type(uint).max);
-
-        console.log("assets[0]", assets[0]);
-        console.log("metavault", address(metaVault));
-        console.log("vaultForDeposit", subMetaVault);
-        console.log("user", user);
-        console.log("sacra", SonicConstantsLib.TOKEN_USDT);
 
         address cvault = IMetaVault(subMetaVault).vaultForDeposit();
         vm.prank(address(subMetaVault));
         IERC20(assets[0]).approve(cvault, type(uint).max);
-        console.log("!!!!!!!allowance", IERC20(0x29219dd400f2Bf60E5a23d13Be72B486D4038894).allowance(subMetaVault, cvault));
-
-        console.log("submetavault", subMetaVault);
-        console.log("cvault", cvault);
-
 
         // --------------------- Prepare fake asset
         uint[] memory fakeAmounts = new uint[](1);
@@ -181,41 +167,73 @@ contract MetaVaultSonicUpgradeAudit is Test {
         fakeAssets[0] = SonicConstantsLib.TOKEN_SACRA;
         _dealAndApprove(user, address(metaVault), fakeAssets, fakeAmounts);
 
-        console.log("Fake asset balance before", IERC20(fakeAssets[0]).balanceOf(user));
-        console.log("Real asset balance before", IERC20(assets[0]).balanceOf(user));
-        console.log("0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE balance before", IERC20(0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE).balanceOf(user));
-        console.log("fakeAssets", address(fakeAssets[0]));
-
         // --------------------- Deposit fake asset
+        uint maxWithdrawBefore = metaVault.balanceOf(user);
+
         vm.prank(user);
         metaVault.depositAssets(fakeAssets, fakeAmounts, 0, user);
-        console.log("deposited");
+        uint maxWithdrawAfter = metaVault.balanceOf(user);
 
-        // --------------------- Withdraw and take profit
-        vm.prank(user);
-        uint maxWithdraw = metaVault.balanceOf(user);
-        console.log("maxWithdraw", maxWithdraw);
-
-        vm.roll(block.number + 6);
-
-        vm.prank(user);
-        metaVault.withdrawAssets(assets, maxWithdraw, new uint[](1));
-
-        console.log("Fake asset balance after", IERC20(fakeAssets[0]).balanceOf(user));
-        console.log("Real asset balance after", IERC20(assets[0]).balanceOf(user), assets[0]);
-        console.log("0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE balance after", IERC20(0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE).balanceOf(user));
+        assertEq(IERC20(fakeAssets[0]).balanceOf(user), fakeAmounts[0], "Balance of the fake asset wasn't changed");
+        assertGt(maxWithdrawAfter, maxWithdrawBefore, "User got some shares");
     }
 
     /// @notice #308: Prevent manipulation with input assets in meta vault, 3.1.5 in audit report
     function testMetaVaultUpgrade308() public {
+        address user = makeAddr("user");
+        address subMetaVault = metaVault.vaultForDeposit();
+        address cvault = IMetaVault(subMetaVault).vaultForDeposit();
+
         // --------------------- Upgrade MetaVault to the new implementation
         _upgradeMetaVault(address(metaVault));
+        _upgradeSubVaults(true);
 
-        // --------------------- Deposit asset and underlying
+        // --------------------- Prepare metaVault to the state suitable for malicious deposit
+        {
+            // Deposit asset on balance of meta vault to simulate situation when meta vault has some assets on balance
+            address[] memory assets = metaVault.assetsForDeposit();
+            uint[] memory depositAmounts = _getAmountsForDeposit(100, assets);
+            _dealAndApprove(subMetaVault, address(1), assets, depositAmounts); // we don't need dealing
+            assertEq(assets.length, 1);
 
-        // --------------------- Bad paths: try to deposit two assets at the same time
+            // --------------------- Assume that metavaults give approve to subvaults for required assets
+            vm.prank(address(metaVault));
+            IERC20(assets[0]).approve(subMetaVault, type(uint).max);
 
-        // --------------------- Bad paths: try to deposit fake asset
+            vm.prank(address(subMetaVault));
+            IERC20(assets[0]).approve(cvault, type(uint).max);
+        }
+
+        // --------------------- Fail to deposit fake asset
+        {
+            uint[] memory fakeAmounts = new uint[](1);
+            fakeAmounts[0] = 100e6;
+            address[] memory fakeAssets = new address[](1);
+            fakeAssets[0] = SonicConstantsLib.TOKEN_SACRA;
+            _dealAndApprove(user, address(metaVault), fakeAssets, fakeAmounts);
+
+            vm.expectRevert(); // MetaVault: assets for deposit should be the same as assets for sub-metaVault
+            vm.prank(user);
+            metaVault.depositAssets(fakeAssets, fakeAmounts, 0, user);
+        }
+
+        // --------------------- Fail to deposit too many assets
+        {
+            address[] memory assets = metaVault.assets();
+            assertEq(assets.length, 2, "metavault has 2 sub-metavaults with different assets");
+
+            uint[] memory depositAmounts = new uint[](2);
+            depositAmounts[0] = 100e6; // scUSD
+            depositAmounts[1] = 100e6; // scEUR
+
+            _dealAndApprove(user, address(metaVault), assets, depositAmounts);
+
+            vm.expectRevert(); // user should provide assets for single sub-metaVault only
+            vm.prank(user);
+            metaVault.depositAssets(assets, depositAmounts, 0, user);
+        }
+
+
     }
 
     //region ------------------------------ Auxiliary Functions
@@ -255,35 +273,33 @@ contract MetaVaultSonicUpgradeAudit is Test {
         }
     }
 
-    function _upgradeSubVaults() internal {
+    function _upgradeSubVaults(bool updateCVaults) internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
         address[] memory vaults0 = IMetaVault(address(metaVault)).vaults();
 
         for (uint i = 0; i < vaults0.length; i++) {
             _upgradeMetaVault(vaults0[i]);
 
-            address[] memory vaults = IMetaVault(address(vaults0[i])).vaults();
-            for (uint i = 0; i < vaults.length; i++) {
-                console.log("i", i, vaults[i]);
-                address vaultImplementation = address(new CVault());
-                vm.prank(multisig);
-                factory.setVaultConfig(
-                    IFactory.VaultConfig({
-                        vaultType: VaultTypeLib.COMPOUNDING,
-                        implementation: vaultImplementation,
-                        deployAllowed: true,
-                        upgradeAllowed: true,
-                        buildingPrice: 1e10
-                    })
-                );
-                console.log("i", i);
-                vm.prank(multisig);
-                factory.upgradeVaultProxy(vaults[i]);
-                console.log("i", i);
+            if (updateCVaults) {
+                address[] memory vaults = IMetaVault(address(vaults0[i])).vaults();
+                for (uint j = 0; j < vaults.length; j++) {
+                    address vaultImplementation = address(new CVault());
+                    vm.prank(multisig);
+                    factory.setVaultConfig(
+                        IFactory.VaultConfig({
+                            vaultType: VaultTypeLib.COMPOUNDING,
+                            implementation: vaultImplementation,
+                            deployAllowed: true,
+                            upgradeAllowed: true,
+                            buildingPrice: 1e10
+                        })
+                    );
+                    vm.prank(multisig);
+                    factory.upgradeVaultProxy(vaults[j]);
 
-                vm.startPrank(multisig);
-                IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
-                vm.stopPrank();
+                    vm.prank(multisig);
+                    IStabilityVault(vaults[j]).setLastBlockDefenseDisabled(true);
+                }
             }
         }
     }
