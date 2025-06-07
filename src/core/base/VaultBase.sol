@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
 ///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   2.3.0: IStabilityVault.assets()
@@ -47,7 +48,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.4.1";
+    string public constant VERSION_VAULT_BASE = "2.4.2";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -109,6 +110,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.doHardWorkOnDeposit = IStrategy(strategy_).isHardWorkOnDepositAllowed();
     }
 
+    //region --------------------------------- Callbacks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -128,7 +130,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IRevenueRouter(revenueRouter).processFeeVault(address(this), feeShares);
         }
     }
+    //endregion --------------------------------- Callbacks
 
+    //region --------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -204,7 +208,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.lastBlockDefenseDisabled = isDisabled;
         emit LastBlockDefenseDisabled(isDisabled);
     }
+    //endregion --------------------------------- Restricted actions
 
+    //region --------------------------------- User actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -256,6 +262,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IERC20(v.underlying).safeTransferFrom(msg.sender, address(v.strategy), v.value);
             (v.amountsConsumed) = v.strategy.depositUnderlying(v.value);
         } else {
+            // assets_ and v.assets must match exactly, see #308; we can't rely on the strategy to validate this
+            _ensureAssetsCorrespondence(v.assets, assets_);
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
@@ -307,7 +315,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line unused-return
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
     }
+    //endregion --------------------------------- User actions
 
+    //region --------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -469,7 +479,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
     }
+    //endregion --------------------------------- View functions
 
+    //region --------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -590,6 +602,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
+                    // we should ensure that assets match to prevent incorrect slippage check below
+                    _ensureAssetsCorrespondence(assets_, _strategy.assets());
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
                 }
             } else {
@@ -598,6 +612,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                     amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
+                    // we should ensure that assets match to prevent incorrect slippage check below
+                    _ensureAssetsCorrespondence(assets_, _strategy.assets());
                     amountsOut = _strategy.transferAssets(amountShares, localTotalSupply, receiver);
                 }
             }
@@ -639,4 +655,18 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             $.withdrawRequests[to] = block.number;
         }
     }
+
+    /// @notice Ensures that the assets array corresponds to the assets of the strategy.
+    /// For simplicity we assume that the assets cannot be reordered.
+    function _ensureAssetsCorrespondence(address[] memory assets_, address[] memory assetsToCheck) internal pure {
+        if (assets_.length != assetsToCheck.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
+        for (uint i; i < assets_.length; ++i) {
+            if (assets_[i] != assetsToCheck[i]) {
+                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
+            }
+        }
+    }
+    //endregion --------------------------------- Internal logic
 }

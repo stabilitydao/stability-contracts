@@ -18,6 +18,7 @@ import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
 /// @title Wrapped rebase MetaVault
 /// Changelog:
+///   1.1.0: add deposit/mint/withdraw/redeem with slippage protection - #306
 ///   1.0.2: withdraw sends to receiver exact requested amount, not more; mulDiv is used - #300.
 ///   1.0.1: fix withdraw to pass Balancer ERC4626 test
 /// @author Alien Deployer (https://github.com/a17)
@@ -30,9 +31,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.2";
+    string public constant VERSION = "1.1.0";
 
-    // keccak256(abi.encode(uint256(keccak256("erc7201:stability.WrappedMetaVault")) - 1)) & ~bytes32(uint256(0xff));
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.WrappedMetaVault")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _WRAPPED_METAVAULT_STORAGE_LOCATION =
         0xf43f9113ffe60414568925ff5214c308a4f0d31cac6adbb67396dfc55ceb9700;
 
@@ -157,6 +158,38 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         } else {
             super._withdraw(caller, receiver, owner, assets, shares);
         }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*               deposit/withdraw with slippage               */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IWrappedMetaVault
+    function deposit(uint assets, address receiver, uint minShares) public virtual returns (uint) {
+        uint shares = deposit(assets, receiver);
+        require(shares > minShares, Slippage(shares, minShares));
+        return shares;
+    }
+
+    /// @inheritdoc IWrappedMetaVault
+    function mint(uint shares, address receiver, uint maxAssets) public virtual returns (uint) {
+        uint assets = mint(shares, receiver);
+        require(assets < maxAssets, Slippage(assets, maxAssets));
+        return assets;
+    }
+
+    /// @inheritdoc IWrappedMetaVault
+    function withdraw(uint assets, address receiver, address owner, uint maxShares) public virtual returns (uint) {
+        uint shares = withdraw(assets, receiver, owner);
+        require(shares < maxShares, Slippage(shares, maxShares));
+        return shares;
+    }
+
+    /// @inheritdoc IWrappedMetaVault
+    function redeem(uint shares, address receiver, address owner, uint minAssets) public virtual returns (uint) {
+        uint assets = redeem(shares, receiver, owner);
+        require(assets > minAssets, Slippage(assets, minAssets));
+        return assets;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
