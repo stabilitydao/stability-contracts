@@ -211,4 +211,12 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {}
 
     function _spendAllowanceOrBlock(address owner, address spender, uint amount) internal {}
+
+    function deposit(uint, address, uint) external returns (uint) {}
+
+    function mint(uint, address, uint) external returns (uint) {}
+
+    function withdraw(uint, address, address, uint) external returns (uint) {}
+
+    function redeem(uint, address, address, uint) external returns (uint) {}
 }

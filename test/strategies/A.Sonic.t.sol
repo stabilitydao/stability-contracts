@@ -8,7 +8,8 @@ import {console, Test} from "forge-std/Test.sol";
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(28237049); // May-20-2025 12:17:44 PM +UTC
+        // vm.rollFork(28237049); // May-20-2025 12:17:44 PM +UTC
+        vm.rollFork(31996320); // Jun-05-2025 09:19:04 AM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -17,6 +18,7 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
         // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
+    /// @notice Compare APR with https://stability.market/
     function testAaveStrategy() public universalTest {
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_wS);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDC);

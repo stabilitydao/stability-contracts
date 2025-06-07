@@ -33,4 +33,16 @@ contract MockWrappedMetaVaultUpgrade is Controllable, ERC4626Upgradeable, IWrapp
 
     /// @inheritdoc IWrappedMetaVault
     function metaVault() external view returns (address) {}
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                deposit/withdraw with slippage              */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function deposit(uint, address, uint) external returns (uint) {}
+
+    function mint(uint, address, uint) external returns (uint) {}
+
+    function withdraw(uint, address, address, uint) external returns (uint) {}
+
+    function redeem(uint, address, address, uint) external returns (uint) {}
 }
