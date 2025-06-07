@@ -15,6 +15,10 @@ library SonicConstantsLib {
     address public constant WRAPPED_METAVAULT_metaUSDC = 0xEEEEEEE6d95E55A468D32FeB5d6648754d10A967;
     address public constant METAVAULT_metascUSD = 0x33333333C480194b5B651987b7D00B20dDCbd287;
     address public constant WRAPPED_METAVAULT_metascUSD = 0xccccCCcca9FC69a2b32408730011EdB3205A93A1;
+    address public constant METAVAULT_metawS = 0x555555554776B14B30597d1032E48f9e16db22A4;
+    address public constant WRAPPED_METAVAULT_metawS = 0xffFFFFFf2fcBeFAe12F1372C56edC769BD411685;
+    address public constant METAVAULT_metaS = 0x4444444420D9De54d69b3997b7D6A31d2BF63F32;
+    address public constant WRAPPED_METAVAULT_metaS = 0xbbbbbbBBbd0aE69510cE374A86749f8276647B19;
 
     // Vaults
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
@@ -314,6 +318,7 @@ library SonicConstantsLib {
     address public constant SILO_LENS = 0xE05966aee69CeCD677a30f469812Ced650cE3b5E;
     address public constant SILO_GAUGE_wS_008 = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
+    address public constant SILO_GAUGE_wS_054 = 0xa9a145BBE1216C3A9b4B442Ab40fD97F4Ec2136D;
     address public constant SILO_VAULT_3_stS = 0x396922EF30Cf012973343f7174db850c7D265278;
     address public constant SILO_VAULT_3_wS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
     address public constant SILO_VAULT_23_wstkscUSD = 0x4E09FF794D255a123b00efa30162667A8054a845;
