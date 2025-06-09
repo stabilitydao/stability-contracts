@@ -91,14 +91,14 @@ contract MetaVaultSonicUpgrade1 is Test {
         );
 
         address[8] memory vaults = [
-                    SonicConstantsLib.VAULT_C_USDC_SiF,
-                    SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-                    SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
-                    SonicConstantsLib.VAULT_C_USDC_S_8,
-                    SonicConstantsLib.VAULT_C_USDC_S_27,
-                    SonicConstantsLib.VAULT_C_USDC_S_34,
-                    SonicConstantsLib.VAULT_C_USDC_S_36,
-                    SonicConstantsLib.VAULT_C_USDC_S_49
+            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
+            SonicConstantsLib.VAULT_C_USDC_S_8,
+            SonicConstantsLib.VAULT_C_USDC_S_27,
+            SonicConstantsLib.VAULT_C_USDC_S_34,
+            SonicConstantsLib.VAULT_C_USDC_S_36,
+            SonicConstantsLib.VAULT_C_USDC_S_49
         ];
 
         for (uint i; i < vaults.length; i++) {
@@ -107,10 +107,12 @@ contract MetaVaultSonicUpgrade1 is Test {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
                 _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)) {
+            } else if (
+                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
+            ) {
                 _upgradeIchiSwapXFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else {
-                revert ("Add call of upgrade function for the strategy");
+                revert("Add call of upgrade function for the strategy");
             }
 
             vm.prank(multisig);
