@@ -31,6 +31,7 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.2.1: Use StrategyBase 2.2.1 - add fuseMode
 ///   2.2.0:
 ///     * Change logic of withdraw with increasing LTV
 ///     * use LeverageLendingBase 1.2.2
@@ -65,7 +66,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.2.0";
+    string public constant VERSION = "2.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

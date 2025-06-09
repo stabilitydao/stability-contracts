@@ -27,6 +27,8 @@ import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
+/// Changelog:
+///   1.0.1: Use StrategyBase 2.2.1 - add fuseMode
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloManagedFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -35,7 +37,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

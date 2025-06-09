@@ -596,7 +596,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             address underlying = _strategy.underlying();
             // nosemgrep
             // fuse is not triggered
-            if  (_strategy.fuseMode() == uint(IStrategy.FuseMode.FUSE_OFF_0)) { // (totalValue > 0) {
+            if (_strategy.fuseMode() == uint(IStrategy.FuseMode.FUSE_OFF_0)) {
+                // (totalValue > 0) {
                 uint totalValue = _strategy.total();
                 uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {

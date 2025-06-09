@@ -32,6 +32,7 @@ import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
+///   2.0.1: Use StrategyBase 2.2.1 - add fuseMode
 ///   2.0.0:
 ///     * feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #257, use universalAddress1 as flashLoanVault for borrow asset
 ///     * Change logic of withdraw: add deposit at the end and possibility to withdraw through increasing LTV
@@ -56,7 +57,7 @@ contract SiloLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "2.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
