@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.4.3: Use strategy.fuseMode to detect fuse mode - #305
 ///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
 ///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
@@ -48,7 +49,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.4.2";
+    string public constant VERSION_VAULT_BASE = "2.4.3";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -244,7 +245,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         v._totalSupply = totalSupply();
         v.totalValue = v.strategy.total();
         // nosemgrep
-        if (v._totalSupply != 0 && v.totalValue == 0) {
+        if (v.strategy.fuseMode() != uint(IStrategy.FuseMode.FUSE_OFF_0)) {
+            // if (v._totalSupply != 0 && v.totalValue == 0) {
             revert FuseTrigger();
         }
 
@@ -587,7 +589,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         IStrategy _strategy = $.strategy;
         uint localTotalSupply = totalSupply();
-        uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
 
@@ -595,7 +596,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             address underlying = _strategy.underlying();
             // nosemgrep
             // fuse is not triggered
-            if (totalValue > 0) {
+            if  (_strategy.fuseMode() == uint(IStrategy.FuseMode.FUSE_OFF_0)) { // (totalValue > 0) {
+                uint totalValue = _strategy.total();
                 uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
@@ -607,6 +609,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
                 }
             } else {
+                // Fuse was triggered and all actives were transferred from the strategy to the vault
+                // Deposit is NOT allowed in this mode, we can ignore any assets (directly added) on strategy balance
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;

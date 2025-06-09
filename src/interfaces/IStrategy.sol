@@ -48,6 +48,13 @@ interface IStrategy is IERC165 {
         string _id;
         uint _exchangeAssetIndex;
         uint customPriceImpactTolerance;
+        /// @inheritdoc IStrategy
+        uint fuseOn;
+    }
+
+    enum FuseMode {
+        FUSE_OFF_0,
+        FUSE_ON_1
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -235,4 +242,7 @@ interface IStrategy is IERC165 {
     /// @notice Custom price impact tolerance instead default need for specific cases where low liquidity in pools
     /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
     function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
+
+    /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
+    function fuseMode() external view returns (uint);
 }
