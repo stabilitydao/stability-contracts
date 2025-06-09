@@ -30,7 +30,7 @@ import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 
 /// @title Earn SwapX farm rewards by Ichi ALM
 /// Changelog:
-///   1.2.1: Use StrategyBase 2.2.1 - add fuseMode
+///   1.3.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   1.2.0: add MerklStrategyBase, update _claimRevenue to earn SwapX gems, decrease code size
 ///   1.1.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
@@ -42,7 +42,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.3.0";
 
     uint internal constant PRECISION = 10 ** 18;
 

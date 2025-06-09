@@ -23,7 +23,7 @@ import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
-///   1.0.4: Use StrategyBase 2.2.1 - add fuseMode
+///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   1.0.3: getSpecificName update
 ///   1.0.2: FarmingStrategyBase 1.3.3
 ///   1.0.1: claimRevenue bugfix
@@ -35,7 +35,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.4";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
