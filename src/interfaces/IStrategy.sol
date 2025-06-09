@@ -54,6 +54,8 @@ interface IStrategy is IERC165 {
 
     enum FuseMode {
         FUSE_OFF_0,
+        /// @notice Fuse mode is on (emergency stop was called).
+        /// All assets were transferred from the underlying pool to the strategy balance, no deposits are allowed.
         FUSE_ON_1
     }
 

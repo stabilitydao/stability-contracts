@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import "../../src/strategies/SiloFarmStrategy.sol";
+import "../../src/strategies/SiloStrategy.sol";
+import "../../src/strategies/libs/StrategyIdLib.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
 import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
+import {console, Test} from "forge-std/Test.sol";
+import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 
 /// @dev MetaVault 1.1.0
 contract MetaVaultSonicUpgrade1 is Test {
@@ -85,22 +90,91 @@ contract MetaVaultSonicUpgrade1 is Test {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_36);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_49);
+        address[8] memory vaults = [
+                    SonicConstantsLib.VAULT_C_USDC_SiF,
+                    SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
+                    SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
+                    SonicConstantsLib.VAULT_C_USDC_S_8,
+                    SonicConstantsLib.VAULT_C_USDC_S_27,
+                    SonicConstantsLib.VAULT_C_USDC_S_34,
+                    SonicConstantsLib.VAULT_C_USDC_S_36,
+                    SonicConstantsLib.VAULT_C_USDC_S_49
+        ];
 
-        vm.startPrank(multisig);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_SiF).setLastBlockDefenseDisabled(true);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_S_8).setLastBlockDefenseDisabled(true);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_S_27).setLastBlockDefenseDisabled(true);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_S_34).setLastBlockDefenseDisabled(true);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_S_36).setLastBlockDefenseDisabled(true);
-        IStabilityVault(SonicConstantsLib.VAULT_C_USDC_S_49).setLastBlockDefenseDisabled(true);
-        vm.stopPrank();
+        for (uint i; i < vaults.length; i++) {
+            factory.upgradeVaultProxy(vaults[i]);
+            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
+                _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
+                _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)) {
+                _upgradeIchiSwapXFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else {
+                revert ("Add call of upgrade function for the strategy");
+            }
+
+            vm.prank(multisig);
+            IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
+        }
+    }
+
+    function _upgradeSiloStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new SiloStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeSiloFarmStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new SiloFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeIchiSwapXFarmStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new IchiSwapXFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.ICHI_SWAPX_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
     }
 }

@@ -171,8 +171,8 @@ abstract contract StrategyBase is Controllable, IStrategy {
         // slither-disable-next-line unused-return
         _withdrawAssets(total(), address(this));
 
-        // Activate fuse mode.
-        // In the fuse mode all assets are transferred from the strategy to the vault, no deposits are allowed
+        // Activate fuse mode. In the fuse mode all assets are transferred
+        // from the underlying pool to the strategy balance, no deposits are allowed after that.
         _getStrategyBaseStorage().fuseOn = uint(IStrategy.FuseMode.FUSE_ON_1);
     }
 

@@ -9,7 +9,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 /// @notice Tokenized 100% auto compounding vault with a single underlying liquidity mining position.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.
 /// Changelog:
-///   1.7.3: Use VaultBase 2.4.3, fix restrictions in initialize
+///   1.7.3: Use VaultBase 2.4.3
 ///   1.7.2: Use VaultBase 2.4.2
 ///   1.7.1: Use mulDiv - #300
 ///   1.7.0: IStabilityVault.lastBlockDefenseDisabled()
