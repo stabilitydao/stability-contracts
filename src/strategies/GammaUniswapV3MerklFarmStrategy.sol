@@ -25,6 +25,7 @@ import {GUMFLib} from "./libs/GUMFLib.sol";
 
 /// @title Earning Merkl rewards on Uniswap V3 by underlying Gamma Hypervisor
 /// Changelog
+///   1.6.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   1.5.0: decrease code size
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Hcrypto7 (https://github.com/Hcrypto7)
@@ -36,7 +37,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.6.0";
 
     uint internal constant _PRECISION = 1e36;
 
