@@ -216,6 +216,7 @@ contract VaultTest is Test, FullMockSetup {
 
         assertEq(vault.balanceOf(address(this)), 0, "Withdrawn not all");
 
+        // ------------------------ check how setDoHardWorkOnDeposit works
         vault.setDoHardWorkOnDeposit(false);
         assertEq(vault.doHardWorkOnDeposit(), false);
         vault.setDoHardWorkOnDeposit(true);
@@ -223,6 +224,7 @@ contract VaultTest is Test, FullMockSetup {
 
         assertEq(vault.maxSupply(), 0);
 
+        // ------------------------ ExceedSlippage
         amounts = new uint[](2);
         amounts[0] = 10e18;
         amounts[1] = 10e6;
@@ -230,9 +232,34 @@ contract VaultTest is Test, FullMockSetup {
         vm.expectRevert();
         vault.depositAssets(assets, amounts, 1e30, address(0));
 
+        // ------------------------ ensure that max supply is checked on deposit
         vault.setMaxSupply(1e3);
         vm.expectRevert();
         vault.depositAssets(assets, amounts, 0, address(0));
+
+        // ------------------------ calculate max possible amount of fee
+        uint[4] memory supplyFeeSnapshot;
+        supplyFeeSnapshot[0] = vault.totalSupply();  // current total supply
+        supplyFeeSnapshot[1] = 0;  // max possible fee (when maxSupply is not set)
+        supplyFeeSnapshot[2] = vm.snapshotState();  // snapshot
+        vault.setMaxSupply(0);
+        vm.prank(address(vault.strategy()));
+        vault.hardWorkMintFeeCallback(assets, amounts);
+        supplyFeeSnapshot[1] = vault.totalSupply() - supplyFeeSnapshot[0]; // now we know max fee
+        vm.revertToState(supplyFeeSnapshot[2]);
+
+        // ------------------------ ensure that max supply is checked on hardwork
+        assertGt(supplyFeeSnapshot[1], 5);
+        vault.setMaxSupply(supplyFeeSnapshot[0] + supplyFeeSnapshot[1] / 5); // max supply = totalSupply + 1/5 max fee
+        vm.prank(address(vault.strategy()));
+        vault.hardWorkMintFeeCallback(assets, amounts);
+        supplyFeeSnapshot[3] = vault.totalSupply() - supplyFeeSnapshot[0];
+
+        assertEq(
+            supplyFeeSnapshot[3],
+            supplyFeeSnapshot[1] / 5,
+            "fee is 1/5 of max fee"
+        );
     }
 
     function testFuse() public {
