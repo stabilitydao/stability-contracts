@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -277,6 +278,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
+        (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price(); // todo 
+        {
+            console.log("price before", targetVaultPrice);
+        }
         IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
         for (uint i; i < v.len; ++i) {
             v.amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
@@ -290,11 +295,16 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         {
-            (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
+            (uint targetVaultPrice2,) = IStabilityVault(v.targetVault).price(); // todo remove
+            console.log("price after", targetVaultPrice2);
+
             uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
             uint depositedTvl = Math.mulDiv(
                 targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
             );
+            console.log("targetVaultSharesBefore", targetVaultSharesBefore);
+            console.log("targetVaultSharesAfter", targetVaultSharesAfter);
+            console.log("depositedTvl", depositedTvl);
             uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {

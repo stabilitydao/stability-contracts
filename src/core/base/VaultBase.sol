@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -240,6 +241,15 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         DepositAssetsVars memory v;
         v.strategy = $.strategy;
 
+        {
+            (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
+            console.log("v.amountsConsumed.before", v.amountsConsumed[0]);
+            console.log("v.value.before", v.value);
+        }
+        console.log("before hardwork.totalSupply", totalSupply());
+        console.log("before hardwork.total", v.strategy.total());
+        uint totalValueBefore = v.strategy.total();
+
         // slither-disable-start timestamp
         // nosemgrep
         if (
@@ -249,6 +259,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // slither-disable-end timestamp
             v.strategy.doHardWork();
         }
+
+        console.log("after hardwork.totalSupply", totalSupply());
+        console.log("after hardwork.total", v.strategy.total());
 
         v._totalSupply = totalSupply();
         v.totalValue = v.strategy.total();
@@ -274,6 +287,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // assets_ and v.assets must match exactly, see #308; we can't rely on the strategy to validate this
             _ensureAssetsCorrespondence(v.assets, assets_);
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
+            console.log("v.amountsConsumed.after", v.amountsConsumed[0]);
+            console.log("v.value.after", v.value);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
                 IERC20(v.assets[i]).safeTransferFrom(msg.sender, address(v.strategy), v.amountsConsumed[i]);
@@ -287,6 +302,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         v.mintAmount =
             _mintShares($, v._totalSupply, v.value, v.totalValue, v.amountsConsumed, minSharesOut, v.assets, receiver);
+        console.log("#### mintAmount", v.mintAmount);
 
         $.withdrawRequests[receiver] = block.number;
 

