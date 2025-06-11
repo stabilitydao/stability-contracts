@@ -9,13 +9,16 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 
 /// @dev Upgrade MetaVault after fixing the issues found in the audit
 contract MetaVaultSonicUpgradeAudit is Test {
-    uint public constant FORK_BLOCK = 31972376; // Jun-05-2025 06:49:31 AM +UTC
+    // uint public constant FORK_BLOCK = 31972376; // Jun-05-2025 06:49:31 AM +UTC
+    uint public constant FORK_BLOCK = 33291167; // Jun-11-2025 07:08:05 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;
@@ -23,7 +26,8 @@ contract MetaVaultSonicUpgradeAudit is Test {
     IPriceReader public priceReader;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.rollFork(33291167); // Jun-11-2025 07:08:05 AM +UTC
 
         metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
@@ -139,38 +143,40 @@ contract MetaVaultSonicUpgradeAudit is Test {
 
     /// @notice #308: Test to reproduce issue #308 before changes, 3.1.5 in audit report
     function testMetaVaultReproduce308() public {
-        address user = makeAddr("user");
-        address subMetaVault = metaVault.vaultForDeposit();
+        if (block.number == 31972376) {
+            address user = makeAddr("user");
+            address subMetaVault = metaVault.vaultForDeposit();
 
-        // ----- Deposit asset on balance of meta vault to simulate situation when meta vault has some assets on balance
-        address[] memory assets = metaVault.assetsForDeposit();
-        uint[] memory depositAmounts = _getAmountsForDeposit(100, assets);
-        _dealAndApprove(subMetaVault, address(1), assets, depositAmounts); // we don't need dealing
+            // ----- Deposit asset on balance of meta vault to simulate situation when meta vault has some assets on balance
+            address[] memory assets = metaVault.assetsForDeposit();
+            uint[] memory depositAmounts = _getAmountsForDeposit(100, assets);
+            _dealAndApprove(subMetaVault, address(1), assets, depositAmounts); // we don't need dealing
 
-        // --------------------- Assume that metavaults give approve to subvaults for required assets
-        vm.prank(address(metaVault));
-        IERC20(assets[0]).approve(subMetaVault, type(uint).max);
+            // --------------------- Assume that metavaults give approve to subvaults for required assets
+            vm.prank(address(metaVault));
+            IERC20(assets[0]).approve(subMetaVault, type(uint).max);
 
-        address cvault = IMetaVault(subMetaVault).vaultForDeposit();
-        vm.prank(address(subMetaVault));
-        IERC20(assets[0]).approve(cvault, type(uint).max);
+            address cvault = IMetaVault(subMetaVault).vaultForDeposit();
+            vm.prank(address(subMetaVault));
+            IERC20(assets[0]).approve(cvault, type(uint).max);
 
-        // --------------------- Prepare fake asset
-        uint[] memory fakeAmounts = new uint[](1);
-        fakeAmounts[0] = 100e6;
-        address[] memory fakeAssets = new address[](1);
-        fakeAssets[0] = SonicConstantsLib.TOKEN_SACRA;
-        _dealAndApprove(user, address(metaVault), fakeAssets, fakeAmounts);
+            // --------------------- Prepare fake asset
+            uint[] memory fakeAmounts = new uint[](1);
+            fakeAmounts[0] = 100e6;
+            address[] memory fakeAssets = new address[](1);
+            fakeAssets[0] = SonicConstantsLib.TOKEN_SACRA;
+            _dealAndApprove(user, address(metaVault), fakeAssets, fakeAmounts);
 
-        // --------------------- Deposit fake asset
-        uint maxWithdrawBefore = metaVault.balanceOf(user);
+            // --------------------- Deposit fake asset
+            uint maxWithdrawBefore = metaVault.balanceOf(user);
 
-        vm.prank(user);
-        metaVault.depositAssets(fakeAssets, fakeAmounts, 0, user);
-        uint maxWithdrawAfter = metaVault.balanceOf(user);
+            vm.prank(user);
+            metaVault.depositAssets(fakeAssets, fakeAmounts, 0, user);
+            uint maxWithdrawAfter = metaVault.balanceOf(user);
 
-        assertEq(IERC20(fakeAssets[0]).balanceOf(user), fakeAmounts[0], "Balance of the fake asset wasn't changed");
-        assertGt(maxWithdrawAfter, maxWithdrawBefore, "User got some shares");
+            assertEq(IERC20(fakeAssets[0]).balanceOf(user), fakeAmounts[0], "Balance of the fake asset wasn't changed");
+            assertGt(maxWithdrawAfter, maxWithdrawBefore, "User got some shares");
+        }
     }
 
     /// @notice #308: Prevent manipulation with input assets in meta vault, 3.1.5 in audit report
@@ -227,6 +233,48 @@ contract MetaVaultSonicUpgradeAudit is Test {
             vm.prank(user);
             metaVault.depositAssets(assets, depositAmounts, 0, user);
         }
+    }
+
+    /// @notice #321: New depositor in metVault can deposit right before hardwork and grab rewards that don't belong to him
+    function testMetaVaultReproduce321() public {
+        address victim = address(1);
+        address hacker = address(2);
+        // ---------------------- Allow hardwork on deposit in all subvaults
+        _enableHardworkOnDeposit();
+
+        // ---------------------- Victim deposits huge amount of assets and waits long time to get rewards
+        address[] memory assets = metaVault.assetsForDeposit();
+        uint[] memory depositAmounts = _getAmountsForDeposit(1e6, assets);
+        _dealAndApprove(victim, address(metaVault), assets, depositAmounts);
+        vm.prank(victim);
+        metaVault.depositAssets(assets, depositAmounts, 0, victim);
+        uint maxWithdraw0 = metaVault.balanceOf(victim);
+        console.log("maxWithdraw0", maxWithdraw0);
+
+        vm.roll(block.number + 10_000); // wait some time to get rewards
+
+        // ---------------------- Get real maxWithdraw amount
+        uint snapshotId = vm.snapshotState();
+        _doHardworkAllVaults();
+        uint maxWithdraw = metaVault.balanceOf(victim);
+        console.log("maxWithdraw", maxWithdraw);
+        console.log("Victim potential profit:", maxWithdraw - maxWithdraw0);
+        vm.revertToState(snapshotId);
+
+        // ---------------------- Hacker enters just before hardwork
+        assets = metaVault.assetsForDeposit();
+        depositAmounts = _getAmountsForDeposit(1000, assets);
+        vm.prank(hacker);
+        metaVault.depositAssets(assets, depositAmounts, 0, victim);
+
+        _doHardworkAllVaults();
+
+        uint maxWithdraw2 = metaVault.balanceOf(victim);
+        uint maxWithdraw3 = metaVault.balanceOf(hacker);
+        console.log("maxWithdraw2", maxWithdraw2);
+        console.log("maxWithdraw3", maxWithdraw3);
+        console.log("Victim profit:", maxWithdraw2 - 1e6);
+        console.log("Hacker profit:", maxWithdraw3 - 1e3);
     }
 
     //region ------------------------------ Auxiliary Functions
@@ -293,6 +341,28 @@ contract MetaVaultSonicUpgradeAudit is Test {
                     vm.prank(multisig);
                     IStabilityVault(vaults[j]).setLastBlockDefenseDisabled(true);
                 }
+            }
+        }
+    }
+
+    function _enableHardworkOnDeposit() internal {
+        address[] memory vaults0 = IMetaVault(address(metaVault)).vaults();
+        for (uint i = 0; i < vaults0.length; i++) {
+            address[] memory vaults = IMetaVault(address(vaults0[i])).vaults();
+            for (uint j = 0; j < vaults.length; j++) {
+                vm.prank(multisig);
+                IVault(vaults[j]).setDoHardWorkOnDeposit(true);
+            }
+        }
+    }
+
+    function _doHardworkAllVaults() internal {
+        address[] memory vaults0 = IMetaVault(address(metaVault)).vaults();
+        for (uint i = 0; i < vaults0.length; i++) {
+            address[] memory vaults = IMetaVault(address(vaults0[i])).vaults();
+            for (uint j = 0; j < vaults.length; j++) {
+                vm.prank(multisig);
+                IVault(vaults[j]).doHardWork();
             }
         }
     }
