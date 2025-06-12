@@ -205,14 +205,14 @@ interface IStrategy is IERC165 {
 
     /// @notice Wothdraw underlying invested and send to receiver
     /// Only vault can call this.
-    /// @param amount Ampunt of underlying asset to withdraw
+    /// @param amount Amount of underlying asset to withdraw
     /// @param receiver User of vault which withdraw underlying from the vault
     function withdrawUnderlying(uint amount, address receiver) external;
 
     /// @dev For specified amount of shares, transfer strategy assets from contract balance and send to receiver if possible
     /// This method is called by vault w/o underlying on triggered fuse mode.
     /// Only vault can call this.
-    /// @param amount Ampunt of liquidity value that user withdraw
+    /// @param amount Amount of liquidity value that user withdraw
     /// @param totalAmount Total amount of strategy liquidity
     /// @param receiver User of vault which withdraw assets
     /// @return amountsOut Amounts of strategy assets sent to user
@@ -235,4 +235,14 @@ interface IStrategy is IERC165 {
     /// @notice Custom price impact tolerance instead default need for specific cases where low liquidity in pools
     /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
     function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
+
+    /// @notice Total amount of assets available in the lending protocol for withdraw
+    /// It's normal situation when user is not able to withdraw all
+    /// because there are not enough reserves available in the protocol right now
+    /// @return amounts Empty array (zero length) is returned if all available amount can be withdrawn
+    function maxWithdrawAssets() external view returns (uint[] memory amounts);
+
+    /// @notice Underlying pool TVL in the terms of USD
+    function poolTvl() external view returns (uint tvlUsd);
 }
+

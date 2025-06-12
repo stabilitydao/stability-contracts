@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {EulerLib} from "./base/EulerLib.sol";
-import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {IEulerVault} from "../integrations/euler/IEulerVault.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 
 /// @title Earns APR by lending assets on Euler.finance
@@ -24,7 +27,7 @@ contract EulerStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.1"; // todo: maxWithdrawAsset, poolTvl
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -91,5 +94,35 @@ contract EulerStrategy is ERC4626StrategyBase {
         return true;
     }
 
+    /// @inheritdoc IStrategy
+    function poolTvl() public view override returns (uint tvlUsd) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+
+        address asset = u.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price, ) = priceReader.getPrice(asset);
+
+        return u.totalAssets() * price / (10**IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IEulerVault u = IEulerVault(__$__._underlying);
+
+        // currently available reserves in the pool
+        uint availableLiquidity = u.cash();
+
+        // total amount of our shares
+        uint shares = u.balanceOf(address(this));
+        uint balanceInAssets = u.convertToAssets(shares);
+
+        amounts = new uint[](1);
+        amounts[0] = Math.min(availableLiquidity, balanceInAssets);
+    }
     //endregion ----------------------- View functions
 }

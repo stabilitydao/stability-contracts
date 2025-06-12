@@ -1,23 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {StrategyBase} from "./base/StrategyBase.sol";
-import {IControllable} from "../interfaces/IControllable.sol";
-import {IVault} from "../interfaces/IVault.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
-import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import {AaveLib} from "./libs/AaveLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
-import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {IAToken} from "../integrations/aave/IAToken.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {StrategyLib} from "./libs/StrategyLib.sol";
-import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
-import {AaveLib} from "./libs/AaveLib.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyBase} from "./base/StrategyBase.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {StrategyLib} from "./libs/StrategyLib.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
+
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
@@ -32,7 +35,7 @@ contract AaveStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.0.1"; // todo: maxWithdrawAsset, poolTvl, aaveToken
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_STRATEGY_STORAGE_LOCATION =
@@ -152,6 +155,39 @@ contract AaveStrategy is StrategyBase {
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external pure override returns (bool isReady) {
         isReady = true;
+    }
+
+    function aaveToken() external view returns (address) {
+        return _getStorage().aToken;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view override returns (uint tvlUsd) {
+        address aToken = _getStorage().aToken;
+        address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price, ) = priceReader.getPrice(asset);
+
+        return IAToken(aToken).totalSupply() * price / (10**IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        address aToken = _getStorage().aToken;
+        address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+
+        // currently available reserves in the pool
+        uint availableLiquidity = IERC20(asset).balanceOf(aToken);
+
+        // aToken balance of the strategy
+        uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
+
+        amounts = new uint[](1);
+        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
     }
     //endregion ----------------------- View functions
 
