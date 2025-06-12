@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {EulerLib} from "./base/EulerLib.sol";
@@ -92,37 +92,6 @@ contract EulerStrategy is ERC4626StrategyBase {
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
         return true;
-    }
-
-    /// @inheritdoc IStrategy
-    function poolTvl() public view override returns (uint tvlUsd) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IERC4626 u = IERC4626(__$__._underlying);
-
-        address asset = u.asset();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-
-        // get price of 1 amount of asset in USD with decimals 18
-        // assume that {trusted} value doesn't matter here
-        (uint price, ) = priceReader.getPrice(asset);
-
-        return u.totalAssets() * price / (10**IERC20Metadata(asset).decimals());
-    }
-
-    /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IEulerVault u = IEulerVault(__$__._underlying);
-
-        // currently available reserves in the pool
-        uint availableLiquidity = u.cash();
-
-        // total amount of our shares
-        uint shares = u.balanceOf(address(this));
-        uint balanceInAssets = u.convertToAssets(shares);
-
-        amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, balanceInAssets);
     }
     //endregion ----------------------- View functions
 }

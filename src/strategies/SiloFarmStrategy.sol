@@ -15,11 +15,14 @@ import {
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
+import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
@@ -144,6 +147,29 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc IFarmingStrategy
     function farmMechanics() external pure returns (string memory) {
         return FarmMechanicsLib.AUTO;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+
+        address asset = u.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price, ) = priceReader.getPrice(asset);
+
+        return u.totalAssets() * price / (10**IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+        amounts = new uint[](1);
+        amounts[0] = u.maxWithdraw(address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

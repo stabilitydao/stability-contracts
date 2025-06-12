@@ -13,7 +13,9 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @notice SiloStrategy is a strategy for lending assets on Silo V2.
 /// Changelog:
@@ -113,6 +115,29 @@ contract SiloStrategy is ERC4626StrategyBase {
 
         //amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
         amounts_[0] = ISilo(u).previewRedeem(IERC20(u).balanceOf(address(this)));
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+
+        address asset = u.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price, ) = priceReader.getPrice(asset);
+
+        return u.totalAssets() * price / (10**IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+        amounts = new uint[](1);
+        amounts[0] = u.maxWithdraw(address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

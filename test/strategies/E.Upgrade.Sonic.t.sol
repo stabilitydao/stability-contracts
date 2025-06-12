@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/integrations/euler/IEthereumVaultConnector.sol";
-import "../../src/strategies/EulerStrategy.sol";
+import {IEVC, IEthereumVaultConnector} from "../../src/integrations/euler/IEthereumVaultConnector.sol";
+import {IEulerVault} from "../../src/integrations/euler/IEulerVault.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
-import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
+import {IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
@@ -38,7 +37,7 @@ contract EUpgradeTest is Test {
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
     }
 
-    /// @notice #326: Metavault is not able to withdraw from Aave strategy all amount because of the lack of liquidity in aToken
+    /// @notice #326: Add maxWithdrawAssets and poolTvl to IStrategy
     function testMetaVaultUpdate326() public {
         IVault vault = IVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
         IStrategy strategy = vault.strategy();
@@ -55,24 +54,17 @@ contract EUpgradeTest is Test {
         EulerStrategy eulerStrategy = EulerStrategy(address(strategy));
         IEulerVault eulerVault = IEulerVault(eulerStrategy.underlying());
         uint cash = eulerVault.cash();
-        console.log("cash", cash);
 
         // ------------------- borrow almost all cache
         _borrowAlmostAllCash(eulerVault, cash);
 
         uint balanceAssets = eulerVault.convertToAssets(eulerVault.balanceOf(address(strategy)));
         uint availableLiquidity = strategy.maxWithdrawAssets()[0];
-        console.log("balanceAssets:", balanceAssets);
-        console.log("eulerVault", address(eulerVault));
 
         // ------------------- amount of vault tokens that can be withdrawn
         uint balanceToWithdraw = availableLiquidity == balanceAssets
             ? maxWithdraw
             : availableLiquidity * maxWithdraw / balanceAssets - 1;
-        console.log("maxWithdraw", maxWithdraw);
-        console.log("balanceToWithdraw", balanceToWithdraw);
-        console.log("availableLiquidity", availableLiquidity);
-        console.log("balanceAssets", balanceAssets);
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
@@ -97,23 +89,18 @@ contract EUpgradeTest is Test {
         IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
         IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
 
-        console.log("cachC1", collateralVault.cash());
-
         uint collateralAmount = cash * 10 * 10**12; // borrow scUSD, collateral is wS
-        console.log("collateralAmount", collateralAmount);
 
         deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
         IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
 
         uint256 borrowAmount = cash - 1e6; // * 9999 / 10000;
 
-        console.log("Enabling borrow controller...");
+        // console.log("Enabling borrow controller...");
         evc.enableController(address(this), address(eulerVault));
-        console.log("Borrow controller enabled");
 
-        console.log("Enabling collateral...");
+        // console.log("Enabling collateral...");
         evc.enableCollateral(address(this), address(collateralVault));
-        console.log("Collateral enabled");
 
         IEVC.BatchItem[] memory items = new IEVC.BatchItem[](2);
 
@@ -141,9 +128,9 @@ contract EUpgradeTest is Test {
             data: borrowData
         });
 
-        console.log("cachB1", eulerVault.cash());
+        uint cashBefore = eulerVault.cash();
         evc.batch(items);
-        console.log("cachB2", eulerVault.cash());
+        assertGt(cashBefore, eulerVault.cash(), "Euler cash was not borrowed");
     }
 
     function _getAmountsForDeposit(

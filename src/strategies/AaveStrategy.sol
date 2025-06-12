@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AaveLib} from "./libs/AaveLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
