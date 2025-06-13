@@ -479,6 +479,17 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account) public virtual view returns (uint amount) {
+        uint[] memory amounts = strategy().maxWithdrawAssets();
+        if (amounts.length == 0) {
+            return balanceOf(account); // strategy allows to withdraw full amount
+        } else {
+            // todo
+        }
+        return 0; // todo
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic

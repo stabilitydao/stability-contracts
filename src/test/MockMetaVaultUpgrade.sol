@@ -178,6 +178,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
         return 18;
     }
 
+    function maxWithdraw(address account) external virtual view returns (uint amount) {}
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

@@ -610,6 +610,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function decimals() external pure returns (uint8) {
         return 18;
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account) external virtual view returns (uint amount) {
+        return 0; // todo
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
