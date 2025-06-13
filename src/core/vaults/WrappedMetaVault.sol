@@ -71,6 +71,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             uint decimalsOffset = 10 ** (18 - decimals());
+            console.log("totalAssets.metaVault.balance", IMetaVault($.metaVault).balanceOf(address(this)));
+            console.log("totalSupply", totalSupply());
             return Math.mulDiv(IMetaVault($.metaVault).balanceOf(address(this)), 1, decimalsOffset, Math.Rounding.Floor);
         }
         return super.totalAssets();
@@ -113,7 +115,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
-        console.log("Wrapped._deposit", assets, shares);
+        console.log("!!!!!!!!!!!!!!Wrapped._deposit", assets, shares);
+        console.log("wrapped.maxWithdraw.before", maxWithdraw(receiver));
+        console.log("Wrapped.balanceOf.before", balanceOf(receiver));
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             address _metaVault = $.metaVault;
@@ -129,6 +133,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         } else {
             super._deposit(caller, receiver, assets, shares);
         }
+        console.log("wrapped.maxWithdraw.after", maxWithdraw(receiver));
+        console.log("!!!!!!!!!!!!!!!Wrapped.balanceOf.after", balanceOf(receiver));
     }
 
     function _withdraw(address caller, address receiver, address owner, uint assets, uint shares) internal override {
@@ -160,6 +166,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             uint balanceAfter = IERC20(_assets[0]).balanceOf(address(this));
             uint assetsToSend = Math.min(balanceAfter - balanceBefore, assets);
             SafeERC20.safeTransfer(IERC20(_assets[0]), receiver, assetsToSend);
+            console.log("Wrapped.assetsToSend", assetsToSend);
 
             emit Withdraw(caller, receiver, owner, assets, shares);
         } else {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -222,6 +223,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint minSharesOut,
         address receiver
     ) external virtual nonReentrant {
+        console.log("VaultBase.depositAssets()", amountsMax[0]);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
@@ -247,6 +249,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         if (v._totalSupply != 0 && v.totalValue == 0) {
             revert FuseTrigger();
         }
+        console.log("VaultBase._totalSupply", v._totalSupply);
+        console.log("VaultBase.totalValue", v.totalValue);
 
         v.len = amountsMax.length;
         if (v.len != assets_.length) {
@@ -265,11 +269,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             // assets_ and v.assets must match exactly, see #308; we can't rely on the strategy to validate this
             _ensureAssetsCorrespondence(v.assets, assets_);
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
+            console.log("VaultBase.previewDepositAssetsWrite", v.value);
+            console.log("VaultBase.amountsConsumed", v.amountsConsumed[0]);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
                 IERC20(v.assets[i]).safeTransferFrom(msg.sender, address(v.strategy), v.amountsConsumed[i]);
             }
             v.value = v.strategy.depositAssets(v.amountsConsumed);
+            console.log("VaultBase.deposited.value", v.value);
         }
 
         if (v.value == 0) {
@@ -278,8 +285,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         v.mintAmount =
             _mintShares($, v._totalSupply, v.value, v.totalValue, v.amountsConsumed, minSharesOut, v.assets, receiver);
+        console.log("VaultBase.mintAmount", v.mintAmount);
 
         $.withdrawRequests[receiver] = block.number;
+
+        console.log("VaultBase._totalSupply", totalSupply());
+        console.log("VaultBase.totalValue", v.strategy.total());
 
         emit DepositAssets(receiver, assets_, v.amountsConsumed, v.mintAmount);
     }
@@ -367,9 +378,27 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
+//            console.log("CVault price() _tvl", _tvl);
+//            console.log("CVault price() __totalSupply", __totalSupply);
             price_ = Math.mulDiv(_tvl, 1e18, __totalSupply, Math.Rounding.Floor);
         }
     }
+
+    function priceExact() external view returns (uint price_, bool trusted_) {
+        VaultBaseStorage storage $ = _getVaultBaseStorage();
+        (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        uint _tvl;
+        //slither-disable-next-line unused-return
+        (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
+        uint __totalSupply = totalSupply();
+        if (__totalSupply > 0) {
+//            console.log("CVault price() _tvl", _tvl);
+//            console.log("CVault price() __totalSupply", __totalSupply);
+            price_ = Math.mulDiv(_tvl, 1e27, __totalSupply, Math.Rounding.Floor);
+        }
+    }
+
 
     /// @inheritdoc IStabilityVault
     function tvl() public view returns (uint tvl_, bool trusted_) {

@@ -169,9 +169,20 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         ISilo siloVault = ISilo(farm.addresses[1]);
         value = amounts[0];
         if (value > 0) {
-            siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
+            console.log("SiloFarmStrategy.maxRedeem.before", siloVault.maxRedeem(address(this)));
+            console.log("SiloFarmStrategy.maxRedeem.before.assets", siloVault.convertToAssets(siloVault.maxRedeem(address(this))));
+            console.log("SiloFarmStrategy.balance.before", siloVault.balanceOf(address(this)));
+            console.log("SiloFarmStrategy.total.before", $base.total);
+            uint shares = siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
+            console.log("SiloFarmStrategy.deposited.shares", shares);
+            console.log("SiloFarmStrategy.deposited.assets", siloVault.convertToAssets(shares));
             $base.total += value;
+            console.log("SiloFarmStrategy.total.after", $base.total);
+            console.log("SiloFarmStrategy.balance.after", siloVault.balanceOf(address(this)));
+            console.log("SiloFarmStrategy.maxRedeem.after", siloVault.maxRedeem(address(this)));
+            console.log("SiloFarmStrategy.maxRedeem.after.assets", siloVault.convertToAssets(siloVault.maxRedeem(address(this))));
         }
+        console.log("_depositAssets.SiloFarmStrategy.value", value, $base.total);
     }
 
     /// @inheritdoc StrategyBase
@@ -187,7 +198,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets.SiloFarmStrategy", value);
+        console.log("_withdrawAssets.SiloFarmStrategy.value", value);
         console.log("_withdrawAssets.total", _getStrategyBaseStorage().total);
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
@@ -195,8 +206,9 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         if (address(this) == receiver) {
             toWithdraw--;
         }
-        console.log("SiloVault.balance", siloVault.balanceOf(address(this)));
+        console.log("SiloVault.balance.before", siloVault.balanceOf(address(this)));
         siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
+        console.log("SiloVault.balance.after", siloVault.balanceOf(address(this)));
         amountsOut = new uint[](1);
         amountsOut[0] = value;
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();

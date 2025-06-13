@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {Controllable, IControllable} from "../base/Controllable.sol";
+import "../base/VaultBase.sol"; // todo remove
 import {CommonLib} from "../libs/CommonLib.sol";
-import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
-import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMetaVault.sol";
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {Controllable, IControllable} from "../base/Controllable.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
+import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMetaVault.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
+import {console} from "forge-std/Test.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -255,7 +256,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
-        console.log("MetaVault.depositAssets", amountsMax[0]);
+        console.log("***************** MetaVault.depositAssets", amountsMax[0]);
+        console.log("MetaVault.totalSupply.before", totalSupply());
+        console.log("MetaVault.depositAssets.totalShares.before", _getMetaVaultStorage().totalShares);
+        {(uint __tvl,) = tvl(); console.log("MetaVault.tvl.before", __tvl);}
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
@@ -292,20 +296,30 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         {
-            (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
+            //(uint targetVaultPrice,) = IStabilityVault(v.targetVault).price(); // todo
+            (uint targetVaultPrice,) = VaultBase(payable(v.targetVault)).priceExact(); // todo
             uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
             uint depositedTvl = Math.mulDiv(
-                targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
+                targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e27, Math.Rounding.Floor
             );
-            uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
+            // uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl); // todo
+            (uint priceAsset,) = price(); // todo
+            uint balanceOut = Math.mulDiv((targetVaultSharesAfter - targetVaultSharesBefore) * targetVaultPrice, 1, priceAsset * 1e9, Math.Rounding.Floor); // todo
+            console.log("balanceOut", balanceOut);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {
                 sharesToCreate = balanceOut;
             } else {
                 sharesToCreate = _amountToShares(balanceOut, v.totalSharesBefore, v.totalSupplyBefore);
             }
+            console.log("MetaVault.depositAssets.depositedTvl", depositedTvl);
+            console.log("MetaVault.depositAssets.targetVaultPrice", targetVaultPrice);
+            console.log("MetaVault.depositAssets.targetVaultSharesBefore", targetVaultSharesBefore);
+            console.log("MetaVault.depositAssets.targetVaultSharesAfter", targetVaultSharesAfter);
+            console.log("MetaVault.depositAssets.sharesToCreate", sharesToCreate);
 
             _mint($, receiver, sharesToCreate, balanceOut);
+            console.log("MetaVault.depositAssets.totalShares.after", $.totalShares);
 
             if (sharesToCreate < minSharesOut) {
                 revert ExceedSlippage(sharesToCreate, minSharesOut);
@@ -319,6 +333,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             $.storedTime = block.timestamp;
             ($.storedSharePrice,,,) = internalSharePrice();
         }
+
+        {(uint __tvl,) = tvl(); console.log("MetaVault.tvl.after", __tvl);}
+        console.log("********************* MetaVault.totalSupply.after", totalSupply());
     }
 
     /// @inheritdoc IStabilityVault
@@ -509,6 +526,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
+        console.log("------------------------- previewDepositAssets");
         address _targetVault = vaultForDeposit();
         uint targetVaultSharesOut;
         uint targetVaultStrategyValueOut;
@@ -550,8 +568,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             if (!safe) {
                 notSafePrice = true;
             }
+
+            (uint vaultSharePrice2, ) = VaultBase(payable(_vaults[i])).priceExact(); // todo
+
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            tvl_ += Math.mulDiv(vaultSharePrice, vaultSharesBalance, 1e18, Math.Rounding.Floor);
+            tvl_ += Math.mulDiv(vaultSharePrice2, vaultSharesBalance, 1e27, Math.Rounding.Floor);
+            console.log("MetaVault.tvl.vault.vaultSharePrice", vaultSharePrice, vaultSharePrice2/1e9);
+//            console.log("MetaVault.tvl.vault.vaultSharesBalance", vaultSharesBalance);
+//            console.log("MetaVault.tvl.vault", i, Math.mulDiv(vaultSharePrice, vaultSharesBalance, 1e18, Math.Rounding.Floor), tvl_);
         }
 
         // get TVL of assets on contract balance
@@ -580,6 +604,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // totalSupply is balance of peg asset
         (uint tvlUsd,) = tvl();
         (uint priceAsset,) = price();
+//        console.log("tvlUsd", tvlUsd);
+//        console.log("price", priceAsset);
         return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
@@ -590,6 +616,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_totalShares == 0) {
             return 0;
         }
+//        console.log("MetaVault.balanceOf.shareBalance", $.shareBalance[account]);
+//        console.log("MetaVault.balanceOf.totalSupply", totalSupply());
+//        console.log("MetaVault.balanceOf.totalShares", _totalShares);
         return Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor);
     }
 
@@ -714,6 +743,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         returns (uint maxAmount, uint vaultSharePrice)
     {
         (vaultSharePrice,) = IStabilityVault(vault).price();
+        //(vaultSharePrice,) = VaultBase(payable(vault)).priceExact();
         uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
     }
@@ -733,6 +763,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _usdAmountToMetaVaultBalance(uint usdAmount) internal view returns (uint) {
         (uint priceAsset,) = price();
+        console.log("_usdAmountToMetaVaultBalance.price", priceAsset);
         return Math.mulDiv(usdAmount, 1e18, priceAsset, Math.Rounding.Floor);
     }
 

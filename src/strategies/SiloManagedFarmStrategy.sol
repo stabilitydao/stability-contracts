@@ -174,6 +174,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             _getSiloVault().deposit(value, address(this));
             $base.total += value;
         }
+        console.log("_depositAssets.SiloManagedFarmStrategy.value", value, $base.total);
     }
 
     /// @inheritdoc StrategyBase

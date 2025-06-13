@@ -172,7 +172,6 @@ contract WrapperERC4626wSSonicTest is ERC4626UniversalTest, SlippageTestUtils {
     }
 
     function _upgradeSiloManagedFarmStrategy(address strategyAddress) internal {
-        console.log("_upgradeSiloManagedFarmStrategy", strategyAddress);
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         address strategyImplementation = address(new SiloManagedFarmStrategy());
@@ -193,7 +192,6 @@ contract WrapperERC4626wSSonicTest is ERC4626UniversalTest, SlippageTestUtils {
     }
 
     function _upgradeSiloFarmStrategy(address strategyAddress) internal {
-        console.log("_upgradeSiloFarmStrategy", strategyAddress);
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         address strategyImplementation = address(new SiloFarmStrategy());
