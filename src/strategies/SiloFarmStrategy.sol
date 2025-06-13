@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
@@ -162,6 +163,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        console.log("_depositAssets.SiloFarmStrategy", amounts[0]);
         IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo siloVault = ISilo(farm.addresses[1]);
@@ -185,12 +187,15 @@ contract SiloFarmStrategy is FarmingStrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.SiloFarmStrategy", value);
+        console.log("_withdrawAssets.total", _getStrategyBaseStorage().total);
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
         uint toWithdraw = value;
         if (address(this) == receiver) {
             toWithdraw--;
         }
+        console.log("SiloVault.balance", siloVault.balanceOf(address(this)));
         siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
         amountsOut = new uint[](1);
         amountsOut[0] = value;

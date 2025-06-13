@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -38,7 +39,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     string public constant VERSION = "1.2.3";
 
     /// @inheritdoc IMetaVault
-    uint public constant USD_THRESHOLD = 1e13;
+    uint public constant USD_THRESHOLD = 1; // todo 1e13;
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
@@ -254,6 +255,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
+        console.log("MetaVault.depositAssets", amountsMax[0]);
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
@@ -325,6 +327,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint amount,
         uint[] memory minAssetAmountsOut
     ) external nonReentrant returns (uint[] memory) {
+        console.log("MetaVault.withdrawAssets", amount);
         return _withdrawAssets(assets_, amount, minAssetAmountsOut, msg.sender, msg.sender);
     }
 
@@ -654,6 +657,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
+        console.log("amount", amount);
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
@@ -688,6 +692,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
 
+        console.log("usdToWithdraw", usdToWithdraw, USD_THRESHOLD);
         require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
 
         uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
@@ -733,6 +738,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _metaVaultBalanceToUsdAmount(uint amount) internal view returns (uint) {
         (uint priceAsset,) = price();
+        console.log("priceAsset", priceAsset);
         return Math.mulDiv(amount, priceAsset, 1e18, Math.Rounding.Ceil);
     }
 

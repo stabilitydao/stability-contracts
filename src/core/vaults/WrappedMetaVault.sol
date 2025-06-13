@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -92,14 +93,18 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
     /// @inheritdoc IERC4626
     function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
+        console.log("Wrapped.maxWithdraw");
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         uint maxUserWithdraw = super.maxWithdraw(owner);
         if ($.isMulti) {
+            console.log("Wrapped.maxWithdraw.1");
             uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
             uint decimalsOffset = 10 ** (18 - IERC20Metadata(asset()).decimals());
             maxVaultWithdrawAmountTx = Math.mulDiv(maxVaultWithdrawAmountTx, 1, decimalsOffset, Math.Rounding.Floor);
+            console.log("Wrapped.maxWithdraw.3", maxUserWithdraw, maxVaultWithdrawAmountTx);
             return Math.min(maxUserWithdraw, maxVaultWithdrawAmountTx);
         }
+        console.log("Wrapped.maxWithdraw.2", maxUserWithdraw);
         return maxUserWithdraw;
     }
 
@@ -108,6 +113,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _deposit(address caller, address receiver, uint assets, uint shares) internal override {
+        console.log("Wrapped._deposit", assets, shares);
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             address _metaVault = $.metaVault;
@@ -126,6 +132,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     function _withdraw(address caller, address receiver, address owner, uint assets, uint shares) internal override {
+        console.log("Wrapped._withdraw", assets, shares);
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
 
         if ($.isMulti) {

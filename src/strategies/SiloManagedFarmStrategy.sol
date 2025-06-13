@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
@@ -166,6 +167,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        console.log("_depositAssets.SiloManagedFarmStrategy", amounts[0]);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         value = amounts[0];
         if (value != 0) {
@@ -187,6 +189,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.SiloManagedFarmStrategy", value);
         uint toWithdraw = value;
         if (address(this) == receiver) {
             // same logic as in SiloFarmStrategy

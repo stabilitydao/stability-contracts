@@ -197,18 +197,24 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     function _testWithdraw(uint amountToWithdraw) internal {
+        console.log("amountToWithdraw", amountToWithdraw);
+        console.log("minDeposit", minDeposit);
+        console.log("userInitialUnderlying", userInitialUnderlying);
         // When user deposited to underlying, a round down may occur and remove some wei. So, makes sure
         // amountToWithdraw does not pass the amount deposited - a wei tolerance.
         amountToWithdraw = bound(amountToWithdraw, minDeposit, userInitialUnderlying - TOLERANCE);
 
         uint convertedShares = wrapper.convertToShares(amountToWithdraw);
+        console.log("convertedShares", convertedShares);
         uint previewedShares = wrapper.previewWithdraw(amountToWithdraw);
+        console.log("previewedShares", previewedShares);
 
         uint balanceUnderlyingBefore = underlyingToken.balanceOf(user);
         uint balanceSharesBefore = wrapper.balanceOf(user);
+        console.log("balanceUnderlyingBefore", balanceUnderlyingBefore);
+        console.log("balanceSharesBefore", balanceSharesBefore);
 
         vm.prank(user);
-
         uint burnedShares = wrapper.withdraw(amountToWithdraw, user, user);
 
         uint balanceUnderlyingAfter = underlyingToken.balanceOf(user);
