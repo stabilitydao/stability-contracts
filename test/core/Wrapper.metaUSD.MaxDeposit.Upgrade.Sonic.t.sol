@@ -29,6 +29,8 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant VAULT_WITH_AAVE_STRATEGY = SonicConstantsLib.VAULT_C_USDC_Stability_StableJack;
+    uint public constant INDEX_VAULT_WITH_AAVE = 6;
+    uint public constant INITIAL_AMOUNT = 5000e6; // 5000 USDC
     IMetaVaultFactory public metaVaultFactory;
     IPriceReader public priceReader;
     address public multisig;
@@ -54,50 +56,70 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         IStrategy strategy = cvault.strategy();
 
         // ------------------- upgrade strategy
-        _upgradeVaults();
+        _upgradeVaults(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_metascUSD, SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+        _upgradeCVaults();
         _upgradeAaveStrategy(address(strategy));
 
-        // ------------------- setup vault-to-withdraw and make deposit
-        uint amount = 0;
-        uint amountToInc = 5000e6;
-        while (
-            metaVault.vaultForWithdraw() != SonicConstantsLib.METAVAULT_metaUSDC
-            || IMetaVault(metaVault.vaultForWithdraw()).vaultForWithdraw() != VAULT_WITH_AAVE_STRATEGY
-        ) {
-            // todo
-            address[] memory assets = IMetaVault(metaVault.vaultForWithdraw()).assets();
-            deal(assets[0], address(this), amountToInc);
-            IERC20(assets[0]).approve(address(wrappedMetaVault), type(uint).max);
-            wrappedMetaVault.deposit(amountToInc, address(this));
-            amount += amountToInc;
+        // ------------------- setup vault-to-deposit and make deposit
+        _setProportionsForDeposit(metaVault, 0);
+        _setProportionsForDeposit(multiVault, INDEX_VAULT_WITH_AAVE);
+        assertEq(metaVault.vaultForDeposit(), address(multiVault), "a1");
+        assertEq(multiVault.vaultForDeposit(), VAULT_WITH_AAVE_STRATEGY, "a2");
+
+        // ------------------- get meta vault tokens
+        {
+            address[] memory assetsM = metaVault.assetsForDeposit();
+            IERC20(assetsM[0]).approve(address(metaVault), type(uint).max);
+            deal(assetsM[0], address(this), INITIAL_AMOUNT);
+            uint[] memory amountsM = new uint[](1);
+            amountsM[0] = INITIAL_AMOUNT;
+            metaVault.depositAssets(assetsM, amountsM, 0, address(this));
+            vm.roll(block.number + 6);
         }
-        assertEq(IMetaVault(metaVault.vaultForWithdraw()).vaultForWithdraw(), VAULT_WITH_AAVE_STRATEGY, "we need a vault with the given AAVE strategy");
+
+        // ------------------- deposit all available meta vault tokens into wrapped meta vault
+        uint amountMetaVaultTokens = metaVault.balanceOf(address(this));
+        address asset = wrappedMetaVault.asset(); // USDC
+        IERC20(asset).approve(address(wrappedMetaVault), type(uint).max);
+        wrappedMetaVault.deposit(amountMetaVaultTokens, address(this));
+        vm.roll(block.number + 6);
+
+        // ------------------- prepare vaults-to-withdraw
+        _setProportionsForWithdraw(metaVault, 0, 1);
+        _setProportionsForWithdraw(multiVault, INDEX_VAULT_WITH_AAVE, 0);
+        assertEq(metaVault.vaultForWithdraw(), address(multiVault), "b1");
+        assertEq(multiVault.vaultForWithdraw(), VAULT_WITH_AAVE_STRATEGY, "b2");
 
         // ------------------- get maxWithdraw when required amount is available
         uint[4] memory maxWithdrawsWMICBefore = _getMaxWithdraw();
-        assertApproxEqAbs(maxWithdrawsWMICBefore[0], amount, 2, "User is able to withdraw all amount");
+        assertApproxEqAbs(maxWithdrawsWMICBefore[0], amountMetaVaultTokens, 2, "User is able to withdraw all amount");
 
         // ------------------- borrow almost all cash, leave only expected amount in the pool
-        uint amountToLeave = 1000e6; // leave 1000 scUSD in the pool
+        uint amountToLeave = 100e6; // leave some USDC in the pool
         {
-            IEulerVault eulerVault = IEulerVault(EulerStrategy(address(strategy)).underlying());
-            uint cash = eulerVault.cash();
-            _borrowAlmostAllCash(eulerVault, cash, amountToLeave);
+            IAToken aToken = IAToken(AaveStrategy(address(strategy)).aaveToken());
+            uint availableLiquidity = strategy.maxWithdrawAssets()[0];
+            _borrowAlmostAllCashAave(IPool(aToken.POOL()), availableLiquidity, amountToLeave);
+            availableLiquidity = strategy.maxWithdrawAssets()[0];
         }
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
-        uint[4] memory maxWithdrawsWMCAfter = _getMaxWithdraw();
-        assertApproxEqAbs(maxWithdrawsWMCAfter[0], amountToLeave, 2, "User is able to withdraw only left amount");
+        uint[4] memory maxWithdrawsWMICAfter = _getMaxWithdraw();
+        assertApproxEqAbs(maxWithdrawsWMICAfter[0], amountMetaVaultTokens, 2, "User is able to withdraw all meta vault tokens from unwrapped");
 
         // ------------------- ensure that we are able to withdraw max withdraw amount from each vault
-        _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2], false);
-        _tryWithdrawFromMetaVault(maxWithdrawsWMCAfter[1], false);
-        _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0], false);
+        _tryWithdrawFromCVault(cvault, maxWithdrawsWMICAfter[3], false);
+        _tryWithdrawFromMultiVault(maxWithdrawsWMICAfter[2], false);
+        _tryWithdrawFromMetaVault(maxWithdrawsWMICAfter[1], false);
+        _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0], false);
 
         // ------------------- ensure that we are NOT able to withdraw more than max withdraw amount from each vault
-        _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2] * 101/100, true);
-        _tryWithdrawFromMetaVault(maxWithdrawsWMCAfter[1] * 101/100, true);
-        _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0] * 101/100, true);
+        _tryWithdrawFromCVault(cvault, maxWithdrawsWMICAfter[3] * 101/100, true);
+        _tryWithdrawFromMultiVault(maxWithdrawsWMICAfter[2] * 101/100, true);
+        _tryWithdrawFromMetaVault(maxWithdrawsWMICAfter[1] * 101/100, true);
+        _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0] * 101/100, true);
     }
 
     function _getMaxWithdraw() internal view returns (uint[4] memory wmcMaxWithdraw) {
@@ -107,10 +129,10 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
             multiVault.maxWithdraw(address(metaVault)),
             IVault(VAULT_WITH_AAVE_STRATEGY).maxWithdraw(address(multiVault))
         ];
-        console.log("max W", wmcMaxWithdraw[0]);
-        console.log("max M", wmcMaxWithdraw[1]);
-        console.log("max I", wmcMaxWithdraw[2]);
-        console.log("max C", wmcMaxWithdraw[3]);
+//        console.log("max W", wmcMaxWithdraw[0]);
+//        console.log("max M", wmcMaxWithdraw[1]);
+//        console.log("max I", wmcMaxWithdraw[2]);
+//        console.log("max C", wmcMaxWithdraw[3]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -119,7 +141,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         address[] memory assets = vault.assets();
 
         if (expectRevert) vm.expectRevert();
-        vm.startPrank(address(metaVault));
+        vm.startPrank(address(multiVault));
         vault.withdrawAssets(assets, vaultShares, new uint[](1));
 
         vm.revertToState(snapshotId);
@@ -128,11 +150,23 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
     function _tryWithdrawFromMetaVault(uint metaVaultTokens, bool expectRevert) internal {
         uint snapshotId = vm.snapshotState();
 
-        address[] memory assets = metaVault.assets();
+        address[] memory assets = metaVault.assetsForWithdraw();
 
         if (expectRevert) vm.expectRevert();
         vm.startPrank(address(wrappedMetaVault));
         metaVault.withdrawAssets(assets, metaVaultTokens, new uint[](1));
+
+        vm.revertToState(snapshotId);
+    }
+
+    function _tryWithdrawFromMultiVault(uint multiVaultTokens_, bool expectRevert) internal {
+        uint snapshotId = vm.snapshotState();
+
+        address[] memory assets = multiVault.assets();
+
+        if (expectRevert) vm.expectRevert();
+        vm.startPrank(address(metaVault));
+        multiVault.withdrawAssets(assets, multiVaultTokens_, new uint[](1));
 
         vm.revertToState(snapshotId);
     }
@@ -148,22 +182,22 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
     }
 
     //region ---------------------- Auxiliary functions
-    function _upgradeVaults() internal {
+    function _upgradeVaults(address metaVault_, address wrapped_) internal {
         multisig = IPlatform(PLATFORM).multisig();
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
 
         address newMetaVaultImplementation = address(new MetaVault());
         address newWrapperImplementation = address(new WrappedMetaVault());
         vm.startPrank(multisig);
+
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
+
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_metascUSD;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metascUSD;
+        proxies[0] = metaVault_;
+        proxies[1] = wrapped_;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
-
-        _upgradeCVaults();
     }
 
     function _upgradeCVaults() internal {
@@ -182,11 +216,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
             })
         );
 
-        address[3] memory vaults = [
-            SonicConstantsLib.VAULT_C_scUSD_S_46,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital
-        ];
+        address[] memory vaults = multiVault.vaults();
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
@@ -216,69 +246,78 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _borrowAlmostAllCash(IEulerVault eulerVault, uint cash, uint leftAmount) internal {
-        IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
-        IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
-
-        uint collateralAmount = cash * 10 * 10**12; // borrow scUSD, collateral is wS
-
-        deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
+    function _borrowAlmostAllCashAave(IPool pool, uint cash, uint leftAmount) internal {
+        address borrowAsset = SonicConstantsLib.TOKEN_USDC;
+        address collateralAsset = SonicConstantsLib.TOKEN_scUSD;
 
         uint256 borrowAmount = cash - leftAmount;
+        uint256 collateralAmount = borrowAmount * 130 / 100;
 
-        // console.log("Enabling borrow controller...");
-        evc.enableController(address(this), address(eulerVault));
+        deal(collateralAsset, address(this), collateralAmount);
+        IERC20(collateralAsset).approve(address(pool), collateralAmount);
 
-        // console.log("Enabling collateral...");
-        evc.enableCollateral(address(this), address(collateralVault));
+        IPool.ReserveData memory reserveData = pool.getReserveData(borrowAsset);
+        uint256 liquidityBefore = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
 
-        IEVC.BatchItem[] memory items = new IEVC.BatchItem[](2);
+        pool.supply(collateralAsset, collateralAmount, address(this), 0);
+        pool.borrow(borrowAsset, borrowAmount, 2, 0, address(this));
 
-        bytes memory depositData = abi.encodeWithSelector(
-            IEulerVault.deposit.selector,
-            collateralAmount,
-            address(this)
-        );
-        items[0] = IEVC.BatchItem({
-            targetContract: address(collateralVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: depositData
-        });
-
-        bytes memory borrowData = abi.encodeWithSelector(
-            IEulerVault.borrow.selector,
-            borrowAmount,
-            address(this)
-        );
-        items[1] = IEVC.BatchItem({
-            targetContract: address(eulerVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: borrowData
-        });
-
-        uint cashBefore = eulerVault.cash();
-        evc.batch(items);
-        assertGt(cashBefore, eulerVault.cash(), "Euler cash was not borrowed");
+        uint256 liquidityAfter = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
+        assertGt(liquidityBefore, liquidityAfter, "Aave cash was not borrowed");
     }
 
-    function _setProportions(uint fromIndex, uint toIndex) internal {
-        multisig = IPlatform(PLATFORM).multisig();
 
-        uint[] memory props = metaVault.targetProportions();
-        props[toIndex] += props[fromIndex] - 2e16;
-        props[fromIndex] = 2e16;
+    function _setProportionsForDeposit(IMetaVault metaVault_, uint targetIndex) internal {
+        multisig = IPlatform(PLATFORM).multisig();
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+
+        uint[] memory props = metaVault_.targetProportions();
+        uint len = props.length;
+        for (uint i = 0; i < len; ++i) {
+            if (i == targetIndex) {
+                props[targetIndex] = 1e18 - 1e16 * (len - 1);
+            } else {
+                props[i] = 1e16;
+            }
+        }
 
         vm.prank(multisig);
-        metaVault.setTargetProportions(props);
+        metaVault_.setTargetProportions(props);
 
-        //        props = metaVault.targetProportions();
-        //        uint[] memory current = metaVault.currentProportions();
-        //        for (uint i; i < current.length; ++i) {
-        //            console.log("i, current, target", i, current[i], props[i]);
-        //        }
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+    }
+
+    function _setProportionsForWithdraw(IMetaVault metaVault_, uint targetIndex, uint fromIndex) internal {
+        multisig = IPlatform(PLATFORM).multisig();
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+
+        uint total = 0;
+        uint[] memory props = metaVault_.currentProportions();
+        for (uint i = 0; i < props.length; ++i) {
+            if (i != targetIndex && i != fromIndex) {
+                total += props[i];
+            }
+        }
+
+        props[fromIndex] = 1e18 - total - 1e16;
+        props[targetIndex] = 1e16;
+
+        vm.prank(multisig);
+        metaVault_.setTargetProportions(props);
+
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+    }
+
+    function _showProportions(IMetaVault metaVault_) internal view {
+        uint[] memory props = metaVault_.targetProportions();
+        uint[] memory current = metaVault_.currentProportions();
+        for (uint i; i < current.length; ++i) {
+            console.log("i, current, target", i, current[i], props[i]);
+        }
     }
     //endregion ---------------------- Auxiliary functions
 }

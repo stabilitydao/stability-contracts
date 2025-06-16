@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -93,13 +92,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
     /// @inheritdoc IERC4626
     function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
-        console.log("Wrapped.maxWithdraw");
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         uint maxUserWithdraw = super.maxWithdraw(owner);
         if ($.isMulti) {
-            console.log("Wrapped.maxWithdraw.maxUserWithdraw", maxUserWithdraw);
-            console.log("Wrapped.maxWithdraw.maxWithdraw(address(this))", IMetaVault($.metaVault).maxWithdraw(address(this)));
-            console.log("Wrapped.maxWithdraw.maxWithdrawAmountTx", IMetaVault($.metaVault).maxWithdrawAmountTx());
             uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdraw(address(this));
             uint decimalsOffset = 10 ** (18 - IERC20Metadata(asset()).decimals());
             maxVaultWithdrawAmountTx = Math.mulDiv(maxVaultWithdrawAmountTx, 1, decimalsOffset, Math.Rounding.Floor);

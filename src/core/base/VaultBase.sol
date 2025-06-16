@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -223,7 +222,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint minSharesOut,
         address receiver
     ) external virtual nonReentrant {
-        console.log("C.depositAssets.receiver", receiver);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
@@ -484,11 +482,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) public virtual view returns (uint vaultShares) {
-        console.log("C.maxWithdraw.account", account);
         uint balance = balanceOf(account);
-        console.log("C.maxWithdraw.balance", balance);
         uint[] memory amounts = strategy().maxWithdrawAssets();
-        console.log("C.maxWithdraw.maxWithdrawAssets", amounts[0]);
         if (amounts.length == 0) {
             // strategy allows to withdraw full amount
             // so all vault shares can be withdrawn
@@ -510,8 +505,6 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 }
             }
             uint _totalSupply = totalSupply();
-            console.log("C.maxWithdraw.minPart", minPart);
-            console.log("C.maxWithdraw._totalSupply", _totalSupply);
 
             return Math.min(
                 balance, // user vault shares balance

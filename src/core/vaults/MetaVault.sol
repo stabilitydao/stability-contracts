@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -255,7 +254,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
-        console.log("M.depositAssets.receiver", receiver);
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
@@ -615,27 +613,18 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) external virtual view returns (uint amount) {
-        console.log("M.maxWithdraw.this", address(this));
-        console.log("M.maxWithdraw.account", account);
         // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
         // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
 
         address _targetVault = vaultForWithdraw();
         (uint vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
-        console.log("M.maxWithdraw._targetVault", _targetVault);
-        console.log("M.maxWithdraw.vaultSharePriceUsd", vaultSharePriceUsd);
 
         // Get max amount of vault shares to withdraw from the target vault
         uint targetVaultSharesToWithdraw = IStabilityVault(_targetVault).maxWithdraw(address(this));
-        console.log("M.maxWithdraw.targetVaultSharesToWithdraw", targetVaultSharesToWithdraw);
 
         // Calculate USD value to withdraw based on targetVaultSharesToWithdraw
         uint usdToWithdraw = Math.mulDiv(targetVaultSharesToWithdraw, vaultSharePriceUsd, 1e18, Math.Rounding.Floor);
-        console.log("M.maxWithdraw.usdToWithdraw", usdToWithdraw);
 
-        console.log("M.maxWithdraw._usdAmountToMetaVaultBalance(usdToWithdraw)", _usdAmountToMetaVaultBalance(usdToWithdraw));
-        console.log("M.maxWithdraw.balanceOf(account)", balanceOf(account));
-        console.log("M.maxWithdraw.ret", Math.min(balanceOf(account), _usdAmountToMetaVaultBalance(usdToWithdraw)));
         // Convert USD amount to MetaVault balance (amount)
         return Math.min(balanceOf(account), _usdAmountToMetaVaultBalance(usdToWithdraw));
     }
