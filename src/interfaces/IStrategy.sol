@@ -181,14 +181,14 @@ interface IStrategy is IERC165 {
 
     /// @notice Invest strategy assets. Amounts of assets must be already on strategy contract balance.
     /// Only vault can call this.
-    /// @param amounts Anounts of strategy assets
+    /// @param amounts Amounts of strategy assets
     /// @return value Liquidity value or underlying token amount
     function depositAssets(uint[] memory amounts) external returns (uint value);
 
     /// @notice Invest underlying asset. Asset must be already on strategy contract balance.
     /// Only vault can call this.
     /// @param amount Amount of underlying asset to invest
-    /// @return amountsConsumed Cosumed amounts of invested assets
+    /// @return amountsConsumed Consumed amounts of invested assets
     function depositUnderlying(uint amount) external returns (uint[] memory amountsConsumed);
 
     /// @dev For specified amount of shares and assets_, withdraw strategy assets from farm/pool/staking and send to receiver if possible

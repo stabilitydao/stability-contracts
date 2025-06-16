@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/Test.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -222,6 +223,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint minSharesOut,
         address receiver
     ) external virtual nonReentrant {
+        console.log("C.depositAssets.receiver", receiver);
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
@@ -481,14 +483,41 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IStabilityVault
-    function maxWithdraw(address account) public virtual view returns (uint amount) {
+    function maxWithdraw(address account) public virtual view returns (uint vaultShares) {
+        console.log("C.maxWithdraw.account", account);
+        uint balance = balanceOf(account);
+        console.log("C.maxWithdraw.balance", balance);
         uint[] memory amounts = strategy().maxWithdrawAssets();
+        console.log("C.maxWithdraw.maxWithdrawAssets", amounts[0]);
         if (amounts.length == 0) {
-            return balanceOf(account); // strategy allows to withdraw full amount
+            // strategy allows to withdraw full amount
+            // so all vault shares can be withdrawn
+            return balance;
         } else {
-            // todo
+            // strategy allows to withdraw only part of the assets
+            // so we need to calculate how many vault shares can be withdrawn
+
+            // Full assets amounts under strategy control
+            (, uint[] memory assetAmounts) = strategy().assetsAmounts();
+
+            // We need to calculate what part of the vault shares can be withdrawn
+            // For strategies with multiple assets we use following assumption: all assets are withdrawn in equal proportions
+            uint minPart = 1e18;
+            uint len = assetAmounts.length;
+            for (uint i = 0; i < len; ++i) {
+                if (amounts[i] * 1e18 / assetAmounts[i] < minPart) {
+                    minPart = amounts[i] * 1e18 / assetAmounts[i];
+                }
+            }
+            uint _totalSupply = totalSupply();
+            console.log("C.maxWithdraw.minPart", minPart);
+            console.log("C.maxWithdraw._totalSupply", _totalSupply);
+
+            return Math.min(
+                balance, // user vault shares balance
+                minPart < 1e18 ? _totalSupply * minPart / 1e18 : _totalSupply // vault shares can be withdrawn
+            );
         }
-        return 0; // todo
     }
     //endregion --------------------------------- View functions
 

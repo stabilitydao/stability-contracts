@@ -53,7 +53,7 @@ contract SiUpgradeTest is Test {
         SiloStrategy siloStrategy = SiloStrategy(address(strategy));
         ISilo silo = ISilo(siloStrategy.underlying());
 
-        // ------------------- borrow almost all cache
+        // ------------------- borrow almost all cash
         uint balanceAssets = silo.convertToAssets(silo.balanceOf(address(strategy)));
         uint availableLiquidity = strategy.maxWithdrawAssets()[0];
         uint maxWithdraw4626 = silo.maxWithdraw(address(strategy));

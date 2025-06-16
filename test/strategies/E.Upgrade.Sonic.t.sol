@@ -50,12 +50,12 @@ contract EUpgradeTest is Test {
         // ------------------- get max amount ot vault tokens that can be withdrawn
         uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_metascUSD);
 
-        // ------------------- our balance and max available liquidity in AAVE token
+        // ------------------- our balance and max available liquidity in Euler token
         EulerStrategy eulerStrategy = EulerStrategy(address(strategy));
         IEulerVault eulerVault = IEulerVault(eulerStrategy.underlying());
         uint cash = eulerVault.cash();
 
-        // ------------------- borrow almost all cache
+        // ------------------- borrow almost all cash
         _borrowAlmostAllCash(eulerVault, cash);
 
         uint balanceAssets = eulerVault.convertToAssets(eulerVault.balanceOf(address(strategy)));
