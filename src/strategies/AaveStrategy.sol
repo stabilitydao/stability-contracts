@@ -21,7 +21,6 @@ import {StrategyLib} from "./libs/StrategyLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
-
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
 ///     1.0.1: fix revenue calculation - #304
@@ -170,9 +169,9 @@ contract AaveStrategy is StrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        (uint price, ) = priceReader.getPrice(asset);
+        (uint price,) = priceReader.getPrice(asset);
 
-        return IAToken(aToken).totalSupply() * price / (10**IERC20Metadata(asset).decimals());
+        return IAToken(aToken).totalSupply() * price / (10 ** IERC20Metadata(asset).decimals());
     }
 
     /// @inheritdoc IStrategy

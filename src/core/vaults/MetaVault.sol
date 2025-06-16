@@ -18,6 +18,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.3.0: Add maxWithdraw - #326
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -35,7 +36,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.3";
+    string public constant VERSION = "1.3.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -612,7 +613,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IStabilityVault
-    function maxWithdraw(address account) external virtual view returns (uint amount) {
+    function maxWithdraw(address account) external view virtual returns (uint amount) {
         // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
         // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
 

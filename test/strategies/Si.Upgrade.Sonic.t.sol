@@ -61,9 +61,8 @@ contract SiUpgradeTest is Test {
         assertEq(availableLiquidity, maxWithdraw4626, "strategy.maxWithdrawAssets uses IE4626.maxWithdraw");
 
         // ------------------- amount of vault tokens that can be withdrawn
-        uint balanceToWithdraw = availableLiquidity == balanceAssets
-            ? maxWithdraw
-            : availableLiquidity * maxWithdraw / balanceAssets - 1;
+        uint balanceToWithdraw =
+            availableLiquidity == balanceAssets ? maxWithdraw : availableLiquidity * maxWithdraw / balanceAssets - 1;
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         if (availableLiquidity < balanceAssets * 99 / 100) {
@@ -79,12 +78,9 @@ contract SiUpgradeTest is Test {
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl
-        (uint price, ) = priceReader.getPrice(assets[0]);
+        (uint price,) = priceReader.getPrice(assets[0]);
 
-        assertEq(
-            silo.totalAssets() * price / (10**IERC20Metadata(assets[0]).decimals()),
-            strategy.poolTvl()
-        );
+        assertEq(silo.totalAssets() * price / (10 ** IERC20Metadata(assets[0]).decimals()), strategy.poolTvl());
     }
 
     //region ------------------------------ Auxiliary Functions

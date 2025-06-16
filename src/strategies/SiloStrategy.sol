@@ -127,9 +127,9 @@ contract SiloStrategy is ERC4626StrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        (uint price, ) = priceReader.getPrice(asset);
+        (uint price,) = priceReader.getPrice(asset);
 
-        return u.totalAssets() * price / (10**IERC20Metadata(asset).decimals());
+        return u.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
     }
 
     /// @inheritdoc IStrategy

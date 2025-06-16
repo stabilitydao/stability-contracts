@@ -56,28 +56,23 @@ contract AUpgradeTest is Test {
         uint availableLiquidity = strategy.maxWithdrawAssets()[0];
 
         // ------------------- amount of vault tokens that can be withdrawn
-        uint balanceToWithdraw = availableLiquidity > aTokenBalance
-            ? maxWithdraw
-            : availableLiquidity * maxWithdraw / aTokenBalance - 1;
+        uint balanceToWithdraw =
+            availableLiquidity > aTokenBalance ? maxWithdraw : availableLiquidity * maxWithdraw / aTokenBalance - 1;
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
         vm.prank(SonicConstantsLib.METAVAULT_metaUSDC);
-        vault.withdrawAssets(assets, balanceToWithdraw * 101/100, new uint[](1));
+        vault.withdrawAssets(assets, balanceToWithdraw * 101 / 100, new uint[](1));
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
         vm.prank(SonicConstantsLib.METAVAULT_metaUSDC);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl
-        (uint price, ) = priceReader.getPrice(assets[0]);
+        (uint price,) = priceReader.getPrice(assets[0]);
 
-        assertEq(
-            aToken.totalSupply() * price / (10**IERC20Metadata(assets[0]).decimals()),
-            strategy.poolTvl()
-        );
+        assertEq(aToken.totalSupply() * price / (10 ** IERC20Metadata(assets[0]).decimals()), strategy.poolTvl());
     }
-
 
     //region ------------------------------ Auxiliary Functions
     function _getAmountsForDeposit(

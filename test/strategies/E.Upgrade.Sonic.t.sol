@@ -62,9 +62,8 @@ contract EUpgradeTest is Test {
         uint availableLiquidity = strategy.maxWithdrawAssets()[0];
 
         // ------------------- amount of vault tokens that can be withdrawn
-        uint balanceToWithdraw = availableLiquidity == balanceAssets
-            ? maxWithdraw
-            : availableLiquidity * maxWithdraw / balanceAssets - 1;
+        uint balanceToWithdraw =
+            availableLiquidity == balanceAssets ? maxWithdraw : availableLiquidity * maxWithdraw / balanceAssets - 1;
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
@@ -76,12 +75,9 @@ contract EUpgradeTest is Test {
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl
-        (uint price, ) = priceReader.getPrice(assets[0]);
+        (uint price,) = priceReader.getPrice(assets[0]);
 
-        assertEq(
-            eulerVault.totalAssets() * price / (10**IERC20Metadata(assets[0]).decimals()),
-            strategy.poolTvl()
-        );
+        assertEq(eulerVault.totalAssets() * price / (10 ** IERC20Metadata(assets[0]).decimals()), strategy.poolTvl());
     }
 
     //region ------------------------------ Auxiliary Functions
@@ -89,12 +85,12 @@ contract EUpgradeTest is Test {
         IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
         IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
 
-        uint collateralAmount = cash * 10 * 10**12; // borrow scUSD, collateral is wS
+        uint collateralAmount = cash * 10 * 10 ** 12; // borrow scUSD, collateral is wS
 
         deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
         IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
 
-        uint256 borrowAmount = cash - 1e6; // * 9999 / 10000;
+        uint borrowAmount = cash - 1e6; // * 9999 / 10000;
 
         // console.log("Enabling borrow controller...");
         evc.enableController(address(this), address(eulerVault));
@@ -104,11 +100,7 @@ contract EUpgradeTest is Test {
 
         IEVC.BatchItem[] memory items = new IEVC.BatchItem[](2);
 
-        bytes memory depositData = abi.encodeWithSelector(
-            IEulerVault.deposit.selector,
-            collateralAmount,
-            address(this)
-        );
+        bytes memory depositData = abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmount, address(this));
         items[0] = IEVC.BatchItem({
             targetContract: address(collateralVault),
             onBehalfOfAccount: address(this),
@@ -116,11 +108,7 @@ contract EUpgradeTest is Test {
             data: depositData
         });
 
-        bytes memory borrowData = abi.encodeWithSelector(
-            IEulerVault.borrow.selector,
-            borrowAmount,
-            address(this)
-        );
+        bytes memory borrowData = abi.encodeWithSelector(IEulerVault.borrow.selector, borrowAmount, address(this));
         items[1] = IEVC.BatchItem({
             targetContract: address(eulerVault),
             onBehalfOfAccount: address(this),

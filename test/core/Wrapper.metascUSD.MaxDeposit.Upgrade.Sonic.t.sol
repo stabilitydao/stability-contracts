@@ -22,7 +22,6 @@ import {IEulerVault} from "../../src/integrations/euler/IEulerVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
-
 contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
 
@@ -65,7 +64,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             wrappedMetaVault.deposit(amountToInc, address(this));
             amount += amountToInc;
         }
-        assertEq(metaVault.vaultForWithdraw(), VAULT_WITH_EULER_STRATEGY, "we need a vault with the given Euler strategy");
+        assertEq(
+            metaVault.vaultForWithdraw(), VAULT_WITH_EULER_STRATEGY, "we need a vault with the given Euler strategy"
+        );
 
         // ------------------- get maxWithdraw when required amount is available
         uint[3] memory maxWithdrawsWMCBefore = _getMaxWithdraw();
@@ -89,9 +90,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0], false);
 
         // ------------------- ensure that we are NOT able to withdraw more than max withdraw amount from each vault
-        _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2] * 101/100, true);
-        _tryWithdrawFromMetaVault(maxWithdrawsWMCAfter[1] * 101/100, true);
-        _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0] * 101/100, true);
+        _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2] * 101 / 100, true);
+        _tryWithdrawFromMetaVault(maxWithdrawsWMCAfter[1] * 101 / 100, true);
+        _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0] * 101 / 100, true);
     }
 
     function _getMaxWithdraw() internal view returns (uint[3] memory wmcMaxWithdraw) {
@@ -100,9 +101,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             metaVault.maxWithdraw(address(wrappedMetaVault)),
             IVault(VAULT_WITH_EULER_STRATEGY).maxWithdraw(address(metaVault))
         ];
-//        console.log("max W", wmcMaxWithdraw[0]);
-//        console.log("max M", wmcMaxWithdraw[1]);
-//        console.log("max C", wmcMaxWithdraw[2]);
+        //        console.log("max W", wmcMaxWithdraw[0]);
+        //        console.log("max M", wmcMaxWithdraw[1]);
+        //        console.log("max C", wmcMaxWithdraw[2]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -212,12 +213,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
         IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
 
-        uint collateralAmount = cash * 10 * 10**12; // borrow scUSD, collateral is wS
+        uint collateralAmount = cash * 10 * 10 ** 12; // borrow scUSD, collateral is wS
 
         deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
         IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
 
-        uint256 borrowAmount = cash - leftAmount;
+        uint borrowAmount = cash - leftAmount;
 
         // console.log("Enabling borrow controller...");
         evc.enableController(address(this), address(eulerVault));
@@ -227,11 +228,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         IEVC.BatchItem[] memory items = new IEVC.BatchItem[](2);
 
-        bytes memory depositData = abi.encodeWithSelector(
-            IEulerVault.deposit.selector,
-            collateralAmount,
-            address(this)
-        );
+        bytes memory depositData = abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmount, address(this));
         items[0] = IEVC.BatchItem({
             targetContract: address(collateralVault),
             onBehalfOfAccount: address(this),
@@ -239,11 +236,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             data: depositData
         });
 
-        bytes memory borrowData = abi.encodeWithSelector(
-            IEulerVault.borrow.selector,
-            borrowAmount,
-            address(this)
-        );
+        bytes memory borrowData = abi.encodeWithSelector(IEulerVault.borrow.selector, borrowAmount, address(this));
         items[1] = IEVC.BatchItem({
             targetContract: address(eulerVault),
             onBehalfOfAccount: address(this),

@@ -23,7 +23,6 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {console, Test} from "forge-std/Test.sol";
 
-
 contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
 
@@ -107,7 +106,12 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
         uint[4] memory maxWithdrawsWMICAfter = _getMaxWithdraw();
-        assertApproxEqAbs(maxWithdrawsWMICAfter[0], amountMetaVaultTokens, 2, "User is able to withdraw all meta vault tokens from unwrapped");
+        assertApproxEqAbs(
+            maxWithdrawsWMICAfter[0],
+            amountMetaVaultTokens,
+            2,
+            "User is able to withdraw all meta vault tokens from unwrapped"
+        );
 
         // ------------------- ensure that we are able to withdraw max withdraw amount from each vault
         _tryWithdrawFromCVault(cvault, maxWithdrawsWMICAfter[3], false);
@@ -116,10 +120,10 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0], false);
 
         // ------------------- ensure that we are NOT able to withdraw more than max withdraw amount from each vault
-        _tryWithdrawFromCVault(cvault, maxWithdrawsWMICAfter[3] * 101/100, true);
-        _tryWithdrawFromMultiVault(maxWithdrawsWMICAfter[2] * 101/100, true);
-        _tryWithdrawFromMetaVault(maxWithdrawsWMICAfter[1] * 101/100, true);
-        _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0] * 101/100, true);
+        _tryWithdrawFromCVault(cvault, maxWithdrawsWMICAfter[3] * 101 / 100, true);
+        _tryWithdrawFromMultiVault(maxWithdrawsWMICAfter[2] * 101 / 100, true);
+        _tryWithdrawFromMetaVault(maxWithdrawsWMICAfter[1] * 101 / 100, true);
+        _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0] * 101 / 100, true);
     }
 
     function _getMaxWithdraw() internal view returns (uint[4] memory wmcMaxWithdraw) {
@@ -129,10 +133,10 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
             multiVault.maxWithdraw(address(metaVault)),
             IVault(VAULT_WITH_AAVE_STRATEGY).maxWithdraw(address(multiVault))
         ];
-//        console.log("max W", wmcMaxWithdraw[0]);
-//        console.log("max M", wmcMaxWithdraw[1]);
-//        console.log("max I", wmcMaxWithdraw[2]);
-//        console.log("max C", wmcMaxWithdraw[3]);
+        //        console.log("max W", wmcMaxWithdraw[0]);
+        //        console.log("max M", wmcMaxWithdraw[1]);
+        //        console.log("max I", wmcMaxWithdraw[2]);
+        //        console.log("max C", wmcMaxWithdraw[3]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -250,22 +254,21 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         address borrowAsset = SonicConstantsLib.TOKEN_USDC;
         address collateralAsset = SonicConstantsLib.TOKEN_scUSD;
 
-        uint256 borrowAmount = cash - leftAmount;
-        uint256 collateralAmount = borrowAmount * 130 / 100;
+        uint borrowAmount = cash - leftAmount;
+        uint collateralAmount = borrowAmount * 130 / 100;
 
         deal(collateralAsset, address(this), collateralAmount);
         IERC20(collateralAsset).approve(address(pool), collateralAmount);
 
         IPool.ReserveData memory reserveData = pool.getReserveData(borrowAsset);
-        uint256 liquidityBefore = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
+        uint liquidityBefore = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
 
         pool.supply(collateralAsset, collateralAmount, address(this), 0);
         pool.borrow(borrowAsset, borrowAmount, 2, 0, address(this));
 
-        uint256 liquidityAfter = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
+        uint liquidityAfter = IERC20(borrowAsset).balanceOf(reserveData.aTokenAddress);
         assertGt(liquidityBefore, liquidityAfter, "Aave cash was not borrowed");
     }
-
 
     function _setProportionsForDeposit(IMetaVault metaVault_, uint targetIndex) internal {
         multisig = IPlatform(PLATFORM).multisig();

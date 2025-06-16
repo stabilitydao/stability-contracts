@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.5.0: Add maxWithdraw - #326
 ///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
 ///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
@@ -481,7 +482,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IStabilityVault
-    function maxWithdraw(address account) public virtual view returns (uint vaultShares) {
+    function maxWithdraw(address account) public view virtual returns (uint vaultShares) {
         uint balance = balanceOf(account);
         uint[] memory amounts = strategy().maxWithdrawAssets();
         if (amounts.length == 0) {

@@ -245,4 +245,3 @@ interface IStrategy is IERC165 {
     /// @notice Underlying pool TVL in the terms of USD
     function poolTvl() external view returns (uint tvlUsd);
 }
-
