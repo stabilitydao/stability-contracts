@@ -314,7 +314,7 @@ library SiloALMFLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
-        SiloAdvancedLib.CollateralDebtState memory debtState =
+        CollateralDebtState memory debtState =
             getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
@@ -509,7 +509,7 @@ library SiloALMFLib {
         uint amount,
         address asset
     ) external returns (uint value) {
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloAdvancedLib.getLeverageLendingAddresses($);
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
 
         uint valueWas = StrategyLib.balance(asset) + calcTotal(v);
         _deposit($, v, amount);
@@ -573,7 +573,7 @@ library SiloALMFLib {
         address receiver
     ) external returns (uint[] memory amountsOut) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
-        SiloAdvancedLib.StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
+        StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
         if (value > state.collateralBalanceStrategy) {
@@ -620,7 +620,7 @@ library SiloALMFLib {
         // workaround dust problems and error LessThenThreshold
         uint maxAmountToWithdraw = withdrawParam1 * value / INTERNAL_PRECISION;
         if (balance > maxAmountToWithdraw * 100 / INTERNAL_PRECISION) {
-            SiloAdvancedLib._deposit($, v, Math.min(maxAmountToWithdraw, balance));
+            _deposit($, v, Math.min(maxAmountToWithdraw, balance));
         }
     }
 
@@ -633,7 +633,7 @@ library SiloALMFLib {
     ) internal {
         (,, uint leverage,,,) = health(platform, $);
 
-        SiloAdvancedLib.CollateralDebtState memory debtState =
+        CollateralDebtState memory debtState =
             getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
 
         if (0 == debtState.debtAmount) {
@@ -687,7 +687,7 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         StateBeforeWithdraw memory state,
-        SiloAdvancedLib.CollateralDebtState memory debtState,
+        CollateralDebtState memory debtState,
         uint value,
         uint leverage
     ) internal returns (bool) {

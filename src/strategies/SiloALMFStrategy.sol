@@ -16,6 +16,7 @@ import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
@@ -58,11 +59,15 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
-        if (addresses.length != 6 || nums.length != 1 || ticks.length != 0) {
+        if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
-        // todo
+        IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+            revert IFarmingStrategy.BadFarm();
+        }
 
+        // todo
         LeverageLendingStrategyBaseInitParams memory params;
         params.platform = addresses[0];
         params.vault = addresses[1];
@@ -95,6 +100,8 @@ contract SiloALMFStrategy is
         $.swapPriceImpactTolerance1 = 1_000;
         $.withdrawParam0 = 100_00;
         $.withdrawParam1 = 100_00;
+
+        __FarmingStrategyBase_init(addresses[0], nums[0]);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -358,6 +365,15 @@ contract SiloALMFStrategy is
         amountsOut = SiloAdvancedLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
     //endregion ----------------------------------- Strategy base
+
+    /// @inheritdoc FarmingStrategyBase
+    function _liquidateRewards(
+        address exchangeAsset,
+        address[] memory rewardAssets_,
+        uint[] memory rewardAmounts_
+    ) internal override(FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
+        return FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+    }
 
     //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

@@ -17,28 +17,17 @@ contract SiloAdvancedLeverageMerlkFarmStrategyTest is SonicSetup, UniversalTest 
     }
 
     function testSiALMFSonic() public universalTest {
-        _addStrategy(SonicConstantsLib.SILO_VAULT_121_WMETAUSD, SonicConstantsLib.SILO_VAULT_121_USDC, 85_00);
+        _addStrategy(52);
     }
 
-    function _addStrategy(
-        address strategyInitAddress0,
-        address strategyInitAddress1,
-        uint targetLeveragePercent
-    ) internal {
-        address[] memory initStrategyAddresses = new address[](4);
-        initStrategyAddresses[0] = strategyInitAddress0;
-        initStrategyAddresses[1] = strategyInitAddress1;
-        initStrategyAddresses[2] = SonicConstantsLib.BEETS_VAULT; // todo
-        initStrategyAddresses[3] = SonicConstantsLib.SILO_LENS;  // todo
-        uint[] memory strategyInitNums = new uint[](1);
-        strategyInitNums[0] = targetLeveragePercent;
+    function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
                 id: StrategyIdLib.SILO_ALMF,
                 pool: address(0),
-                farmId: type(uint).max,
-                strategyInitAddresses: initStrategyAddresses,
-                strategyInitNums: strategyInitNums
+                farmId: farmId,
+                strategyInitAddresses: new address[](0),
+                strategyInitNums: new uint[](0)
             })
         );
     }
