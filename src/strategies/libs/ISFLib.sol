@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IICHIVaultV4} from "../../integrations/ichi/IICHIVaultV4.sol";
+import {CommonLib} from "../../core/libs/CommonLib.sol";
+import {IAlgebraPoolErrors} from "../../integrations/algebrav4/pool/IAlgebraPoolErrors.sol";
+import {IAlgebraPool} from "../../integrations/algebrav4/IAlgebraPool.sol";
+import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
+import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVolatilityOracle} from "../../integrations/algebrav4/IVolatilityOracle.sol";
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
-import {IAlgebraPool} from "../../integrations/algebrav4/IAlgebraPool.sol";
-import {IAlgebraPoolErrors} from "../../integrations/algebrav4/pool/IAlgebraPoolErrors.sol";
-import {IFactory} from "../../interfaces/IFactory.sol";
-import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
-import {CommonLib} from "../../core/libs/CommonLib.sol";
-import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 library ISFLib {
     function initVariants(
@@ -149,6 +151,21 @@ library ISFLib {
 
     function shouldReturn(bytes4 selector, bytes4 expectedSelector) internal pure {
         if (selector != expectedSelector) revert IAlgebraPoolErrors.invalidHookResponse(expectedSelector);
+    }
+
+    function _assetsAmounts(IStrategy.StrategyBaseStorage storage $_)
+        external
+        view
+        returns (address[] memory assets_, uint[] memory amounts_)
+    {
+        assets_ = $_._assets;
+        uint value = $_.total;
+        IICHIVaultV4 _underlying = IICHIVaultV4($_._underlying);
+        (uint amount0, uint amount1) = _underlying.getTotalAmounts();
+        uint totalSupply = _underlying.totalSupply();
+        amounts_ = new uint[](2);
+        amounts_[0] = amount0 * value / totalSupply;
+        amounts_[1] = amount1 * value / totalSupply;
     }
 
     uint internal constant BEFORE_SWAP_FLAG = 1;
