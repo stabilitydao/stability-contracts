@@ -11,7 +11,8 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
-///   2.3.0: add poolTvl
+///   2.4.0: add poolTvl, maxWithdrawAssets - #326
+///   2.3.0: add fuseMode - #305
 ///   2.2.0: extractFees use RevenueRouter
 ///   2.1.3: call hardWorkMintFeeCallback always
 ///   2.1.2: call hardWorkMintFeeCallback only on positive amounts
@@ -171,6 +172,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
     function emergencyStopInvesting() external onlyGovernanceOrMultisig {
         // slither-disable-next-line unused-return
         _withdrawAssets(total(), address(this));
+
+        // Activate fuse mode. In the fuse mode all assets are transferred
+        // from the underlying pool to the strategy balance, no deposits are allowed after that.
+        _getStrategyBaseStorage().fuseOn = uint(IStrategy.FuseMode.FUSE_ON_1);
     }
 
     /// @inheritdoc IStrategy
@@ -296,6 +301,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IStrategy
+    function fuseMode() external view returns (uint) {
+        return _getStrategyBaseStorage().fuseOn;
+    }
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Cosumed amounts of invested assets

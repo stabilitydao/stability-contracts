@@ -23,6 +23,8 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
+///     1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
+///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 ///     1.0.1: fix revenue calculation - #304
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
@@ -34,7 +36,7 @@ contract AaveStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1"; // todo: maxWithdrawAsset, poolTvl, aaveToken
+    string public constant VERSION = "1.2.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_STRATEGY_STORAGE_LOCATION =

@@ -20,6 +20,8 @@ import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 /// @title Earns APR by lending assets on Euler.finance
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///     1.2.0: Add maxWithdrawAsset, poolTvl, use StrategyBase 2.4.0 - #326,
+///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 ///     1.0.1: Use ERC4626StrategyBase 1.0.4 with fixed revenue formula - #304
 contract EulerStrategy is ERC4626StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -27,7 +29,7 @@ contract EulerStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1"; // todo: maxWithdrawAsset, poolTvl
+    string public constant VERSION = "1.2.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

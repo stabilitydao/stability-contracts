@@ -15,7 +15,7 @@ import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// Changelog:
-///     1.0.5: Add default implementation for poolTvl
+///     1.1.0: Add default implementation for poolTvl and maxWithdrawAsset, use StrategyBase 2.4.0 - #326
 ///     1.0.4: Fix revenue formula - #304
 ///     1.0.3: _assetsAmounts is virtual
 ///     1.0.2: _depositAssets and _withdrawAssets are virtual

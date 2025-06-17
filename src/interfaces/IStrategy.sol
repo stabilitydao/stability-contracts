@@ -48,6 +48,15 @@ interface IStrategy is IERC165 {
         string _id;
         uint _exchangeAssetIndex;
         uint customPriceImpactTolerance;
+        /// @inheritdoc IStrategy
+        uint fuseOn;
+    }
+
+    enum FuseMode {
+        FUSE_OFF_0,
+        /// @notice Fuse mode is on (emergency stop was called).
+        /// All assets were transferred from the underlying pool to the strategy balance, no deposits are allowed.
+        FUSE_ON_1
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -244,4 +253,7 @@ interface IStrategy is IERC165 {
 
     /// @notice Underlying pool TVL in the terms of USD
     function poolTvl() external view returns (uint tvlUsd);
+
+    /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
+    function fuseMode() external view returns (uint);
 }
