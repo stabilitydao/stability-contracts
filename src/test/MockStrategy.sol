@@ -98,6 +98,7 @@ contract MockStrategy is LPStrategyBase {
     function triggerFuse() external {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.total = 0;
+        $.fuseOn = uint(IStrategy.FuseMode.FUSE_ON_1);
     }
 
     /*    function untriggerFuse(uint total_) external {

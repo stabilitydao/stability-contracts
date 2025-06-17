@@ -21,6 +21,7 @@ import {AaveLib} from "./libs/AaveLib.sol";
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
+///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 ///     1.0.1: fix revenue calculation - #304
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
@@ -32,7 +33,7 @@ contract AaveStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_STRATEGY_STORAGE_LOCATION =

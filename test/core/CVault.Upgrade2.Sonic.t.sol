@@ -8,7 +8,10 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 
 /// @dev CVault 1.7.0 upgrade test
 contract CVaultUpgrade2SonicTest is Test {
@@ -37,19 +40,8 @@ contract CVaultUpgrade2SonicTest is Test {
         vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
         vault.withdrawAssets(assets, bal, new uint[](1));
 
-        // deploy new impl and upgrade
-        address vaultImplementation = address(new CVault());
-        vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
-        factory.upgradeVaultProxy(address(vault));
+        _upgradeCVault();
+        _upgradeStrategy(address(IVault(address(vault)).strategy()));
 
         vm.prank(multisig);
         vault.setLastBlockDefenseDisabled(true);
@@ -67,4 +59,42 @@ contract CVaultUpgrade2SonicTest is Test {
         vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
         vault.withdrawAssets(assets, bal, new uint[](1));
     }
+
+    //region ---------------------- Auxiliary functions
+    function _upgradeCVault() internal {
+        // deploy new impl and upgrade
+        address vaultImplementation = address(new CVault());
+        vm.prank(multisig);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: vaultImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: 1e10
+            })
+        );
+        factory.upgradeVaultProxy(address(vault));
+    }
+
+    function _upgradeStrategy(address strategy) public {
+        // deploy new impl and upgrade
+        address strategyImplementation = address(new SiloFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategy);
+    }
+
+    //endregion ---------------------- Auxiliary functions
 }
