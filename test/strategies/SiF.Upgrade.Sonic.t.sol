@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -17,10 +16,13 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test, Vm} from "forge-std/Test.sol";
+import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 
-contract SiUpgradeTest is Test {
+contract SiFUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    address public constant METAVAULT = SonicConstantsLib.METAVAULT_metaUSDC;
+    address public constant VAULT_C = SonicConstantsLib.VAULT_C_USDC_SiF;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;
     address public multisig;
@@ -29,7 +31,7 @@ contract SiUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(METAVAULT);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -38,20 +40,21 @@ contract SiUpgradeTest is Test {
 
     /// @notice #326: Add maxWithdrawAssets and poolTvl to IStrategy
     function testMetaVaultUpdate326() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_scUSD_S_46);
+        IVault vault = IVault(VAULT_C);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
 
         // ------------------- upgrade strategy
-        // _upgradeCVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
-        _upgradeSiloStrategy(address(strategy));
+        // _upgradeCVault(SonicConstantsLib.VAULT_C);
+        _upgradeSiloFarmStrategy(address(strategy));
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_metascUSD);
+        uint maxWithdraw = vault.balanceOf(METAVAULT);
 
         // ------------------- our balance and max available liquidity in AAVE token
-        SiloStrategy siloStrategy = SiloStrategy(address(strategy));
-        ISilo silo = ISilo(siloStrategy.underlying());
+        SiloFarmStrategy sifStrategy = SiloFarmStrategy(address(strategy));
+        IFactory.Farm memory farm = IFactory(IPlatform(PLATFORM).factory()).farm(sifStrategy.farmId());
+        ISilo silo = ISilo(farm.addresses[1]);
 
         // ------------------- borrow almost all cash
         uint balanceAssets = silo.convertToAssets(silo.balanceOf(address(strategy)));
@@ -66,15 +69,13 @@ contract SiUpgradeTest is Test {
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         if (availableLiquidity < balanceAssets * 99 / 100) {
-            //            console.log("availableLiquidity", availableLiquidity);
-            //            console.log("balanceAssets", balanceAssets);
             vm.expectRevert();
-            vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+            vm.prank(METAVAULT);
             vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
         }
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+        vm.prank(METAVAULT);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl
@@ -128,14 +129,14 @@ contract SiUpgradeTest is Test {
         factory.upgradeVaultProxy(vault);
     }
 
-    function _upgradeSiloStrategy(address strategyAddress) internal {
+    function _upgradeSiloFarmStrategy(address strategyAddress) internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
-        address strategyImplementation = address(new SiloStrategy());
+        address strategyImplementation = address(new SiloFarmStrategy());
         vm.prank(multisig);
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
+                id: StrategyIdLib.SILO_FARM,
                 implementation: strategyImplementation,
                 deployAllowed: true,
                 upgradeAllowed: true,
