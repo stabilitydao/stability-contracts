@@ -151,25 +151,26 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function poolTvl() public view virtual override returns (uint tvlUsd) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IERC4626 u = IERC4626(__$__._underlying);
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
 
-        address asset = u.asset();
+        address asset = siloVault.asset();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
         (uint price,) = priceReader.getPrice(asset);
 
-        return u.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
     }
 
     /// @inheritdoc IStrategy
     function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IERC4626 u = IERC4626(__$__._underlying);
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+
         amounts = new uint[](1);
-        amounts[0] = u.maxWithdraw(address(this));
+        amounts[0] = siloVault.maxWithdraw(address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
