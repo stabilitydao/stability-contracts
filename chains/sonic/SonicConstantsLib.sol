@@ -30,13 +30,16 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_S_49 = 0xc33568559c8338581BB6914d6F2d024a063886E8;
     address public constant VAULT_C_USDC_Stability_Stream = 0x0c8cE5afC38C94e163F0dDEB2Da65DF4904734f3;
     address public constant VAULT_C_USDC_Stability_StableJack = 0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336;
+    address public constant VAULT_C_USDC_SiMF_Valmore = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
+    address public constant VAULT_C_USDC_S_112 = 0x8913582701B7c80E883F9E352c1653a16769B173;
+
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
     address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
     address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
     // metawS
     address public constant VAULT_C_wS_SiMF_Valmore = 0xA70F074EE09DF3C0AB7e9eb0c058941fF65B8Efe;
-    address public constant VAULT_C_USDC_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
+    address public constant VAULT_C_wS_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
 
     // used in tests
     address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
@@ -349,6 +352,7 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_49_USDC = 0xa18a8f100f2c976044f2f84fae1eE9f807Ae7893;
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
+    address public constant SILO_VAULT_112_USDC = 0xA1627a0E1d0ebcA9326D2219B84Df0c600bed4b1;
 
     // Silo managed vaults
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
