@@ -366,6 +366,10 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_54_wOS = 0x04f124bF435545a3c79A8EE3Ffb6C51213CF5175;
     address public constant SILO_VAULT_54_S = 0xbE0D3c8801206CC9f35A6626f90ef9F4f2983A3D;
 
+    // Silo meta USD
+    address public constant SILO_VAULT_121_WMETAUSD = 0xCCdDbBbd1E36a6EDA3a84CdCee2040A86225Ba71;
+    address public constant SILO_VAULT_121_USDC = 0xEd9777944A2Fb32504a410D23f246463B3f40908;
+
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
     address public constant GAMMA_EQUALIZER_UNIPROXY = 0x38f61169D8bcc08cE303401A13332259F557B35f;

@@ -191,6 +191,7 @@ library SonicLib {
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
+        // todo SiALMF
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
