@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -243,6 +244,14 @@ library SiloLib {
         targetLeveragePercent = $.targetLeveragePercent;
 
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
+
+        console.log("_realTvl", _realTvl);
+        console.log("collateralPrice", collateralPrice);
+        console.log("collateralUsd", collateralUsd);
+        console.log("targetLeveragePercent", targetLeveragePercent);
+        console.log("maxLtv", maxLtv);
+        console.log("collateralAmount", collateralAmount);
+        console.log("debtAmount", debtAmount);
     }
 
     function rebalanceDebt(
@@ -299,6 +308,8 @@ library SiloLib {
             getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
+        console.log("totalCollateralUsd", debtState.totalCollateralUsd );
+        console.log("borrowAssetUsd", debtState.borrowAssetUsd );
     }
 
     function getDebtState(
@@ -324,6 +335,7 @@ library SiloLib {
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+        console.log("borrowAssetPrice", data.borrowAssetPrice);
 
         return data;
     }
@@ -459,6 +471,7 @@ library SiloLib {
 
         // ---------------------- Deposit the amount ~ value
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
+            console.log("!!!!!!!!!!!!_depositAfterWithdraw.value", value);
             _depositAfterWithdraw($, v, state.withdrawParam1, value);
         }
     }
@@ -521,6 +534,7 @@ library SiloLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
+        console.log("Default withdraw, value", value);
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;

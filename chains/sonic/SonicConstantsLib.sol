@@ -31,6 +31,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_Stability_StableJack = 0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336;
     address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
     address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
+    address public constant VAULT_C_wS_Silo_Leverage3_stS_55 = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
