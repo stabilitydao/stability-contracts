@@ -2,12 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {
-MetaVault,
-IMetaVault,
-IStabilityVault,
-IPlatform,
-IPriceReader,
-IControllable
+    MetaVault,
+    IMetaVault,
+    IStabilityVault,
+    IPlatform,
+    IPriceReader,
+    IControllable
 } from "../../src/core/vaults/MetaVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
@@ -555,15 +555,15 @@ contract MetaVaultSonicTest is Test {
         );
 
         address[8] memory vaults = [
-                        SonicConstantsLib.VAULT_C_USDC_SiF,
-                        SonicConstantsLib.VAULT_C_USDC_S_8,
-                        SonicConstantsLib.VAULT_C_USDC_S_27,
-                        SonicConstantsLib.VAULT_C_USDC_S_34,
-                        SonicConstantsLib.VAULT_C_USDC_S_36,
-                        SonicConstantsLib.VAULT_C_USDC_S_49,
-                        SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-                        SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC
-            ];
+            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_S_8,
+            SonicConstantsLib.VAULT_C_USDC_S_27,
+            SonicConstantsLib.VAULT_C_USDC_S_34,
+            SonicConstantsLib.VAULT_C_USDC_S_36,
+            SonicConstantsLib.VAULT_C_USDC_S_49,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
+            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC
+        ];
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
@@ -571,9 +571,13 @@ contract MetaVaultSonicTest is Test {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
                 _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)) {
+            } else if (
+                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)
+            ) {
                 _upgradeSiloManagedFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)) {
+            } else if (
+                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
+            ) {
                 _upgradeIchiSwapxFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else {
                 console.log("Error: strategy is not upgraded", IVault(payable(vaults[i])).strategy().strategyLogicId());
