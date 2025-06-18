@@ -456,12 +456,16 @@ library SiloLib {
         uint bal = StrategyLib.balance(v.collateralAsset);
         uint valueNow = bal + calcTotal(v);
 
+        console.log("bal", bal);
+        console.log("state.valueWas", state.valueWas);
+        console.log("valueNow", valueNow);
         amountsOut = new uint[](1);
         if (state.valueWas > valueNow) {
             amountsOut[0] = Math.min(value - (state.valueWas - valueNow), bal);
         } else {
             amountsOut[0] = Math.min(value + (valueNow - state.valueWas), bal);
         }
+        console.log("amountsOut[0]", amountsOut[0]);
 
         if (receiver != address(this)) {
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
@@ -544,6 +548,8 @@ library SiloLib {
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18 // priceCtoB has decimals 1e18
             / INTERNAL_PRECISION // withdrawParam0
             / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+        console.log("**************** collateralAmountToWithdraw", collateralAmountToWithdraw);
+        console.log("flashAmounts", flashAmounts[0]);
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = $.borrowAsset;
 

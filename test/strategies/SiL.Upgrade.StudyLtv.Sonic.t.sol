@@ -39,7 +39,10 @@ contract SiLUpgradeStudyLtvTest is Test {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(34426100); // Jun-17-2025 02:30:51 AM +UTC
+        // vm.rollFork(34426100); // Jun-17-2025 02:30:51 AM +UTC
+        // vm.rollFork(34626742); // Jun-18-2025 07:17:56 AM +UTC
+        // vm.rollFork(34631116); // Jun-18-2025 07:59:24 AM +UTC
+        vm.rollFork(34635371);
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -107,6 +110,36 @@ contract SiLUpgradeStudyLtvTest is Test {
         console.log("balance after withdraw:", IERC20(vault).balanceOf(userHolder));
     }
 
+    function testWithdrawProblem() public {
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!! withdraw");
+        address userHolder = 0xe51f74A17Ff1fc0505488729bD6d5Bd24F8b86f1;
+
+        vm.prank(multisig);
+        address strategyAddress = address(vault.strategy());
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+
+        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+        vm.stopPrank();
+
+        // ----------------- set up
+        // _adjustParams(strategy);
+        _setTargetLeveragePercent(strategy, 8000);
+
+        // ----------------- deposit & withdraw
+        uint amount = vault.balanceOf(userHolder);
+        console.log("amount to withdraw:", amount);
+        console.log("balance before withdraw:", IERC20(vault).balanceOf(userHolder));
+        console.log("user balance before", IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(userHolder));
+        uint withdrawn = _withdrawForUser(address(vault), strategyAddress, userHolder, amount);
+        vm.roll(block.number + 6);
+        console.log("withdrawn:", withdrawn);
+        console.log("asset", vault.assets()[0]);
+        console.log("user balance after", IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(userHolder));
+
+        console.log("balance after withdraw:", IERC20(vault).balanceOf(userHolder));
+    }
 
     //region -------------------------- Deposit withdraw routines
     function _depositForUser(address vault_, address user, uint depositAmount) internal returns (uint) {
@@ -220,7 +253,7 @@ contract SiLUpgradeStudyLtvTest is Test {
     function _adjustParams(SiloLeverageStrategy strategy) internal {
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
 //        params[0] = 10000; // depositParam0: use default flash amount
-//        params[2] = 10200; // withdrawParam0: use default flash amount
+//        params[2] = 10000; // withdrawParam0: use default flash amount
         params[3] = 0; // withdrawParam1: allow 200% of deposit after withdraw
 //        params[11] = 9500; // withdrawParam2: allow withdraw-through-increasing-ltv if leverage < 95% of target level
         vm.prank(multisig);
