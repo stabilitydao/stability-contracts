@@ -387,11 +387,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
             uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
             uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            vaultUsdValue[i] = Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
+            vaultUsdValue[i] = Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor); // todo case vaultTotalSupply == 0
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
-            proportions[i] = Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
+            proportions[i] = Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor); // todo case totalDepositedTvl == 0
         }
     }
 

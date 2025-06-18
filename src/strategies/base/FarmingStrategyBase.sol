@@ -91,7 +91,7 @@ abstract contract FarmingStrategyBase is StrategyBase, IFarmingStrategy {
         address exchangeAsset,
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
-    ) internal override returns (uint earnedExchangeAsset) {
+    ) internal virtual override returns (uint earnedExchangeAsset) {
         return StrategyLib.liquidateRewards(
             platform(), exchangeAsset, rewardAssets_, rewardAmounts_, customPriceImpactTolerance()
         );

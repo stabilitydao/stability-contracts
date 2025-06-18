@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol"; // todo
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
@@ -16,6 +18,7 @@ import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IMerklStrategy} from "../interfaces/IMerklStrategy.sol";
 import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
 import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
@@ -28,6 +31,7 @@ import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {XStaking} from "../tokenomics/XStaking.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
@@ -53,35 +57,41 @@ contract SiloALMFStrategy is
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
+    //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IStrategy
+    /// @param addresses [platform, vault]
+    /// @param nums [farmId]
     function initialize(address[] memory addresses, uint[] memory nums, int24[] memory ticks) public initializer {
         if (addresses.length != 2 || nums.length != 1 || ticks.length != 0) {
             revert IControllable.IncorrectInitParams();
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
-        // todo
         LeverageLendingStrategyBaseInitParams memory params;
         params.platform = addresses[0];
+        params.strategyId = StrategyIdLib.SILO_ALMF;
         params.vault = addresses[1];
-        params.collateralAsset = IERC4626(addresses[2]).asset();
-        params.borrowAsset = IERC4626(addresses[3]).asset();
-        params.lendingVault = addresses[2];
-        params.borrowingVault = addresses[3];
-        params.flashLoanVault = addresses[4];
-        params.helper = addresses[5];
-        params.targetLeveragePercent = nums[0];
-        __LeverageLendingBase_init(params);
+        params.collateralAsset = IERC4626(farm.addresses[0]).asset();
+        params.borrowAsset = IERC4626(farm.addresses[1]).asset();
+        params.lendingVault = farm.addresses[0];
+        params.borrowingVault = farm.addresses[1];
+        params.flashLoanVault = farm.addresses[2];
+        params.helper = farm.addresses[3]; // SiloLens
+        params.targetLeveragePercent = 85_00;
+
+        __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
+        __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         IERC20(params.collateralAsset).forceApprove(params.lendingVault, type(uint).max);
         IERC20(params.borrowAsset).forceApprove(params.borrowingVault, type(uint).max);
+
         address swapper = IPlatform(params.platform).swapper();
         IERC20(params.collateralAsset).forceApprove(swapper, type(uint).max);
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
@@ -95,20 +105,26 @@ contract SiloALMFStrategy is
         $.increaseLtvParam1 = 99_00;
         // Multiplier of collateral diff
         $.decreaseLtvParam0 = 101_00;
+
         // Swap price impact tolerance
         $.swapPriceImpactTolerance0 = 1_000;
         $.swapPriceImpactTolerance1 = 1_000;
+
+        // Multiplier of flash amount for withdraw. Default is 100_00 == 100%.
         $.withdrawParam0 = 100_00;
+        // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
         $.withdrawParam1 = 100_00;
 
-        __FarmingStrategyBase_init(addresses[0], nums[0]);
     }
+    //endregion ----------------------------------- Initialization
 
+    //region ----------------------------------- Callbacks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     receive() external payable {}
+    //endregion ----------------------------------- Callbacks
 
     //region ----------------------------------- Flash loan
     /// @inheritdoc IFlashLoanRecipient
@@ -176,7 +192,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.SILO_ADVANCED_LEVERAGE;
+        return StrategyIdLib.SILO_ALMF;
     }
 
     /// @inheritdoc IStrategy
@@ -261,8 +277,17 @@ contract SiloALMFStrategy is
         return _getDepositAndBorrowAprs($.helper, $.lendingVault, $.borrowingVault);
     }
 
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(FarmingStrategyBase, LeverageLendingBase, MerklStrategyBase) returns (bool) {
+        return interfaceId == type(IFarmingStrategy).interfaceId
+            || interfaceId == type(IMerklStrategy).interfaceId
+            || interfaceId == type(ILeverageLendingStrategy).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+
     //endregion ----------------------------------- View
 
+    //region ----------------------------------- Leverage lending base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   LEVERAGE LENDING BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -271,6 +296,7 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         return SiloAdvancedLib.rebalanceDebt(platform(), newLtv, $);
     }
+    //endregion ----------------------------------- Leverage lending base
 
     //region ----------------------------------- Strategy base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -364,16 +390,39 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         amountsOut = SiloAdvancedLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
+
+    /// @inheritdoc IStrategy
+    function autoCompoundingByUnderlyingProtocol() public view virtual override (LeverageLendingBase, StrategyBase) returns (bool) {
+        return true;
+    }
     //endregion ----------------------------------- Strategy base
+
+    //region ----------------------------------- FarmingStrategy
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                     FARMING STRATEGY                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc FarmingStrategyBase
     function _liquidateRewards(
         address exchangeAsset,
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
-    ) internal override(FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
+    ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
         return FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
+
+    /// @inheritdoc IFarmingStrategy
+    function canFarm() external view override returns (bool) {
+        IFactory.Farm memory farm = _getFarm();
+        return farm.status == 0;
+    }
+
+    /// @inheritdoc IFarmingStrategy
+    function farmMechanics() external pure returns (string memory) {
+        return FarmMechanicsLib.MERKL;
+    }
+
+    //endregion ----------------------------------- FarmingStrategy
 
     //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

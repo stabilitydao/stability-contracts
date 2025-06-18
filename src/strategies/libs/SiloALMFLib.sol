@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol"; // todo
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
@@ -409,6 +410,7 @@ library SiloALMFLib {
         uint amount,
         uint priceImpactTolerance
     ) internal {
+        console.log("SiloALMFLib._swap", tokenIn, tokenOut, amount);
         if (tokenIn == TOKEN_wS && tokenOut == TOKEN_wanS) {
             //console.log('ws to wans swap');
             // check price of swap without impact

@@ -38,6 +38,7 @@ import {SonicFarmMakerLib} from "./SonicFarmMakerLib.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
+import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -191,7 +192,12 @@ library SonicLib {
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
-        // todo SiALMF
+
+        p.initAddresses = new address[](0);
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ALMF, p);
+
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -215,6 +221,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF, address(new SiloALMFStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 

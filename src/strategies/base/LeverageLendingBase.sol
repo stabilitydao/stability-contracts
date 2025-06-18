@@ -211,7 +211,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         address exchangeAsset,
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
-    ) internal override returns (uint earnedExchangeAsset) {}
+    ) internal virtual override returns (uint earnedExchangeAsset) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */
