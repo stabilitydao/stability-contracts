@@ -411,6 +411,20 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     assertEq(isEmpty, false, "Withdraw assets zero amount");
                 }
 
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*                       MAX WITHDRAW and POOL TVL            */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                {
+                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets();
+                    (, uint[] memory assetAmounts) = strategy.assetsAmounts();
+                    assertEq(
+                        maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,
+                        true,
+                        "maxWithdraw has same length as assetAmounts OR it's empty (there are no limits for withdraw)"
+                    );
+                }
+                assertNotEq(strategy.poolTvl(), 0, "Assume that internal pool has some TVL");
+
                 if (vars.isLPStrategy && makePoolVolume) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                     /*                       MAKE POOL VOLUME                     */

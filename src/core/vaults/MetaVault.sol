@@ -725,12 +725,16 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @dev Shared implementation for {maxWithdraw} and {maxWithdrawAmountTx}
+    /// @param vault Vault to withdraw
+    /// @param vaultSharesToWithdraw Amount of shares to withdraw from the {vault}
+    /// @return maxAmount Amount of meta-vault tokens to withdraw
+    /// @return vaultSharePrice Price of the {vault}
     function _maxAmountToWithdrawFromVaultForShares(
         address vault,
-        uint vaultShares
+        uint vaultSharesToWithdraw
     ) internal view returns (uint maxAmount, uint vaultSharePrice) {
         (vaultSharePrice,) = IStabilityVault(vault).price();
-        uint vaultUsd = Math.mulDiv(vaultSharePrice, vaultShares, 1e18, Math.Rounding.Floor);
+        uint vaultUsd = Math.mulDiv(vaultSharePrice, vaultSharesToWithdraw, 1e18, Math.Rounding.Floor);
         // Convert USD amount to MetaVault tokens
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
     }

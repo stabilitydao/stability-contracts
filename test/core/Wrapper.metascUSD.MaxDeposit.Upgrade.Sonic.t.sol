@@ -10,6 +10,7 @@ import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
@@ -23,7 +24,7 @@ import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
 contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
-    uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
+    uint public constant FORK_BLOCK = 34657318; // Jun-12-2025 05:49:24 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant VAULT_WITH_EULER_STRATEGY = SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs;
@@ -69,19 +70,15 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         );
 
         // ------------------- get maxWithdraw when required amount is available
-        uint[3] memory maxWithdrawsWMCBefore = _getMaxWithdraw();
+        uint[3] memory maxWithdrawsWMCBefore = _getMaxWithdrawWMC();
         assertApproxEqAbs(maxWithdrawsWMCBefore[0], amount, 2, "User is able to withdraw all amount");
 
         // ------------------- borrow almost all cash, leave only expected amount in the pool
         uint amountToLeave = 1000e6; // leave 1000 scUSD in the pool
-        {
-            IEulerVault eulerVault = IEulerVault(EulerStrategy(address(strategy)).underlying());
-            uint cash = eulerVault.cash();
-            _borrowAlmostAllCash(eulerVault, cash, amountToLeave);
-        }
+        _reduceCashInEulerStrategy(amountToLeave, address(strategy));
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
-        uint[3] memory maxWithdrawsWMCAfter = _getMaxWithdraw();
+        uint[3] memory maxWithdrawsWMCAfter = _getMaxWithdrawWMC();
         assertApproxEqAbs(maxWithdrawsWMCAfter[0], amountToLeave, 2, "User is able to withdraw only left amount");
 
         // ------------------- ensure that we are able to withdraw max withdraw amount from each vault
@@ -95,7 +92,49 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0] * 101 / 100, true);
     }
 
-    function _getMaxWithdraw() internal view returns (uint[3] memory wmcMaxWithdraw) {
+    function testUserBalanceExceedsVaultBalance326() public {
+        IVault cvault = IVault(VAULT_WITH_EULER_STRATEGY);
+        IStrategy strategy = cvault.strategy();
+
+        // ------------------- upgrade strategy
+        _upgradeVaults();
+        _upgradeEulerStrategy(address(strategy));
+
+        // ------------------- setup vault-to-withdraw and make deposit
+        address[] memory assets = metaVault.assets();
+        uint amount = 0;
+        uint amountToInc = 500_000e6;
+        for (uint i; i < 2; ++i) {
+            do {
+                deal(assets[0], address(this), amountToInc);
+                IERC20(assets[0]).approve(address(metaVault), type(uint).max);
+                uint[] memory amounts = new uint[](1);
+                amounts[0] = amountToInc;
+                metaVault.depositAssets(assets, amounts, 0, address(this));
+                amount += amountToInc;
+            } while (metaVault.vaultForWithdraw() != VAULT_WITH_EULER_STRATEGY);
+        }
+        assertEq(
+            metaVault.vaultForWithdraw(), VAULT_WITH_EULER_STRATEGY, "we need a vault with the given Euler strategy"
+        );
+
+        // ------------------- check maxWithdraw
+        uint[3] memory amountsBefore = _getMaxWithdrawTwoBalances();
+        assertGt(amountsBefore[1], amountsBefore[0], "total user's metavault balance > max withdraw");
+        assertApproxEqAbs(amountsBefore[2], amountsBefore[0], 2, "subvault balance in metavault-tokens == max withdraw");
+
+        uint amountToLeave = 1000e6; // leave 1000 scUSD in the pool
+        _reduceCashInEulerStrategy(amountToLeave, address(strategy));
+
+        uint[3] memory amountsAfter = _getMaxWithdrawTwoBalances();
+        assertGt(amountsAfter[2], amountsBefore[0], "subvault balance in metavault-tokens > max withdraw");
+
+        assertApproxEqAbs(amountsAfter[0] / 1e12, amountToLeave, 2, "maxWithdraw = cash availalbe in sub-vault");
+
+        metaVault.withdrawAssets(assets, amountsAfter[0], new uint[](1));
+    }
+
+    function _getMaxWithdrawWMC() internal view returns (uint[3] memory wmcMaxWithdraw) {
         wmcMaxWithdraw = [
             wrappedMetaVault.maxWithdraw(address(this)),
             metaVault.maxWithdraw(address(wrappedMetaVault)),
@@ -104,6 +143,18 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         //        console.log("max W", wmcMaxWithdraw[0]);
         //        console.log("max M", wmcMaxWithdraw[1]);
         //        console.log("max C", wmcMaxWithdraw[2]);
+    }
+
+    function _getMaxWithdrawTwoBalances() internal view returns (uint[3] memory amounts) {
+        uint balanceSubVault = IStabilityVault(metaVault.vaultForWithdraw()).balanceOf(address(metaVault));
+        (uint sharePriceSubVault,) = IStabilityVault(metaVault.vaultForWithdraw()).price();
+        (uint priceAsset,) = metaVault.price();
+
+        amounts = [
+            metaVault.maxWithdraw(address(this)),
+            metaVault.balanceOf(address(this)),
+            balanceSubVault * sharePriceSubVault / priceAsset
+        ];
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -139,6 +190,13 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         vm.revertToState(snapshotId);
     }
+
+    function _reduceCashInEulerStrategy(uint amountToLeave, address strategy) internal {
+        IEulerVault eulerVault = IEulerVault(EulerStrategy(strategy).underlying());
+        uint cash = eulerVault.cash();
+        _borrowAlmostAllCash(eulerVault, cash, amountToLeave);
+    }
+    //endregion ---------------------- Internal logic
 
     //region ---------------------- Auxiliary functions
     function _upgradeVaults() internal {
@@ -249,21 +307,49 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         assertGt(cashBefore, eulerVault.cash(), "Euler cash was not borrowed");
     }
 
-    function _setProportions(uint fromIndex, uint toIndex) internal {
+    function _setProportionsForDeposit(IMetaVault metaVault_, uint targetIndex) internal {
         multisig = IPlatform(PLATFORM).multisig();
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
 
-        uint[] memory props = metaVault.targetProportions();
-        props[toIndex] += props[fromIndex] - 2e16;
-        props[fromIndex] = 2e16;
+        uint[] memory props = metaVault_.targetProportions();
+        uint len = props.length;
+        for (uint i = 0; i < len; ++i) {
+            if (i == targetIndex) {
+                props[targetIndex] = 1e18 - 1e16 * (len - 1);
+            } else {
+                props[i] = 1e16;
+            }
+        }
 
         vm.prank(multisig);
-        metaVault.setTargetProportions(props);
+        metaVault_.setTargetProportions(props);
 
-        //        props = metaVault.targetProportions();
-        //        uint[] memory current = metaVault.currentProportions();
-        //        for (uint i; i < current.length; ++i) {
-        //            console.log("i, current, target", i, current[i], props[i]);
-        //        }
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+    }
+
+    function _setProportionsForWithdraw(IMetaVault metaVault_, uint targetIndex, uint fromIndex) internal {
+        multisig = IPlatform(PLATFORM).multisig();
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+
+        uint total = 0;
+        uint[] memory props = metaVault_.currentProportions();
+        for (uint i = 0; i < props.length; ++i) {
+            if (i != targetIndex && i != fromIndex) {
+                total += props[i];
+            }
+        }
+
+        props[fromIndex] = 1e18 - total - 1e16;
+        props[targetIndex] = 1e16;
+
+        vm.prank(multisig);
+        metaVault_.setTargetProportions(props);
+
+        // _showProportions(metaVault_);
+        // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
     }
     //endregion ---------------------- Auxiliary functions
 }
