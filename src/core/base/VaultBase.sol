@@ -498,7 +498,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             (, uint[] memory assetAmounts) = strategy().assetsAmounts();
             if (assetAmounts.length == 1) {
                 // We need to calculate what part of the vault shares can be withdrawn
-                uint minPart = amounts[0] * 1e18 / assetAmounts[0];
+                uint minPart = assetAmounts[0] == 0 ? 0 : amounts[0] * 1e18 / assetAmounts[0];
 
                 return Math.min(
                     balance, // user vault shares balance
