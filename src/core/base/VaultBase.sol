@@ -496,22 +496,18 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
             // Full assets amounts under strategy control
             (, uint[] memory assetAmounts) = strategy().assetsAmounts();
+            if (assetAmounts.length == 1) {
+                // We need to calculate what part of the vault shares can be withdrawn
+                uint minPart = amounts[0] * 1e18 / assetAmounts[0];
 
-            // We need to calculate what part of the vault shares can be withdrawn
-            // For strategies with multiple assets we use following assumption: all assets are withdrawn in equal proportions
-            uint minPart = 1e18;
-            uint len = assetAmounts.length;
-            for (uint i = 0; i < len; ++i) {
-                if (amounts[i] * 1e18 / assetAmounts[i] < minPart) {
-                    minPart = amounts[i] * 1e18 / assetAmounts[i];
-                }
+                return Math.min(
+                    balance, // user vault shares balance
+                    minPart < 1e18 ? totalSupply() * minPart / 1e18 : totalSupply() // vault shares can be withdrawn
+                );
+            } else {
+                // stub; we'll probably need some other impl for multi-assets strategies if there are any
+                return balance;
             }
-            uint _totalSupply = totalSupply();
-
-            return Math.min(
-                balance, // user vault shares balance
-                minPart < 1e18 ? _totalSupply * minPart / 1e18 : _totalSupply // vault shares can be withdrawn
-            );
         }
     }
     //endregion --------------------------------- View functions

@@ -616,18 +616,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function maxWithdraw(address account) external view virtual returns (uint amount) {
         // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
         // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
-
         address _targetVault = vaultForWithdraw();
-        (uint vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
+        (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+            _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+        );
 
-        // Get max amount of vault shares to withdraw from the target vault
-        uint targetVaultSharesToWithdraw = IStabilityVault(_targetVault).maxWithdraw(address(this));
-
-        // Calculate USD value to withdraw based on targetVaultSharesToWithdraw
-        uint usdToWithdraw = Math.mulDiv(targetVaultSharesToWithdraw, vaultSharePriceUsd, 1e18, Math.Rounding.Floor);
-
-        // Convert USD amount to MetaVault balance (amount)
-        return Math.min(balanceOf(account), _usdAmountToMetaVaultBalance(usdToWithdraw));
+        return Math.min(balanceOf(account), maxMetaVaultTokensToWithdraw);
     }
     //endregion --------------------------------- View functions
 
@@ -727,8 +721,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         view
         returns (uint maxAmount, uint vaultSharePrice)
     {
+        return _maxAmountToWithdrawFromVaultForShares(vault, IERC20(vault).balanceOf(address(this)));
+    }
+
+    /// @dev Shared implementation for {maxWithdraw} and {maxWithdrawAmountTx}
+    function _maxAmountToWithdrawFromVaultForShares(
+        address vault,
+        uint vaultShares
+    ) internal view returns (uint maxAmount, uint vaultSharePrice) {
         (vaultSharePrice,) = IStabilityVault(vault).price();
-        uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
+        uint vaultUsd = Math.mulDiv(vaultSharePrice, vaultShares, 1e18, Math.Rounding.Floor);
+        // Convert USD amount to MetaVault tokens
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
     }
 
