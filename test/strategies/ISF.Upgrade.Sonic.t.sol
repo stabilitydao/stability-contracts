@@ -12,14 +12,14 @@ import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract ISFUpgradeTest is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     // wS-USDC.e
     address public constant STRATEGY = 0x0f1Aa4EafAc9bc6C0D6fA474254f4d765cd35648;
     address public constant FEE_TREASURY = 0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(16646000); // Mar-28-2025 09:09:20 PM +UTC
+        // Mar-28-2025 09:09:20 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 16646000));
     }
 
     function testISFUpgrade() public {
