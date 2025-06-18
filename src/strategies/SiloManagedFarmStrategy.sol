@@ -21,6 +21,8 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
@@ -28,7 +30,8 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
 /// Changelog:
-///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
+///     1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
+///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloManagedFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -37,7 +40,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -150,6 +153,27 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc IFarmingStrategy
     function farmMechanics() external pure returns (string memory) {
         return FarmMechanicsLib.AUTO;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        ISiloVault siloVault = _getSiloVault();
+
+        address asset = siloVault.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price,) = priceReader.getPrice(asset);
+
+        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        ISiloVault siloVault = _getSiloVault();
+        amounts = new uint[](1);
+        amounts[0] = siloVault.maxWithdraw(address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

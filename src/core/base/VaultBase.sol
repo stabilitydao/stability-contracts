@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.6.0: Add maxWithdraw - #326
 ///   2.5.0: Use strategy.fuseMode to detect fuse mode - #305
 ///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
 ///   2.4.1: Use mulDiv - #300
@@ -479,6 +480,35 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function doHardWorkOnDeposit() external view returns (bool) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         return $.doHardWorkOnDeposit;
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account) public view virtual returns (uint vaultShares) {
+        uint balance = balanceOf(account);
+        uint[] memory amounts = strategy().maxWithdrawAssets();
+        if (amounts.length == 0) {
+            // strategy allows to withdraw full amount
+            // so all vault shares can be withdrawn
+            return balance;
+        } else {
+            // strategy allows to withdraw only part of the assets
+            // so we need to calculate how many vault shares can be withdrawn
+
+            // Full assets amounts under strategy control
+            (, uint[] memory assetAmounts) = strategy().assetsAmounts();
+            if (assetAmounts.length == 1) {
+                // We need to calculate what part of the vault shares can be withdrawn
+                uint minPart = assetAmounts[0] == 0 ? 0 : amounts[0] * 1e18 / assetAmounts[0];
+
+                return Math.min(
+                    balance, // user vault shares balance
+                    minPart < 1e18 ? totalSupply() * minPart / 1e18 : totalSupply() // vault shares can be withdrawn
+                );
+            } else {
+                // stub; we'll probably need some other impl for multi-assets strategies if there are any
+                return balance;
+            }
+        }
     }
     //endregion --------------------------------- View functions
 

@@ -119,6 +119,8 @@ interface IPool {
     address rateStrategyAddress
   ) external;
 
+  function getReserveData(address asset) external view returns (ReserveData memory);
+
   function getReserveNormalizedIncome(address asset) external view returns (uint);
 
   function getReserveNormalizedVariableDebt(address asset) external view returns (uint);
@@ -162,4 +164,26 @@ interface IPool {
   function rescueTokens(address token, address to, uint amount) external;
 
   function deposit(address asset, uint amount, address onBehalfOf, uint16 referralCode) external;
+
+  struct ReserveConfigurationMap {
+    uint256 data;
+  }
+
+  struct ReserveData {
+    ReserveConfigurationMap configuration;
+    uint128 liquidityIndex;
+    uint128 currentLiquidityRate;
+    uint128 variableBorrowIndex;
+    uint128 currentVariableBorrowRate;
+    uint128 currentStableBorrowRate;
+    uint40 lastUpdateTimestamp;
+    uint16 id;
+    address aTokenAddress;
+    address stableDebtTokenAddress;
+    address variableDebtTokenAddress;
+    address interestRateStrategyAddress;
+    uint128 accruedToTreasury;
+    uint128 unbacked;
+    uint128 isolationModeTotalDebt;
+  }
 }
