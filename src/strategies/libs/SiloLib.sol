@@ -40,7 +40,7 @@ library SiloLib {
     uint private constant DEFAULT_SWAP_FEE = INTERNAL_PRECISION / 200;
 
 
-//region ------------------------------------- Data types
+    //region ------------------------------------- Data types
     struct CollateralDebtState {
         uint collateralPrice;
         uint borrowAssetPrice;
@@ -87,6 +87,7 @@ library SiloLib {
 
     //endregion ------------------------------------- Data types
 
+    //region ------------------------------------- Additional logic
     function receiveFlashLoan(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -94,7 +95,6 @@ library SiloLib {
         uint amount,
         uint feeAmount
     ) external {
-        console.log("************************ receiveFlashLoan.amount", amount);
         address flashLoanVault = _getFlashLoanAddress($, token);
         if (msg.sender != flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
@@ -250,14 +250,6 @@ library SiloLib {
         targetLeveragePercent = $.targetLeveragePercent;
 
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
-
-        console.log("_realTvl", _realTvl);
-        console.log("collateralPrice", collateralPrice);
-        console.log("collateralUsd", collateralUsd);
-        console.log("targetLeveragePercent", targetLeveragePercent);
-        console.log("maxLtv", maxLtv);
-        console.log("collateralAmount", collateralAmount);
-        console.log("debtAmount", debtAmount);
     }
 
     function rebalanceDebt(
@@ -314,8 +306,6 @@ library SiloLib {
             getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
-        console.log("totalCollateralUsd", debtState.totalCollateralUsd );
-        console.log("borrowAssetUsd", debtState.borrowAssetUsd );
     }
 
     function getDebtState(
@@ -341,7 +331,6 @@ library SiloLib {
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
-        console.log("borrowAssetPrice", data.borrowAssetPrice);
 
         return data;
     }
@@ -394,6 +383,7 @@ library SiloLib {
     function totalDebt(address borrowingVault) public view returns (uint) {
         return ISilo(borrowingVault).maxRepay(address(this));
     }
+    //endregion ------------------------------------- Additional logic
 
     //region ------------------------------------- Deposit
     function depositAssets(
@@ -426,8 +416,6 @@ library SiloLib {
         address[] memory _assets,
         uint amountToDeposit
     ) internal {
-        console.log("!!!!!Collateral balance", IERC20($.collateralAsset).balanceOf(address(this)));
-        console.log("!!!!!Borrow balance", IERC20($.borrowAsset).balanceOf(address(this)));
         (uint maxLtv,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
 
         // -------------------------- Calculate corrected borrow amount (it takes swapFee into account)
@@ -437,12 +425,10 @@ library SiloLib {
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         $.tempBorrowAmount = correctedBorrowAmount * priceCtoB / 1e18 - 2;
-        console.log("correctedBorrowAmount", correctedBorrowAmount);
 
         // -------------------------- Calculate flash loan amount
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = correctedBorrowAmount * 1e18 / maxLtv;
-        console.log("flashAmounts[0]", flashAmounts[0]);
 
         // -------------------------- Request flash loan
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
@@ -458,10 +444,6 @@ library SiloLib {
         uint value,
         address receiver
     ) external returns (uint[] memory amountsOut) {
-        console.log("!!!!!Collateral balance", IERC20($.collateralAsset).balanceOf(address(this)));
-        console.log("!!!!!Borrow balance", IERC20($.borrowAsset).balanceOf(address(this)));
-
-        console.log("************************ withdrawAssets.value", value);
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
         StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
 
@@ -477,19 +459,14 @@ library SiloLib {
         uint bal = StrategyLib.balance(v.collateralAsset);
         uint valueNow = bal + calcTotal(v);
 
-        console.log("bal", bal);
-        console.log("state.valueWas", state.valueWas);
-        console.log("valueNow", valueNow);
         amountsOut = new uint[](1);
         if (state.valueWas > valueNow) {
             amountsOut[0] = Math.min(value - (state.valueWas - valueNow), bal);
         } else {
             amountsOut[0] = Math.min(value + (valueNow - state.valueWas), bal);
         }
-        console.log("amountsOut[0]", amountsOut[0]);
 
         if (receiver != address(this)) {
-            console.log("!!!!!!!!!!!!!!! Transfer collateral to receiver", amountsOut[0]);
             IERC20(v.collateralAsset).safeTransfer(receiver, amountsOut[0]);
         }
 
@@ -497,11 +474,8 @@ library SiloLib {
 
         // ---------------------- Deposit the amount ~ value
         if (state.withdrawParam1 > INTERNAL_PRECISION) {
-            console.log("!!!!!!!!!!!!_depositAfterWithdraw.value", value);
             _depositAfterWithdraw($, v, state.withdrawParam1, value);
         }
-        console.log("!!!!!Collateral balance", IERC20($.collateralAsset).balanceOf(address(this)));
-        console.log("!!!!!Borrow balance", IERC20($.borrowAsset).balanceOf(address(this)));
     }
 
     function _depositAfterWithdraw(
@@ -571,7 +545,6 @@ library SiloLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
-        console.log("************************ _defaultWithdraw.value", value);
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
@@ -580,16 +553,14 @@ library SiloLib {
         flashAmounts[0] = collateralAmountToWithdraw * state.maxLtv / 1e18 * state.priceCtoB
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18 // priceCtoB has decimals 1e18
             / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-        console.log("**************** collateralAmountToWithdraw", collateralAmountToWithdraw);
-        console.log("flashAmounts", flashAmounts[0]);
         address[] memory flashAssets = new address[](1);
         flashAssets[0] = $.borrowAsset;
 
         address universalAddress1 = $.universalAddress1;
 
         $.tempCollateralAmount = collateralAmountToWithdraw;
-        console.log("Calculated collateralAmountToWithdraw:", $.tempCollateralAmount);
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
+
         LeverageLendingLib.requestFlashLoanExplicit(
             ILeverageLendingStrategy.FlashLoanKind($.flashLoanKind),
             universalAddress1 == address(0) ? $.flashLoanVault : universalAddress1,
@@ -597,7 +568,6 @@ library SiloLib {
             flashAmounts
         );
     }
-
 
     /// @notice Withdraws a 'value' amount of equity by decreasing the leverage.
     /// @dev This function implements a precise, calculation-based withdrawal.
@@ -613,7 +583,6 @@ library SiloLib {
         uint value
     ) internal {
         uint collateralDecimals = IERC20Metadata(v.collateralAsset).decimals();
-        uint borrowDecimals = IERC20Metadata(v.borrowAsset).decimals();
 
         uint finalDebtUsd;
         {
@@ -633,17 +602,14 @@ library SiloLib {
         // The flash loan amount is the exact amount of debt we need to repay.
         uint[] memory flashAmounts = new uint[](1);
 
-        uint collateralForSwapUsd;
-        {
-            // Amount of debt to repay. This will be the flash loan amount.
-            uint debtToRepayUsd = debtState.borrowAssetUsd - finalDebtUsd;
+        // Amount of debt to repay. This will be the flash loan amount.
+        uint debtToRepayUsd = debtState.borrowAssetUsd - finalDebtUsd;
 
-            // Calculate the total collateral to withdraw, adjusted for the swap fee.
-            // collateralToWithdraw = (debtToRepay / (1 - swapFee)) + value
-            collateralForSwapUsd = debtToRepayUsd * INTERNAL_PRECISION / (INTERNAL_PRECISION - DEFAULT_SWAP_FEE);
+        // Calculate the total collateral to withdraw, adjusted for the swap fee.
+        // collateralToWithdraw = (debtToRepay / (1 - swapFee)) + value
+        uint collateralForSwapUsd = debtToRepayUsd * INTERNAL_PRECISION / (INTERNAL_PRECISION - DEFAULT_SWAP_FEE);
 
-            flashAmounts[0] = debtToRepayUsd * 10 ** IERC20Metadata(v.borrowAsset).decimals() / debtState.borrowAssetPrice;
-        }
+        flashAmounts[0] = debtToRepayUsd * 10 ** IERC20Metadata(v.borrowAsset).decimals() / debtState.borrowAssetPrice;
 
         // The flash loan is requested in the borrow asset.
         address[] memory flashAssets = new address[](1);

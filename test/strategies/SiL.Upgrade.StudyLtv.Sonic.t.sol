@@ -8,9 +8,13 @@ import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStr
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 
 contract SiLUpgradeStudyLtvTest is Test {
@@ -22,6 +26,7 @@ contract SiLUpgradeStudyLtvTest is Test {
     IVault public vault;
     address public multisig;
     IFactory public factory;
+    IPriceReader public priceReader;
 
     struct State {
         uint ltv;
@@ -47,72 +52,11 @@ contract SiLUpgradeStudyLtvTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
         vault = IVault(VAULT);
-    }
-
-    /// @notice Single deposit + withdraw all, single user
-    function testWithdraw() public {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!! withdraw");
-        address userHolder = 0xB1d009a27F194Ad430430469c27aadfeA7a0Bd6B;
-
-        vm.prank(multisig);
-        address strategyAddress = address(vault.strategy());
-
-        // ----------------- deploy new impl and upgrade
-        _upgradeStrategy(strategyAddress);
-
-        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
-        vm.stopPrank();
-
-        // ----------------- set up
-        // _adjustParams(strategy);
-        _setTargetLeveragePercent(strategy, 8000);
-
-        // ----------------- deposit & withdraw
-//        uint deposited = _depositForUser(vault, userHolder, amount);
-//        vm.roll(block.number + 6);
-        uint amount = 1318172813848300382959;
-        console.log("amount to withdraw:", amount);
-        console.log("balance before withdraw:", IERC20(vault).balanceOf(userHolder));
-        uint withdrawn = _withdrawForUser(address(vault), strategyAddress, userHolder, amount);
-        vm.roll(block.number + 6);
-        console.log("withdrawn:", withdrawn);
-        console.log("asset", vault.assets()[0]);
-
-        console.log("balance after withdraw:", IERC20(vault).balanceOf(userHolder));
+        priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
     }
 
     function testDeposit() public {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!! deposit");
         address userHolder = 0xc2024E4bCAb1FFD8281C512F81d3Def0fd357940;
-
-        vm.prank(multisig);
-        address strategyAddress = address(vault.strategy());
-
-        // ----------------- deploy new impl and upgrade
-        _upgradeStrategy(strategyAddress);
-
-        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
-        vm.stopPrank();
-
-        // ----------------- set up
-//        _adjustParams(strategy);
-        _setTargetLeveragePercent(strategy, 8000);
-
-        // ----------------- deposit & withdraw
-//        uint deposited = _depositForUser(vault, userHolder, amount);
-//        vm.roll(block.number + 6);
-        uint amount = 19116e18;
-        uint deposited = _depositForUser(address(vault), userHolder, amount);
-        vm.roll(block.number + 6);
-        console.log("deposited:", deposited);
-        console.log("asset", vault.assets()[0]);
-
-        console.log("balance after withdraw:", IERC20(vault).balanceOf(userHolder));
-    }
-
-    function testWithdrawProblem() public {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!! withdraw");
-        address userHolder = 0xe51f74A17Ff1fc0505488729bD6d5Bd24F8b86f1;
 
         vm.prank(multisig);
         address strategyAddress = address(vault.strategy());
@@ -128,17 +72,50 @@ contract SiLUpgradeStudyLtvTest is Test {
         _setTargetLeveragePercent(strategy, 8000);
 
         // ----------------- deposit & withdraw
+        State memory stateBefore = _getHealth(address(vault), "!!!Before deposit");
+        uint amount = 19116e18;
+        _depositForUser(address(vault), userHolder, amount);
+        vm.roll(block.number + 6);
+
+        State memory stateAfter = _getHealth(address(vault), "!!!After deposit");
+        assertApproxEqAbs(stateBefore.ltv, stateAfter.ltv, 2, "LTV should not change much");
+        assertLt(_getDiffPercent4(stateBefore.leverage, stateAfter.leverage), 100, "Leverage should not change much");
+    }
+
+    function testWithdraw() public {
+        address userHolder = 0xe51f74A17Ff1fc0505488729bD6d5Bd24F8b86f1;
+
+        vm.prank(multisig);
+        address strategyAddress = address(vault.strategy());
+
+        // ----------------- deploy new impl and upgrade
+        _upgradeStrategy(strategyAddress);
+        _upgradeCVaults();
+
+        SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
+        vm.stopPrank();
+
+        // ----------------- set up
+        _adjustParams(strategy);
+        _setTargetLeveragePercent(strategy, 8000);
+
+        // ----------------- deposit & withdraw
         uint amount = vault.balanceOf(userHolder);
-        console.log("amount to withdraw:", amount);
-        console.log("balance before withdraw:", IERC20(vault).balanceOf(userHolder));
-        console.log("user balance before", IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(userHolder));
+        (uint tvl,) = vault.tvl();
+        (uint assetPrice, ) = priceReader.getPrice(vault.assets()[0]);
+        console.log("asset price", assetPrice);
+
+        State memory stateBefore = _getHealth(address(vault), "!!!Before withdraw");
         uint withdrawn = _withdrawForUser(address(vault), strategyAddress, userHolder, amount);
         vm.roll(block.number + 6);
-        console.log("withdrawn:", withdrawn);
-        console.log("asset", vault.assets()[0]);
-        console.log("user balance after", IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(userHolder));
 
-        console.log("balance after withdraw:", IERC20(vault).balanceOf(userHolder));
+        uint expectedToWithdraw = tvl * amount * 1e18 * 100_00 / vault.totalSupply() / stateBefore.leverage / assetPrice;
+
+        State memory stateAfter = _getHealth(address(vault), "!!!After withdraw");
+
+        assertLt(_getDiffPercent4(withdrawn, expectedToWithdraw), 500, "5% diff is ok");
+        assertLt(stateAfter.ltv, stateBefore.ltv, "LTV should decrease after withdraw");
+        assertApproxEqAbs(stateBefore.ltv, stateAfter.ltv, 5, "LTV should not change much");
     }
 
     //region -------------------------- Deposit withdraw routines
@@ -215,15 +192,15 @@ contract SiLUpgradeStudyLtvTest is Test {
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
         state.stateName = stateName;
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
-
-        console.log("ltv", state.ltv);
-        console.log("maxLtv", state.maxLtv);
-        console.log("leverage", state.leverage);
-        console.log("collateralAmount", state.collateralAmount);
-        console.log("debtAmount", state.debtAmount);
-        console.log("targetLeveragePercent", state.targetLeveragePercent);
-        console.log("maxLeverage", state.maxLeverage);
-        console.log("targetLeverage", state.targetLeverage);
+//
+//        console.log("ltv", state.ltv);
+//        console.log("maxLtv", state.maxLtv);
+//        console.log("leverage", state.leverage);
+//        console.log("collateralAmount", state.collateralAmount);
+//        console.log("debtAmount", state.debtAmount);
+//        console.log("targetLeveragePercent", state.targetLeveragePercent);
+//        console.log("maxLeverage", state.maxLeverage);
+//        console.log("targetLeverage", state.targetLeverage);
         return state;
     }
 
@@ -279,6 +256,22 @@ contract SiLUpgradeStudyLtvTest is Test {
 
     function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
         return x > y ? (x - y) * 100_00 / x : 0;
+    }
+
+    function _upgradeCVaults() internal {
+        address vaultImplementation = address(new CVault());
+        vm.prank(multisig);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: vaultImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: 1e10
+            })
+        );
+
+        factory.upgradeVaultProxy(VAULT);
     }
     //endregion -------------------------- Auxiliary functions
 }
