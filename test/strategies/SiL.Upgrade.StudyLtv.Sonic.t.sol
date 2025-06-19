@@ -42,7 +42,7 @@ contract SiLUpgradeStudyLtvTest is Test {
         // vm.rollFork(34426100); // Jun-17-2025 02:30:51 AM +UTC
         // vm.rollFork(34626742); // Jun-18-2025 07:17:56 AM +UTC
         // vm.rollFork(34631116); // Jun-18-2025 07:59:24 AM +UTC
-        vm.rollFork(34635371);
+        vm.rollFork(34686957-1); // Jun-18-2025 03:25:18 PM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -52,7 +52,7 @@ contract SiLUpgradeStudyLtvTest is Test {
     /// @notice Single deposit + withdraw all, single user
     function testWithdraw() public {
         console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!! withdraw");
-        address userHolder = 0xc2024E4bCAb1FFD8281C512F81d3Def0fd357940;
+        address userHolder = 0xB1d009a27F194Ad430430469c27aadfeA7a0Bd6B;
 
         vm.prank(multisig);
         address strategyAddress = address(vault.strategy());
@@ -70,7 +70,7 @@ contract SiLUpgradeStudyLtvTest is Test {
         // ----------------- deposit & withdraw
 //        uint deposited = _depositForUser(vault, userHolder, amount);
 //        vm.roll(block.number + 6);
-        uint amount = vault.balanceOf(userHolder) / 10;
+        uint amount = 1318172813848300382959;
         console.log("amount to withdraw:", amount);
         console.log("balance before withdraw:", IERC20(vault).balanceOf(userHolder));
         uint withdrawn = _withdrawForUser(address(vault), strategyAddress, userHolder, amount);
@@ -124,7 +124,7 @@ contract SiLUpgradeStudyLtvTest is Test {
         vm.stopPrank();
 
         // ----------------- set up
-        // _adjustParams(strategy);
+        _adjustParams(strategy);
         _setTargetLeveragePercent(strategy, 8000);
 
         // ----------------- deposit & withdraw
@@ -253,7 +253,7 @@ contract SiLUpgradeStudyLtvTest is Test {
     function _adjustParams(SiloLeverageStrategy strategy) internal {
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
 //        params[0] = 10000; // depositParam0: use default flash amount
-//        params[2] = 10000; // withdrawParam0: use default flash amount
+        params[2] = 9950; // 10000; // withdrawParam0: use default flash amount
         params[3] = 0; // withdrawParam1: allow 200% of deposit after withdraw
 //        params[11] = 9500; // withdrawParam2: allow withdraw-through-increasing-ltv if leverage < 95% of target level
         vm.prank(multisig);
