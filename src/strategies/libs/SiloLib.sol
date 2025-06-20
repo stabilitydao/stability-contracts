@@ -37,7 +37,7 @@ library SiloLib {
     uint private constant SEARCH_LEVERAGE_TOLERANCE = 1e16; // 0.01 tolerance scaled by 1e18
 
     /// @notice Default swap fee in calculations. Example: 50 for 0.5% (where precision is 10000)
-    uint private constant DEFAULT_SWAP_FEE = INTERNAL_PRECISION / 200;
+    uint private constant DEFAULT_SWAP_FEE = 1000;
 
 
     //region ------------------------------------- Data types
@@ -147,10 +147,14 @@ library SiloLib {
                 );
             }
 
+            console.log("balance C before swap", StrategyLib.balance(collateralAsset));
+            console.log("balance B before swap", StrategyLib.balance(token));
             // swap
             StrategyLib.swap(
                 platform, collateralAsset, token, Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset))
             );
+            console.log("balance C after swap", StrategyLib.balance(collateralAsset));
+            console.log("balance B after swap", StrategyLib.balance(token));
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
@@ -527,6 +531,7 @@ library SiloLib {
                 leverage >= state.targetLeverage * state.withdrawParam2 / INTERNAL_PRECISION
                     || !_withdrawThroughIncreasingLtv($, v, state, debtState, value, leverage)
             ) {
+                console.log("state.withdrawParam0", state.withdrawParam0, leverage, state.targetLeverage);
                 if (leverage > state.targetLeverage && state.withdrawParam0 < INTERNAL_PRECISION) {
                     _withdrawWithDecreasingLeverage($, v, state, debtState, value);
                 } else {
@@ -545,9 +550,13 @@ library SiloLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
+        console.log("defaultWithdraw.value", value);
         // repay debt and withdraw
         // we use maxLeverage and maxLtv, so result ltv will reduce
-        uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
+//        uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION * state.withdrawParam0 / INTERNAL_PRECISION;
+        uint debtCollateral = value * state.maxLeverage / INTERNAL_PRECISION - value;
+        uint debtCollateralWithFee = debtCollateral * INTERNAL_PRECISION / (INTERNAL_PRECISION - DEFAULT_SWAP_FEE);
+        uint collateralAmountToWithdraw = value + debtCollateralWithFee;
 
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = collateralAmountToWithdraw * state.maxLtv / 1e18 * state.priceCtoB
@@ -582,6 +591,7 @@ library SiloLib {
         CollateralDebtState memory debtState,
         uint value
     ) internal {
+        console.log("_withdrawWithDecreasingLeverage.value", value);
         uint collateralDecimals = IERC20Metadata(v.collateralAsset).decimals();
 
         uint finalDebtUsd;
@@ -599,9 +609,6 @@ library SiloLib {
             finalDebtUsd = (targetLeverage - INTERNAL_PRECISION) * finalEquityUsd / INTERNAL_PRECISION;
         }
 
-        // The flash loan amount is the exact amount of debt we need to repay.
-        uint[] memory flashAmounts = new uint[](1);
-
         // Amount of debt to repay. This will be the flash loan amount.
         uint debtToRepayUsd = debtState.borrowAssetUsd - finalDebtUsd;
 
@@ -609,6 +616,8 @@ library SiloLib {
         // collateralToWithdraw = (debtToRepay / (1 - swapFee)) + value
         uint collateralForSwapUsd = debtToRepayUsd * INTERNAL_PRECISION / (INTERNAL_PRECISION - DEFAULT_SWAP_FEE);
 
+        // The flash loan amount is the exact amount of debt we need to repay.
+        uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = debtToRepayUsd * 10 ** IERC20Metadata(v.borrowAsset).decimals() / debtState.borrowAssetPrice;
 
         // The flash loan is requested in the borrow asset.

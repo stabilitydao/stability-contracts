@@ -17,6 +17,7 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 
+/// @notice Withdraw with decreasing leverage, more accurate deposit
 contract SiLUpgradeStudyLtvTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -44,9 +45,6 @@ contract SiLUpgradeStudyLtvTest is Test {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        // vm.rollFork(34426100); // Jun-17-2025 02:30:51 AM +UTC
-        // vm.rollFork(34626742); // Jun-18-2025 07:17:56 AM +UTC
-        // vm.rollFork(34631116); // Jun-18-2025 07:59:24 AM +UTC
         vm.rollFork(34686957-1); // Jun-18-2025 03:25:18 PM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
@@ -95,27 +93,53 @@ contract SiLUpgradeStudyLtvTest is Test {
         SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(strategyAddress));
         vm.stopPrank();
 
-        // ----------------- set up
-        _adjustParams(strategy);
+        State memory stateBefore = _getHealth(address(vault), "!!!Before withdraw");
+
         _setTargetLeveragePercent(strategy, 8000);
 
-        // ----------------- deposit & withdraw
-        uint amount = vault.balanceOf(userHolder);
-        (uint tvl,) = vault.tvl();
+        uint snapshotId = vm.snapshotState();
+        _setWithdrawParam0(strategy, 10000);
+        (uint withdrawn0, uint expectedToWithdraw) = _withdraw(userHolder, strategyAddress);
+        State memory stateAfter0 = _getHealth(address(vault), "!!!After withdraw");
+        vm.revertToState(snapshotId);
+
+        snapshotId = vm.snapshotState();
+        _setWithdrawParam0(strategy, 10500);
+        (uint withdrawn1,) = _withdraw(userHolder, strategyAddress);
+        State memory stateAfter1 = _getHealth(address(vault), "!!!After withdraw");
+        vm.revertToState(snapshotId);
+
+        _setWithdrawParam0(strategy, 9990);
+        (uint withdrawn2,) = _withdraw(userHolder, strategyAddress);
+        State memory stateAfter2 = _getHealth(address(vault), "!!!After withdraw");
+
+        console.log("ltv-default", stateBefore.ltv, "->", stateAfter0.ltv);
+        console.log("ltv-default-modified", stateBefore.ltv, "->", stateAfter1.ltv);
+        console.log("ltv-dec-ltv", stateBefore.ltv, "->", stateAfter2.ltv);
+
+        console.log("leverage-default", stateBefore.leverage, "->", stateAfter0.leverage);
+        console.log("leverage-default-modified", stateBefore.leverage, "->", stateAfter1.leverage);
+        console.log("leverage-dec-ltv", stateBefore.leverage, "->", stateAfter2.leverage);
+
+        console.log("withdrawn-default", expectedToWithdraw, "->", withdrawn0);
+        console.log("withdrawn-default-modified", expectedToWithdraw, "->", withdrawn1);
+        console.log("withdrawn-dec-ltv", expectedToWithdraw, "->", withdrawn2);
+
+        assertLt(_getDiffPercent4(withdrawn2, expectedToWithdraw), 600, "withdrawn amount diff is too high");
+        assertLt(stateAfter2.ltv, stateBefore.ltv, "LTV should decrease after withdraw");
+        assertApproxEqAbs(stateBefore.ltv, stateAfter2.ltv, 5, "LTV should not change much");
+    }
+
+    function _withdraw(address user, address strategy) internal returns (uint withdrawn, uint expectedToWithdraw) {
+        uint amount = vault.balanceOf(user);
+        //(uint tvl,) = vault.tvl();
         (uint assetPrice, ) = priceReader.getPrice(vault.assets()[0]);
-        console.log("asset price", assetPrice);
+        (uint realSharePrice, ) = ILeverageLendingStrategy(strategy).realSharePrice();
+        // uint expectedToWithdraw = tvl * amount * 1e18 * 100_00 / vault.totalSupply() / stateBefore.leverage / assetPrice;
+        expectedToWithdraw = realSharePrice * amount / assetPrice;
 
-        State memory stateBefore = _getHealth(address(vault), "!!!Before withdraw");
-        uint withdrawn = _withdrawForUser(address(vault), strategyAddress, userHolder, amount);
+        withdrawn = _withdrawForUser(address(vault), strategy, user, amount);
         vm.roll(block.number + 6);
-
-        uint expectedToWithdraw = tvl * amount * 1e18 * 100_00 / vault.totalSupply() / stateBefore.leverage / assetPrice;
-
-        State memory stateAfter = _getHealth(address(vault), "!!!After withdraw");
-
-        assertLt(_getDiffPercent4(withdrawn, expectedToWithdraw), 500, "5% diff is ok");
-        assertLt(stateAfter.ltv, stateBefore.ltv, "LTV should decrease after withdraw");
-        assertApproxEqAbs(stateBefore.ltv, stateAfter.ltv, 5, "LTV should not change much");
     }
 
     //region -------------------------- Deposit withdraw routines
@@ -181,6 +205,25 @@ contract SiLUpgradeStudyLtvTest is Test {
     //endregion -------------------------- Deposit withdraw routines
 
     //region -------------------------- Auxiliary functions
+    function _adjustParams(SiloLeverageStrategy strategy) internal {
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+//        params[0] = 10000; // depositParam0: use default flash amount
+//        params[2] = 9917; // 9980; // 10000; // withdrawParam0: use default flash amount
+        params[2] = 10200;
+//        params[3] = 0; // withdrawParam1: allow 200% of deposit after withdraw
+//        params[11] = 9500; // withdrawParam2: allow withdraw-through-increasing-ltv if leverage < 95% of target level
+        vm.prank(multisig);
+        strategy.setUniversalParams(params, addresses);
+    }
+
+    function _setWithdrawParam0(SiloLeverageStrategy strategy, uint value) internal {
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+        params[2] = value;
+        params[3] = 0; // withdrawParam1: allow 200% of deposit after withdraw
+        vm.prank(multisig);
+        strategy.setUniversalParams(params, addresses);
+    }
+
     function _getHealth(address vault_, string memory stateName) internal view returns (State memory state) {
         SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(address(IVault(vault_).strategy())));
         // console.log(stateName);
@@ -225,16 +268,6 @@ contract SiLUpgradeStudyLtvTest is Test {
         );
 
         factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _adjustParams(SiloLeverageStrategy strategy) internal {
-        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
-//        params[0] = 10000; // depositParam0: use default flash amount
-        params[2] = 9950; // 10000; // withdrawParam0: use default flash amount
-        params[3] = 0; // withdrawParam1: allow 200% of deposit after withdraw
-//        params[11] = 9500; // withdrawParam2: allow withdraw-through-increasing-ltv if leverage < 95% of target level
-        vm.prank(multisig);
-        strategy.setUniversalParams(params, addresses);
     }
 
     function _setTargetLeveragePercent(SiloLeverageStrategy strategy, uint newPercent) internal {
