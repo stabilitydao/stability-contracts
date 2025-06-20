@@ -430,6 +430,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
+    /// @dev MultiVault supports withdrawing from all sub-vaults. Return the vault from which to start withdrawing.
     function vaultForWithdraw() public view returns (address target) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         address[] memory _vaults = $.vaults;
@@ -614,14 +615,30 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) external view virtual returns (uint amount) {
-        // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
-        // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
-        address _targetVault = vaultForWithdraw();
-        (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-            _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
-        );
+        uint userBalance = balanceOf(account);
 
-        return Math.min(balanceOf(account), maxMetaVaultTokensToWithdraw);
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            for (uint i; i < $.vaults.length; ++i) {
+                address _targetVault = $.vaults[i];
+                (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                    _targetVault, IStabilityVault(_targetVault).maxWithdraw(account)
+                );
+                amount += maxMetaVaultTokensToWithdraw;
+                if (userBalance < amount) return userBalance;
+            }
+
+            return amount;
+        } else {
+            // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
+            // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
+            address _targetVault = vaultForWithdraw();
+            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+            );
+
+            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+        }
     }
     //endregion --------------------------------- View functions
 
@@ -693,27 +710,92 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, _targetVault);
 
-        (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
-        require(
-            amount <= maxAmountToWithdrawFromVault,
-            MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
-        );
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            amountsOut = _withdrawFromMultiVault($.vaults, assets_, amount, [receiver, owner], minAssetAmountsOut);
+        } else {
+            (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
+            require(
+                amount <= maxAmountToWithdrawFromVault,
+                MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
+            );
 
-        uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
-
-        require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
-
-        uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
-
-        amountsOut = IStabilityVault(_targetVault).withdrawAssets(
-            assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
-        );
+            amountsOut = _withdrawFromSelectedVault(assets_, amount, vaultSharePriceUsd, _targetVault, receiver, minAssetAmountsOut);
+        }
 
         _burn($, owner, amount, sharesToBurn);
 
         $.lastTransferBlock[receiver] = block.number;
 
         emit WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
+    }
+
+    function _withdrawFromMultiVault(
+        address[] memory vaults_,
+        address[] memory assets_,
+        uint amount,
+        address[2] memory receiverOwner, // todo probably return back receiver, owner
+        uint[] memory minAssetAmountsOut
+    ) internal returns (uint[] memory amountsOut) {
+
+        // todo set target vault on the first position in vaults_
+
+        uint amountToWithdraw = amount; // todo we don't need amount if minAssetAmountsOut is checked at the end
+        for (uint i; i < vaults_.length; ++i) {
+            (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(vaults_[i]);
+            uint amountToWithdrawFromVault = Math.min(amountToWithdraw, IStabilityVault(vaults_[i]).maxWithdraw(receiverOwner[1]));
+            if (amountToWithdrawFromVault != 0) {
+                _withdrawFromSelectedVault(
+                    assets_,
+                    amountToWithdrawFromVault,
+                    vaultSharePriceUsd,
+                    vaults_[i],
+                    receiverOwner[0],
+                    _getMinAssetAmountsForVault(minAssetAmountsOut, amount, maxAmountToWithdrawFromVault) // todo check minAssetAmountsOut at the end only
+                );
+                amountToWithdraw -= maxAmountToWithdrawFromVault;
+                if (amountToWithdraw == 0) break;
+            }
+        }
+        require(amountToWithdraw != 0, MaxAmountForWithdrawPerTxReached(amountToWithdraw, 0));
+
+        return amountsOut;
+    }
+
+    // todo remove ?
+    function _getMinAssetAmountsForVault(uint[] memory minAssetAmountsOut, uint totalAmount, uint amount) internal pure returns (uint[] memory) {
+        if (totalAmount == amount) {
+            return minAssetAmountsOut;
+        }
+
+        uint[] memory minAssetAmountsForVault = new uint[](minAssetAmountsOut.length);
+        for (uint i; i < minAssetAmountsOut.length; ++i) {
+            minAssetAmountsForVault[i] = Math.mulDiv(minAssetAmountsOut[i], amount, totalAmount, Math.Rounding.Floor);
+        }
+        return minAssetAmountsForVault;
+    }
+
+    // todo remove ? 
+    function _withdrawFromSelectedVault(
+        address[] memory assets_,
+        uint amount,
+        uint vaultSharePriceUsd,
+        address targetVault_,
+        address receiver,
+        uint[] memory minAssetAmountsOut
+    ) internal returns (uint[] memory amountsOut) {
+        uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
+
+        require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD)); // todo we need only single check
+
+        uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
+
+        amountsOut = IStabilityVault(targetVault_).withdrawAssets(
+            assets_,
+            targetVaultSharesToWithdraw,
+            minAssetAmountsOut,
+            receiver,
+            address(this)
+        );
     }
 
     function _maxAmountToWithdrawFromVault(address vault)
