@@ -81,7 +81,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         uint maxUserShares = super.maxRedeem(owner);
         if ($.isMulti) {
-            uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdrawAmountTx();
+            uint maxVaultWithdrawAmountTx = IMetaVault($.metaVault).maxWithdraw(address(this));
             uint decimalsOffset = 10 ** (18 - IERC20Metadata(asset()).decimals());
             maxVaultWithdrawAmountTx = Math.mulDiv(maxVaultWithdrawAmountTx, 1, decimalsOffset, Math.Rounding.Floor);
             uint maxVaultWithdrawShares = convertToShares(maxVaultWithdrawAmountTx);

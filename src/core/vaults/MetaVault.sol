@@ -754,6 +754,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address targetVault_
     ) internal returns (uint[] memory amountsOut) {
+        uint totalAmount = amount;
+
         // ------------------- set target vault on the first position in vaults_
         uint len = vaults_.length;
         for (uint i; i < len; ++i) {
@@ -769,7 +771,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         amountsOut = new uint[](assets_.length);
         for (uint i; i < len; ++i) {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
-                _getAmountToWithdrawFromVault(vaults_[i], amount, address(this));
+                _getAmountToWithdrawFromVault(vaults_[i], totalAmount, address(this));
             if (targetVaultSharesToWithdraw != 0) {
                 uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
                     assets_,
@@ -781,13 +783,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 for (uint j; j < assets_.length; ++j) {
                     amountsOut[j] += _amountsOut[j];
                 }
-                amount -= amountToWithdraw;
-                if (amount == 0) break;
+                totalAmount -= amountToWithdraw;
+                if (totalAmount == 0) break;
             }
         }
 
         // ------------------- ensure that all requested amount is withdrawn
-        require(amount == 0, MaxAmountForWithdrawPerTxReached(amount, 0));
+        require(totalAmount == 0, MaxAmountForWithdrawPerTxReached(amount, amount - totalAmount));
 
         return amountsOut;
     }
