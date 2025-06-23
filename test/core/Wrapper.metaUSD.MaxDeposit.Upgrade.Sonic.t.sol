@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/strategies/EulerStrategy.sol";
-import "../../src/strategies/SiloFarmStrategy.sol";
-import "../../src/strategies/SiloManagedFarmStrategy.sol";
-import "../../src/strategies/SiloStrategy.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
@@ -148,8 +148,8 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         _tryWithdrawFromMetaVault(maxWithdrawsWMICAfter[1] * 101 / 100, true);
         _tryWithdrawFromWrappedVault(maxWithdrawsWMICAfter[0] * 101 / 100, true);
 
-//        wrappedMetaVault.withdraw(maxWithdrawsWMICAfter[0], address(this), address(this));
-//        uint[4] memory maxWithdrawsWMICFinal = _getMaxWithdraw();
+        //        wrappedMetaVault.withdraw(maxWithdrawsWMICAfter[0], address(this), address(this));
+        //        uint[4] memory maxWithdrawsWMICFinal = _getMaxWithdraw();
     }
 
     function _getMaxWithdraw() internal view returns (uint[4] memory wmcMaxWithdraw) {
@@ -159,10 +159,10 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
             multiVault.maxWithdraw(address(metaVault)),
             IVault(VAULT_WITH_AAVE_STRATEGY).maxWithdraw(address(multiVault))
         ];
-//        console.log("max W", wmcMaxWithdraw[0]);
-//        console.log("max M", wmcMaxWithdraw[1]);
-//        console.log("max I", wmcMaxWithdraw[2]);
-//        console.log("max C", wmcMaxWithdraw[3]);
+        //        console.log("max W", wmcMaxWithdraw[0]);
+        //        console.log("max M", wmcMaxWithdraw[1]);
+        //        console.log("max I", wmcMaxWithdraw[2]);
+        //        console.log("max C", wmcMaxWithdraw[3]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -201,10 +201,10 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         vm.revertToState(snapshotId);
     }
 
-    function _tryWithdrawFromWrappedVault(uint assetsAmount, bool expectRevert) internal returns (
-        uint balanceAfterWithdraw,
-        uint withdrawnAmount
-    ){
+    function _tryWithdrawFromWrappedVault(
+        uint assetsAmount,
+        bool expectRevert
+    ) internal returns (uint balanceAfterWithdraw, uint withdrawnAmount) {
         uint snapshotId = vm.snapshotState();
 
         address asset = wrappedMetaVault.asset();
@@ -267,9 +267,15 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
                     _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
                 } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
                     _upgradeEulerStrategy(address(IVault(payable(vaults[i])).strategy()));
-                } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
+                } else if (
+                    CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)
+                ) {
                     _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-                } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)) {
+                } else if (
+                    CommonLib.eq(
+                        IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM
+                    )
+                ) {
                     _upgradeSiloManagedFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
                 } else {
                     revert("Unknown strategy for CVault");

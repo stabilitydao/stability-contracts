@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/strategies/SiloStrategy.sol";
+import {SiloStrategy} from ../../src/strategies/SiloStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
@@ -80,7 +80,11 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
         uint[3] memory maxWithdrawsWMCAfter = _getMaxWithdrawWMC();
-        assertLt(maxWithdrawsWMCAfter[2], maxWithdrawsWMCBefore[2], "User is able to withdraw less than all amount from CVault");
+        assertLt(
+            maxWithdrawsWMCAfter[2],
+            maxWithdrawsWMCBefore[2],
+            "User is able to withdraw less than all amount from CVault"
+        );
 
         // ------------------- ensure that we are able to withdraw max withdraw amount from each vault
         _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2], false);
@@ -112,12 +116,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
                 IERC20(assets[0]).approve(address(metaVault), type(uint).max);
                 uint[] memory amounts = new uint[](1);
                 amounts[0] = amountToInc;
-                metaVault.depositAssets(
-                    assets,
-                    amounts,
-                    0,
-                    address(this)
-                );
+                metaVault.depositAssets(assets, amounts, 0, address(this));
                 amount += amountToInc;
             } while (metaVault.vaultForWithdraw() != VAULT_WITH_EULER_STRATEGY);
         }
@@ -127,8 +126,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         // ------------------- check maxWithdraw
         uint[3] memory amountsBefore = _getMaxWithdrawTwoBalances();
-        assertGt(amountsBefore[0], amountsBefore[2], "total user metavault balance > subvault balance in metavault-tokens");
-        assertApproxEqAbs(amountsBefore[0], amountsBefore[1], 2, "user is able to withdraw all amount (from multiple subvaults)");
+        assertGt(
+            amountsBefore[0], amountsBefore[2], "total user metavault balance > subvault balance in metavault-tokens"
+        );
+        assertApproxEqAbs(
+            amountsBefore[0], amountsBefore[1], 2, "user is able to withdraw all amount (from multiple subvaults)"
+        );
 
         uint amountToLeave = 1000e6; // leave 1000 scUSD in the pool
         _reduceCashInEulerStrategy(amountToLeave, address(strategy));
@@ -151,9 +154,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             metaVault.maxWithdraw(address(wrappedMetaVault)),
             IVault(VAULT_WITH_EULER_STRATEGY).maxWithdraw(address(metaVault))
         ];
-//        console.log("max W", wmcMaxWithdraw[0]);
-//        console.log("max M", wmcMaxWithdraw[1]);
-//        console.log("max C", wmcMaxWithdraw[2]);
+        //        console.log("max W", wmcMaxWithdraw[0]);
+        //        console.log("max M", wmcMaxWithdraw[1]);
+        //        console.log("max C", wmcMaxWithdraw[2]);
     }
 
     function _getMaxWithdrawTwoBalances() internal view returns (uint[3] memory amounts) {
@@ -166,9 +169,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             metaVault.balanceOf(address(this)),
             balanceSubVault * sharePriceSubVault / priceAsset
         ];
-//        console.log("amounts[0] (max withdraw):", amounts[0]);
-//        console.log("amounts[1] (user balance in meta-vault):", amounts[1]);
-//        console.log("amounts[2] (sub-vault balance in meta-vault-tokens):", amounts[2]);
+        //        console.log("amounts[0] (max withdraw):", amounts[0]);
+        //        console.log("amounts[1] (user balance in meta-vault):", amounts[1]);
+        //        console.log("amounts[2] (sub-vault balance in meta-vault-tokens):", amounts[2]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -195,7 +198,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         vm.revertToState(snapshotId);
     }
 
-    function _tryWithdrawFromMetaVault(uint metaVaultTokens, bool expectRevert, uint[] memory minAmounts, address user) internal {
+    function _tryWithdrawFromMetaVault(
+        uint metaVaultTokens,
+        bool expectRevert,
+        uint[] memory minAmounts,
+        address user
+    ) internal {
         uint snapshotId = vm.snapshotState();
 
         address[] memory assets = metaVault.assets();

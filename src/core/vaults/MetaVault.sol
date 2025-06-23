@@ -18,7 +18,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.3.0: Add maxWithdraw - #326
+///   1.3.0: - Add maxWithdraw - #326
+///          - MultiVault withdraws from all sub-vaults - #334
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -734,7 +735,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 receiver,
                 address(this)
             );
-
         }
 
         _burn($, owner, amount, sharesToBurn);
@@ -768,11 +768,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // ------------------- withdraw from vaults until requested amount is withdrawn
         amountsOut = new uint[](assets_.length);
         for (uint i; i < len; ++i) {
-            (uint amountToWithdraw, uint targetVaultSharesToWithdraw) = _getAmountToWithdrawFromVault(
-                vaults_[i],
-                amount,
-                address(this)
-            );
+            (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
+                _getAmountToWithdrawFromVault(vaults_[i], amount, address(this));
             if (targetVaultSharesToWithdraw != 0) {
                 uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
                     assets_,
@@ -807,10 +804,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint amount,
         address owner
     ) internal view returns (uint amountToWithdraw, uint targetVaultSharesToWithdraw) {
-        (uint maxAmount, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVaultForShares(
-            vault,
-            IStabilityVault(vault).maxWithdraw(owner)
-        );
+        (uint maxAmount, uint vaultSharePriceUsd) =
+            _maxAmountToWithdrawFromVaultForShares(vault, IStabilityVault(vault).maxWithdraw(owner));
         amountToWithdraw = Math.min(amount, maxAmount);
         targetVaultSharesToWithdraw = _getTargetVaultSharesToWithdraw(amountToWithdraw, vaultSharePriceUsd, false);
     }
