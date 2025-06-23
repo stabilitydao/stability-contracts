@@ -632,7 +632,7 @@ contract MetaVaultSonicTest is Test {
         vm.prank(multisig);
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
+                id: StrategyIdLib.SILO_MANAGED_FARM,
                 implementation: strategyImplementation,
                 deployAllowed: true,
                 upgradeAllowed: true,

@@ -1,27 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
+import "../../src/strategies/SiloStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IEVC, IEthereumVaultConnector} from "../../src/integrations/euler/IEthereumVaultConnector.sol";
 import {IEulerVault} from "../../src/integrations/euler/IEulerVault.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 34657318; // Jun-12-2025 05:49:24 AM +UTC
@@ -45,7 +46,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
     }
 
-    /// @notice #326: Check how maxWithdraw works in wrapped/meta-vault/c-vault with Euler strategy
+    /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/c-vault with Euler strategy
     function testMetaVaultUpdate326() public {
         IVault cvault = IVault(VAULT_WITH_EULER_STRATEGY);
         IStrategy strategy = cvault.strategy();
@@ -79,7 +80,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
         uint[3] memory maxWithdrawsWMCAfter = _getMaxWithdrawWMC();
-        assertApproxEqAbs(maxWithdrawsWMCAfter[0], amountToLeave, 2, "User is able to withdraw only left amount");
+        assertLt(maxWithdrawsWMCAfter[2], maxWithdrawsWMCBefore[2], "User is able to withdraw less than all amount from CVault");
 
         // ------------------- ensure that we are able to withdraw max withdraw amount from each vault
         _tryWithdrawFromCVault(cvault, maxWithdrawsWMCAfter[2], false);
@@ -92,13 +93,14 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         _tryWithdrawFromWrappedVault(maxWithdrawsWMCAfter[0] * 101 / 100, true);
     }
 
-    function testUserBalanceExceedsVaultBalance326() public {
+    /// @notice #326, #334: Check how maxWithdraw works in meta-vault/c-vault with Euler strategy
+    /// User balance exceeds sub-vault balance in meta-vault-tokens
+    function testUserBalanceExceedsSubVaultBalance326() public {
         IVault cvault = IVault(VAULT_WITH_EULER_STRATEGY);
         IStrategy strategy = cvault.strategy();
 
         // ------------------- upgrade strategy
         _upgradeVaults();
-        _upgradeEulerStrategy(address(strategy));
 
         // ------------------- setup vault-to-withdraw and make deposit
         address[] memory assets = metaVault.assets();
@@ -110,7 +112,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
                 IERC20(assets[0]).approve(address(metaVault), type(uint).max);
                 uint[] memory amounts = new uint[](1);
                 amounts[0] = amountToInc;
-                metaVault.depositAssets(assets, amounts, 0, address(this));
+                metaVault.depositAssets(
+                    assets,
+                    amounts,
+                    0,
+                    address(this)
+                );
                 amount += amountToInc;
             } while (metaVault.vaultForWithdraw() != VAULT_WITH_EULER_STRATEGY);
         }
@@ -120,29 +127,33 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         // ------------------- check maxWithdraw
         uint[3] memory amountsBefore = _getMaxWithdrawTwoBalances();
-        assertGt(amountsBefore[1], amountsBefore[0], "total user's metavault balance > max withdraw");
-        assertApproxEqAbs(amountsBefore[2], amountsBefore[0], 2, "subvault balance in metavault-tokens == max withdraw");
+        assertGt(amountsBefore[0], amountsBefore[2], "total user metavault balance > subvault balance in metavault-tokens");
+        assertApproxEqAbs(amountsBefore[0], amountsBefore[1], 2, "user is able to withdraw all amount (from multiple subvaults)");
 
         uint amountToLeave = 1000e6; // leave 1000 scUSD in the pool
         _reduceCashInEulerStrategy(amountToLeave, address(strategy));
 
         uint[3] memory amountsAfter = _getMaxWithdrawTwoBalances();
-        assertGt(amountsAfter[2], amountsBefore[0], "subvault balance in metavault-tokens > max withdraw");
+        assertGt(amountsBefore[0], amountsAfter[0], "max withdraw is reduced");
+        assertGt(amountsAfter[0], amountsAfter[2], "max withdraw > sub-vault balance in meta-vault-tokens");
 
-        assertApproxEqAbs(amountsAfter[0] / 1e12, amountToLeave, 2, "maxWithdraw = cash availalbe in sub-vault");
+        uint[] memory minAmounts = new uint[](1);
+        minAmounts[0] = amountsAfter[0] * 99 / 100 / 1e12; // 1% slippage
 
-        metaVault.withdrawAssets(assets, amountsAfter[0], new uint[](1));
+        _tryWithdrawFromMetaVault(amountsAfter[0], false, minAmounts, address(this));
+        _tryWithdrawFromMetaVault(amountsAfter[0] + 1, true, minAmounts, address(this));
     }
 
+    //region ---------------------- Internal logic
     function _getMaxWithdrawWMC() internal view returns (uint[3] memory wmcMaxWithdraw) {
         wmcMaxWithdraw = [
             wrappedMetaVault.maxWithdraw(address(this)),
             metaVault.maxWithdraw(address(wrappedMetaVault)),
             IVault(VAULT_WITH_EULER_STRATEGY).maxWithdraw(address(metaVault))
         ];
-        //        console.log("max W", wmcMaxWithdraw[0]);
-        //        console.log("max M", wmcMaxWithdraw[1]);
-        //        console.log("max C", wmcMaxWithdraw[2]);
+//        console.log("max W", wmcMaxWithdraw[0]);
+//        console.log("max M", wmcMaxWithdraw[1]);
+//        console.log("max C", wmcMaxWithdraw[2]);
     }
 
     function _getMaxWithdrawTwoBalances() internal view returns (uint[3] memory amounts) {
@@ -155,6 +166,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
             metaVault.balanceOf(address(this)),
             balanceSubVault * sharePriceSubVault / priceAsset
         ];
+//        console.log("amounts[0] (max withdraw):", amounts[0]);
+//        console.log("amounts[1] (user balance in meta-vault):", amounts[1]);
+//        console.log("amounts[2] (sub-vault balance in meta-vault-tokens):", amounts[2]);
     }
 
     function _tryWithdrawFromCVault(IVault vault, uint vaultShares, bool expectRevert) internal {
@@ -181,6 +195,18 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         vm.revertToState(snapshotId);
     }
 
+    function _tryWithdrawFromMetaVault(uint metaVaultTokens, bool expectRevert, uint[] memory minAmounts, address user) internal {
+        uint snapshotId = vm.snapshotState();
+
+        address[] memory assets = metaVault.assets();
+
+        if (expectRevert) vm.expectRevert();
+        vm.startPrank(user);
+        metaVault.withdrawAssets(assets, metaVaultTokens, minAmounts);
+
+        vm.revertToState(snapshotId);
+    }
+
     function _tryWithdrawFromWrappedVault(uint assetsAmount, bool expectRevert) internal {
         uint snapshotId = vm.snapshotState();
 
@@ -191,10 +217,10 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         vm.revertToState(snapshotId);
     }
 
-    function _reduceCashInEulerStrategy(uint amountToLeave, address strategy) internal {
+    function _reduceCashInEulerStrategy(uint amountToLeave, address strategy) internal returns (uint cashBefore) {
         IEulerVault eulerVault = IEulerVault(EulerStrategy(strategy).underlying());
-        uint cash = eulerVault.cash();
-        _borrowAlmostAllCash(eulerVault, cash, amountToLeave);
+        cashBefore = eulerVault.cash();
+        _borrowAlmostAllCash(eulerVault, cashBefore, amountToLeave);
     }
     //endregion ---------------------- Internal logic
 
@@ -214,10 +240,10 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
-        _upgradeCVaults();
+        _upgradeCVaultsWithStrategies();
     }
 
-    function _upgradeCVaults() internal {
+    function _upgradeCVaultsWithStrategies() internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
         // deploy new impl and upgrade
@@ -241,8 +267,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         for (uint i; i < vaults.length; i++) {
             factory.upgradeVaultProxy(vaults[i]);
-            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
+            if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO)) {
+                _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
                 _upgradeEulerStrategy(address(IVault(payable(vaults[i])).strategy()));
+            } else {
+                revert("Unknown strategy for CVault");
             }
         }
     }
@@ -255,6 +285,26 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.EULER,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeSiloStrategy(address strategyAddress) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        address strategyImplementation = address(new SiloStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO,
                 implementation: strategyImplementation,
                 deployAllowed: true,
                 upgradeAllowed: true,
