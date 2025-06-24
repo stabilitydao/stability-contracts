@@ -51,6 +51,7 @@ interface IMetaVault is IStabilityVault {
     event Rebalance(uint[] withdrawShares, uint[] depositAmountsProportions, int cost);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);
+    event RemoveVault(address vault);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -135,6 +136,10 @@ interface IMetaVault is IStabilityVault {
 
     /// @notice Add CVault to MetaVault
     function addVault(address vault, uint[] memory newTargetProportions) external;
+
+    /// @notice Remove CVault from MetaVault
+    /// @dev The proportions of the vault should be zero, total deposited amount should be less then threshold
+    function removeVault(address vault) external;
 
     /// @notice Init after deploy
     function initialize(

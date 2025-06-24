@@ -61,6 +61,9 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /// @inheritdoc IMetaVault
     function addVault(address, uint[] memory) external {}
 
+    /// @inheritdoc IMetaVault
+    function removeVault(address) external {}
+
     /// @inheritdoc IStabilityVault
     function setName(string calldata newName) external {}
 

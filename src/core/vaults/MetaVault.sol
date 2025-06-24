@@ -18,6 +18,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.3.0: add removeVault - #336
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -35,7 +36,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.3";
+    string public constant VERSION = "1.3.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -201,6 +202,47 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         emit AddVault(vault);
         emit TargetProportions(newTargetProportions);
+    }
+
+    /// @inheritdoc IMetaVault
+    function removeVault(address vault) external onlyGovernanceOrMultisig {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        // ----------------------------- get vault index
+        address[] memory _vaults = $.vaults;
+        uint vaultIndex = type(uint).max;
+        uint len = _vaults.length;
+        for (uint i; i < len; ++i) {
+            if (_vaults[i] == vault) {
+                vaultIndex = i;
+                break;
+            }
+        }
+
+        require(vaultIndex != type(uint).max, IMetaVault.IncorrectVault());
+
+        // ----------------------------- The proportions of the vault should be zero
+        uint[] memory _targetProportions = targetProportions();
+        require(_targetProportions[vaultIndex] == 0, IMetaVault.IncorrectProportions());
+
+        // ----------------------------- Total deposited amount should be less then threshold
+        uint vaultUsdValue = _getVaultUsdAmount(vault);
+        require(vaultUsdValue < USD_THRESHOLD, UsdAmountLessThreshold(vaultUsdValue, USD_THRESHOLD));
+
+        // ----------------------------- Remove vault
+        if (vaultIndex != len - 1) {
+            $.vaults[vaultIndex] = _vaults[len - 1];
+            $.vaults.pop();
+
+            $.targetProportions[vaultIndex] = _targetProportions[len - 1];
+            $.targetProportions.pop();
+        }
+
+        _targetProportions = targetProportions();
+        _checkProportions(_targetProportions);
+
+        emit RemoveVault(vault);
+        emit TargetProportions(_targetProportions);
     }
 
     /// @inheritdoc IMetaVault
@@ -384,14 +426,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] memory vaultUsdValue = new uint[](len);
         uint totalDepositedTvl;
         for (uint i; i < len; ++i) {
-            (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
-            uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            vaultUsdValue[i] = Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
+            vaultUsdValue[i] = _getVaultUsdAmount(_vaults[i]);
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
-            proportions[i] = Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
+            proportions[i] =
+                totalDepositedTvl == 0 ? 0 : Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
         }
     }
 
@@ -787,6 +827,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
             }
         }
+    }
+
+    function _getVaultUsdAmount(address vault) internal view returns (uint) {
+        (uint vaultTvl,) = IStabilityVault(vault).tvl();
+        uint vaultSharesBalance = IERC20(vault).balanceOf(address(this));
+        uint vaultTotalSupply = IERC20(vault).totalSupply();
+        return
+            vaultTotalSupply == 0 ? 0 : Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
     }
 
     //endregion --------------------------------- Internal logic
