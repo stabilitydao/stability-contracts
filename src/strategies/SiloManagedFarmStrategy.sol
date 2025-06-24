@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
@@ -21,12 +22,12 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {IXSilo} from "../integrations/silo/IXSilo.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
 /// Changelog:
@@ -253,7 +254,8 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         }
 
         // ------------------- calculate earned amounts
-        ISiloVault siloVault = _getSiloVault();
+        address[] memory farmAddresses = _getFarm().addresses;
+        ISiloVault siloVault = ISiloVault(farmAddresses[0]);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
 
@@ -271,12 +273,19 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             c.claimRewards(address(this));
         }
 
+        address xSilo = farmAddresses[1];
+        address silo = IXSilo(xSilo).asset();
+
         // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
-            // we return whole balance, not balance difference
-            // to be able to liquidate rewards that were not registered in the farm previously
-            // and therefore they are just collected on the strategy balance
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]); // - balanceBefore[i];
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+            if (__rewardAssets[i] == xSilo) {
+                if (__rewardAmounts[i] > 0) {
+                    // instant exit with penalty 50%
+                    __rewardAmounts[i] = IXSilo(xSilo).redeemSilo(__rewardAmounts[i], 0);
+                }
+                __rewardAssets[i] = silo;
+            }
         }
     }
 

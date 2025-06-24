@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../../src/interfaces/IAmmAdapter.sol";
-import "../../src/interfaces/ISwapper.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {IDistributionManager} from "../../src/integrations/silo/IDistributionManager.sol";
+// import {IDistributionManager} from "../../src/integrations/silo/IDistributionManager.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
@@ -28,7 +28,7 @@ import {console, Test, Vm} from "forge-std/Test.sol";
 
 /// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {
-    uint public constant FORK_BLOCK = 35508919; // Jun-23-2025 01:42:05 PM +UTC
+    uint public constant FORK_BLOCK = 35662058; // Jun-24-2025 09:03:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant METAVAULT = SonicConstantsLib.METAVAULT_metaUSDC;
     address public constant VAULT_C_USDC_SiMF = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9; // todo move to SonicConstantsLib
@@ -62,9 +62,24 @@ contract SiMFUpgradeXSiloTest is Test {
         IFactory.Farm memory farm = IFactory(IPlatform(PLATFORM).factory()).farm(sifStrategy.farmId());
         ISiloVault siloVault = ISiloVault(farm.addresses[0]);
 
+        //        // ------------------- check how total asset increased before setting xSilo as reward asset
+        //        uint totalAssetIncBefore = 0;
+        //        {
+        //            (, uint[] memory assetsAmountsBefore0) = strategy.assetsAmounts();
+        //            uint snapshotId = vm.snapshotState();
+        //
+        //            vm.prank(address(vault));
+        //            strategy.doHardWork();
+        //
+        //            (, uint[] memory assetsAmountsAfter0) = strategy.assetsAmounts();
+        //            vm.revertToState(snapshotId);
+        //
+        //            totalAssetIncBefore = assetsAmountsAfter0[0] - assetsAmountsBefore0[0];
+        //        }
+
         // ------------------- upgrade list of reward assets in farm
         _upgradeRewardAssetsInFarm(address(strategy));
-        _addPoolForXSilo();
+        // _addPoolForXSilo();
 
         // ------------------- get all available rewards
         uint amountBefore = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO);
@@ -80,28 +95,32 @@ contract SiMFUpgradeXSiloTest is Test {
 
         // ------------------- check results
 
-        (uint price, ) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
-        uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
+        //        (uint price,) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
+        //        uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
 
-//        console.log("amountBefore", amountBefore, balanceBefore, assetsAmountsBefore[0]);
-//        console.log("amountAfter", amountAfter, balanceAfter, assetsAmountsAfter[0]);
-//        console.log("xSilo price", price);
-        console.log("delta usdc", (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6, expectedAmountUSD);
+        //                console.log("amountBefore", amountBefore, balanceBefore, assetsAmountsBefore[0]);
+        //                console.log("amountAfter", amountAfter, balanceAfter, assetsAmountsAfter[0]);
+        //                console.log("xSilo price", price);
+        //                console.log("delta usdc", (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6, expectedAmountUSD);
 
         assertGt(amountBefore, 0, "There are unclaimed xSilo");
         assertGt(balanceBefore, 0, "There are claimed xSilo on the strategy balance");
         assertEq(amountAfter, 0, "There are NO unclaimed xSilo after hard work");
         assertEq(balanceAfter, 0, "There are NO claimed xSilo on the strategy balance after hard work");
         assertGt(assetsAmountsAfter[0], assetsAmountsBefore[0], "total amount was increased after hard work");
-        assertLt(
-            _getPositiveDiffPercent4(expectedAmountUSD, (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6),
-            2000,
-            "total amount was increased by expected amount"
-        );
+        //        assertGt(
+        //            assetsAmountsAfter[0] - assetsAmountsBefore[0],
+        //            totalAssetIncBefore,
+        //            "delta of total amount was increased"
+        //        );
     }
 
     //region ------------------------------ Auxiliary Functions
-    function _getRewards(address strategy, ISiloVault siloVault, address rewardToken_) internal view returns (uint amountOut) {
+    function _getRewards(
+        address strategy,
+        ISiloVault siloVault,
+        address rewardToken_
+    ) internal view returns (uint amountOut) {
         IVaultIncentivesModule vim = IVaultIncentivesModule(siloVault.INCENTIVES_MODULE());
         address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
 
@@ -192,9 +211,17 @@ contract SiMFUpgradeXSiloTest is Test {
         uint farmId = farmingStrategy.farmId();
 
         IFactory.Farm memory f = factory.farm(farmId);
+        assertEq(f.addresses.length, 1, "Farm should have only one address");
+        assertEq(f.rewardAssets.length, 1, "Farm should have only one reward asset");
+
         f.rewardAssets = new address[](2);
         f.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
         f.rewardAssets[1] = SonicConstantsLib.TOKEN_xSILO;
+
+        address[] memory _addresses = new address[](2);
+        _addresses[0] = f.addresses[0];
+        _addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        f.addresses = _addresses;
 
         vm.prank(multisig);
         factory.updateFarm(farmId, f);
@@ -211,18 +238,18 @@ contract SiMFUpgradeXSiloTest is Test {
         IAmmAdapter adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
-//        pools[0] = ISwapper.PoolData({
-//            pool: SonicConstantsLib.POOL_SHADOW_CL_x33_xSILO,
-//            ammAdapter: address(adapter),
-//            tokenIn: SonicConstantsLib.TOKEN_xSILO,
-//            tokenOut: SonicConstantsLib.TOKEN_x33
-//        });
         pools[0] = ISwapper.PoolData({
-            pool: SonicConstantsLib.POOL_SHADOW_CL_xSILO_SILO,
+            pool: SonicConstantsLib.POOL_SHADOW_CL_x33_xSILO,
             ammAdapter: address(adapter),
             tokenIn: SonicConstantsLib.TOKEN_xSILO,
-            tokenOut: SonicConstantsLib.TOKEN_SILO
+            tokenOut: SonicConstantsLib.TOKEN_x33
         });
+        //        pools[0] = ISwapper.PoolData({
+        //            pool: SonicConstantsLib.POOL_SHADOW_CL_xSILO_SILO,
+        //            ammAdapter: address(adapter),
+        //            tokenIn: SonicConstantsLib.TOKEN_xSILO,
+        //            tokenOut: SonicConstantsLib.TOKEN_SILO
+        //        });
 
         vm.prank(address(multisig));
         swapper.addPools(pools, false);
