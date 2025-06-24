@@ -53,31 +53,29 @@ contract SiMFUpgradeXSiloTest is Test {
         IVault vault = IVault(VAULT_C);
         IStrategy strategy = vault.strategy();
 
-        // ------------------- upgrade strategy
-        // _upgradeCVault(SonicConstantsLib.VAULT_C);
-        _upgradeManagedSiloFarmStrategy(address(strategy));
-
         // ------------------- our balance and max available liquidity
         SiloManagedFarmStrategy sifStrategy = SiloManagedFarmStrategy(address(strategy));
         IFactory.Farm memory farm = IFactory(IPlatform(PLATFORM).factory()).farm(sifStrategy.farmId());
         ISiloVault siloVault = ISiloVault(farm.addresses[0]);
 
-        //        // ------------------- check how total asset increased before setting xSilo as reward asset
-        //        uint totalAssetIncBefore = 0;
-        //        {
-        //            (, uint[] memory assetsAmountsBefore0) = strategy.assetsAmounts();
-        //            uint snapshotId = vm.snapshotState();
-        //
-        //            vm.prank(address(vault));
-        //            strategy.doHardWork();
-        //
-        //            (, uint[] memory assetsAmountsAfter0) = strategy.assetsAmounts();
-        //            vm.revertToState(snapshotId);
-        //
-        //            totalAssetIncBefore = assetsAmountsAfter0[0] - assetsAmountsBefore0[0];
-        //        }
+        // ------------------- check how total asset increased before setting xSilo as reward asset
+        uint totalAssetIncBefore = 0;
+        {
+            (, uint[] memory assetsAmountsBefore0) = strategy.assetsAmounts();
+            uint snapshotId = vm.snapshotState();
 
-        // ------------------- upgrade list of reward assets in farm
+            vm.prank(address(vault));
+            strategy.doHardWork();
+
+            (, uint[] memory assetsAmountsAfter0) = strategy.assetsAmounts();
+            vm.revertToState(snapshotId);
+
+            totalAssetIncBefore = assetsAmountsAfter0[0] - assetsAmountsBefore0[0];
+        }
+
+        // ------------------- upgrade strategy
+        // _upgradeCVault(SonicConstantsLib.VAULT_C);
+        _upgradeManagedSiloFarmStrategy(address(strategy));
         _upgradeRewardAssetsInFarm(address(strategy));
         // _addPoolForXSilo();
 
@@ -95,24 +93,22 @@ contract SiMFUpgradeXSiloTest is Test {
 
         // ------------------- check results
 
-        //        (uint price,) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
-        //        uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
+        //         (uint price,) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
+        //         uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
+        //         console.log("xSilo price", price);
 
-        //                console.log("amountBefore", amountBefore, balanceBefore, assetsAmountsBefore[0]);
-        //                console.log("amountAfter", amountAfter, balanceAfter, assetsAmountsAfter[0]);
-        //                console.log("xSilo price", price);
-        //                console.log("delta usdc", (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6, expectedAmountUSD);
+        //        console.log("amountBefore", amountBefore, balanceBefore, assetsAmountsBefore[0]);
+        //        console.log("amountAfter", amountAfter, balanceAfter, assetsAmountsAfter[0]);
+        //        console.log("delta usdc", (assetsAmountsAfter[0] - assetsAmountsBefore[0]), totalAssetIncBefore);
 
         assertGt(amountBefore, 0, "There are unclaimed xSilo");
         assertGt(balanceBefore, 0, "There are claimed xSilo on the strategy balance");
         assertEq(amountAfter, 0, "There are NO unclaimed xSilo after hard work");
         assertEq(balanceAfter, 0, "There are NO claimed xSilo on the strategy balance after hard work");
         assertGt(assetsAmountsAfter[0], assetsAmountsBefore[0], "total amount was increased after hard work");
-        //        assertGt(
-        //            assetsAmountsAfter[0] - assetsAmountsBefore[0],
-        //            totalAssetIncBefore,
-        //            "delta of total amount was increased"
-        //        );
+        assertGt(
+            assetsAmountsAfter[0] - assetsAmountsBefore[0], totalAssetIncBefore, "delta of total amount was increased"
+        );
     }
 
     //region ------------------------------ Auxiliary Functions

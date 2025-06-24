@@ -54,7 +54,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -273,20 +273,23 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             c.claimRewards(address(this));
         }
 
-        address xSilo = farmAddresses[1];
-        address silo = IXSilo(xSilo).asset();
+        address xSilo = farmAddresses.length >= 2 ? farmAddresses[1] : address(0);
+        address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
+        console.log("xSilo:", xSilo);
+        console.log("silo:", silo);
 
         // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
             if (__rewardAssets[i] == xSilo) {
-                if (__rewardAmounts[i] > 0) {
+                if (__rewardAmounts[i] != 0) {
                     // instant exit with penalty 50%
                     __rewardAmounts[i] = IXSilo(xSilo).redeemSilo(__rewardAmounts[i], 0);
                 }
                 __rewardAssets[i] = silo;
             }
         }
+        console.log("done");
     }
 
     /// @inheritdoc StrategyBase

@@ -217,8 +217,9 @@ library SonicFarmMakerLib {
         farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
         farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
 
-        farm.addresses = new address[](1);
+        farm.addresses = new address[](2);
         farm.addresses[0] = managedVault;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
 
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
