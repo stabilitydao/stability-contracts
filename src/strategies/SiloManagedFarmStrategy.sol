@@ -243,13 +243,16 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
             ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
 
-            //IDistributionManager.AccruedRewards[] memory accruedRewards =
+            // IDistributionManager.AccruedRewards[] memory accruedRewards =
             c.claimRewards(address(this));
         }
 
         // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
+            // we return whole balance, not balance difference
+            // to be able to liquidate rewards that were not registered in the farm previously
+            // and therefore they are just collected on the strategy balance
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]); // - balanceBefore[i];
         }
     }
 

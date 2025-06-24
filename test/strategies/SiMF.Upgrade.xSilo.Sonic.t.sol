@@ -1,28 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import "../../src/interfaces/IAmmAdapter.sol";
+import "../../src/interfaces/ISwapper.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {IDistributionManager} from "../../src/integrations/silo/IDistributionManager.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
-import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
-import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
-import {ISiloIncentivesControllerForVault} from "../../src/integrations/silo/ISiloIncentivesControllerForVault.sol";
-import {IDistributionManager} from "../../src/integrations/silo/IDistributionManager.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
+import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {ISiloIncentivesControllerForVault} from "../../src/integrations/silo/ISiloIncentivesControllerForVault.sol";
+import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test, Vm} from "forge-std/Test.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
+/// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {
     uint public constant FORK_BLOCK = 35508919; // Jun-23-2025 01:42:05 PM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -59,42 +63,59 @@ contract SiMFUpgradeXSiloTest is Test {
         ISiloVault siloVault = ISiloVault(farm.addresses[0]);
 
         // ------------------- upgrade list of reward assets in farm
-        _upgradeRewardAssetsInFarm(IFarmingStrategy(address(strategy)).farmId());
+        _upgradeRewardAssetsInFarm(address(strategy));
+        _addPoolForXSilo();
 
         // ------------------- get all available rewards
-        uint amountBefore = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO)
-            + IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        uint amountBefore = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO);
+        uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        (, uint[] memory assetsAmountsBefore) = strategy.assetsAmounts();
 
         vm.prank(address(vault));
         strategy.doHardWork();
 
-        uint amountAfter = _getRewards(address(strategy), siloVault,SonicConstantsLib.TOKEN_xSILO)
-            + IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        uint amountAfter = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO);
+        uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        (, uint[] memory assetsAmountsAfter) = strategy.assetsAmounts();
 
-        console.log("amountBefore", amountBefore);
-        console.log("amountAfter", amountAfter);
+        // ------------------- check results
+
+        (uint price, ) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
+        uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
+
+//        console.log("amountBefore", amountBefore, balanceBefore, assetsAmountsBefore[0]);
+//        console.log("amountAfter", amountAfter, balanceAfter, assetsAmountsAfter[0]);
+//        console.log("xSilo price", price);
+        console.log("delta usdc", (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6, expectedAmountUSD);
+
+        assertGt(amountBefore, 0, "There are unclaimed xSilo");
+        assertGt(balanceBefore, 0, "There are claimed xSilo on the strategy balance");
+        assertEq(amountAfter, 0, "There are NO unclaimed xSilo after hard work");
+        assertEq(balanceAfter, 0, "There are NO claimed xSilo on the strategy balance after hard work");
+        assertGt(assetsAmountsAfter[0], assetsAmountsBefore[0], "total amount was increased after hard work");
+        assertLt(
+            _getPositiveDiffPercent4(expectedAmountUSD, (assetsAmountsAfter[0] - assetsAmountsBefore[0]) / 1e6),
+            2000,
+            "total amount was increased by expected amount"
+        );
     }
 
     //region ------------------------------ Auxiliary Functions
-    function _getRewards(address strategy, ISiloVault siloVault, address rewardToken_) internal returns (uint amountOut) {
-        siloVault.claimRewards();
-
+    function _getRewards(address strategy, ISiloVault siloVault, address rewardToken_) internal view returns (uint amountOut) {
         IVaultIncentivesModule vim = IVaultIncentivesModule(siloVault.INCENTIVES_MODULE());
         address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
 
-        for (uint i; i < claimingLogics.length; ++i) {
-            IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
-            ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
+        IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[0]); // single logic is enough, multiple logics produce duplicates
+        ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
 
-            vm.prank(address(strategy));
-            IDistributionManager.AccruedRewards[] memory accruedRewards = c.claimRewards(address(strategy));
-            for (uint j; j < accruedRewards.length; ++j) {
-                address rewardAsset = accruedRewards[j].rewardToken;
-                uint amount = accruedRewards[j].amount;
-                console.log("Claimed", amount, IERC20Metadata(rewardAsset).symbol(), rewardAsset);
-                if (rewardAsset == rewardToken_) {
-                    amountOut += amount;
-                }
+        string[] memory programNames = c.getAllProgramsNames();
+        for (uint j; j < programNames.length; ++j) {
+            uint unclaimedRewards = c.getRewardsBalance(address(strategy), programNames[j]);
+            c.getUserData(address(strategy), programNames[j]);
+            (, address rewardToken,,,) = c.incentivesPrograms(c.getProgramId(programNames[j]));
+            if (rewardToken == rewardToken_) {
+                amountOut += unclaimedRewards;
+                // console.log("Unclaimed rewards for", unclaimedRewards, rewardToken_);
             }
         }
 
@@ -165,8 +186,10 @@ contract SiMFUpgradeXSiloTest is Test {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _upgradeRewardAssetsInFarm(uint farmId) internal {
+    function _upgradeRewardAssetsInFarm(address strategy) internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+        IFarmingStrategy farmingStrategy = IFarmingStrategy(strategy);
+        uint farmId = farmingStrategy.farmId();
 
         IFactory.Farm memory f = factory.farm(farmId);
         f.rewardAssets = new address[](2);
@@ -175,6 +198,38 @@ contract SiMFUpgradeXSiloTest is Test {
 
         vm.prank(multisig);
         factory.updateFarm(farmId, f);
+
+        vm.prank(multisig);
+        farmingStrategy.refreshFarmingAssets();
+    }
+
+    function _addPoolForXSilo() internal {
+        IPlatform platform = IPlatform(PLATFORM);
+        ISwapper swapper = ISwapper(platform.swapper());
+
+        bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
+        IAmmAdapter adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);
+
+        ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+//        pools[0] = ISwapper.PoolData({
+//            pool: SonicConstantsLib.POOL_SHADOW_CL_x33_xSILO,
+//            ammAdapter: address(adapter),
+//            tokenIn: SonicConstantsLib.TOKEN_xSILO,
+//            tokenOut: SonicConstantsLib.TOKEN_x33
+//        });
+        pools[0] = ISwapper.PoolData({
+            pool: SonicConstantsLib.POOL_SHADOW_CL_xSILO_SILO,
+            ammAdapter: address(adapter),
+            tokenIn: SonicConstantsLib.TOKEN_xSILO,
+            tokenOut: SonicConstantsLib.TOKEN_SILO
+        });
+
+        vm.prank(address(multisig));
+        swapper.addPools(pools, false);
+    }
+
+    function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
+        return x > y ? (x - y) * 100_00 / x : 0;
     }
     //endregion ------------------------------ Auxiliary Functions
 }
