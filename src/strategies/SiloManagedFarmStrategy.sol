@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
@@ -276,8 +275,6 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
 
         address xSilo = farmAddresses.length >= 2 ? farmAddresses[1] : address(0);
         address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
-        console.log("xSilo:", xSilo);
-        console.log("silo:", silo);
 
         // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
@@ -290,7 +287,6 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
                 __rewardAssets[i] = silo;
             }
         }
-        console.log("done");
     }
 
     /// @inheritdoc StrategyBase
