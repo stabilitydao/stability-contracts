@@ -27,7 +27,8 @@ import {IBalancerGauge} from "../integrations/balancer/IBalancerGauge.sol";
 
 /// @title Earn Beets stable pool LP fees and gauge rewards
 /// Changelog:
-///     1.2.0: Use StrategyBase 2.3.0 - add fuseMode
+///   1.2.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
+///   1.2.0: Use StrategyBase 2.3.0 - add fuseMode
 /// @author Alien Deployer (https://github.com/a17)
 contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -37,7 +38,7 @@ contract BeetsStableFarm is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
