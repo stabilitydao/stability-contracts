@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -19,7 +18,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.4.0: add removeVault - #336
+///   1.4.0: add removeVault - #336, fix _getAmountToWithdrawFromVault
 ///   1.3.0: - Add maxWithdraw - #326
 ///          - MultiVault withdraws from all sub-vaults - #334
 ///   1.2.3: - fix slippage check in deposit - #303
@@ -813,7 +812,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         for (uint i; i < len; ++i) {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
                 _getAmountToWithdrawFromVault(vaults_[i], totalAmount, address(this));
-            console.log("i, amountToWithdraw", i, amountToWithdraw);
             if (targetVaultSharesToWithdraw != 0) {
                 uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
                     assets_,
@@ -831,8 +829,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         // ------------------- ensure that all requested amount is withdrawn
-        console.log("amount", amount);
-        console.log("totalAmount", totalAmount);
         require(totalAmount == 0, MaxAmountForWithdrawPerTxReached(amount, amount - totalAmount));
 
         return amountsOut;
@@ -853,6 +849,18 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint maxAmount, uint vaultSharePriceUsd) =
             _maxAmountToWithdrawFromVaultForShares(vault, IStabilityVault(vault).maxWithdraw(owner));
         amountToWithdraw = Math.min(amount, maxAmount);
+        if (amount > maxAmount) {
+            uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount - maxAmount);
+            if (usdToWithdraw <= USD_THRESHOLD) {
+                // We are able to withdraw maxAmount from the given vault.
+                // The maxAmount is less then required amount, so we need to withdraw the rest from other sub-vaults.
+                // But remaining to withdraw amount is dust, it cannot be withdrawn from any other sub-vault.
+                // Let's withdraw a bit less amount from the given vault.
+                // As result we will be able to withdraw remaining amount from other sub-vault.
+                uint amountToKeep = _usdAmountToMetaVaultBalance(USD_THRESHOLD);
+                amountToWithdraw = amountToWithdraw > amountToKeep ? amountToWithdraw - amountToKeep : 0;
+            }
+        }
         targetVaultSharesToWithdraw = _getTargetVaultSharesToWithdraw(amountToWithdraw, vaultSharePriceUsd, false);
     }
 
