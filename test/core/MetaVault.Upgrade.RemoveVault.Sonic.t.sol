@@ -14,6 +14,7 @@ import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol"
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -55,6 +56,52 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         _upgradeVaults(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, true);
+    }
+
+    function testRemoveSingleVaultBadPaths() public {
+        address[] memory vaults = metaVault.vaults();
+
+        // ------------------------------- Try to remove unknown vault
+        vm.expectRevert(IMetaVault.IncorrectVault.selector);
+        vm.prank(multisig);
+        metaVault.removeVault(address(this));
+
+        // ------------------------------- Try to remove vault without multisig
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.prank(address(this));
+        metaVault.removeVault(address(this));
+
+        // ------------------------------- Try to remove vault with deposited amounts
+        uint indexVaultMaxTotalSupply;
+        for (uint i; i < vaults.length; ++i) {
+            if (IERC20(vaults[i]).totalSupply() > IERC20(vaults[indexVaultMaxTotalSupply]).totalSupply()) {
+                indexVaultMaxTotalSupply = i;
+            }
+        }
+        _setZeroProportions(indexVaultMaxTotalSupply, indexVaultMaxTotalSupply == 0 ? 1 : 0);
+
+        vm.prank(multisig);
+        try metaVault.removeVault(vaults[indexVaultMaxTotalSupply]) {
+            fail();
+        } catch (bytes memory reason) {
+            assertEq(bytes4(reason), IMetaVault.UsdAmountLessThreshold.selector, "Not UsdAmountLessThreshold");
+        }
+
+        // ------------------------------- Try to remove vault with not zero target proportions
+        uint vaultIndex;
+        for (uint i; i < vaults.length; ++i) {
+            if (_prepareToRemoveSubVault(i)) {
+                vaultIndex = i; // prepared vault
+
+                _setMaxProportions(i);
+
+                vm.expectRevert(IMetaVault.IncorrectProportions.selector);
+                vm.prank(multisig);
+                metaVault.removeVault(vaults[i]);
+
+                break;
+            }
+        }
     }
 
     function testRemoveSingleVaultStatic() public {
@@ -275,10 +322,6 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
 
     function _removeSubVault(address vault) internal {
         // console.log("_removeSubVault", vault);
-        vm.expectRevert(); // only multisig is able to remove vault
-        vm.prank(address(this));
-        metaVault.removeVault(vault);
-
         vm.prank(multisig);
         metaVault.removeVault(vault);
     }
