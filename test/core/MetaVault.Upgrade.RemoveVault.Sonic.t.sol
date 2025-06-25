@@ -204,20 +204,22 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
 
         console.log("_makeWithdrawDeposit", metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD));
 
+        uint amountToWithdraw = metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD) / 100;
+
         vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
-        metaVault.withdrawAssets(
-            assets,
-            metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD),
-            new uint[](1)
-        );
+        metaVault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
+        vm.roll(block.number + 6);
 
         console.log("_makeWithdrawDeposit.2");
         uint[] memory maxAmounts = new uint[](1);
         maxAmounts[0] = IERC20(assets[0]).balanceOf(address(metaVault));
 
         vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
-        metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_metaUSD);
+        IERC20(assets[0]).approve(address(metaVault), maxAmounts[0]);
 
+        vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_metaUSD);
+        console.log("_makeWithdrawDeposit.3", metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD));
     }
 
     function _getVaultOwnerAmountUsd(address vault, address owner) internal view returns (uint) {
