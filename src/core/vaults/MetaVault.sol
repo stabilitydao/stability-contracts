@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -234,11 +235,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // ----------------------------- Remove vault
         if (vaultIndex != len - 1) {
             $.vaults[vaultIndex] = _vaults[len - 1];
-            $.vaults.pop();
-
             $.targetProportions[vaultIndex] = _targetProportions[len - 1];
-            $.targetProportions.pop();
         }
+
+        $.vaults.pop();
+        $.targetProportions.pop();
 
         _targetProportions = targetProportions();
         _checkProportions(_targetProportions);
@@ -812,6 +813,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         for (uint i; i < len; ++i) {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
                 _getAmountToWithdrawFromVault(vaults_[i], totalAmount, address(this));
+            console.log("i, amountToWithdraw", i, amountToWithdraw);
             if (targetVaultSharesToWithdraw != 0) {
                 uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
                     assets_,
@@ -829,6 +831,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         // ------------------- ensure that all requested amount is withdrawn
+        console.log("amount", amount);
+        console.log("totalAmount", totalAmount);
         require(totalAmount == 0, MaxAmountForWithdrawPerTxReached(amount, amount - totalAmount));
 
         return amountsOut;
