@@ -298,8 +298,10 @@ contract MetaVaultSonicTest is Test {
             {
                 vm.roll(block.number + 6);
 
-                uint maxWithdraw = IMetaVault(metavault).maxWithdrawAmountTx();
+                // uint maxWithdraw = IMetaVault(metavault).maxWithdrawAmountTx();
+                uint maxWithdraw = IMetaVault(metavault).maxWithdraw(address(this));
                 //console.log('user balance', IERC20(metavault).balanceOf(address(this)));
+                console.log("max withdraw amount:", maxWithdraw, IMetaVault(metavault).maxWithdrawAmountTx());
 
                 //console.log('max withdraw');
                 if (maxWithdraw < IERC20(metavault).balanceOf(address(this))) {
