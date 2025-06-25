@@ -18,7 +18,9 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.3.0: add removeVault - #336
+///   1.4.0: add removeVault - #336
+///   1.3.0: - Add maxWithdraw - #326
+///          - MultiVault withdraws from all sub-vaults - #334
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -36,7 +38,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -469,6 +471,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
+    /// @dev MultiVault supports withdrawing from all sub-vaults. Return the vault from which to start withdrawing.
     function vaultForWithdraw() public view returns (address target) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         address[] memory _vaults = $.vaults;
@@ -650,6 +653,34 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function decimals() external pure returns (uint8) {
         return 18;
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account) external view virtual returns (uint amount) {
+        uint userBalance = balanceOf(account);
+
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            for (uint i; i < $.vaults.length; ++i) {
+                address _targetVault = $.vaults[i];
+                (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                    _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+                );
+                amount += maxMetaVaultTokensToWithdraw;
+                if (userBalance < amount) return userBalance;
+            }
+
+            return amount;
+        } else {
+            // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
+            // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
+            address _targetVault = vaultForWithdraw();
+            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+            );
+
+            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+        }
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
@@ -720,21 +751,31 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, _targetVault);
 
-        (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
-        require(
-            amount <= maxAmountToWithdrawFromVault,
-            MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
-        );
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            // withdraw the amount from all sub-vaults starting from the target vault
+            amountsOut = _withdrawFromMultiVault($.vaults, assets_, amount, receiver, _targetVault);
 
-        uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
+            // check slippage
+            for (uint j; j < assets_.length; ++j) {
+                require(amountsOut[j] >= minAssetAmountsOut[j], ExceedSlippage(amountsOut[j], minAssetAmountsOut[j]));
+            }
+        } else {
+            // ensure that the target vault has required amount
+            (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
+            require(
+                amount <= maxAmountToWithdrawFromVault,
+                MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
+            );
 
-        require(usdToWithdraw > USD_THRESHOLD, UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD));
-
-        uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
-
-        amountsOut = IStabilityVault(_targetVault).withdrawAssets(
-            assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
-        );
+            // withdraw the amount from the target vault
+            amountsOut = IStabilityVault(_targetVault).withdrawAssets(
+                assets_,
+                _getTargetVaultSharesToWithdraw(amount, vaultSharePriceUsd, true),
+                minAssetAmountsOut,
+                receiver,
+                address(this)
+            );
+        }
 
         _burn($, owner, amount, sharesToBurn);
 
@@ -743,13 +784,115 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         emit WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
     }
 
+    /// @notice Withdraw the {amount} from multiple sub-vaults starting with the {targetVault_}.
+    /// @dev Slippage is checked outside this function.
+    /// @param amount Amount of meta-vault tokens to withdraw.
+    function _withdrawFromMultiVault(
+        address[] memory vaults_,
+        address[] memory assets_,
+        uint amount,
+        address receiver,
+        address targetVault_
+    ) internal returns (uint[] memory amountsOut) {
+        uint totalAmount = amount;
+
+        // ------------------- set target vault on the first position in vaults_
+        uint len = vaults_.length;
+        for (uint i; i < len; ++i) {
+            if (vaults_[i] == targetVault_) {
+                // first withdraw should be from the target vault
+                // the order of other vaults does not matter because the rebalancer is called often enough
+                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
+                break;
+            }
+        }
+
+        // ------------------- withdraw from vaults until requested amount is withdrawn
+        amountsOut = new uint[](assets_.length);
+        for (uint i; i < len; ++i) {
+            (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
+                _getAmountToWithdrawFromVault(vaults_[i], totalAmount, address(this));
+            if (targetVaultSharesToWithdraw != 0) {
+                uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
+                    assets_,
+                    targetVaultSharesToWithdraw,
+                    new uint[](assets_.length), // minAssetAmountsOut is checked outside
+                    receiver,
+                    address(this)
+                );
+                for (uint j; j < assets_.length; ++j) {
+                    amountsOut[j] += _amountsOut[j];
+                }
+                totalAmount -= amountToWithdraw;
+                if (totalAmount == 0) break;
+            }
+        }
+
+        // ------------------- ensure that all requested amount is withdrawn
+        require(totalAmount == 0, MaxAmountForWithdrawPerTxReached(amount, amount - totalAmount));
+
+        return amountsOut;
+    }
+
+    /// @notice Get the amount to withdraw from the vault and the target shares to withdraw.
+    /// The amount is limited by the max withdraw amount of the vault.
+    /// @param amount Amount of meta-vault tokens
+    /// @param vault Vault to withdraw from
+    /// @param owner Owner of the shares to withdraw
+    /// @return amountToWithdraw Amount of meta-vault tokens to withdraw
+    /// @return targetVaultSharesToWithdraw Amount of shares to withdraw from the vault
+    function _getAmountToWithdrawFromVault(
+        address vault,
+        uint amount,
+        address owner
+    ) internal view returns (uint amountToWithdraw, uint targetVaultSharesToWithdraw) {
+        (uint maxAmount, uint vaultSharePriceUsd) =
+            _maxAmountToWithdrawFromVaultForShares(vault, IStabilityVault(vault).maxWithdraw(owner));
+        amountToWithdraw = Math.min(amount, maxAmount);
+        targetVaultSharesToWithdraw = _getTargetVaultSharesToWithdraw(amountToWithdraw, vaultSharePriceUsd, false);
+    }
+
+    /// @notice Get the target shares to withdraw from the vault for the given {amount}.
+    /// @param amount Amount of meta-vault tokens
+    /// @param vaultSharePriceUsd Price of the vault shares in USD
+    /// @param revertOnLessThanThreshold If true, reverts if the USD amount to withdraw is less than the threshold.
+    /// @return targetVaultSharesToWithdraw Amount of shares to withdraw from the vault
+    function _getTargetVaultSharesToWithdraw(
+        uint amount,
+        uint vaultSharePriceUsd,
+        bool revertOnLessThanThreshold
+    ) internal view returns (uint targetVaultSharesToWithdraw) {
+        uint usdToWithdraw = _metaVaultBalanceToUsdAmount(amount);
+        if (usdToWithdraw > USD_THRESHOLD) {
+            return Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
+        } else {
+            if (revertOnLessThanThreshold) revert UsdAmountLessThreshold(usdToWithdraw, USD_THRESHOLD);
+            return 0;
+        }
+    }
+
+    /// @notice Get the maximum amount of meta-vault tokens that can be withdrawn from the vault
+    /// without taking into account maxWithdraw limit.
     function _maxAmountToWithdrawFromVault(address vault)
         internal
         view
         returns (uint maxAmount, uint vaultSharePrice)
     {
+        return _maxAmountToWithdrawFromVaultForShares(vault, IERC20(vault).balanceOf(address(this)));
+    }
+
+    /// @dev Shared implementation for {maxWithdraw} and {maxWithdrawAmountTx}
+    /// @param vault Vault to withdraw
+    /// @param vaultSharesToWithdraw Amount of shares to withdraw from the {vault}
+    /// @return maxAmount Amount of meta-vault tokens to withdraw
+    /// @return vaultSharePrice Price of the {vault}
+    function _maxAmountToWithdrawFromVaultForShares(
+        address vault,
+        uint vaultSharesToWithdraw
+    ) internal view returns (uint maxAmount, uint vaultSharePrice) {
         (vaultSharePrice,) = IStabilityVault(vault).price();
-        uint vaultUsd = Math.mulDiv(vaultSharePrice, IERC20(vault).balanceOf(address(this)), 1e18, Math.Rounding.Floor);
+        uint vaultUsd = Math.mulDiv(vaultSharePrice, vaultSharesToWithdraw, 1e18, Math.Rounding.Floor);
+        // Convert USD amount to MetaVault tokens
         maxAmount = _usdAmountToMetaVaultBalance(vaultUsd);
     }
 

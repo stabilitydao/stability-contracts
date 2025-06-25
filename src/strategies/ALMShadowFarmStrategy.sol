@@ -24,6 +24,7 @@ import {IXShadow} from "../integrations/shadow/IXShadow.sol";
 
 /// @title Earn Shadow gauge rewards by Stability ALM
 /// Changelog:
+///   1.3.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
 ///   1.3.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   1.2.0: rebalanceTrigger update
 ///   1.1.4: FarmingStrategyBase 1.3.3
@@ -40,7 +41,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

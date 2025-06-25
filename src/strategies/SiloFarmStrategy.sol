@@ -15,18 +15,22 @@ import {
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
+import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
-///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
-///   1.0.3: getSpecificName update
-///   1.0.2: FarmingStrategyBase 1.3.3
-///   1.0.1: claimRevenue bugfix
+///     1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
+///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
+///     1.0.3: getSpecificName update
+///     1.0.2: FarmingStrategyBase 1.3.3
+///     1.0.1: claimRevenue bugfix
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -35,7 +39,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -145,6 +149,30 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /// @inheritdoc IFarmingStrategy
     function farmMechanics() external pure returns (string memory) {
         return FarmMechanicsLib.AUTO;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+
+        address asset = siloVault.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price,) = priceReader.getPrice(asset);
+
+        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+
+        amounts = new uint[](1);
+        amounts[0] = siloVault.maxWithdraw(address(this));
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

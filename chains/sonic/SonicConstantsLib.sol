@@ -31,6 +31,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_Stability_StableJack = 0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336;
     address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
     address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
+    address public constant VAULT_C_USDC_SiMF = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -95,7 +96,9 @@ library SonicConstantsLib {
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
+    address public constant TOKEN_xSILO = 0x4451765739b2D7BCe5f8BC95Beaf966c45E1Dcc9;
     address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
+
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -173,6 +176,8 @@ library SonicConstantsLib {
     address public constant POOL_SHADOW_CL_USDC_EGGS = 0x66A8289bdD968D1157eB1a608f60a87759632cd6;
     address public constant POOL_SHADOW_CL_x33_SHADOW = 0xBB528A050a3b3b998a9651F893Fa46162967A04C;
     address public constant POOL_SHADOW_CL_WBTC_WETH = 0x6B19C48449cE9dE4254A883749257Be5da660BFB;
+    address public constant POOL_SHADOW_CL_x33_xSILO = 0xFa4C622Be92403e78504Bc8a4c01a3EBa8BD12c1;
+    address public constant POOL_SHADOW_CL_xSILO_SILO = 0x8b364CD67cb1943d9cA33D6ab0202Fc704B5B709;
     // address public constant POOL_EQUALIZER_wS_USDC = 0xb1BC4B830FCbA2184B92e15b9133c41160518038;
     // address public constant POOL_EQUALIZER_WETH_wS = 0x81ACF1C9BCC452b634D6DA33DB3f8D96e2CD1c73;
     // address public constant POOL_EQUALIZER_USDC_WETH = 0xfe809A1D337Bdfc98B77A1067e3819f66d8AD23F;
