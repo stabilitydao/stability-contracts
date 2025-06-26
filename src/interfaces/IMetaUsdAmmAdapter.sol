@@ -8,8 +8,8 @@ import {IAmmAdapter} from "./IAmmAdapter.sol";
 /// @author dvpublic (https://github.com/dvpublic)
 interface IMetaUsdAmmAdapter is IAmmAdapter {
     /// @notice Asset in MetaVault.vaultForDeposit
-    function assetToDeposit(address pool) external view returns (address);
+    function assetForDeposit(address pool) external view returns (address);
 
     /// @notice Asset in MetaVault.vaultForWithdraw
-    function assetToWithdraw(address pool) external view returns (address);
+    function assetForWithdraw(address pool) external view returns (address);
 }

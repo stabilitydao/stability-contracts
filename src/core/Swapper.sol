@@ -626,14 +626,14 @@ contract Swapper is Controllable, ISwapper {
             if (poolData.tokenIn == poolData.tokenOut) {
                 IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
                 if (keccak256(bytes(ammAdapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.META_USD))) {
-                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetToWithdraw(poolData.pool);
+                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
                 }
             }
         } else {
             if (poolData.tokenIn == poolData.tokenOut) {
                 IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
                 if (keccak256(bytes(ammAdapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.META_USD))) {
-                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetToDeposit(poolData.pool);
+                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
                 }
             }
 

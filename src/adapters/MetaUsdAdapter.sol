@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
 import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
-import {
-    IPActionSwapPTV3,
-    TokenOutput,
-    TokenInput,
-    createEmptyLimitOrderData,
-    ApproxParams
-} from "../integrations/pendle/IPActionSwapPTV3.sol";
-import {SwapData} from "../integrations/pendle/IPSwapAggregator.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
-import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 import {IMetaVault} from "../interfaces/IMetaVault.sol";
 
 /// @title AMM adapter for Wrapped Meta USD
@@ -63,6 +55,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
         address recipient,
         uint priceImpactTolerance
     ) external {
+        console.log("MetaUsdAdapter.swap");
         IMetaVault metaVault = IMetaVault(pool);
 
         uint amount = IERC20(tokenIn).balanceOf(address(this));
@@ -123,7 +116,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function poolTokens(address pool) public view returns (address[] memory tokens) {
-        address[] memory vaults = IMetaVault(IWrappedMetaVault(pool).metaVault()).vaults();
+        address[] memory vaults = IMetaVault(pool).vaults();
         tokens = new address[](1 + vaults.length);
 
         // wrapped meta vault itself is the first token
@@ -148,7 +141,8 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        address[] memory vaults = IMetaVault(IWrappedMetaVault(pool).metaVault()).vaults();
+        console.log("MetaUsdAdapter.getPrice");
+        address[] memory vaults = IMetaVault(pool).vaults();
         address[] memory tokens = poolTokens(pool);
 
         // we assume here that all tokens are in the same order as vaults, see {poolTokens} implementation
@@ -185,17 +179,17 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
     }
     //endregion -------------------------------- View functions
 
-    //region -------------------------------- IWrappedMetaUsdAmmAdapter
+    //region -------------------------------- IMetaUsdAmmAdapter
     /// @inheritdoc IMetaUsdAmmAdapter
-    function assetToDeposit(address pool) external view returns (address) {
+    function assetForDeposit(address pool) external view returns (address) {
         // we assume here that MetaUSD doesn't support multiple assets for deposit
-        return IMetaVault(IWrappedMetaVault(pool).metaVault()).assetsForDeposit()[0];
+        return IMetaVault(pool).assetsForDeposit()[0];
     }
 
     /// @inheritdoc IMetaUsdAmmAdapter
-    function assetToWithdraw(address pool) external view returns (address) {
+    function assetForWithdraw(address pool) external view returns (address) {
         // we assume here that MetaUSD doesn't support multiple assets for withdraw
-        return IMetaVault(IWrappedMetaVault(pool).metaVault()).assetsForWithdraw()[0];
+        return IMetaVault(pool).assetsForWithdraw()[0];
     }
-    //endregion ------------------------------- IWrappedMetaUsdAmmAdapter
+    //endregion ------------------------------- IMetaUsdAmmAdapter
 }

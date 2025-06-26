@@ -105,7 +105,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         ];
     }
     //region --------------------------------------- Dynamic routes
-    function testSwapUsingDynamicRoutes() public {
+    function testSwapMetaUsd() public {
         _upgrade();
         _addAdapter();
         _routes();
@@ -115,6 +115,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         deal(SonicConstantsLib.TOKEN_USDC, address(this), 1e18);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
 
+        //--------------------------------- USDC => metaUSD
+        console.log("!!!!!!!!!!!!!!!!!USDC => metaUSD");
         swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 1e18, 1);
         uint balanceMetaUsd0 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
         uint balanceUsdc0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
@@ -122,6 +124,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         assertNotEq(balanceMetaUsd0, 0);
         assertEq(balanceUsdc0, 0);
 
+        //--------------------------------- metaUSD => USDC
+        console.log("!!!!!!!!!!!!!!!!!metaUSD => USDC");
         IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
         swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1);
 
