@@ -27,9 +27,9 @@ import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3Fl
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {SiloALMFLib} from "./libs/SiloALMFLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {XStaking} from "../tokenomics/XStaking.sol";
@@ -137,7 +137,7 @@ contract SiloALMFStrategy is
     ) external {
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloAdvancedLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
+        SiloALMFLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
     }
 
     /// @inheritdoc IBalancerV3FlashCallback
@@ -154,7 +154,7 @@ contract SiloALMFStrategy is
         vault.sendTo(token, address(this), amount);
 
         // Flash loan is performed upon deposit and withdrawal
-        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, 0); // assume that flash loan is free, fee is 0
+        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, 0); // assume that flash loan is free, fee is 0
 
         // return flash loan back to the vault
         // assume that the amount was transferred back to the vault inside receiveFlashLoan()
@@ -168,7 +168,7 @@ contract SiloALMFStrategy is
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
     }
 
     function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
@@ -176,7 +176,7 @@ contract SiloALMFStrategy is
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloAdvancedLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
     }
     //endregion ----------------------------------- Flash loan
 
@@ -232,7 +232,7 @@ contract SiloALMFStrategy is
         address lendingVault = $.lendingVault;
         uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
         string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
-        (,, uint targetLeverage) = SiloAdvancedLib.getLtvData(lendingVault, $.targetLeveragePercent);
+        (,, uint targetLeverage) = SiloALMFLib.getLtvData(lendingVault, $.targetLeveragePercent);
         return (
             string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
             false
@@ -242,7 +242,7 @@ contract SiloALMFStrategy is
     /// @inheritdoc ILeverageLendingStrategy
     function realTvl() public view returns (uint tvl, bool trusted) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return SiloAdvancedLib.realTvl(platform(), $);
+        return SiloALMFLib.realTvl(platform(), $);
     }
 
     function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
@@ -268,7 +268,7 @@ contract SiloALMFStrategy is
         )
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return SiloAdvancedLib.health(platform(), $);
+        return SiloALMFLib.health(platform(), $);
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -294,7 +294,7 @@ contract SiloALMFStrategy is
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return SiloAdvancedLib.rebalanceDebt(platform(), newLtv, $);
+        return SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -308,7 +308,7 @@ contract SiloALMFStrategy is
         assets_ = assets();
         amounts_ = new uint[](1);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        amounts_[0] = SiloAdvancedLib.totalCollateral($.lendingVault);
+        amounts_[0] = SiloALMFLib.totalCollateral($.lendingVault);
     }
 
     /// @inheritdoc StrategyBase
@@ -328,7 +328,7 @@ contract SiloALMFStrategy is
         __amounts = new uint[](1);
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        LeverageLendingAddresses memory v = SiloAdvancedLib.getLeverageLendingAddresses($);
+        LeverageLendingAddresses memory v = SiloALMFLib.getLeverageLendingAddresses($);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
         uint totalWas = $base.total;
@@ -336,7 +336,7 @@ contract SiloALMFStrategy is
         ISilo(v.lendingVault).accrueInterest();
         ISilo(v.borrowingVault).accrueInterest();
 
-        uint totalNow = StrategyLib.balance(v.collateralAsset) + SiloAdvancedLib.calcTotal(v);
+        uint totalNow = StrategyLib.balance(v.collateralAsset) + SiloALMFLib.calcTotal(v);
         if (totalNow > totalWas) {
             __amounts[0] = totalNow - totalWas;
         }
@@ -377,7 +377,7 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
-        value = SiloAdvancedLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
+        value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
     }
 
     /// @inheritdoc StrategyBase
@@ -388,7 +388,7 @@ contract SiloALMFStrategy is
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        amountsOut = SiloAdvancedLib.withdrawAssets(platform(), $, $base, value, receiver);
+        amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
     }
 
     /// @inheritdoc IStrategy
