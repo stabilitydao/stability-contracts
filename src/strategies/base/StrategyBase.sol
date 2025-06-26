@@ -11,6 +11,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.3.0: add fuseMode - #305
 ///   2.2.0: extractFees use RevenueRouter
 ///   2.1.3: call hardWorkMintFeeCallback always
 ///   2.1.2: call hardWorkMintFeeCallback only on positive amounts
@@ -28,7 +29,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.2.0";
+    string public constant VERSION_STRATEGY_BASE = "2.3.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -169,6 +170,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
     function emergencyStopInvesting() external onlyGovernanceOrMultisig {
         // slither-disable-next-line unused-return
         _withdrawAssets(total(), address(this));
+
+        // Activate fuse mode. In the fuse mode all assets are transferred
+        // from the underlying pool to the strategy balance, no deposits are allowed after that.
+        _getStrategyBaseStorage().fuseOn = uint(IStrategy.FuseMode.FUSE_ON_1);
     }
 
     /// @inheritdoc IStrategy
@@ -272,6 +277,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @inheritdoc IStrategy
     function customPriceImpactTolerance() public view returns (uint) {
         return _getStrategyBaseStorage().customPriceImpactTolerance;
+    }
+
+    /// @inheritdoc IStrategy
+    function fuseMode() external view returns (uint) {
+        return _getStrategyBaseStorage().fuseOn;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
