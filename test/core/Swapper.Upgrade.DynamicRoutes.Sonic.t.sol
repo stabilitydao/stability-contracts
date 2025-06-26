@@ -11,6 +11,7 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+/// @notice #261, #330: exclude cycling routes, add dynamic routes
 contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     ISwapper public swapper;
@@ -103,21 +104,20 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         ];
     }
 
-    function testSingleCyclingRoutes() public view {
-//        address multisig = IPlatform(PLATFORM).multisig();
-
-//        vm.startPrank(multisig);
-//        _upgrade();
-//        vm.stopPrank();
+    //region --------------------------------------- Cycling routes #261
+    /// @notice #261: ensure that known single cycling route is not detected as cycling
+    function testSingleCyclingRoutes() public {
+        _upgrade();
 
         address tokenIn = KNOWN_CYCLING_PAIRS[0][0];
         address tokenOut = KNOWN_CYCLING_PAIRS[0][1];
 
         (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokenIn, tokenOut);
-        _displayRoute(route, 0, 0, tokenIn, tokenOut);
-        assertEq(_isCycling(route), true);
+        // _displayRoute(route, 0, 0, tokenIn, tokenOut);
+        assertEq(_isCycling(route), false);
     }
 
+    /// @notice #261: ensure that known cycling routes are not detected as cycling
     function testCheckKnownCyclingRoutes() public {
         _upgrade();
 
@@ -126,12 +126,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             address tokenOut = KNOWN_CYCLING_PAIRS[i][1];
 
             (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokenIn, tokenOut);
-            _displayRoute(route, 0, 0, tokenIn, tokenOut);
-            assertEq(_isCycling(route), true);
+            // _displayRoute(route, 0, 0, tokenIn, tokenOut);
+            assertEq(_isCycling(route), false);
         }
     }
+    //endregion --------------------------------------- Cycling routes #261
 
-    //region --------------------------------------- Tests to find cycling routes
+    //region --------------------------------------- Tests to find cycling routes #261
 
 //    function testSearchProblemRoutes__Fuzzy(uint from, uint to) public view {
 
@@ -170,7 +171,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 //        }
 //    }
 
-    //endregion --------------------------------------- Tests to find cycling routes
+    //endregion --------------------------------------- Tests to find cycling routes #261
 
     //region --------------------------------------- Internal logic
     function _displayRoute(ISwapper.PoolData[] memory route, uint from, uint to, address tokenIn, address tokenOut) internal view {

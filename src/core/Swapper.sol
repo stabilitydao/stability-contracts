@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,11 +15,14 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 /// @notice On-chain price quoter and swapper. It works by predefined routes using AMM adapters.
 /// @dev Inspired by TetuLiquidator
 /// Changelog:
+///   1.3.0: - exclude cycling routes - #261
+///          - todo dynamic cycling routes
 ///   1.2.0: support long routes up to 8 hops
 ///   1.1.0: support long routes up to 6 hops
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -26,7 +30,7 @@ contract Swapper is Controllable, ISwapper {
     //region ----- Constants -----
 
     /// @dev Version of Swapper implementation
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     uint public constant ROUTE_LENGTH_MAX = 8;
 
@@ -493,6 +497,7 @@ contract Swapper is Controllable, ISwapper {
 
         // if we can swap between largest pools the route is ended
         if (poolDataIn.tokenOut == poolDataOut3.tokenIn) {
+
             route[1] = poolDataOut3;
             route[2] = poolDataOut2;
             route[3] = poolDataOut;
@@ -658,7 +663,25 @@ contract Swapper is Controllable, ISwapper {
         for (uint i; i < length; ++i) {
             result[i] = route[i];
         }
-        return result;
+        return _removeCycling(result);
+    }
+
+    /// @notice #261: Detect and remove cycling in the route
+    function _removeCycling(PoolData[] memory data) internal pure returns (PoolData[] memory result) {
+        result = data;
+        if (data.length >= 4) {
+            if (
+                data[0].tokenIn == data[1].tokenOut
+                && data[0].tokenOut == data[1].tokenIn
+                && data[2].tokenIn == data[0].tokenIn // for safety
+            ) {
+                // exclude first two pools
+                result = new PoolData[](data.length - 2);
+                for (uint i = 2; i < data.length; ++i) {
+                    result[i - 2] = data[i];
+                }
+            }
+        }
     }
 
     function _addBcAsset(address asset) internal {
