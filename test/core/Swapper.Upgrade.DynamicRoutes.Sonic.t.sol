@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console, Test} from "forge-std/Test.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import "../../src/adapters/MetaUsdAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 /// @notice #261, #330: exclude cycling routes, add dynamic routes
 contract SwapperUpgradeDynamicRoutesSonicTest is Test {
@@ -103,6 +104,36 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             SonicConstantsLib.SILO_VAULT_25_wS
         ];
     }
+    //region --------------------------------------- Dynamic routes
+    function testSwapUsingDynamicRoutes() public {
+        _upgrade();
+        _addAdapter();
+        _routes();
+
+        assertEq(IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this)), 0);
+
+        deal(SonicConstantsLib.TOKEN_USDC, address(this), 1e18);
+        IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
+
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 1e18, 1);
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceUsdc0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0);
+        assertEq(balanceUsdc0, 0);
+
+        IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceUsdc1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertEq(balanceMetaUsd1, 0);
+        assertEq(balanceUsdc1, 1e18);
+    }
+
+
+    //endregion --------------------------------------- Dynamic routes
 
     //region --------------------------------------- Cycling routes #261
     /// @notice #261: ensure that known single cycling route is not detected as cycling
@@ -227,11 +258,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
     //region --------------------------------------- Helper functions
     function _addAdapter() internal {
+        address multisig = IPlatform(PLATFORM).multisig();
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new BalancerV3StableAdapter()));
-        BalancerV3StableAdapter(address(proxy)).init(PLATFORM);
-        BalancerV3StableAdapter(address(proxy)).setupHelpers(SonicConstantsLib.BEETS_V3_ROUTER);
-        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.BALANCER_V3_STABLE, address(proxy));
+        proxy.initProxy(address(new MetaUsdAdapter()));
+        MetaUsdAdapter(address(proxy)).init(PLATFORM);
+
+        vm.prank(multisig);
+        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_USD, address(proxy));
     }
 
     function _upgrade() internal {
@@ -257,50 +290,10 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         uint i;
         // wanS -> USDC
         pools[i++] = _makePoolData(
-            SonicConstantsLib.SILO_VAULT_25_wS,
-            AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.SILO_VAULT_25_wS,
-            SonicConstantsLib.TOKEN_wS
-        );
-        pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS,
-            AmmAdapterIdLib.BALANCER_V3_STABLE,
-            SonicConstantsLib.TOKEN_anS,
-            SonicConstantsLib.SILO_VAULT_25_wS
-        );
-        pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wanS,
-            AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wanS,
-            SonicConstantsLib.TOKEN_anS
-        );
-
-        // wstkscUSD -> USDC
-        pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD
-        );
-        /*pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
-            AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_scUSD
-        );*/
-
-        // wstksceth -> ETH
-        pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscETH,
-            AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_stkscETH
-        );
-        pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_scETH_stkscETH_250,
-            AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscETH,
-            SonicConstantsLib.TOKEN_scETH
+            SonicConstantsLib.METAVAULT_metaUSD,
+            AmmAdapterIdLib.META_USD,
+            SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_metaUSD
         );
     }
 
