@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../interfaces/IMetaUsdAmmAdapter.sol";
+import {console} from "forge-std/console.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
@@ -18,7 +19,7 @@ import {console} from "forge-std/console.sol";
 /// @dev Inspired by TetuLiquidator
 /// Changelog:
 ///   1.3.0: - exclude cycling routes - #261
-///          - todo dynamic cycling routes
+///          - support of dynamic routes for metaUSD - #330
 ///   1.2.0: support long routes up to 8 hops
 ///   1.1.0: support long routes up to 6 hops
 /// @author Alien Deployer (https://github.com/a17)
@@ -622,25 +623,29 @@ contract Swapper is Controllable, ISwapper {
     function _getPoolData(SwapperStorage storage $, address token, bool isTokenIn) internal view returns (PoolData memory poolData) {
         poolData = $.pools[token];
 
-        if (isTokenIn) {
-            if (poolData.tokenIn == poolData.tokenOut) {
-                IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
-                if (keccak256(bytes(ammAdapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.META_USD))) {
-                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
+        if (poolData.tokenIn == token) {
+            if (isTokenIn) {
+                if (poolData.tokenIn == poolData.tokenOut) {
+                    // support of dynamic route: tokenOut is selected on the fly
+                    IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_USD))) {
+                        poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
+                    }
                 }
-            }
-        } else {
-            if (poolData.tokenIn == poolData.tokenOut) {
-                IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
-                if (keccak256(bytes(ammAdapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.META_USD))) {
-                    poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
+            } else {
+                if (poolData.tokenIn == poolData.tokenOut) {
+                    // support of dynamic route: tokenOut is selected on the fly
+                    IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_USD))) {
+                        // we assign tokenOut here because in/out tokens are swapped below
+                        poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
+                    }
                 }
-            }
 
-            // need to swap directions for tokenOut pool
-            (poolData.tokenIn, poolData.tokenOut) = (poolData.tokenOut, poolData.tokenIn);
+                // need to swap directions for tokenOut pool
+                (poolData.tokenIn, poolData.tokenOut) = (poolData.tokenOut, poolData.tokenIn);
+            }
         }
-
     }
 
     //slither-disable-next-line reentrancy-events

@@ -303,8 +303,9 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wETH_SILO, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SILO, SonicConstantsLib.TOKEN_wETH);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_ALGEBRA_beS_OS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_beS, SonicConstantsLib.TOKEN_OS); // 40
         pools[i++] = _makePoolData(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, AmmAdapterIdLib.ERC_4626, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD); // 41
-        pools[i++] = _makePoolData(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, AmmAdapterIdLib.ERC_4626, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD); // 42
-        // todo pools[i++] = _makePoolData(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, AmmAdapterIdLib.WRAPPED_META_USD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD); // 43
+
+        // dynamic route: tokenIn is equal to tokenOut (actual tokenOut is selected on the fly)
+        pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaUSD, AmmAdapterIdLib.META_USD, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD); // 42
         //endregion ----- Pools ----
     }
 
