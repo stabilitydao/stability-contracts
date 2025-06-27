@@ -660,6 +660,7 @@ contract Swapper is Controllable, ISwapper {
 
             // if it is the first step send tokens to the swapper from the current contract
             if (i == 0) {
+                console.log("safeTransferFrom sender to adapter", msg.sender, data.ammAdapter, amount);
                 IERC20(data.tokenIn).safeTransferFrom(msg.sender, data.ammAdapter, amount);
             }
             address recipient;
@@ -671,6 +672,8 @@ contract Swapper is Controllable, ISwapper {
                 recipient = msg.sender;
             }
 
+            // if it is the last step of the route we need to check if we have enough price impact tolerance
+            console.log("Swap using adapter", data.tokenIn, data.tokenOut, recipient);
             IAmmAdapter(data.ammAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
         }
 

@@ -121,7 +121,7 @@ library SiloALMFLib {
             }
 
             // swap
-            StrategyLib.swap(
+            _swap(
                 platform,
                 collateralAsset,
                 token,
@@ -137,7 +137,7 @@ library SiloALMFLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
+            _swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -155,7 +155,7 @@ library SiloALMFLib {
             );
 
             // swap
-            StrategyLib.swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
+            _swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
@@ -216,9 +216,12 @@ library SiloALMFLib {
         uint amount,
         uint priceImpactTolerance
     ) internal {
+        console.log("Strategy", address(this));
         console.log("SiloALMFLib._swap", tokenIn, tokenOut, amount);
 
-        StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
+        // StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
     }
     //endregion ------------------------------------- Flash loan and swap
 
