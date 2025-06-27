@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
 import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
@@ -55,7 +55,6 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
         address recipient,
         uint priceImpactTolerance
     ) external {
-        console.log("MetaUsdAdapter.swap");
         IMetaVault metaVault = IMetaVault(pool);
 
         uint amount = IERC20(tokenIn).balanceOf(address(this));
@@ -63,13 +62,14 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
         if (tokenIn == pool) {
             // swap Meta USD to asset
-            uint balance = metaVault.balanceOf(address(this)); // todo
+            uint balance = metaVault.balanceOf(address(this));
 
             address[] memory assets = metaVault.assetsForWithdraw();
             require(assets.length == 1 && assets[0] == tokenOut, IncorrectTokens());
 
+            // calculate min asset amounts out
             uint[] memory minAssetAmountsOut = new uint[](1);
-            minAssetAmountsOut[0] = amount
+            minAssetAmountsOut[0] = getPrice(pool, tokenIn, tokenOut, amount)
                 * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
 
             metaVault.withdrawAssets(assets, balance, minAssetAmountsOut);
@@ -79,7 +79,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
         } else if (tokenOut == pool) {
             // swap asset to Meta USD
             address[] memory assets = metaVault.assetsForDeposit();
-            require(assets.length == 1 && assets[0] == tokenOut, IncorrectTokens());
+            require(assets.length == 1 && assets[0] == tokenIn, IncorrectTokens());
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amount;
 
@@ -87,15 +87,16 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
             // todo Do we need to refund the excess instead of reverting?
             require(amountsConsumed.length == 1 && amountsConsumed[0] == amount, IncorrectAmountConsumed());
 
+            IERC20(tokenIn).approve(pool, amount);
+            uint balanceBefore = metaVault.balanceOf(recipient);
             metaVault.depositAssets(
                 assets,
                 amountsMax,
                 sharesOut * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR,
-                address(this)
+                recipient
             );
 
-            amountOut = metaVault.balanceOf(address(this)); // todo
-            metaVault.transfer(recipient, amountOut);
+            amountOut = metaVault.balanceOf(recipient) - balanceBefore;
         } else {
             revert IncorrectTokens();
         }
@@ -141,28 +142,34 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        console.log("MetaUsdAdapter.getPrice");
         address[] memory vaults = IMetaVault(pool).vaults();
         address[] memory tokens = poolTokens(pool);
 
-        // we assume here that all tokens are in the same order as vaults, see {poolTokens} implementation
+        uint tokenInDecimals = IERC20Metadata(tokenIn).decimals();
+        uint tokenOutDecimals = IERC20Metadata(tokenOut).decimals();
 
-        if (tokenIn == tokens[0]) {
+        // For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
+        if (amount == 0) {
+            amount = 10 ** tokenInDecimals;
+        }
+
+        // we assume here that all tokens are in the same order as vaults, see {poolTokens} implementation
+        if (tokenIn == pool) {
             // Meta USD to asset
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenOut == tokens[i]) {
                     (uint price, ) = IMetaVault(vaults[i - 1]).price();
                     // todo should we check if the price is trusted here?
-                    return price * amount / 1e18;
+                    return price * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
                 }
             }
-        } else if (tokenOut == tokens[0]) {
+        } else if (tokenOut == pool) {
             // Asset to Meta USD
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenIn == tokens[i]) {
                     (uint price, ) = IMetaVault(vaults[i - 1]).price();
                     // todo should we check if the price is trusted here?
-                    return amount * 1e18 / price;
+                    return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * 1e18 / price;
                 }
             }
         }
