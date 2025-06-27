@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/adapters/MetaUsdAdapter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
@@ -26,116 +31,289 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         KNOWN_CYCLING_PAIRS = [
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
-            [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
-            [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
-        ];
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
+                [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
+                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
+                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
+                [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
+            ];
 
         tokens = [
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wBTC,
-            SonicConstantsLib.TOKEN_USDC, // 3
-            SonicConstantsLib.TOKEN_stS,
-            SonicConstantsLib.TOKEN_BEETS,
-            SonicConstantsLib.TOKEN_EURC,
-            SonicConstantsLib.TOKEN_EQUAL,
-            SonicConstantsLib.TOKEN_scUSD, // 8
-            SonicConstantsLib.TOKEN_GOGLZ,
-            SonicConstantsLib.TOKEN_SACRA,
-            SonicConstantsLib.TOKEN_SACRA_GEM_1,
-            SonicConstantsLib.TOKEN_SWPx,
-            SonicConstantsLib.TOKEN_scETH, // 13
-            SonicConstantsLib.TOKEN_atETH, // 14
-            SonicConstantsLib.TOKEN_AUR,
-            SonicConstantsLib.TOKEN_auUSDC, // 16
-            SonicConstantsLib.TOKEN_BRUSH,
-            SonicConstantsLib.TOKEN_FS,
-            SonicConstantsLib.TOKEN_sDOG,
-            SonicConstantsLib.TOKEN_MOON,
-            SonicConstantsLib.TOKEN_OS,
-            SonicConstantsLib.TOKEN_SHADOW,
-            SonicConstantsLib.TOKEN_xSHADOW,
-            SonicConstantsLib.TOKEN_sGEM1,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stkscETH, // 27
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_wOS, // 29
-            SonicConstantsLib.TOKEN_STBL,
-            SonicConstantsLib.TOKEN_anS, // 31
-            SonicConstantsLib.TOKEN_wanS, // 32
-            SonicConstantsLib.TOKEN_frxUSD, // 33
-            SonicConstantsLib.TOKEN_sfrxUSD, // 34
-            SonicConstantsLib.TOKEN_x33,
-            SonicConstantsLib.TOKEN_DIAMONDS,
-            SonicConstantsLib.TOKEN_aUSDC, // 37
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
-            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
-            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
-            SonicConstantsLib.TOKEN_GEMSx,
-            SonicConstantsLib.TOKEN_bUSDCe20, // 46
-            SonicConstantsLib.TOKEN_BeetsFragmentsS1,
-            SonicConstantsLib.TOKEN_USDT,
-            SonicConstantsLib.TOKEN_SILO, // 49
-            SonicConstantsLib.TOKEN_beS,
+                        SonicConstantsLib.TOKEN_wS,
+                        SonicConstantsLib.TOKEN_wETH,
+                        SonicConstantsLib.TOKEN_wBTC,
+                        SonicConstantsLib.TOKEN_USDC, // 3
+                        SonicConstantsLib.TOKEN_stS,
+                        SonicConstantsLib.TOKEN_BEETS,
+                        SonicConstantsLib.TOKEN_EURC,
+                        SonicConstantsLib.TOKEN_EQUAL,
+                        SonicConstantsLib.TOKEN_scUSD, // 8
+                        SonicConstantsLib.TOKEN_GOGLZ,
+                        SonicConstantsLib.TOKEN_SACRA,
+                        SonicConstantsLib.TOKEN_SACRA_GEM_1,
+                        SonicConstantsLib.TOKEN_SWPx,
+                        SonicConstantsLib.TOKEN_scETH, // 13
+                        SonicConstantsLib.TOKEN_atETH, // 14
+                        SonicConstantsLib.TOKEN_AUR,
+                        SonicConstantsLib.TOKEN_auUSDC, // 16
+                        SonicConstantsLib.TOKEN_BRUSH,
+                        SonicConstantsLib.TOKEN_FS,
+                        SonicConstantsLib.TOKEN_sDOG,
+                        SonicConstantsLib.TOKEN_MOON,
+                        SonicConstantsLib.TOKEN_OS,
+                        SonicConstantsLib.TOKEN_SHADOW,
+                        SonicConstantsLib.TOKEN_xSHADOW,
+                        SonicConstantsLib.TOKEN_sGEM1,
+                        SonicConstantsLib.TOKEN_stkscUSD,
+                        SonicConstantsLib.TOKEN_wstkscUSD,
+                        SonicConstantsLib.TOKEN_stkscETH, // 27
+                        SonicConstantsLib.TOKEN_wstkscETH,
+                        SonicConstantsLib.TOKEN_wOS, // 29
+                        SonicConstantsLib.TOKEN_STBL,
+                        SonicConstantsLib.TOKEN_anS, // 31
+                        SonicConstantsLib.TOKEN_wanS, // 32
+                        SonicConstantsLib.TOKEN_frxUSD, // 33
+                        SonicConstantsLib.TOKEN_sfrxUSD, // 34
+                        SonicConstantsLib.TOKEN_x33,
+                        SonicConstantsLib.TOKEN_DIAMONDS,
+                        SonicConstantsLib.TOKEN_aUSDC, // 37
+                        SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+                        SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
+                        SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
+                        SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
+                        SonicConstantsLib.TOKEN_GEMSx,
+                        SonicConstantsLib.TOKEN_bUSDCe20, // 46
+                        SonicConstantsLib.TOKEN_BeetsFragmentsS1,
+                        SonicConstantsLib.TOKEN_USDT,
+                        SonicConstantsLib.TOKEN_SILO, // 49
+                        SonicConstantsLib.TOKEN_beS,
 
-            SonicConstantsLib.SILO_VAULT_25_wS
-        ];
+                        SonicConstantsLib.SILO_VAULT_25_wS
+            ];
     }
     //region --------------------------------------- Dynamic routes
-    function testSwapMetaUsd() public {
+
+    function testSwapMetaUsdUsdc() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
         _upgrade();
-        _addAdapter();
-        _routes();
+        _addToWhitelist(_addAdapter());
 
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
         assertEq(IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
 
-        deal(SonicConstantsLib.TOKEN_USDC, address(this), 1e18);
+        //--------------------------------- Swap USDC => metaUSD
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
 
-        //--------------------------------- USDC => metaUSD
-        console.log("!!!!!!!!!!!!!!!!!USDC => metaUSD");
-        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 1e18, 1);
         uint balanceMetaUsd0 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
-        uint balanceUsdc0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
 
-        assertNotEq(balanceMetaUsd0, 0);
-        assertEq(balanceUsdc0, 0);
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
-        //--------------------------------- metaUSD => USDC
-        console.log("!!!!!!!!!!!!!!!!!metaUSD => USDC");
+        //--------------------------------- Swap metaUSD => USDC
+        bool withdrawDirectly =
+            IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
         IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1);
+        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
 
         uint balanceMetaUsd1 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
-        uint balanceUsdc1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
 
-        assertEq(balanceMetaUsd1, 0);
-        assertEq(balanceUsdc1, 1e18);
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
     }
 
+    function testSwapMetaUsdScUsd() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addToWhitelist(_addAdapter());
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
+        assertEq(IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_scUSD, address(this), amount);
+
+        //--------------------------------- Swap scUSD => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => scUSD
+        bool withdrawDirectly =
+            IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
+    }
+
+    function testSwapWrappedMetaUsdUsdc() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addToWhitelist(_addAdapter());
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
+        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
+
+        //--------------------------------- Swap USDC => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => USDC
+        bool withdrawDirectly =
+            IMetaVault(
+                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+                ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
+    }
+
+    function testSwapWrappedMetaUsdScUsd() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addToWhitelist(_addAdapter());
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
+        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_scUSD, address(this), amount);
+
+        //--------------------------------- Swap scUSD => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => scUSD
+        bool withdrawDirectly =
+            IMetaVault(
+                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+                ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
+    }
 
     //endregion --------------------------------------- Dynamic routes
 
@@ -261,7 +439,16 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     //endregion --------------------------------------- Internal logic
 
     //region --------------------------------------- Helper functions
-    function _addAdapter() internal {
+    function _addToWhitelist(address /*adapter*/ ) internal {
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true); // todo
+    }
+
+    function _addAdapter() internal returns (address adapter) {
         address multisig = IPlatform(PLATFORM).multisig();
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new MetaUsdAdapter()));
@@ -269,6 +456,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         vm.prank(multisig);
         IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_USD, address(proxy));
+
+        return address(proxy);
     }
 
     function _upgrade() internal {
@@ -290,13 +479,18 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     }
 
     function _routes() internal pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](6);
+        pools = new ISwapper.AddPoolData[](2);
         uint i;
-        // wanS -> USDC
         pools[i++] = _makePoolData(
             SonicConstantsLib.METAVAULT_metaUSD,
             AmmAdapterIdLib.META_USD,
             SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_metaUSD
+        );
+        pools[i++] = _makePoolData(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
             SonicConstantsLib.METAVAULT_metaUSD
         );
     }
@@ -308,6 +502,24 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
+    }
+
+    function _upgradeMetaVault(address metaVault_) internal {
+        IMetaVaultFactory metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        // Upgrade MetaVault to the new implementation
+        address vaultImplementation = address(new MetaVault());
+        vm.prank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
+        address[] memory metaProxies = new address[](1);
+        metaProxies[0] = address(metaVault_);
+        vm.prank(multisig);
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
+    }
+
+    function _getDiffPercent18(uint x, uint y) internal pure returns (uint) {
+        return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
     //endregion --------------------------------------- Helper functions
 }
