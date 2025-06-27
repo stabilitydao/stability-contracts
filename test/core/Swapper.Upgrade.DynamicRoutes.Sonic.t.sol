@@ -31,83 +31,83 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         KNOWN_CYCLING_PAIRS = [
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
-            [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
-            [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
-        ];
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
+                [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
+                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
+                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
+                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
+                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
+                [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
+            ];
 
         tokens = [
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wBTC,
-            SonicConstantsLib.TOKEN_USDC, // 3
-            SonicConstantsLib.TOKEN_stS,
-            SonicConstantsLib.TOKEN_BEETS,
-            SonicConstantsLib.TOKEN_EURC,
-            SonicConstantsLib.TOKEN_EQUAL,
-            SonicConstantsLib.TOKEN_scUSD, // 8
-            SonicConstantsLib.TOKEN_GOGLZ,
-            SonicConstantsLib.TOKEN_SACRA,
-            SonicConstantsLib.TOKEN_SACRA_GEM_1,
-            SonicConstantsLib.TOKEN_SWPx,
-            SonicConstantsLib.TOKEN_scETH, // 13
-            SonicConstantsLib.TOKEN_atETH, // 14
-            SonicConstantsLib.TOKEN_AUR,
-            SonicConstantsLib.TOKEN_auUSDC, // 16
-            SonicConstantsLib.TOKEN_BRUSH,
-            SonicConstantsLib.TOKEN_FS,
-            SonicConstantsLib.TOKEN_sDOG,
-            SonicConstantsLib.TOKEN_MOON,
-            SonicConstantsLib.TOKEN_OS,
-            SonicConstantsLib.TOKEN_SHADOW,
-            SonicConstantsLib.TOKEN_xSHADOW,
-            SonicConstantsLib.TOKEN_sGEM1,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stkscETH, // 27
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_wOS, // 29
-            SonicConstantsLib.TOKEN_STBL,
-            SonicConstantsLib.TOKEN_anS, // 31
-            SonicConstantsLib.TOKEN_wanS, // 32
-            SonicConstantsLib.TOKEN_frxUSD, // 33
-            SonicConstantsLib.TOKEN_sfrxUSD, // 34
-            SonicConstantsLib.TOKEN_x33,
-            SonicConstantsLib.TOKEN_DIAMONDS,
-            SonicConstantsLib.TOKEN_aUSDC, // 37
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
-            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
-            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
-            SonicConstantsLib.TOKEN_GEMSx,
-            SonicConstantsLib.TOKEN_bUSDCe20, // 46
-            SonicConstantsLib.TOKEN_BeetsFragmentsS1,
-            SonicConstantsLib.TOKEN_USDT,
-            SonicConstantsLib.TOKEN_SILO, // 49
-            SonicConstantsLib.TOKEN_beS,
+                        SonicConstantsLib.TOKEN_wS,
+                        SonicConstantsLib.TOKEN_wETH,
+                        SonicConstantsLib.TOKEN_wBTC,
+                        SonicConstantsLib.TOKEN_USDC, // 3
+                        SonicConstantsLib.TOKEN_stS,
+                        SonicConstantsLib.TOKEN_BEETS,
+                        SonicConstantsLib.TOKEN_EURC,
+                        SonicConstantsLib.TOKEN_EQUAL,
+                        SonicConstantsLib.TOKEN_scUSD, // 8
+                        SonicConstantsLib.TOKEN_GOGLZ,
+                        SonicConstantsLib.TOKEN_SACRA,
+                        SonicConstantsLib.TOKEN_SACRA_GEM_1,
+                        SonicConstantsLib.TOKEN_SWPx,
+                        SonicConstantsLib.TOKEN_scETH, // 13
+                        SonicConstantsLib.TOKEN_atETH, // 14
+                        SonicConstantsLib.TOKEN_AUR,
+                        SonicConstantsLib.TOKEN_auUSDC, // 16
+                        SonicConstantsLib.TOKEN_BRUSH,
+                        SonicConstantsLib.TOKEN_FS,
+                        SonicConstantsLib.TOKEN_sDOG,
+                        SonicConstantsLib.TOKEN_MOON,
+                        SonicConstantsLib.TOKEN_OS,
+                        SonicConstantsLib.TOKEN_SHADOW,
+                        SonicConstantsLib.TOKEN_xSHADOW,
+                        SonicConstantsLib.TOKEN_sGEM1,
+                        SonicConstantsLib.TOKEN_stkscUSD,
+                        SonicConstantsLib.TOKEN_wstkscUSD,
+                        SonicConstantsLib.TOKEN_stkscETH, // 27
+                        SonicConstantsLib.TOKEN_wstkscETH,
+                        SonicConstantsLib.TOKEN_wOS, // 29
+                        SonicConstantsLib.TOKEN_STBL,
+                        SonicConstantsLib.TOKEN_anS, // 31
+                        SonicConstantsLib.TOKEN_wanS, // 32
+                        SonicConstantsLib.TOKEN_frxUSD, // 33
+                        SonicConstantsLib.TOKEN_sfrxUSD, // 34
+                        SonicConstantsLib.TOKEN_x33,
+                        SonicConstantsLib.TOKEN_DIAMONDS,
+                        SonicConstantsLib.TOKEN_aUSDC, // 37
+                        SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+                        SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
+                        SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
+                        SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
+                        SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
+                        SonicConstantsLib.TOKEN_GEMSx,
+                        SonicConstantsLib.TOKEN_bUSDCe20, // 46
+                        SonicConstantsLib.TOKEN_BeetsFragmentsS1,
+                        SonicConstantsLib.TOKEN_USDT,
+                        SonicConstantsLib.TOKEN_SILO, // 49
+                        SonicConstantsLib.TOKEN_beS,
 
-            SonicConstantsLib.SILO_VAULT_25_wS
-        ];
+                        SonicConstantsLib.SILO_VAULT_25_wS
+            ];
     }
     //region --------------------------------------- Dynamic routes
 
@@ -244,6 +244,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             IMetaVault(
                 IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
             ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
         swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
         vm.roll(block.number + 6);
@@ -296,6 +297,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             IMetaVault(
                 IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
             ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
         swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
         vm.roll(block.number + 6);
@@ -439,19 +441,19 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     //endregion --------------------------------------- Internal logic
 
     //region --------------------------------------- Helper functions
-    function _addToWhitelist(address adapter) internal {
+    function _addToWhitelist(address /*adapter*/ ) internal {
         address multisig = IPlatform(PLATFORM).multisig();
 
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
 
-        //vm.prank(multisig);
-        //IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true);
+//        vm.prank(multisig);
+//        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(adapter), true);
+//
+//        vm.prank(multisig);
+//        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(swapper), true);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(adapter), true);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(swapper), true);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true); // todo
     }
 
     function _addAdapter() internal returns (address adapter) {

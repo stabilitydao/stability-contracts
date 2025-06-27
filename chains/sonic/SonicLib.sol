@@ -115,6 +115,7 @@ library SonicLib {
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy)
             .setupHelpers(SonicConstantsLib.BEETS_V3_ROUTER);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.PENDLE);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.META_USD);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
