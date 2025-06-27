@@ -446,14 +446,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
 
-//        vm.prank(multisig);
-//        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(adapter), true);
-//
-//        vm.prank(multisig);
-//        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(swapper), true);
-
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true); // todo
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(this), true);
     }
 
     function _addAdapter() internal returns (address adapter) {

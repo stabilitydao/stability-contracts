@@ -364,6 +364,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint amount) public returns (bool) {
+        console.log("MetaVault.transferFrom", msg.sender);
+        console.log("MetaVault.transferFrom", from, to, amount);
         require(to != address(0), ERC20InvalidReceiver(to));
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         _spendAllowanceOrBlock(from, msg.sender, amount);
@@ -641,6 +643,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
+        console.log("update from, to, amount", from, to, amount);
         if (!_isLastBlockDefenseDisabled($, from)) {
             $.lastTransferBlock[from] = block.number;
             $.lastTransferBlock[to] = block.number;
@@ -649,12 +652,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
+        console.log("_beforeDepositOrWithdraw");
         if (!_checkLastBlockProtection($, owner)) {
             $.lastTransferBlock[owner] = block.number;
         }
     }
 
     function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view returns (bool disabled){
+        console.log("_checkLastBlockProtection.owner", owner);
         disabled = _isLastBlockDefenseDisabled($, owner);
         if (!disabled && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
@@ -812,6 +817,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _isLastBlockDefenseDisabled(MetaVaultStorage storage $, address owner) internal view returns (bool) {
+        console.log("_isLastBlockDefenseDisabled", $.lastBlockDefenseDisabled, owner);
         return $.lastBlockDefenseDisabled || $.lastBlockDefenseWhitelist[owner];
     }
     //endregion --------------------------------- Internal logic
