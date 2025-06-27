@@ -11,6 +11,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.4.0: add poolTvl, maxWithdrawAssets - #326
 ///   2.3.0: add fuseMode - #305
 ///   2.2.0: extractFees use RevenueRouter
 ///   2.1.3: call hardWorkMintFeeCallback always
@@ -29,7 +30,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.3.0";
+    string public constant VERSION_STRATEGY_BASE = "2.4.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -54,6 +55,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
             (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
     }
 
+    //region -------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -181,7 +183,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.customPriceImpactTolerance = priceImpactTolerance;
     }
+    //endregion -------------------- Restricted actions
 
+    //region -------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -279,14 +283,29 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return _getStrategyBaseStorage().customPriceImpactTolerance;
     }
 
+    /// @notice IStrategy
+    function maxWithdrawAssets() public view virtual returns (uint[] memory amounts) {
+        // by default zero-length array is returned to indicate that all available amounts can be withdrawn
+        return amounts;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual returns (uint tvlUsd) {
+        // by default max uint is returned to indicate that pool TVL is not calculated
+        return type(uint).max;
+    }
+
+    //endregion -------------------- View functions
+
+    //region -------------------- Default implementations
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                  Default implementations                   */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @inheritdoc IStrategy
     function fuseMode() external view returns (uint) {
         return _getStrategyBaseStorage().fuseOn;
     }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                  Default implementations                   */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Cosumed amounts of invested assets
@@ -331,7 +350,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
             revert NotReadyForHardWork();
         }
     }
+    //endregion -------------------- Default implementations
 
+    //region -------------------- Must be implemented by derived contracts
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -444,7 +465,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     {
         return _previewDepositAssets(amountsMax);
     }
+    //endregion -------------------- Must be implemented by derived contracts
 
+    //region -------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -461,4 +484,5 @@ abstract contract StrategyBase is Controllable, IStrategy {
             revert IControllable.NotVault();
         }
     }
+    //endregion -------------------- Internal logic
 }
