@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -18,6 +19,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   TODO: add whitelist for last-block-defense
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -240,6 +242,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         emit LastBlockDefenseDisabled(isDisabled);
     }
 
+    /// @inheritdoc IMetaVault
+    function changeWhitelist(address addr, bool addToWhitelist) external onlyOperator {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $.lastBlockDefenseWhitelist[addr] = addToWhitelist;
+
+        emit WhitelistChanged(addr, addToWhitelist);
+    }
     //endregion --------------------------------- Restricted action
 
     //region --------------------------------- User actions
@@ -610,6 +619,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function decimals() external pure returns (uint8) {
         return 18;
     }
+
+    /// @inheritdoc IMetaVault
+    function whitelisted(address addr) external view returns (bool) {
+        return _getMetaVaultStorage().lastBlockDefenseWhitelist[addr];
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
@@ -627,7 +641,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
-        if (!$.lastBlockDefenseDisabled) {
+        if (!_isLastBlockDefenseDisabled($, from)) {
             $.lastTransferBlock[from] = block.number;
             $.lastTransferBlock[to] = block.number;
         }
@@ -635,14 +649,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
-        _checkLastBlockProtection($, owner);
-        if (!$.lastBlockDefenseDisabled) {
+        if (!_checkLastBlockProtection($, owner)) {
             $.lastTransferBlock[owner] = block.number;
         }
     }
 
-    function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view {
-        if (!$.lastBlockDefenseDisabled && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
+    function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view returns (bool disabled){
+        disabled = _isLastBlockDefenseDisabled($, owner);
+        if (!disabled && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
             revert WaitAFewBlocks();
         }
     }
@@ -654,6 +668,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
+        console.log("_withdrawAssets.start");
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
@@ -679,6 +694,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // ensure that provided assets correspond to the target vault
         // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, _targetVault);
+        console.log("_withdrawAssets.0");
 
         (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(_targetVault);
         require(
@@ -692,15 +708,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         uint targetVaultSharesToWithdraw = Math.mulDiv(usdToWithdraw, 1e18, vaultSharePriceUsd, Math.Rounding.Floor);
 
+        console.log("_withdrawAssets.1._targetVault", _targetVault);
         amountsOut = IStabilityVault(_targetVault).withdrawAssets(
             assets_, targetVaultSharesToWithdraw, minAssetAmountsOut, receiver, address(this)
         );
+        console.log("_withdrawAssets.2");
 
         _burn($, owner, amount, sharesToBurn);
+        console.log("_withdrawAssets.3");
 
         $.lastTransferBlock[receiver] = block.number;
 
+        console.log("_withdrawAssets.4");
+
         emit WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
+        console.log("_withdrawAssets.end");
     }
 
     function _maxAmountToWithdrawFromVault(address vault)
@@ -789,5 +811,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
     }
 
+    function _isLastBlockDefenseDisabled(MetaVaultStorage storage $, address owner) internal view returns (bool) {
+        return $.lastBlockDefenseDisabled || $.lastBlockDefenseWhitelist[owner];
+    }
     //endregion --------------------------------- Internal logic
 }

@@ -41,6 +41,8 @@ interface IMetaVault is IStabilityVault {
         uint storedTime;
         /// @inheritdoc IStabilityVault
         bool lastBlockDefenseDisabled;
+        /// @dev Whitelist for last block defense
+        mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -51,6 +53,7 @@ interface IMetaVault is IStabilityVault {
     event Rebalance(uint[] withdrawShares, uint[] depositAmountsProportions, int cost);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);
+    event WhitelistChanged(address owner, bool whitelisted);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -109,7 +112,10 @@ interface IMetaVault is IStabilityVault {
         view
         returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime);
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /// @notice True if the {addr} is in last-block-defense whitelist
+    function whitelisted(address addr) external view returns (bool);
+
+        /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -146,4 +152,7 @@ interface IMetaVault is IStabilityVault {
         address[] memory vaults_,
         uint[] memory proportions_
     ) external;
+
+    /// @notice Add/remove {addr} to/from last-block-defense whitelist
+    function changeWhitelist(address addr, bool addToWhitelist) external;
 }

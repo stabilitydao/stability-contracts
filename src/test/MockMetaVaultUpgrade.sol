@@ -219,4 +219,8 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function withdraw(uint, address, address, uint) external returns (uint) {}
 
     function redeem(uint, address, address, uint) external returns (uint) {}
+
+    function changeWhitelist(address addr, bool addToWhitelist) external {}
+
+    function whitelisted(address addr) external view returns (bool) {}
 }

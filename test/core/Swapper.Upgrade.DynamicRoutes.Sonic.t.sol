@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/adapters/MetaUsdAdapter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
@@ -112,15 +117,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         address multisig = IPlatform(PLATFORM).multisig();
 
         _upgrade();
-        _addAdapter();
+        _addToWhitelist(_addAdapter());
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
         vm.stopPrank();
-
-        //--------------------------------- Add swapper to white list in MetaVault
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true); // todo
 
         //--------------------------------- Set up initial balances
         uint amount = 2e6; // 1 USDC
@@ -166,15 +167,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         address multisig = IPlatform(PLATFORM).multisig();
 
         _upgrade();
-        _addAdapter();
+        _addToWhitelist(_addAdapter());
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
         vm.stopPrank();
-
-        //--------------------------------- Add swapper to white list in MetaVault
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true); // todo
 
         //--------------------------------- Set up initial balances
         uint amount = 2e6; // 1 USDC
@@ -200,6 +197,110 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         vm.roll(block.number + 6);
 
         uint balanceMetaUsd1 = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
+    }
+
+    function testSwapWrappedMetaUsdUsdc() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addToWhitelist(_addAdapter());
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
+        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
+
+        //--------------------------------- Swap USDC => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => USDC
+        bool withdrawDirectly =
+            IMetaVault(
+                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+            ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
+        if (withdrawDirectly) {
+            assertEq(balanceToken1, amount, "balanceToken1 should be equal to initial amount");
+        } else {
+            assertLe(
+                _getDiffPercent18(balanceToken1, amount),
+                1e18/1000, // 0.1%
+                "balanceToken1 should be equal to initial amount"
+            );
+        }
+    }
+
+    function testSwapWrappedMetaUsdScUsd() public {
+
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addToWhitelist(_addAdapter());
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e6; // 1 USDC
+        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_scUSD, address(this), amount);
+
+        //--------------------------------- Swap scUSD => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+
+        assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => scUSD
+        bool withdrawDirectly =
+            IMetaVault(
+                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+            ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
         uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
 
         assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
@@ -338,7 +439,22 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     //endregion --------------------------------------- Internal logic
 
     //region --------------------------------------- Helper functions
-    function _addAdapter() internal {
+    function _addToWhitelist(address adapter) internal {
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+
+        //vm.prank(multisig);
+        //IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setLastBlockDefenseDisabled(true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(adapter), true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(swapper), true);
+    }
+
+    function _addAdapter() internal returns (address adapter) {
         address multisig = IPlatform(PLATFORM).multisig();
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new MetaUsdAdapter()));
@@ -346,6 +462,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         vm.prank(multisig);
         IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_USD, address(proxy));
+
+        return address(proxy);
     }
 
     function _upgrade() internal {
@@ -367,13 +485,18 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     }
 
     function _routes() internal pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](1);
+        pools = new ISwapper.AddPoolData[](2);
         uint i;
-        // wanS -> USDC
         pools[i++] = _makePoolData(
             SonicConstantsLib.METAVAULT_metaUSD,
             AmmAdapterIdLib.META_USD,
             SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_metaUSD
+        );
+        pools[i++] = _makePoolData(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
             SonicConstantsLib.METAVAULT_metaUSD
         );
     }
@@ -385,6 +508,20 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
+    }
+
+    function _upgradeMetaVault(address metaVault_) internal {
+        IMetaVaultFactory metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        // Upgrade MetaVault to the new implementation
+        address vaultImplementation = address(new MetaVault());
+        vm.prank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
+        address[] memory metaProxies = new address[](1);
+        metaProxies[0] = address(metaVault_);
+        vm.prank(multisig);
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
 
     function _getDiffPercent18(uint x, uint y) internal pure returns (uint) {
