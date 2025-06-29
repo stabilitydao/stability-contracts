@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
@@ -11,14 +11,14 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 
 contract ChainlinkAdapterTestSonic is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IOracleAdapter public adapter;
     IPriceReader public priceReader;
     address public multisig;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(4690000); // Jan-20-2025 02:26:58 PM +UTC
+        // Jun-05-2025 09:41:47 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 32000000));
     }
 
     function _addAdapter() internal {

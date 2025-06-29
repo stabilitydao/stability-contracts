@@ -204,6 +204,20 @@ library SonicFarmMakerLib {
         return farm;
     }
 
+    function _makeSiloFarm(address gauge, address siloVault, address rewardToken) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardToken;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = siloVault;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
     function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;

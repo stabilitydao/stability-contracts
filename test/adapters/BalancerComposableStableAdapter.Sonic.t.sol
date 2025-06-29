@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import {SonicConstantsLib, AmmAdapterIdLib, IBalancerAdapter} from "../../chains/sonic/SonicLib.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SonicConstantsLib, AmmAdapterIdLib, IBalancerAdapter} from "../../chains/sonic/SonicLib.sol";
 
 contract BalancerComposableStableAdapterTest is SonicSetup {
     bytes32 public _hash;
     IAmmAdapter public adapter;
 
     constructor() {
-        // vm.rollFork(18524880); // Mar-30-2025 03:16:13 PM +UTC
+        vm.rollFork(32000000); // Jun-05-2025 09:41:47 AM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE));
         adapter = IAmmAdapter(platform.ammAdapter(_hash).proxy);

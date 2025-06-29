@@ -18,6 +18,7 @@
 
 * **Frontend** `0x15487495cce9210795f9C2E0e1A7238E336dFc32` [sonicscan](https://sonicscan.org/address/0x15487495cce9210795f9C2E0e1A7238E336dFc32)
 * **RebalanceHelper** `0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319` [sonicscan](https://sonicscan.org/address/0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319)
+* **UpgradeHelper** `0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A` [sonicscan](https://sonicscan.org/address/0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A)
 
 ### Tokenomics
 
