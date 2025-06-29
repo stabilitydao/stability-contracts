@@ -31,7 +31,7 @@ contract SiMFUpgradeXSiloTest is Test {
     uint public constant FORK_BLOCK = 35662058; // Jun-24-2025 09:03:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant METAVAULT = SonicConstantsLib.METAVAULT_metaUSDC;
-    address public constant VAULT_C_USDC_SiMF = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9; // todo move to SonicConstantsLib
+    address public constant VAULT_C_USDC_SiMF = SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore;
     address public constant VAULT_C = VAULT_C_USDC_SiMF;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;

@@ -103,7 +103,6 @@ library SonicConstantsLib {
     address public constant TOKEN_PT_wOS_29MAY2025 = 0x46eb02b9F47634c4fab3110CC7ADc1C6311DfAC1;
     address public constant TOKEN_PT_Silo_46_scUSD_14AUG2025 = 0x9731842eD581816913933c01De142C7EE412A8c8;
     address public constant TOKEN_PT_Silo_20_USDC_17JUL2025 = 0x77d8F09053c28FaF1E00Df6511b23125d438616f;
-
     address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
