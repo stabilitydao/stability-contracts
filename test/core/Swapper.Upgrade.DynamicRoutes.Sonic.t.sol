@@ -32,88 +32,86 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         KNOWN_CYCLING_PAIRS = [
-                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
-                [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
-                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
-                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
-                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
-                [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
-                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
-                [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
-                [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
-                [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
-            ];
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
+            [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
+            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
+            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
+            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
+            [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
+        ];
 
         tokens = [
-                        SonicConstantsLib.TOKEN_wS,
-                        SonicConstantsLib.TOKEN_wETH,
-                        SonicConstantsLib.TOKEN_wBTC,
-                        SonicConstantsLib.TOKEN_USDC, // 3
-                        SonicConstantsLib.TOKEN_stS,
-                        SonicConstantsLib.TOKEN_BEETS,
-                        SonicConstantsLib.TOKEN_EURC,
-                        SonicConstantsLib.TOKEN_EQUAL,
-                        SonicConstantsLib.TOKEN_scUSD, // 8
-                        SonicConstantsLib.TOKEN_GOGLZ,
-                        SonicConstantsLib.TOKEN_SACRA,
-                        SonicConstantsLib.TOKEN_SACRA_GEM_1,
-                        SonicConstantsLib.TOKEN_SWPx,
-                        SonicConstantsLib.TOKEN_scETH, // 13
-                        SonicConstantsLib.TOKEN_atETH, // 14
-                        SonicConstantsLib.TOKEN_AUR,
-                        SonicConstantsLib.TOKEN_auUSDC, // 16
-                        SonicConstantsLib.TOKEN_BRUSH,
-                        SonicConstantsLib.TOKEN_FS,
-                        SonicConstantsLib.TOKEN_sDOG,
-                        SonicConstantsLib.TOKEN_MOON,
-                        SonicConstantsLib.TOKEN_OS,
-                        SonicConstantsLib.TOKEN_SHADOW,
-                        SonicConstantsLib.TOKEN_xSHADOW,
-                        SonicConstantsLib.TOKEN_sGEM1,
-                        SonicConstantsLib.TOKEN_stkscUSD,
-                        SonicConstantsLib.TOKEN_wstkscUSD,
-                        SonicConstantsLib.TOKEN_stkscETH, // 27
-                        SonicConstantsLib.TOKEN_wstkscETH,
-                        SonicConstantsLib.TOKEN_wOS, // 29
-                        SonicConstantsLib.TOKEN_STBL,
-                        SonicConstantsLib.TOKEN_anS, // 31
-                        SonicConstantsLib.TOKEN_wanS, // 32
-                        SonicConstantsLib.TOKEN_frxUSD, // 33
-                        SonicConstantsLib.TOKEN_sfrxUSD, // 34
-                        SonicConstantsLib.TOKEN_x33,
-                        SonicConstantsLib.TOKEN_DIAMONDS,
-                        SonicConstantsLib.TOKEN_aUSDC, // 37
-                        SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-                        SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
-                        SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-                        SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
-                        SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
-                        SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
-                        SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
-                        SonicConstantsLib.TOKEN_GEMSx,
-                        SonicConstantsLib.TOKEN_bUSDCe20, // 46
-                        SonicConstantsLib.TOKEN_BeetsFragmentsS1,
-                        SonicConstantsLib.TOKEN_USDT,
-                        SonicConstantsLib.TOKEN_SILO, // 49
-                        SonicConstantsLib.TOKEN_beS,
-
-                        SonicConstantsLib.SILO_VAULT_25_wS
-            ];
+            SonicConstantsLib.TOKEN_wS,
+            SonicConstantsLib.TOKEN_wETH,
+            SonicConstantsLib.TOKEN_wBTC,
+            SonicConstantsLib.TOKEN_USDC, // 3
+            SonicConstantsLib.TOKEN_stS,
+            SonicConstantsLib.TOKEN_BEETS,
+            SonicConstantsLib.TOKEN_EURC,
+            SonicConstantsLib.TOKEN_EQUAL,
+            SonicConstantsLib.TOKEN_scUSD, // 8
+            SonicConstantsLib.TOKEN_GOGLZ,
+            SonicConstantsLib.TOKEN_SACRA,
+            SonicConstantsLib.TOKEN_SACRA_GEM_1,
+            SonicConstantsLib.TOKEN_SWPx,
+            SonicConstantsLib.TOKEN_scETH, // 13
+            SonicConstantsLib.TOKEN_atETH, // 14
+            SonicConstantsLib.TOKEN_AUR,
+            SonicConstantsLib.TOKEN_auUSDC, // 16
+            SonicConstantsLib.TOKEN_BRUSH,
+            SonicConstantsLib.TOKEN_FS,
+            SonicConstantsLib.TOKEN_sDOG,
+            SonicConstantsLib.TOKEN_MOON,
+            SonicConstantsLib.TOKEN_OS,
+            SonicConstantsLib.TOKEN_SHADOW,
+            SonicConstantsLib.TOKEN_xSHADOW,
+            SonicConstantsLib.TOKEN_sGEM1,
+            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_stkscETH, // 27
+            SonicConstantsLib.TOKEN_wstkscETH,
+            SonicConstantsLib.TOKEN_wOS, // 29
+            SonicConstantsLib.TOKEN_STBL,
+            SonicConstantsLib.TOKEN_anS, // 31
+            SonicConstantsLib.TOKEN_wanS, // 32
+            SonicConstantsLib.TOKEN_frxUSD, // 33
+            SonicConstantsLib.TOKEN_sfrxUSD, // 34
+            SonicConstantsLib.TOKEN_x33,
+            SonicConstantsLib.TOKEN_DIAMONDS,
+            SonicConstantsLib.TOKEN_aUSDC, // 37
+            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
+            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
+            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
+            SonicConstantsLib.TOKEN_GEMSx,
+            SonicConstantsLib.TOKEN_bUSDCe20, // 46
+            SonicConstantsLib.TOKEN_BeetsFragmentsS1,
+            SonicConstantsLib.TOKEN_USDT,
+            SonicConstantsLib.TOKEN_SILO, // 49
+            SonicConstantsLib.TOKEN_beS,
+            SonicConstantsLib.SILO_VAULT_25_wS
+        ];
     }
     //region --------------------------------------- Dynamic routes
 
     function testSwapMetaUsdUsdc() public {
-
         //--------------------------------- Prepare swapper and routes
         address multisig = IPlatform(PLATFORM).multisig();
 
@@ -162,14 +160,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         } else {
             assertLe(
                 _getDiffPercent18(balanceToken1, amount),
-                1e18/1000, // 0.1%
+                1e18 / 1000, // 0.1%
                 "balanceToken1 should be equal to initial amount"
             );
         }
     }
 
     function testSwapMetaUsdScUsd() public {
-
         //--------------------------------- Prepare swapper and routes
         address multisig = IPlatform(PLATFORM).multisig();
 
@@ -218,14 +215,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         } else {
             assertLe(
                 _getDiffPercent18(balanceToken1, amount),
-                1e18/1000, // 0.1%
+                1e18 / 1000, // 0.1%
                 "balanceToken1 should be equal to initial amount"
             );
         }
     }
 
     function testSwapWrappedMetaUsdUsdc() public {
-
         //--------------------------------- Prepare swapper and routes
         address multisig = IPlatform(PLATFORM).multisig();
 
@@ -260,10 +256,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => USDC
-        bool withdrawDirectly =
-            IMetaVault(
-                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-            ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).metaVault())
+            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
 
@@ -282,14 +276,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         } else {
             assertLe(
                 _getDiffPercent18(balanceToken1, amount),
-                1e18/1000, // 0.1%
+                1e18 / 1000, // 0.1%
                 "balanceToken1 should be equal to initial amount"
             );
         }
     }
 
     function testSwapWrappedMetaUsdScUsd() public {
-
         //--------------------------------- Prepare swapper and routes
         address multisig = IPlatform(PLATFORM).multisig();
 
@@ -324,10 +317,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => scUSD
-        bool withdrawDirectly =
-            IMetaVault(
-                IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-            ).metaVault()).assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).metaVault())
+            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
 
@@ -346,14 +337,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         } else {
             assertLe(
                 _getDiffPercent18(balanceToken1, amount),
-                1e18/1000, // 0.1%
+                1e18 / 1000, // 0.1%
                 "balanceToken1 should be equal to initial amount"
             );
         }
     }
 
     function testSwapWrappedMetaBadPaths() public {
-
         //--------------------------------- Prepare swapper and routes
         address multisig = IPlatform(PLATFORM).multisig();
         address whitelisted = makeAddr("whitelisted");
@@ -441,47 +431,53 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
     //region --------------------------------------- Tests to find cycling routes #261
 
-//    function testSearchProblemRoutes__Fuzzy(uint from, uint to) public view {
+    //    function testSearchProblemRoutes__Fuzzy(uint from, uint to) public view {
 
-//        from = bound(from, 0, tokens.length - 1);
-//        to = bound(to, 0, tokens.length - 1);
-//        if (from == to) {
-//            return; // no route
-//        }
-//
-//        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
-//        if (route.length != 0) {
-//            if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
-//                _displayRoute(route, from, to, tokens[from], tokens[to]);
-//                assertEq(false, true);
-//            }
-//        }
-//    }
-//
-//    function testSearchProblemRoutesCycle(uint from, uint to) public view {
-//        from = bound(from, 0, tokens.length - 1);
-//        to = bound(to, 0, tokens.length - 1);
-//        if (from == to) {
-//            return; // no route
-//        }
-//
-//        for (uint i = 0; i < tokens.length; ++i) {
-//            for (uint j = i; j < tokens.length; ++j) {
-//                (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
-//                if (route.length != 0) {
-//                    if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
-//                        console.log("!!!!!!!!!!!Cycling route found for:", tokens[from], tokens[to]);
-//                        _displayRoute(route, from, to, tokens[from], tokens[to]);
-//                    }
-//                }
-//            }
-//        }
-//    }
+    //        from = bound(from, 0, tokens.length - 1);
+    //        to = bound(to, 0, tokens.length - 1);
+    //        if (from == to) {
+    //            return; // no route
+    //        }
+    //
+    //        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
+    //        if (route.length != 0) {
+    //            if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
+    //                _displayRoute(route, from, to, tokens[from], tokens[to]);
+    //                assertEq(false, true);
+    //            }
+    //        }
+    //    }
+    //
+    //    function testSearchProblemRoutesCycle(uint from, uint to) public view {
+    //        from = bound(from, 0, tokens.length - 1);
+    //        to = bound(to, 0, tokens.length - 1);
+    //        if (from == to) {
+    //            return; // no route
+    //        }
+    //
+    //        for (uint i = 0; i < tokens.length; ++i) {
+    //            for (uint j = i; j < tokens.length; ++j) {
+    //                (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
+    //                if (route.length != 0) {
+    //                    if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
+    //                        console.log("!!!!!!!!!!!Cycling route found for:", tokens[from], tokens[to]);
+    //                        _displayRoute(route, from, to, tokens[from], tokens[to]);
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
 
     //endregion --------------------------------------- Tests to find cycling routes #261
 
     //region --------------------------------------- Internal logic
-    function _displayRoute(ISwapper.PoolData[] memory route, uint from, uint to, address tokenIn, address tokenOut) internal view {
+    function _displayRoute(
+        ISwapper.PoolData[] memory route,
+        uint from,
+        uint to,
+        address tokenIn,
+        address tokenOut
+    ) internal view {
         console.log("Route:");
         console.log(from, to, tokenIn, tokenOut);
         console.log(IERC20Metadata(tokenIn).symbol(), IERC20Metadata(tokenOut).symbol());
@@ -515,14 +511,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         return false;
     }
 
-    function _isKnownCyclingPair(
-        address tokenIn,
-        address tokenOut
-    ) internal view returns (bool) {
+    function _isKnownCyclingPair(address tokenIn, address tokenOut) internal view returns (bool) {
         for (uint i = 0; i < KNOWN_CYCLING_PAIRS.length; i++) {
             if (
-                (KNOWN_CYCLING_PAIRS[i][0] == tokenIn && KNOWN_CYCLING_PAIRS[i][1] == tokenOut) ||
-                (KNOWN_CYCLING_PAIRS[i][0] == tokenOut && KNOWN_CYCLING_PAIRS[i][1] == tokenIn)
+                (KNOWN_CYCLING_PAIRS[i][0] == tokenIn && KNOWN_CYCLING_PAIRS[i][1] == tokenOut)
+                    || (KNOWN_CYCLING_PAIRS[i][0] == tokenOut && KNOWN_CYCLING_PAIRS[i][1] == tokenIn)
             ) {
                 return true;
             }

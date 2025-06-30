@@ -158,7 +158,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
             // Meta USD to asset
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenOut == tokens[i]) {
-                    (uint price, ) = IMetaVault(vaults[i - 1]).price();
+                    (uint price,) = IMetaVault(vaults[i - 1]).price();
                     // todo should we check if the price is trusted here?
                     return price * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
                 }
@@ -167,7 +167,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
             // Asset to Meta USD
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenIn == tokens[i]) {
-                    (uint price, ) = IMetaVault(vaults[i - 1]).price();
+                    (uint price,) = IMetaVault(vaults[i - 1]).price();
                     // todo should we check if the price is trusted here?
                     return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * 1e18 / price;
                 }
@@ -179,9 +179,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
-        return
-            interfaceId == type(IAmmAdapter).interfaceId
-            || interfaceId == type(IMetaUsdAmmAdapter).interfaceId
+        return interfaceId == type(IAmmAdapter).interfaceId || interfaceId == type(IMetaUsdAmmAdapter).interfaceId
             || super.supportsInterface(interfaceId);
     }
     //endregion -------------------------------- View functions

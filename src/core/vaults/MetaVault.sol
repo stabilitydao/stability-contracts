@@ -634,11 +634,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return 18;
     }
 
-<<<<<<< HEAD
     /// @inheritdoc IMetaVault
     function whitelisted(address addr) external view returns (bool) {
         return _getMetaVaultStorage().lastBlockDefenseWhitelist[addr];
-=======
+    }
+
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) external view virtual returns (uint amount) {
         uint userBalance = balanceOf(account);
@@ -665,7 +665,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
         }
->>>>>>> main
     }
     //endregion --------------------------------- View functions
 
@@ -701,10 +700,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view {
         if (
             // defence is not disabled by governance
-            !$.lastBlockDefenseDisabled
             // defence is not disabled by whitelisted strategy in the current block
-            && $.lastBlockDefenseDisabledBlockNumber != block.number
-            && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
+            !$.lastBlockDefenseDisabled && $.lastBlockDefenseDisabledBlockNumber != block.number
+                && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
         ) {
             revert WaitAFewBlocks();
         }

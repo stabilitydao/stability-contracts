@@ -609,7 +609,6 @@ library SiloAdvancedLib {
         _ensureLtvValid($, platform, state.maxLtv);
     }
 
-
     function _depositAfterWithdraw(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,

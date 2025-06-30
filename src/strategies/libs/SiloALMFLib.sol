@@ -36,7 +36,7 @@ library SiloALMFLib {
     /// @notice 1000 is 1%
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
 
-//    address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
+    //    address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address internal constant METAVAULT_metaUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
 
     //region ------------------------------------- Data types
@@ -425,6 +425,7 @@ library SiloALMFLib {
 
         return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
     }
+
     //endregion ------------------------------------- View functions
 
     //region ------------------------------------- Deposit

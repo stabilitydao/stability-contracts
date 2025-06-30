@@ -489,7 +489,6 @@ contract Swapper is Controllable, ISwapper {
 
         // if we can swap between largest pools the route is ended
         if (poolDataIn.tokenOut == poolDataOut3.tokenIn) {
-
             route[1] = poolDataOut3;
             route[2] = poolDataOut2;
             route[3] = poolDataOut;
@@ -618,7 +617,11 @@ contract Swapper is Controllable, ISwapper {
     //region ----- Internal logic -----
 
     /// @notice Fix dynamic route on the fly
-    function _getPoolData(SwapperStorage storage $, address token, bool isTokenIn) internal view returns (PoolData memory poolData) {
+    function _getPoolData(
+        SwapperStorage storage $,
+        address token,
+        bool isTokenIn
+    ) internal view returns (PoolData memory poolData) {
         poolData = $.pools[token];
 
         if (poolData.tokenIn == token) {
@@ -691,9 +694,8 @@ contract Swapper is Controllable, ISwapper {
         result = data;
         if (data.length >= 4) {
             if (
-                data[0].tokenIn == data[1].tokenOut
-                && data[0].tokenOut == data[1].tokenIn
-                && data[2].tokenIn == data[0].tokenIn // for safety
+                data[0].tokenIn == data[1].tokenOut && data[0].tokenOut == data[1].tokenIn
+                    && data[2].tokenIn == data[0].tokenIn // for safety
             ) {
                 // exclude first two pools
                 result = new PoolData[](data.length - 2);

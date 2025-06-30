@@ -64,7 +64,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         vm.prank(user2);
         metaVault.setLastBlockDefenseDisabledTx(false);
 
-
         // --------------- User 2 is whitelisted, user 1 is not
         vm.prank(multisig);
         metaVault.changeWhitelist(user1, false);
@@ -141,7 +140,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         vm.rollFork(block.number + 1);
 
         _tryDepositWithdrawTransfer(user, true);
-
     }
 
     //region ------------------------- Internal logic
@@ -218,5 +216,4 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
     //endregion --------------------------------------- Helper functions
-
 }

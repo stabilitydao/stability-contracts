@@ -13,7 +13,6 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 
-
 contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -48,7 +47,6 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.prank(IPlatform(PLATFORM).multisig());
         IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(currentStrategy, true);
     }
-
 
     //region --------------------------------------- Helper functions
     function _upgradeMetaVault(address platform, address metaVault_) internal {

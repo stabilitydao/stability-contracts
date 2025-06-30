@@ -119,7 +119,6 @@ contract SiloALMFStrategy is
         $.withdrawParam0 = 100_00;
         // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
         $.withdrawParam1 = 100_00;
-
     }
     //endregion ----------------------------------- Initialization
 
@@ -293,11 +292,15 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(FarmingStrategyBase, LeverageLendingBase, MerklStrategyBase) returns (bool) {
-        return interfaceId == type(IFarmingStrategy).interfaceId
-            || interfaceId == type(IMerklStrategy).interfaceId
-            || interfaceId == type(ILeverageLendingStrategy).interfaceId
-            || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(FarmingStrategyBase, LeverageLendingBase, MerklStrategyBase)
+        returns (bool)
+    {
+        return interfaceId == type(IFarmingStrategy).interfaceId || interfaceId == type(IMerklStrategy).interfaceId
+            || interfaceId == type(ILeverageLendingStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
     //endregion ----------------------------------- View
@@ -419,7 +422,13 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function autoCompoundingByUnderlyingProtocol() public view virtual override (LeverageLendingBase, StrategyBase) returns (bool) {
+    function autoCompoundingByUnderlyingProtocol()
+        public
+        view
+        virtual
+        override(LeverageLendingBase, StrategyBase)
+        returns (bool)
+    {
         return true;
     }
     //endregion ----------------------------------- Strategy base
