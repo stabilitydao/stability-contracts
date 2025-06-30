@@ -32,6 +32,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_Stability_StableJack = 0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336;
     address public constant VAULT_C_USDC_SiMF_Valmore = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
     address public constant VAULT_C_USDC_S_112 = 0x8913582701B7c80E883F9E352c1653a16769B173;
+    address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
@@ -369,6 +370,7 @@ library SonicConstantsLib {
     address public constant SILO_MANAGED_VAULT_stS_Re7 = 0xf136C06d23492Ff143afD9f5DC4E886224bA7050;
     address public constant SILO_MANAGED_VAULT_S_Re7 = 0x011777671E371E38C3d198Ea315A4885F33ecA8f;
     address public constant SILO_MANAGED_VAULT_scUSD_Varlamore = 0xb6A23cB29e512Df41876B28D7A848BD831f9c5Ba;
+    address public constant SILO_MANAGED_VAULT_USDC_Stability = 0x1320382143D98a80a0B247148A42dd2aa33d9C2D;
 
     address public constant POOL_SHADOW_CL_USDC_SILO = 0xBfaEDfb41b52F5965f4E1192Dd54319a878E115D;
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
