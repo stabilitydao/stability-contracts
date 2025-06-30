@@ -223,4 +223,6 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function changeWhitelist(address addr, bool addToWhitelist) external {}
 
     function whitelisted(address addr) external view returns (bool) {}
+
+    function setLastBlockDefenseDisabledTx(bool isDisabled) external {}
 }

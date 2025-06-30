@@ -35,6 +35,7 @@ import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {XStaking} from "../tokenomics/XStaking.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {IMetaVault} from "../interfaces/IMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
@@ -56,6 +57,10 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
+    uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
+    uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
+    uint public constant FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX = 2;
+    uint public constant FARM_ADDRESS_SILO_LENS_INDEX = 3;
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -78,12 +83,12 @@ contract SiloALMFStrategy is
         params.platform = addresses[0];
         params.strategyId = StrategyIdLib.SILO_ALMF;
         params.vault = addresses[1];
-        params.collateralAsset = IERC4626(farm.addresses[0]).asset();
-        params.borrowAsset = IERC4626(farm.addresses[1]).asset();
-        params.lendingVault = farm.addresses[0];
-        params.borrowingVault = farm.addresses[1];
-        params.flashLoanVault = farm.addresses[2];
-        params.helper = farm.addresses[3]; // SiloLens
+        params.collateralAsset = IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
+        params.borrowAsset = IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
+        params.lendingVault = farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX];
+        params.borrowingVault = farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX];
+        params.flashLoanVault = farm.addresses[FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
+        params.helper = farm.addresses[FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
         params.targetLeveragePercent = 85_00;
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
@@ -201,22 +206,32 @@ contract SiloALMFStrategy is
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IFactory.StrategyAvailableInitParams memory params =
-            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
-        uint len = params.initAddresses.length / 4;
-        variants = new string[](len);
-        addresses = new address[](len * 4);
-        nums = new uint[](len);
+        addresses = new address[](0);
         ticks = new int24[](0);
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint _total;
         for (uint i; i < len; ++i) {
-            address collateralAsset = IERC4626(params.initAddresses[i * 2]).asset();
-            address borrowAsset = IERC4626(params.initAddresses[i * 2 + 1]).asset();
-            variants[i] = _generateDescription(params.initAddresses[i * 2], collateralAsset, borrowAsset);
-            addresses[i * 2] = params.initAddresses[i * 2];
-            addresses[i * 2 + 1] = params.initAddresses[i * 2 + 1];
-            addresses[i * 2 + 2] = params.initAddresses[i * 2 + 2];
-            addresses[i * 2 + 3] = params.initAddresses[i * 2 + 3];
-            nums[i] = params.initNums[i];
+            IFactory.Farm memory farm = farms[i];
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF)) {
+                ++_total;
+            }
+        }
+        variants = new string[](_total);
+        nums = new uint[](_total);
+        _total = 0;
+        for (uint i; i < len; ++i) {
+            IFactory.Farm memory farm = farms[i];
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF)) {
+                nums[_total] = i;
+                variants[_total] = _generateDescription(
+                    farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX],
+                    IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset(),
+                    IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset()
+                );
+                ++_total;
+            }
         }
     }
 
@@ -293,8 +308,12 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
+        console.log("SiloALMFStrategy: _rebalanceDebt", newLtv);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
+
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
+        resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -374,10 +393,14 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        console.log("SiloALMFStrategy: _depositAssets", amounts[0]);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
+
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
         value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
     }
 
     /// @inheritdoc StrategyBase
@@ -386,9 +409,13 @@ contract SiloALMFStrategy is
     ///     - withdrawParam1 is used to correct value asked by the user, to be able to withdraw more than user wants
     ///                      Rest amount is deposited back (such trick allows to fix reduced leverage/ltv)
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
+        console.log("SiloALMFStrategy: _withdrawAssets", value);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
+        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
     }
 
     /// @inheritdoc IStrategy

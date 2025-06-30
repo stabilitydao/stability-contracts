@@ -41,8 +41,11 @@ interface IMetaVault is IStabilityVault {
         uint storedTime;
         /// @inheritdoc IStabilityVault
         bool lastBlockDefenseDisabled;
-        /// @dev Whitelist for last block defense
+        /// @dev Whitelist for addresses that are able to temporarily disable last-block-defense
         mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
+        /// @notice Block in which last-block-defense is temporarily disabled by whitelisted address
+        /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
+        uint lastBlockDefenseDisabledBlockNumber;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -65,6 +68,7 @@ interface IMetaVault is IStabilityVault {
     error IncorrectProportions();
     error IncorrectRebalanceArgs();
     error IncorrectVault();
+    error NotWhitelisted();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -155,4 +159,7 @@ interface IMetaVault is IStabilityVault {
 
     /// @notice Add/remove {addr} to/from last-block-defense whitelist
     function changeWhitelist(address addr, bool addToWhitelist) external;
+
+    /// @notice Allow whitelisted address to disable last-block-defense for the current block or enable it back
+    function setLastBlockDefenseDisabledTx(bool isDisabled) external;
 }

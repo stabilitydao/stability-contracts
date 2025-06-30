@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
@@ -13,7 +12,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {console} from "forge-std/console.sol";
 
 /// @notice On-chain price quoter and swapper. It works by predefined routes using AMM adapters.
 /// @dev Inspired by TetuLiquidator
@@ -653,6 +651,7 @@ contract Swapper is Controllable, ISwapper {
         if (route.length == 0) {
             revert IControllable.IncorrectArrayLength();
         }
+
         uint routeLength = route.length;
         // nosemgrep
         for (uint i; i < routeLength; i++) {
@@ -660,7 +659,6 @@ contract Swapper is Controllable, ISwapper {
 
             // if it is the first step send tokens to the swapper from the current contract
             if (i == 0) {
-                console.log("safeTransferFrom sender to adapter", msg.sender, data.ammAdapter, amount);
                 IERC20(data.tokenIn).safeTransferFrom(msg.sender, data.ammAdapter, amount);
             }
             address recipient;
@@ -673,7 +671,6 @@ contract Swapper is Controllable, ISwapper {
             }
 
             // if it is the last step of the route we need to check if we have enough price impact tolerance
-            console.log("Swap using adapter", data.tokenIn, data.tokenOut, recipient);
             IAmmAdapter(data.ammAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
         }
 

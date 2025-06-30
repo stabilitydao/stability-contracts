@@ -11,7 +11,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 
-/// @dev TODO tests for whitelist
+/// @dev Add whitelist and setLastBlockDefenseDisabledTx into MetaVault
 contract MetaVaultSonicUpgradeWhitelist is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVault public metaVault;
@@ -26,10 +26,79 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+    }
+
+    function testChangeWhitelist() public {
+        address user1 = address(1);
+        address user2 = address(2);
+
+        // --------------- Initially there are no whitelisted users
+        vm.expectRevert(IMetaVault.NotWhitelisted.selector);
+        vm.prank(user1);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        // --------------- User 1 is whitelisted, user 2 is not
+        vm.prank(multisig);
+        metaVault.changeWhitelist(user1, true);
+        assertEq(metaVault.whitelisted(user1), true, "User 1 should be whitelisted 1");
+        assertEq(metaVault.whitelisted(user2), false, "User 2 should NOT be whitelisted 1");
+
+        vm.prank(user1);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        vm.expectRevert(IMetaVault.NotWhitelisted.selector);
+        vm.prank(user2);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        // --------------- Both users are whitelisted
+        vm.prank(multisig);
+        metaVault.changeWhitelist(user2, true);
+        assertEq(metaVault.whitelisted(user1), true, "User 1 should be whitelisted 2");
+        assertEq(metaVault.whitelisted(user2), true, "User 2 should be whitelisted 2");
+
+        vm.prank(user1);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        vm.prank(user2);
+        metaVault.setLastBlockDefenseDisabledTx(false);
+
+
+        // --------------- User 2 is whitelisted, user 1 is not
+        vm.prank(multisig);
+        metaVault.changeWhitelist(user1, false);
+        assertEq(metaVault.whitelisted(user1), false, "User 1 should NOT be whitelisted 3");
+        assertEq(metaVault.whitelisted(user2), true, "User 2 should be whitelisted 3");
+
+        vm.expectRevert(IMetaVault.NotWhitelisted.selector);
+        vm.prank(user1);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        vm.prank(user2);
+        metaVault.setLastBlockDefenseDisabledTx(false);
+
+        // --------------- Both users are not whitelisted
+        vm.prank(multisig);
+        metaVault.changeWhitelist(user2, false);
+        assertEq(metaVault.whitelisted(user1), false, "User 1 should NOT be whitelisted 4");
+        assertEq(metaVault.whitelisted(user2), false, "User 2 should NOT be whitelisted 4");
+
+        vm.expectRevert(IMetaVault.NotWhitelisted.selector);
+        vm.prank(user1);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        vm.expectRevert(IMetaVault.NotWhitelisted.selector);
+        vm.prank(user2);
+        metaVault.setLastBlockDefenseDisabledTx(true);
     }
 
     function testWhitelist() public {
         address user = address(1);
+        address strategy = address(2);
+
+        vm.prank(multisig);
+        metaVault.changeWhitelist(strategy, true);
 
         // ------------------------- Enable defence in the MetaVaults, disable defence in all CVaults
         vm.prank(multisig);
@@ -41,7 +110,7 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
             IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
         }
 
-        // ------------------------- User deposit an amount
+        // ------------------------- User deposits an amount
         address[] memory assets = metaVault.assetsForDeposit();
         uint[] memory depositAmounts = _getAmountsForDeposit(500, assets);
         _dealAndApprove(address(1), address(metaVault), assets, depositAmounts);
@@ -54,21 +123,29 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         _tryDepositWithdrawTransfer(user, true);
 
         // ------------------------- Add user to whitelist and try again (this time successfully)
-        vm.prank(multisig);
-        metaVault.changeWhitelist(user, true);
-        assertEq(metaVault.whitelisted(user), true, "user is whitelisted");
+        vm.prank(strategy);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
         _tryDepositWithdrawTransfer(user, false);
 
-        // ------------------------- Remove user from whitelist and try again (unsuccessfully)
-        vm.prank(multisig);
-        metaVault.changeWhitelist(user, false);
-        assertEq(metaVault.whitelisted(user), false, "user is not whitelisted anymore");
+        // ------------------------- Enable last-block-defence back and try again (unsuccessfully)
+        vm.prank(strategy);
+        metaVault.setLastBlockDefenseDisabledTx(false);
+
         _tryDepositWithdrawTransfer(user, true);
+
+        // ------------------------- Disable last-block-defence, change block - defence is restored back
+        vm.prank(strategy);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+
+        vm.rollFork(block.number + 1);
+
+        _tryDepositWithdrawTransfer(user, true);
+
     }
 
     //region ------------------------- Internal logic
     function _tryDepositWithdrawTransfer(address user, bool shouldRevert) internal {
-        console.log("_tryDepositWithdrawTransfer");
         uint snapshot = vm.snapshot();
 
         // ------------------------ deposit
@@ -81,7 +158,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         }
         vm.prank(user);
         IStabilityVault(metaVault).depositAssets(assets, depositAmounts, 0, user);
-        console.log("deposited");
 
         // ------------------------ withdraw
         assets = metaVault.assetsForWithdraw();
@@ -92,7 +168,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         }
         vm.prank(user);
         IStabilityVault(metaVault).withdrawAssets(assets, balance / 2, new uint[](1));
-        console.log("withdrawn");
 
         // ------------------------ transfer
         balance = metaVault.balanceOf(user);
@@ -101,7 +176,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         }
         vm.prank(user);
         IStabilityVault(metaVault).transfer(address(this), balance);
-        console.log("transferred");
 
         vm.revertTo(snapshot);
     }
@@ -133,6 +207,16 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         }
     }
 
+    function _upgradeMetaVault(address metaVault_) internal {
+        // Upgrade MetaVault to the new implementation
+        address vaultImplementation = address(new MetaVault());
+        vm.prank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
+        address[] memory metaProxies = new address[](1);
+        metaProxies[0] = address(metaVault_);
+        vm.prank(multisig);
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
+    }
     //endregion --------------------------------------- Helper functions
 
 }

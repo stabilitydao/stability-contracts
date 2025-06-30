@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -73,7 +72,6 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
             minAssetAmountsOut[0] = getPrice(pool, tokenIn, tokenOut, amount)
                 * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
 
-            console.log("metaVault.withdraw", balance);
             metaVault.withdrawAssets(assets, balance, minAssetAmountsOut);
 
             amountOut = IERC20(assets[0]).balanceOf(address(this));
@@ -91,7 +89,6 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
             IERC20(tokenIn).approve(pool, amount);
             uint balanceBefore = metaVault.balanceOf(recipient);
-            console.log("metaVault.deposit", amountsMax[0]);
             metaVault.depositAssets(
                 assets,
                 amountsMax,

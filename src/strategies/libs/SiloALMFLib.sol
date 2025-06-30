@@ -221,6 +221,7 @@ library SiloALMFLib {
 
         // StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        console.log("swapper", address(swapper));
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
     }
     //endregion ------------------------------------- Flash loan and swap
@@ -479,8 +480,6 @@ library SiloALMFLib {
             // depositParam0 is used to move result leverage to targetValue.
             // Otherwise result leverage is higher the target value because of swap losses
             * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
-        // not sure that its right way, but its working
-        // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
     }
 
     //endregion ------------------------------------- Deposit
