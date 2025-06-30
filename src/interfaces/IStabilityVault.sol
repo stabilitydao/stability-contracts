@@ -121,4 +121,9 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     /// This is max amount that can be passed to `withdraw` function.
     /// The implementation should take into account IStrategy.maxWithdrawAssets
     function maxWithdraw(address account) external view returns (uint amount);
+
+    /// @return maxAmounts Maximum amounts that can be deposited to the vault for the given account.
+    /// This is max amounts that can be passed to `depositAssets` function.
+    /// The implementation should take into account IStrategy.maxDepositAssets
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts);
 }

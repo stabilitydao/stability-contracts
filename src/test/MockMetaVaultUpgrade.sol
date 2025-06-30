@@ -226,4 +226,6 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function whitelisted(address addr) external view returns (bool) {}
 
     function setLastBlockDefenseDisabledTx(bool isDisabled) external {}
+
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
 }

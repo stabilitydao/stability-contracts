@@ -666,6 +666,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
         }
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
+        account;
+        // todo #330
+        return maxAmounts;
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
