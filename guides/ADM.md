@@ -1,4 +1,4 @@
-# Platform Administration Guide V5
+# Platform Administration Guide V6
 
 ## Dedicated sender actions
 
@@ -327,5 +327,43 @@ Call it via Safe Transaction Builder:
 
 `
 [{"type": "function","name": "setDoHardWorkOnDeposit","inputs": [{"name": "value","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+### Add vault to MetaVault
+
+Use `IMetaVault.addVault` method for MetaVault.
+
+* Prepare vault
+  * setDoHardWorkOnDeposit: false
+  * setLastBlockDefenseDisabled: true
+  * setCustomVaultFee: 20000
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `<MetaVault address>`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "addVault","inputs": [{"name": "vault","type": "address","internalType": "address"}, {"name": "newTargetProportions","type": "uint256[]","internalType": "uint256[]"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+
+### Set vault fee
+
+Use `IPlatform.setCustomVaultFee`.
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
+* platformFee: `20000` (20%)
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setCustomVaultFee","inputs": [{"name": "vault","type": "address","internalType": "address"}, {"name": "platformFee","type": "uint256","internalType": "uint256"}],"outputs": [],"stateMutability": "nonpayable"}]
 `
 </details>

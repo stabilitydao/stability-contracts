@@ -12,7 +12,7 @@
 
 * **[Strategy Developer's Guide V3](guides/Strategy.md)**
 * **[Core Developer's Guide](guides/Core.md)**
-* **[Platform Administration Guide V5](guides/ADM.md)**
+* **[Platform Administration Guide V6](guides/ADM.md)**
 * **[Deploy Guide](guides/Deploy.md)**
 * **[All deployments](guides/AllDeployments.md)**
 
