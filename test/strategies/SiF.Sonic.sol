@@ -5,9 +5,14 @@ import "../base/chains/SonicSetup.sol";
 import "../base/UniversalTest.sol";
 
 contract SiloFarmStrategyTest is SonicSetup, UniversalTest {
+    constructor() {
+        vm.rollFork(32000000); // Jun-05-2025 09:41:47 AM +UTC
+    }
+
     function testSiFSonic() public universalTest {
         _addStrategy(22);
         _addStrategy(23);
+        _addStrategy(52);
     }
 
     function _addStrategy(uint farmId) internal {
