@@ -39,6 +39,9 @@ library SiloALMFLib {
     //    address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address internal constant METAVAULT_metaUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
 
+    /// @notice Max flash loan fee to calculate maxDeposit
+    uint private constant MAX_FLASH_LOAN_FEE = 100; // 100 is 1% fee
+
     //region ------------------------------------- Data types
     struct CollateralDebtState {
         uint collateralPrice;
@@ -428,6 +431,24 @@ library SiloALMFLib {
 
     //endregion ------------------------------------- View functions
 
+    //region ------------------------------------- Max deposit
+    function maxDepositAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) external view returns (uint[] memory amounts) {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+
+        // max deposit is limited by amount available to borrow from the borrow pool
+        uint maxAmountInBorrowPool = ISilo(v.borrowingVault).getLiquidity();
+
+        // take into account flash loan fee because it will be borrowed too // todo probably we nee to make it configurable
+        uint maxBorrowAmount = maxAmountInBorrowPool
+            * (INTERNAL_PRECISION - MAX_FLASH_LOAN_FEE) / INTERNAL_PRECISION;
+
+        amounts = new uint[](1);
+        amounts[0] = _getAmountToDepositFromBorrow($, v, maxBorrowAmount);
+    }
+    //endregion ------------------------------------- Max deposit
+
     //region ------------------------------------- Deposit
     function depositAssets(
         address platform,
@@ -483,6 +504,26 @@ library SiloALMFLib {
             * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
     }
 
+
+    /// @notice Get what collateral amount should be deposited to borrow internally given {borrowAmount}
+    /// @dev Flash fee is not taken into account here
+    /// @param borrowAmount Amount received from {_getDepositFlashAmount}
+    function _getAmountToDepositFromBorrow(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v,
+        uint borrowAmount
+    ) internal view returns (uint amountToDeposit) {
+        (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+
+        return borrowAmount
+            * (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            * 1e18 // priceCtoB has decimals 1e18
+            * INTERNAL_PRECISION / (targetLeverage - INTERNAL_PRECISION)
+            / priceCtoB
+            / (10 ** IERC20Metadata(v.borrowAsset).decimals())
+            * INTERNAL_PRECISION / $.depositParam0;
+    }
     //endregion ------------------------------------- Deposit
 
     //region ------------------------------------- Withdraw

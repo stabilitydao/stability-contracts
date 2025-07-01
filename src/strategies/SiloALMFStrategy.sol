@@ -303,6 +303,12 @@ contract SiloALMFStrategy is
             || interfaceId == type(ILeverageLendingStrategy).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    /// @inheritdoc IStrategy
+    function maxDepositAssets() public view override returns (uint[] memory amounts) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        return SiloALMFLib.maxDepositAssets($);
+    }
+
     //endregion ----------------------------------- View
 
     //region ----------------------------------- Leverage lending base

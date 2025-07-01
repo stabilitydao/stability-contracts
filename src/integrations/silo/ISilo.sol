@@ -65,4 +65,6 @@ interface ISilo is IERC4626 {
     /// @param _borrower Address of the borrower
     /// @return assets Maximum amount of assets the borrower can repay
     function maxRepay(address _borrower) external view returns (uint assets);
+
+    function getLiquidity() external view virtual returns (uint256 liquidity);
 }

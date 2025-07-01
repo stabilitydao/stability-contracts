@@ -46,6 +46,19 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         vm.prank(IPlatform(PLATFORM).multisig());
         IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(currentStrategy, true);
+
+        _checkMaxDepositAssets();
+    }
+
+    /// @notice Ensure that the value returned by maxDepositAssets is not unlimited.
+    /// Ensure that we can deposit max amount and that we CAN'T deposit more than max amount.
+    function _checkMaxDepositAssets() internal {
+        uint snapshot = vm.snapshot();
+
+        address[] memory maxDepositAssets = SiloALMFStrategy(currentStrategy).maxDepositAssets();
+        // todo
+
+        vm.revertToState(snapshot);
     }
 
     //region --------------------------------------- Helper functions

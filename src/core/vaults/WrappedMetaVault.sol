@@ -92,7 +92,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
+    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxAssets) {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         uint maxUserWithdraw = super.maxWithdraw(owner);
         if ($.isMulti) {
@@ -103,9 +103,37 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         }
 
         // For the wrapped vaults of type "MetaVault" the asset is the meta-vault itself, so no limitations
-
         return maxUserWithdraw;
     }
+
+    /// @inheritdoc IERC4626
+    function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256 maxShares) {
+        uint _maxDeposit = maxDeposit(receiver);
+        return _maxDeposit == type(uint).max
+            ? type(uint).max // no limits
+            : convertToShares(_maxDeposit);
+    }
+
+    /// @inheritdoc IERC4626
+    function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256 maxAssets) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+
+        // get max amounts of assets to deposit
+        IMetaVault _metaVault = IMetaVault($.metaVault);
+        uint[] memory amounts = _metaVault.maxDeposit(receiver);
+
+        uint len = amounts.length;
+        for (uint i = 0; i < len; i++) {
+            if (amounts[i] == type(uint).max) {
+                return type(uint).max; // no limits
+            }
+        }
+
+        // recalculate the amounts to meta-vault tokens
+        address[] memory _assets = _metaVault.assets();
+        (, maxAssets, ) = _metaVault.previewDepositAssets(_assets, amounts);
+    }
+
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       ERC4626 HOOKS                        */
