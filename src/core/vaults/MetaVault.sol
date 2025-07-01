@@ -14,14 +14,16 @@ import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SupportsInterfaceWithLookupMock} from "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   TODO: add whitelist for last-block-defense
-///   1.3.0: - add maxWithdraw - #326
-///          - MultiVault withdraws from all sub-vaults - #334
+///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
+///          - add whitelist for last-block-defense - #330
 ///          - add removeVault - #336
+///   1.3.0: - Add maxWithdraw - #326
+///          - MultiVault withdraws from all sub-vaults - #334
 ///   1.2.3: - fix slippage check in deposit - #303
 ///          - check provided assets in deposit/withdrawAssets, clear unused approvals - #308
 ///   1.2.2: USD_THRESHOLD is decreased from to 1e13 to pass Balancer ERC4626 tests
@@ -39,7 +41,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -50,6 +52,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant _METAVAULT_STORAGE_LOCATION =
         0x303154e675d2f93642b6b4ae068c749c9b8a57de9202c6344dbbb24ab936f000;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         Transient                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    /// @notice TODO: Disable last block defense in the current tx
+    bool transient internal _LastBlockDefenseDisabled;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -59,8 +66,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address targetVault;
         uint totalSupplyBefore;
         uint totalSharesBefore;
-        uint len;
-        uint[] balanceBefore;
         uint[] amountsConsumed;
     }
 
@@ -326,32 +331,15 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         v.targetVault = vaultForDeposit();
         v.totalSupplyBefore = totalSupply();
         v.totalSharesBefore = $.totalShares;
-        v.len = assets_.length;
-        v.balanceBefore = new uint[](v.len);
-        v.amountsConsumed = new uint[](v.len);
 
         // ensure that provided assets correspond to the target vault
         // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, v.targetVault);
 
-        for (uint i; i < v.len; ++i) {
-            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
-            v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
-            IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
-        }
-
         uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
-        IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
-        for (uint i; i < v.len; ++i) {
-            v.amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
-            uint refund = amountsMax[i] - v.amountsConsumed[i];
-            if (refund != 0) {
-                IERC20(assets_[i]).safeTransfer(msg.sender, refund);
-            }
-            if (IERC20(assets_[i]).allowance(address(this), v.targetVault) != 0) {
-                IERC20(assets_[i]).forceApprove(v.targetVault, 0);
-            }
-        }
+        v.amountsConsumed = (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) // todo create isMultiVault function
+            ? _depositToMultiVault(v.targetVault, $.vaults, assets_, amountsMax)
+            : _depositToTargetVaultWithRefund(v.targetVault, assets_, amountsMax);
 
         {
             (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
@@ -709,9 +697,32 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
-        account;
-        // todo #330
-        return maxAmounts;
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            // MultiVault supports depositing to all sub-vaults
+            // so we need to calculate summary max deposit amounts for all sub-vaults
+            // but result cannot exceed type(uint).max
+            for (uint i; i < $.vaults.length; ++i) {
+                address _targetVault = $.vaults[i];
+
+                if (i == 0) { // lazy initialization of maxAmounts
+                    maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
+                }
+
+                uint[] memory _amounts = IStabilityVault(vaultForDeposit()).maxDeposit(account);
+                for (uint j; j < _amounts.length; ++j) {
+                    if (maxAmounts[j] != type(uint).max) {
+                        maxAmounts[j] = _amounts[j] == type(uint).max
+                            ? type(uint).max
+                            : maxAmounts[j] + _amounts[j];
+                    }
+                }
+            }
+
+            return maxAmounts;
+        } else {
+            return IStabilityVault(vaultForDeposit()).maxDeposit(account);
+        }
     }
     //endregion --------------------------------- View functions
 
@@ -753,6 +764,99 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         ) {
             revert WaitAFewBlocks();
         }
+    }
+
+    function _depositToTargetVaultWithRefund(
+        address targetVault_,
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal returns (uint[] memory amountsConsumed) {
+        uint len = assets_.length;
+        uint[] memory balanceBefore = new uint[](len);
+        amountsConsumed = new uint[](len);
+
+        for (uint i; i < len; ++i) {
+            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
+            balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            IERC20(assets_[i]).forceApprove(targetVault_, amountsMax[i]);
+        }
+
+        IStabilityVault(targetVault_).depositAssets(assets_, amountsMax, 0, address(this));
+
+        for (uint i; i < len; ++i) {
+            amountsConsumed[i] = balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+            uint refund = amountsMax[i] - amountsConsumed[i];
+            if (refund != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, refund);
+            }
+            if (IERC20(assets_[i]).allowance(address(this), targetVault_) != 0) {
+                IERC20(assets_[i]).forceApprove(targetVault_, 0);
+            }
+        }
+    }
+
+    function _depositToMultiVault(
+        address targetVault_,
+        address[] memory vaults_,
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal returns (uint[] memory amountsConsumed) {
+        // find target vault and move it to the first position
+        // assume that the order of the other vaults does not matter
+        _setTargetVaultFirst(targetVault_, vaults_);
+
+        uint len = assets_.length;
+        amountsConsumed = new uint[](len);
+
+        // ------------------- receive initial amounts from the user
+        uint[] memory balanceBefore = new uint[](len);
+        uint[] memory amountToDeposit = new uint[](len);
+        for (uint i; i < len; ++i) {
+            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
+            balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            amountToDeposit[i] = amountsMax[i];
+        }
+
+        // ------------------- deposit amounts to sub-vaults
+        for (uint n; n < vaults_.length; ++n) {
+            IERC20(assets_[n]).forceApprove(vaults_[n], amountToDeposit[n]);
+
+            IStabilityVault(vaults_[n]).depositAssets(assets_, amountToDeposit, 0, address(this));
+
+            bool needToDepositMore;
+            for (uint i; i < len; ++i) {
+                if (IERC20(assets_[i]).allowance(address(this), vaults_[n]) != 0) {
+                    IERC20(assets_[i]).forceApprove(vaults_[n], 0);
+                }
+
+                amountsConsumed[i] = balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+                amountToDeposit[i] = amountsMax[i] - amountsConsumed[i];
+                needToDepositMore = needToDepositMore || (amountToDeposit[i] != 0);
+            }
+
+            if (!needToDepositMore) break;
+        }
+
+        // ------------------- refund remaining amounts
+        for (uint i; i < len; ++i) {
+            if (amountToDeposit[i] != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, amountToDeposit[i]);
+            }
+        }
+    }
+
+    /// @notice Find target vault in {vaults} and move it on the first position.
+    function _setTargetVaultFirst(address targetVault, address[] memory vaults_) internal pure returns (address[] memory) {
+        uint len = vaults_.length;
+        for (uint i; i < len; ++i) {
+            if (vaults_[i] == targetVault) {
+                // first withdraw should be from the target vault
+                // the order of other vaults does not matter because the rebalancer is called often enough
+                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
+                break;
+            }
+        }
+        return vaults_;
     }
 
     function _withdrawAssets(
@@ -834,17 +938,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint totalAmount = amount;
 
         // ------------------- set target vault on the first position in vaults_
-        uint len = vaults_.length;
-        for (uint i; i < len; ++i) {
-            if (vaults_[i] == targetVault_) {
-                // first withdraw should be from the target vault
-                // the order of other vaults does not matter because the rebalancer is called often enough
-                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
-                break;
-            }
-        }
+        _setTargetVaultFirst(targetVault_, vaults_);
 
         // ------------------- withdraw from vaults until requested amount is withdrawn
+        uint len = vaults_.length;
         amountsOut = new uint[](assets_.length);
         for (uint i; i < len; ++i) {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
