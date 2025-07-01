@@ -87,17 +87,22 @@ library SiloALMFLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
+            console.log("1._swap.amount, collateral balance before swap", amount, IERC20(collateralAsset).balanceOf(address(this)));
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
+            console.log("2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)));
             // supply
             ISilo($.lendingVault).deposit(
                 IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
             );
 
+            console.log("3.borrow amount, feeAmount, maxBorrow", amount, feeAmount, ISilo($.borrowingVault).maxBorrow(address(this)));
+            console.log("3.borrow amount,liquidity", ISilo($.borrowingVault).getLiquidity());
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
 
+            console.log("4.transfer");
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
         }
@@ -220,12 +225,13 @@ library SiloALMFLib {
         uint priceImpactTolerance
     ) internal {
         console.log("Strategy", address(this));
-        console.log("SiloALMFLib._swap", tokenIn, tokenOut, amount);
+        console.log("SiloALMFLib._swap in, out, amount", tokenIn, tokenOut, amount);
 
         // StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         console.log("swapper", address(swapper));
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
+        console.log("swap done");
     }
     //endregion ------------------------------------- Flash loan and swap
 
@@ -349,6 +355,14 @@ library SiloALMFLib {
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
 
+        console.log("collateralAmount", data.collateralAmount);
+        console.log("collateralBalance", data.collateralBalance);
+        console.log("collateralPrice", data.collateralPrice);
+        console.log("totalCollateralUsd", data.totalCollateralUsd);
+        console.log("debtAmount", data.debtAmount);
+        console.log("borrowAssetPrice", data.borrowAssetPrice);
+        console.log("borrowAssetUsd", data.borrowAssetUsd);
+
         return data;
     }
 
@@ -359,15 +373,18 @@ library SiloALMFLib {
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
+            console.log("getPrice.1");
             priceCtoB = ISiloOracle(collateralOracle).quote(
                 10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
             );
             priceBtoC = 1e18 * 1e18 / priceCtoB;
         } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
+            console.log("getPrice.2");
             priceBtoC =
                 ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
+            console.log("getPrice.3.collateralConfig.token", collateralConfig.token);
             priceCtoB = ISiloOracle(collateralOracle).quote(
                 10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
             );
@@ -436,16 +453,21 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) external view returns (uint[] memory amounts) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        console.log("maxDepositAssets.collateralAsset", v.collateralAsset);
 
         // max deposit is limited by amount available to borrow from the borrow pool
         uint maxAmountInBorrowPool = ISilo(v.borrowingVault).getLiquidity();
+        console.log("maxDepositAssets.maxAmountInBorrowPool", maxAmountInBorrowPool);
 
         // take into account flash loan fee because it will be borrowed too // todo probably we nee to make it configurable
         uint maxBorrowAmount = maxAmountInBorrowPool
             * (INTERNAL_PRECISION - MAX_FLASH_LOAN_FEE) / INTERNAL_PRECISION;
 
+        console.log("maxDepositAssets.maxBorrowAmount", maxBorrowAmount);
+
         amounts = new uint[](1);
         amounts[0] = _getAmountToDepositFromBorrow($, v, maxBorrowAmount);
+        console.log("maxDepositAssets.amounts[0]", amounts[0]);
     }
     //endregion ------------------------------------- Max deposit
 
@@ -483,6 +505,8 @@ library SiloALMFLib {
     ) internal {
         uint borrowAmount = _getDepositFlashAmount($, v, amountToDeposit);
         (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, v.borrowAsset);
+        console.log("borrowAmount", borrowAmount);
+        console.log("depositAssets.flashAmounts[0]", flashAmounts[0]);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
@@ -494,8 +518,11 @@ library SiloALMFLib {
         uint amountToDeposit
     ) internal view returns (uint flashAmount) {
         (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        console.log("amountToDeposit", amountToDeposit);
+        console.log("targetLeverage", targetLeverage);
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        console.log("priceCtoB", priceCtoB);
 
         return amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
@@ -513,8 +540,11 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint borrowAmount
     ) internal view returns (uint amountToDeposit) {
-        (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        (uint maxLtv,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
+        console.log("targetLeverage", targetLeverage);
+        console.log("priceCtoB", priceCtoB);
+        console.log("maxLtv", maxLtv);
 
         return borrowAmount
             * (10 ** IERC20Metadata(v.collateralAsset).decimals())

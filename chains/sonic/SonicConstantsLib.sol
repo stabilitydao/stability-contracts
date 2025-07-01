@@ -361,6 +361,7 @@ library SonicConstantsLib {
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
     address public constant POOL_ALGEBRA_beS_OS = 0x97fE831cC56da84321f404a300e2Be81b5bd668A;
     address public constant POOL_UNISWAPV3_wOS_stS = 0xB6D833db433AeCE6AbD8128a61898a219a9c8148;
+    address public constant POOL_SHADOW_CL_USDC_WETH = 0x6Fb30F3FCB864D49cdff15061ed5c6ADFEE40B40;
 
     address public constant SILO_VAULT_102_PT_bscUSD_14AUG = 0x6ec9b5cbA68542F6AFbfA7004a7a3600F09A2703;
     address public constant SILO_VAULT_102_USDC = 0xD47031F7B044dffeB9b041c4eCF16209F6a1B0b2;

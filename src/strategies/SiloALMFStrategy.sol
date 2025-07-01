@@ -102,8 +102,8 @@ contract SiloALMFStrategy is
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        // Multiplier of flash amount for borrow on deposit. Default is 90_00 == 90%.
-        $.depositParam0 = 90_00;
+        // Multiplier of flash amount for borrow on deposit. Default is 90_00 == 90%. // todo
+        $.depositParam0 = 100_00;
         // Multiplier of debt diff
         $.increaseLtvParam0 = 100_80;
         // Multiplier of swap borrow asset to collateral in flash loan callback
@@ -306,6 +306,7 @@ contract SiloALMFStrategy is
     /// @inheritdoc IStrategy
     function maxDepositAssets() public view override returns (uint[] memory amounts) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        {(uint _realTvl,) = realTvl(); console.log("_realTvl", _realTvl);}
         return SiloALMFLib.maxDepositAssets($);
     }
 
