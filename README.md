@@ -24,7 +24,7 @@
 
 ### 🏷️ Projects
 
-[🔨 Q2 2025 🧊 Stability BETA Development | CONTRACTS](https://github.com/orgs/stabilitydao/projects/9/views/6)
+[🔨 Q3 2025 🧊 Stability BETA Development | CONTRACTS](https://github.com/orgs/stabilitydao/projects/10/views/2)
 
 ## Coverage
 
