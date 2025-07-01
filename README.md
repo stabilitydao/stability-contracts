@@ -41,4 +41,5 @@
 
 [Scopes](./audits/scopes.md)
 
+* [Spearbit Cantina audit, competition v25.05.0-alpha](audits/report-cantina.pdf) | [metavault security](audits/scopes.md)
 * [Initial vault audit v24.01.1-alpha](audits/initial-audit-stability-platform-v24.01.1-alpha.md) | [critical scope](audits/scopes.md)
