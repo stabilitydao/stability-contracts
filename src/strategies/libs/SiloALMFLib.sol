@@ -463,11 +463,16 @@ library SiloALMFLib {
         uint maxBorrowAmount = maxAmountInBorrowPool
             * (INTERNAL_PRECISION - MAX_FLASH_LOAN_FEE) / INTERNAL_PRECISION;
 
+        // max deposit is also limited by liquidity available in the flash loan vault
+        uint flashLoanVaultBalance = IERC20(v.borrowAsset).balanceOf($.flashLoanVault);
+
         console.log("maxDepositAssets.maxBorrowAmount", maxBorrowAmount);
+        console.log("maxDepositAssets.flashLoanVaultBalance", flashLoanVaultBalance);
 
         amounts = new uint[](1);
-        amounts[0] = _getAmountToDepositFromBorrow($, v, maxBorrowAmount);
+        amounts[0] = _getAmountToDepositFromBorrow($, v, Math.min(maxBorrowAmount, flashLoanVaultBalance));
         console.log("maxDepositAssets.amounts[0]", amounts[0]);
+
     }
     //endregion ------------------------------------- Max deposit
 

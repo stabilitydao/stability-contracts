@@ -520,8 +520,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         // either the strategy has no limit on deposits (length == 0)
         // or the strategy has multiple assets (length > 1, use stub implementation for now)
-        maxAmounts = new uint[](amounts.length);
-        for (uint i = 0; i < amounts.length; ++i) {
+        uint len = strategy().assets().length;
+        maxAmounts = new uint[](len);
+        for (uint i = 0; i < len; ++i) {
             maxAmounts[i] = type(uint).max;
         }
     }

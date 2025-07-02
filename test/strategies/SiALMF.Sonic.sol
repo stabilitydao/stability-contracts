@@ -15,6 +15,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
@@ -23,6 +24,9 @@ import {UniversalTest} from "../base/UniversalTest.sol";
 
 contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    uint public constant REVERT_NO = 0;
+    uint public constant REVERT_NOT_ENOUGH_LIQUIDITY = 1;
+    uint public constant REVERT_INSUFFICIENT_BALANCE = 2;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
@@ -59,47 +63,76 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         _checkMaxDepositAssets();
     }
 
-    /// @notice Ensure that the value returned by maxDepositAssets is not unlimited.
+    /// @notice Ensure that the value returned by SiloALMFStrategy.maxDepositAssets is not unlimited.
     /// Ensure that we can deposit max amount and that we CAN'T deposit more than max amount.
     function _checkMaxDepositAssets() internal {
         IStrategy strategy = IStrategy(currentStrategy);
 
-        // ---------------------------- try to deposit maxDeposit
+        // ---------------------------- try to deposit maxDeposit - unlimited flash loan is available
         uint snapshot = vm.snapshot();
+        _setUpFlashLoanVault(2e12);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-        _tryToDeposit(strategy, maxDepositAssets, false);
+        _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
         vm.revertToState(snapshot);
 
-        // ---------------------------- try to deposit maxDeposit + 10%
+        // ---------------------------- try to deposit maxDeposit + 1% - unlimited flash loan is available
         snapshot = vm.snapshot();
+        _setUpFlashLoanVault(2e12);
+        maxDepositAssets = strategy.maxDepositAssets();
         for (uint i = 0; i < maxDepositAssets.length; i++) {
             maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
         }
-        _tryToDeposit(strategy, maxDepositAssets, true);
+        _tryToDeposit(strategy, maxDepositAssets, REVERT_NOT_ENOUGH_LIQUIDITY);
         vm.revertToState(snapshot);
+
+        // ---------------------------- try to deposit maxDeposit with limited flash loan
+        snapshot = vm.snapshot();
+        _setUpFlashLoanVault(0);
+        maxDepositAssets = strategy.maxDepositAssets();
+        _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+        vm.revertToState(snapshot);
+
+        // ---------------------------- try to deposit maxDeposit + 1% with limited flash loan
+        snapshot = vm.snapshot();
+        _setUpFlashLoanVault(0);
+        maxDepositAssets = strategy.maxDepositAssets();
+        for (uint i = 0; i < maxDepositAssets.length; i++) {
+            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
+        }
+        _tryToDeposit(strategy, maxDepositAssets, REVERT_INSUFFICIENT_BALANCE);
+        vm.revertToState(snapshot);
+
     }
 
     //region --------------------------------------- Internal logic
-    function _tryToDeposit(IStrategy strategy, uint[] memory amounts_, bool shouldRevert) internal {
+    function _setUpFlashLoanVault(uint additionalAmount) internal {
+        // Set up flash loan vault for the strategy
         _setFlashLoanVault(
             ILeverageLendingStrategy(currentStrategy),
             SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH,
             SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH,
             uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
         );
-        deal(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH, 2e12);
 
-        IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        if (additionalAmount != 0) {
+            // Add additional amount to the flash loan vault to avoid insufficient balance
+            deal(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH, additionalAmount);
+        }
+    }
 
+    function _tryToDeposit(IStrategy strategy, uint[] memory amounts_, uint revertKind) internal {
+        // ----------------------------- Transfer deposit amount to the strategy
         _dealAndApprove(address(this), currentStrategy, strategy.assets(), amounts_);
-        console.log("transfer to strategy. Amount", amounts_[0], wrappedMetaVault.balanceOf(address(this)));
-
         vm.prank(address(this));
         IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).transfer(address(strategy), amounts_[0]);
 
+        // ----------------------------- Try to deposit assets to the strategy
         address vault = address(strategy.vault());
-        if (shouldRevert) {
+        if (revertKind == REVERT_NOT_ENOUGH_LIQUIDITY) {
             vm.expectRevert(ISilo.NotEnoughLiquidity.selector);
+        }
+        if (revertKind == REVERT_INSUFFICIENT_BALANCE) {
+            vm.expectRevert(IControllable.InsufficientBalance.selector);
         }
         vm.prank(vault);
         strategy.depositAssets(amounts_);
