@@ -698,25 +698,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
-        console.log("******************* MetaVault.maxDeposit", address(this));
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+        console.log("******************* MetaVault.maxDeposit", address(this), $.vaults.length);
         if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
-            console.log("MetaVault.maxDeposit.1", $.vaults.length);
             // MultiVault supports depositing to all sub-vaults
             // so we need to calculate summary max deposit amounts for all sub-vaults
             // but result cannot exceed type(uint).max
             for (uint i; i < $.vaults.length; ++i) {
-                console.log("MetaVault.maxDeposit.2", i);
+                console.log("MetaVault.maxDeposit.vault", i, $.vaults[i]);
                 address _targetVault = $.vaults[i];
 
                 if (i == 0) { // lazy initialization of maxAmounts
                     maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
                 }
-                console.log("MetaVault.maxDeposit.3", maxAmounts.length);
-                console.log("vault fo deposit", vaultForDeposit());
-
-                uint[] memory _amounts = IStabilityVault(vaultForDeposit()).maxDeposit(account);
-                console.log("MetaVault.maxDeposit.4", _amounts.length);
+                uint[] memory _amounts = IStabilityVault(_targetVault).maxDeposit(account);
+                console.log("MetaVault.maxDeposit.amount", _amounts[0]);
                 for (uint j; j < _amounts.length; ++j) {
                     if (maxAmounts[j] != type(uint).max) {
                         maxAmounts[j] = _amounts[j] == type(uint).max
@@ -724,10 +720,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                             : maxAmounts[j] + _amounts[j];
                     }
                 }
-                console.log("MetaVault.maxDeposit.5", maxAmounts[0]);
+                console.log("MetaVault.maxDeposit.maxAmounts", maxAmounts[0]);
             }
 
-            console.log("MetaVault.maxDeposit.end", address(this));
+            console.log("MetaVault.maxDeposit.maxAmounts.final", address(this), maxAmounts[0]);
             return maxAmounts;
         } else {
             return IStabilityVault(vaultForDeposit()).maxDeposit(account);
@@ -810,7 +806,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) internal returns (uint[] memory amountsConsumed) {
-        console.log("##################### _depositToMultiVault");
+        console.log("##################### _depositToMultiVault", vaults_[0], vaults_[1]);
         // find target vault and move it to the first position
         // assume that the order of the other vaults does not matter
         _setTargetVaultFirst(targetVault_, vaults_);
@@ -830,6 +826,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // ------------------- deposit amounts to sub-vaults
         uint[] memory amounts = new uint[](len);
         for (uint n; n < vaults_.length; ++n) {
+            console.log("##################### vault", vaults_[n]);
             uint[] memory _maxDeposit = IStabilityVault(vaults_[n]).maxDeposit(address(this));
             for (uint i; i < len; ++i) {
                 amounts[i] = Math.min(amountToDeposit[i], _maxDeposit[i]);
@@ -855,6 +852,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // ------------------- refund remaining amounts
         for (uint i; i < len; ++i) {
             if (amountToDeposit[i] != 0) {
+                console.log("REFUND", amountToDeposit[i]);
                 IERC20(assets_[i]).safeTransfer(msg.sender, amountToDeposit[i]);
             }
         }

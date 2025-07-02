@@ -514,7 +514,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IStabilityVault
     function maxDeposit(address /* account */ ) external view returns (uint[] memory maxAmounts) {
-        console.log("VaultBase: maxDepositAssets");
+        console.log("VaultBase: maxDepositAssets, this", address(this));
         uint[] memory amounts = strategy().maxDepositAssets();
         if (amounts.length == 1) {
             return amounts;

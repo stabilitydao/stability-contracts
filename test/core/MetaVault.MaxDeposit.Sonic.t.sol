@@ -27,6 +27,7 @@ import {Swapper} from "../../src/core/Swapper.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -36,6 +37,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 
 
 /// @notice Create MultiVault with SiALMF-vaults
@@ -77,7 +79,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
         Factory factory = Factory(address(IPlatform(PLATFORM).factory()));
 
-        _upgradeSwapper();
+        _upgradeSwapperAndAdapter();
         _setupMetaVaultFactory();
         _setupImplementations();
         _updateCVaultImplementation(factory);
@@ -97,6 +99,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         for (uint i; i < _vaults.length; ++i) {
             address strategy = address(IVault(_vaults[i]).strategy());
+            console.log("VAULT, I, STRATEGY", _vaults[i], i, strategy);
 
             vm.prank(IPlatform(PLATFORM).multisig());
             IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(strategy, true);
@@ -145,6 +148,10 @@ contract MetaVaultMaxDepositSonicTest is Test {
         uint[] memory amountMetaVaultTokens;
         uint snapshot;
 
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC));
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD));
+
         // ------------------------------ Try to deposit 1 decimal
         snapshot = vm.snapshotState();
         amountMetaVaultTokens = new uint[](1);
@@ -153,16 +160,21 @@ contract MetaVaultMaxDepositSonicTest is Test {
         vm.revertToState(snapshot);
 
         // ------------------------------ Try to deposit max possible amount
+        console.log("!!!!!!!!!!!!!!!!!!!!! Try to deposit max possible amount");
         snapshot = vm.snapshotState();
         amountMetaVaultTokens = multiVault.maxDeposit(address(this));
+        console.log("maxDeposit", amountMetaVaultTokens[0]);
         _tryToDeposit(multiVault, amountMetaVaultTokens, false);
         vm.revertToState(snapshot);
 
         // ------------------------------ Try to deposit more than maxDeposit
-        snapshot = vm.snapshot();
+        console.log("!!!!!!!!!!!!!!!!!!!!! Try to deposit more than maxDeposit");
+        snapshot = vm.snapshotState();
         amountMetaVaultTokens = multiVault.maxDeposit(address(this));
+        console.log("maxDeposit", amountMetaVaultTokens[0]);
         amountMetaVaultTokens[0] = amountMetaVaultTokens[0] * 110 / 100; // increase by 10%
-        _tryToDeposit(multiVault, amountMetaVaultTokens, true);
+        console.log("maxDeposit increased", amountMetaVaultTokens[0]);
+        _tryToDeposit(multiVault, amountMetaVaultTokens, false);
         vm.revertToState(snapshot);
     }
 
@@ -215,6 +227,33 @@ contract MetaVaultMaxDepositSonicTest is Test {
 
             vm.roll(block.number + 6);
         }
+    }
+
+    function _borrowAlmostAllCash(ISilo collateralVault, ISilo debtVault) internal {
+        console.log("!!!!!!!!!!!!_borrowAlmostAllCash");
+        address user = address(214385);
+        uint maxLiquidityToBorrow = debtVault.getLiquidity();
+        uint collateralApproxAmount = 10 * maxLiquidityToBorrow * 1e12;
+        _getMetaUsdOnBalance(user, collateralApproxAmount, true);
+        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.1");
+
+        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(user);
+
+        vm.prank(user);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(collateralVault), balance);
+        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.2");
+
+        vm.prank(user);
+        collateralVault.deposit(balance, user);
+        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.3");
+
+        vm.prank(user);
+        debtVault.borrow(
+            maxLiquidityToBorrow * 99 / 100, // borrow 99% of available liquidity
+            user,
+            user
+        );
+        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.4");
     }
 
     //endregion -------------------------------------------- Internal functions
@@ -388,12 +427,15 @@ contract MetaVaultMaxDepositSonicTest is Test {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
     }
 
-    function _upgradeSwapper() internal {
-        address newImplementation = address(new Swapper());
-        address[] memory proxies = new address[](1);
+    function _upgradeSwapperAndAdapter() internal {
+        address[] memory proxies = new address[](2);
         proxies[0] = address(IPlatform(PLATFORM).swapper());
-        address[] memory implementations = new address[](1);
-        implementations[0] = newImplementation;
+        bytes32 hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
+        proxies[1] = address(IPlatform(PLATFORM).ammAdapter(hash).proxy);
+
+        address[] memory implementations = new address[](2);
+        implementations[0] = address(new Swapper());
+        implementations[1] = address(new UniswapV3Adapter());
 
         vm.prank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.03.1-alpha", proxies, implementations);

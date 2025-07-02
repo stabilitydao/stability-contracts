@@ -76,8 +76,6 @@ contract SiloALMFStrategy is
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
         if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
-            console.log("farm.id", addresses[0], nums[0], farm.addresses.length);
-            console.log("farm.addresses.length", farm.addresses[0], farm.addresses[1]);
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -92,6 +90,12 @@ contract SiloALMFStrategy is
         params.flashLoanVault = farm.addresses[FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
         params.helper = farm.addresses[FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
         params.targetLeveragePercent = 85_00;
+        console.log("INITIALIZATION");
+        console.log("lending vault", params.lendingVault);
+        console.log("collateral asset", params.collateralAsset);
+        console.log("borrow asset", params.borrowAsset);
+        console.log("borrow vault", params.borrowingVault);
+        console.log("farm_id", nums[0]);
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
@@ -307,9 +311,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function maxDepositAssets() public view override returns (uint[] memory amounts) {
-        console.log("SiloALMFStrategy: maxDepositAssets");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        {(uint _realTvl,) = realTvl(); console.log("_realTvl", _realTvl);}
         return SiloALMFLib.maxDepositAssets($);
     }
 
@@ -321,7 +323,6 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
-        console.log("SiloALMFStrategy: _rebalanceDebt", newLtv);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
