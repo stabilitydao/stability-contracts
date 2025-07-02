@@ -5,22 +5,20 @@ import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
-import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 
 contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -45,7 +43,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
-                id: StrategyIdLib.SILO_ALMF,
+                id: StrategyIdLib.SILO_ALMF_FARM,
                 pool: address(0),
                 farmId: farmId,
                 strategyInitAddresses: new address[](0),
@@ -146,32 +144,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     ) internal {
         for (uint j; j < assets.length; ++j) {
             if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD) {
-                uint amountUsdc = 2 * amounts[j] / 1e12;
-                deal(SonicConstantsLib.TOKEN_USDC, user, amountUsdc);
-                IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-
-                uint[] memory amountsMax = new uint[](1);
-                amountsMax[0] = amountUsdc;
-
-                vm.startPrank(address(this));
-                IERC20(SonicConstantsLib.TOKEN_USDC).approve(
-                    address(metaVault),
-                    IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this))
-                );
-                metaVault.depositAssets(metaVault.assetsForDeposit(), amountsMax, 0, address(this));
-                vm.stopPrank();
-
-                vm.roll(block.number + 6);
-
-                vm.startPrank(address(this));
-                IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
-                metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(address(this)));
-                wrappedMetaVault.deposit(metaVault.balanceOf(address(this)), address(this), 0);
-                vm.stopPrank();
-
-                vm.roll(block.number + 6);
-
-                console.log("Dealing and approving metaUSD", amounts[0], wrappedMetaVault.balanceOf(address(this)));
+                _getMetaUsdOnBalance(address(this), amounts[j], true);
+                console.log("Dealing and approving metaUSD", amounts[0], IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)));
             } else {
                 console.log("Dealing and approving", assets[j], amounts[j]);
                 deal(assets[j], user, amounts[j]);
@@ -179,6 +153,37 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
             vm.prank(user);
             IERC20(assets[j]).approve(spender, amounts[j]);
+        }
+    }
+
+    function _getMetaUsdOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+
+        // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
+        // so we deposit a bit large amount of USDC
+        address[] memory _assets = metaVault.assetsForDeposit();
+        uint[] memory amountsMax = new uint[](1);
+        amountsMax[0] = 2 * amountMetaVaultTokens / 1e12;
+
+        deal(SonicConstantsLib.TOKEN_USDC, user, amountsMax[0]);
+
+        vm.startPrank(user);
+        IERC20(SonicConstantsLib.TOKEN_USDC).approve(
+            address(metaVault),
+            IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user)
+        );
+        metaVault.depositAssets(_assets, amountsMax, 0, user);
+        vm.roll(block.number + 6);
+        vm.stopPrank();
+
+        if (wrap) {
+            vm.startPrank(user);
+            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
+            wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
+            vm.stopPrank();
+
+            vm.roll(block.number + 6);
         }
     }
     //endregion --------------------------------------- Internal logic

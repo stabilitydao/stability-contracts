@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -513,6 +514,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IStabilityVault
     function maxDeposit(address /* account */ ) external view returns (uint[] memory maxAmounts) {
+        console.log("VaultBase: maxDepositAssets");
         uint[] memory amounts = strategy().maxDepositAssets();
         if (amounts.length == 1) {
             return amounts;

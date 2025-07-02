@@ -231,6 +231,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             nums,
                             ticks
                         );
+
                         f.strategyLogicId = goodStrategyId;
 
                         factory.updateFarm(nums[0], f);

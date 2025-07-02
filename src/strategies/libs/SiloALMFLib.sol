@@ -87,15 +87,19 @@ library SiloALMFLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
+            console.log("0.borrow amount, feeAmount, maxBorrow", amount, feeAmount, ISilo($.borrowingVault).maxBorrow(address(this)));
             console.log("1._swap.amount, collateral balance before swap", amount, IERC20(collateralAsset).balanceOf(address(this)));
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
-            console.log("2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)));
+            console.log("2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)), $.lendingVault);
             // supply
             ISilo($.lendingVault).deposit(
                 IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
             );
+            console.log("done");
+            console.log("$.borrowingVault", $.borrowingVault);
+            console.log("maxBorrow", ISilo($.borrowingVault).maxBorrow(address(this)));
 
             console.log("3.borrow amount, feeAmount, maxBorrow", amount, feeAmount, ISilo($.borrowingVault).maxBorrow(address(this)));
             console.log("3.borrow amount,liquidity", ISilo($.borrowingVault).getLiquidity());
@@ -511,7 +515,7 @@ library SiloALMFLib {
         uint borrowAmount = _getDepositFlashAmount($, v, amountToDeposit);
         (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, v.borrowAsset);
         console.log("borrowAmount", borrowAmount);
-        console.log("depositAssets.flashAmounts[0]", flashAmounts[0]);
+        console.log("depositAssets.flashAmounts[0]", flashAmounts[0], IERC20(v.borrowAsset).balanceOf($.flashLoanVault));
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
@@ -545,6 +549,7 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint borrowAmount
     ) internal view returns (uint amountToDeposit) {
+        console.log("_getAmountToDepositFromBorrow.borrowAmount", borrowAmount);
         (uint maxLtv,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         console.log("targetLeverage", targetLeverage);

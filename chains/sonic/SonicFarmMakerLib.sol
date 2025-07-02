@@ -234,7 +234,7 @@ library SonicFarmMakerLib {
     ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
-        farm.strategyLogicId = StrategyIdLib.SILO_ALMF;
+        farm.strategyLogicId = StrategyIdLib.SILO_ALMF_FARM;
 
         farm.rewardAssets = new address[](2);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;

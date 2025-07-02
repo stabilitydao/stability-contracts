@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -697,19 +698,25 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
+        console.log("******************* MetaVault.maxDeposit", address(this));
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+            console.log("MetaVault.maxDeposit.1", $.vaults.length);
             // MultiVault supports depositing to all sub-vaults
             // so we need to calculate summary max deposit amounts for all sub-vaults
             // but result cannot exceed type(uint).max
             for (uint i; i < $.vaults.length; ++i) {
+                console.log("MetaVault.maxDeposit.2", i);
                 address _targetVault = $.vaults[i];
 
                 if (i == 0) { // lazy initialization of maxAmounts
                     maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
                 }
+                console.log("MetaVault.maxDeposit.3", maxAmounts.length);
+                console.log("vault fo deposit", vaultForDeposit());
 
                 uint[] memory _amounts = IStabilityVault(vaultForDeposit()).maxDeposit(account);
+                console.log("MetaVault.maxDeposit.4", _amounts.length);
                 for (uint j; j < _amounts.length; ++j) {
                     if (maxAmounts[j] != type(uint).max) {
                         maxAmounts[j] = _amounts[j] == type(uint).max
@@ -717,8 +724,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                             : maxAmounts[j] + _amounts[j];
                     }
                 }
+                console.log("MetaVault.maxDeposit.5", maxAmounts[0]);
             }
 
+            console.log("MetaVault.maxDeposit.end", address(this));
             return maxAmounts;
         } else {
             return IStabilityVault(vaultForDeposit()).maxDeposit(account);
@@ -801,6 +810,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) internal returns (uint[] memory amountsConsumed) {
+        console.log("##################### _depositToMultiVault");
         // find target vault and move it to the first position
         // assume that the order of the other vaults does not matter
         _setTargetVaultFirst(targetVault_, vaults_);
@@ -818,10 +828,15 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         // ------------------- deposit amounts to sub-vaults
+        uint[] memory amounts = new uint[](len);
         for (uint n; n < vaults_.length; ++n) {
-            IERC20(assets_[n]).forceApprove(vaults_[n], amountToDeposit[n]);
+            uint[] memory _maxDeposit = IStabilityVault(vaults_[n]).maxDeposit(address(this));
+            for (uint i; i < len; ++i) {
+                amounts[i] = Math.min(amountToDeposit[i], _maxDeposit[i]);
+                IERC20(assets_[i]).forceApprove(vaults_[n], amounts[i]);
+            }
 
-            IStabilityVault(vaults_[n]).depositAssets(assets_, amountToDeposit, 0, address(this));
+            IStabilityVault(vaults_[n]).depositAssets(assets_, amounts, 0, address(this));
 
             bool needToDepositMore;
             for (uint i; i < len; ++i) {

@@ -197,7 +197,7 @@ library SonicLib {
         p.initAddresses = new address[](0);
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
-        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ALMF, p);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ALMF_FARM, p);
 
         //endregion -- Add strategy available init params -----
 
@@ -222,7 +222,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF, address(new SiloALMFStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 

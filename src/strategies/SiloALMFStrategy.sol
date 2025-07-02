@@ -76,12 +76,14 @@ contract SiloALMFStrategy is
         }
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
         if (farm.addresses.length != 4 || farm.nums.length != 0 || farm.ticks.length != 0) {
+            console.log("farm.id", addresses[0], nums[0], farm.addresses.length);
+            console.log("farm.addresses.length", farm.addresses[0], farm.addresses[1]);
             revert IFarmingStrategy.BadFarm();
         }
 
         LeverageLendingStrategyBaseInitParams memory params;
         params.platform = addresses[0];
-        params.strategyId = StrategyIdLib.SILO_ALMF;
+        params.strategyId = StrategyIdLib.SILO_ALMF_FARM;
         params.vault = addresses[1];
         params.collateralAsset = IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
         params.borrowAsset = IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
@@ -196,7 +198,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
-        return StrategyIdLib.SILO_ALMF;
+        return StrategyIdLib.SILO_ALMF_FARM;
     }
 
     /// @inheritdoc IStrategy
@@ -213,7 +215,7 @@ contract SiloALMFStrategy is
         uint _total;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF)) {
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
                 ++_total;
             }
         }
@@ -222,7 +224,7 @@ contract SiloALMFStrategy is
         _total = 0;
         for (uint i; i < len; ++i) {
             IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF)) {
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
                 nums[_total] = i;
                 variants[_total] = _generateDescription(
                     farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX],
@@ -305,6 +307,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function maxDepositAssets() public view override returns (uint[] memory amounts) {
+        console.log("SiloALMFStrategy: maxDepositAssets");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         {(uint _realTvl,) = realTvl(); console.log("_realTvl", _realTvl);}
         return SiloALMFLib.maxDepositAssets($);
