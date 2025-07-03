@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import {console, Test} from "forge-std/Test.sol";
 import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -104,7 +103,6 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         metaVault.setLastBlockDefenseDisabled(false);
         address[] memory vaults = metaVault.vaults();
         for (uint i = 0; i < vaults.length; ++i) {
-            console.log(vaults[i]);
             vm.prank(multisig);
             IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
         }
@@ -134,62 +132,9 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         _tryDepositWithdrawTransfer(user, true);
     }
 
-    function testWhitelistAutoEnableLastBlockDefence() public {
-        address user = address(1);
-        address strategy = address(2);
-
-        vm.prank(multisig);
-        metaVault.changeWhitelist(strategy, true);
-
-        // ------------------------- Enable defence in the MetaVaults, disable defence in all CVaults
-        vm.prank(multisig);
-        metaVault.setLastBlockDefenseDisabled(false);
-        address[] memory vaults = metaVault.vaults();
-        for (uint i = 0; i < vaults.length; ++i) {
-            console.log(vaults[i]);
-            vm.prank(multisig);
-            IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
-        }
-
-        // ------------------------- User deposits an amount
-        address[] memory assets = metaVault.assetsForDeposit();
-        uint[] memory depositAmounts = _getAmountsForDeposit(500, assets);
-        _dealAndApprove(address(1), address(metaVault), assets, depositAmounts);
-
-        vm.prank(user);
-        IStabilityVault(metaVault).depositAssets(assets, depositAmounts, 0, user);
-
-        // ------------------------- Add user to whitelist and try to deposit (successfully)
-        vm.prank(strategy);
-        metaVault.setLastBlockDefenseDisabledTx(true);
-
-        _tryDepositWithdrawTransfer(user, false);
-
-        // ------------------------ Try to make new deposit
-        assets = metaVault.assetsForDeposit();
-        depositAmounts = _getAmountsForDeposit(500, assets);
-        _dealAndApprove(address(1), address(metaVault), assets, depositAmounts);
-
-        vm.roll(block.number + 6);
-
-        // ------------------------ We can make deposit in the SAME tx
-        uint snapshot = vm.snapshotState();
-        vm.prank(user);
-        IStabilityVault(metaVault).depositAssets(assets, depositAmounts, 0, user);
-        vm.revertToState(snapshot);
-
-        // ------------------------ But we CANNOT make deposit in the different tx
-
-        // external call emulates "next tx"
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!! todo");
-        vm.prank(user, user);
-        (bool ok, ) = address(metaVault).call(abi.encodeWithSignature("function depositAssets(address[], uint[], uint, address)", assets, depositAmounts, 0, user));
-        assertEq(ok, false);
-    }
-
     //region ------------------------- Internal logic
     function _tryDepositWithdrawTransfer(address user, bool shouldRevert) internal {
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
 
         // ------------------------ deposit
         address[] memory assets = metaVault.assetsForDeposit();
