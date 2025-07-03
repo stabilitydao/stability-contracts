@@ -101,10 +101,10 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     function _getVaultState() internal view returns (VaultState memory state) {
         state.vaults = metaVault.vaults();
         state.totalSupply = metaVault.totalSupply();
-        (state.tvl, ) = metaVault.tvl();
+        (state.tvl,) = metaVault.tvl();
         state.targetProportions = metaVault.targetProportions();
         state.currentProportions = metaVault.currentProportions();
-        (state.price, ) = metaVault.price();
+        (state.price,) = metaVault.price();
         state.balanceMetaUsdVault = metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD);
         return state;
     }
@@ -220,7 +220,6 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
         metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_metaUSD);
         console.log("_makeWithdrawDeposit.3", metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD));
-
     }
 
     function _getVaultOwnerAmountUsd(address vault, address owner) internal view returns (uint) {

@@ -99,7 +99,6 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
         _tryToDeposit(strategy, maxDepositAssets, REVERT_INSUFFICIENT_BALANCE);
         vm.revertToState(snapshot);
-
     }
 
     //region --------------------------------------- Internal logic
@@ -136,16 +135,15 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         strategy.depositAssets(amounts_);
     }
 
-    function _dealAndApprove(
-        address user,
-        address spender,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address spender, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD) {
                 _getMetaUsdOnBalance(address(this), amounts[j], true);
-                console.log("Dealing and approving metaUSD", amounts[0], IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)));
+                console.log(
+                    "Dealing and approving metaUSD",
+                    amounts[0],
+                    IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this))
+                );
             } else {
                 console.log("Dealing and approving", assets[j], amounts[j]);
                 deal(assets[j], user, amounts[j]);
@@ -169,8 +167,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         vm.startPrank(user);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(
-            address(metaVault),
-            IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user)
+            address(metaVault), IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user)
         );
         metaVault.depositAssets(_assets, amountsMax, 0, user);
         vm.roll(block.number + 6);
@@ -203,7 +200,12 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
 
-    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
+    function _setFlashLoanVault(
+        ILeverageLendingStrategy strategy,
+        address vaultC,
+        address vaultB,
+        uint kind
+    ) internal {
         address multisig = IPlatform(platform).multisig();
 
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();

@@ -15,7 +15,8 @@ import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SupportsInterfaceWithLookupMock} from "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
+import {SupportsInterfaceWithLookupMock} from
+    "../../../lib/openzeppelin-contracts/contracts/mocks/ERC165/ERC165InterfacesSupported.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
@@ -710,15 +711,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             for (uint i; i < $.vaults.length; ++i) {
                 address _targetVault = $.vaults[i];
 
-                if (i == 0) { // lazy initialization of maxAmounts
+                if (i == 0) {
+                    // lazy initialization of maxAmounts
                     maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
                 }
                 uint[] memory _amounts = IStabilityVault(_targetVault).maxDeposit(account);
                 for (uint j; j < _amounts.length; ++j) {
                     if (maxAmounts[j] != type(uint).max) {
-                        maxAmounts[j] = _amounts[j] == type(uint).max
-                            ? type(uint).max
-                            : maxAmounts[j] + _amounts[j];
+                        maxAmounts[j] = _amounts[j] == type(uint).max ? type(uint).max : maxAmounts[j] + _amounts[j];
                     }
                 }
             }
@@ -763,9 +763,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (
             // defence is not disabled by governance
             // defence is not disabled by whitelisted strategy in the current block
-            !$.lastBlockDefenseDisabled
-            && _LastBlockDefenseDisabledTx != block.number
-            && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
+            !$.lastBlockDefenseDisabled && _LastBlockDefenseDisabledTx != block.number
+                && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
         ) {
             revert WaitAFewBlocks();
         }
@@ -804,9 +803,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint targetVaultPrice,) = IStabilityVault(targetVault_).price();
         uint targetVaultSharesAfter = IERC20(targetVault_).balanceOf(address(this));
 
-        depositedTvl = Math.mulDiv(
-            targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
-        );
+        depositedTvl =
+            Math.mulDiv(targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor);
     }
 
     function _depositToMultiVault(
@@ -814,10 +812,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory vaults_,
         address[] memory assets_,
         uint[] memory amountsMax
-    ) internal returns (
-        uint[] memory amountsConsumed,
-        uint depositedTvl
-    ) {
+    ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
         DepositToMultiVaultLocals memory v;
         // find target vault and move it to the first position
         // assume that the order of the other vaults does not matter
@@ -883,7 +878,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @notice Find target vault in {vaults} and move it on the first position.
-    function _setTargetVaultFirst(address targetVault, address[] memory vaults_) internal pure returns (address[] memory) {
+    function _setTargetVaultFirst(
+        address targetVault,
+        address[] memory vaults_
+    ) internal pure returns (address[] memory) {
         uint len = vaults_.length;
         for (uint i; i < len; ++i) {
             if (vaults_[i] == targetVault) {

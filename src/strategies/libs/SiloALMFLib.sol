@@ -84,12 +84,23 @@ library SiloALMFLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
-            console.log("0.borrow amount, feeAmount, maxBorrow", amount, feeAmount, ISilo($.borrowingVault).maxBorrow(address(this)));
-            console.log("1._swap.amount, collateral balance before swap", amount, IERC20(collateralAsset).balanceOf(address(this)));
+            console.log(
+                "0.borrow amount, feeAmount, maxBorrow",
+                amount,
+                feeAmount,
+                ISilo($.borrowingVault).maxBorrow(address(this))
+            );
+            console.log(
+                "1._swap.amount, collateral balance before swap",
+                amount,
+                IERC20(collateralAsset).balanceOf(address(this))
+            );
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
-            console.log("2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)), $.lendingVault);
+            console.log(
+                "2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)), $.lendingVault
+            );
             // supply
             ISilo($.lendingVault).deposit(
                 IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
@@ -98,7 +109,12 @@ library SiloALMFLib {
             console.log("$.borrowingVault", $.borrowingVault);
             console.log("maxBorrow", ISilo($.borrowingVault).maxBorrow(address(this)));
 
-            console.log("3.borrow amount, feeAmount, maxBorrow", amount, feeAmount, ISilo($.borrowingVault).maxBorrow(address(this)));
+            console.log(
+                "3.borrow amount, feeAmount, maxBorrow",
+                amount,
+                feeAmount,
+                ISilo($.borrowingVault).maxBorrow(address(this))
+            );
             console.log("3.borrow amount,liquidity", ISilo($.borrowingVault).getLiquidity());
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
@@ -440,9 +456,11 @@ library SiloALMFLib {
     //endregion ------------------------------------- View functions
 
     //region ------------------------------------- Max deposit
-    function maxDepositAssets(
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
-    ) external view returns (uint[] memory amounts) {
+    function maxDepositAssets(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+        external
+        view
+        returns (uint[] memory amounts)
+    {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
 
         // max deposit is limited by amount available to borrow from the borrow pool
@@ -514,7 +532,6 @@ library SiloALMFLib {
             * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
     }
 
-
     /// @notice Get what collateral amount should be deposited to borrow internally given {borrowAmount}
     /// @dev Flash fee is not taken into account here
     /// @param borrowAmount Amount received from {_getDepositFlashAmount}
@@ -526,13 +543,9 @@ library SiloALMFLib {
         (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
-        return borrowAmount
-            * (10 ** IERC20Metadata(v.collateralAsset).decimals())
-            * 1e18 // priceCtoB has decimals 1e18
-            * INTERNAL_PRECISION / (targetLeverage - INTERNAL_PRECISION)
-            / priceCtoB
-            / (10 ** IERC20Metadata(v.borrowAsset).decimals())
-            * INTERNAL_PRECISION / $.depositParam0;
+        return borrowAmount * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * 1e18 // priceCtoB has decimals 1e18
+            * INTERNAL_PRECISION / (targetLeverage - INTERNAL_PRECISION) / priceCtoB
+            / (10 ** IERC20Metadata(v.borrowAsset).decimals()) * INTERNAL_PRECISION / $.depositParam0;
     }
     //endregion ------------------------------------- Deposit
 

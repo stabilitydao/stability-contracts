@@ -108,7 +108,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256 maxShares) {
+    function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxShares) {
         uint _maxDeposit = maxDeposit(receiver);
         return _maxDeposit == type(uint).max
             ? type(uint).max // no limits
@@ -116,7 +116,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     /// @inheritdoc IERC4626
-    function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256 maxAssets) {
+    function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxAssets) {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
             IMetaVault _metaVault = IMetaVault($.metaVault);
