@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -25,7 +24,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3TEMP"; // todo restore original file
+    string public constant VERSION = "1.0.3";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -75,10 +74,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
         uint amount = IERC20(tokenIn).balanceOf(address(this));
 
         {
-            console.log("UniV3.swap", pool, tokenIn, tokenOut);
-            console.log("UniV3.amount in, balanceBefore out", amount, balanceBefore);
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
-            console.log("UniV3.priceBefore", priceBefore, amount);
 
             //slither-disable-next-line unused-return
             IUniswapV3Pool(pool).swap(
@@ -94,7 +90,6 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
             // if(priceAfter > priceBefore){
             //     revert IAmmAdapter.PriceIncreased();
             // }
-            console.log("UniV3.priceAfter", priceAfter, amount);
 
             uint priceImpact = (priceBefore - priceAfter) * ConstantsLib.DENOMINATOR / priceBefore;
             if (priceImpact >= priceImpactTolerance) {

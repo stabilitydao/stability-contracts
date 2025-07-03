@@ -39,9 +39,6 @@ library SiloALMFLib {
     //    address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address internal constant METAVAULT_metaUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
 
-    /// @notice Max flash loan fee to calculate maxDeposit
-    uint private constant MAX_FLASH_LOAN_FEE = 100; // 100 is 1% fee
-
     //region ------------------------------------- Data types
     struct CollateralDebtState {
         uint collateralPrice;
@@ -450,23 +447,15 @@ library SiloALMFLib {
 
         // max deposit is limited by amount available to borrow from the borrow pool
         uint maxAmountInBorrowPool = ISilo(v.borrowingVault).getLiquidity();
-        console.log("@@@ maxDepositAssets.vault, borrow asset, this", v.borrowingVault, v.borrowAsset, address(this));
-        console.log("maxAmountInBorrowPool", maxAmountInBorrowPool);
 
-        // take into account flash loan fee because it will be borrowed too // todo probably we nee to make it configurable
-        uint maxBorrowAmount = maxAmountInBorrowPool
-            * (INTERNAL_PRECISION - MAX_FLASH_LOAN_FEE) / INTERNAL_PRECISION;
+        // take into account flash loan fee because it will be borrowed too
+        uint maxBorrowAmount = maxAmountInBorrowPool * $.depositParam1 / INTERNAL_PRECISION;
 
         // max deposit is also limited by liquidity available in the flash loan vault
         uint flashLoanVaultBalance = IERC20(v.borrowAsset).balanceOf($.flashLoanVault);
 
-        console.log("maxDepositAssets.maxBorrowAmount", maxBorrowAmount);
-        console.log("maxDepositAssets.flashLoanVaultBalance", flashLoanVaultBalance);
-
         amounts = new uint[](1);
         amounts[0] = _getAmountToDepositFromBorrow($, v, Math.min(maxBorrowAmount, flashLoanVaultBalance));
-        console.log("maxDepositAssets.amounts[0]", amounts[0]);
-
     }
     //endregion ------------------------------------- Max deposit
 
@@ -504,8 +493,6 @@ library SiloALMFLib {
     ) internal {
         uint borrowAmount = _getDepositFlashAmount($, v, amountToDeposit);
         (address[] memory flashAssets, uint[] memory flashAmounts) = _getFlashLoanAmounts(borrowAmount, v.borrowAsset);
-        console.log("borrowAmount", borrowAmount);
-        console.log("depositAssets.flashAmounts[0]", flashAmounts[0], IERC20(v.borrowAsset).balanceOf($.flashLoanVault));
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);

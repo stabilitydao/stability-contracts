@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
@@ -655,12 +654,10 @@ contract Swapper is Controllable, ISwapper {
         if (route.length == 0) {
             revert IControllable.IncorrectArrayLength();
         }
-        for (uint i; i < route.length; i++) {console.log(route[i].tokenIn, route[i].tokenOut, route[i].ammAdapter, route[i].pool);}
 
         uint routeLength = route.length;
         // nosemgrep
         for (uint i; i < routeLength; i++) {
-            console.log("i");
             PoolData memory data = route[i];
 
             // if it is the first step send tokens to the swapper from the current contract
@@ -678,7 +675,6 @@ contract Swapper is Controllable, ISwapper {
 
             // if it is the last step of the route we need to check if we have enough price impact tolerance
             IAmmAdapter(data.ammAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
-            console.log("done");
         }
 
         emit Swap(route[0].tokenIn, route[routeLength - 1].tokenOut, amount);

@@ -57,6 +57,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
+
     uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
     uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
     uint public constant FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX = 2;
@@ -90,12 +91,6 @@ contract SiloALMFStrategy is
         params.flashLoanVault = farm.addresses[FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
         params.helper = farm.addresses[FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
         params.targetLeveragePercent = 85_00;
-        console.log("INITIALIZATION");
-        console.log("lending vault", params.lendingVault);
-        console.log("collateral asset", params.collateralAsset);
-        console.log("borrow asset", params.borrowAsset);
-        console.log("borrow vault", params.borrowingVault);
-        console.log("farm_id", nums[0]);
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
         __FarmingStrategyBase_init(addresses[0], nums[0]);
@@ -108,8 +103,10 @@ contract SiloALMFStrategy is
         IERC20(params.borrowAsset).forceApprove(swapper, type(uint).max);
 
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        // Multiplier of flash amount for borrow on deposit. Default is 90_00 == 90%. // todo
+        // Multiplier of flash amount for borrow on deposit. Default is 100_00 = 100%
         $.depositParam0 = 100_00;
+        // Multiplier of borrow amount to take into account max flash loan fee in maxDeposit. Default is 99_80 = 99.8%
+        $.depositParam1 = 99_80;
         // Multiplier of debt diff
         $.increaseLtvParam0 = 100_80;
         // Multiplier of swap borrow asset to collateral in flash loan callback

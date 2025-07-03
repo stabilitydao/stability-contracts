@@ -243,6 +243,7 @@ library SonicConstantsLib {
     address public constant BEETS_GAUGE_scUSD_stS = 0xa472438718Fe7785107fCbE584d39183a6420D36;
     address public constant BEETS_GAUGE_USDC_stS = 0xb3Bf2c247A599DFcEf06791b1668Fe9456677923;
     address public constant BEETS_V3_ROUTER = 0x6077b9801B5627a65A5eeE70697C793751D1a71c;
+    address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
 
     // Equalizer
     address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import "../../chains/sonic/SonicLib.sol";
-import "../../src/core/Factory.sol";
+import {SonicLib} from "../../chains/sonic/SonicLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
 import {
 MetaVault,
 IMetaVault,
@@ -18,6 +18,9 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -29,15 +32,17 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
+import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 
 
 /// @notice Create MultiVault with SiALMF-vaults
@@ -139,63 +144,266 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _proportions[0] = 100e16;
         metaVaults[META_VAULT_INDEX] = _deployMetaVaultByMetaVaultFactory(vaultType, address(0), "Stability USD", "metaUSD", _vaults, _proportions);
         wrappedVaults[META_VAULT_INDEX] = _deployWrapper(metaVaults[META_VAULT_INDEX]);
+
+        // ---- Make flash loan unlimited and fees-free to simplify calculations
+        _setUpFlashLoanVault(10e12); // add 10 mln USDC and 10 mln scUSD to flash loan vaults
+
+        // ------------------------------ Make initial deposit to both sub-vaults to avoid first-deposit-small-amount issues
+        uint[] memory amountToDeposit = new uint[](1);
+        amountToDeposit[0] = 222333e16;
+        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // first sub-vault
+        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
     }
 
-    function testMultiDeposit() public {
+    function testDepositSmallAmount() public {
+        uint smallAmountMetaUSD = 100e18;
         IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
         assertEq(multiVault.vaults().length, 2, "MultiVault should have 2 sub-vaults");
 
-        uint[] memory amountMetaVaultTokens;
-        uint snapshot;
+        // ---- Get max deposit amounts and detect target vault
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+        uint targetVaultIndex = multiVault.vaultForDeposit() == multiVault.vaults()[0] ? 0 : 1;
 
-        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
-        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC));
-        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD));
+        // ---- Deposit single decimal
+        uint[] memory amountToDeposit = new uint[](1);
+        amountToDeposit[0] = smallAmountMetaUSD;
 
-        // ------------------------------ Try to deposit 1 decimal
-        snapshot = vm.snapshotState();
-        amountMetaVaultTokens = new uint[](1);
-        amountMetaVaultTokens[0] = 1e18;
-        _tryToDeposit(multiVault, amountMetaVaultTokens, false);
-        vm.revertToState(snapshot);
+        uint balanceBefore = multiVault.balanceOf(address(this));
+        (uint deposited, uint amountConsumedEmitted) = _tryToDeposit(multiVault, amountToDeposit, false);
+        uint balanceAfter = multiVault.balanceOf(address(this));
 
-        // ------------------------------ Try to deposit max possible amount
-        console.log("!!!!!!!!!!!!!!!!!!!!! Try to deposit max possible amount");
-        snapshot = vm.snapshotState();
-        amountMetaVaultTokens = multiVault.maxDeposit(address(this));
-        console.log("maxDeposit", amountMetaVaultTokens[0]);
-        _tryToDeposit(multiVault, amountMetaVaultTokens, false);
-        vm.revertToState(snapshot);
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
 
-        // ------------------------------ Try to deposit more than maxDeposit
-        console.log("!!!!!!!!!!!!!!!!!!!!! Try to deposit more than maxDeposit");
-        snapshot = vm.snapshotState();
-        amountMetaVaultTokens = multiVault.maxDeposit(address(this));
-        console.log("maxDeposit", amountMetaVaultTokens[0]);
-        amountMetaVaultTokens[0] = amountMetaVaultTokens[0] * 110 / 100; // increase by 10%
-        console.log("maxDeposit increased", amountMetaVaultTokens[0]);
-        _tryToDeposit(multiVault, amountMetaVaultTokens, false);
-        vm.revertToState(snapshot);
+        assertEq(deposited, smallAmountMetaUSD, "Deposit of small amount should be successful");
+        assertGe(
+            targetVaultIndex == 0 ? maxDepositAmount0 : maxDepositAmount1,
+            targetVaultIndex == 0 ? maxDepositAmount02 : maxDepositAmount12,
+            "deposit was made to the target vault"
+        );
+        assertEq(
+            targetVaultIndex == 0 ? maxDepositAmount1 : maxDepositAmount0,
+            targetVaultIndex == 0 ? maxDepositAmount12 : maxDepositAmount02,
+            "second sub-vault should not be affected by deposit"
+        );
+        assertEq(amountConsumedEmitted, smallAmountMetaUSD, "correct amount consumed is received");
+        assertGt(balanceAfter, balanceBefore, "balance should increase after deposit");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/10000, "withdrawn amount should be equal to deposited small amount");
     }
 
+    /// @notice Try to deposit exact maxDeposit amount
+    function testMultiDepositMax() public {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+        assertEq(multiVault.vaults().length, 2, "MultiVault should have 2 sub-vaults");
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00);
+
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+
+        // ------------------------------ Try to deposit max possible amount
+        uint[] memory maxAmountToDeposit = multiVault.maxDeposit(address(this)); // amount of metaUSD to deposit in MultiVault
+
+        uint balanceBefore = multiVault.balanceOf(address(this));
+        (uint deposited, uint amountConsumedEmitted) = _tryToDeposit(multiVault, maxAmountToDeposit, false);
+        uint balanceAfter = multiVault.balanceOf(address(this));
+
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(maxAmountToDeposit[0], maxDepositAmount0 + maxDepositAmount1, "maxDeposit should be equal to sum of max deposits of sub-vaults");
+        assertEq(deposited, maxAmountToDeposit[0], "Deposit max possible amount should be successful");
+        assertLe(maxDepositAmount02 + maxDepositAmount12, 10e18, "Nothing to deposit anymore");
+        assertEq(deposited, amountConsumedEmitted, "correct amount consumed is received");
+        assertGt(balanceAfter, balanceBefore, "balance should increase after deposit");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/1000, "withdrawn amount should be equal to deposited amount");
+    }
+
+    /// @notice Try to deposit more than maxDeposit amount
+    function testMultiDepositTooMuch() public {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+        assertEq(multiVault.vaults().length, 2, "MultiVault should have 2 sub-vaults");
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00);
+
+        // ------------------------------ Try to deposit more than maxDeposit (and get refund)
+        uint[] memory maxAmountToDeposit = multiVault.maxDeposit(address(this)); // amount of metaUSD to deposit in MultiVault
+        uint[] memory amountToDepositTooMuch = multiVault.maxDeposit(address(this));
+        amountToDepositTooMuch[0] = amountToDepositTooMuch[0] * 110 / 100; // increase by 10%
+
+        uint balanceBefore = multiVault.balanceOf(address(this));
+        (uint deposited,) = _tryToDeposit(multiVault, amountToDepositTooMuch, false);
+        uint balanceAfter = multiVault.balanceOf(address(this));
+
+        uint refund = amountToDepositTooMuch[0] - deposited;
+
+        assertEq(deposited, maxAmountToDeposit[0], "Deposit max possible amount only");
+        assertApproxEqAbs(refund, maxAmountToDeposit[0] * 10 / 100, 1, "expected 10% refund");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/1000, "withdrawn amount should be equal to deposited amount");
+
+    }
+
+    /// @notice Try to deposit maxDepositAmount0 + dust, maxDepositAmount1 - dust
+    function testMultiDepositWithPlusAddon() public {
+        _testMultiDepositWithPlusAddon_Fuzzy(7518456257831769833, 99_98);
+    }
+
+    /// @notice Try to deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust
+    function testMultiDepositWithMinusAddon() public {
+        _testMultiDepositWithMinusAddon_Fuzzy(7518456257831769833, 99_98);
+    }
+
+    //region -------------------------------------------- Long fuzzy tests (for study, change internal to public)
+    function testMultiDepositWithPlusAddon_Fuzzy(uint addon, uint borrowPercent) internal {
+        addon = bound(addon, 1e15, 10e18); // 0.001 to 10
+        borrowPercent = bound(borrowPercent, 99_90, 99_99);
+
+        _testMultiDepositWithPlusAddon_Fuzzy(addon, borrowPercent);
+    }
+
+    function testMultiDepositWithMinusAddon_Fuzzy(uint addon, uint borrowPercent) internal {
+        addon = bound(addon, 1e15, 10e18); // 0.001 to 10
+        borrowPercent = bound(borrowPercent, 99_90, 99_99);
+
+        _testMultiDepositWithMinusAddon_Fuzzy(addon, borrowPercent);
+    }
+    //endregion -------------------------------------------- Long fuzzy tests (for study, change internal to public)
+
+    //region -------------------------------------------- Test implementation
+    /// @notice Try to deposit maxDepositAmount0 + dust, maxDepositAmount1 - dust
+    function _testMultiDepositWithPlusAddon_Fuzzy(uint addon, uint borrowPercent) internal {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), borrowPercent);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), borrowPercent);
+
+        // ---- Get max deposit amounts
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+        uint[] memory amountToDeposit = multiVault.maxDeposit(address(this));
+
+        // ---- Make two deposits
+        amountToDeposit[0] = maxDepositAmount0 - addon;
+        (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        amountToDeposit[0] = maxDepositAmount1 + addon;
+        (uint deposited1,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        // ---- Check results
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(deposited + deposited1, maxDepositAmount0 + maxDepositAmount1, "Deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust should be successful");
+        assertLt(maxDepositAmount02 + maxDepositAmount12, 1e18, "nothing to deposit anymore");
+    }
+
+    /// @notice Try to deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust
+    function _testMultiDepositWithMinusAddon_Fuzzy(uint addon, uint borrowPercent) internal {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), borrowPercent);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), borrowPercent);
+
+        // ---- Get max deposit amounts
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+        uint[] memory amountToDeposit = multiVault.maxDeposit(address(this));
+
+        // ---- Make two deposits
+        amountToDeposit[0] = maxDepositAmount0 + addon;
+        (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        amountToDeposit[0] = maxDepositAmount1 - addon;
+        (uint deposited1,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        // ---- Check results
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(deposited + deposited1, maxDepositAmount0 + maxDepositAmount1, "Deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust should be successful");
+        assertLt(maxDepositAmount02 + maxDepositAmount12, 1e18, "Nothing to deposit anymore");
+    }
+
+    //endregion -------------------------------------------- Test implementation
+
     //region -------------------------------------------- Internal functions
-    function _tryToDeposit(IMetaVault multiVault, uint[] memory maxAmounts, bool shouldRevert) internal {
-        console.log("!!!!!!!!!!!!!!!!!!!!! _tryToDeposit", maxAmounts[0]);
+    function _tryToWithdraw(IMetaVault multiVault, uint amountToWithdraw) internal returns (uint withdrawn) {
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        uint balanceBefore = wrapped.balanceOf(address(this));
+
+        vm.prank(address(this));
+        wrapped.approve(address(multiVault), amountToWithdraw);
+
+        vm.prank(address(this));
+        multiVault.withdrawAssets(multiVault.assetsForWithdraw(), amountToWithdraw, new uint[](1));
+        vm.roll(block.number + 6);
+
+        return wrapped.balanceOf(address(this)) - balanceBefore;
+    }
+
+    function _getEmittedConsumedAmount() internal returns (uint amountConsumedEmitted) {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSig = keccak256("DepositAssets(address,address[],uint256[],uint256)");
+
+        for (uint i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSig) {
+                address receiver = address(uint160(uint256(logs[i].topics[1])));
+                if (receiver == address(this)) {
+                    (, uint[] memory amountsConsumed, ) = abi.decode(logs[i].data, (address[], uint256[], uint256));
+                    return amountsConsumed[0];
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    function _getMaxAmountsToDeposit() internal view returns (uint maxDepositAmount0, uint maxDepositAmount1) {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+        maxDepositAmount0 = IStabilityVault(multiVault.vaults()[0]).maxDeposit(address(this))[0];
+        maxDepositAmount1 = IStabilityVault(multiVault.vaults()[1]).maxDeposit(address(this))[0];
+    }
+
+    /// @return deposited amount of metaUSD deposited to MultiVault
+    function _tryToDeposit(IMetaVault multiVault, uint[] memory maxAmounts, bool shouldRevert) internal returns (
+        uint deposited,
+        uint amountConsumedEmitted
+    ) {
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
         _getMetaUsdOnBalance(address(this), maxAmounts[0], true);
 
         vm.prank(address(this));
-        IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(multiVault), maxAmounts[0]);
+        wrapped.approve(address(multiVault), maxAmounts[0]);
 
         address[] memory assetsForDeposit = multiVault.assetsForDeposit();
+        uint balanceBefore = wrapped.balanceOf(address(this));
 
-        console.log("balance", IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)));
-        console.log("assetsForDeposit", assetsForDeposit[0], SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        vm.recordLogs();
 
         if (shouldRevert) {
             vm.expectRevert();
         }
         vm.prank(address(this));
         multiVault.depositAssets(assetsForDeposit, maxAmounts, 0, address(this));
+        amountConsumedEmitted = _getEmittedConsumedAmount();
+        vm.roll(block.number + 6);
+
+        deposited = balanceBefore - wrapped.balanceOf(address(this));
+
+        assertEq(deposited, amountConsumedEmitted, "amountConsumedEmitted should be equal to deposited amount");
+        for (uint i = 0; i < multiVault.vaults().length; ++i) {
+            assertEq(wrapped.allowance(address(multiVault), multiVault.vaults()[i]), 0, "metaUSD allowance 0 should be reset after deposit");
+        }
+
+        return (deposited, amountConsumedEmitted);
     }
 
     function _getMetaUsdOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
@@ -229,31 +437,69 @@ contract MetaVaultMaxDepositSonicTest is Test {
         }
     }
 
-    function _borrowAlmostAllCash(ISilo collateralVault, ISilo debtVault) internal {
-        console.log("!!!!!!!!!!!!_borrowAlmostAllCash");
+    function _borrowAlmostAllCash(ISilo collateralVault, ISilo debtVault, uint borrowPercent100_00) internal {
         address user = address(214385);
         uint maxLiquidityToBorrow = debtVault.getLiquidity();
         uint collateralApproxAmount = 10 * maxLiquidityToBorrow * 1e12;
-        _getMetaUsdOnBalance(user, collateralApproxAmount, true);
-        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.1");
+
+        // use deal to avoid increasing liquidity in the silo pool
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, user, collateralApproxAmount);
+        // _getMetaUsdOnBalance(user, collateralApproxAmount, true);
 
         uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(user);
 
         vm.prank(user);
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(collateralVault), balance);
-        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.2");
 
         vm.prank(user);
         collateralVault.deposit(balance, user);
-        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.3");
 
         vm.prank(user);
         debtVault.borrow(
-            maxLiquidityToBorrow * 99 / 100, // borrow 99% of available liquidity
+            maxLiquidityToBorrow * borrowPercent100_00 / 100_00, // borrow i.e. 99% of available liquidity
             user,
             user
         );
-        console.log("!!!!!!!!!!!!_borrowAlmostAllCash.4");
+
+        uint maxLiquidityToBorrow2 = debtVault.getLiquidity();
+        assertLt(maxLiquidityToBorrow2, maxLiquidityToBorrow, "Liquidity should be reduced after borrow");
+    }
+
+    function _setUpFlashLoanVault(uint additionalAmount) internal {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+        address vault0 = multiVault.vaults()[0];
+        address vault1 = multiVault.vaults()[1];
+
+        // Set up flash loan vault for the strategy
+        _setFlashLoanVault(
+            ILeverageLendingStrategy(address(IVault(vault0).strategy())),
+            SonicConstantsLib.BEETS_VAULT_V3,
+            SonicConstantsLib.BEETS_VAULT_V3,
+            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+        );
+
+        _setFlashLoanVault(
+            ILeverageLendingStrategy(address(IVault(vault1).strategy())),
+            SonicConstantsLib.BEETS_VAULT_V3,
+            SonicConstantsLib.BEETS_VAULT_V3,
+            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+        );
+
+        if (additionalAmount != 0) {
+            // Add additional amount to the flash loan vault to avoid insufficient balance
+            deal(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
+            deal(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
+        }
+    }
+
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+        params[10] = kind;
+        addresses[0] = vaultC;
+        addresses[1] = vaultB;
+
+        vm.prank(multisig);
+        strategy.setUniversalParams(params, addresses);
     }
 
     //endregion -------------------------------------------- Internal functions
@@ -428,14 +674,14 @@ contract MetaVaultMaxDepositSonicTest is Test {
     }
 
     function _upgradeSwapperAndAdapter() internal {
-        address[] memory proxies = new address[](2);
+        address[] memory proxies = new address[](1);
         proxies[0] = address(IPlatform(PLATFORM).swapper());
-        bytes32 hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
-        proxies[1] = address(IPlatform(PLATFORM).ammAdapter(hash).proxy);
+//        bytes32 hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
+//        proxies[1] = address(IPlatform(PLATFORM).ammAdapter(hash).proxy);
 
-        address[] memory implementations = new address[](2);
+        address[] memory implementations = new address[](1);
         implementations[0] = address(new Swapper());
-        implementations[1] = address(new UniswapV3Adapter());
+//        implementations[1] = address(new UniswapV3Adapter());
 
         vm.prank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.03.1-alpha", proxies, implementations);
@@ -444,6 +690,10 @@ contract MetaVaultMaxDepositSonicTest is Test {
 
         vm.prank(multisig);
         IPlatform(PLATFORM).upgrade();
+    }
+
+    function _getDiffPercent18(uint x, uint y) internal pure returns (uint) {
+        return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
     //endregion -------------------------------------------- Helper functions
 }

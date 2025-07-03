@@ -67,7 +67,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address targetVault;
         uint totalSupplyBefore;
         uint totalSharesBefore;
+        uint depositedTvl;
         uint[] amountsConsumed;
+    }
+
+    struct DepositToMultiVaultLocals {
+        uint targetVaultSharesBefore;
+        uint targetVaultPrice;
+        uint targetVaultSharesAfter;
+        uint[] balanceBefore;
+        uint[] amountToDeposit;
+        uint[] amounts;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -337,18 +347,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, v.targetVault);
 
-        uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
-        v.amountsConsumed = (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) // todo create isMultiVault function
+        (v.amountsConsumed, v.depositedTvl) = (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) // todo create isMultiVault function
             ? _depositToMultiVault(v.targetVault, $.vaults, assets_, amountsMax)
-            : _depositToTargetVaultWithRefund(v.targetVault, assets_, amountsMax);
+            : _depositToTargetVault(v.targetVault, assets_, amountsMax);
 
         {
-            (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
-            uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
-            uint depositedTvl = Math.mulDiv(
-                targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
-            );
-            uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
+            uint balanceOut = _usdAmountToMetaVaultBalance(v.depositedTvl);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {
                 sharesToCreate = balanceOut;
@@ -699,20 +703,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IStabilityVault
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        console.log("******************* MetaVault.maxDeposit", address(this), $.vaults.length);
         if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
             // MultiVault supports depositing to all sub-vaults
             // so we need to calculate summary max deposit amounts for all sub-vaults
             // but result cannot exceed type(uint).max
             for (uint i; i < $.vaults.length; ++i) {
-                console.log("MetaVault.maxDeposit.vault", i, $.vaults[i]);
                 address _targetVault = $.vaults[i];
 
                 if (i == 0) { // lazy initialization of maxAmounts
                     maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
                 }
                 uint[] memory _amounts = IStabilityVault(_targetVault).maxDeposit(account);
-                console.log("MetaVault.maxDeposit.amount", _amounts[0]);
                 for (uint j; j < _amounts.length; ++j) {
                     if (maxAmounts[j] != type(uint).max) {
                         maxAmounts[j] = _amounts[j] == type(uint).max
@@ -720,10 +721,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                             : maxAmounts[j] + _amounts[j];
                     }
                 }
-                console.log("MetaVault.maxDeposit.maxAmounts", maxAmounts[0]);
             }
 
-            console.log("MetaVault.maxDeposit.maxAmounts.final", address(this), maxAmounts[0]);
             return maxAmounts;
         } else {
             return IStabilityVault(vaultForDeposit()).maxDeposit(account);
@@ -771,14 +770,16 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
     }
 
-    function _depositToTargetVaultWithRefund(
+    function _depositToTargetVault(
         address targetVault_,
         address[] memory assets_,
         uint[] memory amountsMax
-    ) internal returns (uint[] memory amountsConsumed) {
+    ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
         uint len = assets_.length;
         uint[] memory balanceBefore = new uint[](len);
         amountsConsumed = new uint[](len);
+
+        uint targetVaultSharesBefore = IERC20(targetVault_).balanceOf(address(this));
 
         for (uint i; i < len; ++i) {
             IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
@@ -798,6 +799,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 IERC20(assets_[i]).forceApprove(targetVault_, 0);
             }
         }
+
+        (uint targetVaultPrice,) = IStabilityVault(targetVault_).price();
+        uint targetVaultSharesAfter = IERC20(targetVault_).balanceOf(address(this));
+
+        depositedTvl = Math.mulDiv(
+            targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
+        );
     }
 
     function _depositToMultiVault(
@@ -805,8 +813,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory vaults_,
         address[] memory assets_,
         uint[] memory amountsMax
-    ) internal returns (uint[] memory amountsConsumed) {
-        console.log("##################### _depositToMultiVault", vaults_[0], vaults_[1]);
+    ) internal returns (
+        uint[] memory amountsConsumed,
+        uint depositedTvl
+    ) {
+        DepositToMultiVaultLocals memory v;
         // find target vault and move it to the first position
         // assume that the order of the other vaults does not matter
         _setTargetVaultFirst(targetVault_, vaults_);
@@ -815,47 +826,59 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         amountsConsumed = new uint[](len);
 
         // ------------------- receive initial amounts from the user
-        uint[] memory balanceBefore = new uint[](len);
-        uint[] memory amountToDeposit = new uint[](len);
+        v.balanceBefore = new uint[](len);
+        v.amountToDeposit = new uint[](len);
         for (uint i; i < len; ++i) {
             IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
-            balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
-            amountToDeposit[i] = amountsMax[i];
+            v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            v.amountToDeposit[i] = amountsMax[i];
         }
 
         // ------------------- deposit amounts to sub-vaults
-        uint[] memory amounts = new uint[](len);
+        v.amounts = new uint[](len);
         for (uint n; n < vaults_.length; ++n) {
-            console.log("##################### vault", vaults_[n]);
+            v.targetVaultSharesBefore = IERC20(vaults_[n]).balanceOf(address(this));
+
             uint[] memory _maxDeposit = IStabilityVault(vaults_[n]).maxDeposit(address(this));
             for (uint i; i < len; ++i) {
-                amounts[i] = Math.min(amountToDeposit[i], _maxDeposit[i]);
-                IERC20(assets_[i]).forceApprove(vaults_[n], amounts[i]);
+                v.amounts[i] = Math.min(v.amountToDeposit[i], _maxDeposit[i]);
+                IERC20(assets_[i]).forceApprove(vaults_[n], v.amounts[i]);
             }
 
-            IStabilityVault(vaults_[n]).depositAssets(assets_, amounts, 0, address(this));
+            IStabilityVault(vaults_[n]).depositAssets(assets_, v.amounts, 0, address(this));
 
             bool needToDepositMore;
             for (uint i; i < len; ++i) {
+                // maxDeposit should be successfully deposited
+                // so, we don't need to clear allowance here
+                // we do it safety for edge cases only
                 if (IERC20(assets_[i]).allowance(address(this), vaults_[n]) != 0) {
                     IERC20(assets_[i]).forceApprove(vaults_[n], 0);
                 }
 
-                amountsConsumed[i] = balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
-                amountToDeposit[i] = amountsMax[i] - amountsConsumed[i];
-                needToDepositMore = needToDepositMore || (amountToDeposit[i] != 0);
+                amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+                v.amountToDeposit[i] = amountsMax[i] - amountsConsumed[i];
+                needToDepositMore = needToDepositMore || (v.amountToDeposit[i] != 0);
             }
+
+            (v.targetVaultPrice,) = IStabilityVault(vaults_[n]).price();
+            v.targetVaultSharesAfter = IERC20(vaults_[n]).balanceOf(address(this));
+
+            depositedTvl += Math.mulDiv(
+                v.targetVaultSharesAfter - v.targetVaultSharesBefore, v.targetVaultPrice, 1e18, Math.Rounding.Floor
+            );
 
             if (!needToDepositMore) break;
         }
 
         // ------------------- refund remaining amounts
         for (uint i; i < len; ++i) {
-            if (amountToDeposit[i] != 0) {
-                console.log("REFUND", amountToDeposit[i]);
-                IERC20(assets_[i]).safeTransfer(msg.sender, amountToDeposit[i]);
+            if (v.amountToDeposit[i] != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, v.amountToDeposit[i]);
             }
         }
+
+        return (amountsConsumed, depositedTvl);
     }
 
     /// @notice Find target vault in {vaults} and move it on the first position.
