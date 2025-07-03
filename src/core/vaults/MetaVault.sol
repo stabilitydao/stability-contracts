@@ -160,7 +160,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         (uint tvlBefore,) = tvl();
 
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (_isMultiVault($)) {
             address[] memory _assets = $.assets.values();
             for (uint i; i < len; ++i) {
                 if (withdrawShares[i] != 0) {
@@ -207,7 +207,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         address[] memory vaultAssets = IStabilityVault(vault).assets();
 
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (_isMultiVault($)) {
             // check asset
             require(vaultAssets.length == 1, IncorrectVault());
             require(vaultAssets[0] == $.assets.values()[0], IncorrectVault());
@@ -347,7 +347,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, v.targetVault);
 
-        (v.amountsConsumed, v.depositedTvl) = (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) // todo create isMultiVault function
+        (v.amountsConsumed, v.depositedTvl) = (_isMultiVault($)) // todo create isMultiVault function
             ? _depositToMultiVault(v.targetVault, $.vaults, assets_, amountsMax)
             : _depositToTargetVault(v.targetVault, assets_, amountsMax);
 
@@ -677,7 +677,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint userBalance = balanceOf(account);
 
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (_isMultiVault($)) {
             for (uint i; i < $.vaults.length; ++i) {
                 address _targetVault = $.vaults[i];
                 (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
@@ -703,7 +703,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IStabilityVault
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (_isMultiVault($)) {
             // MultiVault supports depositing to all sub-vaults
             // so we need to calculate summary max deposit amounts for all sub-vaults
             // but result cannot exceed type(uint).max
@@ -929,7 +929,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, _targetVault);
 
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (_isMultiVault($)) {
             // withdraw the amount from all sub-vaults starting from the target vault
             amountsOut = _withdrawFromMultiVault($.vaults, assets_, amount, receiver, _targetVault);
 
@@ -1149,6 +1149,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint vaultTotalSupply = IERC20(vault).totalSupply();
         return
             vaultTotalSupply == 0 ? 0 : Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
+    }
+
+    function _isMultiVault(MetaVaultStorage storage $) internal view returns (bool) {
+        return CommonLib.eq($._type, VaultTypeLib.MULTIVAULT);
     }
 
     //endregion --------------------------------- Internal logic

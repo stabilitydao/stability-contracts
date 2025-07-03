@@ -155,10 +155,10 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
     }
 
-    //region -------------------------------------------- Test Wrapped
+    //region -------------------------------------------- Test Wrapped Multi Vault
     // todo
 
-    //endregion -------------------------------------------- Test Wrapped
+    //endregion -------------------------------------------- Test Wrapped Multi Vault
 
     //region -------------------------------------------- Test MetaVault
     function testMetaVaultMaxDeposit() public view {
