@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
-import "../base/chains/SonicSetup.sol";
-import "../../src/interfaces/ICAmmAdapter.sol";
-import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {ICAmmAdapter, IAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {AlgebraV4Adapter, AmmAdapterIdLib, IERC20} from "../../src/adapters/AlgebraV4Adapter.sol";
 
 contract AlgebraV4AdapterTest is SonicSetup {
     bytes32 public _hash;
     ICAmmAdapter public adapter;
 
     constructor() {
-        //vm.rollFork(2702000); // Jan-06-2025 11:41:18 AM +UTC
+        vm.rollFork(32000000); // Jun-05-2025 09:41:47 AM +UTC
         _init();
         _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
         adapter = ICAmmAdapter(platform.ammAdapter(_hash).proxy);

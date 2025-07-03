@@ -311,7 +311,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](54);
+        _farms = new IFactory.Farm[](55);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS);
@@ -370,18 +370,21 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Apostro); // farm 49
         _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_S_Re7); // farm 50
         _farms[i++] = SonicFarmMakerLib._makeSiloManagedFarm(SonicConstantsLib.SILO_MANAGED_VAULT_scUSD_Varlamore); // farm 51
+
+        _farms[i++] = SonicFarmMakerLib._makeSiloFarm(SonicConstantsLib.SILO_GAUGE_wS_054, SonicConstantsLib.SILO_VAULT_54_S, SonicConstantsLib.TOKEN_wOS); // farm 52
         _farms[i++] = SonicFarmMakerLib._makeSiloALMFarm(
             SonicConstantsLib.SILO_VAULT_121_WMETAUSD,
             SonicConstantsLib.SILO_VAULT_121_USDC,
             SonicConstantsLib.BEETS_VAULT, // todo
             SonicConstantsLib.SILO_LENS // todo
-        ); // farm 52
+        ); // farm 53
         _farms[i++] = SonicFarmMakerLib._makeSiloALMFarm(
             SonicConstantsLib.SILO_VAULT_125_WMETAUSD,
             SonicConstantsLib.SILO_VAULT_125_scUSD,
             SonicConstantsLib.BEETS_VAULT, // todo
-            SonicConstantsLib.SILO_LENS // todo
-        ); // farm 53
+        SonicConstantsLib.SILO_LENS // todo
+        ); // farm 54
+
     }
 
     function _makePoolData(

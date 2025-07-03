@@ -37,7 +37,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALMFSonic() public universalTest {
-        _addStrategy(52);
+        _addStrategy(53);
     }
 
     function _addStrategy(uint farmId) internal {

@@ -15,23 +15,37 @@ library SonicConstantsLib {
     address public constant WRAPPED_METAVAULT_metaUSDC = 0xEEEEEEE6d95E55A468D32FeB5d6648754d10A967;
     address public constant METAVAULT_metascUSD = 0x33333333C480194b5B651987b7D00B20dDCbd287;
     address public constant WRAPPED_METAVAULT_metascUSD = 0xccccCCcca9FC69a2b32408730011EdB3205A93A1;
+    address public constant METAVAULT_metaS = 0x4444444420D9De54d69b3997b7D6A31d2BF63F32;
+    address public constant WRAPPED_METAVAULT_metaS = 0xbbbbbbBBbd0aE69510cE374A86749f8276647B19;
+    address public constant METAVAULT_metawS = 0x555555554776B14B30597d1032E48f9e16db22A4;
+    address public constant WRAPPED_METAVAULT_metawS = 0xffFFFFFf2fcBeFAe12F1372C56edC769BD411685;
 
-    // Vaults
+    // Vaults used in MetaVaults
+    // metaUSDC
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
     address public constant VAULT_C_USDC_S_8 = 0x96a8055090E87bfE18BdF3794E9D676F196EFd80;
     address public constant VAULT_C_USDC_S_27 = 0x2ebB3c7808B86f94dF9731AE830aB6ea8cB431d8;
     address public constant VAULT_C_USDC_S_34 = 0xd248c4b6Ec709FEeD32851A9F883AfeaC294aD30;
     address public constant VAULT_C_USDC_S_36 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
     address public constant VAULT_C_USDC_S_49 = 0xc33568559c8338581BB6914d6F2d024a063886E8;
-    address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
-    address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
-    address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
-    address public constant VAULT_C_USDC_Stability_Main = 0x402ae122CaEce6ce57203e3Bd4AF7d1e9Ac446cb;
     address public constant VAULT_C_USDC_Stability_Stream = 0x0c8cE5afC38C94e163F0dDEB2Da65DF4904734f3;
     address public constant VAULT_C_USDC_Stability_StableJack = 0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336;
+    address public constant VAULT_C_USDC_SiMF_Valmore = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
+    address public constant VAULT_C_USDC_S_112 = 0x8913582701B7c80E883F9E352c1653a16769B173;
+    address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
+
+    // metascUSD
+    address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
     address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
     address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
-    address public constant VAULT_C_USDC_SiMF = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
+    // metawS
+    address public constant VAULT_C_wS_SiMF_Valmore = 0xA70F074EE09DF3C0AB7e9eb0c058941fF65B8Efe;
+    address public constant VAULT_C_wS_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
+
+    // used in tests
+    address public constant VAULT_C_USDC_scUSD_ISF_scUSD = 0x8C64D2a1960C7B4b22Dbb367D2D212A21E75b942;
+    address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
+    //address public constant VAULT_C_USDC_Stability_Main = 0x402ae122CaEce6ce57203e3Bd4AF7d1e9Ac446cb;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -90,7 +104,6 @@ library SonicConstantsLib {
     address public constant TOKEN_PT_wOS_29MAY2025 = 0x46eb02b9F47634c4fab3110CC7ADc1C6311DfAC1;
     address public constant TOKEN_PT_Silo_46_scUSD_14AUG2025 = 0x9731842eD581816913933c01De142C7EE412A8c8;
     address public constant TOKEN_PT_Silo_20_USDC_17JUL2025 = 0x77d8F09053c28FaF1E00Df6511b23125d438616f;
-
     address public constant TOKEN_GEMSx = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
@@ -98,7 +111,6 @@ library SonicConstantsLib {
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
     address public constant TOKEN_xSILO = 0x4451765739b2D7BCe5f8BC95Beaf966c45E1Dcc9;
     address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
-
 
     // AMMs
     address public constant POOL_BEETS_wS_stS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -320,6 +332,7 @@ library SonicConstantsLib {
     address public constant SILO_LENS = 0xE05966aee69CeCD677a30f469812Ced650cE3b5E;
     address public constant SILO_GAUGE_wS_008 = 0x0dd368Cd6D8869F2b21BA3Cb4fd7bA107a2e3752;
     address public constant SILO_GAUGE_wS_020 = 0x2D3d269334485d2D876df7363e1A50b13220a7D8;
+    address public constant SILO_GAUGE_wS_054 = 0xa9a145BBE1216C3A9b4B442Ab40fD97F4Ec2136D;
     address public constant SILO_VAULT_3_stS = 0x396922EF30Cf012973343f7174db850c7D265278;
     address public constant SILO_VAULT_3_wS = 0x47d8490Be37ADC7Af053322d6d779153689E13C1;
     address public constant SILO_VAULT_23_wstkscUSD = 0x4E09FF794D255a123b00efa30162667A8054a845;
@@ -343,6 +356,7 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_49_USDC = 0xa18a8f100f2c976044f2f84fae1eE9f807Ae7893;
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
+    address public constant SILO_VAULT_112_USDC = 0xA1627a0E1d0ebcA9326D2219B84Df0c600bed4b1;
 
     // Silo managed vaults
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
@@ -357,6 +371,7 @@ library SonicConstantsLib {
     address public constant SILO_MANAGED_VAULT_stS_Re7 = 0xf136C06d23492Ff143afD9f5DC4E886224bA7050;
     address public constant SILO_MANAGED_VAULT_S_Re7 = 0x011777671E371E38C3d198Ea315A4885F33ecA8f;
     address public constant SILO_MANAGED_VAULT_scUSD_Varlamore = 0xb6A23cB29e512Df41876B28D7A848BD831f9c5Ba;
+    address public constant SILO_MANAGED_VAULT_USDC_Stability = 0x1320382143D98a80a0B247148A42dd2aa33d9C2D;
 
     address public constant POOL_SHADOW_CL_USDC_SILO = 0xBfaEDfb41b52F5965f4E1192Dd54319a878E115D;
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
