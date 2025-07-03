@@ -62,7 +62,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// Can be changed by whitelisted strategies only.
     /// Store block number of the transaction that disabled last-block-defense.
     /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
-    uint transient internal _LastBlockDefenseDisabledTx;
+    uint internal transient _LastBlockDefenseDisabledTx;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
