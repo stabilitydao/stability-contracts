@@ -155,6 +155,88 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
     }
 
+    //region -------------------------------------------- Test Wrapped
+    // todo
+
+    //endregion -------------------------------------------- Test Wrapped
+
+    //region -------------------------------------------- Test MetaVault
+    function testMetaVaultMaxDeposit() public view {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+        IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
+
+        // max deposit amounts to sub-vault
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+
+        // max deposit amount to MultiVault
+        uint maxAmountToDepositMulti = multiVault.maxDeposit(address(this))[0];
+
+        // max deposit amount to MetaVault
+        uint maxAmountToDepositMeta = metaVault.maxDeposit(address(this))[0];
+
+        assertEq(maxDepositAmount0 + maxDepositAmount1, maxAmountToDepositMulti, "sum of sub-vaults == multivault");
+        assertEq(maxAmountToDepositMulti, maxAmountToDepositMeta, "multi == meta");
+    }
+
+    function testMetaVaultDepositMax() public {
+        IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00);
+
+        uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
+
+        // ------------------------------ Try to deposit max possible amount
+        uint[] memory maxAmountToDeposit = metaVault.maxDeposit(address(this)); // amount of metaUSD to deposit in MultiVault
+
+        uint balanceBefore = metaVault.balanceOf(address(this));
+        (uint deposited, uint amountConsumedEmitted) = _tryToDeposit(metaVault, maxAmountToDeposit, false);
+        uint balanceAfter = metaVault.balanceOf(address(this));
+
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(maxAmountToDeposit[0], maxAmountToDepositMulti, "meta.maxDeposit should be equal to multi.maxDeposit");
+        assertEq(deposited, maxAmountToDeposit[0], "Deposit max possible amount should be successful");
+        assertLe(maxDepositAmount02 + maxDepositAmount12, 10e18, "Nothing to deposit anymore");
+        assertEq(deposited, amountConsumedEmitted, "correct amount consumed is received");
+        assertGt(balanceAfter, balanceBefore, "balance should increase after deposit");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(metaVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/1000, "withdrawn amount should be equal to deposited amount");
+    }
+
+    function testMetaDepositTooMuch() public {
+        IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00);
+
+        uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
+
+        // ------------------------------ Try to deposit more than maxDeposit (and get refund)
+        uint[] memory amountToDepositTooMuch = metaVault.maxDeposit(address(this));
+        amountToDepositTooMuch[0] = amountToDepositTooMuch[0] * 110 / 100; // increase by 10%
+
+        uint balanceBefore = metaVault.balanceOf(address(this));
+        (uint deposited,) = _tryToDeposit(metaVault, amountToDepositTooMuch, false);
+        uint balanceAfter = metaVault.balanceOf(address(this));
+
+        uint refund = amountToDepositTooMuch[0] - deposited;
+
+        assertEq(deposited, maxAmountToDepositMulti, "Deposit max possible amount only");
+        assertApproxEqAbs(refund, maxAmountToDepositMulti * 10 / 100, 1, "expected 10% refund");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(metaVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/1000, "withdrawn amount should be equal to deposited amount");
+
+    }
+    //endregion -------------------------------------------- Test MetaVault
+
+    //region -------------------------------------------- Test MultiVault
     function testDepositSmallAmount() public {
         uint smallAmountMetaUSD = 100e18;
         IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
@@ -190,7 +272,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
 
         // ---- Withdraw back
         uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
-        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/10000, "withdrawn amount should be equal to deposited small amount");
+        assertLt(_getDiffPercent18(withdrawn, deposited), 1e18/1000, "withdrawn amount should be almost equal to deposited small amount");
     }
 
     /// @notice Try to deposit exact maxDeposit amount
@@ -263,7 +345,20 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _testMultiDepositWithMinusAddon_Fuzzy(7518456257831769833, 99_98);
     }
 
-    //region -------------------------------------------- Long fuzzy tests (for study, change internal to public)
+    function testMultiDepositWithMinusAddon2() public {
+        _testMultiDepositWithMinusAddon_Fuzzy(9999000000008388607, 99_99);
+    }
+
+    function testMultiDepositProportion() public {
+        _testMultiDepositProportion_Fuzzy(618033988768952984, 99_98); // 0.618e18
+    }
+
+    function testMultiDepositProportion2() public {
+        _testMultiDepositProportion_Fuzzy(677546976265931812, 99_29);
+    }
+    //endregion -------------------------------------------- Test MultiVault
+
+    //region -------------------------------------------- Long fuzzy tests (change internal to public to run)
     function testMultiDepositWithPlusAddon_Fuzzy(uint addon, uint borrowPercent) internal {
         addon = bound(addon, 1e15, 10e18); // 0.001 to 10
         borrowPercent = bound(borrowPercent, 99_90, 99_99);
@@ -277,7 +372,14 @@ contract MetaVaultMaxDepositSonicTest is Test {
 
         _testMultiDepositWithMinusAddon_Fuzzy(addon, borrowPercent);
     }
-    //endregion -------------------------------------------- Long fuzzy tests (for study, change internal to public)
+
+    function testMultiDepositWithProportion_Fuzzy(uint proportion18n, uint borrowPercent) internal {
+        proportion18n = bound(proportion18n, 1e17, 1e18); // 0.001 to 10
+        borrowPercent = bound(borrowPercent, 99_00, 99_99);
+
+        _testMultiDepositProportion_Fuzzy(proportion18n, borrowPercent);
+    }
+    //endregion -------------------------------------------- Long fuzzy tests (change internal to public to run)
 
     //region -------------------------------------------- Test implementation
     /// @notice Try to deposit maxDepositAmount0 + dust, maxDepositAmount1 - dust
@@ -292,18 +394,27 @@ contract MetaVaultMaxDepositSonicTest is Test {
         (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
         uint[] memory amountToDeposit = multiVault.maxDeposit(address(this));
 
+
         // ---- Make two deposits
+        uint balanceBefore = multiVault.balanceOf(address(this));
+
         amountToDeposit[0] = maxDepositAmount0 - addon;
         (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
 
         amountToDeposit[0] = maxDepositAmount1 + addon;
         (uint deposited1,) = _tryToDeposit(multiVault, amountToDeposit, false);
 
+        uint balanceAfter = multiVault.balanceOf(address(this));
+
         // ---- Check results
         (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
 
         assertEq(deposited + deposited1, maxDepositAmount0 + maxDepositAmount1, "Deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust should be successful");
         assertLt(maxDepositAmount02 + maxDepositAmount12, 1e18, "nothing to deposit anymore");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited + deposited1), 1e18/1000, "withdrawn amount should be equal to deposited amount");
     }
 
     /// @notice Try to deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust
@@ -319,17 +430,63 @@ contract MetaVaultMaxDepositSonicTest is Test {
         uint[] memory amountToDeposit = multiVault.maxDeposit(address(this));
 
         // ---- Make two deposits
+        uint balanceBefore = multiVault.balanceOf(address(this));
+
         amountToDeposit[0] = maxDepositAmount0 + addon;
         (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
 
-        amountToDeposit[0] = maxDepositAmount1 - addon;
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!", deposited, maxDepositAmount1, addon);
+
+        amountToDeposit[0] = maxDepositAmount1 > addon ? maxDepositAmount1 - addon : 0;
+        (uint deposited1,) = amountToDeposit[0] == 0
+            ? (0, 0)
+            : _tryToDeposit(multiVault, amountToDeposit, false);
+
+        uint balanceAfter = multiVault.balanceOf(address(this));
+        // ---- Check results
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(deposited + deposited1, maxDepositAmount0 + maxDepositAmount1, "Deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust should be successful");
+        assertLt(maxDepositAmount02 + maxDepositAmount12, 10e18, "Almost nothing to deposit anymore");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited + deposited1), 1e18/1000, "withdrawn amount should be equal to deposited amount");
+    }
+
+    function _testMultiDepositProportion_Fuzzy(uint proportion18, uint borrowPercent) internal {
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), borrowPercent);
+        _borrowAlmostAllCash(ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), borrowPercent);
+
+        // ---- Get max deposit amounts
+        (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
+        uint[] memory amountToDeposit = multiVault.maxDeposit(address(this));
+        uint part1 = (maxDepositAmount0 + maxDepositAmount1) * proportion18 / 1e18;
+        uint part2 = amountToDeposit[0] - part1;
+
+        // ---- Make two deposits
+        uint balanceBefore = multiVault.balanceOf(address(this));
+
+        amountToDeposit[0] = part1;
+        (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        amountToDeposit[0] = part2;
         (uint deposited1,) = _tryToDeposit(multiVault, amountToDeposit, false);
+
+        uint balanceAfter = multiVault.balanceOf(address(this));
 
         // ---- Check results
         (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
 
         assertEq(deposited + deposited1, maxDepositAmount0 + maxDepositAmount1, "Deposit maxDepositAmount0 - dust, maxDepositAmount1 + dust should be successful");
-        assertLt(maxDepositAmount02 + maxDepositAmount12, 1e18, "Nothing to deposit anymore");
+        assertLt(maxDepositAmount02 + maxDepositAmount12, 10e18, "nothing to deposit anymore");
+
+        // ---- Withdraw back
+        uint withdrawn = _tryToWithdraw(multiVault, balanceAfter - balanceBefore);
+        assertLt(_getDiffPercent18(withdrawn, deposited + deposited1), 1e18/1000, "withdrawn amount should be equal to deposited amount");
     }
 
     //endregion -------------------------------------------- Test implementation

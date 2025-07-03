@@ -56,8 +56,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         Transient                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    /// @notice TODO: Disable last block defense in the current tx
-    bool transient internal _LastBlockDefenseDisabled;
+
+    /// @notice Allow to temporally disable last-block-defence in the current tx
+    /// Can be changed by whitelisted strategies only.
+    /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
+    bool transient internal _LastBlockDefenseDisabledTx;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -314,11 +317,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
 
-        if (isDisabled) {
-            $.lastBlockDefenseDisabledBlockNumber = block.number;
-        } else {
-            delete $.lastBlockDefenseDisabledBlockNumber;
-        }
+        _LastBlockDefenseDisabledTx = isDisabled;
     }
     //endregion --------------------------------- Restricted action
 
@@ -334,9 +333,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minSharesOut,
         address receiver
     ) external nonReentrant {
+        console.log("depositAssets");
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, receiver);
+        console.log("depositAssets.2");
 
         DepositAssetsVars memory v;
         v.targetVault = vaultForDeposit();
@@ -763,8 +764,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (
             // defence is not disabled by governance
             // defence is not disabled by whitelisted strategy in the current block
-            !$.lastBlockDefenseDisabled && $.lastBlockDefenseDisabledBlockNumber != block.number
-                && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
+            !$.lastBlockDefenseDisabled
+            && !_LastBlockDefenseDisabledTx
+            && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
         ) {
             revert WaitAFewBlocks();
         }

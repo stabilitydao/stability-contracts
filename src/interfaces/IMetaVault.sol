@@ -41,11 +41,8 @@ interface IMetaVault is IStabilityVault {
         uint storedTime;
         /// @inheritdoc IStabilityVault
         bool lastBlockDefenseDisabled;
-        /// @dev Whitelist for addresses that are able to temporarily disable last-block-defense
+        /// @dev Whitelist for addresses (strategies) that are able to temporarily disable last-block-defense
         mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
-        /// @notice Block in which last-block-defense is temporarily disabled by whitelisted address
-        /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
-        uint lastBlockDefenseDisabledBlockNumber;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

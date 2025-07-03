@@ -132,14 +132,59 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         _tryDepositWithdrawTransfer(user, true);
+    }
 
-        // ------------------------- Disable last-block-defence, change block - defence is restored back
+    function testWhitelistAutoEnableLastBlockDefence() public {
+        address user = address(1);
+        address strategy = address(2);
+
+        vm.prank(multisig);
+        metaVault.changeWhitelist(strategy, true);
+
+        // ------------------------- Enable defence in the MetaVaults, disable defence in all CVaults
+        vm.prank(multisig);
+        metaVault.setLastBlockDefenseDisabled(false);
+        address[] memory vaults = metaVault.vaults();
+        for (uint i = 0; i < vaults.length; ++i) {
+            console.log(vaults[i]);
+            vm.prank(multisig);
+            IStabilityVault(vaults[i]).setLastBlockDefenseDisabled(true);
+        }
+
+        // ------------------------- User deposits an amount
+        address[] memory assets = metaVault.assetsForDeposit();
+        uint[] memory depositAmounts = _getAmountsForDeposit(500, assets);
+        _dealAndApprove(address(1), address(metaVault), assets, depositAmounts);
+
+        vm.prank(user);
+        IStabilityVault(metaVault).depositAssets(assets, depositAmounts, 0, user);
+
+        // ------------------------- Add user to whitelist and try to deposit (successfully)
         vm.prank(strategy);
         metaVault.setLastBlockDefenseDisabledTx(true);
 
-        vm.rollFork(block.number + 1);
+        _tryDepositWithdrawTransfer(user, false);
 
-        _tryDepositWithdrawTransfer(user, true);
+        // ------------------------ Try to make new deposit
+        assets = metaVault.assetsForDeposit();
+        depositAmounts = _getAmountsForDeposit(500, assets);
+        _dealAndApprove(address(1), address(metaVault), assets, depositAmounts);
+
+        vm.roll(block.number + 6);
+
+        // ------------------------ We can make deposit in the SAME tx
+        uint snapshot = vm.snapshotState();
+        vm.prank(user);
+        IStabilityVault(metaVault).depositAssets(assets, depositAmounts, 0, user);
+        vm.revertToState(snapshot);
+
+        // ------------------------ But we CANNOT make deposit in the different tx
+
+        // external call emulates "next tx"
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!! todo");
+        vm.prank(user, user);
+        (bool ok, ) = address(metaVault).call(abi.encodeWithSignature("function depositAssets(address[], uint[], uint, address)", assets, depositAmounts, 0, user));
+        assertEq(ok, false);
     }
 
     //region ------------------------- Internal logic
