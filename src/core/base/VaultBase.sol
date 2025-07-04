@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.7.0: Add maxDeposit - #330; refactoring to reduce size.
 ///   2.6.0: Add maxWithdraw - #326
 ///   2.5.0: Use strategy.fuseMode to detect fuse mode - #305
 ///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
@@ -50,7 +51,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.5.0";
+    string public constant VERSION_VAULT_BASE = "2.7.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -74,19 +75,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint _totalSupply;
         uint totalValue;
         uint len;
-        address[] assets;
-        IStrategy strategy;
-        address underlying;
-        uint[] amountsConsumed;
         uint value;
         uint mintAmount;
+        address underlying;
+        IStrategy strategy;
+        address[] assets;
+        uint[] amountsConsumed;
     }
 
     /// @notice Data structure containing local variables for function getApr() to avoid stack too deep.
     struct GetAprVars {
+        address underlying;
         address[] strategyAssets;
         uint[] proportions;
-        address underlying;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -363,7 +364,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function price() external view returns (uint price_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        IPriceReader priceReader = _getPriceReader();
         uint _tvl;
         //slither-disable-next-line unused-return
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
@@ -377,7 +378,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function tvl() public view returns (uint tvl_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        IPriceReader priceReader = _getPriceReader();
         //slither-disable-next-line unused-return
         (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
@@ -510,6 +511,22 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             }
         }
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxDeposit(address /* account */ ) external view returns (uint[] memory maxAmounts) {
+        uint[] memory amounts = strategy().maxDepositAssets();
+        if (amounts.length == 1) {
+            return amounts;
+        }
+
+        // either the strategy has no limit on deposits (length == 0)
+        // or the strategy has multiple assets (length > 1, use stub implementation for now)
+        uint len = strategy().assets().length;
+        maxAmounts = new uint[](len);
+        for (uint i = 0; i < len; ++i) {
+            maxAmounts[i] = type(uint).max;
+        }
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
@@ -579,7 +596,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         } else {
             // calc mintAmount for USD amount of value
             // its setting sharePrice to 1e18
-            IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            IPriceReader priceReader = _getPriceReader();
             //slither-disable-next-line unused-return
             (mintAmount,,,) = priceReader.getAssetsPrice(assets_, amountsConsumed);
 
@@ -701,6 +718,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
                 revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
             }
         }
+    }
+
+    function _getPriceReader() internal view returns (IPriceReader) {
+        return IPriceReader(IPlatform(platform()).priceReader());
     }
     //endregion --------------------------------- Internal logic
 }

@@ -19,10 +19,11 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @notice SiloStrategy is a strategy for lending assets on Silo V2.
 /// Changelog:
-///     1.2.0: Add maxWithdrawAsset, poolTvl, use ERC4626StrategyBase 1.1.0 - #326
-///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
-///     1.0.2: Use ERC4626StrategyBase 1.0.4 with fixed revenue formula - #304
-///     1.0.1: _assetsAmounts uses previewRedeem to fix #300
+///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   1.2.0: Add maxWithdrawAsset, poolTvl, use ERC4626StrategyBase 1.1.0 - #326
+///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
+///   1.0.2: Use ERC4626StrategyBase 1.0.4 with fixed revenue formula - #304
+///   1.0.1: _assetsAmounts uses previewRedeem to fix #300
 /// @title Lend asset on Silo V2
 /// @author 0xhokugava (https://github.com/0xhokugava)
 /// @author dvpublic (https://github.com/dvpublic)
@@ -33,7 +34,7 @@ contract SiloStrategy is ERC4626StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

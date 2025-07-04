@@ -5,6 +5,8 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
 
 contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     constructor() {
@@ -64,5 +66,15 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
                 strategyInitNums: strategyInitNums
             })
         );
+    }
+
+    /// @notice #330: check maxDepositAssets for SiloAdvancedLeverageStrategy
+    function _preDeposit() internal view override {
+        IStrategy currentStrategy = IStrategy(currentStrategy);
+        IVault vault = IVault(currentStrategy.vault());
+        uint[] memory amounts = vault.maxDeposit(address(this));
+
+        assertEq(amounts.length, 1, "SiloAdvancedLeverageStrategyTest: maxDepositAssets length mismatch");
+        assertEq(amounts[0], type(uint).max, "SiloAdvancedLeverageStrategyTest: maxDepositAssets should be unlimited");
     }
 }

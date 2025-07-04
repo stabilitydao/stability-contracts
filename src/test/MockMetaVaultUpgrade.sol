@@ -61,6 +61,9 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /// @inheritdoc IMetaVault
     function addVault(address, uint[] memory) external {}
 
+    /// @inheritdoc IMetaVault
+    function removeVault(address) external {}
+
     /// @inheritdoc IStabilityVault
     function setName(string calldata newName) external {}
 
@@ -220,4 +223,12 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function withdraw(uint, address, address, uint) external returns (uint) {}
 
     function redeem(uint, address, address, uint) external returns (uint) {}
+
+    function changeWhitelist(address addr, bool addToWhitelist) external {}
+
+    function whitelisted(address addr) external view returns (bool) {}
+
+    function setLastBlockDefenseDisabledTx(bool isDisabled) external {}
+
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
 }

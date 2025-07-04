@@ -26,11 +26,12 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
-///     1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
-///     1.1.0: Use StrategyBase 2.3.0 - add fuseMode
-///     1.0.3: getSpecificName update
-///     1.0.2: FarmingStrategyBase 1.3.3
-///     1.0.1: claimRevenue bugfix
+///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
+///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
+///   1.0.3: getSpecificName update
+///   1.0.2: FarmingStrategyBase 1.3.3
+///   1.0.1: claimRevenue bugfix
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract SiloFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -39,7 +40,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

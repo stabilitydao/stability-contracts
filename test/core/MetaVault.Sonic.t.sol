@@ -512,6 +512,7 @@ contract MetaVaultSonicTest is Test {
         vm.stopPrank();
     }*/
 
+    //region ------------------------------------ Upgrade CVaults and strategies
     function _upgradeCVaults() internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
 
@@ -664,6 +665,7 @@ contract MetaVaultSonicTest is Test {
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
+    //endregion ------------------------------------ Upgrade CVaults and strategies
 
     /*function _upgradePlatform() internal {
         address[] memory proxies = new address[](1);
