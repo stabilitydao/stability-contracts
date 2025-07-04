@@ -57,11 +57,6 @@ contract SiloALMFStrategy is
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
-    uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
-    uint public constant FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX = 2;
-    uint public constant FARM_ADDRESS_SILO_LENS_INDEX = 3;
-
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -83,12 +78,12 @@ contract SiloALMFStrategy is
         params.platform = addresses[0];
         params.strategyId = StrategyIdLib.SILO_ALMF_FARM;
         params.vault = addresses[1];
-        params.collateralAsset = IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
-        params.borrowAsset = IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
-        params.lendingVault = farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX];
-        params.borrowingVault = farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX];
-        params.flashLoanVault = farm.addresses[FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
-        params.helper = farm.addresses[FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
+        params.collateralAsset = IERC4626(farm.addresses[SiloALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
+        params.borrowAsset = IERC4626(farm.addresses[SiloALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
+        params.lendingVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX];
+        params.borrowingVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX];
+        params.flashLoanVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
+        params.helper = farm.addresses[SiloALMFLib.FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
         params.targetLeveragePercent = 85_00;
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
@@ -143,46 +138,24 @@ contract SiloALMFStrategy is
     ) external {
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.receiveFlashLoan(platform(), $, tokens[0], amounts[0], feeAmounts[0]);
+        SiloALMFLib.receiveFlashLoanBalancerV2(platform(), $, tokens, amounts, feeAmounts);
     }
 
     /// @inheritdoc IBalancerV3FlashCallback
     function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
-        // sender is vault, it's checked inside receiveFlashLoan
-        // we can use msg.sender below but $.flashLoanVault looks more safe
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
-
-        // ensure that the vault has available amount
-        require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
-
-        // receive flash loan from the vault
-        vault.sendTo(token, address(this), amount);
-
-        // Flash loan is performed upon deposit and withdrawal
-        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, 0); // assume that flash loan is free, fee is 0
-
-        // return flash loan back to the vault
-        // assume that the amount was transferred back to the vault inside receiveFlashLoan()
-        // we need only to register this transferring
-        vault.settle(token, amount);
+        SiloALMFLib.receiveFlashLoanV3(platform(), $, token, amount);
     }
 
     /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
-        // sender is the pool, it's checked inside receiveFlashLoan
-        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
-
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+        SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
 
     function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
-        // sender is the pool, it's checked inside receiveFlashLoan
-        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
-
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1);
+        SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
     //endregion ----------------------------------- Flash loan
 
@@ -202,57 +175,24 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function initVariants(address platform_)
-        public
-        view
-        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
-    {
-        addresses = new address[](0);
-        ticks = new int24[](0);
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint _total;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
-                ++_total;
-            }
-        }
-        variants = new string[](_total);
-        nums = new uint[](_total);
-        _total = 0;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
-                nums[_total] = i;
-                variants[_total] = _generateDescription(
-                    farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX],
-                    IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset(),
-                    IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset()
-                );
-                ++_total;
-            }
-        }
+    function initVariants(address platform_) public view returns (
+        string[] memory variants,
+        address[] memory addresses,
+        uint[] memory nums,
+        int24[] memory ticks
+    ) {
+        return SiloALMFLib.initVariants(platform_);
     }
 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return _generateDescription($.lendingVault, $.collateralAsset, $.borrowAsset);
+        return SiloALMFLib._generateDescription($.lendingVault, $.collateralAsset, $.borrowAsset);
     }
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        address lendingVault = $.lendingVault;
-        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
-        string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
-        (,, uint targetLeverage) = SiloALMFLib.getLtvData(lendingVault, $.targetLeveragePercent);
-        return (
-            string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
-            false
-        );
+        return SiloALMFLib.getSpecificName(_getLeverageLendingBaseStorage());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -262,12 +202,7 @@ contract SiloALMFStrategy is
     }
 
     function _realSharePrice() internal view override returns (uint sharePrice, bool trusted) {
-        uint _realTvl;
-        (_realTvl, trusted) = realTvl();
-        uint totalSupply = IERC20(vault()).totalSupply();
-        if (totalSupply != 0) {
-            sharePrice = _realTvl * 1e18 / totalSupply;
-        }
+        return SiloALMFLib._realSharePrice(platform(), _getLeverageLendingBaseStorage(), vault());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -290,7 +225,7 @@ contract SiloALMFStrategy is
     /// @inheritdoc ILeverageLendingStrategy
     function getSupplyAndBorrowAprs() external view returns (uint supplyApr, uint borrowApr) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return _getDepositAndBorrowAprs($.helper, $.lendingVault, $.borrowingVault);
+        return SiloALMFLib._getDepositAndBorrowAprs($.helper, $.lendingVault, $.borrowingVault);
     }
 
     /// @inheritdoc IERC165
@@ -321,9 +256,10 @@ contract SiloALMFStrategy is
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
+        IMetaVault metaVault = _getMetaVault($);
+        metaVault.setLastBlockDefenseDisabledTx(true);
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(false);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -341,52 +277,20 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    function _claimRevenue()
-        internal
-        override
-        returns (
-            address[] memory __assets,
-            uint[] memory __amounts,
-            address[] memory __rewardAssets,
-            uint[] memory __rewardAmounts
-        )
-    {
+    function _claimRevenue() internal override returns (
+        address[] memory __assets,
+        uint[] memory __amounts,
+        address[] memory __rewardAssets,
+        uint[] memory __rewardAmounts
+    ) {
         __assets = assets();
-        __rewardAssets = new address[](0);
-        __rewardAmounts = new uint[](0);
-        __amounts = new uint[](1);
-
-        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        LeverageLendingAddresses memory v = SiloALMFLib.getLeverageLendingAddresses($);
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-
-        uint totalWas = $base.total;
-
-        ISilo(v.lendingVault).accrueInterest();
-        ISilo(v.borrowingVault).accrueInterest();
-
-        uint totalNow = StrategyLib.balance(v.collateralAsset) + SiloALMFLib.calcTotal(v);
-        if (totalNow > totalWas) {
-            __amounts[0] = totalNow - totalWas;
-        }
-        $base.total = totalNow;
-
-        {
-            int earned = int(totalNow) - int(totalWas);
-            (uint _realTvl,) = realTvl();
-            uint duration = block.timestamp - $base.lastHardWork;
-
-            IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-            (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
-            int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
-            int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
-            (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
-            (uint sharePrice,) = _realSharePrice();
-            emit LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
-        }
-
-        (uint ltv,, uint leverage,,,) = health();
-        emit LeverageLendingHealth(ltv, leverage);
+        (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
+            platform(),
+            vault(),
+            _getLeverageLendingBaseStorage(),
+            _getStrategyBaseStorage(),
+            _getFarmingStrategyBaseStorage()
+        );
     }
 
     /// @inheritdoc StrategyBase
@@ -407,9 +311,10 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
 
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
+        IMetaVault metaVault = _getMetaVault($);
+        metaVault.setLastBlockDefenseDisabledTx(true);
         value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(false);
     }
 
     /// @inheritdoc StrategyBase
@@ -421,9 +326,10 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(true);
+        IMetaVault metaVault = _getMetaVault($);
+        metaVault.setLastBlockDefenseDisabledTx(true);
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
-        IMetaVault(SiloALMFLib.METAVAULT_metaUSD).setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(false);
     }
 
     /// @inheritdoc IStrategy
@@ -470,36 +376,9 @@ contract SiloALMFStrategy is
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _generateDescription(
-        address lendingVault,
-        address collateralAsset,
-        address borrowAsset
-    ) internal view returns (string memory) {
-        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
-        return string.concat(
-            "Supply ",
-            IERC20Metadata(collateralAsset).symbol(),
-            " and borrow ",
-            IERC20Metadata(borrowAsset).symbol(),
-            " on Silo V2 market ",
-            CommonLib.u2s(siloId),
-            " with leverage looping"
-        );
-    }
-
-    function _formatLeverageShort(uint amount) internal pure returns (string memory) {
-        uint intAmount = amount / 100_00;
-        uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
-        return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
-    }
-
-    function _getDepositAndBorrowAprs(
-        address lens,
-        address lendingVault,
-        address debtVault
-    ) internal view returns (uint depositApr, uint borrowApr) {
-        depositApr = ISiloLens(lens).getDepositAPR(lendingVault) * ConstantsLib.DENOMINATOR / 1e18;
-        borrowApr = ISiloLens(lens).getBorrowAPR(debtVault) * ConstantsLib.DENOMINATOR / 1e18;
+    function _getMetaVault(LeverageLendingBaseStorage storage $) internal view returns (IMetaVault) {
+        // assume that collateral asset is always MetaVault, i.e. metaUSD
+        return IMetaVault($.collateralAsset);
     }
 
     //endregion ----------------------------------- Internal logic
