@@ -39,6 +39,7 @@ import {IMetaVault} from "../interfaces/IMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
+///   1.0.0: Initial version - #330
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloALMFStrategy is
     LeverageLendingBase,
@@ -156,6 +157,7 @@ contract SiloALMFStrategy is
         SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
 
+    /// @inheritdoc IAlgebraFlashCallback
     function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);

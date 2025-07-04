@@ -32,6 +32,7 @@ import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
+///   2.1.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   2.1.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
 ///   2.1.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   2.0.0:
@@ -58,7 +59,7 @@ contract SiloLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.1.1";
+    string public constant VERSION = "2.1.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
