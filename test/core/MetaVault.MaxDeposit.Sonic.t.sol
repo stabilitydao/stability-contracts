@@ -13,7 +13,6 @@ import {
 } from "../../src/core/vaults/MetaVault.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
@@ -23,25 +22,20 @@ import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Test, console, Vm} from "forge-std/Test.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
-import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 
@@ -104,7 +98,6 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         for (uint i; i < _vaults.length; ++i) {
             address strategy = address(IVault(_vaults[i]).strategy());
-            console.log("VAULT, I, STRATEGY", _vaults[i], i, strategy);
 
             vm.prank(IPlatform(PLATFORM).multisig());
             IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(strategy, true);
@@ -150,10 +143,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _setUpFlashLoanVault(10e12); // add 10 mln USDC and 10 mln scUSD to flash loan vaults
 
         // ------------------------------ Make initial deposit to both sub-vaults to avoid first-deposit-small-amount issues
-        uint[] memory amountToDeposit = new uint[](1);
-        amountToDeposit[0] = 222333e16;
-        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // first sub-vault
-        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
+        _initialDeposit();
     }
 
     //region -------------------------------------------- Test Wrapped Meta Vault
@@ -647,8 +637,6 @@ contract MetaVaultMaxDepositSonicTest is Test {
         amountToDeposit[0] = maxDepositAmount0 + addon;
         (uint deposited,) = _tryToDeposit(multiVault, amountToDeposit, false);
 
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!", deposited, maxDepositAmount1, addon);
-
         amountToDeposit[0] = maxDepositAmount1 > addon ? maxDepositAmount1 - addon : 0;
         (uint deposited1,) = amountToDeposit[0] == 0 ? (0, 0) : _tryToDeposit(multiVault, amountToDeposit, false);
 
@@ -726,6 +714,13 @@ contract MetaVaultMaxDepositSonicTest is Test {
     //endregion -------------------------------------------- Test implementation
 
     //region -------------------------------------------- Internal functions
+    function _initialDeposit() internal {
+        uint[] memory amountToDeposit = new uint[](1);
+        amountToDeposit[0] = 222333e16;
+        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // first sub-vault
+        _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
+    }
+
     function _tryToWithdraw(IMetaVault multiVault, uint amountToWithdraw) internal returns (uint withdrawn) {
         IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
         uint balanceBefore = wrapped.balanceOf(address(this));
@@ -752,9 +747,6 @@ contract MetaVaultMaxDepositSonicTest is Test {
         vm.prank(address(this));
         targetWrapped.withdraw(amountToWithdraw, address(this), address(this), shares * 101 / 100); // 1% slippage
         vm.roll(block.number + 6);
-
-        console.log("amountToWithdraw", amountToWithdraw);
-        console.log("dif balances", wrapped.balanceOf(address(this)) - balanceBefore);
 
         return wrapped.balanceOf(address(this)) - balanceBefore;
     }

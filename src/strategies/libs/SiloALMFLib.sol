@@ -519,7 +519,7 @@ library SiloALMFLib {
         (,, uint targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
-        return borrowAmount * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * 1e18 // priceCtoB has decimals 1e18
+        amountToDeposit = borrowAmount * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * 1e18 // priceCtoB has decimals 1e18
             * INTERNAL_PRECISION / (targetLeverage - INTERNAL_PRECISION) / priceCtoB
             / (10 ** IERC20Metadata(v.borrowAsset).decimals()) * INTERNAL_PRECISION / $.depositParam0;
     }

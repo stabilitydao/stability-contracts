@@ -254,7 +254,7 @@ library SonicFarmMakerLib {
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
         farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
 
-        farm.addresses = new address[](5);
+        farm.addresses = new address[](4);
         farm.addresses[0] = collateralSiloVault;
         farm.addresses[1] = borrowSiloVault;
         farm.addresses[2] = flashLoanUsdc;

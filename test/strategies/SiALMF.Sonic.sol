@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import {console} from "forge-std/console.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
@@ -38,6 +38,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
     function testSiALMFSonic() public universalTest {
         _addStrategy(53);
+        _addStrategy(54);
+        _addStrategy(55);
     }
 
     function _addStrategy(uint farmId) internal {
@@ -139,13 +141,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         for (uint j; j < assets.length; ++j) {
             if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD) {
                 _getMetaUsdOnBalance(address(this), amounts[j], true);
-                console.log(
-                    "Dealing and approving metaUSD",
-                    amounts[0],
-                    IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this))
-                );
             } else {
-                console.log("Dealing and approving", assets[j], amounts[j]);
                 deal(assets[j], user, amounts[j]);
             }
 

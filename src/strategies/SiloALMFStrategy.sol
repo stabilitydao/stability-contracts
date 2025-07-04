@@ -36,6 +36,8 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {IMetaVault} from "../interfaces/IMetaVault.sol";
+import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
+import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
@@ -385,8 +387,8 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _getMetaVault(LeverageLendingBaseStorage storage $) internal view returns (IMetaVault) {
-        // assume that collateral asset is always MetaVault, i.e. metaUSD
-        return IMetaVault($.collateralAsset);
+        // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
+        return IMetaVault(IWrappedMetaVault($.collateralAsset).metaVault());
     }
 
     //endregion ----------------------------------- Internal logic
