@@ -348,7 +348,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, v.targetVault);
 
-        (v.amountsConsumed, v.depositedTvl) = (_isMultiVault($)) // todo create isMultiVault function
+        (v.amountsConsumed, v.depositedTvl) = (_isMultiVault($))
             ? _depositToMultiVault(v.targetVault, $.vaults, assets_, amountsMax)
             : _depositToTargetVault(v.targetVault, assets_, amountsMax);
 

@@ -11,6 +11,7 @@ import {
     IPriceReader,
     IControllable
 } from "../../src/core/vaults/MetaVault.sol";
+import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -155,8 +156,156 @@ contract MetaVaultMaxDepositSonicTest is Test {
         _tryToDeposit(IMetaVault(metaVaults[META_VAULT_INDEX]), amountToDeposit, false); // second sub-vault
     }
 
+    //region -------------------------------------------- Test Wrapped Meta Vault
+    function testWrappedMetaVaultMaxDeposit() public view {
+        IWrappedMetaVault wrappedMulti = IWrappedMetaVault(wrappedVaults[META_VAULT_INDEX]);
+        IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
+
+        // max deposit amount to MultiVault
+        uint maxAmountToDepositMulti = metaVault.maxDeposit(address(this))[0];
+
+        // max deposit amount to wrapped
+        uint maxAmountToDepositWrapped = wrappedMulti.maxDeposit(address(this));
+
+        assertNotEq(maxAmountToDepositMulti, type(uint).max, "meta.maxDeposit is limited");
+        assertEq(maxAmountToDepositWrapped, type(uint).max, "wrapped.maxDeposit is unlimited");
+    }
+
+    function testWrappedMetaVaultDepositMax() public {
+        IWrappedMetaVault wrappedMeta = IWrappedMetaVault(wrappedVaults[META_VAULT_INDEX]);
+        IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
+        );
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+        );
+
+        // ------------------------------ Get a lot of metaUSD on balance and deposit them to MetaVault
+        {
+            uint amountMetaUsd = metaVault.maxDeposit(address(this))[0]; // amount of metaUSD to deposit in embedded MultiVault
+            _getMetaUsdOnBalance(address(this), amountMetaUsd, true);
+
+            vm.prank(address(this));
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(metaVault), type(uint).max);
+
+            uint[] memory amountsMax = new uint[](1);
+            amountsMax[0] = amountMetaUsd;
+
+            vm.prank(address(this));
+            metaVault.depositAssets(metaVault.assetsForDeposit(), amountsMax, 0, address(this));
+            vm.roll(block.number + 6);
+        }
+
+        // ------------------------------ Get max-deposit for MultiVault
+        uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
+
+        // ------------------------------ Try to wrap all available MetaVault tokens
+        uint amountMetaVaultTokensToDeposit = metaVault.balanceOf(address(this));
+
+        vm.prank(address(this));
+        metaVault.approve(address(wrappedMeta), amountMetaVaultTokensToDeposit);
+
+        uint wrappedBalanceBefore = wrappedMeta.balanceOf(address(this));
+        uint balanceBefore = metaVault.balanceOf(address(this));
+
+        vm.prank(address(this));
+        wrappedMeta.deposit(amountMetaVaultTokensToDeposit, address(this), 0);
+        vm.roll(block.number + 6); // we need it because withdraw uses MetaVault.transfer internally
+
+        uint balanceAfter = metaVault.balanceOf(address(this));
+        uint wrappedBalanceAfter = wrappedMeta.balanceOf(address(this));
+
+        // ------------------------------ Check results
+        assertEq(balanceBefore - balanceAfter, amountMetaVaultTokensToDeposit, "Deposit max possible amount should be successful");
+        assertEq(maxAmountToDepositMulti, IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0], "max deposit for MultiVault wasn't change");
+        assertGt(wrappedBalanceAfter, wrappedBalanceBefore, "balance should increase after deposit");
+        assertEq(wrappedMeta.maxDeposit(address(this)), type(uint).max, "MetaVault.maxDeposit should be still unlimited");
+
+        // ---- Withdraw back
+        uint amountToWithdraw = wrappedMeta.maxWithdraw(address(this));
+        uint shares = wrappedMeta.previewWithdraw(amountToWithdraw);
+
+        vm.prank(address(this));
+        wrappedMeta.withdraw(amountToWithdraw, address(this), address(this), shares * 101/100); // 1% slippage
+
+        assertEq(wrappedMeta.balanceOf(address(this)), 0, "balance should be zero after withdraw");
+        assertEq(metaVault.balanceOf(address(this)), balanceBefore, "get all meta vault tokens back after withdraw");
+    }
+
+    //endregion -------------------------------------------- Test Wrapped Meta Vault
+
     //region -------------------------------------------- Test Wrapped Multi Vault
-    // todo
+    function testWrappedMultiVaultMaxDeposit() public view {
+        IWrappedMetaVault wrappedMulti = IWrappedMetaVault(wrappedVaults[MULTI_VAULT_INDEX]);
+        IMetaVault multiVault = IMetaVault(metaVaults[MULTI_VAULT_INDEX]);
+
+        // max deposit amount to MultiVault
+        uint maxAmountToDepositMulti = multiVault.maxDeposit(address(this))[0];
+
+        // max deposit amount to wrapped
+        uint maxAmountToDepositWrapped = wrappedMulti.maxDeposit(address(this));
+
+        assertEq(maxAmountToDepositMulti, maxAmountToDepositWrapped, "multi.maxDeposit = wrapped.maxDeposit");
+    }
+
+    function testWrappedMultiVaultDepositMax() public {
+        IWrappedMetaVault wrappedMulti = IWrappedMetaVault(wrappedVaults[MULTI_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
+        );
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+        );
+
+        uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
+
+        // ------------------------------ Try to deposit max possible amount
+        uint maxAmountToDeposit = wrappedMulti.maxDeposit(address(this)); // amount of metaUSD to deposit in MultiVault
+
+        uint balanceBefore = wrappedMulti.balanceOf(address(this));
+        (uint deposited, uint amountConsumedEmitted) = _tryToDeposit(wrappedMulti, maxAmountToDeposit, false);
+        uint balanceAfter = wrappedMulti.balanceOf(address(this));
+
+        (uint maxDepositAmount02, uint maxDepositAmount12) = _getMaxAmountsToDeposit();
+
+        assertEq(maxAmountToDeposit, maxAmountToDepositMulti, "meta.maxDeposit should be equal to multi.maxDeposit");
+        assertEq(deposited, maxAmountToDeposit, "Deposit max possible amount should be successful");
+        assertLe(maxDepositAmount02 + maxDepositAmount12, 10e18, "Nothing to deposit anymore");
+        assertEq(deposited, amountConsumedEmitted, "correct amount consumed is received");
+        assertGt(balanceAfter, balanceBefore, "balance should increase after deposit");
+
+        // ---- Withdraw back
+        uint maxWithdraw = wrappedMulti.maxWithdraw(address(this));
+        uint withdrawn = _tryToWithdraw(wrappedMulti, maxWithdraw);
+
+        assertEq(wrappedMulti.balanceOf(address(this)), 0, "balance should be zero after withdraw");
+        assertLt(
+            _getDiffPercent18(withdrawn, deposited), 1e18 / 1000, "withdrawn amount should be equal to deposited amount"
+        );
+    }
+
+    function testWrappedMultiVaultDepositTooMuch() public {
+        IWrappedMetaVault wrappedMulti = IWrappedMetaVault(wrappedVaults[MULTI_VAULT_INDEX]);
+
+        // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
+        );
+        _borrowAlmostAllCash(
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+        );
+
+        wrappedMulti.maxDeposit(address(this));
+
+        // ------------------------------ Try to deposit more than maxDeposit (and get refund)
+        uint amountToDepositTooMuch = wrappedMulti.maxDeposit(address(this)) * 110 / 100; // increase by 10%
+        _tryToDeposit(wrappedMulti, amountToDepositTooMuch, true);
+    }
 
     //endregion -------------------------------------------- Test Wrapped Multi Vault
 
@@ -213,7 +362,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         );
     }
 
-    function testMetaDepositTooMuch() public {
+    function testMetaVaultDepositTooMuch() public {
         IMetaVault metaVault = IMetaVault(metaVaults[META_VAULT_INDEX]);
 
         // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
@@ -581,6 +730,25 @@ contract MetaVaultMaxDepositSonicTest is Test {
         return wrapped.balanceOf(address(this)) - balanceBefore;
     }
 
+    function _tryToWithdraw(IWrappedMetaVault targetWrapped, uint amountToWithdraw) internal returns (uint withdrawn) {
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        uint balanceBefore = wrapped.balanceOf(address(this));
+
+        vm.prank(address(this));
+        wrapped.approve(address(targetWrapped), amountToWithdraw);
+
+        uint shares = targetWrapped.previewWithdraw(amountToWithdraw);
+
+        vm.prank(address(this));
+        targetWrapped.withdraw(amountToWithdraw, address(this), address(this), shares * 101/100); // 1% slippage
+        vm.roll(block.number + 6);
+
+        console.log("amountToWithdraw", amountToWithdraw);
+        console.log("dif balances", wrapped.balanceOf(address(this)) - balanceBefore);
+
+        return wrapped.balanceOf(address(this)) - balanceBefore;
+    }
+
     function _getEmittedConsumedAmount() internal returns (uint amountConsumedEmitted) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 eventSig = keccak256("DepositAssets(address,address[],uint256[],uint256)");
@@ -591,6 +759,23 @@ contract MetaVaultMaxDepositSonicTest is Test {
                 if (receiver == address(this)) {
                     (, uint[] memory amountsConsumed,) = abi.decode(logs[i].data, (address[], uint[], uint));
                     return amountsConsumed[0];
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    function _getDepositAmountToWrapped() internal returns (uint amountConsumedEmitted) {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSig = keccak256("Deposit(address,address,uint256,uint256)");
+
+        for (uint i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSig) {
+                address receiver = address(uint160(uint(logs[i].topics[2])));
+                if (receiver == address(this)) {
+                    (amountConsumedEmitted,) = abi.decode(logs[i].data, (uint, uint));
+                    return amountConsumedEmitted;
                 }
             }
         }
@@ -617,7 +802,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         wrapped.approve(address(multiVault), maxAmounts[0]);
 
         address[] memory assetsForDeposit = multiVault.assetsForDeposit();
-        uint balanceBefore = wrapped.balanceOf(address(this));
+        uint balanceMetaUsdBefore = wrapped.balanceOf(address(this));
 
         vm.recordLogs();
 
@@ -629,7 +814,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         amountConsumedEmitted = _getEmittedConsumedAmount();
         vm.roll(block.number + 6);
 
-        deposited = balanceBefore - wrapped.balanceOf(address(this));
+        deposited = balanceMetaUsdBefore - wrapped.balanceOf(address(this));
 
         assertEq(deposited, amountConsumedEmitted, "amountConsumedEmitted should be equal to deposited amount");
         for (uint i = 0; i < multiVault.vaults().length; ++i) {
@@ -640,6 +825,41 @@ contract MetaVaultMaxDepositSonicTest is Test {
             );
         }
 
+        return (deposited, amountConsumedEmitted);
+    }
+
+    function _tryToDeposit(
+        IWrappedMetaVault targetWrappedMetaVault,
+        uint amountToDeposit,
+        bool shouldRevert
+    ) internal returns (uint deposited, uint amountConsumedEmitted) {
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        _getMetaUsdOnBalance(address(this), amountToDeposit, true);
+
+        vm.prank(address(this));
+        wrapped.approve(address(targetWrappedMetaVault), amountToDeposit);
+
+        uint balanceMetaUsdBefore = wrapped.balanceOf(address(this));
+
+        vm.recordLogs();
+
+        vm.prank(address(this));
+        // targetWrappedMetaVault.deposit(amountToDeposit, address(this), 0);
+        try targetWrappedMetaVault.deposit(amountToDeposit, address(this), 0) {
+            require(!shouldRevert, "Error ERC4626ExceededMaxDeposit wasn't thrown");
+        } catch (bytes memory reason) {
+            require(
+                reason.length >= 4 && bytes4(reason) == ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                "Some other error was thrown instead of ERC4626ExceededMaxDeposit"
+            );
+        }
+
+        amountConsumedEmitted = _getDepositAmountToWrapped();
+        vm.roll(block.number + 6);
+
+        deposited = balanceMetaUsdBefore - wrapped.balanceOf(address(this));
+
+        assertEq(deposited, amountConsumedEmitted, "amountConsumedEmitted should be equal to deposited amount");
         return (deposited, amountConsumedEmitted);
     }
 
