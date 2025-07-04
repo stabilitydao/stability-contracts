@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../integrations/silo/ISiloIncentivesController.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
-import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
-import {IBVault} from "../../integrations/balancer/IBVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IFactory} from "../../interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
@@ -19,19 +15,14 @@ import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
 import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
 import {ISilo} from "../../integrations/silo/ISilo.sol";
-import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {ITeller} from "../../interfaces/ITeller.sol";
-import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
-import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
-import {IWETH} from "../../integrations/weth/IWETH.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyIdLib} from "./StrategyIdLib.sol";
 import {StrategyLib} from "./StrategyLib.sol";
-import {ISiloGaugeHookReceiver} from "../../integrations/silo/ISiloGaugeHookReceiver.sol";
 
 library SiloALMFLib {
     using SafeERC20 for IERC20;
@@ -41,11 +32,6 @@ library SiloALMFLib {
 
     /// @notice 1000 is 1%
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
-
-    uint public constant FARM_ADDRESS_LENDING_VAULT_INDEX = 0;
-    uint public constant FARM_ADDRESS_BORROWING_VAULT_INDEX = 1;
-    uint public constant FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX = 2;
-    uint public constant FARM_ADDRESS_SILO_LENS_INDEX = 3;
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -76,7 +62,7 @@ library SiloALMFLib {
     }
     //endregion ------------------------------------- Data types
 
-    //region ------------------------------------- Flash loan and swap
+    //region ------------------------------------- Flash loan
     function _receiveFlashLoan(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -264,17 +250,7 @@ library SiloALMFLib {
         SiloALMFLib._receiveFlashLoan(platform, $, token, amount, isToken0 ? fee0 : fee1);
     }
 
-    function _swap(
-        address platform,
-        address tokenIn,
-        address tokenOut,
-        uint amount,
-        uint priceImpactTolerance
-    ) internal {
-        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
-    }
-    //endregion ------------------------------------- Flash loan and swap
+    //endregion ------------------------------------- Flash loan
 
     //region ------------------------------------- View functions
     function health(
@@ -301,7 +277,7 @@ library SiloALMFLib {
         collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
 
-        IPriceReader priceReader = getPriceReader(platform);
+        IPriceReader priceReader = _getPriceReader(platform);
         (uint _realTvl,) = realTvl(platform, $);
         (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
         uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
@@ -367,36 +343,9 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
         CollateralDebtState memory debtState =
-            getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+            _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
-    }
-
-    function getDebtState(
-        address platform,
-        address lendingVault,
-        address collateralAsset,
-        address borrowAsset,
-        address borrowingVault
-    ) public view returns (CollateralDebtState memory data) {
-        bool collateralPriceTrusted;
-        bool borrowAssetPriceTrusted;
-
-        IPriceReader priceReader = getPriceReader(platform);
-
-        data.collateralAmount = totalCollateral(lendingVault);
-        data.collateralBalance = StrategyLib.balance(collateralAsset);
-        (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
-            / 10 ** IERC20Metadata(collateralAsset).decimals();
-
-        data.debtAmount = totalDebt(borrowingVault);
-        (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
-        data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
-
-        data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
-
-        return data;
     }
 
     function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
@@ -454,41 +403,30 @@ library SiloALMFLib {
         return ISilo(borrowingVault).maxRepay(address(this));
     }
 
-    /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
-    /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
-    function _estimateSwapAmount(
-        address platform,
-        uint amountToRepay,
-        address collateralAsset,
-        address token,
-        uint priceImpactTolerance
-    ) internal view returns (uint) {
-        // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
-        // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
-
-        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
-
-        // we use higher (x2) price impact then required for safety
-        uint minCollateralToSwap =
-            swapper.getPrice(token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000); // priceImpactTolerance has its own denominator
-
-        return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
-    }
-
     function _realSharePrice(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         address vault_
-    ) internal view returns (uint sharePrice, bool trusted) {
+    ) public view returns (uint sharePrice, bool trusted) {
         uint _realTvl;
         (_realTvl, trusted) = realTvl(platform, $);
         uint totalSupply = IERC20(vault_).totalSupply();
         sharePrice = totalSupply == 0 ? 0 : _realTvl * 1e18 / totalSupply;
     }
 
-    function getPriceReader(address platform_) internal view returns (IPriceReader) {
-        return IPriceReader(IPlatform(platform_).priceReader());
+    function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+        external
+        view
+        returns (string memory, bool)
+    {
+        address lendingVault = $.lendingVault;
+        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
+        string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
+        (,, uint targetLeverage) = getLtvData(lendingVault, $.targetLeveragePercent);
+        return (
+            string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
+            false
+        );
     }
 
     //endregion ------------------------------------- View functions
@@ -499,7 +437,7 @@ library SiloALMFLib {
         view
         returns (uint[] memory amounts)
     {
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
 
         // max deposit is limited by amount available to borrow from the borrow pool
         uint maxAmountInBorrowPool = ISilo(v.borrowingVault).getLiquidity();
@@ -523,7 +461,7 @@ library SiloALMFLib {
         uint amount,
         address asset
     ) external returns (uint value) {
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
 
         uint valueWas = StrategyLib.balance(asset) + calcTotal(v);
         _deposit($, v, amount);
@@ -599,7 +537,7 @@ library SiloALMFLib {
         uint value,
         address receiver
     ) external returns (uint[] memory amountsOut) {
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v = getLeverageLendingAddresses($);
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
         StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
@@ -661,7 +599,7 @@ library SiloALMFLib {
         (,, uint leverage,,,) = health(platform, $);
 
         CollateralDebtState memory debtState =
-            getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
+            _getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
 
         if (0 == debtState.debtAmount) {
             // zero debt, positive collateral - we can just withdraw required amount
@@ -821,77 +759,6 @@ library SiloALMFLib {
 
     //endregion ------------------------------------- Withdraw
 
-    //region ------------------------------------- Init variants
-    function initVariants(address platform_) external view returns (
-        string[] memory variants,
-        address[] memory addresses,
-        uint[] memory nums,
-        int24[] memory ticks
-    ) {
-        addresses = new address[](0);
-        ticks = new int24[](0);
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint _total;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
-                ++_total;
-            }
-        }
-        variants = new string[](_total);
-        nums = new uint[](_total);
-        _total = 0;
-        for (uint i; i < len; ++i) {
-            IFactory.Farm memory farm = farms[i];
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, StrategyIdLib.SILO_ALMF_FARM)) {
-                nums[_total] = i;
-                variants[_total] = _generateDescription(
-                    farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX],
-                    IERC4626(farm.addresses[FARM_ADDRESS_LENDING_VAULT_INDEX]).asset(),
-                    IERC4626(farm.addresses[FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset()
-                );
-                ++_total;
-            }
-        }
-    }
-
-    function _generateDescription(
-        address lendingVault,
-        address collateralAsset,
-        address borrowAsset
-    ) internal view returns (string memory) {
-        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
-        return string.concat(
-            "Supply ",
-            IERC20Metadata(collateralAsset).symbol(),
-            " and borrow ",
-            IERC20Metadata(borrowAsset).symbol(),
-            " on Silo V2 market ",
-            CommonLib.u2s(siloId),
-            " with leverage looping"
-        );
-    }
-
-    function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $ ) external view returns (string memory, bool) {
-        address lendingVault = $.lendingVault;
-        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
-        string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
-        (,, uint targetLeverage) = getLtvData(lendingVault, $.targetLeveragePercent);
-        return (
-            string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
-            false
-        );
-    }
-
-    function _formatLeverageShort(uint amount) internal pure returns (string memory) {
-        uint intAmount = amount / 100_00;
-        uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
-        return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
-    }
-    //endregion ------------------------------------- Init variants
-
     //region ------------------------------------- Revenue and rewards
     function _claimRevenue(
         address platform,
@@ -899,15 +766,11 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IStrategy.StrategyBaseStorage storage $base,
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f
-    ) external returns (
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    ) {
+    ) external returns (uint[] memory __amounts, address[] memory __rewardAssets, uint[] memory __rewardAmounts) {
         __amounts = new uint[](1);
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloALMFLib._getLeverageLendingAddresses($);
 
-        ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloALMFLib.getLeverageLendingAddresses($);
-
+        // ---------------------- Calculate earned amount
         uint totalWas = $base.total;
 
         ISilo(v.lendingVault).accrueInterest();
@@ -919,6 +782,7 @@ library SiloALMFLib {
         }
         $base.total = totalNow;
 
+        // ---------------------- collect Merkl rewards
         __rewardAssets = $f._rewardAssets;
         uint rwLen = __rewardAssets.length;
         __rewardAmounts = new uint[](rwLen);
@@ -926,15 +790,10 @@ library SiloALMFLib {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
         }
 
+        // ---------------------- Calculate apr and emit event
         (uint _realTvl,) = realTvl(platform, $);
         _emitLeverageLendingHardWork(
-            platform,
-            $,
-            v,
-            vault_,
-            _realTvl,
-            block.timestamp - $base.lastHardWork,
-            int(totalNow) - int(totalWas)
+            platform, $, v, vault_, _realTvl, block.timestamp - $base.lastHardWork, int(totalNow) - int(totalWas)
         );
 
         (uint ltv,, uint leverage,,,) = health(platform, $);
@@ -950,13 +809,15 @@ library SiloALMFLib {
         uint duration,
         int earned
     ) internal {
-        IPriceReader priceReader = getPriceReader(platform);
+        IPriceReader priceReader = _getPriceReader(platform);
         (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
         int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
         int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
         (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
         (uint sharePrice,) = _realSharePrice(platform, $, vault_);
-        emit ILeverageLendingStrategy.LeverageLendingHardWork(realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr);
+        emit ILeverageLendingStrategy.LeverageLendingHardWork(
+            realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr
+        );
     }
 
     function _getDepositAndBorrowAprs(
@@ -971,6 +832,75 @@ library SiloALMFLib {
     //endregion ------------------------------------- Revenue and rewards
 
     //region ------------------------------------- Internal
+    function _swap(
+        address platform,
+        address tokenIn,
+        address tokenOut,
+        uint amount,
+        uint priceImpactTolerance
+    ) internal {
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
+    }
+
+    function _formatLeverageShort(uint amount) internal pure returns (string memory) {
+        uint intAmount = amount / 100_00;
+        uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
+        return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
+    }
+
+    function _getDebtState(
+        address platform,
+        address lendingVault,
+        address collateralAsset,
+        address borrowAsset,
+        address borrowingVault
+    ) internal view returns (CollateralDebtState memory data) {
+        bool collateralPriceTrusted;
+        bool borrowAssetPriceTrusted;
+
+        IPriceReader priceReader = _getPriceReader(platform);
+
+        data.collateralAmount = totalCollateral(lendingVault);
+        data.collateralBalance = StrategyLib.balance(collateralAsset);
+        (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
+        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
+            / 10 ** IERC20Metadata(collateralAsset).decimals();
+
+        data.debtAmount = totalDebt(borrowingVault);
+        (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
+        data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
+
+        data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+
+        return data;
+    }
+
+    /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
+    /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
+    function _estimateSwapAmount(
+        address platform,
+        uint amountToRepay,
+        address collateralAsset,
+        address token,
+        uint priceImpactTolerance
+    ) internal view returns (uint) {
+        // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
+        // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
+
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
+
+        // we use higher (x2) price impact then required for safety
+        uint minCollateralToSwap =
+            swapper.getPrice(token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000); // priceImpactTolerance has its own denominator
+
+        return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
+    }
+
+    function _getPriceReader(address platform_) internal view returns (IPriceReader) {
+        return IPriceReader(IPlatform(platform_).priceReader());
+    }
 
     /// @notice ensure that result LTV doesn't exceed max
     function _ensureLtvValid(
@@ -992,7 +922,7 @@ library SiloALMFLib {
         flashAmounts[0] = borrowAmount;
     }
 
-    function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+    function _getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
         internal
         view
         returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)

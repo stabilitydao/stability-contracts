@@ -29,6 +29,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {SiloALMFLib} from "./libs/SiloALMFLib.sol";
+import {SiloALMFLib2} from "./libs/SiloALMFLib2.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {XStaking} from "../tokenomics/XStaking.sol";
@@ -78,12 +79,12 @@ contract SiloALMFStrategy is
         params.platform = addresses[0];
         params.strategyId = StrategyIdLib.SILO_ALMF_FARM;
         params.vault = addresses[1];
-        params.collateralAsset = IERC4626(farm.addresses[SiloALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
-        params.borrowAsset = IERC4626(farm.addresses[SiloALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
-        params.lendingVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_LENDING_VAULT_INDEX];
-        params.borrowingVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_BORROWING_VAULT_INDEX];
-        params.flashLoanVault = farm.addresses[SiloALMFLib.FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
-        params.helper = farm.addresses[SiloALMFLib.FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
+        params.collateralAsset = IERC4626(farm.addresses[SiloALMFLib2.FARM_ADDRESS_LENDING_VAULT_INDEX]).asset();
+        params.borrowAsset = IERC4626(farm.addresses[SiloALMFLib2.FARM_ADDRESS_BORROWING_VAULT_INDEX]).asset();
+        params.lendingVault = farm.addresses[SiloALMFLib2.FARM_ADDRESS_LENDING_VAULT_INDEX];
+        params.borrowingVault = farm.addresses[SiloALMFLib2.FARM_ADDRESS_BORROWING_VAULT_INDEX];
+        params.flashLoanVault = farm.addresses[SiloALMFLib2.FARM_ADDRESS_FLASH_LOAN_VAULT_INDEX];
+        params.helper = farm.addresses[SiloALMFLib2.FARM_ADDRESS_SILO_LENS_INDEX]; // SiloLens
         params.targetLeveragePercent = 85_00;
 
         __LeverageLendingBase_init(params); // __StrategyBase_init is called inside
@@ -116,6 +117,8 @@ contract SiloALMFStrategy is
         $.withdrawParam0 = 100_00;
         // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
         $.withdrawParam1 = 100_00;
+        // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
+        //$.withdrawParam2 = 0; // 0 by default
     }
     //endregion ----------------------------------- Initialization
 
@@ -175,19 +178,18 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc IStrategy
-    function initVariants(address platform_) public view returns (
-        string[] memory variants,
-        address[] memory addresses,
-        uint[] memory nums,
-        int24[] memory ticks
-    ) {
-        return SiloALMFLib.initVariants(platform_);
+    function initVariants(address platform_)
+        public
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
+        return SiloALMFLib2.initVariants(platform_);
     }
 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        return SiloALMFLib._generateDescription($.lendingVault, $.collateralAsset, $.borrowAsset);
+        return SiloALMFLib2._generateDescription($.lendingVault, $.collateralAsset, $.borrowAsset);
     }
 
     /// @inheritdoc IStrategy
@@ -277,12 +279,16 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    function _claimRevenue() internal override returns (
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    ) {
+    function _claimRevenue()
+        internal
+        override
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
+    {
         __assets = assets();
         (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
             platform(),
