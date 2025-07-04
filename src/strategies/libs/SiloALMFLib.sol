@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol"; // todo
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
@@ -84,42 +83,16 @@ library SiloALMFLib {
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
-            console.log(
-                "0.borrow amount, feeAmount, maxBorrow",
-                amount,
-                feeAmount,
-                ISilo($.borrowingVault).maxBorrow(address(this))
-            );
-            console.log(
-                "1._swap.amount, collateral balance before swap",
-                amount,
-                IERC20(collateralAsset).balanceOf(address(this))
-            );
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
-            console.log(
-                "2.deposit.collateral-balance", IERC20(collateralAsset).balanceOf(address(this)), $.lendingVault
-            );
             // supply
             ISilo($.lendingVault).deposit(
                 IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
             );
-            console.log("done");
-            console.log("$.borrowingVault", $.borrowingVault);
-            console.log("maxBorrow", ISilo($.borrowingVault).maxBorrow(address(this)));
-
-            console.log(
-                "3.borrow amount, feeAmount, maxBorrow",
-                amount,
-                feeAmount,
-                ISilo($.borrowingVault).maxBorrow(address(this))
-            );
-            console.log("3.borrow amount,liquidity", ISilo($.borrowingVault).getLiquidity());
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
 
-            console.log("4.transfer");
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
         }
@@ -241,15 +214,9 @@ library SiloALMFLib {
         uint amount,
         uint priceImpactTolerance
     ) internal {
-        console.log("Strategy", address(this));
-        console.log("priceImpactTolerance", priceImpactTolerance);
-        console.log("SiloALMFLib._swap in, out, amount", tokenIn, tokenOut, amount);
-
         // StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        console.log("swapper", address(swapper));
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
-        console.log("swap done");
     }
     //endregion ------------------------------------- Flash loan and swap
 

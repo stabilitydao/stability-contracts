@@ -219,17 +219,27 @@ contract MetaVaultMaxDepositSonicTest is Test {
         uint wrappedBalanceAfter = wrappedMeta.balanceOf(address(this));
 
         // ------------------------------ Check results
-        assertEq(balanceBefore - balanceAfter, amountMetaVaultTokensToDeposit, "Deposit max possible amount should be successful");
-        assertEq(maxAmountToDepositMulti, IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0], "max deposit for MultiVault wasn't change");
+        assertEq(
+            balanceBefore - balanceAfter,
+            amountMetaVaultTokensToDeposit,
+            "Deposit max possible amount should be successful"
+        );
+        assertEq(
+            maxAmountToDepositMulti,
+            IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0],
+            "max deposit for MultiVault wasn't change"
+        );
         assertGt(wrappedBalanceAfter, wrappedBalanceBefore, "balance should increase after deposit");
-        assertEq(wrappedMeta.maxDeposit(address(this)), type(uint).max, "MetaVault.maxDeposit should be still unlimited");
+        assertEq(
+            wrappedMeta.maxDeposit(address(this)), type(uint).max, "MetaVault.maxDeposit should be still unlimited"
+        );
 
         // ---- Withdraw back
         uint amountToWithdraw = wrappedMeta.maxWithdraw(address(this));
         uint shares = wrappedMeta.previewWithdraw(amountToWithdraw);
 
         vm.prank(address(this));
-        wrappedMeta.withdraw(amountToWithdraw, address(this), address(this), shares * 101/100); // 1% slippage
+        wrappedMeta.withdraw(amountToWithdraw, address(this), address(this), shares * 101 / 100); // 1% slippage
 
         assertEq(wrappedMeta.balanceOf(address(this)), 0, "balance should be zero after withdraw");
         assertEq(metaVault.balanceOf(address(this)), balanceBefore, "get all meta vault tokens back after withdraw");
@@ -740,7 +750,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         uint shares = targetWrapped.previewWithdraw(amountToWithdraw);
 
         vm.prank(address(this));
-        targetWrapped.withdraw(amountToWithdraw, address(this), address(this), shares * 101/100); // 1% slippage
+        targetWrapped.withdraw(amountToWithdraw, address(this), address(this), shares * 101 / 100); // 1% slippage
         vm.roll(block.number + 6);
 
         console.log("amountToWithdraw", amountToWithdraw);
