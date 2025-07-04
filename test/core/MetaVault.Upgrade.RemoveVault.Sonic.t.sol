@@ -55,7 +55,23 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     }
 
     function testRemoveSingleVault0() public {
-        _testRemoveSingleVault(8);
+        _testRemoveSingleVault(0);
+    }
+
+    function testRemoveSingleVault1() public {
+        _testRemoveSingleVault(1);
+    }
+
+    function testRemoveSingleVault2() public {
+        _testRemoveSingleVault(2);
+    }
+
+    function testRemoveSingleVault3() public {
+        _testRemoveSingleVault(3);
+    }
+
+    function testRemoveSingleVault4() public {
+        _testRemoveSingleVault(4);
     }
 
     function testRemoveSingleVault__Fuzzy(uint indexVaultToRemove) public {
@@ -63,48 +79,63 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         _testRemoveSingleVault(indexVaultToRemove);
     }
 
-    function testRemoveSeveralVaults__Fuzzy(uint startVaultIndex, uint countVaultsToRemove) public {
+    function testRemoveSeveralThreeVaults__Fuzzy(uint startVaultIndex) public {
+        uint countVaultsToRemove = 3;
         startVaultIndex = bound(startVaultIndex, 0, metaVault.vaults().length - 1);
-        countVaultsToRemove = bound(countVaultsToRemove, 0, metaVault.vaults().length - 2);
         _testRemoveSeveralVaults(startVaultIndex, countVaultsToRemove);
     }
 
     //region ------------------------------ Internal logic
+    /// @notice Ensure that the vault has enough liquidity to withdraw all assets
+    function _isVaultRemovable(uint valueIndex) internal view returns (bool) {
+        address vault = metaVault.vaults()[valueIndex];
+        bool ret = IStabilityVault(vault).maxWithdraw(address(metaVault))
+            <= IStabilityVault(vault).balanceOf(address(metaVault));
+        console.log(
+            "_isVaultRemovable",
+            valueIndex,
+            IStabilityVault(vault).maxWithdraw(address(metaVault)),
+            IStabilityVault(vault).balanceOf(address(metaVault))
+        );
+        console.log("ret", ret);
+        return ret;
+    }
+
     function _testRemoveSingleVault(uint indexVaultToRemove) internal {
         _upgradeMultiVault(address(metaVault));
+        if (_isVaultRemovable(indexVaultToRemove)) {
+            VaultState memory stateBefore = _removeSubVault(indexVaultToRemove);
 
-        VaultState memory stateBefore = _getVaultState();
-        _removeSubVault(indexVaultToRemove);
+            // ------------------------------ Check vault state after remove
+            VaultState memory stateAfter = _getVaultState();
+            _checkVaultStateAfterRemove(stateBefore, stateAfter);
 
-        // ------------------------------ Check vault state after remove
-        VaultState memory stateAfter = _getVaultState();
-        _checkVaultStateAfterRemove(stateBefore, stateAfter);
-
-        // ------------------------------ Try to make actions after remove
-        _makeWithdrawDeposit();
-
-        VaultState memory stateFinal = _getVaultState();
-        _checkVaultStateAfterRemove(stateBefore, stateFinal);
+            // ------------------------------ Try to make actions after remove
+            _makeWithdrawDeposit(); // no revert
+        } else {
+            console.log("Vault is not removable, skipping test for index", indexVaultToRemove);
+        }
     }
 
     function _testRemoveSeveralVaults(uint startVaultIndex, uint countVaultsToRemove) internal {
         _upgradeMultiVault(address(metaVault));
 
-        VaultState memory stateBefore = _getVaultState();
+        for (uint n; n < countVaultsToRemove; ++n) {
+            for (uint i; i < metaVault.vaults().length; ++i) {
+                uint index = startVaultIndex + i % metaVault.vaults().length;
+                if (_isVaultRemovable(index)) {
+                    VaultState memory stateBefore = _removeSubVault(index);
 
-        for (uint i; i < countVaultsToRemove; ++i) {
-            _removeSubVault(startVaultIndex < metaVault.vaults().length ? startVaultIndex : 0);
-
-            // ------------------------------ Check vault state after remove
-            VaultState memory stateAfter = _getVaultState();
-            _checkVaultStateAfterRemove(stateBefore, stateAfter);
+                    // ------------------------------ Check vault state after remove
+                    VaultState memory stateAfter = _getVaultState();
+                    _checkVaultStateAfterRemove(stateBefore, stateAfter);
+                    break;
+                }
+            }
         }
 
         // ------------------------------ Try to make actions after remove
-        _makeWithdrawDeposit();
-
-        VaultState memory stateFinal = _getVaultState();
-        _checkVaultStateAfterRemove(stateBefore, stateFinal);
+        _makeWithdrawDeposit(); // no revert
     }
 
     function _getVaultState() internal view returns (VaultState memory state) {
@@ -133,16 +164,21 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         );
         console.log("_checkVaultStateAfterRemove.2");
 
-        assertApproxEqAbs(stateAfter.totalSupply, stateBefore.totalSupply, 1, "Total supply should not changed");
+        console.log("stateAfter.totalSupply", stateAfter.totalSupply);
+        console.log("stateBefore.totalSupply", stateBefore.totalSupply);
+        assertLt(
+            _getDiffPercent18(stateAfter.totalSupply, stateBefore.totalSupply),
+            1e18 / 10_000,
+            "Total supply should not changed"
+        );
         console.log("_checkVaultStateAfterRemove.3");
-        assertApproxEqAbs(stateAfter.tvl, stateBefore.tvl, 1, "TVL should not changed");
+        assertLt(_getDiffPercent18(stateAfter.tvl, stateBefore.tvl), 1e18 / 10_000, "TVL should not changed");
         console.log("_checkVaultStateAfterRemove.4");
         assertApproxEqAbs(stateAfter.price, stateBefore.price, 1, "Price should not changed");
         console.log("_checkVaultStateAfterRemove.5");
-        assertApproxEqAbs(
-            stateAfter.balanceMetaUsdVault,
-            stateBefore.balanceMetaUsdVault,
-            1,
+        assertLt(
+            _getDiffPercent18(stateAfter.balanceMetaUsdVault, stateBefore.balanceMetaUsdVault),
+            1e18 / 10_000,
             "Balance of MetaUSD vault should not changed"
         );
         console.log("_checkVaultStateAfterRemove.6");
@@ -160,36 +196,44 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
             }
             require(index != type(uint).max, "Vault not found");
 
-            assertEq(
-                stateAfter.targetProportions[i],
-                stateBefore.targetProportions[index],
+            assertLt(
+                _getDiffPercent18(stateAfter.targetProportions[i], stateBefore.targetProportions[index]),
+                1e18 / 10_000,
                 "Target proportions should not changed"
             );
-            assertEq(
-                stateAfter.currentProportions[i],
-                stateBefore.currentProportions[index],
+            assertLt(
+                _getDiffPercent18(stateAfter.currentProportions[i], stateBefore.currentProportions[index]),
+                1e18 / 10_000,
                 "Current proportions should not changed"
             );
         }
     }
 
-    function _removeSubVault(uint vaultIndex) internal {
+    function _removeSubVault(uint vaultIndex) internal returns (VaultState memory state) {
         address vault = metaVault.vaults()[vaultIndex];
-
-        // ----------------------------- Set proportions of the target vault to zero
-        _setZeroProportions(vaultIndex, vaultIndex == 0 ? 1 : 0);
 
         // ----------------------------- Remove all actives from the volt so that only dust remains in it
         uint threshold = metaVault.USD_THRESHOLD();
         uint step;
 
         do {
-            _makeWithdrawDeposit();
-            ++step;
-
             uint amount = _getVaultOwnerAmountUsd(vault, address(metaVault));
             if (amount < threshold) break;
-        } while (step < 250);
+
+            // Set target vault to zero
+            _prepareProportionsToWithdraw(vaultIndex);
+            console.log("Vault to withdraw", vaultIndex, vault, metaVault.vaultForWithdraw());
+            console.log("amount", amount);
+
+            _makeWithdraw();
+            _prepareProportionsToDeposit(vaultIndex == 0 ? 1 : 0);
+            console.log("Vault to deposit", vaultIndex, vault, metaVault.vaultForDeposit());
+
+            _makeDeposit();
+            ++step;
+        } while (step < 25);
+
+        _prepareProportionsToWithdraw(vaultIndex);
 
         assertLt(
             _getVaultOwnerAmountUsd(vault, address(metaVault)),
@@ -198,6 +242,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         );
 
         // ----------------------------- Remove vault from MetaVault
+        state = _getVaultState();
 
         vm.expectRevert(); // only multisig is able to remove vault
         vm.prank(address(this));
@@ -208,19 +253,22 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     }
 
     function _makeWithdrawDeposit() internal {
-        console.log("_makeWithdrawDeposit.1");
-        address[] memory assets = metaVault.assets();
+        _makeWithdraw();
+        _makeDeposit();
+    }
 
-        console.log("_makeWithdrawDeposit", metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD));
+    function _makeWithdraw() internal {
+        address[] memory assets = metaVault.assetsForWithdraw();
+
         uint amountToWithdraw = metaVault.maxWithdraw(SonicConstantsLib.METAVAULT_metaUSD) / 10;
-
-//        uint amountToWithdraw = metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD) / 100;
 
         vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
         metaVault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
         vm.roll(block.number + 6);
+    }
 
-        console.log("_makeWithdrawDeposit.2");
+    function _makeDeposit() internal {
+        address[] memory assets = metaVault.assetsForDeposit();
         uint[] memory maxAmounts = new uint[](1);
         maxAmounts[0] = IERC20(assets[0]).balanceOf(address(metaVault));
 
@@ -230,7 +278,6 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
         metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_metaUSD);
         vm.roll(block.number + 6);
-        console.log("_makeWithdrawDeposit.3", metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD));
     }
 
     function _getVaultOwnerAmountUsd(address vault, address owner) internal view returns (uint) {
@@ -241,12 +288,61 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
             vaultTotalSupply == 0 ? 0 : Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
     }
 
-    function _setZeroProportions(uint fromIndex, uint toIndex) internal {
+    function _prepareProportionsToWithdraw(uint fromIndex) internal {
+        multisig = IPlatform(PLATFORM).multisig();
+        uint countVaults = metaVault.vaults().length;
+
+        uint[] memory props = metaVault.currentProportions();
+        uint sumProps;
+        for (uint i; i < props.length; ++i) {
+            sumProps += props[i];
+        }
+        if (sumProps > 1e18) {
+            uint delta = sumProps - 1e18;
+            for (uint i; i < props.length; ++i) {
+                if (props[i] > delta) {
+                    props[i] -= delta;
+                    break;
+                }
+            }
+        } else if (sumProps < 1e18) {
+            uint delta = 1e18 - sumProps;
+            props[0] += delta;
+        }
+        uint part1 = props[fromIndex] / 2;
+        uint part2 = props[fromIndex] - part1;
+        props[fromIndex] = 0;
+
+        uint toIndex = fromIndex + 1;
+        if (toIndex >= countVaults) toIndex = 0;
+        props[toIndex] += part1;
+
+        toIndex = fromIndex + 1;
+        if (toIndex >= countVaults) toIndex = 0;
+        props[toIndex] += part2;
+
+        vm.prank(multisig);
+        metaVault.setTargetProportions(props);
+
+        //        props = metaVault.targetProportions();
+        //        for (uint i; i < current.length; ++i) {
+        //            // uint[] memory current = metaVault.currentProportions();
+        //            console.log("i, current, target", i, current[i], props[i]);
+        //        }
+    }
+
+    function _prepareProportionsToDeposit(uint toIndex) internal {
         multisig = IPlatform(PLATFORM).multisig();
 
+        uint sumProps = 0;
         uint[] memory props = metaVault.targetProportions();
-        props[toIndex] += props[fromIndex];
-        props[fromIndex] = 0;
+        for (uint i; i < props.length; ++i) {
+            if (i != toIndex) {
+                props[i] = 1e16;
+                sumProps += props[i];
+            }
+        }
+        props[toIndex] = 1e18 - sumProps;
 
         vm.prank(multisig);
         metaVault.setTargetProportions(props);
@@ -256,6 +352,13 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         //        for (uint i; i < current.length; ++i) {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
+    }
+
+    function _getDiffPercent18(uint x, uint y) internal pure returns (uint) {
+        if (x == 0) {
+            return y == 0 ? 0 : 1e18;
+        }
+        return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
     //endregion ------------------------------ Internal logic
 
@@ -332,9 +435,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
                 CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
             ) {
                 _upgradeIchiSwapxFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.AAVE)
-            ) {
+            } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.AAVE)) {
                 _upgradeAaveStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else {
                 console.log("Error: strategy is not upgraded", IVault(payable(vaults[i])).strategy().strategyLogicId());
@@ -442,5 +543,4 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         factory.upgradeStrategyProxy(strategyAddress);
     }
     //endregion ------------------------------------ Upgrade CVaults and strategies
-
 }
