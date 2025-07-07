@@ -356,18 +356,20 @@ library SiloALMFLib {
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
-            priceCtoB = ISiloOracle(collateralOracle).quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
+            priceCtoB = ISiloOracle(collateralOracle).quote(
+                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
+            );
             priceBtoC = 1e18 * 1e18 / priceCtoB;
         } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
-            priceBtoC = ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceBtoC =
+                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
             uint priceC = ISiloOracle(collateralOracle).quote(
                 10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
             );
-            uint priceB = ISiloOracle(borrowOracle).quote(
-                10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token
-            );
+            uint priceB =
+                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
 
             priceCtoB = priceC * 1e18 / priceB; // todo
             priceBtoC = 1e18 * 1e18 / priceCtoB;

@@ -161,9 +161,10 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenOut == tokens[i]) {
                     (uint price,) = IMetaVault(vaults[i - 1]).price();
-                    (uint priceTokenOut, ) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
+                    (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
                     // todo should we check if the price is trusted here?
-                    return price * 1e18 / priceTokenOut * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
+                    return price * 1e18 / priceTokenOut * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals)
+                        / 1e18;
                 }
             }
         } else if (tokenOut == pool) {
@@ -171,7 +172,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenIn == tokens[i]) {
                     (uint price,) = IMetaVault(vaults[i - 1]).price();
-                    (uint priceTokenOut, ) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
+                    (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
                     // todo should we check if the price is trusted here?
                     return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * priceTokenOut * 1e18 / price;
                 }

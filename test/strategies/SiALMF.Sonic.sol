@@ -46,7 +46,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
     function testSiALMFSonic() public universalTest {
         _addStrategy(FARM_META_USD_USDC_53);
-//        _addStrategy(FARM_META_USD_SCUSD_54); // todo
+        //        _addStrategy(FARM_META_USD_SCUSD_54); // todo
         _addStrategy(FARM_METAS_S_55);
     }
 
@@ -113,7 +113,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint withdrawn = _tryToWithdrawAll(strategy);
         vm.revertToState(snapshot);
 
-        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
+        assertLt(
+            _getDiffPercent18(deposited, withdrawn),
+            1e18 * 97 / 100,
+            "Withdrawn amount should be close to deposited amount (fee amount)"
+        );
     }
 
     function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash() internal {
@@ -124,7 +128,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
         for (uint i = 0; i < maxDepositAssets.length; i++) {
-           maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
+            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
         }
         _tryToDeposit(strategy, maxDepositAssets, REVERT_NOT_ENOUGH_LIQUIDITY);
         vm.revertToState(snapshot);
@@ -140,11 +144,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
 
-//        // ---------------------------- try to withdraw full amount back without any losses
-//        uint withdrawn = _tryToWithdrawAll(strategy);
+        //        // ---------------------------- try to withdraw full amount back without any losses
+        //        uint withdrawn = _tryToWithdrawAll(strategy);
         vm.revertToState(snapshot);
-//
-//        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
+        //
+        //        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
     }
 
     function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash() internal {
@@ -157,9 +161,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint farmId = _currentFarmId();
         address borrowVault = farmId == FARM_META_USD_USDC_53
             ? SonicConstantsLib.SILO_VAULT_121_USDC
-            : farmId == FARM_META_USD_SCUSD_54
-                ? SonicConstantsLib.SILO_VAULT_125_scUSD
-                : SonicConstantsLib.SILO_VAULT_128_S;
+            : farmId == FARM_META_USD_SCUSD_54 ? SonicConstantsLib.SILO_VAULT_125_scUSD : SonicConstantsLib.SILO_VAULT_128_S;
         address asset = IERC4626(borrowVault).asset();
         uint expectedRevertKind = IERC20(asset).balanceOf(flashLoanVault) < IERC20(asset).balanceOf(borrowVault)
             ? REVERT_INSUFFICIENT_BALANCE
@@ -187,7 +189,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
     }
 
-    function _setUpFlashLoanVault(uint additionalAmount, ILeverageLendingStrategy.FlashLoanKind flashKindForFarm53) internal returns (address) {
+    function _setUpFlashLoanVault(
+        uint additionalAmount,
+        ILeverageLendingStrategy.FlashLoanKind flashKindForFarm53
+    ) internal returns (address) {
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53) {
             address pool = flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
@@ -212,9 +217,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             }
             return pool;
         } else if (farmId == FARM_META_USD_SCUSD_54) {
-            address pool = additionalAmount == 0
-                ? SonicConstantsLib.BEETS_VAULT_V3
-                : SonicConstantsLib.BEETS_VAULT;
+            address pool = additionalAmount == 0 ? SonicConstantsLib.BEETS_VAULT_V3 : SonicConstantsLib.BEETS_VAULT;
             _setFlashLoanVault(
                 ILeverageLendingStrategy(currentStrategy),
                 pool,
@@ -229,9 +232,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             }
             return pool;
         } else if (farmId == FARM_METAS_S_55) {
-            address pool = additionalAmount == 0
-                ? SonicConstantsLib.BEETS_VAULT_V3
-                : SonicConstantsLib.BEETS_VAULT;
+            address pool = additionalAmount == 0 ? SonicConstantsLib.BEETS_VAULT_V3 : SonicConstantsLib.BEETS_VAULT;
             _setFlashLoanVault(
                 ILeverageLendingStrategy(currentStrategy),
                 pool,
@@ -248,10 +249,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         } else {
             revert("Unknown farmId");
         }
-
     }
 
-    function _tryToDeposit(IStrategy strategy, uint[] memory amounts_, uint revertKind) internal returns (uint deposited){
+    function _tryToDeposit(
+        IStrategy strategy,
+        uint[] memory amounts_,
+        uint revertKind
+    ) internal returns (uint deposited) {
         // ----------------------------- Transfer deposit amount to the strategy
         IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(
             strategy.assets()[0] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
@@ -328,10 +332,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         deal(asset, user, amountsMax[0]);
 
         vm.startPrank(user);
-        IERC20(asset).approve(
-            address(metaVault),
-            IERC20(asset).balanceOf(user)
-        );
+        IERC20(asset).approve(address(metaVault), IERC20(asset).balanceOf(user));
         metaVault.depositAssets(_assets, amountsMax, 0, user);
         vm.roll(block.number + 6);
         vm.stopPrank();
