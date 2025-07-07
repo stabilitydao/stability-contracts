@@ -70,8 +70,8 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         _testRemoveSingleVault(3);
     }
 
-    function testRemoveSingleVault4() public {
-        _testRemoveSingleVault(4);
+    function testRemoveSeveralThreeVaults7() public {
+        _testRemoveSeveralVaults(4, 3);
     }
 
     function testRemoveSingleVault__Fuzzy(uint indexVaultToRemove) public {
@@ -89,16 +89,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     /// @notice Ensure that the vault has enough liquidity to withdraw all assets
     function _isVaultRemovable(uint valueIndex) internal view returns (bool) {
         address vault = metaVault.vaults()[valueIndex];
-        bool ret = IStabilityVault(vault).maxWithdraw(address(metaVault))
-            <= IStabilityVault(vault).balanceOf(address(metaVault));
-        console.log(
-            "_isVaultRemovable",
-            valueIndex,
-            IStabilityVault(vault).maxWithdraw(address(metaVault)),
-            IStabilityVault(vault).balanceOf(address(metaVault))
-        );
-        console.log("ret", ret);
-        return ret;
+        return IStabilityVault(vault).maxWithdraw(address(metaVault)) == IStabilityVault(vault).balanceOf(address(metaVault));
     }
 
     function _testRemoveSingleVault(uint indexVaultToRemove) internal {
@@ -122,7 +113,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
 
         for (uint n; n < countVaultsToRemove; ++n) {
             for (uint i; i < metaVault.vaults().length; ++i) {
-                uint index = startVaultIndex + i % metaVault.vaults().length;
+                uint index = (startVaultIndex + i) % metaVault.vaults().length;
                 if (_isVaultRemovable(index)) {
                     VaultState memory stateBefore = _removeSubVault(index);
 
@@ -150,7 +141,6 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     }
 
     function _checkVaultStateAfterRemove(VaultState memory stateBefore, VaultState memory stateAfter) internal pure {
-        console.log("_checkVaultStateAfterRemove.1");
         assertEq(stateAfter.vaults.length, stateBefore.vaults.length - 1, "Vault count should decrease by one");
         assertEq(
             stateAfter.targetProportions.length,
@@ -162,29 +152,21 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
             stateBefore.currentProportions.length - 1,
             "Current proportions length is reduced by one"
         );
-        console.log("_checkVaultStateAfterRemove.2");
 
-        console.log("stateAfter.totalSupply", stateAfter.totalSupply);
-        console.log("stateBefore.totalSupply", stateBefore.totalSupply);
         assertLt(
             _getDiffPercent18(stateAfter.totalSupply, stateBefore.totalSupply),
             1e18 / 10_000,
             "Total supply should not changed"
         );
-        console.log("_checkVaultStateAfterRemove.3");
         assertLt(_getDiffPercent18(stateAfter.tvl, stateBefore.tvl), 1e18 / 10_000, "TVL should not changed");
-        console.log("_checkVaultStateAfterRemove.4");
         assertApproxEqAbs(stateAfter.price, stateBefore.price, 1, "Price should not changed");
-        console.log("_checkVaultStateAfterRemove.5");
         assertLt(
             _getDiffPercent18(stateAfter.balanceMetaUsdVault, stateBefore.balanceMetaUsdVault),
             1e18 / 10_000,
             "Balance of MetaUSD vault should not changed"
         );
-        console.log("_checkVaultStateAfterRemove.6");
 
         for (uint i; i < stateAfter.vaults.length; ++i) {
-            console.log("_checkVaultStateAfterRemove.7", i);
             // find index of the vault in the stateBefore
             uint index = type(uint).max;
 
@@ -222,12 +204,12 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
 
             // Set target vault to zero
             _prepareProportionsToWithdraw(vaultIndex);
-            console.log("Vault to withdraw", vaultIndex, vault, metaVault.vaultForWithdraw());
-            console.log("amount", amount);
 
             _makeWithdraw();
             _prepareProportionsToDeposit(vaultIndex == 0 ? 1 : 0);
-            console.log("Vault to deposit", vaultIndex, vault, metaVault.vaultForDeposit());
+
+            amount = _getVaultOwnerAmountUsd(vault, address(metaVault));
+            if (amount < threshold) break;
 
             _makeDeposit();
             ++step;

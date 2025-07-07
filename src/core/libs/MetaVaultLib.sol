@@ -78,11 +78,11 @@ library MetaVaultLib {
         // ----------------------------- Remove vault
         if (vaultIndex != len - 1) {
             $.vaults[vaultIndex] = _vaults[len - 1];
-            $.vaults.pop();
-
             $.targetProportions[vaultIndex] = _targetProportions[len - 1];
-            $.targetProportions.pop();
         }
+
+        $.vaults.pop();
+        $.targetProportions.pop();
 
         _targetProportions = $.targetProportions;
         _checkProportions(_targetProportions);
