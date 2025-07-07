@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -318,7 +317,6 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
-        console.log("_depositAssets.1");
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
@@ -327,7 +325,6 @@ contract SiloALMFStrategy is
         metaVault.setLastBlockDefenseDisabledTx(true);
         value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
         metaVault.setLastBlockDefenseDisabledTx(false);
-        console.log("_depositAssets.2");
     }
 
     /// @inheritdoc StrategyBase

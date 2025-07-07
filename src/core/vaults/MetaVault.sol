@@ -464,7 +464,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_pegAsset == address(0)) {
             return (1e18, true);
         }
-        return IPriceReader(IPlatform(platform()).priceReader()).getPrice(_pegAsset);
+        (price_, trusted_) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(_pegAsset);
     }
 
     /// @inheritdoc IStabilityVault

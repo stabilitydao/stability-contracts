@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -118,12 +119,16 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
     /// @inheritdoc IERC4626
     function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxAssets) {
+        console.log("wrapped.maxDeposit");
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         if ($.isMulti) {
+            console.log("wrapped.maxDeposit.multi");
             IMetaVault _metaVault = IMetaVault($.metaVault);
             uint[] memory amounts = _metaVault.maxDeposit(receiver);
+            console.log("wrapped.maxDeposit", amounts[0]);
             return amounts[0];
         } else {
+            console.log("wrapped.maxDeposit.metavault.results", super.maxDeposit(receiver));
             return super.maxDeposit(receiver);
         }
     }

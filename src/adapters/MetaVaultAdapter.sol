@@ -10,6 +10,8 @@ import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IMetaVault} from "../interfaces/IMetaVault.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title AMM adapter for Wrapped Meta USD
 /// Changelog:
@@ -159,8 +161,9 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenOut == tokens[i]) {
                     (uint price,) = IMetaVault(vaults[i - 1]).price();
+                    (uint priceTokenOut, ) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
                     // todo should we check if the price is trusted here?
-                    return price * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
+                    return price * 1e18 / priceTokenOut * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
                 }
             }
         } else if (tokenOut == pool) {
@@ -168,8 +171,9 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             for (uint i = 1; i < tokens.length; i++) {
                 if (tokenIn == tokens[i]) {
                     (uint price,) = IMetaVault(vaults[i - 1]).price();
+                    (uint priceTokenOut, ) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
                     // todo should we check if the price is trusted here?
-                    return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * 1e18 / price;
+                    return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * priceTokenOut * 1e18 / price;
                 }
             }
         }

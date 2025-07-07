@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {console} from "forge-std/console.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
@@ -34,7 +35,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         // vm.rollFork(34471950); // Jun-17-2025 09:08:37 AM +UTC
-        vm.rollFork(36717785); // Jul-01-2025 01:21:29 PM +UTC
+        // vm.rollFork(36717785); // Jul-01-2025 01:21:29 PM +UTC
+        vm.rollFork(37477020); // Jul-07-2025 12:24:42 PM +UTC
+
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -43,8 +46,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
     function testSiALMFSonic() public universalTest {
         _addStrategy(FARM_META_USD_USDC_53);
-        _addStrategy(FARM_META_USD_SCUSD_54);
-//        _addStrategy(FARM_METAS_S_55);
+//        _addStrategy(FARM_META_USD_SCUSD_54); // todo
+        _addStrategy(FARM_METAS_S_55);
     }
 
     function _addStrategy(uint farmId) internal {
@@ -70,9 +73,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             revert("Unknown farmId");
         }
 
-        _upgradeMetaVault(address(PLATFORM), _currentMetaVault);
+        IPlatform platform = IPlatform(PLATFORM); // IControllable(currentStrategy).platform());
+        _upgradeMetaVault(address(platform), _currentMetaVault);
 
-        vm.prank(IPlatform(PLATFORM).multisig());
+        vm.prank(platform.multisig());
         IMetaVault(_currentMetaVault).changeWhitelist(currentStrategy, true);
 
         if (farmId == FARM_META_USD_USDC_53) {
@@ -90,13 +94,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     /// @notice Ensure that the value returned by SiloALMFStrategy.maxDepositAssets is not unlimited.
     /// Ensure that we can deposit max amount and that we CAN'T deposit more than max amount.
     function _checkMaxDepositAssets_All() internal {
-        console.log("_checkMaxDepositAssets_MaxDeposit_UnlimitedFlash");
         _checkMaxDepositAssets_MaxDeposit_UnlimitedFlash();
-        console.log("_checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash");
         _checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash();
-        console.log("_checkMaxDepositAssets_MaxDeposit_LimitedFlash");
         _checkMaxDepositAssets_MaxDeposit_LimitedFlash();
-        console.log("_checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash");
         _checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash();
     }
 
@@ -105,10 +105,15 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // ---------------------------- try to deposit maxDeposit - unlimited flash loan is available
         uint snapshot = vm.snapshot();
-        _setUpFlashLoanVault(2e12, false);
+        _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
-        _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+        uint deposited = _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+
+        // ---------------------------- try to withdraw full amount back without any losses
+        uint withdrawn = _tryToWithdrawAll(strategy);
         vm.revertToState(snapshot);
+
+        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
     }
 
     function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_UnlimitedFlash() internal {
@@ -116,7 +121,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // ---------------------------- try to deposit maxDeposit + 1% - unlimited flash loan is available
         uint snapshot = vm.snapshot();
-        _setUpFlashLoanVault(2e12, true);
+        _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
         for (uint i = 0; i < maxDepositAssets.length; i++) {
            maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
@@ -130,10 +135,16 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // ---------------------------- try to deposit maxDeposit with limited flash loan
         uint snapshot = vm.snapshot();
-        _setUpFlashLoanVault(0, false);
+        _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
+
         _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
+
+//        // ---------------------------- try to withdraw full amount back without any losses
+//        uint withdrawn = _tryToWithdrawAll(strategy);
         vm.revertToState(snapshot);
+//
+//        assertLt(_getDiffPercent18(deposited, withdrawn), 1e18*97/100, "Withdrawn amount should be close to deposited amount (fee amount)");
     }
 
     function _checkMaxDepositAssets_AmountMoreThanMaxDeposit_LimitedFlash() internal {
@@ -141,12 +152,24 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // ---------------------------- try to deposit maxDeposit + 1% with limited flash loan
         uint snapshot = vm.snapshot();
-        _setUpFlashLoanVault(0, false);
+        address flashLoanVault = _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
+
+        uint farmId = _currentFarmId();
+        address borrowVault = farmId == FARM_META_USD_USDC_53
+            ? SonicConstantsLib.SILO_VAULT_121_USDC
+            : farmId == FARM_META_USD_SCUSD_54
+                ? SonicConstantsLib.SILO_VAULT_125_scUSD
+                : SonicConstantsLib.SILO_VAULT_128_S;
+        address asset = IERC4626(borrowVault).asset();
+        uint expectedRevertKind = IERC20(asset).balanceOf(flashLoanVault) < IERC20(asset).balanceOf(borrowVault)
+            ? REVERT_INSUFFICIENT_BALANCE
+            : REVERT_NOT_ENOUGH_LIQUIDITY;
+
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
         for (uint i = 0; i < maxDepositAssets.length; i++) {
             maxDepositAssets[i] = maxDepositAssets[i] * 101 / 100;
         }
-        _tryToDeposit(strategy, maxDepositAssets, REVERT_INSUFFICIENT_BALANCE);
+        _tryToDeposit(strategy, maxDepositAssets, expectedRevertKind);
         vm.revertToState(snapshot);
     }
     //region --------------------------------------- Pre-deposit checkers
@@ -156,62 +179,85 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         return IFarmingStrategy(currentStrategy).farmId();
     }
 
-    function _setUpFlashLoanVault(uint additionalAmount, bool useAlgebraIfPossible) internal {
+    function getUnlimitedFlashAmount() internal view returns (uint) {
+        if (_currentFarmId() == FARM_METAS_S_55) {
+            return 2e24; // 2 million wS
+        } else {
+            return 2e12; // 2 million USDC
+        }
+    }
+
+    function _setUpFlashLoanVault(uint additionalAmount, ILeverageLendingStrategy.FlashLoanKind flashKindForFarm53) internal returns (address) {
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53) {
-            address pool = useAlgebraIfPossible
+            address pool = flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
                 ? SonicConstantsLib.POOL_ALGEBRA_WS_USDC
-                : SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH;
+                : flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
+                    ? SonicConstantsLib.POOL_SHADOW_CL_USDC_WETH
+                    : SonicConstantsLib.BEETS_VAULT_V3;
             // Set up flash loan vault for the strategy
             _setFlashLoanVault(
                 ILeverageLendingStrategy(currentStrategy),
                 pool,
                 pool,
-                useAlgebraIfPossible
+                flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3
                     ? uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
-                    : uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+                    : flashKindForFarm53 == ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2
+                        ? uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2)
+                        : uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
             );
             if (additionalAmount != 0) {
                 // Add additional amount to the flash loan vault to avoid insufficient balance
                 deal(SonicConstantsLib.TOKEN_USDC, pool, additionalAmount);
             }
+            return pool;
         } else if (farmId == FARM_META_USD_SCUSD_54) {
+            address pool = additionalAmount == 0
+                ? SonicConstantsLib.BEETS_VAULT_V3
+                : SonicConstantsLib.BEETS_VAULT;
             _setFlashLoanVault(
                 ILeverageLendingStrategy(currentStrategy),
-                SonicConstantsLib.BEETS_VAULT_V3,
-                SonicConstantsLib.BEETS_VAULT_V3,
-                uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+                pool,
+                pool,
+                pool == SonicConstantsLib.BEETS_VAULT_V3
+                    ? uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+                    : uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
             );
             if (additionalAmount != 0) {
                 // Add additional amount to the flash loan vault to avoid insufficient balance
-                deal(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
+                deal(SonicConstantsLib.TOKEN_scUSD, pool, additionalAmount);
             }
+            return pool;
         } else if (farmId == FARM_METAS_S_55) {
+            address pool = additionalAmount == 0
+                ? SonicConstantsLib.BEETS_VAULT_V3
+                : SonicConstantsLib.BEETS_VAULT;
             _setFlashLoanVault(
                 ILeverageLendingStrategy(currentStrategy),
-                SonicConstantsLib.BEETS_VAULT,
-                SonicConstantsLib.BEETS_VAULT,
-                uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
+                pool,
+                pool,
+                pool == SonicConstantsLib.BEETS_VAULT_V3
+                    ? uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1)
+                    : uint(ILeverageLendingStrategy.FlashLoanKind.Default_0)
             );
             if (additionalAmount != 0) {
                 // Add additional amount to the flash loan vault to avoid insufficient balance
-                deal(SonicConstantsLib.TOKEN_wS, SonicConstantsLib.BEETS_VAULT, additionalAmount);
+                deal(SonicConstantsLib.TOKEN_wS, pool, additionalAmount);
             }
+            return pool;
         } else {
             revert("Unknown farmId");
         }
 
     }
 
-    function _tryToDeposit(IStrategy strategy, uint[] memory amounts_, uint revertKind) internal {
+    function _tryToDeposit(IStrategy strategy, uint[] memory amounts_, uint revertKind) internal returns (uint deposited){
         // ----------------------------- Transfer deposit amount to the strategy
         IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(
             strategy.assets()[0] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
                 ? SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
                 : SonicConstantsLib.WRAPPED_METAVAULT_metaS
         );
-        console.log("wrappedMetaVault", address(wrappedMetaVault));
-        console.log("asset", strategy.assets()[0]);
 
         _dealAndApprove(address(this), currentStrategy, strategy.assets(), amounts_);
         vm.prank(address(this));
@@ -227,6 +273,22 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
         vm.prank(vault);
         strategy.depositAssets(amounts_);
+
+        return amounts_[0];
+    }
+
+    function _tryToWithdrawAll(IStrategy strategy) internal returns (uint withdrawn) {
+        address vault = strategy.vault();
+        address[] memory _assets = strategy.assets();
+
+        uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
+
+        uint total = strategy.total();
+
+        vm.prank(vault);
+        strategy.withdrawAssets(_assets, total, address(this));
+
+        return IERC20(_assets[0]).balanceOf(address(this)) - balanceBefore;
     }
 
     function _dealAndApprove(address user, address spender, address[] memory assets, uint[] memory amounts) internal {
@@ -265,7 +327,6 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         deal(asset, user, amountsMax[0]);
 
-        console.log("deposit.metaVault", address(metaVault), IERC20(asset).balanceOf(user));
         vm.startPrank(user);
         IERC20(asset).approve(
             address(metaVault),
@@ -275,7 +336,6 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.roll(block.number + 6);
         vm.stopPrank();
 
-        console.log("wrap");
         if (wrap) {
             vm.startPrank(user);
             IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(wrappedMetaVault_);
@@ -297,6 +357,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         address vaultImplementation = address(new MetaVault());
         vm.prank(multisig);
         metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
+
         address[] memory metaProxies = new address[](1);
         metaProxies[0] = address(metaVault_);
         vm.prank(multisig);
@@ -318,6 +379,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
+    }
+
+    function _getDiffPercent18(uint x, uint y) internal pure returns (uint) {
+        if (x == 0) {
+            return y == 0 ? 0 : 1e18;
+        }
+        return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
     //endregion --------------------------------------- Helper functions
 }
