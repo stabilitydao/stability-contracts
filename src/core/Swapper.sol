@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
-import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
+import {IMetaVaultAmmAdapter} from "../interfaces/IMetaVaultAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
@@ -629,17 +629,17 @@ contract Swapper is Controllable, ISwapper {
                 if (poolData.tokenIn == poolData.tokenOut) {
                     // support of dynamic route: tokenOut is selected on the fly
                     IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
-                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_USD))) {
-                        poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_VAULT))) {
+                        poolData.tokenOut = IMetaVaultAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
                     }
                 }
             } else {
                 if (poolData.tokenIn == poolData.tokenOut) {
                     // support of dynamic route: tokenOut is selected on the fly
                     IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
-                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_USD))) {
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_VAULT))) {
                         // we assign tokenOut here because in/out tokens are swapped below
-                        poolData.tokenOut = IMetaUsdAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
+                        poolData.tokenOut = IMetaVaultAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
                     }
                 }
 

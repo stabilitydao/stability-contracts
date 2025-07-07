@@ -6,7 +6,7 @@ import {IAmmAdapter} from "./IAmmAdapter.sol";
 
 /// @dev Get price, swap, liquidity calculations. Used by strategies and swapper
 /// @author dvpublic (https://github.com/dvpublic)
-interface IMetaUsdAmmAdapter is IAmmAdapter {
+interface IMetaVaultAmmAdapter is IAmmAdapter {
     /// @notice Asset in MetaVault.vaultForDeposit
     function assetForDeposit(address pool) external view returns (address);
 

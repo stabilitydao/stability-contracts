@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -538,11 +538,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     function _addAdapter() internal returns (address adapter) {
         address multisig = IPlatform(PLATFORM).multisig();
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new MetaUsdAdapter()));
-        MetaUsdAdapter(address(proxy)).init(PLATFORM);
+        proxy.initProxy(address(new MetaVaultAdapter()));
+        MetaVaultAdapter(address(proxy)).init(PLATFORM);
 
         vm.prank(multisig);
-        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_USD, address(proxy));
+        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_VAULT, address(proxy));
 
         return address(proxy);
     }
@@ -570,7 +570,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         uint i;
         pools[i++] = _makePoolData(
             SonicConstantsLib.METAVAULT_metaUSD,
-            AmmAdapterIdLib.META_USD,
+            AmmAdapterIdLib.META_VAULT,
             SonicConstantsLib.METAVAULT_metaUSD,
             SonicConstantsLib.METAVAULT_metaUSD
         );

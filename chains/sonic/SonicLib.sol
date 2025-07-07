@@ -115,7 +115,7 @@ library SonicLib {
         IBalancerAdapter(IPlatform(platform).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE))).proxy)
             .setupHelpers(SonicConstantsLib.BEETS_V3_ROUTER);
         DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.PENDLE);
-        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.META_USD);
+        DeployAdapterLib.deployAmmAdapter(platform, AmmAdapterIdLib.META_VAULT);
         LogDeployLib.logDeployAmmAdapters(platform, showLog);
         //endregion
 
@@ -193,12 +193,6 @@ library SonicLib {
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
-
-        p.initAddresses = new address[](0);
-        p.initNums = new uint[](0);
-        p.initTicks = new int24[](0);
-        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ALMF_FARM, p);
-
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -245,7 +239,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](43);
+        pools = new ISwapper.AddPoolData[](45);
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
@@ -303,10 +297,15 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_PT_Silo_20_USDC_17JUL2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_wETH_SILO, AmmAdapterIdLib.SOLIDLY, SonicConstantsLib.TOKEN_SILO, SonicConstantsLib.TOKEN_wETH);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_ALGEBRA_beS_OS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_beS, SonicConstantsLib.TOKEN_OS); // 40
+
         pools[i++] = _makePoolData(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, AmmAdapterIdLib.ERC_4626, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD); // 41
+        pools[i++] = _makePoolData(SonicConstantsLib.WRAPPED_METAVAULT_metaS, AmmAdapterIdLib.ERC_4626, SonicConstantsLib.WRAPPED_METAVAULT_metaS, SonicConstantsLib.METAVAULT_metaS); // 42
 
         // dynamic route: tokenIn is equal to tokenOut (actual tokenOut is selected on the fly)
-        pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaUSD, AmmAdapterIdLib.META_USD, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD); // 42
+        pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaUSD, AmmAdapterIdLib.META_VAULT, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD); // 43
+        // dynamic route: tokenIn is equal to tokenOut (actual tokenOut is selected on the fly)
+        pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaS, AmmAdapterIdLib.META_VAULT, SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.METAVAULT_metaS); // 44
+
         //endregion ----- Pools ----
     }
 

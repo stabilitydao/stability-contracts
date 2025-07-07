@@ -5,7 +5,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
-import {IMetaUsdAmmAdapter} from "../interfaces/IMetaUsdAmmAdapter.sol";
+import {IMetaVaultAmmAdapter} from "../interfaces/IMetaVaultAmmAdapter.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
@@ -15,7 +15,7 @@ import {IMetaVault} from "../interfaces/IMetaVault.sol";
 /// Changelog:
 ///   1.0.0: Initial version
 /// @author dvpublic (https://github.com/dvpublic)
-contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
+contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -112,7 +112,7 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function ammAdapterId() external pure returns (string memory) {
-        return AmmAdapterIdLib.META_USD;
+        return AmmAdapterIdLib.META_VAULT;
     }
 
     /// @inheritdoc IAmmAdapter
@@ -179,22 +179,22 @@ contract MetaUsdAdapter is Controllable, IMetaUsdAmmAdapter {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
-        return interfaceId == type(IAmmAdapter).interfaceId || interfaceId == type(IMetaUsdAmmAdapter).interfaceId
+        return interfaceId == type(IAmmAdapter).interfaceId || interfaceId == type(IMetaVaultAmmAdapter).interfaceId
             || super.supportsInterface(interfaceId);
     }
     //endregion -------------------------------- View functions
 
-    //region -------------------------------- IMetaUsdAmmAdapter
-    /// @inheritdoc IMetaUsdAmmAdapter
+    //region -------------------------------- IMetaVaultAmmAdapter
+    /// @inheritdoc IMetaVaultAmmAdapter
     function assetForDeposit(address pool) external view returns (address) {
         // we assume here that MetaUSD doesn't support multiple assets for deposit
         return IMetaVault(pool).assetsForDeposit()[0];
     }
 
-    /// @inheritdoc IMetaUsdAmmAdapter
+    /// @inheritdoc IMetaVaultAmmAdapter
     function assetForWithdraw(address pool) external view returns (address) {
         // we assume here that MetaUSD doesn't support multiple assets for withdraw
         return IMetaVault(pool).assetsForWithdraw()[0];
     }
-    //endregion ------------------------------- IMetaUsdAmmAdapter
+    //endregion ------------------------------- IMetaVaultAmmAdapter
 }

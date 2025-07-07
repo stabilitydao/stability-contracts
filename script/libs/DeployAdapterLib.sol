@@ -15,7 +15,7 @@ import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
-import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -70,8 +70,8 @@ library DeployAdapterLib {
             proxy.initProxy(address(new PendleAdapter()));
         }
 
-        if (eq(id, AmmAdapterIdLib.META_USD)) {
-            proxy.initProxy(address(new MetaUsdAdapter()));
+        if (eq(id, AmmAdapterIdLib.META_VAULT)) {
+            proxy.initProxy(address(new MetaVaultAdapter()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));

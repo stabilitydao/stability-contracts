@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IMetaUsdAmmAdapter} from "../../src/interfaces/IMetaUsdAmmAdapter.sol";
+import {IMetaVaultAmmAdapter} from "../../src/interfaces/IMetaVaultAmmAdapter.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {console} from "forge-std/Test.sol";
 
-contract MetaUsdAdapterTest is SonicSetup {
+contract MetaVaultAdapterTest is SonicSetup {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
     bytes32 public _hash;
-    MetaUsdAdapter public adapter;
+    MetaVaultAdapter public adapter;
     address public multisig;
     IMetaVault internal metaVault;
 
     constructor() {
         vm.rollFork(35998179); // Jun-26-2025 11:16:51 AM +UTC
         _init();
-        _hash = keccak256(bytes(AmmAdapterIdLib.META_USD));
+        _hash = keccak256(bytes(AmmAdapterIdLib.META_VAULT));
         metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
 
         _addAdapter();
@@ -120,7 +120,7 @@ contract MetaUsdAdapterTest is SonicSetup {
     }
 
     function testIERC165() public view {
-        assertEq(adapter.supportsInterface(type(IMetaUsdAmmAdapter).interfaceId), true);
+        assertEq(adapter.supportsInterface(type(IMetaVaultAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
@@ -182,7 +182,7 @@ contract MetaUsdAdapterTest is SonicSetup {
         adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_USDC, 1e6);
     }
 
-    function testIMetaUsdAmmAdapter() public view {
+    function testIMetaVaultAmmAdapter() public view {
         assertEq(adapter.assetForDeposit(SonicConstantsLib.METAVAULT_metaUSD), metaVault.assetsForDeposit()[0]);
 
         assertEq(adapter.assetForWithdraw(SonicConstantsLib.METAVAULT_metaUSD), metaVault.assetsForWithdraw()[0]);
@@ -224,15 +224,15 @@ contract MetaUsdAdapterTest is SonicSetup {
 
     function _addAdapter() internal {
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new MetaUsdAdapter()));
-        MetaUsdAdapter(address(proxy)).init(PLATFORM);
+        proxy.initProxy(address(new MetaVaultAdapter()));
+        MetaVaultAdapter(address(proxy)).init(PLATFORM);
         IPriceReader priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         multisig = IPlatform(PLATFORM).multisig();
 
         vm.prank(multisig);
         priceReader.addAdapter(address(proxy));
 
-        adapter = MetaUsdAdapter(address(proxy));
+        adapter = MetaVaultAdapter(address(proxy));
     }
 
     function _dealAndApprove(address user, address spender, address[] memory assets, uint[] memory amounts) internal {

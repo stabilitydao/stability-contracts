@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -70,6 +71,7 @@ library SiloALMFLib {
         uint amount,
         uint feeAmount
     ) internal {
+        console.log("lib._receiveFlashLoan.1");
         // token is borrow asset
         address collateralAsset = $.collateralAsset;
         address flashLoanVault = $.flashLoanVault;
@@ -196,8 +198,12 @@ library SiloALMFLib {
             }
         }
 
+        console.log("lib._receiveFlashLoan.2");
+
         (uint ltv,, uint leverage,,,) = health(platform, $);
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
+
+        console.log("lib._receiveFlashLoan.3");
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
     }
@@ -219,6 +225,7 @@ library SiloALMFLib {
         address token,
         uint amount
     ) external {
+        console.log("receiveFlashLoanV3.1");
         // sender is vault, it's checked inside receiveFlashLoan
         // we can use msg.sender below but $.flashLoanVault looks more safe
         IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
@@ -268,24 +275,32 @@ library SiloALMFLib {
             uint targetLeveragePercent
         )
     {
+        console.log("lib.health.1");
         address lendingVault = $.lendingVault;
         address collateralAsset = $.collateralAsset;
 
         ltv = ISiloLens($.helper).getLtv(lendingVault, address(this));
         ltv = ltv * INTERNAL_PRECISION / 1e18;
+        console.log("lib.health.2");
 
         collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
+        console.log("lib.health.3");
 
         IPriceReader priceReader = _getPriceReader(platform);
+        console.log("lib.health.4");
         (uint _realTvl,) = realTvl(platform, $);
+        console.log("lib.health.5");
         (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
+        console.log("lib.health.6");
         uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
+        console.log("lib.health.7");
 
         leverage = _realTvl == 0 ? 0 : collateralUsd * INTERNAL_PRECISION / _realTvl;
 
         targetLeveragePercent = $.targetLeveragePercent;
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
+        console.log("lib.health.5");
     }
 
     function rebalanceDebt(
@@ -342,9 +357,14 @@ library SiloALMFLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
+        console.log("lib.realTvl.1");
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        console.log("lib.realTvl.2");
+        console.log("debtState.totalCollateralUsd", debtState.totalCollateralUsd);
+        console.log("debtState.borrowAssetUsd", debtState.borrowAssetUsd);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
+        console.log("lib.realTvl.3");
         trusted = debtState.trusted;
     }
 
@@ -461,10 +481,12 @@ library SiloALMFLib {
         uint amount,
         address asset
     ) external returns (uint value) {
+        console.log("lib.depositAssets.1");
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
 
         uint valueWas = StrategyLib.balance(asset) + calcTotal(v);
         _deposit($, v, amount);
+        console.log("lib.depositAssets.2");
         uint valueNow = StrategyLib.balance(asset) + calcTotal(v);
 
         if (valueNow > valueWas) {
@@ -478,6 +500,7 @@ library SiloALMFLib {
         // ensure that result LTV doesn't exceed max
         (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         _ensureLtvValid($, platform, maxLtv);
+        console.log("lib.depositAssets.3");
     }
 
     function _deposit(
@@ -839,8 +862,15 @@ library SiloALMFLib {
         uint amount,
         uint priceImpactTolerance
     ) internal {
+        console.log("_swap tokenIn, tokenOut", tokenIn, tokenOut);
+        console.log("_swap amount", amount);
+        console.log("token in balance", IERC20(tokenIn).balanceOf(address(this)));
+        console.log("token out balance", IERC20(tokenOut).balanceOf(address(this)));
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
+        console.log("token in balance", IERC20(tokenIn).balanceOf(address(this)));
+        console.log("token out balance", IERC20(tokenOut).balanceOf(address(this)));
+        console.log("_swap done");
     }
 
     function _formatLeverageShort(uint amount) internal pure returns (string memory) {
@@ -856,22 +886,28 @@ library SiloALMFLib {
         address borrowAsset,
         address borrowingVault
     ) internal view returns (CollateralDebtState memory data) {
+        console.log("lib._getDebtState.1");
         bool collateralPriceTrusted;
         bool borrowAssetPriceTrusted;
 
         IPriceReader priceReader = _getPriceReader(platform);
+        console.log("lib._getDebtState.2");
 
         data.collateralAmount = totalCollateral(lendingVault);
         data.collateralBalance = StrategyLib.balance(collateralAsset);
         (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
+        console.log("lib._getDebtState.3");
         data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
             / 10 ** IERC20Metadata(collateralAsset).decimals();
+        console.log("lib._getDebtState.4");
 
         data.debtAmount = totalDebt(borrowingVault);
         (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
+        console.log("lib._getDebtState.5");
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+        console.log("lib._getDebtState.6");
 
         return data;
     }

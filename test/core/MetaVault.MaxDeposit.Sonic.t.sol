@@ -35,7 +35,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Test, console, Vm} from "forge-std/Test.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
-import {MetaUsdAdapter} from "../../src/adapters/MetaUsdAdapter.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 
@@ -1098,11 +1098,11 @@ contract MetaVaultMaxDepositSonicTest is Test {
 
     function _addAdapter() internal returns (address adapter) {
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new MetaUsdAdapter()));
-        MetaUsdAdapter(address(proxy)).init(PLATFORM);
+        proxy.initProxy(address(new MetaVaultAdapter()));
+        MetaVaultAdapter(address(proxy)).init(PLATFORM);
 
         vm.prank(multisig);
-        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_USD, address(proxy));
+        IPlatform(PLATFORM).addAmmAdapter(AmmAdapterIdLib.META_VAULT, address(proxy));
 
         return address(proxy);
     }
@@ -1112,7 +1112,7 @@ contract MetaVaultMaxDepositSonicTest is Test {
         uint i;
         pools[i++] = _makePoolData(
             SonicConstantsLib.METAVAULT_metaUSD,
-            AmmAdapterIdLib.META_USD,
+            AmmAdapterIdLib.META_VAULT,
             SonicConstantsLib.METAVAULT_metaUSD,
             SonicConstantsLib.METAVAULT_metaUSD
         );
