@@ -15,8 +15,8 @@ import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
 
 contract RevenueRouterTestSonic is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
-    address public constant STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    address public constant STBL = SonicConstantsLib.TOKEN_STBL;
     address public multisig;
     IXSTBL public xStbl;
     IXStaking public xStaking;
