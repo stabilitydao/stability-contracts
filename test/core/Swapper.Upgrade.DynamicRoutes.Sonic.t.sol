@@ -109,7 +109,8 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             SonicConstantsLib.SILO_VAULT_25_wS
         ];
     }
-    //region --------------------------------------- Dynamic routes
+
+    //region --------------------------------------- Dynamic routes - metaVault
 
     function testSwapMetaUsdUsdc() public {
         //--------------------------------- Prepare swapper and routes
@@ -220,6 +221,56 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             );
         }
     }
+
+    function testSwapMetaSToWS() public {
+        //--------------------------------- Prepare swapper and routes
+        address multisig = IPlatform(PLATFORM).multisig();
+
+        _upgrade();
+        _addAdapter();
+        _addToWhitelist(address(this));
+
+        vm.startPrank(multisig);
+        swapper.addPools(_routes(), false);
+        vm.stopPrank();
+
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaS);
+
+        //--------------------------------- Set up initial balances
+        uint amount = 2e18; // 2 ws
+        assertEq(metaVault.balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_wS, address(this), amount);
+
+        //--------------------------------- Swap USDC => metaUSD
+        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_wS, SonicConstantsLib.METAVAULT_metaS, amount, 1_000);
+        vm.roll(block.number + 6);
+
+        uint balanceMetaS0 = metaVault.balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this));
+
+        assertNotEq(balanceMetaS0, 0, "balanceMetaS0 should not be 0");
+        assertEq(balanceToken0, 0, "balanceToken0 should be 0");
+
+        //--------------------------------- Swap metaUSD => USDC
+        metaVault.approve(address(swapper), type(uint).max);
+
+        metaVault.setLastBlockDefenseDisabledTx(true);
+        swapper.swap(SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.TOKEN_wS, balanceMetaS0, 1_000);
+        metaVault.setLastBlockDefenseDisabledTx(false);
+
+        vm.roll(block.number + 6);
+
+        uint balanceMetaS1 = metaVault.balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this));
+
+        assertApproxEqAbs(balanceMetaS1, 0, 1, "balanceMetaS1 should be 0");
+        assertApproxEqAbs(balanceToken1, amount, 10, "balanceToken1 should be equal to initial amount");
+    }
+
+    //endregion --------------------------------------- Dynamic routes  - metaVault
+
+    //region --------------------------------------- Dynamic routes  - wrapped
 
     function testSwapWrappedMetaUsdUsdc() public {
         //--------------------------------- Prepare swapper and routes
@@ -399,7 +450,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
     }
 
-    //endregion --------------------------------------- Dynamic routes
+    //endregion --------------------------------------- Dynamic routes  - wrapped
 
     //region --------------------------------------- Cycling routes #261
     /// @notice #261: ensure that known single cycling route is not detected as cycling
@@ -429,46 +480,45 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     }
     //endregion --------------------------------------- Cycling routes #261
 
-    //region --------------------------------------- Tests to find cycling routes #261
+    //region --------------------------------------- Tests to find cycling routes #261 (change internal to public to enable)
 
-    //    function testSearchProblemRoutes__Fuzzy(uint from, uint to) public view {
+    function testSearchProblemRoutes__Fuzzy(uint from, uint to) internal view {
+        from = bound(from, 0, tokens.length - 1);
+        to = bound(to, 0, tokens.length - 1);
+        if (from == to) {
+            return; // no route
+        }
 
-    //        from = bound(from, 0, tokens.length - 1);
-    //        to = bound(to, 0, tokens.length - 1);
-    //        if (from == to) {
-    //            return; // no route
-    //        }
-    //
-    //        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
-    //        if (route.length != 0) {
-    //            if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
-    //                _displayRoute(route, from, to, tokens[from], tokens[to]);
-    //                assertEq(false, true);
-    //            }
-    //        }
-    //    }
-    //
-    //    function testSearchProblemRoutesCycle(uint from, uint to) public view {
-    //        from = bound(from, 0, tokens.length - 1);
-    //        to = bound(to, 0, tokens.length - 1);
-    //        if (from == to) {
-    //            return; // no route
-    //        }
-    //
-    //        for (uint i = 0; i < tokens.length; ++i) {
-    //            for (uint j = i; j < tokens.length; ++j) {
-    //                (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
-    //                if (route.length != 0) {
-    //                    if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
-    //                        console.log("!!!!!!!!!!!Cycling route found for:", tokens[from], tokens[to]);
-    //                        _displayRoute(route, from, to, tokens[from], tokens[to]);
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
+        (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
+        if (route.length != 0) {
+            if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
+                _displayRoute(route, from, to, tokens[from], tokens[to]);
+                assertEq(false, true);
+            }
+        }
+    }
 
-    //endregion --------------------------------------- Tests to find cycling routes #261
+    function testSearchProblemRoutesCycle(uint from, uint to) internal view {
+        from = bound(from, 0, tokens.length - 1);
+        to = bound(to, 0, tokens.length - 1);
+        if (from == to) {
+            return; // no route
+        }
+
+        for (uint i = 0; i < tokens.length; ++i) {
+            for (uint j = i; j < tokens.length; ++j) {
+                (ISwapper.PoolData[] memory route,) = swapper.buildRoute(tokens[from], tokens[to]);
+                if (route.length != 0) {
+                    if (_isCycling(route) && !_isKnownCyclingPair(tokens[from], tokens[to])) {
+                        console.log("!!!!!!!!!!!Cycling route found for:", tokens[from], tokens[to]);
+                        _displayRoute(route, from, to, tokens[from], tokens[to]);
+                    }
+                }
+            }
+        }
+    }
+
+    //endregion --------------------------------------- Tests to find cycling routes #261 (change internal to public to enable)
 
     //region --------------------------------------- Internal logic
     function _displayRoute(
@@ -530,9 +580,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         address multisig = IPlatform(PLATFORM).multisig();
 
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaS);
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(whitelistedUser, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaS).changeWhitelist(whitelistedUser, true);
     }
 
     function _addAdapter() internal returns (address adapter) {
@@ -566,7 +620,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     }
 
     function _routes() internal pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](2);
+        pools = new ISwapper.AddPoolData[](4);
         uint i;
         pools[i++] = _makePoolData(
             SonicConstantsLib.METAVAULT_metaUSD,
@@ -579,6 +633,18 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
             AmmAdapterIdLib.ERC_4626,
             SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
             SonicConstantsLib.METAVAULT_metaUSD
+        );
+        pools[i++] = _makePoolData(
+            SonicConstantsLib.METAVAULT_metaS,
+            AmmAdapterIdLib.META_VAULT,
+            SonicConstantsLib.METAVAULT_metaS,
+            SonicConstantsLib.METAVAULT_metaS
+        );
+        pools[i++] = _makePoolData(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaS,
+            AmmAdapterIdLib.ERC_4626,
+            SonicConstantsLib.WRAPPED_METAVAULT_metaS,
+            SonicConstantsLib.METAVAULT_metaS
         );
     }
 
