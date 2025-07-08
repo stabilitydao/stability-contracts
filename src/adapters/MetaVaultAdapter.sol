@@ -13,7 +13,7 @@ import {IMetaVault} from "../interfaces/IMetaVault.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
-/// @title AMM adapter for Wrapped Meta USD
+/// @title AMM adapter for Meta Vaults
 /// Changelog:
 ///   1.0.0: Initial version
 /// @author dvpublic (https://github.com/dvpublic)
