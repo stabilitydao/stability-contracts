@@ -125,25 +125,8 @@ contract MetaVaultAdapterTest is SonicSetup {
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
 
-    function testGetPriceDirect() public {
+    function testGetPriceDirectBadPaths() public {
         address pool = SonicConstantsLib.METAVAULT_metaUSD;
-        uint price;
-
-        // 100 MetaUSD => USDC
-        (uint assetPrice,) = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).price();
-        uint expectedPrice = 1e6 * assetPrice / 1e18;
-        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, 100 * 1e18);
-        assertEq(price, 100 * expectedPrice);
-
-        // 0 MetaUSD == 1 MetaUSD => USDC
-        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, 0);
-        assertEq(price, expectedPrice);
-
-        // 100 MetaUSD => scUSD
-        (assetPrice,) = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).price();
-        expectedPrice = 1e6 * assetPrice / 1e18;
-        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, 1e18);
-        assertEq(price, expectedPrice);
 
         // 1 MetaUSD => aUSDC (not supported token)
         vm.expectRevert();
@@ -154,40 +137,168 @@ contract MetaVaultAdapterTest is SonicSetup {
         adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scUSD, 0);
     }
 
-    function testGetPriceReverse() public {
-        address pool = SonicConstantsLib.METAVAULT_metaUSD;
-
-        // 100 USDC => MetaUSD
-        (uint assertPrice,) = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).price();
-        uint expectedPrice100 = 100 * 1e18 * 1e18 / assertPrice;
-        uint price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 100e6);
-        assertEq(price, expectedPrice100);
-
-        // 100 scUSD => MetaUSD
-        (assertPrice,) = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).price();
-        expectedPrice100 = 100 * 1e18 * 1e18 / assertPrice;
-        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, 100e6);
-        assertEq(price, expectedPrice100);
-
-        // 0 scUSD == 1 scUSD => MetaUSD
-        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, 0);
-        assertEq(price, expectedPrice100 / 100);
-
-        // 1 aUSDC (not supported token) => MetaUSD
-        vm.expectRevert();
-        adapter.getPrice(pool, SonicConstantsLib.TOKEN_aUSDC, SonicConstantsLib.METAVAULT_metaUSD, 1e6);
-
-        // 1 scUSD => 1 USDC (there is no MetaUSD)
-        vm.expectRevert();
-        adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_USDC, 1e6);
-    }
-
     function testIMetaVaultAmmAdapter() public view {
         assertEq(adapter.assetForDeposit(SonicConstantsLib.METAVAULT_metaUSD), metaVault.assetsForDeposit()[0]);
 
         assertEq(adapter.assetForWithdraw(SonicConstantsLib.METAVAULT_metaUSD), metaVault.assetsForWithdraw()[0]);
     }
     //endregion ------------------------------------ Tests for view functions
+
+    //region ------------------------------------ Get price MetaUSD in other tokens
+    function testGetPriceDirectUSDC() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaUSD;
+
+        // ---------------------- get amount of USDC that should be received for the given amount of MetaUSD
+        // Example:
+        //  1 MetaUSD = $1
+        //  1 USDC = $0.99985
+        //  1 MetaUSD = 1.000150 USDC
+
+        // MetaUSD has 18 decimals, USDC has 6 decimals
+
+        (uint usdcPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_USDC);
+
+        // 100 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, 100 * 1e18);
+        assertEq(price, 1e6 * 100 * 1e18 / usdcPrice, "100 MetaUSD => USDC");
+
+        // 2 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, 2e18);
+        assertEq(price, 1e6 * 2 * 1e18 / usdcPrice, "2 MetaUSD");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, 0);
+        assertEq(price, 1e6 * 1 * 1e18 / usdcPrice, "0 MetaUSD");
+    }
+
+    function testGetPriceDirectWS() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaS;
+
+        // ---------------------- get amount of wS that should be received for the given amount of MetaUSD
+
+        // Example:
+        // 1 MetaS = $0.3098776
+        // 1 wS = $0.3098776
+        // 1 MetaS = 1 wS
+
+        // MetaS has 18 decimals, wS has 18 decimals
+
+        // 100 MetaS => wS
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.TOKEN_wS, 100 * 1e18);
+        assertEq(price, 100e18, "100 MetaS => wS");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.TOKEN_wS, 0);
+        assertEq(price, 1e18, "0 wS");
+    }
+
+    function testGetPriceDirectScUSD() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaUSD;
+
+        // ---------------------- get amount of scUSD that should be received for the given amount of MetaUSD
+        // Example:
+        //  1 MetaUSD = $1
+        //  1 scUSD = $0.99911831
+        //  1 MetaUSD = 1.000882 scUSD
+
+        // MetaUSD has 18 decimals, scUSD has 6 decimals
+
+        (uint scusdPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_scUSD);
+
+        // 100 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, 100 * 1e18);
+        assertEq(price, 1e6 * 100 * 1e18 / scusdPrice, "100 MetaUSD => scUSD");
+
+        // 2 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, 2e18);
+        assertEq(price, 1e6 * 2 * 1e18 / scusdPrice, "2 MetaUSD");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, 0);
+        assertEq(price, 1e6 * 1 * 1e18 / scusdPrice, "0 MetaUSD");
+    }
+    //endregion ------------------------------------ Get price MetaUSD in other tokens
+
+    //region ------------------------------------ Get price other tokens in other MetaUSD
+    function testGetPriceReverseUSDC() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaUSD;
+
+        // ---------------------- get amount of MetaUSD that should be received for the given amount of USDC
+        // Example:
+        //  1 MetaUSD = $1
+        //  1 USDC = $0.99985
+        //  1 MetaUSD = 1.000150 USDC
+
+        // MetaUSD has 18 decimals, USDC has 6 decimals
+
+        (uint usdcPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_USDC);
+
+        // 100 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 100 * 1e6);
+        assertEq(price, 100 * usdcPrice, "100 USDC => MetaUSD");
+
+        // 2 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 2e6);
+        assertEq(price, 2 * usdcPrice, "2 USDC");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, 0);
+        assertEq(price, usdcPrice, "0 USDC");
+    }
+
+    function testGetPriceReversetWS() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaS;
+
+        // ---------------------- get amount of MetaS that should be received for the given amount of wS
+
+        // Example:
+        // 1 MetaS = $0.3098776
+        // 1 wS = $0.3098776
+        // 1 MetaS = 1 wS
+
+        // MetaS has 18 decimals, wS has 18 decimals
+
+        // 100 MetaS => wS
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.METAVAULT_metaS, 100 * 1e18);
+        assertEq(price, 100e18, "100 wS => MetaS");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.METAVAULT_metaS, 0);
+        assertEq(price, 1e18, "0 wS");
+    }
+
+    function testGetPriceReverseScUSD() public view {
+        uint price;
+        address pool = SonicConstantsLib.METAVAULT_metaUSD;
+
+        // ---------------------- get amount of metaUSD that should be received for the given amount of scUSD
+        // Example:
+        //  1 MetaUSD = $1
+        //  1 scUSD = $0.99911831
+        //  1 MetaUSD = 1.000882 scUSD
+
+        // MetaUSD has 18 decimals, scUSD has 6 decimals
+
+        (uint scusdPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_scUSD);
+
+        // 100 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, 100 * 1e6);
+        assertEq(price, 100 * scusdPrice, "100 scUSD => MetaUSD");
+
+        // 2 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, 2e6);
+        assertEq(price, 2 * scusdPrice, "2 scUSD");
+
+        // 0 MetaUSD == 1 MetaUSD => USDC
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, 0);
+        assertEq(price, scusdPrice, "0 scUSD");
+    }
+    //endregion ------------------------------------ Get price other tokens in other MetaUSD
 
     //region ------------------------------------ Internal logic
     function _swap(

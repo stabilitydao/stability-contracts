@@ -144,9 +144,6 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        address[] memory vaults = IMetaVault(pool).vaults();
-        address[] memory tokens = poolTokens(pool);
-
         uint tokenInDecimals = IERC20Metadata(tokenIn).decimals();
         uint tokenOutDecimals = IERC20Metadata(tokenOut).decimals();
 
@@ -155,28 +152,20 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             amount = 10 ** tokenInDecimals;
         }
 
-        // we assume here that all tokens are in the same order as vaults, see {poolTokens} implementation
+        // get price of MetaVault in USD
+        (uint priceMetaVault,) = IMetaVault(pool).price();
+
         if (tokenIn == pool) {
-            // Meta USD to asset
-            for (uint i = 1; i < tokens.length; i++) {
-                if (tokenOut == tokens[i]) {
-                    (uint price,) = IMetaVault(vaults[i - 1]).price();
-                    (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
-                    // todo should we check if the price is trusted here?
-                    return price * 1e18 / priceTokenOut * amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals)
-                        / 1e18;
-                }
-            }
+            // get price of tokenOut in USD
+            (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
+
+            // MetaVault to asset
+            return amount * (10 ** tokenOutDecimals) * priceMetaVault / priceTokenOut / (10 ** tokenInDecimals);
         } else if (tokenOut == pool) {
-            // Asset to Meta USD
-            for (uint i = 1; i < tokens.length; i++) {
-                if (tokenIn == tokens[i]) {
-                    (uint price,) = IMetaVault(vaults[i - 1]).price();
-                    (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
-                    // todo should we check if the price is trusted here?
-                    return amount * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) * priceTokenOut * 1e18 / price;
-                }
-            }
+            (uint priceTokenIn,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenIn);
+
+            // Asset to MetaVault
+            return amount * (10 ** tokenOutDecimals) * priceTokenIn / priceMetaVault / (10 ** tokenInDecimals);
         }
 
         revert IncorrectTokens();
