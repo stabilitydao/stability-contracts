@@ -346,6 +346,8 @@ library SiloALMFLib {
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
+//        console.log("totalCollateralUsd", debtState.totalCollateralUsd);
+//        console.log("borrowAssetUsd", debtState.borrowAssetUsd);
         trusted = debtState.trusted;
     }
 
@@ -373,6 +375,7 @@ library SiloALMFLib {
 
             priceCtoB = priceC * 1e18 / priceB; // todo
             priceBtoC = 1e18 * 1e18 / priceCtoB;
+            // console.log("priceC, priceB, priceCtoB", priceC, priceB, priceCtoB);
         }
     }
 
@@ -877,6 +880,8 @@ library SiloALMFLib {
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
+//        console.log("collateralPrice", data.collateralPrice);
+//        console.log("borrowAssetPrice", data.borrowAssetPrice);
 
         return data;
     }
