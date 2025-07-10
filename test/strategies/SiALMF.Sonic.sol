@@ -148,11 +148,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     /// @notice Deposit, check state, withdraw all, check state
-    function _testDepositWithdraw(
-        uint targetLeveragePercent_,
-        uint amountNoDecimals,
-        bool freeFlashLoan_
-    ) internal {
+    function _testDepositWithdraw(uint targetLeveragePercent_, uint amountNoDecimals, bool freeFlashLoan_) internal {
         uint snapshot = vm.snapshotState();
 
         if (freeFlashLoan_) {
@@ -182,14 +178,18 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         // --------------------------------------------- Check results
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
         if (freeFlashLoan_) {
-            assertApproxEqAbs(depositedAssets, withdrawn1,
-                depositedAssets/100,
+            assertApproxEqAbs(
+                depositedAssets,
+                withdrawn1,
+                depositedAssets / 100,
                 "Withdrawn amount should be equal to deposited amount 1"
             );
 
             // some amount left in the collateral vault after full withdraw
-            assertApproxEqAbs(depositedAssets, withdrawn1 + state2.collateralAmount,
-                depositedAssets/100_000,
+            assertApproxEqAbs(
+                depositedAssets,
+                withdrawn1 + state2.collateralAmount,
+                depositedAssets / 100_000,
                 "Withdrawn amount should be equal to deposited amount 2"
             );
         }
@@ -199,7 +199,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
     }
 
-    function _testRebalance(uint targetLeveragePercent_, uint targetLeveragePercentNew_, bool freeFlashLoan_) internal {
+    function _testRebalance(
+        uint targetLeveragePercent_,
+        uint targetLeveragePercentNew_,
+        bool freeFlashLoan_
+    ) internal {
         uint snapshot = vm.snapshotState();
 
         if (freeFlashLoan_) {
@@ -247,14 +251,18 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
         if (freeFlashLoan_) {
-            assertApproxEqAbs(depositedAssets, withdrawn1,
-                depositedAssets/100,
+            assertApproxEqAbs(
+                depositedAssets,
+                withdrawn1,
+                depositedAssets / 100,
                 "Withdrawn amount should be equal to deposited amount 1"
             );
 
             // some amount left in the collateral vault after full withdraw
-            assertApproxEqAbs(depositedAssets, withdrawn1 + state2.collateralAmount,
-                depositedAssets/100_000,
+            assertApproxEqAbs(
+                depositedAssets,
+                withdrawn1 + state2.collateralAmount,
+                depositedAssets / 100_000,
                 "Withdrawn amount should be equal to deposited amount 2"
             );
         }
@@ -265,7 +273,6 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         assertNotEq(sharePrice, 0, "Share price is not 0");
     }
-
 
     /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
     function _testOneDepositTwoWithdraw(
@@ -312,8 +319,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         // --------------------------------------------- Check results
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
         if (freeFlashLoan_) {
-            assertApproxEqAbs(depositedAssets, withdrawn1 + withdrawn2,
-                depositedAssets/100,
+            assertApproxEqAbs(
+                depositedAssets,
+                withdrawn1 + withdrawn2,
+                depositedAssets / 100,
                 "Withdrawn amount should be equal to deposited amount 3"
             );
         }
@@ -606,10 +615,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         return (amounts_[0], strategy.total() - valuesBefore);
     }
 
-    function _tryToDepositToVault(address vault, uint[] memory amounts_, uint revertKind) internal returns (
-        uint deposited,
-        uint values
-    ) {
+    function _tryToDepositToVault(
+        address vault,
+        uint[] memory amounts_,
+        uint revertKind
+    ) internal returns (uint deposited, uint values) {
         address[] memory assets = IVault(vault).assets();
         // ----------------------------- Prepare amount on user's balance
         _dealAndApprove(address(this), vault, assets, amounts_);
@@ -772,16 +782,16 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
-//        console.log("ltv", state.ltv);
-//        console.log("maxLtv", state.maxLtv);
-//        console.log("targetLeverage", state.targetLeverage);
-//        console.log("leverage", state.leverage);
-//        console.log("total", state.total);
-//        console.log("collateralAmount", state.collateralAmount);
-//        console.log("debtAmount", state.debtAmount);
-//        console.log("targetLeveragePercent", state.targetLeveragePercent);
-//        console.log("maxLeverage", state.maxLeverage);
-//        console.log("realTvl", state.realTvl);
+        //        console.log("ltv", state.ltv);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("targetLeverage", state.targetLeverage);
+        //        console.log("leverage", state.leverage);
+        //        console.log("total", state.total);
+        //        console.log("collateralAmount", state.collateralAmount);
+        //        console.log("debtAmount", state.debtAmount);
+        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        //        console.log("maxLeverage", state.maxLeverage);
+        //        console.log("realTvl", state.realTvl);
         return state;
     }
     //endregion --------------------------------------- Internal logic
