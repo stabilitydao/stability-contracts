@@ -59,7 +59,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// Can be changed by whitelisted strategies only.
     /// Store block number of the transaction that disabled last-block-defense.
     /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
-    uint internal transient _LastBlockDefenseDisabledTx;
+    uint internal transient _lastBlockDefenseDisabledTx;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -247,7 +247,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
 
-        _LastBlockDefenseDisabledTx = isDisabled ? block.number : 0;
+        _lastBlockDefenseDisabledTx = isDisabled ? block.number : 0;
     }
     //endregion --------------------------------- Restricted action
 
@@ -631,7 +631,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (
             // defence is not disabled by governance
             // defence is not disabled by whitelisted strategy in the current block
-            !$.lastBlockDefenseDisabled && _LastBlockDefenseDisabledTx != block.number
+            !$.lastBlockDefenseDisabled && _lastBlockDefenseDisabledTx != block.number
                 && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
         ) {
             revert WaitAFewBlocks();
@@ -668,6 +668,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             }
         }
 
+        // slither-disable-next-line unused-return
         (uint targetVaultPrice,) = IStabilityVault(targetVault_).price();
         uint targetVaultSharesAfter = IERC20(targetVault_).balanceOf(address(this));
 
@@ -681,7 +682,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
+        // slither-disable-next-line uninitialized-state
         DepositToMultiVaultLocals memory v;
+
         // find target vault and move it to the first position
         // assume that the order of the other vaults does not matter
         _setTargetVaultFirst(targetVault_, vaults_);
@@ -711,7 +714,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
             IStabilityVault(vaults_[n]).depositAssets(assets_, v.amounts, 0, address(this));
 
+            // slither-disable-next-line uninitialized-state
             bool needToDepositMore;
+
             for (uint i; i < len; ++i) {
                 // maxDeposit should be successfully deposited
                 // so, we don't need to clear allowance here
@@ -725,6 +730,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 needToDepositMore = needToDepositMore || (v.amountToDeposit[i] != 0);
             }
 
+            // slither-disable-next-line unused-return
             (v.targetVaultPrice,) = IStabilityVault(vaults_[n]).price();
             v.targetVaultSharesAfter = IERC20(vaults_[n]).balanceOf(address(this));
 

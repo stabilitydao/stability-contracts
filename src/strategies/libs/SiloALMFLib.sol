@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -86,6 +85,7 @@ library SiloALMFLib {
             ISilo($.lendingVault).deposit(
                 IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
             );
+
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
 
@@ -272,8 +272,7 @@ library SiloALMFLib {
         address lendingVault = $.lendingVault;
         address collateralAsset = $.collateralAsset;
 
-        ltv = ISiloLens($.helper).getLtv(lendingVault, address(this));
-        ltv = ltv * INTERNAL_PRECISION / 1e18;
+        ltv = ISiloLens($.helper).getLtv(lendingVault, address(this)) * INTERNAL_PRECISION / 1e18;
 
         collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
         debtAmount = totalDebt($.borrowingVault);
@@ -534,10 +533,6 @@ library SiloALMFLib {
     //endregion ------------------------------------- Deposit
 
     //region ------------------------------------- Withdraw
-    /// @dev The strategy uses withdrawParam0 and withdrawParam1
-    ///     - withdrawParam0 is used to correct auto calculated flashAmount
-    ///     - withdrawParam1 is used to correct value asked by the user, to be able to withdraw more than user wants
-    ///                      Rest amount is deposited back (such trick allows to fix reduced leverage/ltv)
     function withdrawAssets(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,

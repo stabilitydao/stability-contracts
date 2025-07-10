@@ -78,7 +78,9 @@ contract SiloALMFStrategy is
             revert IFarmingStrategy.BadFarm();
         }
 
+        // slither-disable-next-line unused-return
         LeverageLendingStrategyBaseInitParams memory params;
+
         params.platform = addresses[0];
         params.strategyId = StrategyIdLib.SILO_ALMF_FARM;
         params.vault = addresses[1];
@@ -173,7 +175,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
-        return true;
+        return false;
     }
 
     /// @inheritdoc IStrategy
@@ -276,9 +278,10 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        assets_ = assets();
-        amounts_ = new uint[](1);
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        assets_ = assets();
+
+        amounts_ = new uint[](1);
         amounts_[0] = SiloALMFLib.totalCollateral($.lendingVault);
     }
 
@@ -328,10 +331,6 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    /// @dev The strategy uses withdrawParam0 and withdrawParam1
-    ///     - withdrawParam0 is used to correct auto calculated flashAmount
-    ///     - withdrawParam1 is used to correct value asked by the user, to be able to withdraw more than user wants
-    ///                      Rest amount is deposited back (such trick allows to fix reduced leverage/ltv)
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();

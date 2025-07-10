@@ -47,6 +47,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint total;
         uint sharePrice;
         uint balanceAsset;
+        uint realTvl;
     }
 
     constructor() {
@@ -610,6 +611,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
         state.balanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
+        state.realTvl = strategy.realTvl();
 
         console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
@@ -622,6 +624,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         //        console.log("debtAmount", state.debtAmount);
         //        console.log("targetLeveragePercent", state.targetLeveragePercent);
         //        console.log("maxLeverage", state.maxLeverage);
+        //        console.log("realTvl", state.realTvl);
         return state;
     }
     //endregion --------------------------------------- Internal logic

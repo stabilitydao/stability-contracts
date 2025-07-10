@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
 import {IMetaVaultAmmAdapter} from "../interfaces/IMetaVaultAmmAdapter.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
@@ -14,6 +13,7 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title AMM adapter for Meta Vaults
+/// @dev It's not suitable for MultiVaults, see i.e. poolTokens implementation.
 /// Changelog:
 ///   1.0.0: Initial version
 /// @author dvpublic (https://github.com/dvpublic)
@@ -60,10 +60,11 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         IMetaVault metaVault = IMetaVault(pool);
 
         uint amount = IERC20(tokenIn).balanceOf(address(this));
+        // slither-disable-next-line uninitialized-state
         uint amountOut;
 
         if (tokenIn == pool) {
-            // swap Meta USD to asset
+            // swap Meta Vault to asset
             uint balance = metaVault.balanceOf(address(this));
 
             address[] memory assets = metaVault.assetsForWithdraw();
@@ -74,22 +75,21 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             minAssetAmountsOut[0] = getPrice(pool, tokenIn, tokenOut, amount)
                 * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
 
+            // slither-disable-next-line unused-return
             metaVault.withdrawAssets(assets, balance, minAssetAmountsOut);
 
             amountOut = IERC20(assets[0]).balanceOf(address(this));
-            IERC20(assets[0]).transfer(recipient, amountOut);
+            IERC20(assets[0]).safeTransfer(recipient, amountOut);
         } else if (tokenOut == pool) {
-            // swap asset to Meta USD
+            // swap asset to Meta Vault
             address[] memory assets = metaVault.assetsForDeposit();
             require(assets.length == 1 && assets[0] == tokenIn, IncorrectTokens());
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amount;
 
-            (uint[] memory amountsConsumed, uint sharesOut,) = metaVault.previewDepositAssets(assets, amountsMax);
-            // todo Do we need to refund the excess instead of reverting?
-            require(amountsConsumed.length == 1 && amountsConsumed[0] == amount, IncorrectAmountConsumed());
+            (, uint sharesOut,) = metaVault.previewDepositAssets(assets, amountsMax);
 
-            IERC20(tokenIn).approve(pool, amount);
+            IERC20(tokenIn).forceApprove(pool, amount);
             uint balanceBefore = metaVault.balanceOf(recipient);
             metaVault.depositAssets(
                 assets,
@@ -99,6 +99,9 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             );
 
             amountOut = metaVault.balanceOf(recipient) - balanceBefore;
+
+            // ensure that all input tokens were deposited
+            require(IERC20(tokenIn).balanceOf(address(this)) == 0, IncorrectAmountConsumed());
         } else {
             revert IncorrectTokens();
         }
@@ -148,20 +151,24 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         uint tokenOutDecimals = IERC20Metadata(tokenOut).decimals();
 
         // For zero value provided amount 1.0 (10 ** decimals of tokenIn) will be used.
+        // slither-disable-next-line incorrect-equality
         if (amount == 0) {
             amount = 10 ** tokenInDecimals;
         }
 
         // get price of MetaVault in USD
+        // slither-disable-next-line unused-return
         (uint priceMetaVault,) = IMetaVault(pool).price();
 
         if (tokenIn == pool) {
             // get price of tokenOut in USD
+            // slither-disable-next-line unused-return
             (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
 
             // MetaVault to asset
             return amount * (10 ** tokenOutDecimals) * priceMetaVault / priceTokenOut / (10 ** tokenInDecimals);
         } else if (tokenOut == pool) {
+            // slither-disable-next-line unused-return
             (uint priceTokenIn,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenIn);
 
             // Asset to MetaVault
