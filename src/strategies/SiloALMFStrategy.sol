@@ -121,7 +121,7 @@ contract SiloALMFStrategy is
         // Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
         $.withdrawParam1 = 100_00;
         // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
-        //$.withdrawParam2 = 0; // 0 by default
+        $.withdrawParam2 = 100_00;
     }
     //endregion ----------------------------------- Initialization
 

@@ -80,6 +80,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
+        console.log("!!!!!!!!!!!! _preDeposit START");
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53 || farmId == FARM_META_USD_SCUSD_54) {
             _currentMetaVault = SonicConstantsLib.METAVAULT_metaUSD;
@@ -111,20 +112,31 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.revertToState(snapshot);
 
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
+        console.log("!!!!!!!!!!!! _preDeposit END");
     }
 
     //region --------------------------------------- Strategy params tests
     function _testStrategyParams_All() internal {
+        uint snapshot = vm.snapshotState();
+
         // --------------------------------------------- targetLeveragePercent - percent of max leverage.
         _testOneDepositTwoWithdraw(80_00, 1000, true);
         _testOneDepositTwoWithdraw(85_00, 10_000, false);
         _testOneDepositTwoWithdraw(75_00, 50_000, false);
 
-        // depositParam0 - Multiplier of flash amount for borrow on deposit.
-        // depositParam1 - Multiplier of borrow amount to take into account max flash loan fee in maxDeposit
-        // withdrawParam0 - Multiplier of flash amount for borrow on withdraw.
-        // withdrawParam1 - Multiplier of amount allowed to be deposited after withdraw. Default is 100_00 == 100% (deposit forbidden)
-        // withdrawParam2 - allows to disable withdraw through increasing ltv if leverage is near to target
+        // --------------------------------------------- try to set HIGH values of deposit/withdraw-params
+        _setDepositParams(100_00, 99_80);
+        _setWithdrawParams(100_00, 110_00, 110_00);
+        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
+
+        _setWithdrawParams(110_00, 100_00, 100_00);
+        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
+
+        _setDepositParams(110_00, 98_00);
+        _setWithdrawParams(100_00, 100_00, 100_00);
+        _testMultipleDepositsAndMultipleWithdraw(80_00, 1000, true); // free flash loan
+
+        vm.revertToState(snapshot);
     }
 
     /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
@@ -146,13 +158,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // --------------------------------------------- Make initial deposit to the strategy
         uint[] memory amountsToDeposit = new uint[](1);
-        amountsToDeposit[0] = 1000 * 10**IERC20Metadata(strategy.assets()[0]).decimals();
+        amountsToDeposit[0] = 1000 * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
         _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
 
         // --------------------------------------------- Deposit
         amountsToDeposit = new uint[](1);
-        amountsToDeposit[0] = amountNoDecimals * 10**IERC20Metadata(strategy.assets()[0]).decimals();
+        amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
         State memory state0 = _getState();
         (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
@@ -178,30 +190,103 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         if (freeFlashLoan_) {
             assertLt(
                 _getDiffPercent18(depositedAssets, withdrawn1 + withdrawn2),
-                1e18/100, // less 1%
+                1e18 / 100, // less 1%
                 "Withdrawn amount should be equal to deposited amount"
             );
         }
 
-// todo
-//        assertApproxEqAbs(state0.targetLeverage, state1.leverage,
-//            2000,
-//            "The leverage should be equal to target leverage after deposit"
-//        );
-//        assertApproxEqAbs(state0.targetLeverage, state2.leverage,
-//            2000,
-//            "The leverage should be equal to target leverage after withdrawing half"
-//        );
-//        assertApproxEqAbs(state0.targetLeverage, state3.leverage,
-//            2000,
-//            "The leverage should be equal to target leverage after withdrawing all"
-//        );
+        // todo
+        //        assertApproxEqAbs(state0.targetLeverage, state1.leverage,
+        //            2000,
+        //            "The leverage should be equal to target leverage after deposit"
+        //        );
+        //        assertApproxEqAbs(state0.targetLeverage, state2.leverage,
+        //            2000,
+        //            "The leverage should be equal to target leverage after withdrawing half"
+        //        );
+        //        assertApproxEqAbs(state0.targetLeverage, state3.leverage,
+        //            2000,
+        //            "The leverage should be equal to target leverage after withdrawing all"
+        //        );
 
         assertLt(state0.total, state1.total, "Total should increase after deposit");
         assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit");
-        assertEq(state2.total, state0.total + depositedValue - depositedValue / 2, "Total should decrease after first withdraw");
+        assertEq(
+            state2.total,
+            state0.total + depositedValue - depositedValue / 2,
+            "Total should decrease after first withdraw"
+        );
         assertEq(state3.total, state0.total, "Total should return to initial value after second withdraw");
+    }
 
+    function _testMultipleDepositsAndMultipleWithdraw(
+        uint targetLeveragePercent_,
+        uint amountNoDecimals,
+        bool freeFlashLoan_
+    ) internal {
+        uint snapshot = vm.snapshotState();
+
+        if (freeFlashLoan_) {
+            _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
+        } else {
+            _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
+        }
+
+        _setTargetLeveragePercent(targetLeveragePercent_);
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------------------------------- Make initial deposit to the strategy
+        uint[] memory amountsToDeposit = new uint[](1);
+        amountsToDeposit[0] = (freeFlashLoan_ ? 100 : 10_000) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+        _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+        vm.roll(block.number + 6);
+
+        uint valueBefore = strategy.total();
+
+        uint totalDeposited = amountsToDeposit[0];
+        uint totalWithdrawn = 0;
+
+        // --------------------------------------------- Deposit
+        for (uint i; i < 10; ++i) {
+            amountsToDeposit = new uint[](1);
+            amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+
+            // State memory state0 = _getState();
+            (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
+            vm.roll(block.number + 6);
+            totalDeposited += depositedAssets;
+            // console.log("i, deposited assets, value", i, depositedAssets, depositedValue);
+            // State memory state1 = _getState();
+
+            uint withdrawn1 = _tryToWithdraw(strategy, depositedValue * (i + 1) / (i + 2));
+            vm.roll(block.number + 6);
+            // State memory state2 = _getState();
+            totalWithdrawn += withdrawn1;
+        }
+
+        uint withdrawn2 = _tryToWithdraw(strategy, (strategy.total() - valueBefore) / 2);
+        vm.roll(block.number + 6);
+        // State memory state3 = _getState();
+        totalWithdrawn += withdrawn2;
+
+        withdrawn2 = _tryToWithdraw(strategy, strategy.total());
+        vm.roll(block.number + 6);
+        // state3 = _getState();
+        totalWithdrawn += withdrawn2;
+
+        vm.revertToState(snapshot);
+
+        assertApproxEqAbs(
+            totalDeposited,
+            totalWithdrawn,
+            totalDeposited / 1000,
+            "Withdrawn amount should be close to deposited amount"
+        );
+        //        assertLe(
+        //            _getDiffPercent18(totalDeposited, totalWithdrawn),
+        //            1e18 / 100 / 100, // less 0.01%
+        //            "Withdrawn amount should be close to deposited amount"
+        //        );
     }
 
     //endregion --------------------------------------- Strategy params tests
@@ -518,27 +603,23 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         (state.sharePrice,) = strategy.realSharePrice();
 
-        (
-            state.ltv,
-            state.maxLtv,
-            state.leverage,
-            state.collateralAmount,
-            state.debtAmount,
-            state.targetLeveragePercent
-        ) = strategy.health();
+        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
+        = strategy.health();
 
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
         state.balanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
 
-                console.log("ltv", state.ltv);
-                console.log("maxLtv", state.maxLtv);
-                console.log("targetLeverage", state.targetLeverage);
-                console.log("leverage", state.leverage);
-                console.log("total", state.total);
-                console.log("collateralAmount", state.collateralAmount);
-                console.log("debtAmount", state.debtAmount);
+        console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
+
+        //        console.log("ltv", state.ltv);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("targetLeverage", state.targetLeverage);
+        //        console.log("leverage", state.leverage);
+        //        console.log("total", state.total);
+        //        console.log("collateralAmount", state.collateralAmount);
+        //        console.log("debtAmount", state.debtAmount);
         //        console.log("targetLeveragePercent", state.targetLeveragePercent);
         //        console.log("maxLeverage", state.maxLeverage);
         return state;
