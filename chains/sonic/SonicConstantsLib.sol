@@ -446,4 +446,9 @@ library SonicConstantsLib {
     address public constant EULER_VAULT_WETH_MEV = 0xa5cd24d9792F4F131f5976Af935A505D19c8Db2b;
     // todo more addresses: https://app.euler.finance/?network=sonic
 
+    // Stability Market
+    address public constant LENDING_FEE_TREASURY = 0x3950b3a43fa0687561Bc5c8E32D2EE826D88a661;
+    address public constant STABILITY_MARKET_Stream = 0x1f672BD230D0FC2Ee9A75D2037a92CC1225A4Ad8;
+    address public constant STABILITY_MARKET_StableJack = 0x4895151C8eB560c0DE6Bd29A3916610DdfCEB094;
+    address public constant STABILITY_MARKET_Brunch = 0x680F8A574b0273f26A314cA61466c0A4f1E2d95e;
 }
