@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
-import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
+import {IRevenueRouter, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
@@ -13,20 +13,23 @@ import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.3.0: vaultsAccumulated; updateUnit; units
 ///   1.2.0: Units; Aave unit; all revenue via buy-back
 /// @author Alien Deployer (https://github.com/a17)
 contract RevenueRouter is Controllable, IRevenueRouter {
     using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -58,7 +61,21 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         uint unitIndex = $.units.length;
         $.units.push(Unit({unitType: unitType, name: name, pendingRevenue: 0, feeTreasury: feeTreasury}));
-        emit NewUnit(unitIndex, name, feeTreasury);
+        emit AddedUnit(unitIndex, unitType, name, feeTreasury);
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function updateUnit(
+        uint unitIndex,
+        UnitType unitType,
+        string calldata name,
+        address feeTreasury
+    ) external onlyGovernanceOrMultisig {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        $.units[unitIndex].unitType = unitType;
+        $.units[unitIndex].name = name;
+        $.units[unitIndex].feeTreasury = feeTreasury;
+        emit UpdatedUnit(unitIndex, unitType, name, feeTreasury);
     }
 
     /// @inheritdoc IRevenueRouter
@@ -138,27 +155,15 @@ contract RevenueRouter is Controllable, IRevenueRouter {
 
     /// @inheritdoc IRevenueRouter
     function processFeeVault(address vault, uint amount) external {
-        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        address stbl = $.stbl;
-        ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-        address[] memory assets = IStabilityVault(vault).assets();
-        uint len = assets.length;
-        try IStabilityVault(vault).withdrawAssets(assets, amount, new uint[](len), address(this), msg.sender) {
-            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
-            for (uint i; i < len; ++i) {
-                address asset = assets[i];
-                if (asset != stbl) {
-                    uint threshold = swapper.threshold(asset);
-                    uint amountToSwap = IERC20(asset).balanceOf(address(this));
-                    if (amountToSwap > threshold) {
-                        IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                        try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
-                    }
-                }
+        if (_isDeployedVault(vault)) {
+            RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+            if (IStabilityVault(vault).lastBlockDefenseDisabled()) {
+                _withdrawVaultSharesAndBuyBack($, vault, amount, msg.sender);
+            } else {
+                IERC20(vault).safeTransferFrom(msg.sender, address(this), amount);
+                $.vaultsAccumulated.add(vault);
             }
-            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-            IERC20(stbl).safeTransfer($.feeTreasury, stblGot);
-        } catch {}
+        }
     }
 
     /// @inheritdoc IRevenueRouter
@@ -193,8 +198,18 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function processUnitsRevenue() external {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
 
+        // process accumulatedVaults
+        address[] memory vaultsAccumulated = $.vaultsAccumulated.values();
+        uint len = vaultsAccumulated.length;
+        for (uint i; i < len; ++i) {
+            _withdrawVaultSharesAndBuyBack(
+                $, vaultsAccumulated[i], IERC20(vaultsAccumulated[i]).balanceOf(address(this)), address(this)
+            );
+            $.vaultsAccumulated.remove(vaultsAccumulated[i]);
+        }
+
         // mint Aave fees
-        uint len = $.aavePools.length;
+        len = $.aavePools.length;
         for (uint i; i < len; ++i) {
             address aavePool = $.aavePools[i];
             address[] memory reserves = IPool(aavePool).getReservesList();
@@ -211,6 +226,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IRevenueRouter
+    function units() external view returns (Unit[] memory) {
+        return _getRevenueRouterStorage().units;
+    }
 
     /// @inheritdoc IRevenueRouter
     function getPeriod() public view returns (uint) {
@@ -240,6 +260,45 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _withdrawVaultSharesAndBuyBack(
+        RevenueRouterStorage storage $,
+        address vault,
+        uint amount,
+        address owner
+    ) internal {
+        address stbl = $.stbl;
+        ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+        address[] memory assets = IStabilityVault(vault).assets();
+        uint len = assets.length;
+        try IStabilityVault(vault).withdrawAssets(assets, amount, new uint[](len), address(this), owner) {
+            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+            for (uint i; i < len; ++i) {
+                address asset = assets[i];
+                if (asset != stbl) {
+                    uint threshold = swapper.threshold(asset);
+                    uint amountToSwap = IERC20(asset).balanceOf(address(this));
+                    if (amountToSwap > threshold) {
+                        IERC20(asset).forceApprove(address(swapper), amountToSwap);
+                        try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
+                    }
+                }
+            }
+            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
+            IERC20(stbl).safeTransfer($.feeTreasury, stblGot);
+        } catch {}
+    }
+
+    function _isDeployedVault(address vault) internal view returns (bool) {
+        address[] memory deployedVaults = IFactory(IPlatform(platform()).factory()).deployedVaults();
+        uint len = deployedVaults.length;
+        for (uint i; i < len; ++i) {
+            if (deployedVaults[i] == vault) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     function _getRevenueRouterStorage() internal pure returns (RevenueRouterStorage storage $) {
         //slither-disable-next-line assembly
