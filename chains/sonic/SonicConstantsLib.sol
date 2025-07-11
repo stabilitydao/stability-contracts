@@ -428,6 +428,10 @@ library SonicConstantsLib {
     address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
     address public constant ORACLE_PYTH_stS_USD = 0xfdbA54F2F4242Df3DbD34C72C8983E40d7C19CBE;
     address public constant ORACLE_PYTH_scUSD_USD = 0xC55C8c98Bd7359C587Cd9a5D999ab4720608F18C;
+    /// @notice price feed for scUsd used by deployed ChainlinkAdapter 0xc53172dB113fbB310a4D53eC3BcfA60f233aBb73
+    address public constant ORACLE_CHAINLINK_scUSD = 0xACE5e348a341a740004304c2c228Af1A4581920F;
+    /// @notice price feed for wS used by deployed ChainlinkAdapter 0xc53172dB113fbB310a4D53eC3BcfA60f233aBb73
+    address public constant ORACLE_CHAINLINK_wS = 0xc76dFb89fF298145b417d221B2c747d84952e01d;
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;

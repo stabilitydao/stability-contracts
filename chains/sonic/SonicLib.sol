@@ -16,6 +16,7 @@ import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
 import {Api3Adapter} from "../../src/adapters/Api3Adapter.sol";
+import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {BeetsStableFarm} from "../../src/strategies/BeetsStableFarm.sol";
 import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
@@ -96,6 +97,22 @@ library SonicLib {
             adapter.addPriceFeeds(assets, priceFeeds);
             priceReader.addAdapter(address(adapter));
             LogDeployLib.logDeployAndSetupOracleAdapter("Api3", address(adapter), showLog);
+        }
+        // Chainlink
+        {
+            Proxy proxy = new Proxy();
+            proxy.initProxy(address(new ChainlinkAdapter()));
+            ChainlinkAdapter adapter = ChainlinkAdapter(address(proxy));
+            adapter.initialize(platform);
+            address[] memory assets = new address[](2);
+            assets[0] = SonicConstantsLib.TOKEN_scUSD;
+            assets[1] = SonicConstantsLib.TOKEN_wS;
+            address[] memory priceFeeds = new address[](2);
+            priceFeeds[0] = SonicConstantsLib.ORACLE_CHAINLINK_scUSD;
+            priceFeeds[1] = SonicConstantsLib.ORACLE_CHAINLINK_wS;
+            adapter.addPriceFeeds(assets, priceFeeds);
+            priceReader.addAdapter(address(adapter));
+            LogDeployLib.logDeployAndSetupOracleAdapter("Chainlink", address(adapter), showLog);
         }
         //endregion
 

@@ -682,7 +682,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
-        // slither-disable-next-line uninitialized-state
+        // slither-disable-next-line uninitialized-local
         DepositToMultiVaultLocals memory v;
 
         // find target vault and move it to the first position

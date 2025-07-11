@@ -298,11 +298,7 @@ contract SiloALMFStrategy is
     {
         __assets = assets();
         (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
-            platform(),
-            vault(),
-            _getLeverageLendingBaseStorage(),
-            _getStrategyBaseStorage(),
-            _getFarmingStrategyBaseStorage()
+            _getLeverageLendingBaseStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
         );
     }
 
@@ -351,6 +347,15 @@ contract SiloALMFStrategy is
     {
         return true;
     }
+
+    function _compound() internal override(LeverageLendingBase, StrategyBase) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+
+        IMetaVault metaVault = _getMetaVault($);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+        SiloALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
+        metaVault.setLastBlockDefenseDisabledTx(false);
+    }
     //endregion ----------------------------------- Strategy base
 
     //region ----------------------------------- FarmingStrategy
@@ -364,7 +369,12 @@ contract SiloALMFStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        return FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+
+        IMetaVault metaVault = _getMetaVault($);
+        metaVault.setLastBlockDefenseDisabledTx(true);
+        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+        metaVault.setLastBlockDefenseDisabledTx(false);
     }
 
     /// @inheritdoc IFarmingStrategy

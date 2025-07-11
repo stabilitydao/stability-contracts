@@ -63,6 +63,8 @@ library SiloALMFLib {
     //endregion ------------------------------------- Data types
 
     //region ------------------------------------- Flash loan
+    /// @notice token Borrow asset
+    /// @notice amount Flash loan amount in borrow asset
     function _receiveFlashLoan(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
@@ -70,12 +72,16 @@ library SiloALMFLib {
         uint amount,
         uint feeAmount
     ) internal {
-        // token is borrow asset
         address collateralAsset = $.collateralAsset;
         address flashLoanVault = $.flashLoanVault;
-        if (msg.sender != flashLoanVault) {
-            revert IControllable.IncorrectMsgSender();
-        }
+        require(msg.sender == flashLoanVault, IControllable.IncorrectMsgSender());
+
+        // Reward asset can be equal to the borrow asset. Rewards can be transferred to the strategy at any moment.
+        // If any borrow asset is on the balance before taking flash loan it can be only rewards.
+        // All rewards are processed by hardwork and cannot be used before hardwork.
+        // So, we need to keep reward amount on balance after exit this function.
+        uint tokenBalance0 = IERC20(token).balanceOf(address(this));
+        tokenBalance0 = tokenBalance0 > amount ? tokenBalance0 - amount : 0;
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
             // swap
@@ -119,19 +125,29 @@ library SiloALMFLib {
                 platform,
                 collateralAsset,
                 token,
-                _estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0),
+                _estimateSwapAmount(
+                    platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0, tokenBalance0
+                ),
                 // Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
                 swapPriceImpactTolerance0
             );
 
             // explicit error for the case when _estimateSwapAmount gives incorrect amount
-            require(IERC20(token).balanceOf(address(this)) >= amount + feeAmount, IControllable.InsufficientBalance());
+            require(
+                _balanceWithoutRewards(token, tokenBalance0) >= amount + feeAmount, IControllable.InsufficientBalance()
+            );
 
             // pay flash loan
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            _swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
+            _swap(
+                platform,
+                token,
+                collateralAsset,
+                _balanceWithoutRewards(token, tokenBalance0),
+                swapPriceImpactTolerance0
+            );
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -141,7 +157,7 @@ library SiloALMFLib {
             address lendingVault = $.lendingVault;
 
             // repay
-            ISilo($.borrowingVault).repay(StrategyLib.balance(token), address(this));
+            ISilo($.borrowingVault).repay(_balanceWithoutRewards(token, tokenBalance0), address(this));
 
             // withdraw amount
             ISilo(lendingVault).withdraw(
@@ -155,7 +171,7 @@ library SiloALMFLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay remaining balance
-            ISilo($.borrowingVault).repay(StrategyLib.balance(token), address(this));
+            ISilo($.borrowingVault).repay(_balanceWithoutRewards(token, tokenBalance0), address(this));
 
             $.tempCollateralAmount = 0;
         }
@@ -168,7 +184,7 @@ library SiloALMFLib {
                 platform,
                 token,
                 collateralAsset,
-                IERC20(token).balanceOf(address(this)) * $.increaseLtvParam1 / INTERNAL_PRECISION,
+                _balanceWithoutRewards(token, tokenBalance0) * $.increaseLtvParam1 / INTERNAL_PRECISION,
                 $.swapPriceImpactTolerance1
             );
 
@@ -186,7 +202,7 @@ library SiloALMFLib {
             IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
 
             // repay not used borrow
-            uint tokenBalance = IERC20(token).balanceOf(address(this));
+            uint tokenBalance = _balanceWithoutRewards(token, tokenBalance0);
             if (tokenBalance != 0) {
                 ISilo($.borrowingVault).repay(tokenBalance, address(this));
             }
@@ -196,6 +212,9 @@ library SiloALMFLib {
                 $.tempCollateralAmount = 0;
             }
         }
+
+        // ensure that all rewards are still exist on the balance
+        require(tokenBalance0 == IERC20(token).balanceOf(address(this)), IControllable.IncorrectBalance());
 
         (uint ltv,, uint leverage,,,) = health(platform, $);
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
@@ -440,7 +459,7 @@ library SiloALMFLib {
 
     //region ------------------------------------- Max deposit
     function maxDepositAssets(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        external
+        public
         view
         returns (uint[] memory amounts)
     {
@@ -764,8 +783,6 @@ library SiloALMFLib {
 
     //region ------------------------------------- Revenue and rewards
     function _claimRevenue(
-        address platform,
-        address vault_,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IStrategy.StrategyBaseStorage storage $base,
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f
@@ -773,7 +790,7 @@ library SiloALMFLib {
         __amounts = new uint[](1);
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloALMFLib._getLeverageLendingAddresses($);
 
-        // ---------------------- Calculate earned amount
+        // ---------------------- Calculate amount earned through accrueInterest
         uint totalWas = $base.total;
 
         ISilo(v.lendingVault).accrueInterest();
@@ -783,24 +800,19 @@ library SiloALMFLib {
         if (totalNow > totalWas) {
             __amounts[0] = totalNow - totalWas;
         }
-        $base.total = totalNow;
+
+        // total will be updated later inside compound()
 
         // ---------------------- collect Merkl rewards
         __rewardAssets = $f._rewardAssets;
         uint rwLen = __rewardAssets.length;
         __rewardAmounts = new uint[](rwLen);
         for (uint i; i < rwLen; ++i) {
+            // Reward asset can be equal to the borrow asset.
+            // The borrow asset is never left on the balance, see _receiveFlashLoan().
+            // So, any borrow asset on balance can be considered as a reward.
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
         }
-
-        // ---------------------- Calculate apr and emit event
-        (uint _realTvl,) = realTvl(platform, $);
-        _emitLeverageLendingHardWork(
-            platform, $, v, vault_, _realTvl, block.timestamp - $base.lastHardWork, int(totalNow) - int(totalWas)
-        );
-
-        (uint ltv,, uint leverage,,,) = health(platform, $);
-        emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
     }
 
     function _emitLeverageLendingHardWork(
@@ -830,6 +842,34 @@ library SiloALMFLib {
     ) internal view returns (uint depositApr, uint borrowApr) {
         depositApr = ISiloLens(lens).getDepositAPR(lendingVault) * ConstantsLib.DENOMINATOR / 1e18;
         borrowApr = ISiloLens(lens).getBorrowAPR(debtVault) * ConstantsLib.DENOMINATOR / 1e18;
+    }
+
+    function _compound(
+        address platform,
+        address vault_,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        IStrategy.StrategyBaseStorage storage $base
+    ) external {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = SiloALMFLib._getLeverageLendingAddresses($);
+
+        // ---------------------- Calculate amount earned through rewards
+        uint totalWas = $base.total;
+        uint totalNow = StrategyLib.balance(v.collateralAsset) + calcTotal(v);
+        $base.total = totalNow;
+
+        if (totalNow > totalWas) {
+            uint[] memory _maxDepositAmounts = maxDepositAssets($);
+            _deposit($, v, Math.min(_maxDepositAmounts[0], totalNow - totalWas));
+        }
+
+        // ---------------------- Calculate apr and emit event
+        (uint _realTvl,) = realTvl(platform, $);
+        _emitLeverageLendingHardWork(
+            platform, $, v, vault_, _realTvl, block.timestamp - $base.lastHardWork, int(totalNow) - int(totalWas)
+        );
+
+        (uint ltv,, uint leverage,,,) = health(platform, $);
+        emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
     }
 
     //endregion ------------------------------------- Revenue and rewards
@@ -875,8 +915,6 @@ library SiloALMFLib {
         data.borrowAssetUsd = data.debtAmount * data.borrowAssetPrice / 10 ** IERC20Metadata(borrowAsset).decimals();
 
         data.trusted = collateralPriceTrusted && borrowAssetPriceTrusted;
-        //        console.log("collateralPrice", data.collateralPrice);
-        //        console.log("borrowAssetPrice", data.borrowAssetPrice);
 
         return data;
     }
@@ -888,13 +926,14 @@ library SiloALMFLib {
         uint amountToRepay,
         address collateralAsset,
         address token,
-        uint priceImpactTolerance
+        uint priceImpactTolerance,
+        uint rewardsBalance
     ) internal view returns (uint) {
         // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
         // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
 
         ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
+        uint requiredAmount = amountToRepay - _balanceWithoutRewards(token, rewardsBalance);
 
         // we use higher (x2) price impact then required for safety
         uint minCollateralToSwap =
@@ -943,6 +982,11 @@ library SiloALMFLib {
     function _getLimitedAmount(uint amount, uint optionalLimit) internal pure returns (uint) {
         if (optionalLimit == 0) return amount;
         return Math.min(amount, optionalLimit);
+    }
+
+    function _balanceWithoutRewards(address borrowAsset, uint rewardsAmount) internal view returns (uint) {
+        uint balance = StrategyLib.balance(borrowAsset);
+        return balance > rewardsAmount ? balance - rewardsAmount : 0;
     }
     //endregion ------------------------------------- Internal
 }

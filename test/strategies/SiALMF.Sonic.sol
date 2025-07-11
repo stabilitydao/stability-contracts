@@ -66,7 +66,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALMFSonic() public universalTest {
-        //        _addStrategy(FARM_META_USD_SCUSD_54); // todo
+        //        _addStrategy(FARM_META_USD_SCUSD_54);
         _addStrategy(FARM_METAS_S_55);
         _addStrategy(FARM_META_USD_USDC_53);
     }
@@ -118,12 +118,18 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
     }
 
+    function _preHardWork() internal override {
+        // emulate merkl rewards
+        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 1e18);
+        deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 1e18);
+    }
+
     //region --------------------------------------- Strategy params tests
     function _testStrategyParams_All() internal {
         uint snapshot = vm.snapshotState();
 
         // --------------------------------------------- Ensure that rebalance doesn't change real share price
-        // todo check in upgrade test
+        // todo upgrade test
         // _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
 
         // --------------------------------------------- targetLeveragePercent - percent of max leverage.
@@ -164,6 +170,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
+        // emulate rewards BEFORE deposit
+        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 177e18);
+
         State memory state0 = _getState();
         (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
@@ -173,6 +182,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
+        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
@@ -197,6 +207,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         assertLt(state0.total, state1.total, "Total should increase after deposit");
         assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit");
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
+
+        assertEq(wsFinalBalance, 177e18, "wS balance should not change after deposit and withdraw");
     }
 
     function _testRebalance(
@@ -214,7 +226,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         _setTargetLeveragePercent(targetLeveragePercent_);
         IStrategy strategy = IStrategy(currentStrategy);
-        address vault = strategy.vault();
+
+        // emulate rewards BEFORE deposit
+        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 177e18);
 
         // --------------------------------------------- Deposit max amount (but less maxDeposit to be able to rebalance)
         uint[] memory amountsToDeposit = strategy.maxDepositAssets();
@@ -222,7 +236,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         // console.log("deposit", amountsToDeposit[0]);
         State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(vault, amountsToDeposit, REVERT_NO);
+        (uint depositedAssets, uint depositedValue) =
+            _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
         State memory state1 = _getState();
 
@@ -239,10 +254,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         (uint realTvlAfter,) = ILeverageLendingStrategy(address(strategy)).realTvl();
         // console.log("rebalance done", sharePriceAfter, realTvlAfter, strategy.total());
 
-        uint withdrawn1 = _tryToWithdrawFromVault(vault, depositedValue);
+        uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue);
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
+        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
@@ -272,6 +288,12 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
 
         assertNotEq(sharePrice, 0, "Share price is not 0");
+
+        assertEq(
+            wsFinalBalance,
+            177e18,
+            "wS balance should not change after on rebalance (only hardwork can process rewards)"
+        );
     }
 
     /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
