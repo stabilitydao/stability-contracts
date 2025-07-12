@@ -106,4 +106,7 @@ interface IRevenueRouter {
 
     /// @notice Get Aave pool list to mintToTreasury calls
     function aavePools() external view returns (address[] memory);
+
+    /// @notice Get vault addresses that contract hold on balance, but not withdrew yet
+    function vaultsAccumulated() external view returns (address[] memory);
 }

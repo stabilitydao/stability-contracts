@@ -10,13 +10,14 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
-import {IPool} from "../integrations/aave/IPool.sol";
-import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
+import {IPool} from "../integrations/aave/IPool.sol";
+import {IAToken} from "../integrations/aave/IAToken.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
 ///   1.3.0: vaultsAccumulated; updateUnit; units
 ///   1.2.0: Units; Aave unit; all revenue via buy-back
 /// @author Alien Deployer (https://github.com/a17)
@@ -29,7 +30,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -181,9 +182,12 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             for (uint i; i < outAssets.length; ++i) {
                 address asset = IAToken(outAssets[i]).UNDERLYING_ASSET_ADDRESS();
                 if (amounts[i] != 0) {
-                    IPool(IAToken(outAssets[i]).POOL()).withdraw(asset, amounts[i], address(this));
-                    IERC20(asset).forceApprove(address(swapper), amounts[i]);
-                    try swapper.swap(asset, stbl, amounts[i], 20_000) {} catch {}
+                    // here we use all because extra amounts from failed withdraw can be
+                    amounts[i] = IERC20(outAssets[i]).balanceOf(address(this));
+                    try IPool(IAToken(outAssets[i]).POOL()).withdraw(asset, amounts[i], address(this)) {
+                        IERC20(asset).forceApprove(address(swapper), amounts[i]);
+                        try swapper.swap(asset, stbl, amounts[i], 20_000) {} catch {}
+                    } catch {}
                 }
             }
 
@@ -199,13 +203,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
 
         // process accumulatedVaults
-        address[] memory vaultsAccumulated = $.vaultsAccumulated.values();
-        uint len = vaultsAccumulated.length;
+        address[] memory _vaultsAccumulated = $.vaultsAccumulated.values();
+        uint len = _vaultsAccumulated.length;
         for (uint i; i < len; ++i) {
             _withdrawVaultSharesAndBuyBack(
-                $, vaultsAccumulated[i], IERC20(vaultsAccumulated[i]).balanceOf(address(this)), address(this)
+                $, _vaultsAccumulated[i], IERC20(_vaultsAccumulated[i]).balanceOf(address(this)), address(this)
             );
-            $.vaultsAccumulated.remove(vaultsAccumulated[i]);
+            $.vaultsAccumulated.remove(_vaultsAccumulated[i]);
         }
 
         // mint Aave fees
@@ -255,6 +259,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function aavePools() external view returns (address[] memory) {
         return _getRevenueRouterStorage().aavePools;
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function vaultsAccumulated() external view returns (address[] memory) {
+        return _getRevenueRouterStorage().vaultsAccumulated.values();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
