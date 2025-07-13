@@ -17,6 +17,7 @@ import {IAToken} from "../integrations/aave/IAToken.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.5.0: processAccumulatedVaults
 ///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
 ///   1.3.0: vaultsAccumulated; updateUnit; units
 ///   1.2.0: Units; Aave unit; all revenue via buy-back
@@ -30,7 +31,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.5.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -202,18 +203,8 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function processUnitsRevenue() external {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
 
-        // process accumulatedVaults
-        address[] memory _vaultsAccumulated = $.vaultsAccumulated.values();
-        uint len = _vaultsAccumulated.length;
-        for (uint i; i < len; ++i) {
-            _withdrawVaultSharesAndBuyBack(
-                $, _vaultsAccumulated[i], IERC20(_vaultsAccumulated[i]).balanceOf(address(this)), address(this)
-            );
-            $.vaultsAccumulated.remove(_vaultsAccumulated[i]);
-        }
-
         // mint Aave fees
-        len = $.aavePools.length;
+        uint len = $.aavePools.length;
         for (uint i; i < len; ++i) {
             address aavePool = $.aavePools[i];
             address[] memory reserves = IPool(aavePool).getReservesList();
@@ -224,6 +215,24 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         len = $.units.length;
         for (uint i; i < len; ++i) {
             processUnitRevenue(i);
+        }
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function processAccumulatedVaults(uint maxVaultsForWithdraw) external {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+
+        // process accumulatedVaults
+        address[] memory _vaultsAccumulated = $.vaultsAccumulated.values();
+        uint len = _vaultsAccumulated.length;
+        for (uint i; i < len; ++i) {
+            if (i == maxVaultsForWithdraw) {
+                break;
+            }
+            _withdrawVaultSharesAndBuyBack(
+                $, _vaultsAccumulated[i], IERC20(_vaultsAccumulated[i]).balanceOf(address(this)), address(this)
+            );
+            $.vaultsAccumulated.remove(_vaultsAccumulated[i]);
         }
     }
 

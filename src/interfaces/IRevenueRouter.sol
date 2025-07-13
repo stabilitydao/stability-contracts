@@ -84,6 +84,9 @@ interface IRevenueRouter {
     /// @notice Claim units fees and swap to STBL
     function processUnitsRevenue() external;
 
+    /// @notice Withdraw assets from accumulated vaults and swap to STBL
+    function processAccumulatedVaults(uint maxVaultsForWithdraw) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
