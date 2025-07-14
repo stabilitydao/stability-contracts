@@ -84,10 +84,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
-//        _showPrices(
-//            IPlatform(PLATFORM).priceReader(),
-//            IPlatform(IControllable(currentStrategy).platform()).priceReader()
-//        );
+        //        _showPrices(
+        //            IPlatform(PLATFORM).priceReader(),
+        //            IPlatform(IControllable(currentStrategy).platform()).priceReader()
+        //        );
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53 || farmId == FARM_META_USD_SCUSD_54) {
             _currentMetaVault = SonicConstantsLib.METAVAULT_metaUSD;
@@ -129,19 +129,19 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     //region --------------------------------------- Strategy params tests
-//    function _showPrices(address priceReader1, address priceReader2) internal {
-//        console.log("!!!!!!!!!!!!!!!!!!Price reader 1, get price wS");
-//        (uint price1, ) = IPriceReader(priceReader1).getPrice(SonicConstantsLib.TOKEN_wS);
-//        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price metas");
-//        (uint price2, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.METAVAULT_metaS);
-//        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price wS");
-//        (uint price3, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_wS);
-//        console.log("reader1, reader2", priceReader1, priceReader2);
-//        console.log("price1, price2, price3", price1, price2, price3);
-//
-//        (uint priceUsdc, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_USDC);
-//        console.log("priceUsdc", priceUsdc);
-//    }
+    //    function _showPrices(address priceReader1, address priceReader2) internal {
+    //        console.log("!!!!!!!!!!!!!!!!!!Price reader 1, get price wS");
+    //        (uint price1, ) = IPriceReader(priceReader1).getPrice(SonicConstantsLib.TOKEN_wS);
+    //        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price metas");
+    //        (uint price2, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.METAVAULT_metaS);
+    //        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price wS");
+    //        (uint price3, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_wS);
+    //        console.log("reader1, reader2", priceReader1, priceReader2);
+    //        console.log("price1, price2, price3", price1, price2, price3);
+    //
+    //        (uint priceUsdc, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_USDC);
+    //        console.log("priceUsdc", priceUsdc);
+    //    }
 
     function _testStrategyParams_All() internal {
         uint snapshot = vm.snapshotState();
@@ -264,10 +264,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         (uint realTvl,) = ILeverageLendingStrategy(address(strategy)).realTvl();
         // console.log("start rebalance", sharePrice, realTvl, strategy.total());
         ILeverageLendingStrategy(address(strategy)).rebalanceDebt(
-            targetLeveragePercentNew_,
-            sharePrice * (1e6-1)/1e6
-            // 0
+            targetLeveragePercentNew_, sharePrice * (1e6 - 1) / 1e6
         );
+        // 0
+
         (uint sharePriceAfter,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
         (uint realTvlAfter,) = ILeverageLendingStrategy(address(strategy)).realTvl();
         states[2] = _getState();
@@ -302,7 +302,11 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
 
         assertLt(states[0].vaultBalance, states[1].vaultBalance, "vaultBalance should increase after deposit");
-        assertEq(states[1].vaultBalance, states[0].vaultBalance + depositedValue, "vaultBalance should increase on expected value after deposit 3");
+        assertEq(
+            states[1].vaultBalance,
+            states[0].vaultBalance + depositedValue,
+            "vaultBalance should increase on expected value after deposit 3"
+        );
         assertEq(states[2].vaultBalance, states[1].vaultBalance, "vaultBalance should not change after rebalance");
         assertEq(states[3].vaultBalance, states[0].vaultBalance, "vaultBalance should decrease after withdraw");
 
@@ -313,10 +317,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             177e18,
             "wS balance should not change after on rebalance (only hardwork can process rewards)"
         );
-//        console.log("sharePrice.before", sharePrice);
-//        console.log("sharePrice.after", sharePriceAfter);
-//        console.log("realTvl.before", realTvl);
-//        console.log("realTvl.after", realTvlAfter);
+        //        console.log("sharePrice.before", sharePrice);
+        //        console.log("sharePrice.after", sharePriceAfter);
+        //        console.log("realTvl.before", realTvl);
+        //        console.log("realTvl.after", realTvlAfter);
     }
 
     /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
