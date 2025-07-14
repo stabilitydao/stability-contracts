@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/core/vaults/WrappedMetaVault.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,7 +17,6 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -51,6 +49,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint sharePrice;
         uint balanceAsset;
         uint realTvl;
+        uint vaultBalance;
     }
 
     constructor() {
@@ -58,6 +57,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         // vm.rollFork(34471950); // Jun-17-2025 09:08:37 AM +UTC
         // vm.rollFork(36717785); // Jul-01-2025 01:21:29 PM +UTC
         vm.rollFork(37477020); // Jul-07-2025 12:24:42 PM +UTC
+        // vm.rollFork(38132683); // Jul-12-2025 01:38:42 AM +UTC
 
         allowZeroApr = true;
         duration1 = 0.1 hours;
@@ -84,6 +84,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
+//        _showPrices(
+//            IPlatform(PLATFORM).priceReader(),
+//            IPlatform(IControllable(currentStrategy).platform()).priceReader()
+//        );
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53 || farmId == FARM_META_USD_SCUSD_54) {
             _currentMetaVault = SonicConstantsLib.METAVAULT_metaUSD;
@@ -125,12 +129,25 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     //region --------------------------------------- Strategy params tests
+//    function _showPrices(address priceReader1, address priceReader2) internal {
+//        console.log("!!!!!!!!!!!!!!!!!!Price reader 1, get price wS");
+//        (uint price1, ) = IPriceReader(priceReader1).getPrice(SonicConstantsLib.TOKEN_wS);
+//        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price metas");
+//        (uint price2, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.METAVAULT_metaS);
+//        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price wS");
+//        (uint price3, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_wS);
+//        console.log("reader1, reader2", priceReader1, priceReader2);
+//        console.log("price1, price2, price3", price1, price2, price3);
+//
+//        (uint priceUsdc, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_USDC);
+//        console.log("priceUsdc", priceUsdc);
+//    }
+
     function _testStrategyParams_All() internal {
         uint snapshot = vm.snapshotState();
 
         // --------------------------------------------- Ensure that rebalance doesn't change real share price
-        // todo upgrade test
-        // _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
+        _testRebalance(75_00, 85_00, true); // rebalance with free flash loan
 
         // --------------------------------------------- targetLeveragePercent - percent of max leverage.
         _testDepositWithdraw(80_00, 1000, true);
@@ -205,7 +222,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
 
         assertLt(state0.total, state1.total, "Total should increase after deposit");
-        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit");
+        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit 2");
         assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
 
         assertEq(wsFinalBalance, 177e18, "wS balance should not change after deposit and withdraw");
@@ -234,12 +251,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint[] memory amountsToDeposit = strategy.maxDepositAssets();
         amountsToDeposit[0] = amountsToDeposit[0] / 4;
 
-        // console.log("deposit", amountsToDeposit[0]);
-        State memory state0 = _getState();
+        State[4] memory states;
+        states[0] = _getState();
         (uint depositedAssets, uint depositedValue) =
             _tryToDepositToVault(strategy.vault(), amountsToDeposit, REVERT_NO);
         vm.roll(block.number + 6);
-        State memory state1 = _getState();
+        states[1] = _getState();
+        // console.log("deposit", amountsToDeposit[0], depositedAssets, depositedValue);
 
         // --------------------------------------------- Rebalance: ensure that real share price is not changed
         (uint sharePrice,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
@@ -247,23 +265,23 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         // console.log("start rebalance", sharePrice, realTvl, strategy.total());
         ILeverageLendingStrategy(address(strategy)).rebalanceDebt(
             targetLeveragePercentNew_,
-            // todo sharePrice
-            0
+            sharePrice * (1e6-1)/1e6
+            // 0
         );
         (uint sharePriceAfter,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
         (uint realTvlAfter,) = ILeverageLendingStrategy(address(strategy)).realTvl();
-        // console.log("rebalance done", sharePriceAfter, realTvlAfter, strategy.total());
+        states[2] = _getState();
 
         uint withdrawn1 = _tryToWithdrawFromVault(strategy.vault(), depositedValue);
         vm.roll(block.number + 6);
-        State memory state2 = _getState();
+        states[3] = _getState();
 
         uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
-        assertEq(sharePriceAfter, sharePrice, "Share price should not change after rebalance");
-        assertEq(realTvl, realTvlAfter, "TVL should not change after rebalance");
+        assertApproxEqAbs(sharePriceAfter, sharePrice, 1e10, "Share price should not change after rebalance");
+        assertApproxEqAbs(realTvl, realTvlAfter, 1e14, "TVL should not change after rebalance");
 
         assertEq(depositedAssets, amountsToDeposit[0], "Deposited amount should be equal to amountsToDeposit");
         if (freeFlashLoan_) {
@@ -277,15 +295,16 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             // some amount left in the collateral vault after full withdraw
             assertApproxEqAbs(
                 depositedAssets,
-                withdrawn1 + state2.collateralAmount,
+                withdrawn1 + states[3].collateralAmount,
                 depositedAssets / 100_000,
                 "Withdrawn amount should be equal to deposited amount 2"
             );
         }
 
-        assertLt(state0.total, state1.total, "Total should increase after deposit");
-        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit");
-        assertEq(state2.total, state0.total, "Total should decrease after first withdraw");
+        assertLt(states[0].vaultBalance, states[1].vaultBalance, "vaultBalance should increase after deposit");
+        assertEq(states[1].vaultBalance, states[0].vaultBalance + depositedValue, "vaultBalance should increase on expected value after deposit 3");
+        assertEq(states[2].vaultBalance, states[1].vaultBalance, "vaultBalance should not change after rebalance");
+        assertEq(states[3].vaultBalance, states[0].vaultBalance, "vaultBalance should decrease after withdraw");
 
         assertNotEq(sharePrice, 0, "Share price is not 0");
 
@@ -294,6 +313,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             177e18,
             "wS balance should not change after on rebalance (only hardwork can process rewards)"
         );
+//        console.log("sharePrice.before", sharePrice);
+//        console.log("sharePrice.after", sharePriceAfter);
+//        console.log("realTvl.before", realTvl);
+//        console.log("realTvl.after", realTvlAfter);
     }
 
     /// @notice Deposit, check state, withdraw half, check state, withdraw all, check state
@@ -364,7 +387,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         //        );
 
         assertLt(state0.total, state1.total, "Total should increase after deposit");
-        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit");
+        assertEq(state1.total, state0.total + depositedValue, "Total should increase on expected value after deposit 1");
         assertEq(
             state2.total,
             state0.total + depositedValue - depositedValue / 2,
@@ -801,6 +824,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         state.targetLeverage = state.maxLeverage * state.targetLeveragePercent / 100_00;
         state.balanceAsset = IERC20(IStrategy(address(strategy)).assets()[0]).balanceOf(address(currentStrategy));
         (state.realTvl,) = strategy.realTvl();
+        state.vaultBalance = IVault(IStrategy(address(strategy)).vault()).balanceOf(address(this));
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 

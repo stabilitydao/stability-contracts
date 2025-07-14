@@ -432,6 +432,8 @@ library SonicConstantsLib {
     address public constant ORACLE_CHAINLINK_scUSD = 0xACE5e348a341a740004304c2c228Af1A4581920F;
     /// @notice price feed for wS used by deployed ChainlinkAdapter 0xc53172dB113fbB310a4D53eC3BcfA60f233aBb73
     address public constant ORACLE_CHAINLINK_wS = 0xc76dFb89fF298145b417d221B2c747d84952e01d;
+    address public constant ORACLE_CHAINLINK_metaUSD = 0x440A6bf579069Fa4e7C3C9fe634B34D2C78C584c;
+    address public constant ORACLE_CHAINLINK_metaS = 0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7;
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
