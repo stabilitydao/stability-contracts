@@ -25,6 +25,7 @@ interface IControllable {
     error ETHTransferFailed();
     error IncorrectInitParams();
     error InsufficientBalance();
+    error IncorrectBalance();
     error IncorrectLtv(uint ltv);
     error TooLowValue(uint value);
     error IncorrectAssetsList(address[] assets_, address[] expectedAssets_);

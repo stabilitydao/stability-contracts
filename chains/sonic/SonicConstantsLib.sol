@@ -255,6 +255,7 @@ library SonicConstantsLib {
     address public constant BEETS_GAUGE_scUSD_stS = 0xa472438718Fe7785107fCbE584d39183a6420D36;
     address public constant BEETS_GAUGE_USDC_stS = 0xb3Bf2c247A599DFcEf06791b1668Fe9456677923;
     address public constant BEETS_V3_ROUTER = 0x6077b9801B5627a65A5eeE70697C793751D1a71c;
+    address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
 
     // Equalizer
     address public constant EQUALIZER_ROUTER_03 = 0xcC6169aA1E879d3a4227536671F85afdb2d23fAD;
@@ -376,6 +377,9 @@ library SonicConstantsLib {
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;
     address public constant POOL_ALGEBRA_beS_OS = 0x97fE831cC56da84321f404a300e2Be81b5bd668A;
     address public constant POOL_UNISWAPV3_wOS_stS = 0xB6D833db433AeCE6AbD8128a61898a219a9c8148;
+    address public constant POOL_SHADOW_CL_USDC_WETH = 0x6Fb30F3FCB864D49cdff15061ed5c6ADFEE40B40;
+    address public constant POOL_ALGEBRA_WS_USDC = 0x5C4B7d607aAF7B5CDE9F09b5F03Cf3b5c923AEEa;
+    address public constant POOL_ALGEBRA_USDC_STS = 0x5DDbeF774488cc68266d5F15bFB08eaA7cd513F9;
 
     address public constant SILO_VAULT_102_PT_bscUSD_14AUG = 0x6ec9b5cbA68542F6AFbfA7004a7a3600F09A2703;
     address public constant SILO_VAULT_102_USDC = 0xD47031F7B044dffeB9b041c4eCF16209F6a1B0b2;
@@ -385,6 +389,14 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_104_USDC = 0x8A810A8bDceCc5ca467e9Fac5A5a846d36c5Bf7e;
     address public constant SILO_VAULT_54_wOS = 0x04f124bF435545a3c79A8EE3Ffb6C51213CF5175;
     address public constant SILO_VAULT_54_S = 0xbE0D3c8801206CC9f35A6626f90ef9F4f2983A3D;
+
+    // Silo meta USD
+    address public constant SILO_VAULT_121_WMETAUSD = 0xCCdDbBbd1E36a6EDA3a84CdCee2040A86225Ba71;
+    address public constant SILO_VAULT_121_USDC = 0xEd9777944A2Fb32504a410D23f246463B3f40908;
+    address public constant SILO_VAULT_125_WMETAUSD = 0x6e8C150224D6e9B646889b96EFF6f7FD742e2C22;
+    address public constant SILO_VAULT_125_scUSD = 0x0aB02DD08c1555d1a20C76a6EA30e3E36f3e06d4;
+    address public constant SILO_VAULT_128_WMETAS = 0x1c1791911483E98875D162355feC47f37613f0FB;
+    address public constant SILO_VAULT_128_S = 0x8c98b43BF61F2B07c4D26f85732217948Fca2a90;
 
     // Gamma
     address public constant GAMMA_UNISWAPV3_UNIPROXY = 0xcD5A60eb030300661cAf97244aE98e1D5A70f2c8;
@@ -416,6 +428,12 @@ library SonicConstantsLib {
     address public constant ORACLE_API3_wS_USD = 0x726D2E87d73567ecA1b75C063Bd09c1493655918;
     address public constant ORACLE_PYTH_stS_USD = 0xfdbA54F2F4242Df3DbD34C72C8983E40d7C19CBE;
     address public constant ORACLE_PYTH_scUSD_USD = 0xC55C8c98Bd7359C587Cd9a5D999ab4720608F18C;
+    /// @notice price feed for scUsd used by deployed ChainlinkAdapter 0xc53172dB113fbB310a4D53eC3BcfA60f233aBb73
+    address public constant ORACLE_CHAINLINK_scUSD = 0xACE5e348a341a740004304c2c228Af1A4581920F;
+    /// @notice price feed for wS used by deployed ChainlinkAdapter 0xc53172dB113fbB310a4D53eC3BcfA60f233aBb73
+    address public constant ORACLE_CHAINLINK_wS = 0xc76dFb89fF298145b417d221B2c747d84952e01d;
+    address public constant ORACLE_CHAINLINK_metaUSD = 0x440A6bf579069Fa4e7C3C9fe634B34D2C78C584c;
+    address public constant ORACLE_CHAINLINK_metaS = 0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7;
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
