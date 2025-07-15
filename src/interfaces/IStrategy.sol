@@ -256,4 +256,8 @@ interface IStrategy is IERC165 {
 
     /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
     function fuseMode() external view returns (uint);
+
+    /// @notice Maximum amounts of assets that can be deposited into the strategy
+    /// @return amounts Empty array (zero length) is returned if there are no limits on deposits
+    function maxDepositAssets() external view returns (uint[] memory amounts);
 }

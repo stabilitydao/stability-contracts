@@ -13,6 +13,7 @@ import {IControllable} from "../../interfaces/IControllable.sol";
 
 /// @notice Base strategy for leverage lending
 /// Changelog:
+///   1.2.3: liquidateRewards is virtual, use StrategyBase 2.5.0
 ///   1.2.2: add universalAddress1 and withdrawParam2 to universal params
 ///   1.2.1: rebalanceDebt reverts if result share price less #277
 ///   1.2.0: feat: return new share price by rebalanceDebt #256; feat: use BeetsV3 OR UniswapV3-like DeX free flash loans #268
@@ -26,7 +27,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of FarmingStrategyBase implementation
-    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.2";
+    string public constant VERSION_LEVERAGE_LENDING_STRATEGY_BASE = "1.2.3";
 
     /// @dev 100_00 is 1.0 or 100%
     uint internal constant INTERNAL_PRECISION = 100_00;
@@ -211,7 +212,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
         address exchangeAsset,
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
-    ) internal override returns (uint earnedExchangeAsset) {}
+    ) internal virtual override returns (uint earnedExchangeAsset) {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */

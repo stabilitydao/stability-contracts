@@ -7,17 +7,20 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {Controllable, IControllable} from "../base/Controllable.sol";
-import {CommonLib} from "../libs/CommonLib.sol";
-import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault, IStabilityVault, EnumerableSet} from "../../interfaces/IMetaVault.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
+///          - add whitelist for last-block-defense - #330
+///          - add removeVault - #336
+///          - add MetaVaultLib to reduce contract size
 ///   1.3.0: - Add maxWithdraw - #326
 ///          - MultiVault withdraws from all sub-vaults - #334
 ///   1.2.3: - fix slippage check in deposit - #303
@@ -37,7 +40,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.4.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -48,6 +51,15 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant _METAVAULT_STORAGE_LOCATION =
         0x303154e675d2f93642b6b4ae068c749c9b8a57de9202c6344dbbb24ab936f000;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         Transient                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Allow to temporally disable last-block-defence in the current tx
+    /// Can be changed by whitelisted strategies only.
+    /// Store block number of the transaction that disabled last-block-defense.
+    /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
+    uint internal transient _lastBlockDefenseDisabledTx;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -57,9 +69,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address targetVault;
         uint totalSupplyBefore;
         uint totalSharesBefore;
-        uint len;
-        uint[] balanceBefore;
+        uint depositedTvl;
         uint[] amountsConsumed;
+    }
+
+    struct DepositToMultiVaultLocals {
+        uint targetVaultSharesBefore;
+        uint targetVaultPrice;
+        uint targetVaultSharesAfter;
+        uint[] balanceBefore;
+        uint[] amountToDeposit;
+        uint[] amounts;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -117,7 +137,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function setTargetProportions(uint[] memory newTargetProportions) external onlyAllowedOperator {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
-        _checkProportions(newTargetProportions);
+        MetaVaultLib._checkProportions(newTargetProportions);
         $.targetProportions = newTargetProportions;
         emit TargetProportions(newTargetProportions);
     }
@@ -127,7 +147,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] memory withdrawShares,
         uint[] memory depositAmountsProportions
     ) external onlyAllowedOperator returns (uint[] memory proportions, int cost) {
-        _checkProportions(depositAmountsProportions);
+        MetaVaultLib._checkProportions(depositAmountsProportions);
 
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         uint len = $.vaults.length;
@@ -138,7 +158,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         (uint tvlBefore,) = tvl();
 
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (MetaVaultLib._isMultiVault($)) {
             address[] memory _assets = $.assets.values();
             for (uint i; i < len; ++i) {
                 if (withdrawShares[i] != 0) {
@@ -169,40 +189,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function addVault(address vault, uint[] memory newTargetProportions) external onlyGovernanceOrMultisig {
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        MetaVaultLib.addVault(_getMetaVaultStorage(), vault, newTargetProportions);
+    }
 
-        // check vault
-        uint len = $.vaults.length;
-        for (uint i; i < len; ++i) {
-            if ($.vaults[i] == vault) {
-                revert IMetaVault.IncorrectVault();
-            }
-        }
-
-        // check proportions
-        require(newTargetProportions.length == $.vaults.length + 1, IncorrectArrayLength());
-        _checkProportions(newTargetProportions);
-
-        address[] memory vaultAssets = IStabilityVault(vault).assets();
-
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
-            // check asset
-            require(vaultAssets.length == 1, IncorrectVault());
-            require(vaultAssets[0] == $.assets.values()[0], IncorrectVault());
-        } else {
-            // add assets
-            len = vaultAssets.length;
-            for (uint i; i < len; ++i) {
-                $.assets.add(vaultAssets[i]);
-            }
-        }
-
-        // add vault
-        $.vaults.push(vault);
-        $.targetProportions = newTargetProportions;
-
-        emit AddVault(vault);
-        emit TargetProportions(newTargetProportions);
+    /// @inheritdoc IMetaVault
+    function removeVault(address vault) external onlyGovernanceOrMultisig {
+        MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, USD_THRESHOLD);
     }
 
     /// @inheritdoc IMetaVault
@@ -242,6 +234,21 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         emit LastBlockDefenseDisabled(isDisabled);
     }
 
+    /// @inheritdoc IMetaVault
+    function changeWhitelist(address addr, bool addToWhitelist) external onlyOperator {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $.lastBlockDefenseWhitelist[addr] = addToWhitelist;
+
+        emit WhitelistChanged(addr, addToWhitelist);
+    }
+
+    /// @inheritdoc IMetaVault
+    function setLastBlockDefenseDisabledTx(bool isDisabled) external {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
+
+        _lastBlockDefenseDisabledTx = isDisabled ? block.number : 0;
+    }
     //endregion --------------------------------- Restricted action
 
     //region --------------------------------- User actions
@@ -260,44 +267,22 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         _beforeDepositOrWithdraw($, receiver);
 
+        //slither-disable-next-line uninitialized-local
         DepositAssetsVars memory v;
         v.targetVault = vaultForDeposit();
         v.totalSupplyBefore = totalSupply();
         v.totalSharesBefore = $.totalShares;
-        v.len = assets_.length;
-        v.balanceBefore = new uint[](v.len);
-        v.amountsConsumed = new uint[](v.len);
 
         // ensure that provided assets correspond to the target vault
         // assume that user should call {assetsForDeposit} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, v.targetVault);
 
-        for (uint i; i < v.len; ++i) {
-            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
-            v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
-            IERC20(assets_[i]).forceApprove(v.targetVault, amountsMax[i]);
-        }
-
-        uint targetVaultSharesBefore = IERC20(v.targetVault).balanceOf(address(this));
-        IStabilityVault(v.targetVault).depositAssets(assets_, amountsMax, 0, address(this));
-        for (uint i; i < v.len; ++i) {
-            v.amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
-            uint refund = amountsMax[i] - v.amountsConsumed[i];
-            if (refund != 0) {
-                IERC20(assets_[i]).safeTransfer(msg.sender, refund);
-            }
-            if (IERC20(assets_[i]).allowance(address(this), v.targetVault) != 0) {
-                IERC20(assets_[i]).forceApprove(v.targetVault, 0);
-            }
-        }
+        (v.amountsConsumed, v.depositedTvl) = (MetaVaultLib._isMultiVault($))
+            ? _depositToMultiVault(v.targetVault, $.vaults, assets_, amountsMax)
+            : _depositToTargetVault(v.targetVault, assets_, amountsMax);
 
         {
-            (uint targetVaultPrice,) = IStabilityVault(v.targetVault).price();
-            uint targetVaultSharesAfter = IERC20(v.targetVault).balanceOf(address(this));
-            uint depositedTvl = Math.mulDiv(
-                targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor
-            );
-            uint balanceOut = _usdAmountToMetaVaultBalance(depositedTvl);
+            uint balanceOut = _usdAmountToMetaVaultBalance(v.depositedTvl);
             uint sharesToCreate;
             if (v.totalSharesBefore == 0) {
                 sharesToCreate = balanceOut;
@@ -376,25 +361,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function currentProportions() public view returns (uint[] memory proportions) {
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-        address[] memory _vaults = $.vaults;
-        if ($.totalShares == 0) {
-            return targetProportions();
-        }
-        uint len = _vaults.length;
-        proportions = new uint[](len);
-        uint[] memory vaultUsdValue = new uint[](len);
-        uint totalDepositedTvl;
-        for (uint i; i < len; ++i) {
-            (uint vaultTvl,) = IStabilityVault(_vaults[i]).tvl();
-            uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            uint vaultTotalSupply = IERC20(_vaults[i]).totalSupply();
-            vaultUsdValue[i] = Math.mulDiv(vaultSharesBalance, vaultTvl, vaultTotalSupply, Math.Rounding.Floor);
-            totalDepositedTvl += vaultUsdValue[i];
-        }
-        for (uint i; i < len; ++i) {
-            proportions[i] = Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
-        }
+        return MetaVaultLib.currentProportions(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
@@ -404,25 +371,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function vaultForDeposit() public view returns (address target) {
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-        address[] memory _vaults = $.vaults;
-        if ($.totalShares == 0) {
-            return _vaults[0];
-        }
-        uint len = _vaults.length;
-        uint[] memory _proportions = currentProportions();
-        uint[] memory _targetProportions = targetProportions();
-        uint lowProportionDiff;
-        target = _vaults[0];
-        for (uint i; i < len; ++i) {
-            if (_proportions[i] < _targetProportions[i]) {
-                uint diff = _targetProportions[i] - _proportions[i];
-                if (diff > lowProportionDiff) {
-                    lowProportionDiff = diff;
-                    target = _vaults[i];
-                }
-            }
-        }
+        return MetaVaultLib.vaultForDeposit(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
@@ -433,25 +382,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     /// @dev MultiVault supports withdrawing from all sub-vaults. Return the vault from which to start withdrawing.
     function vaultForWithdraw() public view returns (address target) {
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-        address[] memory _vaults = $.vaults;
-        if ($.totalShares == 0) {
-            return _vaults[0];
-        }
-        uint len = _vaults.length;
-        uint[] memory _proportions = currentProportions();
-        uint[] memory _targetProportions = targetProportions();
-        uint highProportionDiff;
-        target = _vaults[0];
-        for (uint i; i < len; ++i) {
-            if (_proportions[i] > _targetProportions[i] && _proportions[i] > 1e16) {
-                uint diff = _proportions[i] - _targetProportions[i];
-                if (diff > highProportionDiff) {
-                    highProportionDiff = diff;
-                    target = _vaults[i];
-                }
-            }
-        }
+        return MetaVaultLib.vaultForWithdraw(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
@@ -533,7 +464,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_pegAsset == address(0)) {
             return (1e18, true);
         }
-        return IPriceReader(IPlatform(platform()).priceReader()).getPrice(_pegAsset);
+        (price_, trusted_) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(_pegAsset);
     }
 
     /// @inheritdoc IStabilityVault
@@ -614,12 +545,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return 18;
     }
 
+    /// @inheritdoc IMetaVault
+    function whitelisted(address addr) external view returns (bool) {
+        return _getMetaVaultStorage().lastBlockDefenseWhitelist[addr];
+    }
+
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) external view virtual returns (uint amount) {
         uint userBalance = balanceOf(account);
 
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (MetaVaultLib._isMultiVault($)) {
             for (uint i; i < $.vaults.length; ++i) {
                 address _targetVault = $.vaults[i];
                 (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
@@ -641,21 +577,40 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
         }
     }
+
+    /// @inheritdoc IStabilityVault
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        if (MetaVaultLib._isMultiVault($)) {
+            // MultiVault supports depositing to all sub-vaults
+            // so we need to calculate summary max deposit amounts for all sub-vaults
+            // but result cannot exceed type(uint).max
+            for (uint i; i < $.vaults.length; ++i) {
+                address _targetVault = $.vaults[i];
+
+                if (i == 0) {
+                    // lazy initialization of maxAmounts
+                    maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
+                }
+                uint[] memory _amounts = IStabilityVault(_targetVault).maxDeposit(account);
+                for (uint j; j < _amounts.length; ++j) {
+                    if (maxAmounts[j] != type(uint).max) {
+                        maxAmounts[j] = _amounts[j] == type(uint).max ? type(uint).max : maxAmounts[j] + _amounts[j];
+                    }
+                }
+            }
+
+            return maxAmounts;
+        } else {
+            return IStabilityVault(vaultForDeposit()).maxDeposit(account);
+        }
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _checkProportions(uint[] memory proportions_) internal pure {
-        uint len = proportions_.length;
-        uint total;
-        for (uint i; i < len; ++i) {
-            total += proportions_[i];
-        }
-        require(total == 1e18, IncorrectProportions());
-    }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
         if (!$.lastBlockDefenseDisabled) {
@@ -673,9 +628,144 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     function _checkLastBlockProtection(MetaVaultStorage storage $, address owner) internal view {
-        if (!$.lastBlockDefenseDisabled && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number) {
+        if (
+            // defence is not disabled by governance
+            // defence is not disabled by whitelisted strategy in the current block
+            !$.lastBlockDefenseDisabled && _lastBlockDefenseDisabledTx != block.number
+                && $.lastTransferBlock[owner] + _TRANSFER_DELAY_BLOCKS >= block.number
+        ) {
             revert WaitAFewBlocks();
         }
+    }
+
+    function _depositToTargetVault(
+        address targetVault_,
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
+        uint len = assets_.length;
+        uint[] memory balanceBefore = new uint[](len);
+        amountsConsumed = new uint[](len);
+
+        uint targetVaultSharesBefore = IERC20(targetVault_).balanceOf(address(this));
+
+        for (uint i; i < len; ++i) {
+            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
+            balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            IERC20(assets_[i]).forceApprove(targetVault_, amountsMax[i]);
+        }
+
+        IStabilityVault(targetVault_).depositAssets(assets_, amountsMax, 0, address(this));
+
+        for (uint i; i < len; ++i) {
+            amountsConsumed[i] = balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+            uint refund = amountsMax[i] - amountsConsumed[i];
+            if (refund != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, refund);
+            }
+            if (IERC20(assets_[i]).allowance(address(this), targetVault_) != 0) {
+                IERC20(assets_[i]).forceApprove(targetVault_, 0);
+            }
+        }
+
+        // slither-disable-next-line unused-return
+        (uint targetVaultPrice,) = IStabilityVault(targetVault_).price();
+        uint targetVaultSharesAfter = IERC20(targetVault_).balanceOf(address(this));
+
+        depositedTvl =
+            Math.mulDiv(targetVaultSharesAfter - targetVaultSharesBefore, targetVaultPrice, 1e18, Math.Rounding.Floor);
+    }
+
+    function _depositToMultiVault(
+        address targetVault_,
+        address[] memory vaults_,
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) internal returns (uint[] memory amountsConsumed, uint depositedTvl) {
+        // slither-disable-next-line uninitialized-local
+        DepositToMultiVaultLocals memory v;
+
+        // find target vault and move it to the first position
+        // assume that the order of the other vaults does not matter
+        _setTargetVaultFirst(targetVault_, vaults_);
+
+        uint len = assets_.length;
+        amountsConsumed = new uint[](len);
+
+        // ------------------- receive initial amounts from the user
+        v.balanceBefore = new uint[](len);
+        v.amountToDeposit = new uint[](len);
+        for (uint i; i < len; ++i) {
+            IERC20(assets_[i]).safeTransferFrom(msg.sender, address(this), amountsMax[i]);
+            v.balanceBefore[i] = IERC20(assets_[i]).balanceOf(address(this));
+            v.amountToDeposit[i] = amountsMax[i];
+        }
+
+        // ------------------- deposit amounts to sub-vaults
+        v.amounts = new uint[](len);
+        for (uint n; n < vaults_.length; ++n) {
+            v.targetVaultSharesBefore = IERC20(vaults_[n]).balanceOf(address(this));
+
+            uint[] memory _maxDeposit = IStabilityVault(vaults_[n]).maxDeposit(address(this));
+            for (uint i; i < len; ++i) {
+                v.amounts[i] = Math.min(v.amountToDeposit[i], _maxDeposit[i]);
+                IERC20(assets_[i]).forceApprove(vaults_[n], v.amounts[i]);
+            }
+
+            IStabilityVault(vaults_[n]).depositAssets(assets_, v.amounts, 0, address(this));
+
+            // slither-disable-next-line uninitialized-state
+            bool needToDepositMore;
+
+            for (uint i; i < len; ++i) {
+                // maxDeposit should be successfully deposited
+                // so, we don't need to clear allowance here
+                // we do it safety for edge cases only
+                if (IERC20(assets_[i]).allowance(address(this), vaults_[n]) != 0) {
+                    IERC20(assets_[i]).forceApprove(vaults_[n], 0);
+                }
+
+                amountsConsumed[i] = v.balanceBefore[i] - IERC20(assets_[i]).balanceOf(address(this));
+                v.amountToDeposit[i] = amountsMax[i] - amountsConsumed[i];
+                needToDepositMore = needToDepositMore || (v.amountToDeposit[i] != 0);
+            }
+
+            // slither-disable-next-line unused-return
+            (v.targetVaultPrice,) = IStabilityVault(vaults_[n]).price();
+            v.targetVaultSharesAfter = IERC20(vaults_[n]).balanceOf(address(this));
+
+            depositedTvl += Math.mulDiv(
+                v.targetVaultSharesAfter - v.targetVaultSharesBefore, v.targetVaultPrice, 1e18, Math.Rounding.Floor
+            );
+
+            if (!needToDepositMore) break;
+        }
+
+        // ------------------- refund remaining amounts
+        for (uint i; i < len; ++i) {
+            if (v.amountToDeposit[i] != 0) {
+                IERC20(assets_[i]).safeTransfer(msg.sender, v.amountToDeposit[i]);
+            }
+        }
+
+        return (amountsConsumed, depositedTvl);
+    }
+
+    /// @notice Find target vault in {vaults} and move it on the first position.
+    function _setTargetVaultFirst(
+        address targetVault,
+        address[] memory vaults_
+    ) internal pure returns (address[] memory) {
+        uint len = vaults_.length;
+        for (uint i; i < len; ++i) {
+            if (vaults_[i] == targetVault) {
+                // first withdraw should be from the target vault
+                // the order of other vaults does not matter because the rebalancer is called often enough
+                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
+                break;
+            }
+        }
+        return vaults_;
     }
 
     function _withdrawAssets(
@@ -711,7 +801,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
         _checkProvidedAssets(assets_, _targetVault);
 
-        if (CommonLib.eq($._type, VaultTypeLib.MULTIVAULT)) {
+        if (MetaVaultLib._isMultiVault($)) {
             // withdraw the amount from all sub-vaults starting from the target vault
             amountsOut = _withdrawFromMultiVault($.vaults, assets_, amount, receiver, _targetVault);
 
@@ -757,17 +847,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint totalAmount = amount;
 
         // ------------------- set target vault on the first position in vaults_
-        uint len = vaults_.length;
-        for (uint i; i < len; ++i) {
-            if (vaults_[i] == targetVault_) {
-                // first withdraw should be from the target vault
-                // the order of other vaults does not matter because the rebalancer is called often enough
-                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
-                break;
-            }
-        }
+        _setTargetVaultFirst(targetVault_, vaults_);
 
         // ------------------- withdraw from vaults until requested amount is withdrawn
+        uint len = vaults_.length;
         amountsOut = new uint[](assets_.length);
         for (uint i; i < len; ++i) {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
