@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 interface IRevenueRouter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     event EpochFlip(uint periodEnded, uint totalStblRevenue);
-    event NewUnit(uint unitIndex, string name, address feeTreasury);
+    event AddedUnit(uint unitIndex, UnitType unitType, string name, address feeTreasury);
+    event UpdatedUnit(uint unitIndex, UnitType unitType, string name, address feeTreasury);
     event UnitEpochRevenue(uint periodEnded, string unitName, uint stblRevenue);
     event ProcessUnitRevenue(uint unitIndex, uint stblGot);
 
@@ -32,6 +35,7 @@ interface IRevenueRouter {
         uint pendingRevenue;
         Unit[] units;
         address[] aavePools;
+        EnumerableSet.AddressSet vaultsAccumulated;
     }
 
     enum UnitType {
@@ -53,6 +57,9 @@ interface IRevenueRouter {
 
     /// @notice Add new Unit
     function addUnit(UnitType unitType, string calldata name, address feeTreasury) external;
+
+    /// @notice Update Unit
+    function updateUnit(uint unitIndex, UnitType unitType, string calldata name, address feeTreasury) external;
 
     /// @notice Setup Aave pool list
     function setAavePools(address[] calldata pools) external;
@@ -77,9 +84,15 @@ interface IRevenueRouter {
     /// @notice Claim units fees and swap to STBL
     function processUnitsRevenue() external;
 
+    /// @notice Withdraw assets from accumulated vaults and swap to STBL
+    function processAccumulatedVaults(uint maxVaultsForWithdraw) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Show all Units
+    function units() external view returns (Unit[] memory);
 
     /// @notice The period used for rewarding
     /// @return The block.timestamp divided by 1 week in seconds
@@ -96,4 +109,7 @@ interface IRevenueRouter {
 
     /// @notice Get Aave pool list to mintToTreasury calls
     function aavePools() external view returns (address[] memory);
+
+    /// @notice Get vault addresses that contract hold on balance, but not withdrew yet
+    function vaultsAccumulated() external view returns (address[] memory);
 }

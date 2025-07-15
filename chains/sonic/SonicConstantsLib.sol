@@ -47,6 +47,11 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_scUSD_ISF_USDC = 0xb773B791F3baDB3b28BC7A2da18E2a012b9116c2;
     //address public constant VAULT_C_USDC_Stability_Main = 0x402ae122CaEce6ce57203e3Bd4AF7d1e9Ac446cb;
 
+    // leverage vaults
+    address public constant VAULT_LEV_SiL_stS_S = 0x709833e5B4B98aAb812d175510F94Bc91CFABD89;
+    address public constant VAULT_LEV_SiL_S_stS = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
+    address public constant VAULT_LEV_SiAL_wstkscUSD_USDC = 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1;
+
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address public constant TOKEN_wETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
