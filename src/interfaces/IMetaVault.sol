@@ -41,6 +41,8 @@ interface IMetaVault is IStabilityVault {
         uint storedTime;
         /// @inheritdoc IStabilityVault
         bool lastBlockDefenseDisabled;
+        /// @dev Whitelist for addresses (strategies) that are able to temporarily disable last-block-defense
+        mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -51,6 +53,8 @@ interface IMetaVault is IStabilityVault {
     event Rebalance(uint[] withdrawShares, uint[] depositAmountsProportions, int cost);
     event AddVault(address vault);
     event TargetProportions(uint[] proportions);
+    event WhitelistChanged(address owner, bool whitelisted);
+    event RemoveVault(address vault);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -62,6 +66,7 @@ interface IMetaVault is IStabilityVault {
     error IncorrectProportions();
     error IncorrectRebalanceArgs();
     error IncorrectVault();
+    error NotWhitelisted();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
@@ -109,6 +114,9 @@ interface IMetaVault is IStabilityVault {
         view
         returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime);
 
+    /// @notice True if the {addr} is in last-block-defense whitelist
+    function whitelisted(address addr) external view returns (bool);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -136,6 +144,10 @@ interface IMetaVault is IStabilityVault {
     /// @notice Add CVault to MetaVault
     function addVault(address vault, uint[] memory newTargetProportions) external;
 
+    /// @notice Remove CVault from MetaVault
+    /// @dev The proportions of the vault should be zero, total deposited amount should be less then threshold
+    function removeVault(address vault) external;
+
     /// @notice Init after deploy
     function initialize(
         address platform_,
@@ -146,4 +158,10 @@ interface IMetaVault is IStabilityVault {
         address[] memory vaults_,
         uint[] memory proportions_
     ) external;
+
+    /// @notice Add/remove {addr} to/from last-block-defense whitelist
+    function changeWhitelist(address addr, bool addToWhitelist) external;
+
+    /// @notice Allow whitelisted address to disable last-block-defense for the current block or enable it back
+    function setLastBlockDefenseDisabledTx(bool isDisabled) external;
 }

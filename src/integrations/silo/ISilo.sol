@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 interface ISilo is IERC4626 {
+    error NotEnoughLiquidity();
     /// @dev There are 2 types of accounting in the system: for non-borrowable collateral deposit called "protected" and
     ///      for borrowable collateral deposit called "collateral". System does
     ///      identical calculations for each type of accounting but it uses different data. To avoid code duplication
@@ -65,4 +66,6 @@ interface ISilo is IERC4626 {
     /// @param _borrower Address of the borrower
     /// @return assets Maximum amount of assets the borrower can repay
     function maxRepay(address _borrower) external view returns (uint assets);
+
+    function getLiquidity() external view returns (uint256 liquidity);
 }

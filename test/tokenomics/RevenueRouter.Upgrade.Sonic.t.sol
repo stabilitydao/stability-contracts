@@ -26,6 +26,10 @@ contract RevenueRouterUpgradeTestSonic is Test {
         revenueRouter.addUnit(IRevenueRouter.UnitType.AaveMarkets, "Lending", SonicConstantsLib.LENDING_FEE_TREASURY);
         vm.prank(multisig);
         revenueRouter.addUnit(IRevenueRouter.UnitType.AaveMarkets, "Lending", SonicConstantsLib.LENDING_FEE_TREASURY);
+        vm.prank(multisig);
+        revenueRouter.updateUnit(
+            0, IRevenueRouter.UnitType.AaveMarkets, "Lending1", SonicConstantsLib.LENDING_FEE_TREASURY
+        );
 
         revenueRouter.processUnitRevenue(0);
 
@@ -45,7 +49,12 @@ contract RevenueRouterUpgradeTestSonic is Test {
         vm.startPrank(IPlatform(PLATFORM).hardWorker());
         IVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore).doHardWork();
         IVault(SonicConstantsLib.VAULT_C_USDC_Stability_Stream).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SiL_stS_S).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SiL_S_stS).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC).doHardWork();
         vm.stopPrank();
+        vm.roll(block.number + 6);
+        revenueRouter.processUnitsRevenue();
     }
 
     function _upgradeRevenueRouter() internal {
@@ -55,8 +64,9 @@ contract RevenueRouterUpgradeTestSonic is Test {
         implementations[0] = address(new RevenueRouter());
         vm.startPrank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.07.0-alpha", proxies, implementations);
-        skip(1 days);
+        skip(18 hours);
         IPlatform(PLATFORM).upgrade();
         vm.stopPrank();
+        rewind(17 hours);
     }
 }

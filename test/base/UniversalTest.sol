@@ -231,6 +231,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             nums,
                             ticks
                         );
+
                         f.strategyLogicId = goodStrategyId;
 
                         factory.updateFarm(nums[0], f);
@@ -412,7 +413,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 }
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-                /*                       MAX WITHDRAW and POOL TVL            */
+                /*             MAX DEPOSIT, MAX WITHDRAW, POOL TVL            */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
                     uint[] memory maxWithdraw = strategy.maxWithdrawAssets();
@@ -421,6 +422,13 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,
                         true,
                         "maxWithdraw has same length as assetAmounts OR it's empty (there are no limits for withdraw)"
+                    );
+
+                    uint[] memory maxDeposit = strategy.maxDepositAssets();
+                    assertEq(
+                        maxDeposit.length == assetAmounts.length || maxDeposit.length == 0,
+                        true,
+                        "maxDeposit has same length as assetAmounts OR it's empty (there are no limits for deposit)"
                     );
                 }
                 assertNotEq(strategy.poolTvl(), 0, "Assume that internal pool has some TVL");

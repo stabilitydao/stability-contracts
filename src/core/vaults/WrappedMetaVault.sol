@@ -18,6 +18,7 @@ import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
 /// @title Wrapped rebase MetaVault
 /// Changelog:
+///   1.2.0: maxDeposit and maxMint take into account MetaVault.maxDeposit - #330
 ///   1.1.1: Change maxWithdraw - #326
 ///   1.1.0: add deposit/mint/withdraw/redeem with slippage protection - #306
 ///   1.0.2: withdraw sends to receiver exact requested amount, not more; mulDiv is used - #300.
@@ -32,7 +33,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.WrappedMetaVault")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _WRAPPED_METAVAULT_STORAGE_LOCATION =
@@ -57,6 +58,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         );
     }
 
+    //region ------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -92,7 +94,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint) {
+    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxAssets) {
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         uint maxUserWithdraw = super.maxWithdraw(owner);
         if ($.isMulti) {
@@ -103,10 +105,31 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         }
 
         // For the wrapped vaults of type "MetaVault" the asset is the meta-vault itself, so no limitations
-
         return maxUserWithdraw;
     }
 
+    /// @inheritdoc IERC4626
+    function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxShares) {
+        uint _maxDeposit = maxDeposit(receiver);
+        return _maxDeposit == type(uint).max
+            ? type(uint).max // no limits
+            : convertToShares(_maxDeposit);
+    }
+
+    /// @inheritdoc IERC4626
+    function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxAssets) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        if ($.isMulti) {
+            IMetaVault _metaVault = IMetaVault($.metaVault);
+            uint[] memory amounts = _metaVault.maxDeposit(receiver);
+            return amounts[0];
+        } else {
+            return super.maxDeposit(receiver);
+        }
+    }
+    //endregion ------------------------- View functions
+
+    //region ------------------------- erc4626 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       ERC4626 HOOKS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -163,7 +186,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             super._withdraw(caller, receiver, owner, assets, shares);
         }
     }
+    //endregion ------------------------- erc4626 hooks
 
+    //region ------------------------- deposit/withdraw with slippage
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*               deposit/withdraw with slippage               */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -195,7 +220,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         require(assets > minAssets, Slippage(assets, minAssets));
         return assets;
     }
+    //endregion ------------------------- deposit/withdraw with slippage
 
+    //region ------------------------- internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -206,4 +233,5 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             $.slot := _WRAPPED_METAVAULT_STORAGE_LOCATION
         }
     }
+    //endregion ------------------------- internal logic
 }
