@@ -613,7 +613,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
-        if (!$.lastBlockDefenseDisabled) {
+        if (!$.lastBlockDefenseDisabled && _lastBlockDefenseDisabledTx != block.number) {
             $.lastTransferBlock[from] = block.number;
             $.lastTransferBlock[to] = block.number;
         }
@@ -622,7 +622,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
         _checkLastBlockProtection($, owner);
-        if (!$.lastBlockDefenseDisabled) {
+        if (!$.lastBlockDefenseDisabled && _lastBlockDefenseDisabledTx != block.number) {
             $.lastTransferBlock[owner] = block.number;
         }
     }

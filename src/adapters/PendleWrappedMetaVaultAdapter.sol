@@ -32,6 +32,9 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
   address public immutable PIVOT_TOKEN;
   address public immutable owner;
 
+  /// @notice Only whitelisted addresses are allowed to disable last-block defence
+  mapping(address => bool) public whitelisted;
+
   /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
   /*                         ERRORS                             */
   /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -39,6 +42,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
   error ZeroAddress();
   error IncorrectToken();
   error MaxWithdrawExceeded();
+  error NotWhitelisted();
 
   /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
   /*                         Initialization                     */
@@ -46,7 +50,19 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
   constructor (address metaVault_) {
     require(metaVault_ != address(0), ZeroAddress());
     PIVOT_TOKEN = metaVault_;
+    owner = msg.sender;
   }
+
+  /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+  /*                     Restricted actions                     */
+  /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+  function changeWhitelist(address account, bool whitelisted_) external {
+    require(msg.sender == owner, NotOwner());
+    require(account != address(0), ZeroAddress());
+
+    whitelisted[account] = whitelisted_;
+  }
+
 
   //region ---------------------------------- View
   /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -66,6 +82,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
 
   /// @inheritdoc IStandardizedYieldAdapter
   function previewConvertToDeposit(address tokenIn, uint256 amountTokenIn) external view returns (uint256 amountOut) {
+    console.log("previewConvertToDeposit");
     //------------------- ensure that the tokenIn is the asset of the meta vault
     address[] memory assetsForDeposit = IMetaVault(PIVOT_TOKEN).assetsForDeposit();
     require(tokenIn == assetsForDeposit[0], IncorrectToken());
@@ -81,6 +98,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
   function previewConvertToRedeem(address tokenOut, uint256 amountPivotTokenIn) external view returns (
     uint256 amountOut
   ) {
+    console.log("previewConvertToRedeem");
     //------------------- ensure that the tokenOut is the asset of the meta vault
     address[] memory assetsForWithdraw = IMetaVault(PIVOT_TOKEN).assetsForWithdraw();
     require(tokenOut == assetsForWithdraw[0], IncorrectToken());
@@ -90,7 +108,8 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
     IPriceReader priceReader = IPriceReader(IPlatform(IControllable(PIVOT_TOKEN).platform()).priceReader());
     (uint priceAsset, ) = priceReader.getPrice(tokenOut);
 
-    return Math.mulDiv(amountPivotTokenIn, priceMetaVaultToken, priceAsset, Math.Rounding.Ceil);
+    amountOut = Math.mulDiv(amountPivotTokenIn, priceMetaVaultToken, priceAsset, Math.Rounding.Ceil);
+    console.log("amountOut", amountOut);
   }
   //endregion ---------------------------------- View
 
@@ -106,6 +125,9 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
     address[] memory assetsForDeposit = IMetaVault(PIVOT_TOKEN).assetsForDeposit();
     require(tokenIn == assetsForDeposit[0], IncorrectToken());
 
+    // only whitelisted addresses can disable last-block defence
+    require(whitelisted[msg.sender], NotWhitelisted());
+
     // todo take into account maxDeposit
 
     uint[] memory amountsMax = new uint[](1);
@@ -114,29 +136,45 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
     IERC20(assetsForDeposit[0]).forceApprove(PIVOT_TOKEN, amountsMax[0]);
 
     uint balanceUserBefore = IMetaVault(PIVOT_TOKEN).balanceOf(msg.sender);
+
     console.log("convertToDeposit.1");
-    // todo disable last-block defence
+    IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(true);
     IMetaVault(PIVOT_TOKEN).depositAssets(assetsForDeposit, amountsMax, 0, msg.sender);
-    // todo enable last-block defence
+    IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(false);
+
     uint balanceAdapterAfter = IERC20(assetsForDeposit[0]).balanceOf(address(this));
-    console.log("convertToDeposit.2");
-    return IMetaVault(PIVOT_TOKEN).balanceOf(msg.sender) - balanceUserBefore;
+    amountOut = IMetaVault(PIVOT_TOKEN).balanceOf(msg.sender) - balanceUserBefore;
+    console.log("convertToDeposit.2.amountOut", amountOut);
   }
 
   /// @inheritdoc IStandardizedYieldAdapter
   /// @dev We don't check slippage here, assume that the slippage is checked by the caller.
   function convertToRedeem(address tokenOut, uint256 amountPivotTokenIn) external returns (uint256 amountOut) {
-    console.log("convertToRedeem.0");
+    console.log("convertToRedeem.0.amountPivotTokenIn,balance", amountPivotTokenIn);
     address[] memory assetsForWithdraw = IMetaVault(PIVOT_TOKEN).assetsForWithdraw();
     require(tokenOut == assetsForWithdraw[0], IncorrectToken());
 
-    uint maxWithdraw = IMetaVault(PIVOT_TOKEN).maxWithdraw(msg.sender);
+    // only whitelisted addresses can disable last-block defence
+    require(whitelisted[msg.sender], NotWhitelisted());
+
+    // metavalut balance is dynamic and can vary on the level of dust
+    amountPivotTokenIn = Math.min(IMetaVault(PIVOT_TOKEN).balanceOf(address(this)), amountPivotTokenIn);
+
+    uint maxWithdraw = IMetaVault(PIVOT_TOKEN).maxWithdraw(address(this));
+    console.log("maxWithdraw", maxWithdraw);
     require(amountPivotTokenIn <= maxWithdraw, MaxWithdrawExceeded());
 
-    uint balanceBefore = IERC20(tokenOut).balanceOf(msg.sender);
+    uint balanceBefore = IERC20(tokenOut).balanceOf(address(this));
+    console.log("convertToRedeem.balanceBefore", balanceBefore);
+    IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(true);
     IMetaVault(PIVOT_TOKEN).withdrawAssets(assetsForWithdraw, amountPivotTokenIn, new uint[](1));
+    IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(false);
     console.log("convertToRedeem.1");
-    return IERC20(tokenOut).balanceOf(msg.sender) - balanceBefore;
+    console.log("convertToRedeem.balanceAfter", IERC20(tokenOut).balanceOf(address(this)));
+    uint withdrawn = IERC20(tokenOut).balanceOf(address(this)) - balanceBefore;
+    console.log("convertToRedeem.withdrawn", withdrawn);
+    IERC20(tokenOut).safeTransfer(msg.sender, withdrawn);
+    return withdrawn;
   }
 
   function salvage(address token, address to, uint256 amount) external {
