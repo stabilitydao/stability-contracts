@@ -92,6 +92,9 @@ library StrategyDeveloperLib {
         if (CommonLib.eq(strategyId, StrategyIdLib.SILO_ALMF_FARM)) {
             return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
         }
+        if (CommonLib.eq(strategyId, StrategyIdLib.AAVE_MERKL_FARM)) {
+            return 0xcd18A818f2eC5C21EEF6771183eD5641B15da247;
+        }
         return address(0);
     }
 }

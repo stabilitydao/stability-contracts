@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/adapters/ChainlinkMinimal2V3Adapter.sol";
+import {ChainlinkMinimal2V3Adapter} from "../../src/adapters/ChainlinkMinimal2V3Adapter.sol";
 import {ALMLib} from "../../src/strategies/libs/ALMLib.sol";
 import {ALMPositionNameLib} from "../../src/strategies/libs/ALMPositionNameLib.sol";
 import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
+import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {Api3Adapter} from "../../src/adapters/Api3Adapter.sol";
@@ -239,6 +240,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -332,7 +334,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](56);
+        _farms = new IFactory.Farm[](57);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS);
@@ -412,6 +414,7 @@ library SonicLib {
             SonicConstantsLib.SILO_LENS
         ); // farm 55
 
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_SONIC_wS); // farm 56
     }
 
     function _makePoolData(
