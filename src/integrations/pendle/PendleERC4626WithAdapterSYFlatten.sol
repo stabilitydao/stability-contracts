@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
-import {console} from "forge-std/console.sol";
 
 // Sources flattened with hardhat v2.25.0 https://hardhat.org
 
@@ -5412,24 +5411,18 @@ contract PendleERC4626WithAdapterSY is SYBaseUpg, IPStandardizedYieldWithAdapter
         address tokenIn,
         uint256 amountDeposited
     ) internal virtual override returns (uint256 amountSharesOut) {
-        console.log("_deposit.1");
         if (tokenIn != yieldToken && tokenIn != asset) {
-            console.log("_deposit.2");
             _transferOut(tokenIn, adapter, amountDeposited);
-            console.log("_deposit.3");
             (tokenIn, amountDeposited) = (
                 asset,
                 IStandardizedYieldAdapter(adapter).convertToDeposit(tokenIn, amountDeposited)
             );
-            console.log("_deposit.4");
         }
 
         if (tokenIn == yieldToken) {
             amountSharesOut = amountDeposited;
         } else {
-            console.log("_deposit.5");
             amountSharesOut = IERC4626(yieldToken).deposit(amountDeposited, address(this));
-            console.log("_deposit.6");
         }
 
         require(_selfBalance(yieldToken) >= totalSupply() + amountSharesOut, "SY: insufficient shares");
@@ -5440,26 +5433,15 @@ contract PendleERC4626WithAdapterSY is SYBaseUpg, IPStandardizedYieldWithAdapter
         address tokenOut,
         uint256 amountSharesToRedeem
     ) internal virtual override returns (uint256) {
-        console.log("_redeem.yieldToken", yieldToken);
-        console.log("balance.this", IERC20(yieldToken).balanceOf(address(this)));
-        console.log("balance.adapter", IERC20(yieldToken).balanceOf(address(adapter)));
-        console.log("_redeem.amountSharesToRedeem", amountSharesToRedeem);
         if (tokenOut == yieldToken) {
-            console.log("_redeem.1");
             _transferOut(yieldToken, receiver, amountSharesToRedeem);
             return amountSharesToRedeem;
         } else {
-            console.log("_redeem.2");
             if (tokenOut == asset) {
-                console.log("_redeem.3");
                 return IERC4626(yieldToken).redeem(amountSharesToRedeem, receiver, address(this));
             } else {
-                console.log("_redeem.4");
                 uint256 amtAsset = IERC4626(yieldToken).redeem(amountSharesToRedeem, adapter, address(this));
-                console.log("balance.metavault.adapter", IERC20(0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e).balanceOf(address(adapter)));
-                console.log("_redeem.5.amtAsset", amtAsset);
                 uint256 amtTokenOut = IStandardizedYieldAdapter(adapter).convertToRedeem(tokenOut, amtAsset);
-                console.log("_redeem.6.amtTokenOut, receiver", amtTokenOut, receiver);
                 _transferOut(tokenOut, receiver, amtTokenOut);
                 return amtTokenOut;
             }

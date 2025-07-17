@@ -146,9 +146,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         bool withdrawDirectly = metaVault.assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
         metaVault.approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -201,9 +201,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         bool withdrawDirectly = metaVault.assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
         metaVault.approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -255,9 +255,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Swap metaUSD => USDC
         metaVault.approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.TOKEN_wS, balanceMetaS0, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -294,9 +294,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Swap USDC => metaUSD
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -312,9 +312,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -355,9 +355,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Swap scUSD => metaUSD
         IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -373,9 +373,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
 
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
@@ -418,11 +418,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         //--------------------------------- Disable protection => swap works fine
         vm.prank(whitelisted);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
         // suppose, we forget to enable protection back
-        // metaVault.setLastBlockDefenseDisabledTx(false);
+        // metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6); // protection is automatically enabled after changing block
 
@@ -435,12 +435,12 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         //----------------------- Disable protection => swap works fine
         vm.prank(whitelisted);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
 
         vm.prank(whitelisted);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         // --------------------- block is NOT changed, protection is enabled back - now it's not possible to swap again
         deal(SonicConstantsLib.TOKEN_scUSD, address(this), 1e6);
