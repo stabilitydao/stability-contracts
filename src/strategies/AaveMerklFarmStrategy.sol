@@ -206,6 +206,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return IAToken(aToken).totalSupply() * price / (10 ** IERC20Metadata(asset).decimals());

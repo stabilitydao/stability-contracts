@@ -334,7 +334,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](57);
+        _farms = new IFactory.Farm[](62);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS);
@@ -414,7 +414,12 @@ library SonicLib {
             SonicConstantsLib.SILO_LENS
         ); // farm 55
 
-        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_SONIC_USDC); // farm 56
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_MARKET_SONIC_wS); // farm 56
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_MARKET_SONIC_USDC); // farm 57
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_MARKET_SONIC_scUSD); // farm 58
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_wS); // farm 59
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_USDC); // farm 60
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_scUSD); // farm 61
     }
 
     function _makePoolData(

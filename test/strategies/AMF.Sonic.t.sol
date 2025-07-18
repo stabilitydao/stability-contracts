@@ -37,7 +37,12 @@ contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
     /// @notice Compare APR with https://stability.market/
     function testAaveStrategy() public universalTest {
-        _addStrategy(56);
+        //        _addStrategy(56);
+        //        _addStrategy(57);
+        //        _addStrategy(58);
+        //        _addStrategy(59);
+        _addStrategy(60);
+        _addStrategy(61);
     }
 
     function _addStrategy(uint farmId) internal {
