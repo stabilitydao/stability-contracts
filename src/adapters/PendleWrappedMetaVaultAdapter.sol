@@ -31,7 +31,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
     /// @dev Address of the underlying asset of Wrapped MetaVault, i.e. metaUSD or metaS
     //slither-disable-next-line naming-convention
     address public immutable PIVOT_TOKEN;
-    address public immutable owner;
+    address public owner;
 
     /// @notice Only whitelisted addresses are allowed to disable last-block defence. SY must be whitelisted.
     mapping(address => bool) public whitelisted;
@@ -44,6 +44,9 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
     error IncorrectToken();
     error MaxWithdrawExceeded();
     error NotWhitelisted();
+
+    event ChangeWhitelist(address account, bool whitelisted);
+    event OwnershipTransferred(address newOwner);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         Initialization                     */
@@ -64,6 +67,15 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         require(account != address(0), ZeroAddress());
 
         whitelisted[account] = whitelisted_;
+        emit ChangeWhitelist(account, whitelisted_);
+    }
+
+    function changeOwner(address newOwner) external {
+        require(msg.sender == owner, NotOwner());
+        require(newOwner != address(0), ZeroAddress());
+
+        owner = newOwner;
+        emit OwnershipTransferred(newOwner);
     }
 
     //region ---------------------------------- View

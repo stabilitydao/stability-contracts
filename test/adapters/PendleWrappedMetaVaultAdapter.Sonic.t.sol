@@ -345,21 +345,40 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     }
 
     function testBadPathsChangeWhitelist() public {
-        (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) = _setUp(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
-            SonicConstantsLib.METAVAULT_metaUSD
-        );
+        (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
         vm.prank(address(314));
-        adapter.changeWhitelist(address(syMetaUsd), false);
+        adapter.changeWhitelist(address(syMetaUsd), true);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
         vm.prank(address(this));
         adapter.changeWhitelist(address(0), false);
 
         vm.prank(address(this));
+        adapter.changeWhitelist(address(syMetaUsd), true);
+        assertEq(adapter.whitelisted(address(syMetaUsd)), true);
+
+        address newOwner = makeAddr("newOwner");
+
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
+        vm.prank(newOwner);
+        adapter.changeOwner(newOwner);
+
+        assertEq(adapter.owner(), address(this));
+        vm.prank(address(this));
+        adapter.changeOwner(newOwner);
+        assertEq(adapter.owner(), newOwner);
+
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
+        vm.prank(address(this));
         adapter.changeWhitelist(address(syMetaUsd), false);
+
+        vm.prank(newOwner);
+        adapter.changeWhitelist(address(syMetaUsd), false);
+
+        assertEq(adapter.whitelisted(address(syMetaUsd)), false);
     }
 
     function testBadPathsConstructor() public {
