@@ -261,6 +261,14 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         vm.prank(receiver);
         adapter.salvage(SonicConstantsLib.TOKEN_USDC, receiver, 100e6);
 
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
+        vm.prank(address(this));
+        adapter.salvage(SonicConstantsLib.TOKEN_USDC, address(0), 100e6);
+
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
+        vm.prank(address(this));
+        adapter.salvage(address(0), receiver, 100e6);
+
         vm.prank(address(this));
         adapter.salvage(SonicConstantsLib.TOKEN_USDC, receiver, 100e6);
     }
@@ -317,6 +325,9 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         vm.prank(address(syMetaUsd));
         adapter.convertToDeposit(SonicConstantsLib.TOKEN_wS, amount);
 
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
+        adapter.previewConvertToRedeem(SonicConstantsLib.TOKEN_wS, amount);
+
         syMetaUsd.deposit(address(this), asset, amount, 0);
         vm.roll(block.number + 6);
 
@@ -327,7 +338,33 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         vm.prank(address(syMetaUsd));
         adapter.convertToRedeem(SonicConstantsLib.TOKEN_wS, amount);
 
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
+        adapter.previewConvertToDeposit(SonicConstantsLib.TOKEN_wS, amount);
+
         syMetaUsd.redeem(address(this), balance, asset, 0, false);
+    }
+
+    function testBadPathsChangeWhitelist() public {
+        (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) = _setUp(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_metaUSD
+        );
+
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
+        vm.prank(address(314));
+        adapter.changeWhitelist(address(syMetaUsd), false);
+
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
+        vm.prank(address(this));
+        adapter.changeWhitelist(address(0), false);
+
+        vm.prank(address(this));
+        adapter.changeWhitelist(address(syMetaUsd), false);
+    }
+
+    function testBadPathsConstructor() public {
+        vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
+        new PendleWrappedMetaVaultAdapter(address(0));
     }
 
     //region ---------------------------------------- Internal logic

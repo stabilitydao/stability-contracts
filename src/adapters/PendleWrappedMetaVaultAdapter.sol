@@ -29,6 +29,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
 
     /// @inheritdoc IStandardizedYieldAdapter
     /// @dev Address of the underlying asset of Wrapped MetaVault, i.e. metaUSD or metaS
+    //slither-disable-next-line naming-convention
     address public immutable PIVOT_TOKEN;
     address public immutable owner;
 
@@ -91,6 +92,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         uint[] memory amountsMax = new uint[](1);
         amountsMax[0] = amountTokenIn;
 
+        // slither-disable-next-line unused-return
         (, amountOut,) = IMetaVault(PIVOT_TOKEN).previewDepositAssets(assetsForDeposit, amountsMax);
     }
 
@@ -101,8 +103,10 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         require(tokenOut == assetsForWithdraw[0], IncorrectToken());
 
         //------------------- convert meta vault balance => USD amount => asset amount
+        // slither-disable-next-line unused-return
         (uint priceMetaVaultToken,) = IMetaVault(PIVOT_TOKEN).price();
         IPriceReader priceReader = IPriceReader(IPlatform(IControllable(PIVOT_TOKEN).platform()).priceReader());
+        // slither-disable-next-line unused-return
         (uint priceAsset,) = priceReader.getPrice(tokenOut);
 
         amountOut = Math.mulDiv(amountPivotTokenIn, priceMetaVaultToken, priceAsset, Math.Rounding.Ceil)
@@ -162,6 +166,7 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(
             uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
         );
+        // slither-disable-next-line unused-return
         IMetaVault(PIVOT_TOKEN).withdrawAssets(assetsForWithdraw, amountPivotTokenIn, new uint[](1));
         IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
