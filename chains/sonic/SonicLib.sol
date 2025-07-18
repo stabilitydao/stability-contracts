@@ -414,7 +414,7 @@ library SonicLib {
             SonicConstantsLib.SILO_LENS
         ); // farm 55
 
-        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_SONIC_wS); // farm 56
+        _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_SONIC_USDC); // farm 56
     }
 
     function _makePoolData(

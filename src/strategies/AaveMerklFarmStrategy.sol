@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "./libs/FarmMechanicsLib.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
@@ -10,6 +11,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
+import {IMerklStrategy} from "../interfaces/IMerklStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
@@ -20,6 +22,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
@@ -28,7 +31,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 /// Changelog:
 ///   1.0.0: initial release
 /// @author dvpublic (https://github.com/dvpublic)
-contract AaveMerklFarmStrategy is FarmingStrategyBase {
+contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -68,7 +71,14 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
         address[] memory _assets = new address[](1);
         _assets[0] = IAToken(farm.addresses[0]).UNDERLYING_ASSET_ADDRESS();
 
-        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE_MERKL_FARM, addresses[1], _assets, address(0), type(uint).max);
+        __StrategyBase_init(
+            addresses[0],
+            StrategyIdLib.AAVE_MERKL_FARM,
+            addresses[1],
+            _assets,
+            address(0),
+            0 // exchangeAssetIndex
+        );
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         IERC20(_assets[0]).forceApprove(IAToken(farm.addresses[0]).POOL(), type(uint).max);
@@ -78,6 +88,17 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(FarmingStrategyBase, MerklStrategyBase)
+        returns (bool)
+    {
+        return interfaceId == type(IFarmingStrategy).interfaceId || interfaceId == type(IMerklStrategy).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
 
     /// @inheritdoc IStrategy
     function strategyLogicId() public pure override returns (string memory) {
@@ -110,9 +131,9 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function initVariants(address platform_)
-    external
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         addresses = new address[](0);
         ticks = new int24[](0);
@@ -162,10 +183,10 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
         (assets_, amounts) = _getRevenue(newPrice, aToken);
     }
 
-    /// @inheritdoc IStrategy
-    function autoCompoundingByUnderlyingProtocol() public pure override returns (bool) {
-        return true;
-    }
+    //    /// @inheritdoc IStrategy
+    //    function autoCompoundingByUnderlyingProtocol() public pure override returns (bool) {
+    //        return true;
+    //    }
 
     /// @inheritdoc IStrategy
     function isReadyForHardWork() external pure override returns (bool isReady) {
@@ -268,10 +289,10 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _previewDepositAssets(uint[] memory amountsMax)
-    internal
-    pure
-    override
-    returns (uint[] memory amountsConsumed, uint value)
+        internal
+        pure
+        override
+        returns (uint[] memory amountsConsumed, uint value)
     {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
@@ -290,8 +311,45 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
     function _processRevenue(
         address[] memory, /*assets_*/
         uint[] memory /*amountsRemaining*/
-    ) internal override returns (bool needCompound) {
+    ) internal pure override returns (bool needCompound) {
         needCompound = true;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _claimRevenue()
+        internal
+        override
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
+    {
+        AaveMerklFarmStrategyStorage storage $ = _getStorage();
+        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        address aToken = aaveToken();
+        uint newPrice = _getSharePrice(aToken);
+        (__assets, __amounts) = _getRevenue(newPrice, aToken);
+        $.lastSharePrice = newPrice;
+
+        // ---------------------- collect Merkl rewards
+        __rewardAssets = $f._rewardAssets;
+        uint rwLen = __rewardAssets.length;
+        __rewardAmounts = new uint[](rwLen);
+        for (uint i; i < rwLen; ++i) {
+            // Reward asset can be equal to the borrow asset.
+            // The borrow asset is never left on the balance, see _receiveFlashLoan().
+            // So, any borrow asset on balance can be considered as a reward.
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+        }
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (old value) and in _compound (new value)
+        $base.total = total();
     }
 
     /// @inheritdoc StrategyBase
@@ -312,38 +370,15 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase {
         if (notZero) {
             _depositAssets(amounts, false);
         }
+
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (new value) and in _claimRevenue (old value)
+        $base.total = total();
     }
 
-    /// @inheritdoc StrategyBase
-    function _claimRevenue()
-        internal
-        override
-        returns (
-            address[] memory __assets,
-            uint[] memory __amounts,
-            address[] memory __rewardAssets,
-            uint[] memory __rewardAmounts
-        )
-    {
-        AaveMerklFarmStrategyStorage storage $ = _getStorage();
-        FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-
-        address aToken = aaveToken();
-        uint newPrice = _getSharePrice(aToken);
-        (__assets, __amounts) = _getRevenue(newPrice, aToken);
-        $.lastSharePrice = newPrice;
-
-        // ---------------------- collect Merkl rewards
-        __rewardAssets = $f._rewardAssets;
-        uint rwLen = __rewardAssets.length;
-        __rewardAmounts = new uint[](rwLen);
-        for (uint i; i < rwLen; ++i) {
-            // Reward asset can be equal to the borrow asset.
-            // The borrow asset is never left on the balance, see _receiveFlashLoan().
-            // So, any borrow asset on balance can be considered as a reward.
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
-        }
-    }
     //endregion ----------------------- Strategy base
 
     //region ----------------------------------- FarmingStrategy
