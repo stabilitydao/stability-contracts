@@ -22,6 +22,20 @@ contract MerkleDistributorTest is Test, MockSetup {
         // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MerkleDistributor")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
+    function test_renounce_ownership() public {
+        vm.prank(address(merkleDistributor));
+        token.mint(address(500), 1);
+
+        vm.prank(address(1));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        merkleDistributor.renounceOwnership(address(token));
+
+        merkleDistributor.renounceOwnership(address(token));
+
+        vm.expectRevert();
+        token.mint(address(500), 1);
+    }
+
     function test_MerkleDistributorY17() public {
         bytes32 root = 0x4432a096ade674aeb91759a45bf71b14dae7452b7d8cf9b823db5740fd4abc31;
         string memory contestId = "y17";
