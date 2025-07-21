@@ -411,7 +411,7 @@ library SonicConstantsLib {
     // address public constant ICHI_EQUALIZER_VAULT_GATEWAY = 0x4c8c0D2Ca19a97896AA9135449e6d6471a53FC5f;
     // address public constant ICHI_EQUALIZER_VAULT_DEPLOYER = 0x0b2a31D95B1a4c8b1e772599ffcB8875FB4e2d33;
 
-    // Vicuna
+    // -------------------------- Vicuna
     // address public constant VICUNA_POOL = 0xaa1C02a83362BcE106dFf6eB65282fE8B97A1665;
     address public constant STABILITY_SONIC_wS = 0x9E581fC9181f99c3c4DAB344B91C55DaEb9413fe;
     address public constant STABILITY_SONIC_USDC = 0xF224CB039F2B5909197c019b1972E62d7fdCdA0f;
@@ -421,7 +421,23 @@ library SonicConstantsLib {
     address public constant STABILITY_SONIC_wOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
     address public constant STABILITY_SONIC_stS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
 
-    // Shadow
+    // -------------------------- Stability market (AAVE)
+    /// @notice https://stability.farm/vaults/vault/146/0xdf41864a148c3e17075c0440352c27c633935fe5
+    address public constant STABILITY_MARKET_SONIC_wS = 0x61bC5Ce0639aA0A24Ab7ea8B574D4B0D6b619833;
+    /// @notice https://stability.farm/vaults/vault/146/0xde200f9b328689d6aec4914aadc6dbecedbe8ec1
+    address public constant STABILITY_MARKET_SONIC_USDC = 0x64d0071044EF8F98B8E5ecFCb4A6c12Cb8BC1Ec0;
+    /// @notice https://stability.farm/vaults/vault/146/0xd3709008719e4da87434554516876ef3ff77b8f3
+    address public constant STABILITY_MARKET_SONIC_scUSD = 0x9154f0a385eef5d48ceF78D9FEA19995A92718a9;
+
+    // -------------------------- Stability Credix market (AAVE)
+    /// @notice https://stability.farm/vaults/vault/146/0x4bc62fcf68732ea77ef9dd72f4ebc1042702bc9d
+    address public constant STABILITY_CREDIX_MARKET_SONIC_wS = 0x95cAF53667D912F3491173fd4712450dFcf4c89f;
+    /// @notice https://stability.farm/vaults/vault/146/0xc683d8c99876bfcd193894ae6ed42ed74dd2f26f
+    address public constant STABILITY_CREDIX_MARKET_SONIC_USDC = 0xEc26D07B5c0a99D3690375A2CC229E5B943e7726;
+    /// @notice https://stability.farm/vaults/vault/146/0x505620f50203cc4d21bd7475c2a7ed82e32dbe56
+    address public constant STABILITY_CREDIX_MARKET_SONIC_scUSD = 0xa175EE511de429275d26Ac5420fAbeb60C67C372;
+
+    // -------------------------- Shadow
     address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;
     address public constant SHADOW_ROUTER = 0x1D368773735ee1E678950B7A97bcA2CafB330CDc;
     address public constant SHADOW_GAUGE_CL_wS_WETH = 0xF5C7598C953E49755576CDA6b2B2A9dAaf89a837;
