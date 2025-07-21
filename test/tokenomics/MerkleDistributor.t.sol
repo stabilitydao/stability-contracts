@@ -22,6 +22,44 @@ contract MerkleDistributorTest is Test, MockSetup {
         // console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MerkleDistributor")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
+    function test_renounce_ownership() public {
+        vm.prank(address(merkleDistributor));
+        token.mint(address(500), 1);
+
+        vm.prank(address(1));
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        merkleDistributor.renounceOwnership(address(token));
+
+        merkleDistributor.renounceOwnership(address(token));
+
+        vm.expectRevert();
+        token.mint(address(500), 1);
+    }
+
+    function test_MerkleDistributorY17() public {
+        bytes32 root = 0x4432a096ade674aeb91759a45bf71b14dae7452b7d8cf9b823db5740fd4abc31;
+        string memory contestId = "y17";
+        merkleDistributor.setupCampaign(contestId, address(token), 1500_000e18, root, true);
+
+        address user1 = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A; // 3888.71077695512
+
+        string[] memory campaignIds = new string[](1);
+        campaignIds[0] = contestId;
+        uint[] memory amounts = new uint[](1);
+        amounts[0] = 3888710776955119400000;
+        bytes32[][] memory proofs = new bytes32[][](1);
+        proofs[0] = new bytes32[](6);
+        proofs[0][0] = 0xfcdd954a5869c2c53a6498eb9beff0f0ec77a424bc6e7b59c8b5fadb27c6fb07;
+        proofs[0][1] = 0x1643dbe2912c76dbf33eb55bbadd86c9ae432caf23424fcdd4a23561abfab284;
+        proofs[0][2] = 0x7ebc89c26b252ecf63458f21a6d96837cb5a127470776258cf79b6164f72fb41;
+        proofs[0][3] = 0x68e1ca0d04f767351ddaf57083a1a665e34081a571280e2c21fdfc5dabbd326f;
+        proofs[0][4] = 0x6be2d7692a25f0e1dccae667b4b409c864457c81d6f901281ae2d4a761fff577;
+        proofs[0][5] = 0xba10d69ebb8233c18a603cecfa818924723c60b286c35a70cddc839b4d19c765;
+
+        vm.startPrank(user1);
+        merkleDistributor.claim(campaignIds, amounts, proofs, address(this));
+    }
+
     function test_MerkleDistributor() public {
         bytes32 root = 0x644a8a8eecf5154d3a52966b43f7ce22899b2993682c44ee431af6d6a50363d4;
         string memory contestId = "y10";

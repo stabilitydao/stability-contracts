@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -8,8 +8,11 @@ import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IMintedERC20} from "../interfaces/IMintedERC20.sol";
 import {IMerkleDistributor} from "../interfaces/IMerkleDistributor.sol";
+import {IOwnable} from "../interfaces/IOwnable.sol";
 
 /// @title Distributor of rewards by merkle tree
+/// Changelog:
+///     1.1.0: renounceOwnership
 /// @author Alien Deployer (https://github.com/a17)
 contract MerkleDistributor is Controllable, IMerkleDistributor {
     using SafeERC20 for IERC20;
@@ -19,7 +22,7 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MerkleDistributor")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant MERKLE_DISTRIBUTOR_STORAGE_LOCATION =
@@ -91,6 +94,11 @@ contract MerkleDistributor is Controllable, IMerkleDistributor {
             amount = IERC20(token).balanceOf(address(this));
         }
         IERC20(token).safeTransfer(receiver, amount);
+    }
+
+    /// @inheritdoc IMerkleDistributor
+    function renounceOwnership(address ownableContract) external onlyGovernanceOrMultisig {
+        IOwnable(ownableContract).renounceOwnership();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
