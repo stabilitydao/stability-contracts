@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 interface IMerkleDistributor {
     event NewCampaign(string campaignId, address token, uint totalAmount, bytes32 merkleRoot, bool mint);
@@ -64,6 +64,9 @@ interface IMerkleDistributor {
     /// @param amount Amount of token
     /// @param receiver Receiver of token
     function salvage(address token, uint amount, address receiver) external;
+
+    /// @notice Renounce ownable contract ownership by governance
+    function renounceOwnership(address ownableContract) external;
 
     /// @notice View campaign data
     /// @param campaignId String IDs of campaign ("y10", etc)
