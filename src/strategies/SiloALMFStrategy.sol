@@ -304,9 +304,8 @@ contract SiloALMFStrategy is
 
         SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
         __assets = assets();
-        (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
-            $, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
-        );
+        (__amounts, __rewardAssets, __rewardAmounts) =
+            SiloALMFLib._claimRevenue($, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
 
@@ -332,7 +331,7 @@ contract SiloALMFStrategy is
 
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
-        value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
+        value = SiloALMFLib.depositAssets($, $base, amounts[0], _assets[0]);
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);

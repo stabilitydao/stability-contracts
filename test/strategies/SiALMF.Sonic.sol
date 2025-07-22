@@ -961,10 +961,14 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaS, true);
-        console.log("changeWhitelistTransientCache.SonicConstantsLib.METAVAULT_metaS", SonicConstantsLib.METAVAULT_metaS);
+        console.log(
+            "changeWhitelistTransientCache.SonicConstantsLib.METAVAULT_metaS", SonicConstantsLib.METAVAULT_metaS
+        );
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
-        console.log("changeWhitelistTransientCache.SonicConstantsLib.METAVAULT_metaUSD", SonicConstantsLib.METAVAULT_metaUSD);
+        console.log(
+            "changeWhitelistTransientCache.SonicConstantsLib.METAVAULT_metaUSD", SonicConstantsLib.METAVAULT_metaUSD
+        );
     }
 }

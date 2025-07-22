@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Controllable, IPlatform} from "./base/Controllable.sol";
@@ -39,7 +38,6 @@ contract PriceReader is Controllable, IPriceReader {
     struct PriceReaderStorage {
         EnumerableSet.AddressSet _adapters;
         EnumerableSet.AddressSet safeSharePrice;
-
         /// @notice Users allowed to use transient cache
         EnumerableSet.AddressSet whitelistTransientCache;
     }
@@ -167,7 +165,6 @@ contract PriceReader is Controllable, IPriceReader {
 
     /// @inheritdoc IPriceReader
     function changeWhitelistTransientCache(address user, bool add) external onlyOperator {
-        console.log("changeWhitelistTransientCache", user, add);
         PriceReaderStorage storage $ = _getStorage();
         if (add) {
             $.whitelistTransientCache.add(user);
@@ -203,8 +200,8 @@ contract PriceReader is Controllable, IPriceReader {
             _countVaults = 0;
         } else {
             PriceReaderStorage storage $ = _getStorage();
-            (, , bool found) = _getVaultPriceFromCache(vault);
-            if (! found) {
+            (,, bool found) = _getVaultPriceFromCache(vault);
+            if (!found) {
                 _preCalculateVaultPriceTx($, vault);
             }
         }
@@ -217,18 +214,15 @@ contract PriceReader is Controllable, IPriceReader {
     //slither-disable-next-line calls-loop
     function getPrice(address asset) public view returns (uint price, bool trusted) {
         PriceReaderStorage storage $ = _getStorage();
-        (price, trusted) = lastCacheableAsset == asset
-            ? (lastCacheablePrice, lastCacheableTrusted)
-            : _getPrice($, asset);
+        (price, trusted) =
+            lastCacheableAsset == asset ? (lastCacheablePrice, lastCacheableTrusted) : _getPrice($, asset);
     }
 
     /// @inheritdoc IPriceReader
     function getVaultPrice(address vault) external view returns (uint price, bool safe) {
         PriceReaderStorage storage $ = _getStorage();
         (uint priceFromCache, bool safeFromCache, bool found) = _getVaultPriceFromCache(vault);
-        (price, safe) = found
-            ? (priceFromCache, safeFromCache)
-            : _getVaultPrice($, vault);
+        (price, safe) = found ? (priceFromCache, safeFromCache) : _getVaultPrice($, vault);
     }
 
     /// @inheritdoc IPriceReader
@@ -330,7 +324,10 @@ contract PriceReader is Controllable, IPriceReader {
         return (0, false);
     }
 
-    function _getVaultPrice(PriceReaderStorage storage $, address vault) internal view returns (uint price, bool safe) {
+    function _getVaultPrice(
+        PriceReaderStorage storage $,
+        address vault
+    ) internal view returns (uint price, bool safe) {
         bool safeSharePrice = $.safeSharePrice.contains(vault);
         (uint vaultOnChainPrice, bool trustedAssetPrice) = IStabilityVault(vault).price();
         if (safeSharePrice) {
@@ -350,66 +347,48 @@ contract PriceReader is Controllable, IPriceReader {
     function _getVaultPriceFromCache(address vault_) internal view returns (uint price, bool safe, bool found) {
         uint count = _countVaults;
         if (count != 0) {
+            // we don't use nested ifs here to avoid problems with forge formatter
             if (_addr00 == vault_) return (_price00, _getSafe(0), true);
-            if (count > 1) {
-                if (_addr01 == vault_) return (_price01, _getSafe(1), true);
-                if (count > 2) {
-                    if (_addr02 == vault_) return (_price02, _getSafe(2), true);
-                    if (count > 3) {
-                        if (_addr03 == vault_) return (_price03, _getSafe(3), true);
-                        if (count > 4) {
-                            if (_addr04 == vault_) return (_price04, _getSafe(4), true);
-                            if (count > 5) {
-                                if (_addr05 == vault_) return (_price05, _getSafe(5), true);
-                                if (count > 6) {
-                                    if (_addr06 == vault_) return (_price06, _getSafe(6), true);
-                                    if (count > 7) {
-                                        if (_addr07 == vault_) return (_price07, _getSafe(7), true);
-                                        if (count > 8) {
-                                            if (_addr08 == vault_) return (_price08, _getSafe(8), true);
-                                            if (count > 9) {
-                                                if (_addr09 == vault_) return (_price09, _getSafe(9), true);
-                                                if (count > 10) {
-                                                    if (_addr10 == vault_) return (_price10, _getSafe(10), true);
-                                                    if (count > 11) {
-                                                        if (_addr11 == vault_) return (_price11, _getSafe(11), true);
-                                                        if (count > 12) {
-                                                            if (_addr12 == vault_) return (_price12, _getSafe(12), true);
-                                                            if (count > 13) {
-                                                                if (_addr13 == vault_) return (_price13, _getSafe(13), true);
-                                                                if (count > 14) {
-                                                                    if (_addr14 == vault_) return (_price14, _getSafe(14), true);
-                                                                    if (count > 15) {
-                                                                        if (_addr15 == vault_) return (_price15, _getSafe(15), true);
-                                                                        if (count > 16) {
-                                                                            if (_addr16 == vault_) return (_price16, _getSafe(16), true);
-                                                                            if (count > 17) {
-                                                                                if (_addr17 == vault_) return (_price17, _getSafe(17), true);
-                                                                                if (count > 18) {
-                                                                                    if (_addr18 == vault_) return (_price18, _getSafe(18), true);
-                                                                                    if (count > 19) {
-                                                                                        if (_addr19 == vault_) return (_price19, _getSafe(19), true);
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            if (count == 1) return (0, false, false);
+            if (_addr01 == vault_) return (_price01, _getSafe(1), true);
+            if (count == 2) return (0, false, false);
+            if (_addr02 == vault_) return (_price02, _getSafe(2), true);
+            if (count == 3) return (0, false, false);
+            if (_addr03 == vault_) return (_price03, _getSafe(3), true);
+            if (count == 4) return (0, false, false);
+            if (_addr04 == vault_) return (_price04, _getSafe(4), true);
+            if (count == 5) return (0, false, false);
+            if (_addr05 == vault_) return (_price05, _getSafe(5), true);
+            if (count == 6) return (0, false, false);
+            if (_addr06 == vault_) return (_price06, _getSafe(6), true);
+            if (count == 7) return (0, false, false);
+            if (_addr07 == vault_) return (_price07, _getSafe(7), true);
+            if (count == 8) return (0, false, false);
+            if (_addr08 == vault_) return (_price08, _getSafe(8), true);
+            if (count == 9) return (0, false, false);
+            if (_addr09 == vault_) return (_price09, _getSafe(9), true);
+            if (count == 10) return (0, false, false);
+            if (_addr10 == vault_) return (_price10, _getSafe(10), true);
+            if (count == 11) return (0, false, false);
+            if (_addr11 == vault_) return (_price11, _getSafe(11), true);
+            if (count == 12) return (0, false, false);
+            if (_addr12 == vault_) return (_price12, _getSafe(12), true);
+            if (count == 13) return (0, false, false);
+            if (_addr13 == vault_) return (_price13, _getSafe(13), true);
+            if (count == 14) return (0, false, false);
+            if (_addr14 == vault_) return (_price14, _getSafe(14), true);
+            if (count == 15) return (0, false, false);
+            if (_addr15 == vault_) return (_price15, _getSafe(15), true);
+            if (count == 16) return (0, false, false);
+            if (_addr16 == vault_) return (_price16, _getSafe(16), true);
+            if (count == 17) return (0, false, false);
+            if (_addr17 == vault_) return (_price17, _getSafe(17), true);
+            if (count == 18) return (0, false, false);
+            if (_addr18 == vault_) return (_price18, _getSafe(18), true);
+            if (count == 19) return (0, false, false);
+            if (_addr19 == vault_) return (_price19, _getSafe(19), true);
         }
-        return (0, safe, false);
+        return (0, false, false);
     }
 
     function _preCalculateVaultPriceTx(PriceReaderStorage storage $, address vault) internal {
@@ -418,24 +397,24 @@ contract PriceReader is Controllable, IPriceReader {
             bool safe;
             if (count == 0) ((_price00, safe), _addr00) = (_getVaultPrice($, vault), vault);
             if (count == 1) ((_price01, safe), _addr01) = (_getVaultPrice($, vault), vault);
-            if (count == 2) ((_price02, safe), _addr02)  = (_getVaultPrice($, vault), vault);
-            if (count == 3) ((_price03, safe), _addr03)  = (_getVaultPrice($, vault), vault);
-            if (count == 4) ((_price04, safe), _addr04)  = (_getVaultPrice($, vault), vault);
+            if (count == 2) ((_price02, safe), _addr02) = (_getVaultPrice($, vault), vault);
+            if (count == 3) ((_price03, safe), _addr03) = (_getVaultPrice($, vault), vault);
+            if (count == 4) ((_price04, safe), _addr04) = (_getVaultPrice($, vault), vault);
             if (count == 5) ((_price05, safe), _addr05) = (_getVaultPrice($, vault), vault);
-            if (count == 6) ((_price06, safe), _addr06)  = (_getVaultPrice($, vault), vault);
-            if (count == 7) ((_price07, safe), _addr07)  = (_getVaultPrice($, vault), vault);
-            if (count == 8) ((_price08, safe), _addr08)  = (_getVaultPrice($, vault), vault);
-            if (count == 9) ((_price09, safe), _addr09)  = (_getVaultPrice($, vault), vault);
-            if (count == 10) ((_price10, safe), _addr10)  = (_getVaultPrice($, vault), vault);
-            if (count == 11) ((_price11, safe), _addr11)  = (_getVaultPrice($, vault), vault);
-            if (count == 12) ((_price12, safe), _addr12)  = (_getVaultPrice($, vault), vault);
-            if (count == 13) ((_price13, safe), _addr13)  = (_getVaultPrice($, vault), vault);
-            if (count == 14) ((_price14, safe), _addr14)  = (_getVaultPrice($, vault), vault);
-            if (count == 15) ((_price15, safe), _addr15)  = (_getVaultPrice($, vault), vault);
-            if (count == 16) ((_price16, safe), _addr16)  = (_getVaultPrice($, vault), vault);
-            if (count == 17) ((_price17, safe), _addr17)  = (_getVaultPrice($, vault), vault);
-            if (count == 18) ((_price18, safe), _addr18)  = (_getVaultPrice($, vault), vault);
-            if (count == 19) ((_price19, safe), _addr19)  = (_getVaultPrice($, vault), vault);
+            if (count == 6) ((_price06, safe), _addr06) = (_getVaultPrice($, vault), vault);
+            if (count == 7) ((_price07, safe), _addr07) = (_getVaultPrice($, vault), vault);
+            if (count == 8) ((_price08, safe), _addr08) = (_getVaultPrice($, vault), vault);
+            if (count == 9) ((_price09, safe), _addr09) = (_getVaultPrice($, vault), vault);
+            if (count == 10) ((_price10, safe), _addr10) = (_getVaultPrice($, vault), vault);
+            if (count == 11) ((_price11, safe), _addr11) = (_getVaultPrice($, vault), vault);
+            if (count == 12) ((_price12, safe), _addr12) = (_getVaultPrice($, vault), vault);
+            if (count == 13) ((_price13, safe), _addr13) = (_getVaultPrice($, vault), vault);
+            if (count == 14) ((_price14, safe), _addr14) = (_getVaultPrice($, vault), vault);
+            if (count == 15) ((_price15, safe), _addr15) = (_getVaultPrice($, vault), vault);
+            if (count == 16) ((_price16, safe), _addr16) = (_getVaultPrice($, vault), vault);
+            if (count == 17) ((_price17, safe), _addr17) = (_getVaultPrice($, vault), vault);
+            if (count == 18) ((_price18, safe), _addr18) = (_getVaultPrice($, vault), vault);
+            if (count == 19) ((_price19, safe), _addr19) = (_getVaultPrice($, vault), vault);
             _setSafe(count, safe);
             ++_countVaults;
         }
@@ -449,5 +428,4 @@ contract PriceReader is Controllable, IPriceReader {
         return (_safetyMask & (1 << index)) != 0;
     }
     //endregion ------------------------- Transient cache internal logic
-
 }

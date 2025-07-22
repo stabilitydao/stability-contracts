@@ -275,6 +275,10 @@ library SiloALMFLib {
     //endregion ------------------------------------- Flash loan
 
     //region ------------------------------------- View functions
+    function getLtv(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $) internal view returns (uint ltv) {
+        return ISiloLens($.helper).getLtv($.lendingVault, address(this)) * INTERNAL_PRECISION / 1e18;
+    }
+
     function health(
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
@@ -290,23 +294,9 @@ library SiloALMFLib {
             uint targetLeveragePercent
         )
     {
-        address lendingVault = $.lendingVault;
-        address collateralAsset = $.collateralAsset;
-
-        ltv = ISiloLens($.helper).getLtv(lendingVault, address(this)) * INTERNAL_PRECISION / 1e18;
-
-        collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
-        debtAmount = totalDebt($.borrowingVault);
-
-        IPriceReader priceReader = _getPriceReader(platform);
-        (uint _realTvl,) = realTvl(platform, $);
-        (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
-        uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
-
-        leverage = _realTvl == 0 ? 0 : collateralUsd * INTERNAL_PRECISION / _realTvl;
-
-        targetLeveragePercent = $.targetLeveragePercent;
-        (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
+        CollateralDebtState memory debtState =
+            _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        return _health(platform, $, debtState);
     }
 
     function rebalanceDebt(
@@ -356,7 +346,7 @@ library SiloALMFLib {
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
-        (resultLtv,,,,,) = health(platform, $);
+        resultLtv = SiloALMFLib.getLtv($);
     }
 
     function realTvl(
@@ -365,10 +355,7 @@ library SiloALMFLib {
     ) public view returns (uint tvl, bool trusted) {
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
-        tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
-        //        console.log("totalCollateralUsd", debtState.totalCollateralUsd);
-        //        console.log("borrowAssetUsd", debtState.borrowAssetUsd);
-        trusted = debtState.trusted;
+        return _realTvl(debtState);
     }
 
     function getPrices(address lendVault, address debtVault) public view returns (uint priceCtoB, uint priceBtoC) {
@@ -436,10 +423,10 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         address vault_
     ) public view returns (uint sharePrice, bool trusted) {
-        uint _realTvl;
-        (_realTvl, trusted) = realTvl(platform, $);
+        uint __realTvl;
+        (__realTvl, trusted) = realTvl(platform, $);
         uint totalSupply = IERC20(vault_).totalSupply();
-        sharePrice = totalSupply == 0 ? 0 : _realTvl * 1e18 / totalSupply;
+        sharePrice = totalSupply == 0 ? 0 : __realTvl * 1e18 / totalSupply;
     }
 
     function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
@@ -483,7 +470,6 @@ library SiloALMFLib {
 
     //region ------------------------------------- Deposit
     function depositAssets(
-        address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         IStrategy.StrategyBaseStorage storage $base,
         uint amount,
@@ -505,7 +491,7 @@ library SiloALMFLib {
 
         // ensure that result LTV doesn't exceed max
         (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
-        _ensureLtvValid($, platform, maxLtv);
+        _ensureLtvValid($, maxLtv);
     }
 
     function _deposit(
@@ -562,7 +548,7 @@ library SiloALMFLib {
         address receiver
     ) external returns (uint[] memory amountsOut) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
-        StateBeforeWithdraw memory state = _getStateBeforeWithdraw(platform, $, v);
+        StateBeforeWithdraw memory state = _getStateBeforeWithdraw($, v);
 
         // ---------------------- withdraw from the lending vault - only if amount on the balance is not enough
         if (value > state.collateralBalanceStrategy) {
@@ -595,7 +581,7 @@ library SiloALMFLib {
         }
 
         // ensure that result LTV doesn't exceed max
-        _ensureLtvValid($, platform, state.maxLtv);
+        _ensureLtvValid($, state.maxLtv);
     }
 
     function _depositAfterWithdraw(
@@ -620,10 +606,9 @@ library SiloALMFLib {
         StateBeforeWithdraw memory state,
         uint value
     ) internal {
-        (,, uint leverage,,,) = health(platform, $);
-
         CollateralDebtState memory debtState =
             _getDebtState(platform, v.lendingVault, v.collateralAsset, v.borrowAsset, v.borrowingVault);
+        (,, uint leverage,,,) = _health(platform, $, debtState);
 
         if (0 == debtState.debtAmount) {
             // zero debt, positive collateral - we can just withdraw required amount
@@ -763,13 +748,12 @@ library SiloALMFLib {
     }
 
     function _getStateBeforeWithdraw(
-        address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v
     ) public view returns (StateBeforeWithdraw memory state) {
         state.collateralBalanceStrategy = StrategyLib.balance(v.collateralAsset);
         state.valueWas = state.collateralBalanceStrategy + calcTotal(v);
-        (state.ltv,,,,,) = health(platform, $);
+        state.ltv = getLtv($);
         (state.maxLtv, state.maxLeverage, state.targetLeverage) = getLtvData(v.lendingVault, $.targetLeveragePercent);
         (state.priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
         state.withdrawParam0 = $.withdrawParam0;
@@ -822,18 +806,18 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         address vault_,
-        uint _realTvl,
+        uint realTvl_,
         uint duration,
         int earned
     ) internal {
         IPriceReader priceReader = _getPriceReader(platform);
         (uint collateralPrice,) = priceReader.getPrice(v.collateralAsset);
         int realEarned = earned * int(collateralPrice) / int(10 ** IERC20Metadata(v.collateralAsset).decimals());
-        int realApr = StrategyLib.computeAprInt(_realTvl, realEarned, duration);
+        int realApr = StrategyLib.computeAprInt(realTvl_, realEarned, duration);
         (uint depositApr, uint borrowApr) = _getDepositAndBorrowAprs($.helper, v.lendingVault, v.borrowingVault);
         (uint sharePrice,) = _realSharePrice(platform, $, vault_);
         emit ILeverageLendingStrategy.LeverageLendingHardWork(
-            realApr, earned, _realTvl, duration, sharePrice, depositApr, borrowApr
+            realApr, earned, realTvl_, duration, sharePrice, depositApr, borrowApr
         );
     }
 
@@ -865,9 +849,9 @@ library SiloALMFLib {
         }
 
         // ---------------------- Calculate apr and emit event
-        (uint _realTvl,) = realTvl(platform, $);
+        (uint realTvl_,) = realTvl(platform, $);
         _emitLeverageLendingHardWork(
-            platform, $, v, vault_, _realTvl, block.timestamp - $base.lastHardWork, int(totalNow) - int(totalWas)
+            platform, $, v, vault_, realTvl_, block.timestamp - $base.lastHardWork, int(totalNow) - int(totalWas)
         );
 
         (uint ltv,, uint leverage,,,) = health(platform, $);
@@ -951,10 +935,9 @@ library SiloALMFLib {
     /// @notice ensure that result LTV doesn't exceed max
     function _ensureLtvValid(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address platform,
         uint maxLtv
     ) internal view {
-        (uint ltv,,,,,) = health(platform, $);
+        uint ltv = getLtv($);
         require(ltv <= maxLtv, IControllable.IncorrectLtv(ltv));
     }
 
@@ -990,6 +973,46 @@ library SiloALMFLib {
         uint balance = StrategyLib.balance(borrowAsset);
         return balance > rewardsAmount ? balance - rewardsAmount : 0;
     }
+
+    function _realTvl(CollateralDebtState memory debtState) internal pure returns (uint tvl, bool trusted) {
+        tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
+        trusted = debtState.trusted;
+    }
+
+    function _health(
+        address platform,
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        CollateralDebtState memory debtState_
+    )
+        internal
+        view
+        returns (
+            uint ltv,
+            uint maxLtv,
+            uint leverage,
+            uint collateralAmount,
+            uint debtAmount,
+            uint targetLeveragePercent
+        )
+    {
+        address lendingVault = $.lendingVault;
+        address collateralAsset = $.collateralAsset;
+
+        ltv = getLtv($);
+
+        collateralAmount = StrategyLib.balance(collateralAsset) + totalCollateral(lendingVault);
+        debtAmount = totalDebt($.borrowingVault);
+
+        IPriceReader priceReader = _getPriceReader(platform);
+        (uint __realTvl,) = _realTvl(debtState_);
+        (uint collateralPrice,) = priceReader.getPrice(collateralAsset);
+        uint collateralUsd = collateralAmount * collateralPrice / 10 ** IERC20Metadata(collateralAsset).decimals();
+
+        leverage = __realTvl == 0 ? 0 : collateralUsd * INTERNAL_PRECISION / __realTvl;
+
+        targetLeveragePercent = $.targetLeveragePercent;
+        (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
+    }
     //endregion ------------------------------------- Internal
 
     //region ------------------------------------- Transient prices cache
@@ -998,8 +1021,8 @@ library SiloALMFLib {
         IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
         priceReader.preCalculatePriceTx(wrappedMetaVault);
 
-//        priceReader = SiloALMFLib._getPriceReader(IControllable($.collateralAsset).platform());
-//        priceReader.preCalculatePriceTx(address(0));
+        //        priceReader = SiloALMFLib._getPriceReader(IControllable($.collateralAsset).platform());
+        //        priceReader.preCalculatePriceTx(address(0));
 
         // cache price of all sub-vaults
         IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault()).cachePrices(false);

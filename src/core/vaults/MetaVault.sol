@@ -523,17 +523,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // totalSupply is balance of peg asset
         (uint tvlUsd,) = tvl();
         (uint priceAsset,) = price();
-        return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
+        _tvl = Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC20
     function balanceOf(address account) public view returns (uint) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        uint _totalShares = $.totalShares;
-        if (_totalShares == 0) {
-            return 0;
-        }
-        return Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor);
+        return _balanceOf($, account, totalSupply());
     }
 
     /// @inheritdoc IERC20
@@ -787,24 +783,24 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
         if (amount == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
-        if (amount > balanceOf(owner)) {
+        uint totalSupply_ = totalSupply();
+        if (amount > _balanceOf($, owner, totalSupply_)) {
             revert ERC20InsufficientBalance(owner, balanceOf(owner), amount);
         }
         if (assets_.length != minAssetAmountsOut.length) {
             revert IControllable.IncorrectArrayLength();
         }
 
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-
         _beforeDepositOrWithdraw($, owner);
 
-        uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply());
+        uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply_);
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         address _targetVault = vaultForWithdraw();
@@ -1027,5 +1023,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
     }
 
+    function _balanceOf(MetaVaultStorage storage $, address account, uint totalSupply_) internal view returns (uint) {
+        uint _totalShares = $.totalShares;
+        if (_totalShares == 0) {
+            return 0;
+        }
+        return Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
+    }
     //endregion --------------------------------- Internal logic
 }

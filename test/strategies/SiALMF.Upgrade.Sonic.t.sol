@@ -61,9 +61,8 @@ contract SiALMFUpgradeTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
         vault = IStabilityVault(SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121);
         strategy = IVault(address(vault)).strategy();
-        priceReader = IPriceReader(
-            IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader()
-        );
+        priceReader =
+            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
 
         _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
@@ -75,6 +74,8 @@ contract SiALMFUpgradeTest is Test {
     }
 
     function testSingleDepositWithdraw() public {
+        _removeUnusedVaults();
+
         // ---------------------------------- Set whitelist for transient cache
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(strategy), true);
@@ -108,7 +109,6 @@ contract SiALMFUpgradeTest is Test {
         assertApproxEqAbs(amount, withdrawn[0], amount / 100 * 2, "Withdrawn amount does not match deposited amount");
         assertEq(vault.balanceOf(address(this)), 0, "Shares should be zero after withdrawal");
 
-
         // ---------------------------------- Hardwork
         {
             gas0 = gasleft();
@@ -120,7 +120,6 @@ contract SiALMFUpgradeTest is Test {
             console.log("gas used for hardwork", gas0 - gasleft());
             // todo assertLt(gas0 - gasleft(), 16e6, "Hardwork should not use more than 16 mln gas");
         }
-
 
         // ---------------------------------- Rebalance
         // todo
@@ -141,10 +140,10 @@ contract SiALMFUpgradeTest is Test {
         _testMultipleDepositWithdraw(100e18);
     }
 
-//    function testMultipleDepositWithdraw_Fuzzy(uint baseAmount) public {
-//        baseAmount = bound(baseAmount, 10e18, 1000e18);
-//        _testMultipleDepositWithdraw(baseAmount);
-//    }
+    //    function testMultipleDepositWithdraw_Fuzzy(uint baseAmount) public {
+    //        baseAmount = bound(baseAmount, 10e18, 1000e18);
+    //        _testMultipleDepositWithdraw(baseAmount);
+    //    }
 
     function _testMultipleDepositWithdraw(uint baseAmount) internal {
         // ---------------------------------- Set whitelist for transient cache
@@ -165,11 +164,7 @@ contract SiALMFUpgradeTest is Test {
         uint totalWithdrawn;
         for (uint i; i < 20; ++i) {
             {
-                uint amount = i % 5 == 0
-                    ? baseAmount * 11
-                    : i % 3 == 0
-                        ? baseAmount / 7
-                        : baseAmount;
+                uint amount = i % 5 == 0 ? baseAmount * 11 : i % 3 == 0 ? baseAmount / 7 : baseAmount;
 
                 _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
                 IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(vault), amount);
@@ -188,11 +183,7 @@ contract SiALMFUpgradeTest is Test {
 
             {
                 uint balance = vault.balanceOf(address(this));
-                uint shares = i % 5 == 0
-                    ? balance * 99/100
-                    : i % 2 == 0
-                        ? balance / 7
-                        : balance / 100;
+                uint shares = i % 5 == 0 ? balance * 99 / 100 : i % 2 == 0 ? balance / 7 : balance / 100;
                 totalWithdrawn += vault.withdrawAssets(assets, shares, new uint[](1))[0];
                 vm.roll(block.number + 6);
             }
@@ -208,7 +199,9 @@ contract SiALMFUpgradeTest is Test {
             }
         }
 
-        assertApproxEqAbs(totalDeposited, totalWithdrawn, totalDeposited / 100 * 2, "Withdrawn amount does not match deposited amount");
+        assertApproxEqAbs(
+            totalDeposited, totalWithdrawn, totalDeposited / 100 * 2, "Withdrawn amount does not match deposited amount"
+        );
         assertEq(vault.balanceOf(address(this)), 0, "Shares should be zero after withdrawal");
     }
 
@@ -399,5 +392,24 @@ contract SiALMFUpgradeTest is Test {
         //        console.log("realTvl", state.realTvl);
         return state;
     }
+
+    function _removeUnusedVaults() internal {
+        // todo UsdAmountLessThreshold(6074204700030295904090)
+        //        vm.prank(multisig);
+        //        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).removeVault(SonicConstantsLib.METAVAULT_metascUSD);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0xa51e7204054464e656B3658e7dBb63d9b0f150f1);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0x96a8055090E87bfE18BdF3794E9D676F196EFd80);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0xd248c4b6Ec709FEeD32851A9F883AfeaC294aD30);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336);
+    }
+
     //endregion ------------------------------------ Helpers
 }
