@@ -164,4 +164,8 @@ interface IMetaVault is IStabilityVault {
 
     /// @notice Allow whitelisted address to disable last-block-defense for the current block or enable it back
     function setLastBlockDefenseDisabledTx(bool isDisabled) external;
+
+    /// @notice Allow to cache assets and vaults prices in the transient cache
+    /// @param clear True - clear the cache, false - prepare the cache
+    function cachePrices(bool clear) external;
 }

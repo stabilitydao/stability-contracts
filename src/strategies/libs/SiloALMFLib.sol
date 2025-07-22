@@ -15,6 +15,8 @@ import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
 import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
 import {ISilo} from "../../integrations/silo/ISilo.sol";
+import {IMetaVault} from "../../interfaces/IMetaVault.sol";
+import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
@@ -989,4 +991,26 @@ library SiloALMFLib {
         return balance > rewardsAmount ? balance - rewardsAmount : 0;
     }
     //endregion ------------------------------------- Internal
+
+    //region ------------------------------------- Transient prices cache
+    function _cachePricesTx(address platform, address wrappedMetaVault) internal {
+        // cache price of wrapped meta vault
+        IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
+        priceReader.preCalculatePriceTx(wrappedMetaVault);
+
+//        priceReader = SiloALMFLib._getPriceReader(IControllable($.collateralAsset).platform());
+//        priceReader.preCalculatePriceTx(address(0));
+
+        // cache price of all sub-vaults
+        IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault()).cachePrices(false);
+    }
+
+    function _clearCachePricesTx(address platform, address wrappedMetaVault) internal {
+        IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
+        priceReader.preCalculatePriceTx(address(0));
+
+        IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault()).cachePrices(true);
+    }
+
+    //region ------------------------------------- Transient prices cache
 }

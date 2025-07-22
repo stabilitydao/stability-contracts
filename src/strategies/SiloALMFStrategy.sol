@@ -264,10 +264,14 @@ contract SiloALMFStrategy is
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
+
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
         metaVault.setLastBlockDefenseDisabledTx(false);
+
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -296,10 +300,14 @@ contract SiloALMFStrategy is
             uint[] memory __rewardAmounts
         )
     {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
         __assets = assets();
         (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
-            _getLeverageLendingBaseStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
+            $, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
         );
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc StrategyBase
@@ -320,10 +328,14 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
 
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
+
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
         value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
         metaVault.setLastBlockDefenseDisabledTx(false);
+
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc StrategyBase
@@ -331,10 +343,14 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
+
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
         metaVault.setLastBlockDefenseDisabledTx(false);
+
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc IStrategy
@@ -351,10 +367,14 @@ contract SiloALMFStrategy is
     function _compound() internal override(LeverageLendingBase, StrategyBase) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
+
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
         SiloALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
         metaVault.setLastBlockDefenseDisabledTx(false);
+
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
     //endregion ----------------------------------- Strategy base
 
@@ -371,10 +391,14 @@ contract SiloALMFStrategy is
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
+        SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
+
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
         metaVault.setLastBlockDefenseDisabledTx(false);
+
+        SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc IFarmingStrategy

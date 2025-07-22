@@ -17,6 +17,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.4.2: TODO
 ///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
 ///          - add whitelist for last-block-defense - #330
 ///          - add removeVault - #336
@@ -40,7 +41,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.4.0"; // todo
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -61,6 +62,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
     uint internal transient _lastBlockDefenseDisabledTx;
 
+    //region --------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -81,7 +83,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] amountToDeposit;
         uint[] amounts;
     }
+    //endregion --------------------------------- Data types
 
+    //region --------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -117,7 +121,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         $.symbol = symbol_;
         emit TargetProportions(proportions_);
     }
+    //endregion --------------------------------- Initialization
 
+    //region --------------------------------- Modifiers
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -127,6 +133,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _requiredAllowedOperator();
         _;
     }
+    //endregion --------------------------------- Modifiers
 
     //region --------------------------------- Restricted action
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -248,6 +255,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
 
         _lastBlockDefenseDisabledTx = isDisabled ? block.number : 0;
+    }
+
+    /// @inheritdoc IMetaVault
+    function cachePrices(bool clear) external {
+        MetaVaultLib.cachePrices(_getMetaVaultStorage(), IPriceReader(IPlatform(platform()).priceReader()), clear);
     }
     //endregion --------------------------------- Restricted action
 

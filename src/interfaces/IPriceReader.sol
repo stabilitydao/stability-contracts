@@ -61,4 +61,16 @@ interface IPriceReader {
     /// Only operator (multisig is operator too) can add adapter
     /// @param vaults Addresses of vaults
     function removeSafeSharePrices(address[] memory vaults) external;
+
+    /// @notice Add user to whitelist of transient cache
+    function changeWhitelistTransientCache(address user, bool add) external;
+
+    /// @notice Save asset price to transient cache
+    /// @param asset Pass 0 to clear the cache
+    function preCalculatePriceTx(address asset) external;
+
+    /// @notice Save vault price to transient cache
+    /// Second call with the same vault will be ignored and won't not change the price
+    /// @param vault Pass 0 to clear the cache
+    function preCalculateVaultPriceTx(address vault) external;
 }

@@ -9,6 +9,7 @@ import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 library MetaVaultLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -89,6 +90,24 @@ library MetaVaultLib {
 
         emit IMetaVault.RemoveVault(vault);
         emit IMetaVault.TargetProportions(_targetProportions);
+    }
+
+    function cachePrices(IMetaVault.MetaVaultStorage storage $, IPriceReader priceReader_, bool clear) external {
+        require(!_isMultiVault($), IMetaVault.IncorrectVault());
+
+        if (clear) {
+            // clear exist cache
+            priceReader_.preCalculateVaultPriceTx(address(0));
+        } else {
+            address[] memory _vaults = $.vaults;
+            for (uint i; i < _vaults.length; ++i) {
+                address[] memory _subVaults = IMetaVault(_vaults[i]).vaults();
+                for (uint j; j < _subVaults.length; ++j) {
+                    priceReader_.preCalculateVaultPriceTx(_subVaults[j]);
+                }
+                priceReader_.preCalculateVaultPriceTx(_subVaults[i]);
+            }
+        }
     }
     //endregion --------------------------------- Restricted actions
 
