@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
@@ -10,6 +11,7 @@ import {IPMarket, IStandardizedYield} from "../integrations/pendle/IPMarket.sol"
 import {IPPYLpOracle} from "../integrations/pendle/IPPYLpOracle.sol";
 import {IPPrincipalToken} from "../integrations/pendle/IPPrincipalToken.sol";
 import {IPYieldToken} from "../integrations/pendle/IPYieldToken.sol";
+import {IPActionMiscV3} from "../integrations/pendle/IPActionMiscV3.sol";
 import {
     IPActionSwapPTV3,
     TokenOutput,
@@ -28,13 +30,14 @@ contract PendleAdapter is Controllable, IAmmAdapter {
     /// @dev Pendle oracle address for all chains
     address public constant ORACLE = 0x9a9Fa8338dd5E5B2188006f1Cd2Ef26d921650C2;
     address public constant ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
+    address public constant ACTION_MISC_V3 = 0x373Dba2055Ad40cb4815148bC47cd1DC16e92E44;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1"; //todo
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -76,19 +79,35 @@ contract PendleAdapter is Controllable, IAmmAdapter {
         // pt to yield token
         // pt to asset
         if ((tokenIn == tokens[1] && tokenOut == tokens[3]) || (tokenIn == tokens[1] && tokenOut == tokens[4])) {
-            (amountOut,,) = IPActionSwapPTV3(ROUTER).swapExactPtForToken(
-                recipient,
-                pool,
-                amount,
-                TokenOutput({
-                    tokenOut: tokenOut,
-                    minTokenOut: 0,
-                    tokenRedeemSy: tokenOut,
-                    pendleSwap: address(0),
-                    swapData: emptySwapData
-                }),
-                createEmptyLimitOrderData()
-            );
+            if (IPPrincipalToken(tokenIn).isExpired()) {
+                IERC20(tokenIn).forceApprove(ACTION_MISC_V3, amount);
+                (amountOut,) = IPActionMiscV3(ACTION_MISC_V3).redeemPyToToken(
+                    recipient,
+                    IPPrincipalToken(tokenIn).YT(),
+                    amount,
+                    TokenOutput({
+                        tokenOut: tokenOut,
+                        minTokenOut: 0,
+                        tokenRedeemSy: tokenOut,
+                        pendleSwap: address(0),
+                        swapData: emptySwapData
+                    })
+                );
+            } else {
+                (amountOut,,) = IPActionSwapPTV3(ROUTER).swapExactPtForToken(
+                    recipient,
+                    pool,
+                    amount,
+                    TokenOutput({
+                        tokenOut: tokenOut,
+                        minTokenOut: 0,
+                        tokenRedeemSy: tokenOut,
+                        pendleSwap: address(0),
+                        swapData: emptySwapData
+                    }),
+                    createEmptyLimitOrderData()
+                );
+            }
         }
 
         // yield token to pt

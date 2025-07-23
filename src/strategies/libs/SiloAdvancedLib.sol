@@ -29,6 +29,9 @@ import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
 
+    /// @notice Value of depositParams1 - it means that the collateral asset is PT and the PT market it expired
+    uint public constant COLLATERAL_IS_PT_EXPIRED_MARKET = 1;
+
     /// @dev 100_00 is 1.0 or 100%
     uint public constant INTERNAL_PRECISION = 100_00;
 
@@ -83,6 +86,13 @@ library SiloAdvancedLib {
         uint withdrawParam2;
         uint priceCtoB;
     }
+
+    struct ReceiveFlashLoanLocal {
+        bool ptExpiredMode;
+        address collateralAsset;
+        address flashLoanVault;
+    }
+
     //endregion ------------------------------------- Data types
 
     function receiveFlashLoan(
@@ -92,27 +102,31 @@ library SiloAdvancedLib {
         uint amount,
         uint feeAmount
     ) external {
+        //slither-disable-next-line uninitialized-local
+        ReceiveFlashLoanLocal memory v;
+
         // token is borrow asset (USDC/WETH/wS)
-        address collateralAsset = $.collateralAsset;
-        address flashLoanVault = $.flashLoanVault;
-        if (msg.sender != flashLoanVault) {
+        v.ptExpiredMode = $.depositParam1 == COLLATERAL_IS_PT_EXPIRED_MARKET;
+        v.collateralAsset = $.collateralAsset;
+        v.flashLoanVault = $.flashLoanVault;
+        if (msg.sender != v.flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
             // swap
-            _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
+            _swap(platform, token, v.collateralAsset, amount, $.swapPriceImpactTolerance0);
 
             // supply
             ISilo($.lendingVault).deposit(
-                IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
+                IERC20(v.collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
             );
 
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
 
             // pay flash loan
-            IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
+            IERC20(token).safeTransfer(v.flashLoanVault, amount + feeAmount);
         }
 
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Withdraw) {
@@ -139,9 +153,11 @@ library SiloAdvancedLib {
             // swap
             StrategyLib.swap(
                 platform,
-                collateralAsset,
+                v.collateralAsset,
                 token,
-                _estimateSwapAmount(platform, amount + feeAmount, collateralAsset, token, swapPriceImpactTolerance0),
+                _estimateSwapAmount(
+                    platform, amount + feeAmount, v.collateralAsset, token, swapPriceImpactTolerance0, v.ptExpiredMode
+                ),
                 // Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
                 swapPriceImpactTolerance0
             );
@@ -150,10 +166,14 @@ library SiloAdvancedLib {
             require(IERC20(token).balanceOf(address(this)) >= amount + feeAmount, IControllable.InsufficientBalance());
 
             // pay flash loan
-            IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
+            IERC20(token).safeTransfer(v.flashLoanVault, amount + feeAmount);
 
             // swap unnecessary borrow asset
-            StrategyLib.swap(platform, token, collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0);
+            if (!v.ptExpiredMode && StrategyLib.balance(token) != 0) {
+                StrategyLib.swap(
+                    platform, token, v.collateralAsset, StrategyLib.balance(token), swapPriceImpactTolerance0
+                );
+            }
 
             // reset temp vars
             $.tempCollateralAmount = 0;
@@ -171,10 +191,10 @@ library SiloAdvancedLib {
             );
 
             // swap
-            StrategyLib.swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
+            StrategyLib.swap(platform, v.collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
 
             // pay flash loan
-            IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
+            IERC20(token).safeTransfer(v.flashLoanVault, amount + feeAmount);
 
             // repay remaining balance
             ISilo($.borrowingVault).repay(StrategyLib.balance(token), address(this));
@@ -189,14 +209,14 @@ library SiloAdvancedLib {
             _swap(
                 platform,
                 token,
-                collateralAsset,
+                v.collateralAsset,
                 IERC20(token).balanceOf(address(this)) * $.increaseLtvParam1 / INTERNAL_PRECISION,
                 $.swapPriceImpactTolerance1
             );
 
             // supply
             ISilo($.lendingVault).deposit(
-                _getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
+                _getLimitedAmount(IERC20(v.collateralAsset).balanceOf(address(this)), tempCollateralAmount),
                 address(this),
                 ISilo.CollateralType.Collateral
             );
@@ -205,7 +225,7 @@ library SiloAdvancedLib {
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
 
             // pay flash loan
-            IERC20(token).safeTransfer(flashLoanVault, amount + feeAmount);
+            IERC20(token).safeTransfer(v.flashLoanVault, amount + feeAmount);
 
             // repay not used borrow
             uint tokenBalance = IERC20(token).balanceOf(address(this));
@@ -363,10 +383,13 @@ library SiloAdvancedLib {
                 ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
+            uint pc = ISiloOracle(collateralOracle).quote(
                 10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
             );
-            priceBtoC = 1e18 * 1e18 / priceCtoB;
+            uint pb =
+                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceCtoB = pc * 1e18 / pb;
+            priceBtoC = pb * 1e18 / pc;
         }
     }
 
@@ -486,19 +509,28 @@ library SiloAdvancedLib {
         uint amountToRepay,
         address collateralAsset,
         address token,
-        uint priceImpactTolerance
+        uint priceImpactTolerance,
+        bool ptExpiredMode_
     ) internal view returns (uint) {
-        // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
-        // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
+        if (ptExpiredMode_) {
+            // Pendle marked is expired
+            // PT tokens should be swapped to asset as 1:1 (in practice: 1 decimal can be lost)
+            // We need to swap in so way that we receive amountToRepay on balance exactly
+            return amountToRepay + 1 - StrategyLib.balance(token);
+        } else {
+            // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
+            // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
 
-        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-        uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
 
-        // we use higher (x2) price impact then required for safety
-        uint minCollateralToSwap =
-            swapper.getPrice(token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000); // priceImpactTolerance has its own denominator
+            // we use higher (x2) price impact then required for safety
+            uint minCollateralToSwap = swapper.getPrice(
+                token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000
+            ); // priceImpactTolerance has its own denominator
 
-        return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
+            return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
+        }
     }
 
     //region ------------------------------------- Deposit
