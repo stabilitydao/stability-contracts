@@ -36,6 +36,11 @@ contract SiALUpgradeExpiredPtTest is Test {
     address public constant USER_PT3 = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
     address public constant PENDLE_PT3 = SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025;
 
+    // TOKEN_PT_wOS_29MAY2025;
+    address public constant STRATEGY_PT4 = 0x970683D06A47594A2480451061E5411d97a54e5A;
+    address public constant USER_PT4 = 0x959767f961E91dFbBf865490D1c99Cf4e421B9E9;
+    address public constant PENDLE_PT4 = SonicConstantsLib.TOKEN_PT_wOS_29MAY2025;
+
     address public constant STRATEGY_W = 0x78080B52E639D9410F8c8f75E168072cd2617e6C;
     address public constant USER_W = 0x4ECe177350d5d474146242c3A0811c67762146F9;
 
@@ -215,6 +220,8 @@ contract SiALUpgradeExpiredPtTest is Test {
         address[] memory assets = vault.assets();
         uint balanceBefore = IERC20(assets[0]).balanceOf(USER_PT2);
 
+        uint expectedWithdraw = _getExpectedWithdraw(vault, USER_PT2);
+
         // ------------------------- Ensure that we cannot withdraw before upgrade
         vm.expectRevert();
         vm.prank(USER_PT2);
@@ -233,6 +240,13 @@ contract SiALUpgradeExpiredPtTest is Test {
         uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
         uint balanceAfter = IERC20(assets[0]).balanceOf(USER_PT2);
         // State memory stateAfter = _getHealth(address(vault));
+
+        assertApproxEqAbs(
+            withdrawn[0],
+            expectedWithdraw,
+            2 * expectedWithdraw / 100,
+            "PT2: withdrawn amount should be close to expected"
+        );
 
         assertGt(balanceAfter - balanceBefore, 0, "PT2: withdrawn balance should be greater than 0");
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT2: withdrawn balance should match the returned value");
@@ -331,6 +345,49 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT3: total should match the total withdrawn amount");
     }
     //endregion ---------------------------------------- Test for TOKEN_PT_wstkscETH_29MAY2025
+
+    //region ---------------------------------------- Test for TOKEN_PT_wOS_29MAY2025
+    function testExpiredPt4SingleUser() public {
+        // ------------------------- Prepare to withdraw
+        IVault vault = IVault(IStrategy(STRATEGY_PT4).vault());
+        uint shares = vault.balanceOf(USER_PT4);
+        assertGt(shares, 0, "PT2: shares should be greater than 0");
+        //console.log("balance", shares);
+
+        address[] memory assets = vault.assets();
+        uint balanceBefore = IERC20(assets[0]).balanceOf(USER_PT4);
+
+        uint expectedWithdraw = _getExpectedWithdraw(vault, USER_PT4);
+
+        assertEq(IPPrincipalToken(PENDLE_PT4).isExpired(), true, "PT4: PT should be expired");
+
+        // ------------------------- Ensure that we cannot withdraw before upgrade
+//        vm.expectRevert();
+//        vm.prank(USER_PT4);
+//        vault.withdrawAssets(assets, shares, new uint[](1));
+
+        // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
+        _upgradeStrategy(STRATEGY_PT4);
+        _upgradePlatform();
+        _adjustParams(ILeverageLendingStrategy(STRATEGY_PT4));
+
+        // ------------------------- Ensure that withdraw is possible without revert
+        vm.prank(USER_PT4);
+        uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
+        uint balanceAfter = IERC20(assets[0]).balanceOf(USER_PT4);
+
+        assertApproxEqAbs(
+            withdrawn[0],
+            expectedWithdraw,
+            2 * expectedWithdraw / 100,
+            "PT2: withdrawn amount should be close to expected"
+        );
+
+        assertGt(balanceAfter - balanceBefore, 0, "PT4: withdrawn balance should be greater than 0");
+        assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT4: withdrawn balance should match the returned value");
+        // console.log("withdrawn balance", withdrawn[0]);
+    }
+    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
 
     function testWstkscusd() internal {
         // 0x6Fb30F3FCB864D49cdff15061ed5c6ADFEE40B40
