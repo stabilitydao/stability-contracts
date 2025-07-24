@@ -362,9 +362,9 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(IPPrincipalToken(PENDLE_PT4).isExpired(), true, "PT4: PT should be expired");
 
         // ------------------------- Ensure that we cannot withdraw before upgrade
-//        vm.expectRevert();
-//        vm.prank(USER_PT4);
-//        vault.withdrawAssets(assets, shares, new uint[](1));
+        //        vm.expectRevert();
+        //        vm.prank(USER_PT4);
+        //        vault.withdrawAssets(assets, shares, new uint[](1));
 
         // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
         _upgradeStrategy(STRATEGY_PT4);
