@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
@@ -106,9 +107,10 @@ library SiloAdvancedLib {
         ReceiveFlashLoanLocal memory v;
 
         // token is borrow asset (USDC/WETH/wS)
-        v.ptExpiredMode = $.depositParam1 == COLLATERAL_IS_PT_EXPIRED_MARKET;
+        v.ptExpiredMode = _isPtExpiredMode($);
         v.collateralAsset = $.collateralAsset;
         v.flashLoanVault = $.flashLoanVault;
+
         if (msg.sender != v.flashLoanVault) {
             revert IControllable.IncorrectMsgSender();
         }
@@ -150,17 +152,7 @@ library SiloAdvancedLib {
                 );
             }
 
-            // swap
-            StrategyLib.swap(
-                platform,
-                v.collateralAsset,
-                token,
-                _estimateSwapAmount(
-                    platform, amount + feeAmount, v.collateralAsset, token, swapPriceImpactTolerance0, v.ptExpiredMode
-                ),
-                // Math.min(tempCollateralAmount, StrategyLib.balance(collateralAsset)),
-                swapPriceImpactTolerance0
-            );
+            _swapForWithdraw(platform, v, token, amount + feeAmount, swapPriceImpactTolerance0);
 
             // explicit error for the case when _estimateSwapAmount gives incorrect amount
             require(IERC20(token).balanceOf(address(this)) >= amount + feeAmount, IControllable.InsufficientBalance());
@@ -243,6 +235,64 @@ library SiloAdvancedLib {
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
+    }
+
+    function _swapForWithdraw(
+        address platform,
+        ReceiveFlashLoanLocal memory v,
+        address token,
+        uint amountToRepay,
+        uint swapPriceImpactTolerance0
+    ) internal {
+        ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+        uint requiredAmount = amountToRepay;
+        {
+            uint balance = IERC20(token).balanceOf(address(this));
+            requiredAmount = amountToRepay > balance ? amountToRepay - balance : 0;
+        }
+
+        if (v.ptExpiredMode) {
+            // Pendle market is expired
+            // PT tokens should be swapped to asset as 1:1
+            // We need to swap in so way that we receive amountToRepay on balance exactly
+
+            // assume below that available collateral amount is always enough for the first swap
+            // because we need to pay flash loan and then send not-zero amount of collateral to the user
+            (ISwapper.PoolData[] memory route,) = swapper.buildRoute(token, v.collateralAsset);
+            bool simpleMode = route.length == 1;
+            if (simpleMode) {
+                // Ex: PT => USDC. As soon as the market is expired, price 1:1 (in practice: 1 decimal can be lost)
+                StrategyLib.swap(platform, v.collateralAsset, token, requiredAmount + 1, swapPriceImpactTolerance0);
+            } else {
+                // Ex: PT => stkscETH => scETH => WETH
+                // PT => stkscETH is 1:1 but other conversions can have prices and price impact
+                // We cannot swap larger amount and then swap remain amount back because the market is expired
+                // So, let's swap in two steps
+                // At first try to swap amount according to price (without taking price impact into account)
+                // Then check balances and swap little more amount to get amountToRepay on balance
+
+                uint amountToSwap = swapper.getPrice(token, v.collateralAsset, requiredAmount);
+                StrategyLib.swap(platform, v.collateralAsset, token, amountToSwap, swapPriceImpactTolerance0);
+            }
+
+            uint balance = IERC20(token).balanceOf(address(this));
+            requiredAmount = amountToRepay > balance ? amountToRepay - balance : 0;
+        }
+
+        if (requiredAmount != 0) {
+            // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
+            // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
+
+            uint minCollateralToSwap = swapper.getPrice(
+                token,
+                v.collateralAsset,
+                requiredAmount * (100_000 + swapPriceImpactTolerance0) / 100_000 // priceImpactTolerance has its own denominator
+            );
+            uint amountToSwap = Math.min(minCollateralToSwap, StrategyLib.balance(v.collateralAsset));
+
+            // swap
+            StrategyLib.swap(platform, v.collateralAsset, token, amountToSwap, swapPriceImpactTolerance0);
+        }
     }
 
     function health(
@@ -500,37 +550,6 @@ library SiloAdvancedLib {
         }
 
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
-    }
-
-    /// @notice Estimate amount of collateral to swap to receive {amountToRepay} on balance
-    /// @param priceImpactTolerance Price impact tolerance. Must include fees at least. Denominator is 100_000.
-    function _estimateSwapAmount(
-        address platform,
-        uint amountToRepay,
-        address collateralAsset,
-        address token,
-        uint priceImpactTolerance,
-        bool ptExpiredMode_
-    ) internal view returns (uint) {
-        if (ptExpiredMode_) {
-            // Pendle marked is expired
-            // PT tokens should be swapped to asset as 1:1 (in practice: 1 decimal can be lost)
-            // We need to swap in so way that we receive amountToRepay on balance exactly
-            return amountToRepay + 1 - StrategyLib.balance(token);
-        } else {
-            // We have collateral C = C1 + C2 where C1 is amount to withdraw, C2 is amount to swap to B (to repay)
-            // We don't need to swap whole C, we can swap only C2 with same addon (i.e. 10%) for safety
-
-            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-            uint requiredAmount = amountToRepay - IERC20(token).balanceOf(address(this));
-
-            // we use higher (x2) price impact then required for safety
-            uint minCollateralToSwap = swapper.getPrice(
-                token, collateralAsset, requiredAmount * (100_000 + 2 * priceImpactTolerance) / 100_000
-            ); // priceImpactTolerance has its own denominator
-
-            return Math.min(minCollateralToSwap, StrategyLib.balance(collateralAsset));
-        }
     }
 
     //region ------------------------------------- Deposit
@@ -864,6 +883,16 @@ library SiloAdvancedLib {
     function _getLimitedAmount(uint amount, uint optionalLimit) internal pure returns (uint) {
         if (optionalLimit == 0) return amount;
         return Math.min(amount, optionalLimit);
+    }
+
+    function _isPtExpiredMode(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
+        internal
+        view
+        returns (bool)
+    {
+        // PT expired mode is used when the strategy is used with Pendle
+        // and the PT tokens are expired, so we can swap them 1:1 to the asset
+        return $.depositParam1 == COLLATERAL_IS_PT_EXPIRED_MARKET;
     }
     //endregion ------------------------------------- Internal
 }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import "../../src/core/Platform.sol";
 import "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
@@ -15,19 +16,31 @@ import {console, Test} from "forge-std/Test.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {IPPrincipalToken} from "../../src/integrations/pendle/IPPrincipalToken.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
 
 contract SiALUpgradeExpiredPtTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
+    // TOKEN_PT_Silo_20_USDC_17JUL2025
     address public constant STRATEGY_PT = 0x2D34203886Da9ad7d1fe48FF7EF65a70f3788573;
     address public constant USER_PT = 0xFCd9df3BcdC746B23AB3FcF063F92C2Ca2D185B3;
+    address public constant PENDLE_PT = SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025;
+
+    // TOKEN_PT_wstkscUSD_29MAY2025
+    address public constant STRATEGY_PT2 = 0x2D34203886Da9ad7d1fe48FF7EF65a70f3788573;
+    address public constant USER_PT2 = 0xFCd9df3BcdC746B23AB3FcF063F92C2Ca2D185B3;
+    address public constant PENDLE_PT2 = SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025;
+
+    // TOKEN_PT_wstkscETH_29MAY2025
+    address public constant STRATEGY_PT3 = 0xe76A6B14f48e141239bb59F137529F12780Fe45B;
+    address public constant USER_PT3 = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
+    address public constant PENDLE_PT3 = SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025;
 
     address public constant STRATEGY_W = 0x78080B52E639D9410F8c8f75E168072cd2617e6C;
     address public constant USER_W = 0x4ECe177350d5d474146242c3A0811c67762146F9;
 
-    address public constant PENDLE_PT = 0x77d8F09053c28FaF1E00Df6511b23125d438616f;
-
     address[5] HOLDERS_VAULT_PT;
+    address[6] HOLDERS_VAULT_PT3;
 
     struct State {
         uint ltv;
@@ -61,8 +74,18 @@ contract SiALUpgradeExpiredPtTest is Test {
             0x23b8Cc22C4c82545F4b451B11E2F17747A730810,
             0x6F5791B0D0CF656fF13b476aF62afb93138AeAd9
         ];
+
+        HOLDERS_VAULT_PT3 = [
+            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A, // largest
+            0x0644141DD9C2c34802d28D334217bD2034206Bf7,
+            0x959767f961E91dFbBf865490D1c99Cf4e421B9E9,
+            0x23b8Cc22C4c82545F4b451B11E2F17747A730810,
+            0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2,
+            0xc25a74f2dC4F2B504867B4ee728c53A838Db72BD
+        ];
     }
 
+    //region ---------------------------------------- Test for TOKEN_PT_Silo_20_USDC_17JUL2025
     function testExpiredPtLargestUser() public {
         // ------------------------- Prepare to withdraw
         IVault vault = IVault(IStrategy(STRATEGY_PT).vault());
@@ -109,26 +132,43 @@ contract SiALUpgradeExpiredPtTest is Test {
         address[] memory assets = vault.assets();
         uint total = IStrategy(STRATEGY_PT).total();
         uint totalWithdrawn;
+        uint[] memory expectedWithdraw = new uint[](HOLDERS_VAULT_PT.length);
+        for (uint i; i < HOLDERS_VAULT_PT.length; ++i) {
+            expectedWithdraw[i] = _getExpectedWithdraw(vault, HOLDERS_VAULT_PT[i]);
+        }
 
         for (uint i; i < HOLDERS_VAULT_PT.length; ++i) {
             // console.log("i", i);
             uint shares = vault.balanceOf(HOLDERS_VAULT_PT[i]);
             uint balanceBefore = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT[i]);
-            //            (uint tvl, ) = vault.tvl();
-            //            (uint price,) = vault.price();
-            //            console.log("withdraw.shares, holder", shares, HOLDERS_VAULT_PT[i]);
-            //            console.log("totalSupply, tvl, price", vault.totalSupply() / 1e18, tvl / 1e18, price);
             // ------------------------- Ensure that withdraw is possible without revert
             vm.prank(HOLDERS_VAULT_PT[i]);
             uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
             uint balanceAfter = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT[i]);
 
-            assertGt(balanceAfter - balanceBefore, 0, "M: withdrawn balance should be greater than 0");
-            assertEq(balanceAfter - balanceBefore, withdrawn[0], "M: withdrawn balance should match the returned value");
-            //console.log("withdrawn balance", withdrawn[0], assets[0]);
+            assertGt(balanceAfter - balanceBefore, 0, "PT: withdrawn balance should be greater than 0");
+            assertEq(
+                balanceAfter - balanceBefore, withdrawn[0], "PT: withdrawn balance should match the returned value"
+            );
+            assertApproxEqAbs(
+                withdrawn[0],
+                expectedWithdraw[i],
+                2 * expectedWithdraw[i] / 100,
+                "PT: withdrawn amount should be close to expected"
+            );
+            //console.log("withdrawn balance", withdrawn[0], expectedWithdraw[i]);
+
+            // console.log("withdrawn balance", withdrawn[0], assets[0]);
             _getHealth(address(vault));
             totalWithdrawn += withdrawn[0];
         }
+
+        assertEq(IERC20(assets[0]).balanceOf(address(STRATEGY_PT)), 0, "PT3: collateral final balance should be 0");
+        assertEq(
+            IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(STRATEGY_PT)),
+            0,
+            "PT3: borrow final balance should be 0"
+        );
 
         assertApproxEqAbs(total, totalWithdrawn, total / 100, "M: total should match the total withdrawn amount");
     }
@@ -148,21 +188,149 @@ contract SiALUpgradeExpiredPtTest is Test {
             console.log("i", i);
             uint shares = vault.balanceOf(HOLDERS_VAULT_PT[i]);
             uint balanceBefore = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT[i]);
-            (uint tvl,) = vault.tvl();
-            (uint price,) = vault.price();
-            console.log("withdraw.shares, holder", shares / 1e18, HOLDERS_VAULT_PT[i]);
-            console.log("totalSupply, tvl, price", vault.totalSupply() / 1e18, tvl / 1e18, price);
+            uint expectedWithdraw = _getExpectedWithdraw(vault, HOLDERS_VAULT_PT[i]);
 
             // ------------------------- Ensure that withdraw is possible without revert
             vm.prank(HOLDERS_VAULT_PT[i]);
             uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
             uint balanceAfter = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT[i]);
 
-            assertGt(balanceAfter - balanceBefore, 0, "M: withdrawn balance should be greater than 0");
-            assertEq(balanceAfter - balanceBefore, withdrawn[0], "M: withdrawn balance should match the returned value");
-            console.log("withdrawn balance", withdrawn[0], assets[0]);
+            assertGt(balanceAfter - balanceBefore, 0, "PTNE: withdrawn balance should be greater than 0");
+            assertEq(
+                balanceAfter - balanceBefore, withdrawn[0], "PTNE: withdrawn balance should match the returned value"
+            );
+            console.log("withdrawn balance", withdrawn[0], expectedWithdraw);
         }
     }
+    //endregion ---------------------------------------- Test for TOKEN_PT_Silo_20_USDC_17JUL2025
+
+    //region ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
+    function testExpiredPt2SingleUser() public {
+        // ------------------------- Prepare to withdraw
+        IVault vault = IVault(IStrategy(STRATEGY_PT2).vault());
+        uint shares = vault.balanceOf(USER_PT2);
+        assertGt(shares, 0, "PT2: shares should be greater than 0");
+        //console.log("balance", shares);
+
+        address[] memory assets = vault.assets();
+        uint balanceBefore = IERC20(assets[0]).balanceOf(USER_PT2);
+
+        // ------------------------- Ensure that we cannot withdraw before upgrade
+        vm.expectRevert();
+        vm.prank(USER_PT2);
+        vault.withdrawAssets(assets, shares, new uint[](1));
+        // custom error 0xb2094b59
+
+        // State memory stateBefore = _getHealth(address(vault));
+
+        // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
+        _upgradeStrategy(STRATEGY_PT2);
+        _upgradePlatform();
+        _adjustParams(ILeverageLendingStrategy(STRATEGY_PT2));
+
+        // ------------------------- Ensure that withdraw is possible without revert
+        vm.prank(USER_PT2);
+        uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
+        uint balanceAfter = IERC20(assets[0]).balanceOf(USER_PT2);
+        // State memory stateAfter = _getHealth(address(vault));
+
+        assertGt(balanceAfter - balanceBefore, 0, "PT2: withdrawn balance should be greater than 0");
+        assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT2: withdrawn balance should match the returned value");
+        // console.log("withdrawn balance", withdrawn[0]);
+    }
+    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
+
+    //region ---------------------------------------- Test for TOKEN_PT_wstkscETH_29MAY2025
+    function testExpiredPt3SingleUser() public {
+        // ------------------------- Prepare to withdraw
+        IVault vault = IVault(IStrategy(STRATEGY_PT3).vault());
+        uint shares = vault.balanceOf(USER_PT3);
+        assertGt(shares, 0, "PT3: shares should be greater than 0");
+        //console.log("balance", shares);
+
+        address[] memory assets = vault.assets();
+        uint balanceBefore = IERC20(assets[0]).balanceOf(USER_PT3);
+
+        // ------------------------- Ensure that we cannot withdraw before upgrade
+        vm.expectRevert();
+        vm.prank(USER_PT3);
+        vault.withdrawAssets(assets, shares, new uint[](1));
+        // custom error 0xb2094b59
+
+        // State memory stateBefore = _getHealth(address(vault));
+
+        // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
+        _upgradeStrategy(STRATEGY_PT3);
+        _upgradePlatform();
+        _adjustParams(ILeverageLendingStrategy(STRATEGY_PT3));
+
+        // ------------------------- Ensure that withdraw is possible without revert
+        vm.prank(USER_PT3);
+        uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
+        uint balanceAfter = IERC20(assets[0]).balanceOf(USER_PT3);
+        // State memory stateAfter = _getHealth(address(vault));
+
+        assertGt(balanceAfter - balanceBefore, 0, "PT3: withdrawn balance should be greater than 0");
+        assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT3: withdrawn balance should match the returned value");
+        // console.log("withdrawn balance", withdrawn[0]);
+    }
+
+    function testExpiredPt3AllHolders() public {
+        // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
+        _upgradeStrategy(STRATEGY_PT3);
+        _upgradePlatform();
+        _adjustParams(ILeverageLendingStrategy(STRATEGY_PT3));
+
+        // ------------------------- Prepare to withdraw
+        IVault vault = IVault(IStrategy(STRATEGY_PT3).vault());
+        // _getHealth(address(vault));
+
+        address[] memory assets = vault.assets();
+        uint total = IStrategy(STRATEGY_PT3).total();
+        uint totalWithdrawn;
+
+        uint[] memory expectedWithdraw = new uint[](HOLDERS_VAULT_PT3.length);
+        for (uint i; i < HOLDERS_VAULT_PT3.length; ++i) {
+            expectedWithdraw[i] = _getExpectedWithdraw(vault, HOLDERS_VAULT_PT3[i]);
+        }
+
+        for (uint i; i < HOLDERS_VAULT_PT3.length; ++i) {
+            // console.log("i", i);
+            uint shares = vault.balanceOf(HOLDERS_VAULT_PT3[i]);
+            uint balanceBefore = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT3[i]);
+
+            // ------------------------- Ensure that withdraw is possible without revert
+            vm.prank(HOLDERS_VAULT_PT3[i]);
+            uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
+            uint balanceAfter = IERC20(assets[0]).balanceOf(HOLDERS_VAULT_PT3[i]);
+
+            assertGt(balanceAfter - balanceBefore, 0, "PT3: withdrawn balance should be greater than 0");
+            assertEq(
+                balanceAfter - balanceBefore, withdrawn[0], "PT3: withdrawn balance should match the returned value"
+            );
+            assertApproxEqAbs(
+                withdrawn[0],
+                expectedWithdraw[i],
+                2 * expectedWithdraw[i] / 100,
+                "PT3: withdrawn amount should be close to expected"
+            );
+            // console.log("withdrawn, expected", withdrawn[0], expectedWithdraw[i]);
+            _getHealth(address(vault));
+            totalWithdrawn += withdrawn[0];
+        }
+
+        assertEq(IERC20(assets[0]).balanceOf(address(STRATEGY_PT3)), 0, "PT3: collateral final balance should be 0");
+        assertLt(
+            IERC20(SonicConstantsLib.TOKEN_wETH).balanceOf(address(STRATEGY_PT3)),
+            1e12,
+            "PT3: borrow final balance should be less than threshold"
+        );
+
+        // some small amount can be left on strategy balance in borrow asset
+        // also there are some losses because of the flash loan fees
+        assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT3: total should match the total withdrawn amount");
+    }
+    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscETH_29MAY2025
 
     function testWstkscusd() internal {
         // 0x6Fb30F3FCB864D49cdff15061ed5c6ADFEE40B40
@@ -185,6 +353,17 @@ contract SiALUpgradeExpiredPtTest is Test {
     }
 
     //region ---------------------------------------- Helpers
+    function _getExpectedWithdraw(IVault vault, address holder) internal view returns (uint expectedWithdraw) {
+        uint shares = vault.balanceOf(holder);
+        (uint realSharePrice,) = ILeverageLendingStrategy(address(vault.strategy())).realSharePrice();
+        (uint assetPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(vault.assets()[0]);
+        expectedWithdraw =
+            shares * realSharePrice * 10 ** IERC20Metadata(vault.assets()[0]).decimals() / assetPrice / 1e18;
+        //        console.log("withdraw.shares, holder", shares, holder);
+        //        console.log("value, realSharePrice", value, realSharePrice);
+        //        console.log("price, assetPrice, expectedWithdraw", price, assetPrice, expectedWithdraw);
+        //            console.log("totalSupply, tvl, price", vault.totalSupply() / 1e18, tvl / 1e18, price);
+    }
 
     function _setFlashLoanVault(ILeverageLendingStrategy strategy) internal {
         address multisig = IPlatform(PLATFORM).multisig();
@@ -235,9 +414,11 @@ contract SiALUpgradeExpiredPtTest is Test {
 
         address[] memory proxies = new address[](1);
         proxies[0] = IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.PENDLE))).proxy;
+        // proxies[1] = IPlatform(PLATFORM).swapper();
 
         address[] memory implementations = new address[](1);
         implementations[0] = address(new PendleAdapter());
+        // implementations[1] = address(new Swapper());
 
         vm.startPrank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
