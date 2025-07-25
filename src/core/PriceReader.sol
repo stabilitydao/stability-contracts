@@ -394,27 +394,27 @@ contract PriceReader is Controllable, IPriceReader {
     function _preCalculateVaultPriceTx(PriceReaderStorage storage $, address vault) internal {
         uint count = _countVaults;
         if (count < MAX_COUNT_VAULT_PRICES_CACHED) {
-            bool safe;
-            if (count == 0) ((_price00, safe), _addr00) = (_getVaultPrice($, vault), vault);
-            if (count == 1) ((_price01, safe), _addr01) = (_getVaultPrice($, vault), vault);
-            if (count == 2) ((_price02, safe), _addr02) = (_getVaultPrice($, vault), vault);
-            if (count == 3) ((_price03, safe), _addr03) = (_getVaultPrice($, vault), vault);
-            if (count == 4) ((_price04, safe), _addr04) = (_getVaultPrice($, vault), vault);
-            if (count == 5) ((_price05, safe), _addr05) = (_getVaultPrice($, vault), vault);
-            if (count == 6) ((_price06, safe), _addr06) = (_getVaultPrice($, vault), vault);
-            if (count == 7) ((_price07, safe), _addr07) = (_getVaultPrice($, vault), vault);
-            if (count == 8) ((_price08, safe), _addr08) = (_getVaultPrice($, vault), vault);
-            if (count == 9) ((_price09, safe), _addr09) = (_getVaultPrice($, vault), vault);
-            if (count == 10) ((_price10, safe), _addr10) = (_getVaultPrice($, vault), vault);
-            if (count == 11) ((_price11, safe), _addr11) = (_getVaultPrice($, vault), vault);
-            if (count == 12) ((_price12, safe), _addr12) = (_getVaultPrice($, vault), vault);
-            if (count == 13) ((_price13, safe), _addr13) = (_getVaultPrice($, vault), vault);
-            if (count == 14) ((_price14, safe), _addr14) = (_getVaultPrice($, vault), vault);
-            if (count == 15) ((_price15, safe), _addr15) = (_getVaultPrice($, vault), vault);
-            if (count == 16) ((_price16, safe), _addr16) = (_getVaultPrice($, vault), vault);
-            if (count == 17) ((_price17, safe), _addr17) = (_getVaultPrice($, vault), vault);
-            if (count == 18) ((_price18, safe), _addr18) = (_getVaultPrice($, vault), vault);
-            if (count == 19) ((_price19, safe), _addr19) = (_getVaultPrice($, vault), vault);
+            (uint price, bool safe) = _getVaultPrice($, vault);
+            if (count == 0) (_price00, _addr00) = (price, vault);
+            if (count == 1) (_price01, _addr01) = (price, vault);
+            if (count == 2) (_price02, _addr02) = (price, vault);
+            if (count == 3) (_price03, _addr03) = (price, vault);
+            if (count == 4) (_price04, _addr04) = (price, vault);
+            if (count == 5) (_price05, _addr05) = (price, vault);
+            if (count == 6) (_price06, _addr06) = (price, vault);
+            if (count == 7) (_price07, _addr07) = (price, vault);
+            if (count == 8) (_price08, _addr08) = (price, vault);
+            if (count == 9) (_price09, _addr09) = (price, vault);
+            if (count == 10) (_price10, _addr10) = (price, vault);
+            if (count == 11) (_price11, _addr11) = (price, vault);
+            if (count == 12) (_price12, _addr12) = (price, vault);
+            if (count == 13) (_price13, _addr13) = (price, vault);
+            if (count == 14) (_price14, _addr14) = (price, vault);
+            if (count == 15) (_price15, _addr15) = (price, vault);
+            if (count == 16) (_price16, _addr16) = (price, vault);
+            if (count == 17) (_price17, _addr17) = (price, vault);
+            if (count == 18) (_price18, _addr18) = (price, vault);
+            if (count == 19) (_price19, _addr19) = (price, vault);
             _setSafe(count, safe);
             ++_countVaults;
         }
