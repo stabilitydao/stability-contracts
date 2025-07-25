@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -12,6 +13,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 library MetaVaultLib {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     //region --------------------------------- Restricted actions
@@ -111,6 +113,34 @@ library MetaVaultLib {
     }
     //endregion --------------------------------- Restricted actions
 
+    //region --------------------------------- Actions
+    function rebalanceMultiVault(
+        IMetaVault.MetaVaultStorage storage $,
+        uint[] memory withdrawShares,
+        uint[] memory depositAmountsProportions
+    ) external {
+        uint len = $.vaults.length;
+        address[] memory _assets = $.assets.values();
+        for (uint i; i < len; ++i) {
+            if (withdrawShares[i] != 0) {
+                IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
+                require(depositAmountsProportions[i] == 0, IMetaVault.IncorrectRebalanceArgs());
+            }
+        }
+        uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
+        for (uint i; i < len; ++i) {
+            address vault = $.vaults[i];
+            uint[] memory amountsMax = new uint[](1);
+            amountsMax[0] = depositAmountsProportions[i] * totalToDeposit / 1e18;
+            if (amountsMax[0] != 0) {
+                IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
+                IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
+                require(withdrawShares[i] == 0, IMetaVault.IncorrectRebalanceArgs());
+            }
+        }
+    }
+    //endregion --------------------------------- Actions
+
     //region --------------------------------- View functions
     function currentProportions(IMetaVault.MetaVaultStorage storage $)
         external
@@ -120,10 +150,11 @@ library MetaVaultLib {
         return _currentProportions($);
     }
 
-    function vaultForDepositWithdraw(IMetaVault.MetaVaultStorage storage $) external view returns (
-        address targetForDeposit,
-        address targetForWithdraw
-    ) {
+    function vaultForDepositWithdraw(IMetaVault.MetaVaultStorage storage $)
+        external
+        view
+        returns (address targetForDeposit, address targetForWithdraw)
+    {
         address[] memory _vaults = $.vaults;
         if ($.totalShares == 0) {
             return (_vaults[0], _vaults[0]);

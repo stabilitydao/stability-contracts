@@ -296,14 +296,7 @@ library SiloALMFLib {
     {
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
-        (
-            ltv,
-            maxLtv,
-            leverage,
-            collateralAmount,
-            debtAmount,
-            targetLeveragePercent
-        ) = _health(platform, $, debtState);  // todo return
+        (ltv, maxLtv, leverage, collateralAmount, debtAmount, targetLeveragePercent) = _health(platform, $, debtState); // todo return
     }
 
     function rebalanceDebt(
@@ -1039,7 +1032,7 @@ library SiloALMFLib {
     //endregion ------------------------------------- Internal
 
     //region ------------------------------------- Transient prices cache
-    function _cachePricesTx(address platform, address wrappedMetaVault) internal {
+    function prepareWriteOp(address platform, address wrappedMetaVault) internal {
         // cache price of wrapped meta vault
         IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
         priceReader.preCalculatePriceTx(wrappedMetaVault);
@@ -1048,15 +1041,23 @@ library SiloALMFLib {
         //        priceReader.preCalculatePriceTx(address(0));
 
         // cache price of all sub-vaults
-        IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault()).cachePrices(false);
+        IMetaVault metaVault = _getMetaVault(wrappedMetaVault);
+        metaVault.cachePrices(false);
+        metaVault.setLastBlockDefenseDisabledTx(true);
     }
 
-    function _clearCachePricesTx(address platform, address wrappedMetaVault) internal {
+    function unprepareWriteOp(address platform, address wrappedMetaVault) internal {
         IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
         priceReader.preCalculatePriceTx(address(0));
 
-        IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault()).cachePrices(true);
+        IMetaVault metaVault = _getMetaVault(wrappedMetaVault);
+        metaVault.cachePrices(true);
+        metaVault.setLastBlockDefenseDisabledTx(false);
     }
 
+    function _getMetaVault(address wrappedMetaVault) internal view returns (IMetaVault) {
+        // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
+        return IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault());
+    }
     //region ------------------------------------- Transient prices cache
 }

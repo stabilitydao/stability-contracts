@@ -170,24 +170,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint tvlBefore,) = tvl();
 
         if (MetaVaultLib._isMultiVault($)) {
-            address[] memory _assets = $.assets.values();
-            for (uint i; i < len; ++i) {
-                if (withdrawShares[i] != 0) {
-                    IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
-                    require(depositAmountsProportions[i] == 0, IncorrectRebalanceArgs());
-                }
-            }
-            uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
-            for (uint i; i < len; ++i) {
-                address vault = $.vaults[i];
-                uint[] memory amountsMax = new uint[](1);
-                amountsMax[0] = depositAmountsProportions[i] * totalToDeposit / 1e18;
-                if (amountsMax[0] != 0) {
-                    IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
-                    IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
-                    require(withdrawShares[i] == 0, IncorrectRebalanceArgs());
-                }
-            }
+            MetaVaultLib.rebalanceMultiVault($, withdrawShares, depositAmountsProportions);
         } else {
             revert NotSupported();
         }
@@ -265,9 +248,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function cachePrices(bool clear) external {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         MetaVaultLib.cachePrices($, IPriceReader(IPlatform(platform()).priceReader()), clear);
-        (_cachedVaultForDeposit, _cachedVaultForWithdraw) = clear
-            ? (address(0), address(0))
-            : MetaVaultLib.vaultForDepositWithdraw($);
+        (_cachedVaultForDeposit, _cachedVaultForWithdraw) =
+            clear ? (address(0), address(0)) : MetaVaultLib.vaultForDepositWithdraw($);
     }
     //endregion --------------------------------- Restricted action
 
@@ -394,7 +376,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (_cachedVaultForDeposit != address(0)) {
             return _cachedVaultForDeposit;
         }
-        (target, ) = MetaVaultLib.vaultForDepositWithdraw(_getMetaVaultStorage());
+        (target,) = MetaVaultLib.vaultForDepositWithdraw(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
