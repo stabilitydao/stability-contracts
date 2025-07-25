@@ -9,7 +9,6 @@ import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IMetaVault} from "../interfaces/IMetaVault.sol";
-import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
@@ -26,7 +25,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1"; // todo
+    string public constant VERSION = "1.0.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -50,7 +49,6 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IAmmAdapter
-
     //slither-disable-next-line reentrancy-events
     function swap(
         address pool,
@@ -69,7 +67,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             // swap Meta Vault to asset
             uint balance = metaVault.balanceOf(address(this));
 
-            address[] memory assets = IStabilityVault(metaVault.vaultForWithdraw()).assets();
+            address[] memory assets = metaVault.assetsForWithdraw();
             require(assets.length == 1 && assets[0] == tokenOut, IncorrectTokens());
 
             // calculate min asset amounts out
@@ -81,11 +79,10 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             metaVault.withdrawAssets(assets, balance, minAssetAmountsOut);
 
             amountOut = IERC20(assets[0]).balanceOf(address(this));
-
             IERC20(assets[0]).safeTransfer(recipient, amountOut);
         } else if (tokenOut == pool) {
             // swap asset to Meta Vault
-            address[] memory assets = IStabilityVault(metaVault.vaultForDeposit()).assets();
+            address[] memory assets = metaVault.assetsForDeposit();
             require(assets.length == 1 && assets[0] == tokenIn, IncorrectTokens());
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amount;

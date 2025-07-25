@@ -246,15 +246,15 @@ contract SiALMFUpgradeTest is Test {
 
         IPlatform platform = IPlatform(IControllable(priceReader_).platform());
 
-        address[] memory proxies = new address[](2);
-        address[] memory implementations = new address[](2);
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
 
         proxies[0] = address(priceReader_);
-        proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+        // proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
         //proxies[2] = platform.swapper();
 
         implementations[0] = address(new PriceReader());
-        implementations[1] = address(new MetaVaultAdapter());
+        // implementations[1] = address(new MetaVaultAdapter());
         //implementations[2] = address(new Swapper());
 
         vm.startPrank(multisig);

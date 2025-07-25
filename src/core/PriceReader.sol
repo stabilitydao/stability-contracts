@@ -167,8 +167,10 @@ contract PriceReader is Controllable, IPriceReader {
     function changeWhitelistTransientCache(address user, bool add) external onlyOperator {
         PriceReaderStorage storage $ = _getStorage();
         if (add) {
+            //slither-disable-next-line unused-return
             $.whitelistTransientCache.add(user);
         } else {
+            //slither-disable-next-line unused-return
             $.whitelistTransientCache.remove(user);
         }
     }
@@ -289,6 +291,7 @@ contract PriceReader is Controllable, IPriceReader {
         address[] memory __adapters = $._adapters.values();
         uint len = __adapters.length;
         for (uint i; i < len; ++i) {
+            //slither-disable-next-line low-level-calls
             //slither-disable-next-line unused-return
             (uint _price,) = IOracleAdapter(__adapters[i]).getPrice(asset);
             if (_price > 0) {
@@ -300,13 +303,17 @@ contract PriceReader is Controllable, IPriceReader {
             ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
             for (uint j; j < len; ++j) {
                 IOracleAdapter oracleAdapter = IOracleAdapter($._adapters.at(j));
+                //slither-disable-next-line low-level-calls
                 address[] memory oracleAssets = oracleAdapter.assets();
                 uint oracleAssetsLen = oracleAssets.length;
                 for (uint i; i < oracleAssetsLen; ++i) {
+                    //slither-disable-next-line low-level-calls
                     uint swapperPrice = swapper.getPrice(asset, oracleAssets[i], 0);
                     if (swapperPrice > 0) {
+                        //slither-disable-next-line low-level-calls
                         //slither-disable-next-line unused-return
                         (uint _price,) = oracleAdapter.getPrice(oracleAssets[i]);
+                        //slither-disable-next-line low-level-calls
                         uint assetOutDecimals = IERC20Metadata(oracleAssets[i]).decimals();
                         uint priceInTermOfOracleAsset;
                         if (assetOutDecimals <= 18) {

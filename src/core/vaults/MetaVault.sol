@@ -247,6 +247,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     function cachePrices(bool clear) external {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+        require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
+
         MetaVaultLib.cachePrices($, IPriceReader(IPlatform(platform()).priceReader()), clear);
         (_cachedVaultForDeposit, _cachedVaultForWithdraw) =
             clear ? (address(0), address(0)) : MetaVaultLib.vaultForDepositWithdraw($);
