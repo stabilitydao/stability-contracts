@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
@@ -9,6 +10,7 @@ import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IMetaVault} from "../interfaces/IMetaVault.sol";
+import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
@@ -25,7 +27,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1"; // todo
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -49,6 +51,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IAmmAdapter
+
     //slither-disable-next-line reentrancy-events
     function swap(
         address pool,
@@ -57,6 +60,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         address recipient,
         uint priceImpactTolerance
     ) external {
+        console.log("MetaVaultAdapter.swap");uint temp = gasleft();
         IMetaVault metaVault = IMetaVault(pool);
 
         uint amount = IERC20(tokenIn).balanceOf(address(this));
@@ -64,33 +68,44 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         uint amountOut;
 
         if (tokenIn == pool) {
+            console.log("MetaVaultAdapter.swap.1", temp - gasleft());
             // swap Meta Vault to asset
             uint balance = metaVault.balanceOf(address(this));
 
-            address[] memory assets = metaVault.assetsForWithdraw();
+            console.log("MetaVaultAdapter.swap.2", temp - gasleft());
+            address[] memory assets = IStabilityVault(metaVault.vaultForWithdraw()).assets();
             require(assets.length == 1 && assets[0] == tokenOut, IncorrectTokens());
 
+            console.log("MetaVaultAdapter.swap.3", temp - gasleft());
             // calculate min asset amounts out
             uint[] memory minAssetAmountsOut = new uint[](1);
             minAssetAmountsOut[0] = getPrice(pool, tokenIn, tokenOut, amount)
                 * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
 
+            console.log("MetaVaultAdapter.swap.4", temp - gasleft());
             // slither-disable-next-line unused-return
             metaVault.withdrawAssets(assets, balance, minAssetAmountsOut);
 
+            console.log("MetaVaultAdapter.swap.5", temp - gasleft());
             amountOut = IERC20(assets[0]).balanceOf(address(this));
+
+            console.log("MetaVaultAdapter.swap.6", temp - gasleft());
             IERC20(assets[0]).safeTransfer(recipient, amountOut);
         } else if (tokenOut == pool) {
             // swap asset to Meta Vault
-            address[] memory assets = metaVault.assetsForDeposit();
+            console.log("MetaVaultAdapter.swap.7", temp - gasleft());
+            address[] memory assets = IStabilityVault(metaVault.vaultForDeposit()).assets();
+            console.log("MetaVaultAdapter.swap.8", temp - gasleft());
             require(assets.length == 1 && assets[0] == tokenIn, IncorrectTokens());
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amount;
 
             (, uint sharesOut,) = metaVault.previewDepositAssets(assets, amountsMax);
+            console.log("MetaVaultAdapter.swap.9", temp - gasleft());
 
             IERC20(tokenIn).forceApprove(pool, amount);
             uint balanceBefore = metaVault.balanceOf(recipient);
+            console.log("MetaVaultAdapter.swap.10", temp - gasleft());
             metaVault.depositAssets(
                 assets,
                 amountsMax,
@@ -98,14 +113,17 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
                 recipient
             );
 
+            console.log("MetaVaultAdapter.swap.11", temp - gasleft());
             amountOut = metaVault.balanceOf(recipient) - balanceBefore;
 
+            console.log("MetaVaultAdapter.swap.12", temp - gasleft());
             // ensure that all input tokens were deposited
             require(IERC20(tokenIn).balanceOf(address(this)) == 0, IncorrectAmountConsumed());
         } else {
             revert IncorrectTokens();
         }
 
+        console.log("MetaVaultAdapter.swap.13", temp - gasleft());
         emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amount, amountOut);
     }
     //endregion ---------------------------------- User actions

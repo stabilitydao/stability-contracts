@@ -94,7 +94,9 @@ contract SiALMFUpgradeTest is Test {
         amountsMax[0] = amount;
 
         uint gas0 = gasleft();
+        console.log("!!!!!!!!!!!!!!!!!!!!! start deposit");
         vault.depositAssets(assets, amountsMax, 0, address(this));
+        console.log("!!!!!!!!!!!!!!!!!!!!! end deposit");
         vm.roll(block.number + 6);
         console.log("gas used for deposit", gas0 - gasleft());
         //assertLt(gas0 - gasleft(), 12e6, "Deposit should not use more than 12 mln gas");
@@ -102,7 +104,9 @@ contract SiALMFUpgradeTest is Test {
         // ---------------------------------- Withdraw
         uint shares = vault.balanceOf(address(this));
         gas0 = gasleft();
+        console.log("!!!!!!!!!!!!!!!!!!!!! start withdraw");
         uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
+        console.log("!!!!!!!!!!!!!!!!!!!!! end withdraw");
         console.log("gas used for withdraw", gas0 - gasleft());
         // assertLt(gas0 - gasleft(), 16e6, "Withdraw should not use more than 16 mln gas");
 
@@ -117,12 +121,9 @@ contract SiALMFUpgradeTest is Test {
             vm.prank(hardWorker);
             IVault(address(vault)).doHardWork();
 
-            console.log("gas used for hardwork", gas0 - gasleft());
+            console.log("!!!!!!!!!!!!!!!!!!!gas used for hardwork", gas0 - gasleft());
             // todo assertLt(gas0 - gasleft(), 16e6, "Hardwork should not use more than 16 mln gas");
         }
-
-        // ---------------------------------- Rebalance
-        // todo
 
         // ---------------------------------- Emergency exit
         {
@@ -131,7 +132,7 @@ contract SiALMFUpgradeTest is Test {
             vm.prank(multisig);
             strategy.emergencyStopInvesting();
 
-            console.log("gas used for emergency exit", gas0 - gasleft());
+            console.log("!!!!!!!!!!!!!!!!!!!!gas used for emergency exit", gas0 - gasleft());
             // todo assertLt(gas0 - gasleft(), 16e6, "Emergency exit should not use more than 16 mln gas");
         }
     }
@@ -249,16 +250,16 @@ contract SiALMFUpgradeTest is Test {
 
         IPlatform platform = IPlatform(IControllable(priceReader_).platform());
 
-        address[] memory proxies = new address[](1);
-        address[] memory implementations = new address[](1);
+        address[] memory proxies = new address[](2);
+        address[] memory implementations = new address[](2);
 
         proxies[0] = address(priceReader_);
-        //proxies[1] = platform.swapper();
-        //proxies[2] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+        proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+        //proxies[2] = platform.swapper();
 
         implementations[0] = address(new PriceReader());
-        //implementations[1] = address(new Swapper());
-        //implementations[2] = address(new MetaVaultAdapter());
+        implementations[1] = address(new MetaVaultAdapter());
+        //implementations[2] = address(new Swapper());
 
         vm.startPrank(multisig);
         platform.cancelUpgrade();

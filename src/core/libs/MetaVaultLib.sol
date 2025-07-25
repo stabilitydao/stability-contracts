@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
@@ -120,43 +121,33 @@ library MetaVaultLib {
         return _currentProportions($);
     }
 
-    function vaultForDeposit(IMetaVault.MetaVaultStorage storage $) external view returns (address target) {
+    function vaultForDepositWithdraw(IMetaVault.MetaVaultStorage storage $) external view returns (
+        address targetForDeposit,
+        address targetForWithdraw
+    ) {
         address[] memory _vaults = $.vaults;
         if ($.totalShares == 0) {
-            return _vaults[0];
+            return (_vaults[0], _vaults[0]);
         }
         uint len = _vaults.length;
         uint[] memory _proportions = _currentProportions($);
         uint[] memory _targetProportions = $.targetProportions;
         uint lowProportionDiff;
-        target = _vaults[0];
+        uint highProportionDiff;
+        targetForDeposit = _vaults[0];
+        targetForWithdraw = _vaults[0];
         for (uint i; i < len; ++i) {
             if (_proportions[i] < _targetProportions[i]) {
                 uint diff = _targetProportions[i] - _proportions[i];
                 if (diff > lowProportionDiff) {
                     lowProportionDiff = diff;
-                    target = _vaults[i];
+                    targetForDeposit = _vaults[i];
                 }
-            }
-        }
-    }
-
-    function vaultForWithdraw(IMetaVault.MetaVaultStorage storage $) external view returns (address target) {
-        address[] memory _vaults = $.vaults;
-        if ($.totalShares == 0) {
-            return _vaults[0];
-        }
-        uint len = _vaults.length;
-        uint[] memory _proportions = _currentProportions($);
-        uint[] memory _targetProportions = $.targetProportions;
-        uint highProportionDiff;
-        target = _vaults[0];
-        for (uint i; i < len; ++i) {
-            if (_proportions[i] > _targetProportions[i] && _proportions[i] > 1e16) {
+            } else if (_proportions[i] > _targetProportions[i] && _proportions[i] > 1e16) {
                 uint diff = _proportions[i] - _targetProportions[i];
                 if (diff > highProportionDiff) {
                     highProportionDiff = diff;
-                    target = _vaults[i];
+                    targetForWithdraw = _vaults[i];
                 }
             }
         }
