@@ -53,7 +53,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
 
         // ------------------------- Add user to whitelist and try to deposit (successfully)
         vm.prank(strategy);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         assets = metaVault.assetsForDeposit();
         depositAmounts = _getAmountsForDeposit(500, assets);

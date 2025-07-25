@@ -36,7 +36,7 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         // --------------- Initially there are no whitelisted users
         vm.expectRevert(IMetaVault.NotWhitelisted.selector);
         vm.prank(user1);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         // --------------- User 1 is whitelisted, user 2 is not
         vm.prank(multisig);
@@ -45,11 +45,11 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         assertEq(metaVault.whitelisted(user2), false, "User 2 should NOT be whitelisted 1");
 
         vm.prank(user1);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         vm.expectRevert(IMetaVault.NotWhitelisted.selector);
         vm.prank(user2);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         // --------------- Both users are whitelisted
         vm.prank(multisig);
@@ -58,10 +58,10 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         assertEq(metaVault.whitelisted(user2), true, "User 2 should be whitelisted 2");
 
         vm.prank(user1);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         vm.prank(user2);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         // --------------- User 2 is whitelisted, user 1 is not
         vm.prank(multisig);
@@ -71,10 +71,10 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
 
         vm.expectRevert(IMetaVault.NotWhitelisted.selector);
         vm.prank(user1);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         vm.prank(user2);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         // --------------- Both users are not whitelisted
         vm.prank(multisig);
@@ -84,11 +84,11 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
 
         vm.expectRevert(IMetaVault.NotWhitelisted.selector);
         vm.prank(user1);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         vm.expectRevert(IMetaVault.NotWhitelisted.selector);
         vm.prank(user2);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
     }
 
     function testWhitelist() public {
@@ -121,13 +121,13 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
 
         // ------------------------- Add user to whitelist and try again (this time successfully)
         vm.prank(strategy);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
         _tryDepositWithdrawTransfer(user, false);
 
         // ------------------------- Enable last-block-defence back and try again (unsuccessfully)
         vm.prank(strategy);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         _tryDepositWithdrawTransfer(user, true);
     }
