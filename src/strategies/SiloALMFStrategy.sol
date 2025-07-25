@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -301,7 +300,6 @@ contract SiloALMFStrategy is
             uint[] memory __rewardAmounts
         )
     {
-        console.log("SiALMF._claimRevenue.start", gasleft());uint temp = gasleft();
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
@@ -309,7 +307,6 @@ contract SiloALMFStrategy is
         (__amounts, __rewardAssets, __rewardAmounts) =
             SiloALMFLib._claimRevenue($, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
-        console.log("SiALMF._claimRevenue.end. gas used:", temp - gasleft(), gasleft());
     }
 
     /// @inheritdoc StrategyBase
@@ -326,27 +323,21 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
-        console.log("SiALMF.depositAssets.start", gasleft());uint temp = gasleft();
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
-        console.log("SiALMF.depositAssets.0", temp-gasleft(), gasleft());
         SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
 
         IMetaVault metaVault = _getMetaVault($);
         metaVault.setLastBlockDefenseDisabledTx(true);
-        console.log("SiALMF.depositAssets.1", temp-gasleft(), gasleft());
         value = SiloALMFLib.depositAssets($, $base, amounts[0], _assets[0]);
-        console.log("SiALMF.depositAssets.2", temp-gasleft(), gasleft());
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
-        console.log("SiALMF.depositAssets.end. gas used:", temp - gasleft(), gasleft());
     }
 
     /// @inheritdoc StrategyBase
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
-        console.log("SiALMF._withdrawAssets.start", gasleft());uint temp = gasleft();
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
@@ -358,7 +349,6 @@ contract SiloALMFStrategy is
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
-        console.log("SiALMF._withdrawAssets.end. gas used:", temp - gasleft(), gasleft());
     }
 
     /// @inheritdoc IStrategy
@@ -373,7 +363,6 @@ contract SiloALMFStrategy is
     }
 
     function _compound() internal override(LeverageLendingBase, StrategyBase) {
-        console.log("SiALMF._compound.start", gasleft());uint temp = gasleft();
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
@@ -384,7 +373,6 @@ contract SiloALMFStrategy is
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
-        console.log("SiALMF._compound.end. gas used:", temp - gasleft(), gasleft());
     }
     //endregion ----------------------------------- Strategy base
 
@@ -399,7 +387,6 @@ contract SiloALMFStrategy is
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
-        console.log("SiALMF._liquidateRewards.start", gasleft());uint temp = gasleft();
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         SiloALMFLib._cachePricesTx(platform(), $.collateralAsset);
@@ -410,7 +397,6 @@ contract SiloALMFStrategy is
         metaVault.setLastBlockDefenseDisabledTx(false);
 
         SiloALMFLib._clearCachePricesTx(platform(), $.collateralAsset);
-        console.log("SiALMF._liquidateRewards.end. gas used:", temp - gasleft(), gasleft());
     }
 
     /// @inheritdoc IFarmingStrategy

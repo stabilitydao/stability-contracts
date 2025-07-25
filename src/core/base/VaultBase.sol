@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -226,12 +225,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint minSharesOut,
         address receiver
     ) external virtual nonReentrant {
-        console.log("VaultBase.depositAssets.1");
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         if (IFactory(IPlatform(platform()).factory()).vaultStatus(address(this)) != VaultStatusLib.ACTIVE) {
             revert IFactory.NotActiveVault();
         }
-        console.log("VaultBase.depositAssets.2");
 
         //slither-disable-next-line uninitialized-local
         DepositAssetsVars memory v;
@@ -248,23 +245,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
 
         v._totalSupply = totalSupply();
-        console.log("VaultBase.depositAssets.3");
         v.totalValue = v.strategy.total();
         // nosemgrep
         if (v.strategy.fuseMode() != uint(IStrategy.FuseMode.FUSE_OFF_0)) {
             revert FuseTrigger();
         }
-        console.log("VaultBase.depositAssets.4");
 
         v.len = amountsMax.length;
         if (v.len != assets_.length) {
             revert IControllable.IncorrectArrayLength();
         }
-        console.log("VaultBase.depositAssets.5");
 
         v.assets = v.strategy.assets();
         v.underlying = v.strategy.underlying();
-        console.log("VaultBase.depositAssets.6");
 
         // nosemgrep
         if (v.len == 1 && v.underlying != address(0) && v.underlying == assets_[0]) {
@@ -272,33 +265,25 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IERC20(v.underlying).safeTransferFrom(msg.sender, address(v.strategy), v.value);
             (v.amountsConsumed) = v.strategy.depositUnderlying(v.value);
         } else {
-            console.log("VaultBase.depositAssets.7");
             // assets_ and v.assets must match exactly, see #308; we can't rely on the strategy to validate this
             _ensureAssetsCorrespondence(v.assets, assets_);
-            console.log("VaultBase.depositAssets.8");
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
-            console.log("VaultBase.depositAssets.9");
             // nosemgrep
             for (uint i; i < v.len; ++i) {
                 IERC20(v.assets[i]).safeTransferFrom(msg.sender, address(v.strategy), v.amountsConsumed[i]);
             }
-            console.log("VaultBase.depositAssets.10.before deposit");
             v.value = v.strategy.depositAssets(v.amountsConsumed);
-            console.log("VaultBase.depositAssets.11.after deposit");
         }
 
         if (v.value == 0) {
             revert StrategyZeroDeposit();
         }
-        console.log("VaultBase.depositAssets.12");
 
         v.mintAmount =
             _mintShares($, v._totalSupply, v.value, v.totalValue, v.amountsConsumed, minSharesOut, v.assets, receiver);
 
-        console.log("VaultBase.depositAssets.13");
         $.withdrawRequests[receiver] = block.number;
 
-        console.log("VaultBase.depositAssets.14");
         emit DepositAssets(receiver, assets_, v.amountsConsumed, v.mintAmount);
     }
 

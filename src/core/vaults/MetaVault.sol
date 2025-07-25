@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
@@ -392,7 +391,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function vaultForDeposit() public view returns (address target) {
-        console.log("MV.vaultForDeposit");
         if (_cachedVaultForDeposit != address(0)) {
             return _cachedVaultForDeposit;
         }
@@ -401,14 +399,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function assetsForDeposit() external view returns (address[] memory) {
-        console.log("MV.assetsForDeposit");
         return IStabilityVault(vaultForDeposit()).assets();
     }
 
     /// @inheritdoc IMetaVault
     /// @dev MultiVault supports withdrawing from all sub-vaults. Return the vault from which to start withdrawing.
     function vaultForWithdraw() public view returns (address target) {
-        console.log("MV.vaultForWithdraw");
         if (_cachedVaultForWithdraw != address(0)) {
             return _cachedVaultForWithdraw;
         }
@@ -417,7 +413,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function assetsForWithdraw() external view returns (address[] memory) {
-        console.log("MV.assetsForWithdraw");
         return IStabilityVault(vaultForWithdraw()).assets();
     }
 
@@ -471,7 +466,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory assets_,
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
-        console.log("previewDepositAssets");
         address _targetVault = vaultForDeposit();
         uint targetVaultSharesOut;
         uint targetVaultStrategyValueOut;
@@ -501,7 +495,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function tvl() public view returns (uint tvl_, bool trusted_) {
-        console.log("tvl");
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
         bool notSafePrice;
@@ -541,17 +534,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IERC20
     function totalSupply() public view returns (uint _tvl) {
-        //console.log("totalSupply");uint temp = gasleft();
         // totalSupply is balance of peg asset
         (uint tvlUsd,) = tvl();
         (uint priceAsset,) = price();
         _tvl = Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
-        //console.log("totalSupply.result", temp - gasleft());
     }
 
     /// @inheritdoc IERC20
     function balanceOf(address account) public view returns (uint) {
-        console.log("MV.balanceOf");
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         return _balanceOf($, account, totalSupply());
     }
