@@ -350,7 +350,6 @@ Use `IMetaVault.addVault` method for MetaVault.
 `
 </details>
 
-
 ### Set vault fee
 
 Use `IPlatform.setCustomVaultFee`.
@@ -367,3 +366,4 @@ Use `IPlatform.setCustomVaultFee`.
 [{"type": "function","name": "setCustomVaultFee","inputs": [{"name": "vault","type": "address","internalType": "address"}, {"name": "platformFee","type": "uint256","internalType": "uint256"}],"outputs": [],"stateMutability": "nonpayable"}]
 `
 </details>
+
