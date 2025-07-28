@@ -17,7 +17,8 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.4.2: TODO
+///   1.4.2: add cachePrices - #348
+///   1.4.1: add LastBlockDefenseDisableMode
 ///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
 ///          - add whitelist for last-block-defense - #330
 ///          - add removeVault - #336
@@ -41,7 +42,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.0"; // todo
+    string public constant VERSION = "1.4.2";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -62,6 +63,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// Store block number of the transaction that disabled last-block-defense.
     /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
     uint internal transient _lastBlockDefenseDisabledTx;
+    IMetaVault.LastBlockDefenseDisableMode internal transient _lastBlockDefenseDisabledMode;
 
     address internal transient _cachedVaultForDeposit;
     address internal transient _cachedVaultForWithdraw;
@@ -237,11 +239,14 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function setLastBlockDefenseDisabledTx(bool isDisabled) external {
+    function setLastBlockDefenseDisabledTx(uint disableMode) external {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
 
-        _lastBlockDefenseDisabledTx = isDisabled ? block.number : 0;
+        _lastBlockDefenseDisabledTx =
+            disableMode == uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0) ? 0 : block.number;
+
+        _lastBlockDefenseDisabledMode = IMetaVault.LastBlockDefenseDisableMode(disableMode);
     }
 
     /// @inheritdoc IMetaVault
@@ -620,8 +625,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
         if (!$.lastBlockDefenseDisabled) {
-            $.lastTransferBlock[from] = block.number;
-            $.lastTransferBlock[to] = block.number;
+            if (_lastBlockDefenseDisabledMode != IMetaVault.LastBlockDefenseDisableMode.DISABLE_TX_DONT_UPDATE_MAPS_2) {
+                $.lastTransferBlock[to] = block.number;
+                $.lastTransferBlock[from] = block.number;
+            }
         }
         emit Transfer(from, to, amount);
     }
@@ -629,7 +636,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function _beforeDepositOrWithdraw(MetaVaultStorage storage $, address owner) internal {
         _checkLastBlockProtection($, owner);
         if (!$.lastBlockDefenseDisabled) {
-            $.lastTransferBlock[owner] = block.number;
+            if (_lastBlockDefenseDisabledMode != IMetaVault.LastBlockDefenseDisableMode.DISABLE_TX_DONT_UPDATE_MAPS_2) {
+                $.lastTransferBlock[owner] = block.number;
+            }
         }
     }
 

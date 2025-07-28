@@ -45,6 +45,16 @@ interface IMetaVault is IStabilityVault {
         mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
     }
 
+    /// @notice Types of last-block-defense disable modes
+    enum LastBlockDefenseDisableMode {
+        /// @notice Last-block-defense is enabled
+        ENABLED_0,
+        /// @notice Last-block-defense is disabled for the current tx, update and _beforeDepositOrWithdraw update maps
+        DISABLED_TX_UPDATE_MAPS_1,
+        /// @notice Last-block-defense is disabled for the current tx, do not update maps
+        DISABLE_TX_DONT_UPDATE_MAPS_2
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -163,7 +173,10 @@ interface IMetaVault is IStabilityVault {
     function changeWhitelist(address addr, bool addToWhitelist) external;
 
     /// @notice Allow whitelisted address to disable last-block-defense for the current block or enable it back
-    function setLastBlockDefenseDisabledTx(bool isDisabled) external;
+    /// @param disableMode See {LastBlockDefenseDisableMode}
+    /// 0 - the defence enabled
+    /// 1 - the defence disabled in tx, maps are updated
+    function setLastBlockDefenseDisabledTx(uint disableMode) external;
 
     /// @notice Allow to cache assets and vaults prices in the transient cache
     /// @param clear True - clear the cache, false - prepare the cache

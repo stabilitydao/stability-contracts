@@ -1037,13 +1037,10 @@ library SiloALMFLib {
         IPriceReader priceReader = SiloALMFLib._getPriceReader(platform);
         priceReader.preCalculatePriceTx(wrappedMetaVault);
 
-        //        priceReader = SiloALMFLib._getPriceReader(IControllable($.collateralAsset).platform());
-        //        priceReader.preCalculatePriceTx(address(0));
-
         // cache price of all sub-vaults
         IMetaVault metaVault = _getMetaVault(wrappedMetaVault);
         metaVault.cachePrices(false);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
     }
 
     function unprepareWriteOp(address platform, address wrappedMetaVault) internal {
@@ -1052,7 +1049,7 @@ library SiloALMFLib {
 
         IMetaVault metaVault = _getMetaVault(wrappedMetaVault);
         metaVault.cachePrices(true);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
     }
 
     function _getMetaVault(address wrappedMetaVault) internal view returns (IMetaVault) {

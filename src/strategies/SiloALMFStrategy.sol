@@ -41,6 +41,8 @@ import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
+///   1.1.0: Each write operation caches prices of MetaUSD - #348
+///   1.0.1: Use new version of setLastBlockDefenseDisabledTx
 ///   1.0.0: Initial version - #330
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloALMFStrategy is
@@ -59,7 +61,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -387,11 +389,4 @@ contract SiloALMFStrategy is
     }
 
     //endregion ----------------------------------- FarmingStrategy
-
-    //region ----------------------------------- Internal logic
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       INTERNAL LOGIC                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    //endregion ----------------------------------- Internal logic
 }
