@@ -25,7 +25,6 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
 
     /// @notice Ensure that the address can be added to whitelist and removed from it
     function testChangeWhitelistTransientCache() public {
-
         assertEq(priceReader.whitelistTransientCache(address(this)), false);
 
         vm.expectRevert(IControllable.NotOperator.selector);
@@ -71,7 +70,6 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
 
     /// @notice Ensure that getting price in cache mode less expensive than without cache
     function testPreCalculatePrices() public {
-
         // ------------------------------ Get prices from the price reader with enabled cache
         uint gas0 = gasleft();
         (uint priceMetaUsd,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_metaUSD);
@@ -109,7 +107,6 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
             gasVaultPriceNoCache2 < gasVaultPriceNoCache,
             "Gas cost for vault price with cache should be less than without cache"
         );
-
     }
 
     /// @notice Ensure that the price reader returns cached prices same as the not-cached values
@@ -124,25 +121,21 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
             SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,
             SonicConstantsLib.VAULT_C_USDC_S_36,
-
             SonicConstantsLib.VAULT_C_USDC_S_49,
             SonicConstantsLib.VAULT_C_USDC_Stability_Stream,
             SonicConstantsLib.VAULT_C_USDC_Stability_StableJack,
             SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore,
             SonicConstantsLib.VAULT_C_wS_SiMF_Valmore,
-
             SonicConstantsLib.VAULT_C_USDC_S_112,
             SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse,
             SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121,
             SonicConstantsLib.VAULT_C_scUSD_S_46,
             SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital,
-
             SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
             SonicConstantsLib.VAULT_C_wS_SiMF_Valmore,
             SonicConstantsLib.VAULT_C_wS_SiF_54,
             SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
             SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
-
             SonicConstantsLib.VAULT_LEV_SiL_stS_S
         ];
 
@@ -169,9 +162,7 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
         for (uint i = 0; i < vaults.length; i++) {
             assertEq(pricesNoCache[i], pricesCache[i], "Cached and not-cached prices should be equal");
             assertEq(
-                pricesNoCache[i],
-                pricesNoCache2[i],
-                "Not-cached prices should be equal to the prices after cache reset"
+                pricesNoCache[i], pricesNoCache2[i], "Not-cached prices should be equal to the prices after cache reset"
             );
         }
 

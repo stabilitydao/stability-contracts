@@ -17,7 +17,6 @@ interface IPriceReader {
     error NotWhitelistedTransientCache();
     //endregion --------------------------- Errors
 
-
     /// @notice Price of asset
     /// @dev Price of 1.0 amount of asset in USD
     /// @param asset Address of asset
