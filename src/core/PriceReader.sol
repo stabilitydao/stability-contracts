@@ -28,8 +28,6 @@ contract PriceReader is Controllable, IPriceReader {
     bytes32 private constant PRICEREADER_STORAGE_LOCATION =
         0x5fb640640fb9e5b309b8dbb32d70e4c1afbc916914ea7278d067186632e15f00;
 
-    error NotWhitelistedTransientCache();
-
     //endregion ---------------------------- Constants
 
     //region ---------------------------- Storage
@@ -338,7 +336,6 @@ contract PriceReader is Controllable, IPriceReader {
         bool safeSharePrice = $.safeSharePrice.contains(vault);
         (uint vaultOnChainPrice, bool trustedAssetPrice) = IStabilityVault(vault).price();
         if (safeSharePrice) {
-            // console.log("getVaultPrice.vault.1", temp - gasleft());
             return (vaultOnChainPrice, trustedAssetPrice);
         }
 

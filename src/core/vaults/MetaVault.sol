@@ -61,7 +61,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @notice Allow to temporally disable last-block-defence in the current tx
     /// Can be changed by whitelisted strategies only.
     /// Store block number of the transaction that disabled last-block-defense.
-    /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
     uint internal transient _lastBlockDefenseDisabledTx;
     IMetaVault.LastBlockDefenseDisableMode internal transient _lastBlockDefenseDisabledMode;
 
