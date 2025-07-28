@@ -28,7 +28,9 @@ import {console, Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 
 contract SiALMFUpgradeTest is Test {
-    uint public constant FORK_BLOCK = 39484599; // Jul-21-2025 08:14:43 AM +UTC
+    // uint public constant FORK_BLOCK = 39484599; // Jul-21-2025 08:14:43 AM +UTC
+    uint public constant FORK_BLOCK = 40550698; // Jul-28-2025 05:46:21 AM +UTC
+
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
     address internal multisig;
@@ -143,6 +145,8 @@ contract SiALMFUpgradeTest is Test {
     //    }
 
     function _testMultipleDepositWithdraw(uint baseAmount) internal {
+        _removeUnusedVaults();
+
         // ---------------------------------- Set whitelist for transient cache
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(strategy), true);
@@ -200,6 +204,13 @@ contract SiALMFUpgradeTest is Test {
             totalDeposited, totalWithdrawn, totalDeposited / 100 * 2, "Withdrawn amount does not match deposited amount"
         );
         assertEq(vault.balanceOf(address(this)), 0, "Shares should be zero after withdrawal");
+
+        vm.warp(block.timestamp + 7200);
+        deal(SonicConstantsLib.TOKEN_wS, IPlatform(PLATFORM).hardWorker(), 10e18); // emulate Merkl rewards
+
+        address hardWorker = IPlatform(PLATFORM).hardWorker();
+        vm.prank(hardWorker);
+        IVault(address(vault)).doHardWork();
     }
 
     //region ------------------------------------ Helpers
@@ -257,11 +268,11 @@ contract SiALMFUpgradeTest is Test {
         // implementations[1] = address(new MetaVaultAdapter());
         //implementations[2] = address(new Swapper());
 
-        vm.startPrank(multisig);
-        platform.cancelUpgrade();
+        // vm.startPrank(multisig);
+        // platform.cancelUpgrade();
 
         vm.startPrank(multisig);
-        platform.announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
+        platform.announcePlatformUpgrade("2025.08.0-alpha", proxies, implementations);
 
         skip(1 days);
         platform.upgrade();
@@ -391,22 +402,102 @@ contract SiALMFUpgradeTest is Test {
     }
 
     function _removeUnusedVaults() internal {
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+
         // todo UsdAmountLessThreshold(6074204700030295904090)
         //        vm.prank(multisig);
         //        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).removeVault(SonicConstantsLib.METAVAULT_metascUSD);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0xa51e7204054464e656B3658e7dBb63d9b0f150f1);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SiF);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0x96a8055090E87bfE18BdF3794E9D676F196EFd80);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0xd248c4b6Ec709FEeD32851A9F883AfeaC294aD30);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(0x7FC269E8A80d4cFbBCfaB99A6BcEAC06227E2336);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(
+            SonicConstantsLib.VAULT_C_USDC_Stability_StableJack
+        );
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
+
+        // _removeUnusedVaultsMetaScUsd();
     }
 
+    function _removeUnusedVaultsMetaScUsd() internal {
+        // there are 5 sub vaults in metascUSD
+        // two of them have target proportions 0.1%
+        // let's try to remove them completely
+
+        // --------------------------------- Set target proportions to 0
+        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 2e16);
+        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 2e16);
+
+        // --------------------------------- Withdraw liquidity from the sub vaults
+        _tryToWithdraw(
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+        );
+        _tryToWithdraw(
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+        );
+        _tryToWithdraw(
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+        );
+        _tryToWithdraw(
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+        );
+
+        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 0);
+        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 0);
+
+        // --------------------------------- Remove sub vaults
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_S_46); // index 0
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs); // index 1
+    }
+
+    function _tryToWithdraw(IMetaVault multiVault, address user, uint percents) internal {
+        uint balance = multiVault.balanceOf(user);
+        address[] memory assets = multiVault.assetsForWithdraw();
+
+        console.log("balance", balance);
+        console.log("subvalut", multiVault.vaultForWithdraw());
+
+        vm.prank(user);
+        multiVault.withdrawAssets(assets, balance * percents / 100_00, new uint[](1));
+
+        vm.roll(block.number + 6);
+    }
+
+    function _setProportions(address metaVault_, uint fromIndex, uint toIndex, uint min) internal {
+        IMetaVault metaVault = IMetaVault(metaVault_);
+        multisig = IPlatform(PLATFORM).multisig();
+
+        uint[] memory props = metaVault.targetProportions();
+        props[toIndex] = props[toIndex] + props[fromIndex] - min;
+        props[fromIndex] = min;
+
+        vm.prank(multisig);
+        metaVault.setTargetProportions(props);
+
+        //        props = metaVault.targetProportions();
+        //        uint[] memory current = metaVault.currentProportions();
+        //        for (uint i; i < current.length; ++i) {
+        //            console.log("i, current, target", i, current[i], props[i]);
+        //        }
+    }
     //endregion ------------------------------------ Helpers
 }

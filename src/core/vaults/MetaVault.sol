@@ -17,7 +17,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
-///   1.4.2: add cachePrices - #348
+///   1.4.2: add cachePrices - #348, use USD_THRESHOLD_REMOVE_VAULT in removeVault
 ///   1.4.1: add LastBlockDefenseDisableMode
 ///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
 ///          - add whitelist for last-block-defense - #330
@@ -46,6 +46,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
+
+    /// @notice Vault can be removed if its TVL is less than this value
+    uint public constant USD_THRESHOLD_REMOVE_VAULT = USD_THRESHOLD * 1000; // 1 cent
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
@@ -189,7 +192,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function removeVault(address vault) external onlyGovernanceOrMultisig {
-        MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, USD_THRESHOLD);
+        MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, USD_THRESHOLD_REMOVE_VAULT);
     }
 
     /// @inheritdoc IMetaVault
@@ -796,8 +799,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         if (amount == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
-        uint totalSupply_ = totalSupply();
-        if (amount > _balanceOf($, owner, totalSupply_)) {
+        uint _totalSupply = totalSupply();
+        if (amount > _balanceOf($, owner, _totalSupply)) {
             revert ERC20InsufficientBalance(owner, balanceOf(owner), amount);
         }
         if (assets_.length != minAssetAmountsOut.length) {
@@ -806,7 +809,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         _beforeDepositOrWithdraw($, owner);
 
-        uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply_);
+        uint sharesToBurn = _amountToShares(amount, $.totalShares, _totalSupply);
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         address _targetVault = vaultForWithdraw();
