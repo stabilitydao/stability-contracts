@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ERC20Upgradeable, IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -645,6 +646,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             if (_strategy.fuseMode() == uint(IStrategy.FuseMode.FUSE_OFF_0)) {
                 uint totalValue = _strategy.total();
                 uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
+                console.log("totalValue", totalValue);
+                console.log("value", value);
+                console.log("amountShares", amountShares);
+                console.log("localTotalSupply", localTotalSupply);
                 if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = value;

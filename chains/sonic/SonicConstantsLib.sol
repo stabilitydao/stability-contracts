@@ -481,7 +481,7 @@ library SonicConstantsLib {
 
     // ---------------------------------- Enclabc (https://github.com/EnclaveLabs/enclabs-protocol)
     address public constant ENCLABS_VTOKEN_USDC = 0x87C69a8fB7F04b7890F48A1577a83788683A2036;
-    address public constant ENCLABS_VTOKEN_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E9;
+    address public constant ENCLABS_VTOKEN_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
 
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -34,7 +35,10 @@ contract CompoundV2Strategy is StrategyBase {
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundV2Strategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant COMPOUND_V2_STRATEGY_STORAGE_LOCATION =
-        0; // todo
+        0x521f61dff1434739ba1cce3408ca24814df0ac37d5c1f8d308e97ca6d9831800; // erc7201:stability.CompoundV2Strategy
+
+    error MintError(uint errorCode);
+    error RedeemError(uint errorCode);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -46,6 +50,7 @@ contract CompoundV2Strategy is StrategyBase {
         address market;
     }
 
+    //region ----------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -57,11 +62,20 @@ contract CompoundV2Strategy is StrategyBase {
         }
         address[] memory _assets = new address[](1);
         _assets[0] = IVToken(addresses[2]).underlying();
-        __StrategyBase_init(addresses[0], StrategyIdLib.COMPOUND_V2, addresses[1], _assets, address(0), type(uint).max);
-        _getStorage().market = addresses[2];
 
-        IERC20(_assets[0]).forceApprove(IVToken(addresses[2]), type(uint).max);
+        __StrategyBase_init(
+            addresses[0], // platform
+            StrategyIdLib.COMPOUND_V2,
+            addresses[1], // vault
+            _assets,
+            address(0), // underlying
+            type(uint).max
+        );
+        _getStorage().market = addresses[2]; // todo: try to use market as underlying
+
+        IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max);
     }
+    //endregion ----------------------- Initialization
 
     //region ----------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -88,9 +102,9 @@ contract CompoundV2Strategy is StrategyBase {
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
         CompoundV2StrategyStorage storage $ = _getStorage();
-        address market = $.market;
-        string memory shortAddr = SharedLib.shortAddress(IVToken(market));
-        return (string.concat(IERC20Metadata(market).symbol(), " ", shortAddr), true);
+        address _market = $.market;
+        string memory shortAddr = SharedLib.shortAddress(_market);
+        return (string.concat(IERC20Metadata(_market).symbol(), " ", shortAddr), true);
     }
 
     /// @inheritdoc IStrategy
@@ -126,7 +140,9 @@ contract CompoundV2Strategy is StrategyBase {
     /// @inheritdoc IStrategy
     function total() public view override returns (uint) {
         CompoundV2StrategyStorage storage $ = _getStorage();
-        return StrategyLib.balance($.market); // todo
+        // total is a number of cTokens on the strategy balance
+        // this number is changes on deposit/withdraw only
+        return StrategyLib.balance($.market);
     }
 
     /// @inheritdoc IStrategy
@@ -138,13 +154,14 @@ contract CompoundV2Strategy is StrategyBase {
     /// @inheritdoc IStrategy
     function getRevenue() public view override returns (address[] memory assets_, uint[] memory amounts) {
         CompoundV2StrategyStorage storage $ = _getStorage();
-        uint newPrice = _getSharePrice($.market);
-        (assets_, amounts) = _getRevenue(newPrice, $.market);
+        address _market = $.market;
+        uint newPrice = _getSharePrice(_market);
+        (assets_, amounts) = _getRevenue(newPrice, _market);
     }
 
     /// @inheritdoc IStrategy
     function autoCompoundingByUnderlyingProtocol() public pure override returns (bool) {
-        return true; // todo
+        return true;
     }
 
     /// @inheritdoc IStrategy
@@ -158,31 +175,38 @@ contract CompoundV2Strategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function poolTvl() public view override returns (uint tvlUsd) {
-        address market = _getStorage().market;
-        address asset = IVToken(market).underlying();
+        console.log("!!!!!!!!!!! poolTvl");
+        address _market = _getStorage().market;
+        address asset = IVToken(_market).underlying();
 
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
 
         // get price of 1 amount of asset in USD with decimals 18
-        // assume that {trusted} value doesn't matter here
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
+        uint totalSupply = IVToken(_market).totalSupply(); // 8 decimals
+        uint exchangeRate = IVToken(_market).exchangeRateStored(); // underlying decimals * 1e18 / 1e8
+        uint underlyingTotal = _convertCTokensToAmount(totalSupply, exchangeRate);
 
-        return IVToken(market).totalSupply() * price / (10 ** IERC20Metadata(asset).decimals());
+        return underlyingTotal * price / (10 ** IERC20Metadata(asset).decimals());
     }
 
     /// @inheritdoc IStrategy
     function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
-        address market = _getStorage().market;
-        address asset = IVToken(market).underlying();
+        console.log("!!!!!!!!!!! maxWithdrawAssets");
+        address _market = _getStorage().market;
+        address asset = IVToken(_market).underlying();
 
-        // currently available reserves in the pool
-        uint availableLiquidity = IERC20(asset).balanceOf(market);
+        // currently available liquidity in the pool
+        uint availableLiquidity = IERC20(asset).balanceOf(_market);
 
-        // aToken balance of the strategy
-        uint aTokenBalance = IERC20(market).balanceOf(address(this));
+        // balance of the strategy
+        uint cTokenBalance = IVToken(_market).balanceOf(address(this)); // 8 decimals
+        uint exchangeRate = IVToken(_market).exchangeRateStored(); // underlying decimals * 1e18 / 1e8
+        uint underlyingBalance = _convertCTokensToAmount(cTokenBalance, exchangeRate);
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
+        amounts[0] = Math.min(underlyingBalance, availableLiquidity);
     }
     //endregion ----------------------- View functions
 
@@ -194,18 +218,26 @@ contract CompoundV2Strategy is StrategyBase {
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
+        console.log("!!!!!!!!!!! deposit", amounts[0]);
         CompoundV2StrategyStorage storage $ = _getStorage();
 
-        IVToken market = IVToken($.market);
+        IVToken _market = IVToken($.market);
         value = amounts[0];
 
-        if (value != 0) {
-            market.mint(amounts[0]); // todo check error
+
+        uint cTokenBalanceBefore = StrategyLib.balance(address(_market));
+        if (amounts[0] != 0) {
+            uint errorCode = _market.mint(amounts[0]);
+            require(errorCode == 0, MintError(errorCode));
+
+            value = StrategyLib.balance(address(_market)) - cTokenBalanceBefore;
 
             if ($.lastSharePrice == 0) {
-                $.lastSharePrice = _getSharePrice(address(market));
+                $.lastSharePrice = _getSharePrice(address(_market));
             }
         }
+        console.log("Deposit value, amount", value, amounts[0]);
+        console.log("Balance after mint:", StrategyLib.balance(address(_market)));
     }
 
     /// @inheritdoc StrategyBase
@@ -247,6 +279,7 @@ contract CompoundV2Strategy is StrategyBase {
         address[] memory, /*assets_*/
         uint[] memory amountsMax
     ) internal pure override returns (uint[] memory amountsConsumed, uint value) {
+        console.log("!!!!!!!!!!! _previewDepositAssets");
         return _previewDepositAssets(amountsMax);
     }
 
@@ -264,28 +297,35 @@ contract CompoundV2Strategy is StrategyBase {
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
+        console.log("!!!!!!!!!!! _withdrawAssets", value);
         amountsOut = new uint[](1);
 
         CompoundV2StrategyStorage storage $ = _getStorage();
-        IVToken market = IVToken($.market);
-        address depositedAsset = market.underlying();
+        IVToken _market = IVToken($.market);
+        address depositedAsset = _market.underlying();
 
-        address[] memory _assets = assets();
-
+        console.log("balance before redeem:", StrategyLib.balance(address(_market)));
+        console.log("value to redeem:", value);
         uint initialValue = StrategyLib.balance(depositedAsset);
-        market.redeem(value); // todo check error
+        uint errorCode = _market.redeem(value);
+        require(errorCode == 0, RedeemError(errorCode));
         amountsOut[0] = StrategyLib.balance(depositedAsset) - initialValue;
+        console.log("balance after redeem:", StrategyLib.balance(address(_market)));
+        console.log("amountsOut[0]:", amountsOut[0]);
 
         IERC20(depositedAsset).safeTransfer(receiver, amountsOut[0]);
     }
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        console.log("!!!!!!!!!!! _assetsAmounts");
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         CompoundV2StrategyStorage storage $ = _getStorage();
+
         assets_ = $base._assets;
+
         amounts_ = new uint[](1);
-        amounts_[0] = StrategyLib.balance($.market);
+        amounts_[0] = _convertCTokensToAmount(StrategyLib.balance($.market), IVToken($.market).exchangeRateStored());
     }
 
     /// @inheritdoc StrategyBase
@@ -299,6 +339,7 @@ contract CompoundV2Strategy is StrategyBase {
             uint[] memory __rewardAmounts
         )
     {
+        console.log("!!!!!!!!!!! _claimRevenue");
         CompoundV2StrategyStorage storage $ = _getStorage();
 
         uint newPrice = _getSharePrice($.market);
@@ -322,14 +363,14 @@ contract CompoundV2Strategy is StrategyBase {
     }
 
     function _getSharePrice(address u) internal view returns (uint) {
-        IVToken market = IVToken(u);
-        return market.exchangeRateStored(); // todo use exchangeRateCurrent in write function
+        return IVToken(u).exchangeRateStored();
     }
 
     function _getRevenue(
         uint newPrice,
         address u
     ) internal view returns (address[] memory __assets, uint[] memory amounts) {
+        console.log("!!!!!!!!!!! _getRevenue");
         CompoundV2StrategyStorage storage $ = _getStorage();
         __assets = assets();
         amounts = new uint[](1);
@@ -343,15 +384,20 @@ contract CompoundV2Strategy is StrategyBase {
         }
     }
 
-    function _generateDescription(address market) internal view returns (string memory) {
+    function _generateDescription(address market_) internal view returns (string memory) {
         //slither-disable-next-line calls-loop
         return string.concat(
             "Supply ",
-            IERC20Metadata(IVToken(market).underlying()).symbol(),
+            IERC20Metadata(IVToken(market_).underlying()).symbol(),
             " to ",
-            IVToken(market).name(),
-            SharedLib.shortAddress(IVToken(market))
+            IVToken(market_).name(),
+            SharedLib.shortAddress(market_)
         );
+    }
+
+    /// @param exchangeRate The exchange rate of cTokens to underlying asset = underlying decimals * 1e18 / 1e8
+    function _convertCTokensToAmount(uint cTokens, uint exchangeRate) internal pure returns (uint amount) {
+        return cTokens * exchangeRate / 1e18;
     }
     //endregion ----------------------- Internal logic
 }

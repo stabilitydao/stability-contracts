@@ -232,7 +232,7 @@ interface IVToken {
     uint8 decimals_,
     address admin_,
     address accessControlManager_,
-    VTokenInterface.RiskManagementInit memory riskManagement,
+    RiskManagementInit memory riskManagement,
     uint256 reserveFactorMantissa_
   ) external;
 
