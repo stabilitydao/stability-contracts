@@ -16,29 +16,32 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
 
     struct State {
         uint strategyTotal;
-        uint cTokenStrategyBalance;
         uint assetUserBalance;
         uint assetStrategyBalance;
         uint userVaultBalance;
         uint assetVaultBalance;
+        uint underlyingUserBalance;
+        uint underlyingStrategyBalance;
     }
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(FORK_BLOCK);
         allowZeroApr = true;
-        duration1 = 0.1 hours;
-        duration2 = 0.1 hours;
-        duration3 = 0.1 hours;
+        duration1 = 10 hours;
+        duration2 = 10 hours;
+        duration3 = 10 hours;
         console.log("erc7201:stability.CompoundV2Strategy");
         console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundV2Strategy")) - 1)) & ~bytes32(uint256(0xff)));
     }
 
     /// @notice Compare APR with https://stability.market/
     function testStrategies() public universalTest {
-//        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_USDC);
-        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wS);
-//        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_wS);
+        // _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_scUSD);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_stS);
     }
 
     //region --------------------------------- Internal functions
@@ -48,17 +51,10 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         // deposit - withdraw
         _testDepositWithdraw(1000);
 
-        // todo: view functions
-        // underlying, pool tvl, market, max deposit, hardworkOnDeposit and so on
+        // deposit - withdraw underlying
+        _testDepositWithdrawUnderlying(1000);
 
-        // todo: _preHardWork();
-
-        // todo: max withdraw
-
-        // todo: max deposit
-
-
-        // todo: deposit, hardwork, withdraw, emergency
+        _testMaxDeposit();
     }
 
     function _addStrategy(address aToken) internal {
@@ -85,13 +81,13 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         // --------------------------------------------- Initial deposit (dead shares)
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = 100 * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
-        _tryToDepositToVault(vault, amountsToDeposit, address(1));
+        _tryToDepositToVault(vault, amountsToDeposit, address(1), true);
 
         // --------------------------------------------- Deposit
         amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
         State memory state0 = _getState();
-        (uint depositedAssets, uint depositedValue) = _tryToDepositToVault(vault, amountsToDeposit, address(this));
+        (, uint depositedValue) = _tryToDepositToVault(vault, amountsToDeposit, address(this), true);
         vm.roll(block.number + 6);
         State memory state1 = _getState();
 
@@ -112,6 +108,64 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
             "user should get back all assets"
         );
     }
+
+    function _testDepositWithdrawUnderlying(uint amountNoDecimals) internal {
+        uint snapshot = vm.snapshotState();
+
+        IStrategy strategy = IStrategy(currentStrategy);
+        address vault = strategy.vault();
+
+        // --------------------------------------------- Initial deposit (dead shares)
+        uint[] memory amountsToDeposit = new uint[](1);
+        amountsToDeposit[0] = 100 * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+        _tryToDepositToVault(vault, amountsToDeposit, address(1), true);
+
+        // --------------------------------------------- Deposit
+        amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
+
+        State memory state0 = _getState();
+        (, uint depositedValue) = _tryToDepositToVaultUnderlying(vault, amountsToDeposit, address(this));
+        vm.roll(block.number + 6);
+        State memory state1 = _getState();
+
+        // --------------------------------------------- Withdraw all
+        uint withdrawn1 = _tryToWithdrawFromVaultUnderlying(vault, depositedValue, address(this));
+        vm.roll(block.number + 6);
+        State memory state2 = _getState();
+
+        vm.revertToState(snapshot);
+
+        // --------------------------------------------- Check results
+        assertEq(state1.strategyTotal, state0.strategyTotal + amountsToDeposit[0], "Total should increase after deposit");
+        assertEq(state2.strategyTotal, state0.strategyTotal, "Total should decrease back after withdraw all");
+        assertApproxEqAbs(
+            amountsToDeposit[0],
+            withdrawn1,
+            amountsToDeposit[0] / 1_000_000,
+            "user should get back all underlying assets"
+        );
+
+        assertEq(state1.underlyingStrategyBalance, state0.underlyingStrategyBalance + amountsToDeposit[0], "Underlying strategy balance should increase after deposit");
+        assertEq(state2.underlyingStrategyBalance, state0.underlyingStrategyBalance, "Underlying strategy balance should decrease back after withdraw all");
+    }
+
+    function _testMaxDeposit() internal {
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // --------------------- Ensure that we cannot deposit more than maxDepositAssets
+        uint[] memory tooHighAmounts = strategy.maxDepositAssets();
+        tooHighAmounts[0] = tooHighAmounts[0] * 101 / 100;
+
+        uint snapshot = vm.snapshotState();
+        _tryToDepositToVault(strategy.vault(), tooHighAmounts, address(this), false);
+        vm.revertToState(snapshot);
+
+        // --------------------- Ensure that we can deposit maxDepositAssets
+        snapshot = vm.snapshotState();
+        uint[] memory amounts = strategy.maxDepositAssets();
+        _tryToDepositToVault(strategy.vault(), amounts, address(this), true);
+        vm.revertToState(snapshot);
+    }
     //endregion --------------------------------- Internal functions
 
     //region --------------------------------- Helpers
@@ -120,7 +174,8 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
         address vault = strategy.vault();
         state.strategyTotal = strategy.total();
-        state.cTokenStrategyBalance = IERC20(CompoundV2Strategy(address(strategy)).market()).balanceOf(currentStrategy);
+        state.underlyingStrategyBalance = IERC20(strategy.underlying()).balanceOf(currentStrategy);
+        state.underlyingUserBalance = IERC20(strategy.underlying()).balanceOf(address(this));
         state.assetUserBalance = IERC20(strategy.assets()[0]).balanceOf(address(this));
         state.assetStrategyBalance = IERC20(strategy.assets()[0]).balanceOf(currentStrategy);
         state.userVaultBalance = IERC20(vault).balanceOf(address(this));
@@ -132,9 +187,45 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     function _tryToDepositToVault(
         address vault,
         uint[] memory amounts_,
-        address user
+        address user,
+        bool success
     ) internal returns (uint deposited, uint values) {
         address[] memory assets = IVault(vault).assets();
+        // ----------------------------- Prepare amount on user's balance
+        _dealAndApprove(user, vault, assets, amounts_);
+        // console.log("Deposit to vault", assets[0], amounts_[0]);
+
+        // ----------------------------- Try to deposit assets to the vault
+        uint valuesBefore = IERC20(vault).balanceOf(user);
+
+        if (! success) {
+            vm.expectRevert();
+        }
+        vm.prank(user);
+        IStabilityVault(vault).depositAssets(assets, amounts_, 0, user);
+
+        return (amounts_[0], IERC20(vault).balanceOf(user) - valuesBefore);
+    }
+
+    function _tryToWithdrawFromVault(address vault, uint values, address user) internal returns (uint withdrawn) {
+        address[] memory _assets = IVault(vault).assets();
+
+        uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
+
+        vm.prank(user);
+        IStabilityVault(vault).withdrawAssets(_assets, values, new uint[](1));
+
+        return IERC20(_assets[0]).balanceOf(user) - balanceBefore;
+    }
+
+    function _tryToDepositToVaultUnderlying(
+        address vault,
+        uint[] memory amounts_,
+        address user
+    ) internal returns (uint deposited, uint values) {
+        address[] memory assets = new address[](1);
+        assets[0] = IVault(vault).strategy().underlying();
+
         // ----------------------------- Prepare amount on user's balance
         _dealAndApprove(user, vault, assets, amounts_);
         // console.log("Deposit to vault", assets[0], amounts_[0]);
@@ -148,8 +239,9 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         return (amounts_[0], IERC20(vault).balanceOf(user) - valuesBefore);
     }
 
-    function _tryToWithdrawFromVault(address vault, uint values, address user) internal returns (uint withdrawn) {
-        address[] memory _assets = IVault(vault).assets();
+    function _tryToWithdrawFromVaultUnderlying(address vault, uint values, address user) internal returns (uint withdrawn) {
+        address[] memory _assets = new address[](1);
+        _assets[0] = IVault(vault).strategy().underlying();
 
         uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
 

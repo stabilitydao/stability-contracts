@@ -219,8 +219,8 @@ library SonicLib {
         factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
 
         p.initAddresses = new address[](3);
-        p.initAddresses[0] = SonicConstantsLib.ENCLABS_VTOKEN_USDC;
-        p.initAddresses[1] = SonicConstantsLib.ENCLABS_VTOKEN_wS;
+        p.initAddresses[0] = SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC;
+        p.initAddresses[1] = SonicConstantsLib.ENCLABS_VTOKEN_CORE_wS;
         p.initAddresses[2] = SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD;
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);

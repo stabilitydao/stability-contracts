@@ -480,8 +480,10 @@ library SonicConstantsLib {
     address public constant STABILITY_MARKET_Brunch = 0x680F8A574b0273f26A314cA61466c0A4f1E2d95e;
 
     // ---------------------------------- Enclabc (https://github.com/EnclaveLabs/enclabs-protocol)
-    address public constant ENCLABS_VTOKEN_USDC = 0x87C69a8fB7F04b7890F48A1577a83788683A2036;
-    address public constant ENCLABS_VTOKEN_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
+    address public constant ENCLABS_VTOKEN_CORE_USDC = 0x87C69a8fB7F04b7890F48A1577a83788683A2036;
+    address public constant ENCLABS_VTOKEN_CORE_scUSD = 0x6770aF27FC5233A70B85BFf631061400a09d2e1c;
+    address public constant ENCLABS_VTOKEN_CORE_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
+    address public constant ENCLABS_VTOKEN_CORE_stS = 0xe544e51bF20AB186B6b7b1A9095C8BC1E3f203f5;
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
 
 }
