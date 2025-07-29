@@ -41,6 +41,7 @@ import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
+///   1.0.1: Use new version of setLastBlockDefenseDisabledTx
 ///   1.0.0: Initial version - #330
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloALMFStrategy is
@@ -59,7 +60,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -265,9 +266,9 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(0);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -321,9 +322,9 @@ contract SiloALMFStrategy is
         address[] memory _assets = assets();
 
         IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(0);
     }
 
     /// @inheritdoc StrategyBase
@@ -332,9 +333,9 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
         IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(0);
     }
 
     /// @inheritdoc IStrategy
@@ -352,9 +353,9 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         SiloALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(0);
     }
     //endregion ----------------------------------- Strategy base
 
@@ -372,9 +373,9 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
         IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(true);
+        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
-        metaVault.setLastBlockDefenseDisabledTx(false);
+        metaVault.setLastBlockDefenseDisabledTx(0);
     }
 
     /// @inheritdoc IFarmingStrategy
