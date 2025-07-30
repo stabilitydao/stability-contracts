@@ -6,7 +6,6 @@ import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
-import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVToken} from "../../src/integrations/compoundv2/IVToken.sol";

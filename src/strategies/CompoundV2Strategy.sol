@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IEnclabsRewardDistributor} from "../integrations/compoundv2/IEnclabsRewardDistributor.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IComptroller} from "../integrations/compoundv2/IComptroller.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -11,9 +10,7 @@ import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IVToken} from "../integrations/compoundv2/IVToken.sol";
-import {IVault} from "../interfaces/IVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";
@@ -40,6 +37,7 @@ contract CompoundV2Strategy is StrategyBase {
 
     error MintError(uint errorCode);
     error RedeemError(uint errorCode);
+    error AccrueInterestError(uint errorCode);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -344,7 +342,8 @@ contract CompoundV2Strategy is StrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address market = $base._underlying;
 
-        IVToken(market).accrueInterest();
+        uint errorCode = IVToken(market).accrueInterest();
+        require(errorCode == 0, AccrueInterestError(errorCode));
 
         uint newPrice = _getSharePrice(market);
         (__assets, __amounts) = _getRevenue(newPrice, market);
