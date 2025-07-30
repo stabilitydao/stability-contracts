@@ -42,6 +42,7 @@ import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperL
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -216,6 +217,15 @@ library SonicLib {
         p.initNums = new uint[](0);
         p.initTicks = new int24[](0);
         factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
+
+        p.initAddresses = new address[](3);
+        p.initAddresses[0] = SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC;
+        p.initAddresses[1] = SonicConstantsLib.ENCLABS_VTOKEN_CORE_wS;
+        p.initAddresses[2] = SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD;
+        p.initNums = new uint[](0);
+        p.initTicks = new int24[](0);
+        factory.setStrategyAvailableInitParams(StrategyIdLib.COMPOUND_V2, p);
+
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
@@ -241,6 +251,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()), false);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
