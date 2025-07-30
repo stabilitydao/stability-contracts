@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 /// @title Oracle Vault Price Interface
 /// @author ruby (https://github.com/alexandersazonof)
-/// @notice Interface for the OracleVaultPrice contract, which aggregates prices from multiple oracles for vaults using a quorum-based median mechanism.
-interface IOracleVaultPrice {
+/// @notice Interface for the VaultPriceOracle contract, which aggregates prices from multiple oracles for vaults using a quorum-based median mechanism.
+interface IVaultPriceOracle {
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -43,6 +43,14 @@ interface IOracleVaultPrice {
     /// @param timestamp The timestamp of the aggregation.
     event PriceUpdated(address indexed vault, uint256 price, uint256 roundId, uint256 timestamp);
 
+    /// @notice Emitted when a new validator is added.
+    /// @param validator The address of the added validator.
+    event ValidatorAdded(address indexed validator);
+
+    /// @notice Emitted when a validator is removed.
+    /// @param validator The address of the removed validator.
+    event ValidatorRemoved(address indexed validator);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -57,20 +65,20 @@ interface IOracleVaultPrice {
     /// @notice Retrieves a specific observation for a vault, round, and oracle.
     /// @param vault The address of the vault.
     /// @param roundId The ID of the round.
-    /// @param oracle The address of the oracle.
+    /// @param validator The address of the validator.
     /// @return price The submitted price.
     /// @return timestamp The submission timestamp.
-    function observations(address vault, uint256 roundId, address oracle) external view returns (uint256 price, uint256 timestamp);
+    function observations(address vault, uint256 roundId, address validator) external view returns (uint256 price, uint256 timestamp);
 
-    /// @notice Checks if an address is an authorized oracle.
-    /// @param oracle The address to check.
+    /// @notice Checks if an address is an authorized validator.
+    /// @param validator The address to check.
     /// @return True if authorized, false otherwise.
-    function authorizedOracles(address oracle) external view returns (bool);
+    function authorizedValidator(address validator) external view returns (bool);
 
-    /// @notice Retrieves an oracle address from the list by index.
+    /// @notice Retrieves an validator address from the list by index.
     /// @param index The index in the oracle list.
-    /// @return The address of the oracle at that index.
-    function oracleList(uint256 index) external view returns (address);
+    /// @return The address of the validator at that index.
+    function validatorList(uint256 index) external view returns (address);
 
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
@@ -92,20 +100,22 @@ interface IOracleVaultPrice {
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    function initialize(address platform_, uint256 _minQuorum, address[] memory _validator, uint256 _maxPriceAge) external;
+
     /// @notice Submits a price for a vault in the current round.
-    /// @dev Can only be called by authorized oracles.
+    /// @dev Can only be called by authorized validators.
     /// @param _vault The address of the vault.
     /// @param _price The price to submit.
     /// @param _roundId The ID of the round (must match current).
     function submitPrice(address _vault, uint256 _price, uint256 _roundId) external;
 
-    /// @notice Adds a new oracle to the authorized list.
+    /// @notice Adds a new validator to the authorized list.
     /// @dev Restricted to governance or multisig.
-    /// @param _oracle The address of the oracle to add.
-    function addOracle(address _oracle) external;
+    /// @param _validator The address of the validator to add.
+    function addValidator(address _validator) external;
 
-    /// @notice Removes an oracle from the authorized list.
+    /// @notice Removes an validator from the authorized list.
     /// @dev Restricted to governance or multisig.
-    /// @param _oracle The address of the oracle to remove.
-    function removeOracle(address _oracle) external;
+    /// @param _validator The address of the validator to remove.
+    function removeValidator(address _validator) external;
 }
