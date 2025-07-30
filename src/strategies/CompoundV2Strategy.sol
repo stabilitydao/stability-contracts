@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-
-import {console} from "forge-std/console.sol";
 import {IEnclabsRewardDistributor} from "../integrations/compoundv2/IEnclabsRewardDistributor.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IComptroller} from "../integrations/compoundv2/IComptroller.sol";
@@ -206,7 +204,7 @@ contract CompoundV2Strategy is StrategyBase {
     function maxDepositAssets() public view override returns (uint[] memory amounts) {
         address _underlying = _getStrategyBaseStorage()._underlying;
         uint supplyCap = IComptroller(IVToken(_underlying).comptroller()).supplyCaps(_underlying);
-        if (supplyCap != type(uint256).max) {
+        if (supplyCap != type(uint).max) {
             uint vTokenSupply = IVToken(_underlying).totalSupply();
             uint totalSupply = _tokensToAmount(vTokenSupply, IVToken(_underlying).exchangeRateStored());
 
@@ -255,17 +253,6 @@ contract CompoundV2Strategy is StrategyBase {
         uint[] memory /*rewardAmounts_*/
     ) internal override returns (uint earnedExchangeAsset) {
         // do nothing
-
-//        // todo
-//        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-//        IComptroller c = IComptroller(IVToken($base._underlying).comptroller());
-//        address[] memory rewardDistributors = c.getRewardDistributors();
-//
-//        for (uint i; i < rewardDistributors.length; ++i) {
-//            IEnclabsRewardDistributor rd = IEnclabsRewardDistributor(rewardDistributors[i]);
-//            console.log("reward token", rd.rewardToken());
-//            console.log(rd.rewardTokenAccrued(address(this)));
-//        }
     }
 
     /// @inheritdoc StrategyBase
@@ -282,10 +269,12 @@ contract CompoundV2Strategy is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _previewDepositAssets(uint[] memory amountsMax) internal view override returns (
-        uint[] memory amountsConsumed,
-        uint value
-    ) {
+    function _previewDepositAssets(uint[] memory amountsMax)
+        internal
+        view
+        override
+        returns (uint[] memory amountsConsumed, uint value)
+    {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amountsMax[0];
@@ -335,16 +324,21 @@ contract CompoundV2Strategy is StrategyBase {
         assets_ = $base._assets;
 
         amounts_ = new uint[](1);
-        amounts_[0] = _tokensToAmount(StrategyLib.balance($base._underlying), IVToken($base._underlying).exchangeRateStored());
+        amounts_[0] =
+            _tokensToAmount(StrategyLib.balance($base._underlying), IVToken($base._underlying).exchangeRateStored());
     }
 
     /// @inheritdoc StrategyBase
-    function _claimRevenue() internal override returns (
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    ) {
+    function _claimRevenue()
+        internal
+        override
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
+    {
         CompoundV2StrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address market = $base._underlying;
@@ -358,7 +352,7 @@ contract CompoundV2Strategy is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed ) {
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
         CompoundV2StrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
 
@@ -375,9 +369,7 @@ contract CompoundV2Strategy is StrategyBase {
         IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }
 
-    function _previewDepositUnderlying(uint amount) internal view override returns (
-        uint[] memory amountsConsumed
-    ) {
+    function _previewDepositUnderlying(uint amount) internal view override returns (uint[] memory amountsConsumed) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = _tokensToAmount(amount, IVToken($base._underlying).exchangeRateStored());
@@ -431,6 +423,7 @@ contract CompoundV2Strategy is StrategyBase {
     function _tokensToAmount(uint cTokens, uint exchangeRate) internal pure returns (uint amount) {
         return cTokens * exchangeRate / 1e18;
     }
+
     function _amountToTokens(uint amount, uint exchangeRate) internal pure returns (uint cTokens) {
         return amount * 1e18 / exchangeRate;
     }
