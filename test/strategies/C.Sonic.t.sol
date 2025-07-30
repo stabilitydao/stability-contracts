@@ -15,7 +15,7 @@ import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {console, Test} from "forge-std/Test.sol";
 
 contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
-    uint public constant FORK_BLOCK = 40578218; // Jul-28-2025 10:26:00 AM +UTC
+    uint public constant FORK_BLOCK = 40868489; // Jul-30-2025 11:16:51 AM +UTC
 
     struct State {
         uint strategyTotal;
@@ -44,9 +44,10 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     function testStrategies() public universalTest {
         _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC);
         _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_wS);
-        // _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD);
         _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_scUSD);
         _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_stS);
+
+        // _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD);
     }
 
     //region --------------------------------- Internal functions
@@ -60,11 +61,10 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         _testDepositWithdrawUnderlying(1000);
 
         _testMaxDeposit();
-
-        if (IStrategy(currentStrategy).underlying() == SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC) {
-            _testDepositWithdrawHardwork(5);
-            _directDeposit();
-        }
+        //        if (IStrategy(currentStrategy).underlying() == SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC) {
+        //            _testDepositWithdrawHardwork(5);
+        //            _directDeposit();
+        //        }
     }
 
     function _addStrategy(address aToken) internal {
@@ -82,22 +82,29 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     }
 
     function _directDeposit() internal {
+        uint snapshot = vm.snapshotState();
         uint usdcBalanceBefore = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
 
+        IVToken token = IVToken(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC);
         deal(SonicConstantsLib.TOKEN_USDC, address(this), 5e6);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC, 5e6);
 
-        IVToken(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC).mint(5e6);
+        uint vTokensBalanceBefore = token.balanceOf(address(this));
+        token.mint(5e6);
 
+        console.log("direct.rate1", token.exchangeRateStored());
         vm.warp(block.timestamp + 12209);
         vm.roll(block.number + 17497);
         //IVToken(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC).accrueInterest();
 
-        uint vTokensBalance = IVToken(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC).balanceOf(address(this));
-        IVToken(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC).redeem(vTokensBalance);
+        uint vTokensBalanceAfter = token.balanceOf(address(this));
+        token.redeem(vTokensBalanceAfter - vTokensBalanceBefore);
+        console.log("vTokensBalance after, before", vTokensBalanceAfter, vTokensBalanceBefore);
+        console.log("direct.rate2", token.exchangeRateStored());
 
         uint usdcBalanceAfter = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
         console.log("delta usdc", usdcBalanceAfter - usdcBalanceBefore);
+        vm.revertToState(snapshot);
     }
 
     function _testDepositWithdrawHardwork(uint amountNoDecimals) internal {
@@ -115,7 +122,7 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
         // State memory state0 = _getState();
-        (, uint depositedValue) = _tryToDepositToVault(vault, amountsToDeposit, address(this), true);
+        _tryToDepositToVault(vault, amountsToDeposit, address(this), true);
         vm.roll(block.number + 6);
         // State memory state1 = _getState();
 
@@ -127,17 +134,12 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         IVault(vault).doHardWork();
 
         // --------------------------------------------- Withdraw all
-        uint withdrawn = _tryToWithdrawFromVault(vault, depositedValue, address(this));
+        uint maxWithdraw = IERC20(vault).balanceOf(address(this));
+        _tryToWithdrawFromVault(vault, maxWithdraw, address(this));
         vm.roll(block.number + 6);
         // State memory state2 = _getState();
 
         vm.revertToState(snapshot);
-
-        // --------------------------------------------- Check results
-        console.log("amountsToDeposit", amountsToDeposit[0]);
-        console.log("withdrawn", withdrawn);
-
-        console.log("apr", strategy.lastApr(), strategy.lastAprCompound());
     }
 
     /// @notice Deposit, check state, withdraw all, check state

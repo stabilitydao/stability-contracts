@@ -230,7 +230,6 @@ contract CompoundV2Strategy is StrategyBase {
         CompoundV2StrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         IVToken _market = IVToken($base._underlying);
-        value = amounts[0];
 
         uint cTokenBalanceBefore = StrategyLib.balance(address(_market));
         if (amounts[0] != 0) {
@@ -244,6 +243,8 @@ contract CompoundV2Strategy is StrategyBase {
                 $.lastSharePrice = _getSharePrice(address(_market));
             }
         }
+
+        return value;
     }
 
     /// @inheritdoc StrategyBase
@@ -342,6 +343,8 @@ contract CompoundV2Strategy is StrategyBase {
         CompoundV2StrategyStorage storage $ = _getStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address market = $base._underlying;
+
+        IVToken(market).accrueInterest();
 
         uint newPrice = _getSharePrice(market);
         (__assets, __amounts) = _getRevenue(newPrice, market);
