@@ -17,6 +17,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.4.2: add cachePrices - #348, use USD_THRESHOLD_REMOVE_VAULT in removeVault
 ///   1.4.1: add LastBlockDefenseDisableMode
 ///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
 ///          - add whitelist for last-block-defense - #330
@@ -41,10 +42,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.1";
+    string public constant VERSION = "1.4.2";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
+
+    /// @notice Vault can be removed if its TVL is less than this value
+    uint public constant USD_THRESHOLD_REMOVE_VAULT = USD_THRESHOLD * 1000; // 1 cent
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
@@ -52,6 +56,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant _METAVAULT_STORAGE_LOCATION =
         0x303154e675d2f93642b6b4ae068c749c9b8a57de9202c6344dbbb24ab936f000;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         Transient                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -59,10 +64,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @notice Allow to temporally disable last-block-defence in the current tx
     /// Can be changed by whitelisted strategies only.
     /// Store block number of the transaction that disabled last-block-defense.
-    /// @dev transient variable can be used instead but support of transient keyword is currently very poor in IDE
     uint internal transient _lastBlockDefenseDisabledTx;
     IMetaVault.LastBlockDefenseDisableMode internal transient _lastBlockDefenseDisabledMode;
 
+    address internal transient _cachedVaultForDeposit;
+    address internal transient _cachedVaultForWithdraw;
+
+    //region --------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -83,7 +91,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] amountToDeposit;
         uint[] amounts;
     }
+    //endregion --------------------------------- Data types
 
+    //region --------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -119,7 +129,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         $.symbol = symbol_;
         emit TargetProportions(proportions_);
     }
+    //endregion --------------------------------- Initialization
 
+    //region --------------------------------- Modifiers
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -129,6 +141,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _requiredAllowedOperator();
         _;
     }
+    //endregion --------------------------------- Modifiers
 
     //region --------------------------------- Restricted action
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -161,24 +174,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (uint tvlBefore,) = tvl();
 
         if (MetaVaultLib._isMultiVault($)) {
-            address[] memory _assets = $.assets.values();
-            for (uint i; i < len; ++i) {
-                if (withdrawShares[i] != 0) {
-                    IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
-                    require(depositAmountsProportions[i] == 0, IncorrectRebalanceArgs());
-                }
-            }
-            uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
-            for (uint i; i < len; ++i) {
-                address vault = $.vaults[i];
-                uint[] memory amountsMax = new uint[](1);
-                amountsMax[0] = depositAmountsProportions[i] * totalToDeposit / 1e18;
-                if (amountsMax[0] != 0) {
-                    IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
-                    IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
-                    require(withdrawShares[i] == 0, IncorrectRebalanceArgs());
-                }
-            }
+            MetaVaultLib.rebalanceMultiVault($, withdrawShares, depositAmountsProportions);
         } else {
             revert NotSupported();
         }
@@ -196,7 +192,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function removeVault(address vault) external onlyGovernanceOrMultisig {
-        MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, USD_THRESHOLD);
+        MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, USD_THRESHOLD_REMOVE_VAULT);
     }
 
     /// @inheritdoc IMetaVault
@@ -253,6 +249,16 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             disableMode == uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0) ? 0 : block.number;
 
         _lastBlockDefenseDisabledMode = IMetaVault.LastBlockDefenseDisableMode(disableMode);
+    }
+
+    /// @inheritdoc IMetaVault
+    function cachePrices(bool clear) external {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        require($.lastBlockDefenseWhitelist[msg.sender], NotWhitelisted());
+
+        MetaVaultLib.cachePrices($, IPriceReader(IPlatform(platform()).priceReader()), clear);
+        (_cachedVaultForDeposit, _cachedVaultForWithdraw) =
+            clear ? (address(0), address(0)) : MetaVaultLib.vaultForDepositWithdraw($);
     }
     //endregion --------------------------------- Restricted action
 
@@ -376,7 +382,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IMetaVault
     function vaultForDeposit() public view returns (address target) {
-        return MetaVaultLib.vaultForDeposit(_getMetaVaultStorage());
+        if (_cachedVaultForDeposit != address(0)) {
+            return _cachedVaultForDeposit;
+        }
+        (target,) = MetaVaultLib.vaultForDepositWithdraw(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
@@ -387,7 +396,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     /// @dev MultiVault supports withdrawing from all sub-vaults. Return the vault from which to start withdrawing.
     function vaultForWithdraw() public view returns (address target) {
-        return MetaVaultLib.vaultForWithdraw(_getMetaVaultStorage());
+        if (_cachedVaultForWithdraw != address(0)) {
+            return _cachedVaultForWithdraw;
+        }
+        (, target) = MetaVaultLib.vaultForDepositWithdraw(_getMetaVaultStorage());
     }
 
     /// @inheritdoc IMetaVault
@@ -516,17 +528,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         // totalSupply is balance of peg asset
         (uint tvlUsd,) = tvl();
         (uint priceAsset,) = price();
-        return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
+        _tvl = Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC20
     function balanceOf(address account) public view returns (uint) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
-        uint _totalShares = $.totalShares;
-        if (_totalShares == 0) {
-            return 0;
-        }
-        return Math.mulDiv($.shareBalance[account], totalSupply(), _totalShares, Math.Rounding.Floor);
+        return _balanceOf($, account, totalSupply());
     }
 
     /// @inheritdoc IERC20
@@ -784,24 +792,24 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address receiver,
         address owner
     ) internal returns (uint[] memory amountsOut) {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
         if (amount == 0) {
             revert IControllable.IncorrectZeroArgument();
         }
-        if (amount > balanceOf(owner)) {
+        uint _totalSupply = totalSupply();
+        if (amount > _balanceOf($, owner, _totalSupply)) {
             revert ERC20InsufficientBalance(owner, balanceOf(owner), amount);
         }
         if (assets_.length != minAssetAmountsOut.length) {
             revert IControllable.IncorrectArrayLength();
         }
 
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-
         _beforeDepositOrWithdraw($, owner);
 
-        uint sharesToBurn = _amountToShares(amount, $.totalShares, totalSupply());
+        uint sharesToBurn = _amountToShares(amount, $.totalShares, _totalSupply);
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         address _targetVault = vaultForWithdraw();
@@ -1024,5 +1032,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
     }
 
+    function _balanceOf(MetaVaultStorage storage $, address account, uint totalSupply_) internal view returns (uint) {
+        uint _totalShares = $.totalShares;
+        if (_totalShares == 0) {
+            return 0;
+        }
+        return Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
+    }
     //endregion --------------------------------- Internal logic
 }

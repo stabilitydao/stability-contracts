@@ -41,6 +41,7 @@ import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
+///   1.1.0: Each write operation caches prices of MetaUSD - #348
 ///   1.0.1: Use new version of setLastBlockDefenseDisabledTx
 ///   1.0.0: Initial version - #330
 /// @author dvpublic (https://github.com/dvpublic)
@@ -60,7 +61,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -265,10 +266,9 @@ contract SiloALMFStrategy is
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
-        IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
-        metaVault.setLastBlockDefenseDisabledTx(0);
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
     //endregion ----------------------------------- Leverage lending base
 
@@ -297,10 +297,13 @@ contract SiloALMFStrategy is
             uint[] memory __rewardAmounts
         )
     {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         __assets = assets();
-        (__amounts, __rewardAssets, __rewardAmounts) = SiloALMFLib._claimRevenue(
-            _getLeverageLendingBaseStorage(), _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage()
-        );
+        (__amounts, __rewardAssets, __rewardAmounts) =
+            SiloALMFLib._claimRevenue($, _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage());
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc StrategyBase
@@ -321,10 +324,9 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
 
-        IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        value = SiloALMFLib.depositAssets(platform(), $, $base, amounts[0], _assets[0]);
-        metaVault.setLastBlockDefenseDisabledTx(0);
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
+        value = SiloALMFLib.depositAssets($, $base, amounts[0], _assets[0]);
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc StrategyBase
@@ -332,10 +334,9 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 
-        IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
-        metaVault.setLastBlockDefenseDisabledTx(0);
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc IStrategy
@@ -352,10 +353,9 @@ contract SiloALMFStrategy is
     function _compound() internal override(LeverageLendingBase, StrategyBase) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
-        IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         SiloALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
-        metaVault.setLastBlockDefenseDisabledTx(0);
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
     //endregion ----------------------------------- Strategy base
 
@@ -372,10 +372,9 @@ contract SiloALMFStrategy is
     ) internal override(FarmingStrategyBase, StrategyBase, LeverageLendingBase) returns (uint earnedExchangeAsset) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
-        IMetaVault metaVault = _getMetaVault($);
-        metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
+        SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
-        metaVault.setLastBlockDefenseDisabledTx(0);
+        SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
 
     /// @inheritdoc IFarmingStrategy
@@ -390,16 +389,4 @@ contract SiloALMFStrategy is
     }
 
     //endregion ----------------------------------- FarmingStrategy
-
-    //region ----------------------------------- Internal logic
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       INTERNAL LOGIC                       */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function _getMetaVault(LeverageLendingBaseStorage storage $) internal view returns (IMetaVault) {
-        // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
-        return IMetaVault(IWrappedMetaVault($.collateralAsset).metaVault());
-    }
-
-    //endregion ----------------------------------- Internal logic
 }
