@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -86,19 +85,9 @@ library SiloALMFLib {
         uint tokenBalance0 = IERC20(token).balanceOf(address(this));
         tokenBalance0 = tokenBalance0 > amount ? tokenBalance0 - amount : 0;
 
-        console.log("flashLoanVault", $.flashLoanVault);
-        console.log("collateralAsset", $.collateralAsset);
-        console.log("borrowAsset", $.borrowAsset);
-
         if ($.tempAction == ILeverageLendingStrategy.CurrentAction.Deposit) {
-            console.log("deposit 1");
-            console.log("swapPriceImpactTolerance0", $.swapPriceImpactTolerance0);
-            console.log("token", token);
-            console.log("collateralAsset", collateralAsset);
-            console.log("amount", amount);
             // swap
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
-            console.log("deposit 2");
 
             // supply
             ISilo($.lendingVault).deposit(
