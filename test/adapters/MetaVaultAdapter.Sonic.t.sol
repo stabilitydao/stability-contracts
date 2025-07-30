@@ -29,62 +29,71 @@ contract MetaVaultAdapterTest is SonicSetup {
     }
 
     //region ------------------------------------ Tests for swaps
-    function testSwapsMetaUSD() public {
+    function testSwapsMetaUSD100USDC() public {
+        _testSwapsMetaUSD(SonicConstantsLib.TOKEN_USDC, 100e6);
+    }
+
+    function testSwapsMetaUSD100000USDC() public {
+        _testSwapsMetaUSD(SonicConstantsLib.TOKEN_USDC, 100_000e6);
+    }
+
+    function testSwapsMetaUSD100scUSD() public {
+        _testSwapsMetaUSD(SonicConstantsLib.TOKEN_scUSD, 100e6);
+    }
+
+    function testSwapsMetaUSD100000scUSD() public {
+        _testSwapsMetaUSD(SonicConstantsLib.TOKEN_scUSD, 100_000e6);
+    }
+
+    function _testSwapsMetaUSD(address token, uint amount) internal {
         IMetaVault metaVaultUSD = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         uint got;
         address[] memory vaults = metaVaultUSD.vaults();
         assertEq(vaults.length, 2);
+        uint i = token == SonicConstantsLib.TOKEN_USDC ? 0 : 1;
 
-        for (uint i; i < 2; ++i) {
-            uint snapshot = vm.snapshot();
-            address token = i == 0 ? SonicConstantsLib.TOKEN_USDC : SonicConstantsLib.TOKEN_scUSD;
-            // set up vault for deposit
-            _setProportions(metaVaultUSD, i, true);
-            assertEq(metaVaultUSD.vaultForDeposit(), vaults[i], "vaultForDeposit mismatch");
+        // set up vault for deposit
+        _setProportions(metaVaultUSD, i, true);
+        assertEq(metaVaultUSD.vaultForDeposit(), vaults[i], "vaultForDeposit mismatch");
 
-            // deposit 100 USDC to MetaVault and get MetaUSD on balance
-            deal(token, address(this), 100e6);
-            _depositToMetaVault(metaVaultUSD, 100e6, address(this));
-            uint metaVaultBalance = metaVaultUSD.balanceOf(address(this));
+        // deposit 100 USDC to MetaVault and get MetaUSD on balance
+        deal(token, address(this), amount);
+        _depositToMetaVault(metaVaultUSD, amount, address(this));
+        uint metaVaultBalance = metaVaultUSD.balanceOf(address(this));
 
-            // set up vault for withdraw
-            _setProportions(metaVaultUSD, i, false);
-            if (metaVaultUSD.vaultForWithdraw() != vaults[i]) {
-                deal(token, address(1), 1_000_000e6);
-                _depositToMetaVault(metaVaultUSD, 1_000_000e6, address(1));
-            }
-            assertEq(metaVaultUSD.vaultForWithdraw(), vaults[i], "vaultForWithdraw mismatch");
-
-            // swap 100 MetaUSD to USDC
-            got = _swap(
-                SonicConstantsLib.METAVAULT_metaUSD,
-                SonicConstantsLib.METAVAULT_metaUSD,
-                token,
-                metaVaultBalance,
-                1_000 // 1% price impact
-            );
-            vm.roll(block.number + 6);
-            assertApproxEqAbs(got, 100e6, 1, "got all USDC (difference in 1 decimal is allowed)");
-
-            // set up vault for deposit
-            _setProportions(metaVaultUSD, i, true);
-            assertEq(metaVaultUSD.vaultForDeposit(), vaults[i], "vaultForDeposit mismatch 2");
-
-            // swap 100 USDC to MetaUSD
-            got = _swap(
-                SonicConstantsLib.METAVAULT_metaUSD,
-                token,
-                SonicConstantsLib.METAVAULT_metaUSD,
-                got,
-                1_000 // 1% price impact
-            );
-            vm.roll(block.number + 6);
-            assertLt(
-                _getDiffPercent18(got, metaVaultBalance), 1e10, "got ~ metaVaultBalance back (losses are almost 0)"
-            );
-
-            vm.revertToState(snapshot);
+        // set up vault for withdraw
+        _setProportions(metaVaultUSD, i, false);
+        if (metaVaultUSD.vaultForWithdraw() != vaults[i]) {
+            deal(token, address(1), 1_000_000e6);
+            _depositToMetaVault(metaVaultUSD, 1_000_000e6, address(1));
         }
+        assertEq(metaVaultUSD.vaultForWithdraw(), vaults[i], "vaultForWithdraw mismatch");
+
+        // swap 100 MetaUSD to USDC
+        got = _swap(
+            SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_metaUSD,
+            token,
+            metaVaultBalance,
+            1_000 // 1% price impact
+        );
+        vm.roll(block.number + 6);
+        assertApproxEqAbs(got, amount, 2, "got all USDC (difference in 2 decimals is allowed)");
+
+        // set up vault for deposit
+        _setProportions(metaVaultUSD, i, true);
+        assertEq(metaVaultUSD.vaultForDeposit(), vaults[i], "vaultForDeposit mismatch 2");
+
+        // swap 100 USDC to MetaUSD
+        got = _swap(
+            SonicConstantsLib.METAVAULT_metaUSD,
+            token,
+            SonicConstantsLib.METAVAULT_metaUSD,
+            got,
+            1_000 // 1% price impact
+        );
+        vm.roll(block.number + 6);
+        assertLt(_getDiffPercent18(got, metaVaultBalance), 1e10, "got ~ metaVaultBalance back (losses are almost 0)");
     }
 
     function testSwapsMetaS() public {
@@ -454,10 +463,10 @@ contract MetaVaultAdapterTest is SonicSetup {
 
         _dealAndApprove(user, address(metaVault_), assets, amountsMax);
 
-        (, uint sharesOut,) = metaVault_.previewDepositAssets(assets, amountsMax);
+        (,, uint valueOut) = metaVault_.previewDepositAssets(assets, amountsMax);
 
         vm.prank(user);
-        metaVault_.depositAssets(assets, amountsMax, sharesOut * 99 / 100, user);
+        metaVault_.depositAssets(assets, amountsMax, valueOut * 99 / 100, user);
 
         vm.roll(block.number + 6);
     }
