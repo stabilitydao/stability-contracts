@@ -14,6 +14,7 @@ import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
@@ -21,6 +22,7 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
 import {console} from "forge-std/console.sol";
 
 contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
@@ -63,6 +65,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
         duration3 = 0.1 hours;
+
+        _upgradePlatform(IPlatform(PLATFORM).multisig(), IPlatform(PLATFORM).priceReader());
     }
 
     function testSiALMFSonic() public universalTest {
@@ -84,6 +88,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     }
 
     function _preDeposit() internal override {
+        address multisig = platform.multisig();
+
         //        _showPrices(
         //            IPlatform(PLATFORM).priceReader(),
         //            IPlatform(IControllable(currentStrategy).platform()).priceReader()
@@ -101,9 +107,21 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         _upgradeMetaVault(address(platform), _currentMetaVault);
         upgradeWrappedMetaVault();
 
-        vm.prank(platform.multisig());
+        vm.prank(multisig);
         IMetaVault(_currentMetaVault).changeWhitelist(currentStrategy, true);
 
+        // ---------------------------------- Set whitelist for transient cache
+        {
+            IPriceReader priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+            console.log("price reader 1", IPlatform(PLATFORM).priceReader());
+            console.log("price reader 2", IPlatform(IControllable(currentStrategy).platform()).priceReader());
+            IPriceReader priceReader2 = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader());
+
+            _changeWhitelistTransientCache(multisig, priceReader);
+            _changeWhitelistTransientCache(multisig, priceReader2);
+        }
+
+        // ---------------------------------- Make additional tests
         uint snapshot = vm.snapshotState();
         if (farmId == FARM_META_USD_USDC_53) {
             _testStrategyParams_All();
@@ -119,6 +137,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         }
         vm.revertToState(snapshot);
 
+        // ---------------------------------- Set up flash loan
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
     }
 
@@ -876,6 +895,36 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.stopPrank();
     }
 
+    function _upgradePlatform(address multisig, address priceReader_) internal {
+        // we need to skip 1 day to update the swapper
+        // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
+        // vm.warp(block.timestamp - 86400);
+        rewind(86400);
+
+        IPlatform platform = IPlatform(IControllable(priceReader_).platform());
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        proxies[0] = address(priceReader_);
+        //proxies[1] = platform.swapper();
+        //proxies[2] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+
+        implementations[0] = address(new PriceReader());
+        //implementations[1] = address(new Swapper());
+        //implementations[2] = address(new MetaVaultAdapter());
+
+        //vm.prank(multisig);
+        // platform.cancelUpgrade();
+
+        vm.startPrank(multisig);
+        platform.announcePlatformUpgrade("2025.07.22-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
+    }
+
     function _setFlashLoanVault(
         ILeverageLendingStrategy strategy,
         address vaultC,
@@ -900,4 +949,18 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
     //endregion --------------------------------------- Helper functions
+
+    function _changeWhitelistTransientCache(address multisig, IPriceReader priceReader) internal {
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(currentStrategy, true);
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(_currentMetaVault, true);
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaS, true);
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
+    }
 }

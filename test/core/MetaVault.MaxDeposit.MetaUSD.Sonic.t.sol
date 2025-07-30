@@ -25,6 +25,7 @@ import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
@@ -76,7 +77,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
         Factory factory = Factory(address(IPlatform(PLATFORM).factory()));
 
-        _upgradeSwapperAndAdapter();
+        _upgradePlatform();
         _setupMetaVaultFactory();
         _setupImplementations();
         _updateCVaultImplementation(factory);
@@ -99,6 +100,9 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
             vm.prank(IPlatform(PLATFORM).multisig());
             IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(strategy, true);
+
+            vm.prank(multisig);
+            priceReader.changeWhitelistTransientCache(strategy, true);
         }
 
         // ------------------------------ Setup swap of metaUSD
@@ -139,6 +143,13 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         // ---- Make flash loan unlimited and fees-free to simplify calculations
         _setUpFlashLoanVault(10e12); // add 10 mln USDC and 10 mln scUSD to flash loan vaults
+
+        // ---------------------------------- Set whitelist for transient cache #348
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(metaVaults[META_VAULT_INDEX], true);
 
         // ------------------------------ Make initial deposit to both sub-vaults to avoid first-deposit-small-amount issues
         _initialDeposit();
@@ -1131,14 +1142,16 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
     }
 
-    function _upgradeSwapperAndAdapter() internal {
-        address[] memory proxies = new address[](1);
+    function _upgradePlatform() internal {
+        address[] memory proxies = new address[](2);
         proxies[0] = address(IPlatform(PLATFORM).swapper());
+        proxies[1] = address(IPlatform(PLATFORM).priceReader());
         //        bytes32 hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
         //        proxies[1] = address(IPlatform(PLATFORM).ammAdapter(hash).proxy);
 
-        address[] memory implementations = new address[](1);
+        address[] memory implementations = new address[](2);
         implementations[0] = address(new Swapper());
+        implementations[1] = address(new PriceReader());
         //        implementations[1] = address(new UniswapV3Adapter());
 
         vm.prank(multisig);

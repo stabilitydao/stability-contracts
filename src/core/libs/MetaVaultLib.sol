@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -9,8 +10,10 @@ import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 library MetaVaultLib {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     //region --------------------------------- Restricted actions
@@ -90,7 +93,53 @@ library MetaVaultLib {
         emit IMetaVault.RemoveVault(vault);
         emit IMetaVault.TargetProportions(_targetProportions);
     }
+
+    function cachePrices(IMetaVault.MetaVaultStorage storage $, IPriceReader priceReader_, bool clear) external {
+        require(!_isMultiVault($), IMetaVault.IncorrectVault());
+
+        if (clear) {
+            // clear exist cache
+            priceReader_.preCalculateVaultPriceTx(address(0));
+        } else {
+            address[] memory _vaults = $.vaults;
+            for (uint i; i < _vaults.length; ++i) {
+                address[] memory _subVaults = IMetaVault(_vaults[i]).vaults();
+                for (uint j; j < _subVaults.length; ++j) {
+                    priceReader_.preCalculateVaultPriceTx(_subVaults[j]);
+                }
+                priceReader_.preCalculateVaultPriceTx(_subVaults[i]);
+            }
+        }
+    }
     //endregion --------------------------------- Restricted actions
+
+    //region --------------------------------- Actions
+    function rebalanceMultiVault(
+        IMetaVault.MetaVaultStorage storage $,
+        uint[] memory withdrawShares,
+        uint[] memory depositAmountsProportions
+    ) external {
+        uint len = $.vaults.length;
+        address[] memory _assets = $.assets.values();
+        for (uint i; i < len; ++i) {
+            if (withdrawShares[i] != 0) {
+                IStabilityVault($.vaults[i]).withdrawAssets(_assets, withdrawShares[i], new uint[](1));
+                require(depositAmountsProportions[i] == 0, IMetaVault.IncorrectRebalanceArgs());
+            }
+        }
+        uint totalToDeposit = IERC20(_assets[0]).balanceOf(address(this));
+        for (uint i; i < len; ++i) {
+            address vault = $.vaults[i];
+            uint[] memory amountsMax = new uint[](1);
+            amountsMax[0] = depositAmountsProportions[i] * totalToDeposit / 1e18;
+            if (amountsMax[0] != 0) {
+                IERC20(_assets[0]).forceApprove(vault, amountsMax[0]);
+                IStabilityVault(vault).depositAssets(_assets, amountsMax, 0, address(this));
+                require(withdrawShares[i] == 0, IMetaVault.IncorrectRebalanceArgs());
+            }
+        }
+    }
+    //endregion --------------------------------- Actions
 
     //region --------------------------------- View functions
     function currentProportions(IMetaVault.MetaVaultStorage storage $)
@@ -101,43 +150,34 @@ library MetaVaultLib {
         return _currentProportions($);
     }
 
-    function vaultForDeposit(IMetaVault.MetaVaultStorage storage $) external view returns (address target) {
+    function vaultForDepositWithdraw(IMetaVault.MetaVaultStorage storage $)
+        external
+        view
+        returns (address targetForDeposit, address targetForWithdraw)
+    {
         address[] memory _vaults = $.vaults;
         if ($.totalShares == 0) {
-            return _vaults[0];
+            return (_vaults[0], _vaults[0]);
         }
         uint len = _vaults.length;
         uint[] memory _proportions = _currentProportions($);
         uint[] memory _targetProportions = $.targetProportions;
         uint lowProportionDiff;
-        target = _vaults[0];
+        uint highProportionDiff;
+        targetForDeposit = _vaults[0];
+        targetForWithdraw = _vaults[0];
         for (uint i; i < len; ++i) {
             if (_proportions[i] < _targetProportions[i]) {
                 uint diff = _targetProportions[i] - _proportions[i];
                 if (diff > lowProportionDiff) {
                     lowProportionDiff = diff;
-                    target = _vaults[i];
+                    targetForDeposit = _vaults[i];
                 }
-            }
-        }
-    }
-
-    function vaultForWithdraw(IMetaVault.MetaVaultStorage storage $) external view returns (address target) {
-        address[] memory _vaults = $.vaults;
-        if ($.totalShares == 0) {
-            return _vaults[0];
-        }
-        uint len = _vaults.length;
-        uint[] memory _proportions = _currentProportions($);
-        uint[] memory _targetProportions = $.targetProportions;
-        uint highProportionDiff;
-        target = _vaults[0];
-        for (uint i; i < len; ++i) {
-            if (_proportions[i] > _targetProportions[i] && _proportions[i] > 1e16) {
+            } else if (_proportions[i] > _targetProportions[i] && _proportions[i] > 1e16) {
                 uint diff = _proportions[i] - _targetProportions[i];
                 if (diff > highProportionDiff) {
                     highProportionDiff = diff;
-                    target = _vaults[i];
+                    targetForWithdraw = _vaults[i];
                 }
             }
         }

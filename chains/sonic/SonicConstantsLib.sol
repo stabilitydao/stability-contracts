@@ -33,6 +33,8 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_SiMF_Valmore = 0xf6Fc4Ea6c1E6DcB68C5FFab82F6c0aD2D4c94df9;
     address public constant VAULT_C_USDC_S_112 = 0x8913582701B7c80E883F9E352c1653a16769B173;
     address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
+    address public constant VAULT_C_WMETAUSD_USDC_121 = 0xe965c5114F689BF9184D9300F3af4A378c6934A9;
+    address public constant VAULT_C_WMETAUSD_scUSD_125 = 0x58D310a1A490f0daa86608998E08852630000151;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
@@ -478,4 +480,12 @@ library SonicConstantsLib {
     address public constant STABILITY_MARKET_Stream = 0x1f672BD230D0FC2Ee9A75D2037a92CC1225A4Ad8;
     address public constant STABILITY_MARKET_StableJack = 0x4895151C8eB560c0DE6Bd29A3916610DdfCEB094;
     address public constant STABILITY_MARKET_Brunch = 0x680F8A574b0273f26A314cA61466c0A4f1E2d95e;
+
+    // ---------------------------------- Enclabc (https://github.com/EnclaveLabs/enclabs-protocol)
+    address public constant ENCLABS_VTOKEN_CORE_USDC = 0x87C69a8fB7F04b7890F48A1577a83788683A2036;
+    address public constant ENCLABS_VTOKEN_CORE_scUSD = 0x6770aF27FC5233A70B85BFf631061400a09d2e1c;
+    address public constant ENCLABS_VTOKEN_CORE_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
+    address public constant ENCLABS_VTOKEN_CORE_stS = 0xe544e51bF20AB186B6b7b1A9095C8BC1E3f203f5;
+    address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
+
 }
