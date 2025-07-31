@@ -8,3 +8,4 @@ openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
 openzeppelin/=lib/openzeppelin-contracts-upgradeable/contracts/
 solady/=lib/solady/
 openzeppelin-contracts/=lib/openzeppelin-contracts/
+@layerzerolabs/=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts
