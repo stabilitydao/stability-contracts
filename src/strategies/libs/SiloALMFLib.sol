@@ -91,7 +91,10 @@ library SiloALMFLib {
 
             // supply
             ISilo($.lendingVault).deposit(
-                IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
+                IERC20(collateralAsset).balanceOf(address(this)),
+                address(this),
+                // we should make non-borrowable collateral deposit to be able to get Merkl rewards
+                ISilo.CollateralType.Protected
             );
 
             // borrow
@@ -194,7 +197,8 @@ library SiloALMFLib {
             ISilo($.lendingVault).deposit(
                 _getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
                 address(this),
-                ISilo.CollateralType.Collateral
+                // we should make non-borrowable collateral deposit to be able to get Merkl rewards
+                ISilo.CollateralType.Protected
             );
 
             // borrow
