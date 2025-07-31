@@ -488,4 +488,13 @@ library SonicConstantsLib {
     address public constant ENCLABS_VTOKEN_CORE_stS = 0xe544e51bF20AB186B6b7b1A9095C8BC1E3f203f5;
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
 
+    // ---------------------------------- LayerZero-v2 https://docs.layerzero.network/v2/deployments/chains/sonic
+    address public constant LAYER_ZERO_V2_ENDPOINT = 0x6F475642a6e85809B1c36Fa62763669b1b48DD5B;
+    address public constant LAYER_ZERO_V2_SEND_ULN_302 = 0xC39161c743D0307EB9BCc9FEF03eeb9Dc4802de7;
+    address public constant LAYER_ZERO_V2_RECEIVE_ULN_302 = 0xe1844c5D63a9543023008D332Bd3d2e6f1FE1043;
+    address public constant LAYER_ZERO_V2_READ_LIB_1002 = 0x860E8D714944E7accE4F9e6247923ec5d30c0471;
+    address public constant LAYER_ZERO_V2_EXECUTOR = 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b;
+    address public constant LAYER_ZERO_V2_BLOCKED_MESSAGE_LIBRARY = 0xc1ce56b2099ca68720592583c7984cab4b6d7e7a;
+    address public constant LAYER_ZERO_V2_DEAD_DVN = 0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842;
+
 }
