@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 /// @author ruby (https://github.com/alexandersazonof)
 /// @notice Interface for the VaultPriceOracle contract, which aggregates prices from multiple oracles for vaults using a quorum-based median mechanism.
 interface IVaultPriceOracle {
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -13,16 +12,16 @@ interface IVaultPriceOracle {
     /// @notice Structure representing a single price observation from an oracle.
     /// @dev Contains the submitted price and the timestamp of submission.
     struct Observation {
-        uint256 price;
-        uint256 timestamp;
+        uint price;
+        uint timestamp;
     }
 
     /// @notice Structure representing aggregated price data for a vault.
     /// @dev Includes the median price, aggregation timestamp, and associated round ID.
     struct AggregatedData {
-        uint256 price;
-        uint256 timestamp;
-        uint256 roundId;
+        uint price;
+        uint timestamp;
+        uint roundId;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -34,14 +33,14 @@ interface IVaultPriceOracle {
     /// @param oracle The address of the oracle submitting the price.
     /// @param price The submitted price.
     /// @param roundId The ID of the round for this submission.
-    event PriceSubmitted(address indexed vault, address indexed oracle, uint256 price, uint256 roundId);
+    event PriceSubmitted(address indexed vault, address indexed oracle, uint price, uint roundId);
 
     /// @notice Emitted when the price for a vault is updated after aggregation.
     /// @param vault The address of the vault.
     /// @param price The aggregated median price.
     /// @param roundId The ID of the round that was aggregated.
     /// @param timestamp The timestamp of the aggregation.
-    event PriceUpdated(address indexed vault, uint256 price, uint256 roundId, uint256 timestamp);
+    event PriceUpdated(address indexed vault, uint price, uint roundId, uint timestamp);
 
     /// @notice Emitted when a new validator is added.
     /// @param validator The address of the added validator.
@@ -60,7 +59,7 @@ interface IVaultPriceOracle {
     /// @return price The aggregated median price.
     /// @return timestamp The timestamp of the aggregation.
     /// @return roundId The ID of the aggregated round.
-    function vaultPrices(address vault_) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
+    function vaultPrices(address vault_) external view returns (uint price, uint timestamp, uint roundId);
 
     /// @notice Retrieves a specific observation for a vault, round, and oracle.
     /// @param vault_ The address of the vault.
@@ -68,7 +67,11 @@ interface IVaultPriceOracle {
     /// @param validator_ The address of the validator.
     /// @return price The submitted price.
     /// @return timestamp The submission timestamp.
-    function observations(address vault_, uint256 roundId_, address validator_) external view returns (uint256 price, uint256 timestamp);
+    function observations(
+        address vault_,
+        uint roundId_,
+        address validator_
+    ) external view returns (uint price, uint timestamp);
 
     /// @notice Checks if an address is an authorized validator.
     /// @param validator_ The address to check.
@@ -78,18 +81,18 @@ interface IVaultPriceOracle {
     /// @notice Retrieves an validator address from the list by index.
     /// @param index_ The index in the oracle list.
     /// @return The address of the validator at that index.
-    function validatorList(uint256 index_) external view returns (address);
+    function validatorList(uint index_) external view returns (address);
 
     /// @notice Retrieves the number of validators.
-    function validatorListLength() external view returns (uint256);
+    function validatorListLength() external view returns (uint);
 
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
-    function minQuorum() external view returns (uint256);
+    function minQuorum() external view returns (uint);
 
     /// @notice Returns the maximum age allowed for a price before it's considered stale.
     /// @return The maximum age in seconds.
-    function maxPriceAge() external view returns (uint256);
+    function maxPriceAge() external view returns (uint);
 
     /// @notice Retrieves the latest valid aggregated price for a vault.
     /// @dev Reverts if no data is available or if the price is too old.
@@ -97,20 +100,20 @@ interface IVaultPriceOracle {
     /// @return price The latest aggregated price.
     /// @return timestamp The aggregation timestamp.
     /// @return roundId The associated round ID.
-    function getLatestPrice(address vault_) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
+    function getLatestPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, uint256 minQuorum_, address[] memory validator_, uint256 maxPriceAge_) external;
+    function initialize(address platform_, uint minQuorum_, address[] memory validator_, uint maxPriceAge_) external;
 
     /// @notice Submits a price for a vault in the current round.
     /// @dev Can only be called by authorized validators.
     /// @param vault_ The address of the vault.
     /// @param price_ The price to submit.
     /// @param roundId_ The ID of the round (must match current).
-    function submitPrice(address vault_, uint256 price_, uint256 roundId_) external;
+    function submitPrice(address vault_, uint price_, uint roundId_) external;
 
     /// @notice Adds a new validator to the authorized list.
     /// @dev Restricted to governance or multisig.

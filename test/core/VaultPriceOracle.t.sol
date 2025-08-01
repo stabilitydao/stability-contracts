@@ -9,8 +9,8 @@ contract VaultPriceOracleTest is Test, MockSetup {
     VaultPriceOracle public oracle;
     address[] public validators;
     address public vault;
-    uint256 constant MIN_QUORUM = 3;
-    uint256 constant MAX_PRICE_AGE = 1 hours;
+    uint constant MIN_QUORUM = 3;
+    uint constant MAX_PRICE_AGE = 1 hours;
 
     function setUp() public {
         validators = new address[](5);
@@ -36,7 +36,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         assertEq(oracle.minQuorum(), MIN_QUORUM, "Min quorum not set correctly");
         assertEq(oracle.maxPriceAge(), MAX_PRICE_AGE, "Max price age not set correctly");
 
-        for (uint256 i = 0; i < validators.length; i++) {
+        for (uint i = 0; i < validators.length; i++) {
             assertTrue(oracle.authorizedValidator(validators[i]), "Validator not authorized");
             assertEq(oracle.validatorList(i), validators[i], "Validator list incorrect");
         }
@@ -57,7 +57,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
     function testVaultPriceOracleSlot() public {
         bytes32 namespaceHash = keccak256(abi.encodePacked("erc7201:stability.VaultPriceOracle"));
         bytes32 expectedSlot = 0xa68171b251d015e5a139782486873a18b874637da10a73c080418fb52ac37300;
-        bytes32 calculatedSlot = keccak256(abi.encode(uint256(namespaceHash) - 1)) & ~bytes32(uint256(0xff));
+        bytes32 calculatedSlot = keccak256(abi.encode(uint(namespaceHash) - 1)) & ~bytes32(uint(0xff));
         assertEq(calculatedSlot, expectedSlot, "Storage slot calculation is incorrect");
     }
 
@@ -98,8 +98,8 @@ contract VaultPriceOracleTest is Test, MockSetup {
     }
 
     function testSubmitPriceAndAggregation() public {
-        uint256 roundId = 1;
-        uint256[] memory prices = new uint256[](5);
+        uint roundId = 1;
+        uint[] memory prices = new uint[](5);
         prices[0] = 100;
         prices[1] = 110;
         prices[2] = 105;
@@ -132,7 +132,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.submitPrice(vault, prices[2], roundId);
 
         // Aggregation happened: median of [100,110,105] sorted [100,105,110] -> 105
-        (uint256 price, uint256 timestamp, uint256 rId) = oracle.getLatestPrice(vault);
+        (uint price, uint timestamp, uint rId) = oracle.getLatestPrice(vault);
         assertEq(price, 105, "Incorrect median price");
         assertEq(timestamp, block.timestamp, "Incorrect timestamp");
         assertEq(rId, 2, "Incorrect roundId");
@@ -145,14 +145,15 @@ contract VaultPriceOracleTest is Test, MockSetup {
             if (entries[i].topics[0] == keccak256("PriceSubmitted(address,address,uint256,uint256)")) {
                 assertEq(address(uint160(uint(entries[i].topics[1]))), vault);
                 assertEq(address(uint160(uint(entries[i].topics[2]))), validators[2]);
-                (uint256 submittedPrice, uint256 submittedRound) = abi.decode(entries[i].data, (uint256, uint256));
+                (uint submittedPrice, uint submittedRound) = abi.decode(entries[i].data, (uint, uint));
                 assertEq(submittedPrice, prices[2]);
                 assertEq(submittedRound, roundId);
                 priceSubmitted = true;
             }
             if (entries[i].topics[0] == keccak256("PriceUpdated(address,uint256,uint256,uint256)")) {
                 assertEq(address(uint160(uint(entries[i].topics[1]))), vault);
-                (uint256 updatedPrice, uint256 updatedRound, uint256 updatedTimestamp) = abi.decode(entries[i].data, (uint256, uint256, uint256));
+                (uint updatedPrice, uint updatedRound, uint updatedTimestamp) =
+                    abi.decode(entries[i].data, (uint, uint, uint));
                 assertEq(updatedPrice, 105);
                 assertEq(updatedRound, roundId);
                 assertEq(updatedTimestamp, block.timestamp);
@@ -165,14 +166,14 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Test multiple submissions (no protection in contract)
         vm.prank(validators[0]);
         oracle.submitPrice(vault, 999, roundId + 1); // Overwrites previous submission
-        (uint256 overwrittenPrice, uint256 overwrittenTimestamp) = oracle.observations(vault, roundId + 1, validators[0]);
+        (uint overwrittenPrice, uint overwrittenTimestamp) = oracle.observations(vault, roundId + 1, validators[0]);
         assertEq(overwrittenPrice, 999, "Price not overwritten");
         assertEq(overwrittenTimestamp, block.timestamp, "Timestamp not updated");
     }
 
     // New test to debug median calculation
     function testMedianCalculation() public {
-        uint256 roundId = 1;
+        uint roundId = 1;
         // Submit prices: [100, 110, 105]
         vm.prank(validators[0]);
         oracle.submitPrice(vault, 100, roundId);
@@ -182,7 +183,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.submitPrice(vault, 105, roundId);
 
         // Check aggregated price
-        (uint256 price,,uint256 newRoundId) = oracle.getLatestPrice(vault);
+        (uint price,, uint newRoundId) = oracle.getLatestPrice(vault);
         console.log("Median price:", price);
         assertEq(price, 105, "Incorrect median for [100,110,105]");
 
@@ -209,7 +210,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Submit and aggregate
         testSubmitPriceAndAggregation();
 
-        (uint256 price, uint256 timestamp, uint256 rId) = oracle.getLatestPrice(vault);
+        (uint price, uint timestamp, uint rId) = oracle.getLatestPrice(vault);
         assertEq(price, 105, "Incorrect price");
         assertEq(rId, 2, "Incorrect roundId");
 
@@ -221,7 +222,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
     function testVaultPrices() public {
         // No data yet
-        (uint256 price, uint256 timestamp, uint256 rId) = oracle.vaultPrices(vault);
+        (uint price, uint timestamp, uint rId) = oracle.vaultPrices(vault);
         assertEq(price, 0, "Price should be 0");
         assertEq(timestamp, 0, "Timestamp should be 0");
         assertEq(rId, 0, "RoundId should be 0");
@@ -236,12 +237,12 @@ contract VaultPriceOracleTest is Test, MockSetup {
     }
 
     function testObservations() public {
-        uint256 roundId = 1;
-        uint256 price = 100;
+        uint roundId = 1;
+        uint price = 100;
         vm.prank(validators[0]);
         oracle.submitPrice(vault, price, roundId);
 
-        (uint256 observedPrice, uint256 observedTimestamp) = oracle.observations(vault, roundId, validators[0]);
+        (uint observedPrice, uint observedTimestamp) = oracle.observations(vault, roundId, validators[0]);
         assertEq(observedPrice, price, "Incorrect observed price");
         assertEq(observedTimestamp, block.timestamp, "Incorrect observation timestamp");
     }
