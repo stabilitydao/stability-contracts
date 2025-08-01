@@ -13,6 +13,10 @@ interface IPriceReader {
     event VaultWithSafeSharePriceRemoved(address vault);
     //endregion -- Events -----
 
+    //region --------------------------- Errors
+    error NotWhitelistedTransientCache();
+    //endregion --------------------------- Errors
+
     /// @notice Price of asset
     /// @dev Price of 1.0 amount of asset in USD
     /// @param asset Address of asset
@@ -61,4 +65,19 @@ interface IPriceReader {
     /// Only operator (multisig is operator too) can add adapter
     /// @param vaults Addresses of vaults
     function removeSafeSharePrices(address[] memory vaults) external;
+
+    /// @notice Check if the user is whitelisted for using transient cache
+    function whitelistTransientCache(address user_) external view returns (bool);
+
+    /// @notice Add user to whitelist of users allowed to use the transient cache
+    function changeWhitelistTransientCache(address user, bool add) external;
+
+    /// @notice Save asset price to transient cache
+    /// @param asset Pass 0 to clear the cache
+    function preCalculatePriceTx(address asset) external;
+
+    /// @notice Save vault price to transient cache
+    /// Second call with the same vault will be ignored and won't not change the price
+    /// @param vault Pass 0 to clear the cache
+    function preCalculateVaultPriceTx(address vault) external;
 }

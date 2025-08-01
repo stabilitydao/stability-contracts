@@ -315,12 +315,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
-    /// @return Cosumed amounts of invested assets
+    /// @return Consumed amounts of invested assets
     function _depositUnderlying(uint /*amount*/ ) internal virtual returns (uint[] memory /*amountsConsumed*/ ) {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
-    /// @dev Wothdraw underlying invested and send to receiver
+    /// @dev Withdraw underlying invested and send to receiver
     function _withdrawUnderlying(uint, /*amount*/ address /*receiver*/ ) internal virtual {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }

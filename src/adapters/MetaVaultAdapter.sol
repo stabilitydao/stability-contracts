@@ -15,6 +15,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title AMM adapter for Meta Vaults
 /// @dev It's not suitable for MultiVaults, see i.e. poolTokens implementation.
 /// Changelog:
+///   1.0.1: fix incorrect calculation of minSharesOut in swap()
 ///   1.0.0: Initial version
 /// @author dvpublic (https://github.com/dvpublic)
 contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
@@ -25,7 +26,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -87,14 +88,18 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amount;
 
-            (, uint sharesOut,) = metaVault.previewDepositAssets(assets, amountsMax);
+            (
+                , // consumed amounts
+                , // amount meta vault tokens
+                uint valueOut // amount of meta vault shares to be received
+            ) = metaVault.previewDepositAssets(assets, amountsMax);
 
             IERC20(tokenIn).forceApprove(pool, amount);
             uint balanceBefore = metaVault.balanceOf(recipient);
             metaVault.depositAssets(
                 assets,
                 amountsMax,
-                sharesOut * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR,
+                valueOut * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR,
                 recipient
             );
 

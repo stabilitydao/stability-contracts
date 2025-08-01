@@ -176,6 +176,9 @@ interface IMetaVault is IStabilityVault {
     /// @param disableMode See {LastBlockDefenseDisableMode}
     /// 0 - the defence enabled
     /// 1 - the defence disabled in tx, maps are updated
-    ///
     function setLastBlockDefenseDisabledTx(uint disableMode) external;
+
+    /// @notice Allow to cache assets and vaults prices in the transient cache
+    /// @param clear True - clear the cache, false - prepare the cache
+    function cachePrices(bool clear) external;
 }
