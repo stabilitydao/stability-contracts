@@ -56,29 +56,32 @@ interface IVaultPriceOracle {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Retrieves the aggregated price data for a specific vault.
-    /// @param vault The address of the vault.
+    /// @param vault_ The address of the vault.
     /// @return price The aggregated median price.
     /// @return timestamp The timestamp of the aggregation.
     /// @return roundId The ID of the aggregated round.
-    function vaultPrices(address vault) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
+    function vaultPrices(address vault_) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
 
     /// @notice Retrieves a specific observation for a vault, round, and oracle.
-    /// @param vault The address of the vault.
-    /// @param roundId The ID of the round.
-    /// @param validator The address of the validator.
+    /// @param vault_ The address of the vault.
+    /// @param roundId_ The ID of the round.
+    /// @param validator_ The address of the validator.
     /// @return price The submitted price.
     /// @return timestamp The submission timestamp.
-    function observations(address vault, uint256 roundId, address validator) external view returns (uint256 price, uint256 timestamp);
+    function observations(address vault_, uint256 roundId_, address validator_) external view returns (uint256 price, uint256 timestamp);
 
     /// @notice Checks if an address is an authorized validator.
-    /// @param validator The address to check.
+    /// @param validator_ The address to check.
     /// @return True if authorized, false otherwise.
-    function authorizedValidator(address validator) external view returns (bool);
+    function authorizedValidator(address validator_) external view returns (bool);
 
     /// @notice Retrieves an validator address from the list by index.
-    /// @param index The index in the oracle list.
+    /// @param index_ The index in the oracle list.
     /// @return The address of the validator at that index.
-    function validatorList(uint256 index) external view returns (address);
+    function validatorList(uint256 index_) external view returns (address);
+
+    /// @notice Retrieves the number of validators.
+    function validatorListLength() external view returns (uint256);
 
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
@@ -90,32 +93,32 @@ interface IVaultPriceOracle {
 
     /// @notice Retrieves the latest valid aggregated price for a vault.
     /// @dev Reverts if no data is available or if the price is too old.
-    /// @param _vault The address of the vault.
+    /// @param vault_ The address of the vault.
     /// @return price The latest aggregated price.
     /// @return timestamp The aggregation timestamp.
     /// @return roundId The associated round ID.
-    function getLatestPrice(address _vault) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
+    function getLatestPrice(address vault_) external view returns (uint256 price, uint256 timestamp, uint256 roundId);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, uint256 _minQuorum, address[] memory _validator, uint256 _maxPriceAge) external;
+    function initialize(address platform_, uint256 minQuorum_, address[] memory validator_, uint256 maxPriceAge_) external;
 
     /// @notice Submits a price for a vault in the current round.
     /// @dev Can only be called by authorized validators.
-    /// @param _vault The address of the vault.
-    /// @param _price The price to submit.
-    /// @param _roundId The ID of the round (must match current).
-    function submitPrice(address _vault, uint256 _price, uint256 _roundId) external;
+    /// @param vault_ The address of the vault.
+    /// @param price_ The price to submit.
+    /// @param roundId_ The ID of the round (must match current).
+    function submitPrice(address vault_, uint256 price_, uint256 roundId_) external;
 
     /// @notice Adds a new validator to the authorized list.
     /// @dev Restricted to governance or multisig.
-    /// @param _validator The address of the validator to add.
-    function addValidator(address _validator) external;
+    /// @param validator_ The address of the validator to add.
+    function addValidator(address validator_) external;
 
     /// @notice Removes an validator from the authorized list.
     /// @dev Restricted to governance or multisig.
-    /// @param _validator The address of the validator to remove.
-    function removeValidator(address _validator) external;
+    /// @param validator_ The address of the validator to remove.
+    function removeValidator(address validator_) external;
 }
