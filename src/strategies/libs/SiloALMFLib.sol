@@ -422,11 +422,8 @@ library SiloALMFLib {
     }
 
     function totalCollateral(address lendingVault) public view returns (uint) {
-        (address protectedShareToken, , ) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
-        return ISilo(lendingVault).convertToAssets(
-            StrategyLib.balance(protectedShareToken),
-            ISilo.AssetType.Protected
-        );
+        (address protectedShareToken,,) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
+        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(protectedShareToken), ISilo.AssetType.Protected);
     }
 
     function totalDebt(address borrowingVault) public view returns (uint) {

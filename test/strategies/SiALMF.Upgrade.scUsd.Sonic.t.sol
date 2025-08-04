@@ -73,7 +73,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse);
 
         // we must withdraw all assets before upgrading the strategy
-        address [3] memory holders = [
+        address[3] memory holders = [
             0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
             0xEae43e21a658B41d741139854cafDe9Ef7A580aB,
             0x224b920120AD0c30aedb5AFD01056405ec8E00F8
