@@ -41,7 +41,7 @@ import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
-///   1.1.1: Change deposit type to "non-borrowable collateral deposit"
+///   1.2.0: Change deposit type to "non-borrowable collateral deposit"
 ///   1.1.0: Each write operation caches prices of MetaUSD - #348
 ///   1.0.1: Use new version of setLastBlockDefenseDisabledTx
 ///   1.0.0: Initial version - #330
@@ -62,7 +62,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

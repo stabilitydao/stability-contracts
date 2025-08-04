@@ -121,7 +121,7 @@ library SiloALMFLib {
                     Math.min(tempCollateralAmount, collateralAmountTotal),
                     address(this),
                     address(this),
-                    ISilo.CollateralType.Collateral
+                    ISilo.CollateralType.Protected
                 );
             }
 
@@ -166,7 +166,7 @@ library SiloALMFLib {
 
             // withdraw amount
             ISilo(lendingVault).withdraw(
-                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral
+                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Protected
             );
 
             // swap
@@ -300,7 +300,7 @@ library SiloALMFLib {
     {
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
-        (ltv, maxLtv, leverage, collateralAmount, debtAmount, targetLeveragePercent) = _health(platform, $, debtState); // todo return
+        return _health(platform, $, debtState);
     }
 
     function rebalanceDebt(
@@ -422,7 +422,11 @@ library SiloALMFLib {
     }
 
     function totalCollateral(address lendingVault) public view returns (uint) {
-        return IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
+        (address protectedShareToken, , ) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
+        return ISilo(lendingVault).convertToAssets(
+            StrategyLib.balance(protectedShareToken),
+            ISilo.AssetType.Protected
+        );
     }
 
     function totalDebt(address borrowingVault) public view returns (uint) {
@@ -635,7 +639,7 @@ library SiloALMFLib {
             );
             if (amountToWithdraw != 0) {
                 ISilo(v.lendingVault).withdraw(
-                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral
+                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Protected
                 );
             }
         } else {
@@ -713,7 +717,7 @@ library SiloALMFLib {
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         // --------- Withdraw value from landing vault to the strategy balance
-        ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Collateral);
+        ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Protected);
 
         return true;
     }

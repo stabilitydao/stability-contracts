@@ -126,7 +126,7 @@ contract SiALMFUpgradeTest is Test {
             vm.prank(multisig);
             strategy.emergencyStopInvesting();
 
-            console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
+            // console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 16e6, "Emergency exit should not use more than 16 mln gas");
         }
     }

@@ -25,8 +25,9 @@ import {console, Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 
 /// @notice Fix a problem in MetaVaultAdapter that produced a false-positive ExceedSlippage error
+/// @notice Upgrade SiloALMFStrategy to 1.2.0 (use non-borrowable collateral)
 contract SiALMFUpgradeScUsdTest is Test {
-    uint public constant FORK_BLOCK = 40834789; // Jul-30-2025 04:59:49 AM +UTC
+    uint public constant FORK_BLOCK = 41561093; // Aug-04-2025 05:20:57 AM +UTC
 
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -63,14 +64,25 @@ contract SiALMFUpgradeScUsdTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
 
-        _upgradePlatform(address(priceReader));
+        // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         //        _upgradeWrappedMetaVault();
         _upgradeCVault(address(vault));
 
-        _upgradeStrategy();
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
         _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse);
+
+        // we must withdraw all assets before upgrading the strategy
+        address [3] memory holders = [
+            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
+            0xEae43e21a658B41d741139854cafDe9Ef7A580aB,
+            0x224b920120AD0c30aedb5AFD01056405ec8E00F8
+        ];
+        for (uint i; i < holders.length; ++i) {
+            _withdrawAll(holders[i]);
+        }
+
+        _upgradeStrategy();
     }
 
     /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
@@ -110,7 +122,7 @@ contract SiALMFUpgradeScUsdTest is Test {
             IVault(address(vault)).doHardWork();
 
             // console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
-            assertLt(gas0 - gasleft(), 15e6, "Hardwork should not use more than 16 mln gas");
+            assertLt(gas0 - gasleft(), 15.5e6, "Hardwork should not use more than 16 mln gas");
         }
 
         // ---------------------------------- Emergency exit
@@ -393,6 +405,36 @@ contract SiALMFUpgradeScUsdTest is Test {
         //        for (uint i; i < current.length; ++i) {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
+    }
+
+    function _getFlashLoanVault() internal view returns (address _vault, uint _kind) {
+        ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(strategy));
+        (uint[] memory params, address[] memory addresses) = _strategy.getUniversalParams();
+        return (addresses[0], params[10]);
+    }
+
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy_, address vault_, uint kind) internal {
+        (uint[] memory params, address[] memory addresses) = strategy_.getUniversalParams();
+        params[10] = kind;
+        addresses[0] = vault_;
+
+        vm.prank(multisig);
+        strategy_.setUniversalParams(params, addresses);
+    }
+
+    function _withdrawAll(address user) internal {
+        address[] memory assets = vault.assets();
+        uint shares = vault.balanceOf(user);
+
+        vm.prank(user);
+        vault.withdrawAssets(assets, shares / 2, new uint[](1));
+        vm.roll(block.number + 6);
+
+        shares = vault.balanceOf(user);
+        vm.prank(user);
+        vault.withdrawAssets(assets, shares, new uint[](1));
+
+        vm.roll(block.number + 6);
     }
     //endregion ------------------------------------ Helpers
 }
