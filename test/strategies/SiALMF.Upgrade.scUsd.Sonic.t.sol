@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
@@ -27,7 +28,7 @@ import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 /// @notice Fix a problem in MetaVaultAdapter that produced a false-positive ExceedSlippage error
 /// @notice Upgrade SiloALMFStrategy to 1.2.0 (use non-borrowable collateral)
 contract SiALMFUpgradeScUsdTest is Test {
-    uint public constant FORK_BLOCK = 41561093; // Aug-04-2025 05:20:57 AM +UTC
+    uint public constant FORK_BLOCK = 41583791; // Aug-04-2025 09:35:18 AM +UTC
 
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -64,6 +65,13 @@ contract SiALMFUpgradeScUsdTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
 
+//        deal(
+//            SonicConstantsLib.TOKEN_scUSD,
+//            SonicConstantsLib.BEETS_VAULT,
+//            1_000_000e6 // 100k USDC
+//        );
+
+
         // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         //        _upgradeWrappedMetaVault();
@@ -72,21 +80,14 @@ contract SiALMFUpgradeScUsdTest is Test {
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
         _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse);
 
-        // we must withdraw all assets before upgrading the strategy
-        address[3] memory holders = [
-            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
-            0xEae43e21a658B41d741139854cafDe9Ef7A580aB,
-            0x224b920120AD0c30aedb5AFD01056405ec8E00F8
-        ];
-        for (uint i; i < holders.length; ++i) {
-            _withdrawAll(holders[i]);
-        }
-
         _upgradeStrategy();
     }
 
     /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
     function testSingleDepositWithdraw() public {
+        // ---------------------------------- Re-deposit "collateral type" => "protected type" to allow deposit/withdraw
+        _reDeposit();
+
         // ---------------------------------- Deposit
         uint amount = 7000e18;
         _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
@@ -100,14 +101,14 @@ contract SiALMFUpgradeScUsdTest is Test {
         uint gas0 = gasleft();
         vault.depositAssets(assets, amountsMax, 0, address(this));
         vm.roll(block.number + 6);
-        // console.log("!!!!!!!!!!!!!!! gas used for deposit", gas0 - gasleft());
+        console.log("!!!!!!!!!!!!!!! gas used for deposit", gas0 - gasleft());
         assertLt(gas0 - gasleft(), 12e6, "Deposit should not use more than 12 mln gas");
 
         // ---------------------------------- Withdraw
         uint shares = vault.balanceOf(address(this));
         gas0 = gasleft();
         uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
-        // console.log("!!!!!!!!!!!!!!! gas used for withdraw", gas0 - gasleft());
+        console.log("!!!!!!!!!!!!!!! gas used for withdraw", gas0 - gasleft());
         assertLt(gas0 - gasleft(), 15e6, "Withdraw should not use more than 15 mln gas");
 
         assertApproxEqAbs(amount, withdrawn[0], amount / 100 * 2, "Withdrawn amount does not match deposited amount");
@@ -121,21 +122,71 @@ contract SiALMFUpgradeScUsdTest is Test {
             vm.prank(hardWorker);
             IVault(address(vault)).doHardWork();
 
-            // console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
+            console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 15.5e6, "Hardwork should not use more than 16 mln gas");
         }
 
+    }
+
+    function testEmergencyExit() public {
+        // ---------------------------------- Re-deposit "collateral type" => "protected type" to allow deposit/withdraw
+        _reDeposit();
+
         // ---------------------------------- Emergency exit
         {
-            gas0 = gasleft();
+            uint gas0 = gasleft();
 
             vm.prank(multisig);
             strategy.emergencyStopInvesting();
 
-            // console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
+            console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 15e6, "Emergency exit should not use more than 15 mln gas");
         }
     }
+
+    //region ------------------------------------ Re-deposit
+    /// @dev Re-deposit incorrectly deposited amounts: "collateral type" => "protected type"
+    function _reDeposit() internal {
+        // ---------------------------------- State before re-deposit
+        SiloALMFStrategy _strategy = SiloALMFStrategy(payable(address(strategy)));
+        uint baseAmount = _strategy.totalCollateralToRedeposit() / 2;
+
+        uint total = strategy.total();
+        (uint sharePriceBefore,) = _strategy.realSharePrice();
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!total, sharePriceBefore", total, sharePriceBefore);
+
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, address(multisig), 10_000e18);
+        uint balanceBefore = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(multisig);
+        State memory stateBefore = _getState();
+
+        while (_strategy.totalCollateralToRedeposit() != 0) {
+            uint amount = Math.min(_strategy.totalCollateralToRedeposit(), baseAmount);
+
+            vm.prank(multisig);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(_strategy), balanceBefore);
+
+            // exit
+            uint gas0 = gasleft();
+            vm.prank(multisig);
+            _strategy.reDeposit(amount, type(uint).max, true);
+            console.log("!!!!!!!!!gas used for re-deposit1", gas0 - gasleft());
+
+            // enter
+            gas0 = gasleft();
+            vm.prank(multisig);
+            _strategy.reDeposit(0, 0, false);
+            console.log("!!!!!!!!!gas used for re-deposit2", gas0 - gasleft());
+        }
+
+        uint total2 = strategy.total();
+        (uint sharePriceAfter,) = _strategy.realSharePrice();
+        uint balanceAfter = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(multisig);
+        State memory stateAfter = _getState();
+
+        console.log("total, sharePriceAfter", total2, sharePriceAfter);
+        console.log("!!!!!!!!!! TOTAL LOSSES", balanceBefore - balanceAfter);
+    }
+    //endregion ------------------------------------ Re-deposit
 
     //region ------------------------------------ Helpers
     function _upgradeStrategy() internal {
@@ -295,16 +346,17 @@ contract SiALMFUpgradeScUsdTest is Test {
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
-        //        console.log("ltv", state.ltv);
-        //        console.log("maxLtv", state.maxLtv);
-        //        console.log("targetLeverage", state.targetLeverage);
-        //        console.log("leverage", state.leverage);
-        //        console.log("total", state.total);
-        //        console.log("collateralAmount", state.collateralAmount);
-        //        console.log("debtAmount", state.debtAmount);
-        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
-        //        console.log("maxLeverage", state.maxLeverage);
-        //        console.log("realTvl", state.realTvl);
+        console.log("============== state");
+        console.log("ltv", state.ltv);
+        console.log("maxLtv", state.maxLtv);
+        console.log("targetLeverage", state.targetLeverage);
+        console.log("leverage", state.leverage);
+        console.log("total", state.total);
+        console.log("collateralAmount", state.collateralAmount);
+        console.log("debtAmount", state.debtAmount);
+        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        console.log("maxLeverage", state.maxLeverage);
+        console.log("realTvl", state.realTvl);
         return state;
     }
 
@@ -413,9 +465,13 @@ contract SiALMFUpgradeScUsdTest is Test {
         return (addresses[0], params[10]);
     }
 
-    function _setFlashLoanVault(ILeverageLendingStrategy strategy_, address vault_, uint kind) internal {
+    function _setFlashLoanVault(
+        ILeverageLendingStrategy strategy_,
+        address vault_,
+        ILeverageLendingStrategy.FlashLoanKind kind
+    ) internal {
         (uint[] memory params, address[] memory addresses) = strategy_.getUniversalParams();
-        params[10] = kind;
+        params[10] = uint(kind);
         addresses[0] = vault_;
 
         vm.prank(multisig);

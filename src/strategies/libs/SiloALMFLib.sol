@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
@@ -34,6 +35,9 @@ library SiloALMFLib {
 
     /// @notice 1000 is 1%
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
+
+    error TemporallyDisabled();
+    error NotEnoughAmountToCover(uint amountToCover);
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -74,6 +78,7 @@ library SiloALMFLib {
         uint amount,
         uint feeAmount
     ) internal {
+        console.log("_receiveFlashLoan amount,feeAmount", amount, feeAmount);
         address collateralAsset = $.collateralAsset;
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, IControllable.IncorrectMsgSender());
@@ -112,18 +117,7 @@ library SiloALMFLib {
             ISilo($.borrowingVault).repay(amount, address(this));
 
             // withdraw
-            {
-                address lendingVault = $.lendingVault;
-                uint collateralAmountTotal = totalCollateral(lendingVault);
-                collateralAmountTotal -= collateralAmountTotal / 1000;
-
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Protected
-                );
-            }
+            _withdrawInReceiveFlashLoan($, tempCollateralAmount);
 
             // swap
             _swap(
@@ -226,6 +220,41 @@ library SiloALMFLib {
         emit ILeverageLendingStrategy.LeverageLendingHealth(ltv, leverage);
 
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
+    }
+
+    function _withdrawInReceiveFlashLoan(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint tempCollateralAmount
+    ) internal {
+        uint totalCollateralC = totalCollateralToRedeposit($.lendingVault);
+        if (totalCollateralC == 0) {
+            address lendingVault = $.lendingVault;
+            uint collateralAmountTotal = totalCollateral(lendingVault);
+            collateralAmountTotal -= collateralAmountTotal / 1000;
+
+            ISilo(lendingVault).withdraw(
+                Math.min(tempCollateralAmount, collateralAmountTotal),
+                address(this),
+                address(this),
+                ISilo.CollateralType.Protected
+            );
+        } else {
+            address lendingVault = $.lendingVault;
+            uint collateralAmountTotal = totalCollateralC;
+
+            console.log("_withdrawInReceiveFlashLoan.tempCollateralAmount", tempCollateralAmount);
+            console.log("_withdrawInReceiveFlashLoan.collateralAmountTotal", collateralAmountTotal);
+            ISilo(lendingVault).withdraw(
+                Math.min(
+                    // +1 decimal - don't allow to leave dust in Silo
+                    tempCollateralAmount + 10 ** IERC20Metadata($.collateralAsset).decimals(),
+                    collateralAmountTotal
+                ),
+                address(this),
+                address(this),
+                ISilo.CollateralType.Collateral
+            );
+        }
     }
 
     function receiveFlashLoanBalancerV2(
@@ -423,7 +452,10 @@ library SiloALMFLib {
 
     function totalCollateral(address lendingVault) public view returns (uint) {
         (address protectedShareToken,,) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
-        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(protectedShareToken), ISilo.AssetType.Protected);
+        return ISilo(lendingVault).convertToAssets(
+            StrategyLib.balance(protectedShareToken),
+            ISilo.AssetType.Protected
+        ) + totalCollateralToRedeposit(lendingVault);
     }
 
     function totalDebt(address borrowingVault) public view returns (uint) {
@@ -671,6 +703,7 @@ library SiloALMFLib {
 
         $.tempCollateralAmount = collateralAmountToWithdraw;
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Withdraw;
+        console.log("requestFlashLoan", flashAssets[0], flashAmounts[0]);
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
     }
 
@@ -1061,5 +1094,50 @@ library SiloALMFLib {
         // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
         return IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault());
     }
-    //region ------------------------------------- Transient prices cache
+    //endregion ------------------------------------- Transient prices cache
+
+    //region ----------------------------------- Additional temporally functions
+
+    /// @dev True if there is no deposit of "collateral type"
+    function totalCollateralToRedeposit(address lendingVault) internal view returns (uint) {
+        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(lendingVault), ISilo.AssetType.Collateral);
+    }
+
+    /// @notice Withdraw {value_} of Collateral and re-deposit it as Protected collateral
+    function reDeposit(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint maxCollateralToWithdraw_,
+        bool exitMode_
+    ) internal {
+        console.log("reDeposit");
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
+        StateBeforeWithdraw memory state = _getStateBeforeWithdraw($, v);
+
+        if (exitMode_) {
+
+            require(totalCollateralToRedeposit(v.lendingVault) != 0, TemporallyDisabled());
+
+            uint totalCollateralToWithdraw = ISilo(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault), ISilo.AssetType.Collateral);
+            console.log("reDeposit.totalCollateralToWithdraw", totalCollateralToWithdraw);
+            uint value = Math.mulDiv(
+                Math.min(totalCollateralToWithdraw, maxCollateralToWithdraw_),
+                INTERNAL_PRECISION * INTERNAL_PRECISION,
+                state.maxLeverage * state.withdrawParam0,
+                Math.Rounding.Ceil
+            );
+            console.log("reDeposit.value", value);
+
+            _defaultWithdraw($, v, state, value);
+            console.log("totalCollateralToWithdraw.after", ISilo(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault), ISilo.AssetType.Collateral));
+        } else {
+            _deposit($, v, StrategyLib.balance($.collateralAsset), state.priceCtoB);
+        }
+
+        (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        _ensureLtvValid($, maxLtv);
+    }
+
+    //endregion ----------------------------------- Additional temporally functions
+
+
 }
