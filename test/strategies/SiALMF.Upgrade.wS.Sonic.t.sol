@@ -24,14 +24,17 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
+import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 
 /// @notice Upgrade SiloALMFStrategy to 1.2.0 (use non-borrowable collateral)
 contract SiALMFUpgradeWsTest is Test {
     uint public constant FORK_BLOCK = 41583791; // Aug-04-2025 09:35:18 AM +UTC
     uint public constant REDEPOSIT_OP_KIND_WITHDRAW = 0;
     uint public constant REDEPOSIT_OP_KIND_DEPOSIT = 1;
+    uint public constant COUNT_ITERATIONS = 2;
 
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
+    address public constant STRATEGY_COMPOUND_V2 = 0x396D38E56ce682f056AD4c653A145Ab9d3e78fd0;
 
     address internal multisig;
     IFactory internal factory;
@@ -66,12 +69,6 @@ contract SiALMFUpgradeWsTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaS).platform()).priceReader());
 
-//        deal(
-//            SonicConstantsLib.TOKEN_scUSD,
-//            SonicConstantsLib.BEETS_VAULT,
-//            1_000_000e6 // 100k USDC
-//        );
-
 
         // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaS);
@@ -81,6 +78,7 @@ contract SiALMFUpgradeWsTest is Test {
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAS_wS_128);
 
         _upgradeStrategy();
+        _upgradeCompoundV2Strategy(STRATEGY_COMPOUND_V2); // we need to fix maxWithdraw
     }
 
     /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
@@ -149,13 +147,14 @@ contract SiALMFUpgradeWsTest is Test {
     function _reDeposit() internal {
         // -------------------------------------- State before re-deposit
         SiloALMFStrategy _strategy = SiloALMFStrategy(payable(address(strategy)));
-        uint baseAmount = _strategy.totalCollateralToRedeposit() / 2;
+        uint baseAmount = _strategy.totalCollateralToRedeposit() / COUNT_ITERATIONS;
 
         State memory stateBefore = _getState();
 
         // -------------------------------------- Withdraw, deposit
         while (_strategy.totalCollateralToRedeposit() != 0) {
             uint amount = Math.min(_strategy.totalCollateralToRedeposit(), baseAmount);
+            console.log("amount to re-deposit", amount);
 
             // exit
             uint gas0 = gasleft();
@@ -212,6 +211,24 @@ contract SiALMFUpgradeWsTest is Test {
         );
 
         factory.upgradeStrategyProxy(address(strategy));
+    }
+
+    function _upgradeCompoundV2Strategy(address strategy_) internal {
+        address strategyImplementation = address(new CompoundV2Strategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.COMPOUND_V2,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategy_);
     }
 
     function _upgradePlatform(address priceReader_) internal {

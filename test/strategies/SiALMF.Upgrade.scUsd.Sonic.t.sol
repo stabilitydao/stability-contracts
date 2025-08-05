@@ -31,6 +31,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     uint public constant FORK_BLOCK = 41583791; // Aug-04-2025 09:35:18 AM +UTC
     uint public constant REDEPOSIT_OP_KIND_WITHDRAW = 0;
     uint public constant REDEPOSIT_OP_KIND_DEPOSIT = 1;
+    uint public constant COUNT_ITERATIONS = 10;
 
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -148,7 +149,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     function _reDeposit() internal {
         // -------------------------------------- State before re-deposit
         SiloALMFStrategy _strategy = SiloALMFStrategy(payable(address(strategy)));
-        uint baseAmount = _strategy.totalCollateralToRedeposit() / 10;
+        uint baseAmount = _strategy.totalCollateralToRedeposit() / COUNT_ITERATIONS;
 
         State memory stateBefore = _getState();
 

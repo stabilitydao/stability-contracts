@@ -401,6 +401,7 @@ contract SiloALMFStrategy is
 
     //region ----------------------------------- Additional temporally functions
     function isPaused() public view returns (bool) {
+        // todo probably we need flag Paused in the storage
         return totalCollateralToRedeposit() != 0;
     }
 
