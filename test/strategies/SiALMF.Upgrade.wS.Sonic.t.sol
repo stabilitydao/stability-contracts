@@ -69,7 +69,6 @@ contract SiALMFUpgradeWsTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaS).platform()).priceReader());
 
-
         // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaS);
         //        _upgradeWrappedMetaVault();
@@ -123,7 +122,6 @@ contract SiALMFUpgradeWsTest is Test {
             // console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 15.5e6, "Hardwork should not use more than 16 mln gas");
         }
-
     }
 
     function testEmergencyExit() public {
@@ -179,7 +177,9 @@ contract SiALMFUpgradeWsTest is Test {
             deal(SonicConstantsLib.WRAPPED_METAVAULT_metaS, address(multisig), stateBefore.realTvl - stateAfter.realTvl);
 
             vm.prank(multisig);
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaS).transfer(address(_strategy), stateBefore.realTvl - stateAfter.realTvl);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaS).transfer(
+                address(_strategy), stateBefore.realTvl - stateAfter.realTvl
+            );
 
             vm.prank(multisig);
             _strategy.reDeposit(REDEPOSIT_OP_KIND_DEPOSIT, stateBefore.realTvl - stateAfter.realTvl);
@@ -188,8 +188,18 @@ contract SiALMFUpgradeWsTest is Test {
         // -------------------------------------- Check results
         State memory stateFinal = _getState();
 
-        assertApproxEqAbs(stateBefore.sharePrice, stateFinal.sharePrice, stateBefore.sharePrice / 10_000, "Share price should not change after re-deposit");
-        assertApproxEqAbs(stateBefore.realTvl, stateFinal.realTvl, stateBefore.realTvl / 10_000, "Real TLV should not change after re-deposit");
+        assertApproxEqAbs(
+            stateBefore.sharePrice,
+            stateFinal.sharePrice,
+            stateBefore.sharePrice / 10_000,
+            "Share price should not change after re-deposit"
+        );
+        assertApproxEqAbs(
+            stateBefore.realTvl,
+            stateFinal.realTvl,
+            stateBefore.realTvl / 10_000,
+            "Real TLV should not change after re-deposit"
+        );
         assertEq(stateBefore.total, stateFinal.total, "Total should not change after re-deposit");
     }
     //endregion ------------------------------------ Re-deposit

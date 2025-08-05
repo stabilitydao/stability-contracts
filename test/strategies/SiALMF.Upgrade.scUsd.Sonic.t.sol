@@ -68,8 +68,11 @@ contract SiALMFUpgradeScUsdTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
 
-        _setFlashLoanVault(ILeverageLendingStrategy(address(strategy)), SonicConstantsLib.BEETS_VAULT_V3, ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1);
-
+        _setFlashLoanVault(
+            ILeverageLendingStrategy(address(strategy)),
+            SonicConstantsLib.BEETS_VAULT_V3,
+            ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1
+        );
 
         // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
@@ -124,7 +127,6 @@ contract SiALMFUpgradeScUsdTest is Test {
             // console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 15.5e6, "Hardwork should not use more than 16 mln gas");
         }
-
     }
 
     // todo: there is not enough scUSD in flash loan vault
@@ -177,10 +179,14 @@ contract SiALMFUpgradeScUsdTest is Test {
         // -------------------------------------- Operator compensates the losses
         if (stateAfter.realTvl < stateBefore.realTvl) {
             console.log("cover losses", stateBefore.realTvl - stateAfter.realTvl);
-            deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, address(multisig), stateBefore.realTvl - stateAfter.realTvl);
+            deal(
+                SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, address(multisig), stateBefore.realTvl - stateAfter.realTvl
+            );
 
             vm.prank(multisig);
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).transfer(address(_strategy), stateBefore.realTvl - stateAfter.realTvl);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).transfer(
+                address(_strategy), stateBefore.realTvl - stateAfter.realTvl
+            );
 
             vm.prank(multisig);
             _strategy.reDeposit(REDEPOSIT_OP_KIND_DEPOSIT, stateBefore.realTvl - stateAfter.realTvl);
@@ -189,8 +195,18 @@ contract SiALMFUpgradeScUsdTest is Test {
         // -------------------------------------- Check results
         State memory stateFinal = _getState();
 
-        assertApproxEqAbs(stateBefore.sharePrice, stateFinal.sharePrice, stateBefore.sharePrice / 10_000, "Share price should not change after re-deposit");
-        assertApproxEqAbs(stateBefore.realTvl, stateFinal.realTvl, stateBefore.realTvl / 10_000, "Real TLV should not change after re-deposit");
+        assertApproxEqAbs(
+            stateBefore.sharePrice,
+            stateFinal.sharePrice,
+            stateBefore.sharePrice / 10_000,
+            "Share price should not change after re-deposit"
+        );
+        assertApproxEqAbs(
+            stateBefore.realTvl,
+            stateFinal.realTvl,
+            stateBefore.realTvl / 10_000,
+            "Real TLV should not change after re-deposit"
+        );
         assertEq(stateBefore.total, stateFinal.total, "Total should not change after re-deposit");
     }
     //endregion ------------------------------------ Re-deposit
@@ -353,18 +369,18 @@ contract SiALMFUpgradeScUsdTest is Test {
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
-//        console.log("============== state");
-//        console.log("ltv", state.ltv);
-//        console.log("maxLtv", state.maxLtv);
-//        console.log("targetLeverage", state.targetLeverage);
-//        console.log("leverage", state.leverage);
-//        console.log("total", state.total);
-//        console.log("collateralAmount", state.collateralAmount);
-//        console.log("debtAmount", state.debtAmount);
-//        console.log("targetLeveragePercent", state.targetLeveragePercent);
-//        console.log("maxLeverage", state.maxLeverage);
-//        console.log("realTvl", state.realTvl);
-//        console.log("realSharePrice", state.sharePrice);
+        //        console.log("============== state");
+        //        console.log("ltv", state.ltv);
+        //        console.log("maxLtv", state.maxLtv);
+        //        console.log("targetLeverage", state.targetLeverage);
+        //        console.log("leverage", state.leverage);
+        //        console.log("total", state.total);
+        //        console.log("collateralAmount", state.collateralAmount);
+        //        console.log("debtAmount", state.debtAmount);
+        //        console.log("targetLeveragePercent", state.targetLeveragePercent);
+        //        console.log("maxLeverage", state.maxLeverage);
+        //        console.log("realTvl", state.realTvl);
+        //        console.log("realSharePrice", state.sharePrice);
         return state;
     }
 

@@ -200,7 +200,7 @@ contract CompoundV2Strategy is StrategyBase {
         uint totalReserves = IVToken(_underlying).totalReserves();
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(underlyingBalance, (availableLiquidity - totalReserves) * 995/1000); // 99.5% of the available liquidity
+        amounts[0] = Math.min(underlyingBalance, (availableLiquidity - totalReserves) * 995 / 1000); // 99.5% of the available liquidity
     }
 
     /// @notice IStrategy

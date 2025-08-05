@@ -395,10 +395,8 @@ library SiloALMFLib {
 
     function totalCollateral(address lendingVault) public view returns (uint) {
         (address protectedShareToken,,) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
-        return ISilo(lendingVault).convertToAssets(
-            StrategyLib.balance(protectedShareToken),
-            ISilo.AssetType.Protected
-        ) + totalCollateralToRedeposit(lendingVault);
+        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(protectedShareToken), ISilo.AssetType.Protected)
+            + totalCollateralToRedeposit(lendingVault);
     }
 
     function totalDebt(address borrowingVault) public view returns (uint) {
@@ -1038,7 +1036,8 @@ library SiloALMFLib {
             // withdraw from the lending vault
             require(totalCollateralToRedeposit(v.lendingVault) != 0, Paused());
 
-            uint totalCollateralToWithdraw = ISilo(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault), ISilo.AssetType.Collateral);
+            uint totalCollateralToWithdraw =
+                ISilo(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault), ISilo.AssetType.Collateral);
             uint value = Math.mulDiv(
                 Math.min(totalCollateralToWithdraw, maxCollateralToWithdraw_),
                 INTERNAL_PRECISION * INTERNAL_PRECISION,
@@ -1057,6 +1056,4 @@ library SiloALMFLib {
     }
 
     //endregion ----------------------------------- Additional temporally functions
-
-
 }

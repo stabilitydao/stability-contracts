@@ -74,9 +74,9 @@ library SiloALMFLib2 {
     }
 
     function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-    external
-    view
-    returns (string memory, bool)
+        external
+        view
+        returns (string memory, bool)
     {
         address lendingVault = $.lendingVault;
         uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
@@ -141,5 +141,4 @@ library SiloALMFLib2 {
         (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
         SiloALMFLib._receiveFlashLoan(platform, $, token, amount, isToken0 ? fee0 : fee1);
     }
-
 }
