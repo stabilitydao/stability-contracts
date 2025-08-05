@@ -39,7 +39,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0"; // todo
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION =
@@ -82,6 +82,12 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         IERC20(_assets[0]).forceApprove(IAToken(farm.addresses[0]).POOL(), type(uint).max);
+    }
+
+    function setUnderlying() external onlyOperator {
+        // todo
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base._underlying = aaveToken();
     }
 
     //region ----------------------- View functions
