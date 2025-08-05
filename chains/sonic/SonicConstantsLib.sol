@@ -35,6 +35,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
     address public constant VAULT_C_WMETAUSD_USDC_121 = 0xe965c5114F689BF9184D9300F3af4A378c6934A9;
     address public constant VAULT_C_WMETAUSD_scUSD_125 = 0x58D310a1A490f0daa86608998E08852630000151;
+    address public constant VAULT_C_WMETAS_wS_128 = 0xD44E7413134Ad3909c793C52cd242d99271f6570;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;

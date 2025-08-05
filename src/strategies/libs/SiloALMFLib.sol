@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
@@ -19,11 +17,9 @@ import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
-import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {StrategyIdLib} from "./StrategyIdLib.sol";
 import {StrategyLib} from "./StrategyLib.sol";
 
 library SiloALMFLib {
@@ -34,6 +30,9 @@ library SiloALMFLib {
 
     /// @notice 1000 is 1%
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
+
+    error Paused();
+    error NotEnoughAmountToCover(uint amountToCover);
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -91,7 +90,10 @@ library SiloALMFLib {
 
             // supply
             ISilo($.lendingVault).deposit(
-                IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
+                IERC20(collateralAsset).balanceOf(address(this)),
+                address(this),
+                // we should make non-borrowable collateral deposit to be able to get Merkl rewards
+                ISilo.CollateralType.Protected
             );
 
             // borrow
@@ -109,18 +111,7 @@ library SiloALMFLib {
             ISilo($.borrowingVault).repay(amount, address(this));
 
             // withdraw
-            {
-                address lendingVault = $.lendingVault;
-                uint collateralAmountTotal = totalCollateral(lendingVault);
-                collateralAmountTotal -= collateralAmountTotal / 1000;
-
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Collateral
-                );
-            }
+            _withdrawInReceiveFlashLoan($, tempCollateralAmount);
 
             // swap
             _swap(
@@ -163,7 +154,7 @@ library SiloALMFLib {
 
             // withdraw amount
             ISilo(lendingVault).withdraw(
-                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral
+                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Protected
             );
 
             // swap
@@ -194,7 +185,8 @@ library SiloALMFLib {
             ISilo($.lendingVault).deposit(
                 _getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
                 address(this),
-                ISilo.CollateralType.Collateral
+                // we should make non-borrowable collateral deposit to be able to get Merkl rewards
+                ISilo.CollateralType.Protected
             );
 
             // borrow
@@ -224,52 +216,37 @@ library SiloALMFLib {
         $.tempAction = ILeverageLendingStrategy.CurrentAction.None;
     }
 
-    function receiveFlashLoanBalancerV2(
-        address platform,
+    function _withdrawInReceiveFlashLoan(
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address[] memory tokens,
-        uint[] memory amounts,
-        uint[] memory feeAmounts
-    ) external {
-        // Flash loan is performed upon deposit and withdrawal
-        SiloALMFLib._receiveFlashLoan(platform, $, tokens[0], amounts[0], feeAmounts[0]);
-    }
+        uint tempCollateralAmount
+    ) internal {
+        uint totalCollateralC = totalCollateralToRedeposit($.lendingVault);
+        if (totalCollateralC == 0) {
+            address lendingVault = $.lendingVault;
+            uint collateralAmountTotal = totalCollateral(lendingVault);
+            collateralAmountTotal -= collateralAmountTotal / 1000;
 
-    function receiveFlashLoanV3(
-        address platform,
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        address token,
-        uint amount
-    ) external {
-        // sender is vault, it's checked inside receiveFlashLoan
-        // we can use msg.sender below but $.flashLoanVault looks more safe
-        IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
+            ISilo(lendingVault).withdraw(
+                Math.min(tempCollateralAmount, collateralAmountTotal),
+                address(this),
+                address(this),
+                ISilo.CollateralType.Protected
+            );
+        } else {
+            address lendingVault = $.lendingVault;
+            uint collateralAmountTotal = totalCollateralC;
 
-        // ensure that the vault has available amount
-        require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
-
-        // receive flash loan from the vault
-        vault.sendTo(token, address(this), amount);
-
-        // Flash loan is performed upon deposit and withdrawal
-        SiloALMFLib._receiveFlashLoan(platform, $, token, amount, 0); // assume that flash loan is free, fee is 0
-
-        // return flash loan back to the vault
-        // assume that the amount was transferred back to the vault inside receiveFlashLoan()
-        // we need only to register this transferring
-        vault.settle(token, amount);
-    }
-
-    function uniswapV3FlashCallback(
-        address platform,
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        uint fee0,
-        uint fee1,
-        bytes calldata userData
-    ) external {
-        // sender is the pool, it's checked inside receiveFlashLoan
-        (address token, uint amount, bool isToken0) = abi.decode(userData, (address, uint, bool));
-        SiloALMFLib._receiveFlashLoan(platform, $, token, amount, isToken0 ? fee0 : fee1);
+            ISilo(lendingVault).withdraw(
+                Math.min(
+                    // +1 decimal - don't allow to leave dust in Silo
+                    tempCollateralAmount + 10 ** IERC20Metadata($.collateralAsset).decimals(),
+                    collateralAmountTotal
+                ),
+                address(this),
+                address(this),
+                ISilo.CollateralType.Collateral
+            );
+        }
     }
 
     //endregion ------------------------------------- Flash loan
@@ -296,7 +273,7 @@ library SiloALMFLib {
     {
         CollateralDebtState memory debtState =
             _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
-        (ltv, maxLtv, leverage, collateralAmount, debtAmount, targetLeveragePercent) = _health(platform, $, debtState); // todo return
+        return _health(platform, $, debtState);
     }
 
     function rebalanceDebt(
@@ -385,9 +362,8 @@ library SiloALMFLib {
             uint priceB =
                 ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
 
-            priceCtoB = priceC * 1e18 / priceB; // todo
+            priceCtoB = priceC * 1e18 / priceB;
             priceBtoC = 1e18 * 1e18 / priceCtoB;
-            // console.log("priceC, priceB, priceCtoB", priceC, priceB, priceCtoB);
         }
     }
 
@@ -418,7 +394,9 @@ library SiloALMFLib {
     }
 
     function totalCollateral(address lendingVault) public view returns (uint) {
-        return IERC4626(lendingVault).convertToAssets(StrategyLib.balance(lendingVault));
+        (address protectedShareToken,,) = ISiloConfig(ISilo(lendingVault).config()).getShareTokens(lendingVault);
+        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(protectedShareToken), ISilo.AssetType.Protected)
+            + totalCollateralToRedeposit(lendingVault);
     }
 
     function totalDebt(address borrowingVault) public view returns (uint) {
@@ -434,21 +412,6 @@ library SiloALMFLib {
         (__realTvl, trusted) = realTvl(platform, $);
         uint totalSupply = IERC20(vault_).totalSupply();
         sharePrice = totalSupply == 0 ? 0 : __realTvl * 1e18 / totalSupply;
-    }
-
-    function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        external
-        view
-        returns (string memory, bool)
-    {
-        address lendingVault = $.lendingVault;
-        uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
-        string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
-        (,, uint targetLeverage) = getLtvData(lendingVault, $.targetLeveragePercent);
-        return (
-            string.concat(CommonLib.u2s(siloId), " ", borrowAssetSymbol, " ", _formatLeverageShort(targetLeverage)),
-            false
-        );
     }
 
     //endregion ------------------------------------- View functions
@@ -631,7 +594,7 @@ library SiloALMFLib {
             );
             if (amountToWithdraw != 0) {
                 ISilo(v.lendingVault).withdraw(
-                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral
+                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Protected
                 );
             }
         } else {
@@ -709,7 +672,7 @@ library SiloALMFLib {
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
         // --------- Withdraw value from landing vault to the strategy balance
-        ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Collateral);
+        ISilo(v.lendingVault).withdraw(value, address(this), address(this), ISilo.CollateralType.Protected);
 
         return true;
     }
@@ -888,12 +851,6 @@ library SiloALMFLib {
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
     }
 
-    function _formatLeverageShort(uint amount) internal pure returns (string memory) {
-        uint intAmount = amount / 100_00;
-        uint decimalAmount = (amount - intAmount * 100_00) / 10_00;
-        return string.concat("x", CommonLib.u2s(intAmount), ".", CommonLib.u2s(decimalAmount));
-    }
-
     function _getDebtState(
         address platform,
         address lendingVault,
@@ -1056,5 +1013,47 @@ library SiloALMFLib {
         // assume that collateral asset is always WrappedMetaVault, i.e. wmetaUSD
         return IMetaVault(IWrappedMetaVault(wrappedMetaVault).metaVault());
     }
-    //region ------------------------------------- Transient prices cache
+    //endregion ------------------------------------- Transient prices cache
+
+    //region ----------------------------------- Additional temporally functions
+
+    /// @dev True if there is no deposit of "collateral type"
+    function totalCollateralToRedeposit(address lendingVault) internal view returns (uint) {
+        return ISilo(lendingVault).convertToAssets(StrategyLib.balance(lendingVault), ISilo.AssetType.Collateral);
+    }
+
+    /// @notice Withdraw {value_} of Collateral and re-deposit it as Protected collateral
+    /// @param opKind_ 0 - withdraw, 1 - deposit
+    function reDeposit(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
+        uint maxCollateralToWithdraw_,
+        uint opKind_
+    ) external {
+        ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
+        StateBeforeWithdraw memory state = _getStateBeforeWithdraw($, v);
+
+        if (opKind_ == 0) {
+            // withdraw from the lending vault
+            require(totalCollateralToRedeposit(v.lendingVault) != 0, Paused());
+
+            uint totalCollateralToWithdraw =
+                ISilo(v.lendingVault).convertToAssets(StrategyLib.balance(v.lendingVault), ISilo.AssetType.Collateral);
+            uint value = Math.mulDiv(
+                Math.min(totalCollateralToWithdraw, maxCollateralToWithdraw_),
+                INTERNAL_PRECISION * INTERNAL_PRECISION,
+                state.maxLeverage * state.withdrawParam0,
+                Math.Rounding.Ceil
+            );
+
+            _defaultWithdraw($, v, state, value);
+        } else if (opKind_ == 1) {
+            // deposit to the lending vault
+            _deposit($, v, StrategyLib.balance($.collateralAsset), state.priceCtoB);
+        }
+
+        (uint maxLtv,,) = getLtvData(v.lendingVault, $.targetLeveragePercent);
+        _ensureLtvValid($, maxLtv);
+    }
+
+    //endregion ----------------------------------- Additional temporally functions
 }

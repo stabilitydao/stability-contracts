@@ -14,6 +14,16 @@ interface ISilo is IERC4626 {
         Collateral
     }
 
+    /// @dev There are 3 types of accounting in the system: for non-borrowable collateral deposit called "protected",
+    ///      for borrowable collateral deposit called "collateral" and for borrowed tokens called "debt". System does
+    ///      identical calculations for each type of accounting but it uses different data. To avoid code duplication
+    ///      this enum is used to decide which data should be read.
+    enum AssetType {
+        Protected, // default
+        Collateral,
+        Debt
+    }
+
     /// @notice Implements IERC4626.deposit for protected (non-borrowable) collateral and collateral
     /// @dev Reverts for debt asset type
     function deposit(uint _assets, address _receiver, CollateralType collateralType) external returns (uint shares);
@@ -68,4 +78,19 @@ interface ISilo is IERC4626 {
     function maxRepay(address _borrower) external view returns (uint assets);
 
     function getLiquidity() external view returns (uint256 liquidity);
+
+    /// @notice Implements IERC4626.maxRedeem for protected (non-borrowable) collateral and collateral
+    /// @dev Reverts for debt asset type
+    function maxRedeem(address _owner, CollateralType _collateralType) external view returns (uint256 maxShares);
+
+    /// @notice Implements IERC4626.maxWithdraw for protected (non-borrowable) collateral and collateral
+    /// @dev Reverts for debt asset type
+    function maxWithdraw(address _owner, CollateralType _collateralType) external view returns (uint256 maxAssets);
+
+    /// @notice Calculates the maximum number of shares that can be repaid for a given borrower
+    /// @param _borrower Address of the borrower
+    /// @return shares The maximum number of shares that can be repaid for the borrower
+    function maxRepayShares(address _borrower) external view returns (uint256 shares);
+
+    function convertToAssets(uint256 _shares, AssetType _assetType) external view returns (uint256 assets);
 }

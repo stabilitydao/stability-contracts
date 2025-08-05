@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IComptroller} from "../integrations/compoundv2/IComptroller.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
@@ -21,6 +22,8 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Earns APR by lending assets on Compound V2 protocol.
 /// @author dvpublic (https://github.com/dvpublic)
+/// Change log:
+/// - 1.0.1: maxWithdrawAssets allows to withdraw 99.5% of the available liquidity only
 contract CompoundV2Strategy is StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -29,7 +32,7 @@ contract CompoundV2Strategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundV2Strategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant COMPOUND_V2_STRATEGY_STORAGE_LOCATION =
@@ -183,6 +186,7 @@ contract CompoundV2Strategy is StrategyBase {
 
     /// @inheritdoc IStrategy
     function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+        console.log("CompoundV2Strategy.maxWithdrawAssets");
         address _underlying = _getStrategyBaseStorage()._underlying;
         address asset = IVToken(_underlying).underlying();
 
@@ -193,9 +197,10 @@ contract CompoundV2Strategy is StrategyBase {
         uint cTokenBalance = IVToken(_underlying).balanceOf(address(this)); // 8 decimals
         uint exchangeRate = IVToken(_underlying).exchangeRateStored(); // underlying decimals * 1e18 / 1e8
         uint underlyingBalance = _tokensToAmount(cTokenBalance, exchangeRate);
+        uint totalReserves = IVToken(_underlying).totalReserves();
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(underlyingBalance, availableLiquidity);
+        amounts[0] = Math.min(underlyingBalance, (availableLiquidity - totalReserves) * 995 / 1000); // 99.5% of the available liquidity
     }
 
     /// @notice IStrategy

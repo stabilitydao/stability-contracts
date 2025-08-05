@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {PriceReader} from "../../src/core/PriceReader.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
@@ -22,10 +23,14 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 
-contract SiALMFUpgradeTest is Test {
-    // uint public constant FORK_BLOCK = 39484599; // Jul-21-2025 08:14:43 AM +UTC
-    uint public constant FORK_BLOCK = 40550698; // Jul-28-2025 05:46:21 AM +UTC
+/// @notice Upgrade SiloALMFStrategy to 1.2.0 (use non-borrowable collateral)
+contract SiALMFUpgradeUsdcTest is Test {
+    uint public constant FORK_BLOCK = 41583791; // Aug-04-2025 09:35:18 AM +UTC
+    uint public constant REDEPOSIT_OP_KIND_WITHDRAW = 0;
+    uint public constant REDEPOSIT_OP_KIND_DEPOSIT = 1;
+    uint public constant COUNT_ITERATIONS = 2;
 
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
@@ -62,27 +67,29 @@ contract SiALMFUpgradeTest is Test {
         priceReader =
             IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
 
-        _upgradePlatform(address(priceReader));
+        _setFlashLoanVault(
+            ILeverageLendingStrategy(address(strategy)),
+            SonicConstantsLib.BEETS_VAULT_V3,
+            ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1
+        );
+
+        // _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeWrappedMetaVault();
-        _upgradeCVault();
+        //        _upgradeWrappedMetaVault();
+        _upgradeCVault(address(vault));
+
+        _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121);
 
         _upgradeStrategy();
-        _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121);
     }
 
+    /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
     function testSingleDepositWithdraw() public {
-        _removeUnusedVaults();
-
-        // ---------------------------------- Set whitelist for transient cache
-        vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(address(strategy), true);
-
-        vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
+        // ---------------------------------- Re-deposit "collateral type" => "protected type" to allow deposit/withdraw
+        _reDeposit();
 
         // ---------------------------------- Deposit
-        uint amount = 7e18;
+        uint amount = 7000e18;
         _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(vault), amount);
@@ -94,15 +101,15 @@ contract SiALMFUpgradeTest is Test {
         uint gas0 = gasleft();
         vault.depositAssets(assets, amountsMax, 0, address(this));
         vm.roll(block.number + 6);
-        //console.log("!!!!!!!!!!!!!!! gas used for deposit", gas0 - gasleft());
-        //assertLt(gas0 - gasleft(), 12e6, "Deposit should not use more than 12 mln gas");
+        // console.log("!!!!!!!!!!!!!!! gas used for deposit", gas0 - gasleft());
+        assertLt(gas0 - gasleft(), 12e6, "Deposit should not use more than 12 mln gas");
 
         // ---------------------------------- Withdraw
         uint shares = vault.balanceOf(address(this));
         gas0 = gasleft();
         uint[] memory withdrawn = vault.withdrawAssets(assets, shares, new uint[](1));
-        //console.log("!!!!!!!!!!!!!!! gas used for withdraw", gas0 - gasleft());
-        assertLt(gas0 - gasleft(), 16e6, "Withdraw should not use more than 16 mln gas");
+        // console.log("!!!!!!!!!!!!!!! gas used for withdraw", gas0 - gasleft());
+        assertLt(gas0 - gasleft(), 15e6, "Withdraw should not use more than 15 mln gas");
 
         assertApproxEqAbs(amount, withdrawn[0], amount / 100 * 2, "Withdrawn amount does not match deposited amount");
         assertEq(vault.balanceOf(address(this)), 0, "Shares should be zero after withdrawal");
@@ -115,99 +122,92 @@ contract SiALMFUpgradeTest is Test {
             vm.prank(hardWorker);
             IVault(address(vault)).doHardWork();
 
-            //console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
-            assertLt(gas0 - gasleft(), 16e6, "Hardwork should not use more than 16 mln gas");
+            // console.log("!!!!!!!!!!!!!!!!!!! gas used for hardwork", gas0 - gasleft());
+            assertLt(gas0 - gasleft(), 15.5e6, "Hardwork should not use more than 16 mln gas");
         }
+    }
+
+    // todo: there is not enough usdc in flash loan vault
+    function testEmergencyExit() internal {
+        // ---------------------------------- Re-deposit "collateral type" => "protected type" to allow deposit/withdraw
+        _reDeposit();
 
         // ---------------------------------- Emergency exit
         {
-            gas0 = gasleft();
+            uint gas0 = gasleft();
 
             vm.prank(multisig);
             strategy.emergencyStopInvesting();
 
             // console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
-            assertLt(gas0 - gasleft(), 16e6, "Emergency exit should not use more than 16 mln gas");
+            assertLt(gas0 - gasleft(), 15e6, "Emergency exit should not use more than 15 mln gas");
         }
     }
 
-    function testMultipleDepositWithdraw() public {
-        _testMultipleDepositWithdraw(100e18);
-    }
+    //region ------------------------------------ Re-deposit
+    /// @dev Re-deposit incorrectly deposited amounts: "collateral type" => "protected type"
+    function _reDeposit() internal {
+        // -------------------------------------- State before re-deposit
+        SiloALMFStrategy _strategy = SiloALMFStrategy(payable(address(strategy)));
+        uint baseAmount = _strategy.totalCollateralToRedeposit() / COUNT_ITERATIONS;
 
-    //    function testMultipleDepositWithdraw_Fuzzy(uint baseAmount) public {
-    //        baseAmount = bound(baseAmount, 10e18, 1000e18);
-    //        _testMultipleDepositWithdraw(baseAmount);
-    //    }
+        State memory stateBefore = _getState();
 
-    function _testMultipleDepositWithdraw(uint baseAmount) internal {
-        _removeUnusedVaults();
+        // -------------------------------------- Withdraw, deposit
+        while (_strategy.totalCollateralToRedeposit() != 0) {
+            uint amount = Math.min(_strategy.totalCollateralToRedeposit(), baseAmount);
 
-        // ---------------------------------- Set whitelist for transient cache
-        vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(address(strategy), true);
+            // exit
+            uint gas0 = gasleft();
+            vm.prank(multisig);
+            _strategy.reDeposit(REDEPOSIT_OP_KIND_WITHDRAW, amount);
+            // console.log("!!!!!!!!!gas used for re-deposit1", gas0 - gasleft());
+            assertLt(gas0 - gasleft(), 15e6, "reDeposit should not use more than 15 mln gas 1");
 
-        vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
-
-        // ---------------------------------- Deposit and withdraw
-        address[] memory assets = vault.assets();
-
-        State memory state = _getState();
-        //console.log("before ltv, leverage, shareprice", state.ltv, state.leverage, state.sharePrice);
-        //console.log("max ltv, target leverage", state.maxLtv, state.targetLeverage);
-
-        uint totalDeposited;
-        uint totalWithdrawn;
-        for (uint i; i < 20; ++i) {
-            {
-                uint amount = i % 5 == 0 ? baseAmount * 11 : i % 3 == 0 ? baseAmount / 7 : baseAmount;
-
-                _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
-                IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(vault), amount);
-
-                uint[] memory amountsMax = new uint[](1);
-                amountsMax[0] = amount;
-
-                vault.depositAssets(assets, amountsMax, 0, address(this));
-                vm.roll(block.number + 6);
-
-                totalDeposited += amount;
-            }
-            state = _getState();
-            assertLt(state.ltv, state.maxLtv, "LTV should be less than max LTV after deposit");
-            //console.log("after deposit ltv, leverage, shareprice", state.ltv, state.leverage, state.sharePrice);
-
-            {
-                uint balance = vault.balanceOf(address(this));
-                uint shares = i % 5 == 0 ? balance * 99 / 100 : i % 2 == 0 ? balance / 7 : balance / 100;
-                totalWithdrawn += vault.withdrawAssets(assets, shares, new uint[](1))[0];
-                vm.roll(block.number + 6);
-            }
-            state = _getState();
-            //console.log("after withdraw ltv, leverage, shareprice", state.ltv, state.leverage, state.sharePrice);
-            assertLt(state.ltv, state.maxLtv, "LTV should be less than max LTV after withdrawal");
+            // enter
+            gas0 = gasleft();
+            vm.prank(multisig);
+            _strategy.reDeposit(REDEPOSIT_OP_KIND_DEPOSIT, 0);
+            // console.log("!!!!!!!!!gas used for re-deposit2", gas0 - gasleft());
+            assertLt(gas0 - gasleft(), 12e6, "reDeposit should not use more than 12 mln gas 2");
         }
 
-        {
-            uint shares = vault.balanceOf(address(this));
-            if (shares != 0) {
-                totalWithdrawn += vault.withdrawAssets(assets, shares, new uint[](1))[0];
-            }
+        State memory stateAfter = _getState();
+
+        // -------------------------------------- Operator compensates the losses
+        if (stateAfter.realTvl < stateBefore.realTvl) {
+            console.log("cover losses", stateBefore.realTvl - stateAfter.realTvl);
+            deal(
+                SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, address(multisig), stateBefore.realTvl - stateAfter.realTvl
+            );
+
+            vm.prank(multisig);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).transfer(
+                address(_strategy), stateBefore.realTvl - stateAfter.realTvl
+            );
+
+            vm.prank(multisig);
+            _strategy.reDeposit(REDEPOSIT_OP_KIND_DEPOSIT, stateBefore.realTvl - stateAfter.realTvl);
         }
+
+        // -------------------------------------- Check results
+        State memory stateFinal = _getState();
 
         assertApproxEqAbs(
-            totalDeposited, totalWithdrawn, totalDeposited / 100 * 2, "Withdrawn amount does not match deposited amount"
+            stateBefore.sharePrice,
+            stateFinal.sharePrice,
+            stateBefore.sharePrice / 10_000,
+            "Share price should not change after re-deposit"
         );
-        assertEq(vault.balanceOf(address(this)), 0, "Shares should be zero after withdrawal");
-
-        vm.warp(block.timestamp + 7200);
-        deal(SonicConstantsLib.TOKEN_wS, IPlatform(PLATFORM).hardWorker(), 10e18); // emulate Merkl rewards
-
-        address hardWorker = IPlatform(PLATFORM).hardWorker();
-        vm.prank(hardWorker);
-        IVault(address(vault)).doHardWork();
+        assertApproxEqAbs(
+            stateBefore.realTvl,
+            stateFinal.realTvl,
+            stateBefore.realTvl / 10_000,
+            "Real TLV should not change after re-deposit"
+        );
+        assertEq(stateBefore.total, stateFinal.total, "Total should not change after re-deposit");
     }
+    //endregion ------------------------------------ Re-deposit
 
     //region ------------------------------------ Helpers
     function _upgradeStrategy() internal {
@@ -228,23 +228,6 @@ contract SiALMFUpgradeTest is Test {
         factory.upgradeStrategyProxy(address(strategy));
     }
 
-    function _upgradeCVault(address vault_) internal {
-        // deploy new impl and upgrade
-        address vaultImplementation = address(new CVault());
-        vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
-
-        factory.upgradeVaultProxy(vault_);
-    }
-
     function _upgradePlatform(address priceReader_) internal {
         // we need to skip 1 day to update the swapper
         // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
@@ -256,13 +239,13 @@ contract SiALMFUpgradeTest is Test {
         address[] memory proxies = new address[](1);
         address[] memory implementations = new address[](1);
 
-        proxies[0] = address(priceReader_);
-        // proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
-        //proxies[2] = platform.swapper();
+        //proxies[0] = address(priceReader_);
+        proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+        //proxies[0] = platform.swapper();
 
-        implementations[0] = address(new PriceReader());
-        // implementations[1] = address(new MetaVaultAdapter());
-        //implementations[2] = address(new Swapper());
+        //implementations[0] = address(new PriceReader());
+        implementations[0] = address(new MetaVaultAdapter());
+        //implementations[0] = address(new Swapper());
 
         // vm.startPrank(multisig);
         // platform.cancelUpgrade();
@@ -300,7 +283,7 @@ contract SiALMFUpgradeTest is Test {
         vm.stopPrank();
     }
 
-    function _upgradeCVault() internal {
+    function _upgradeCVault(address vault_) internal {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
@@ -313,7 +296,7 @@ contract SiALMFUpgradeTest is Test {
                 buildingPrice: 1e10
             })
         );
-        factory.upgradeVaultProxy(address(vault));
+        factory.upgradeVaultProxy(vault_);
     }
 
     function _dealAndApprove(
@@ -384,6 +367,7 @@ contract SiALMFUpgradeTest is Test {
 
         // console.log("targetLeverage, leverage, total", state.targetLeverage, state.leverage, state.total);
 
+        //        console.log("============== state");
         //        console.log("ltv", state.ltv);
         //        console.log("maxLtv", state.maxLtv);
         //        console.log("targetLeverage", state.targetLeverage);
@@ -394,106 +378,42 @@ contract SiALMFUpgradeTest is Test {
         //        console.log("targetLeveragePercent", state.targetLeveragePercent);
         //        console.log("maxLeverage", state.maxLeverage);
         //        console.log("realTvl", state.realTvl);
+        //        console.log("realSharePrice", state.sharePrice);
         return state;
     }
 
-    function _removeUnusedVaults() internal {
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
-
-        // todo UsdAmountLessThreshold(6074204700030295904090)
-        //        vm.prank(multisig);
-        //        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).removeVault(SonicConstantsLib.METAVAULT_metascUSD);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SiF);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(
-            SonicConstantsLib.VAULT_C_USDC_Stability_StableJack
-        );
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
-
-        // _removeUnusedVaultsMetaScUsd();
+    function _getFlashLoanVault() internal view returns (address _vault, uint _kind) {
+        ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(strategy));
+        (uint[] memory params, address[] memory addresses) = _strategy.getUniversalParams();
+        return (addresses[0], params[10]);
     }
 
-    function _removeUnusedVaultsMetaScUsd() internal {
-        // there are 5 sub vaults in metascUSD
-        // two of them have target proportions 0.1%
-        // let's try to remove them completely
-
-        // --------------------------------- Set target proportions to 0
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 2e16);
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 2e16);
-
-        // --------------------------------- Withdraw liquidity from the sub vaults
-        _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
-        );
-        _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
-        );
-        _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
-        );
-        _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
-        );
-
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 0);
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 0);
-
-        // --------------------------------- Remove sub vaults
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_S_46); // index 0
+    function _setFlashLoanVault(
+        ILeverageLendingStrategy strategy_,
+        address vault_,
+        ILeverageLendingStrategy.FlashLoanKind kind
+    ) internal {
+        (uint[] memory params, address[] memory addresses) = strategy_.getUniversalParams();
+        params[10] = uint(kind);
+        addresses[0] = vault_;
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs); // index 1
+        strategy_.setUniversalParams(params, addresses);
     }
 
-    function _tryToWithdraw(IMetaVault multiVault, address user, uint percents) internal {
-        uint balance = multiVault.balanceOf(user);
-        address[] memory assets = multiVault.assetsForWithdraw();
-
-        //        console.log("balance", balance);
-        //        console.log("subvalut", multiVault.vaultForWithdraw());
+    function _withdrawAll(address user) internal {
+        address[] memory assets = vault.assets();
+        uint shares = vault.balanceOf(user);
 
         vm.prank(user);
-        multiVault.withdrawAssets(assets, balance * percents / 100_00, new uint[](1));
+        vault.withdrawAssets(assets, shares / 2, new uint[](1));
+        vm.roll(block.number + 6);
+
+        shares = vault.balanceOf(user);
+        vm.prank(user);
+        vault.withdrawAssets(assets, shares, new uint[](1));
 
         vm.roll(block.number + 6);
-    }
-
-    function _setProportions(address metaVault_, uint fromIndex, uint toIndex, uint min) internal {
-        IMetaVault metaVault = IMetaVault(metaVault_);
-        multisig = IPlatform(PLATFORM).multisig();
-
-        uint[] memory props = metaVault.targetProportions();
-        props[toIndex] = props[toIndex] + props[fromIndex] - min;
-        props[fromIndex] = min;
-
-        vm.prank(multisig);
-        metaVault.setTargetProportions(props);
-
-        //        props = metaVault.targetProportions();
-        //        uint[] memory current = metaVault.currentProportions();
-        //        for (uint i; i < current.length; ++i) {
-        //            console.log("i, current, target", i, current[i], props[i]);
-        //        }
     }
     //endregion ------------------------------------ Helpers
 }

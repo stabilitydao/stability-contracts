@@ -41,6 +41,7 @@ import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:
+///   1.2.0: Change deposit type to "non-borrowable collateral deposit", add reDeposit
 ///   1.1.0: Each write operation caches prices of MetaUSD - #348
 ///   1.0.1: Use new version of setLastBlockDefenseDisabledTx
 ///   1.0.0: Initial version - #330
@@ -61,7 +62,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.2.0";
 
     //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -148,25 +149,25 @@ contract SiloALMFStrategy is
     ) external {
         // Flash loan is performed upon deposit and withdrawal
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.receiveFlashLoanBalancerV2(platform(), $, tokens, amounts, feeAmounts);
+        SiloALMFLib2.receiveFlashLoanBalancerV2(platform(), $, tokens, amounts, feeAmounts);
     }
 
     /// @inheritdoc IBalancerV3FlashCallback
     function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.receiveFlashLoanV3(platform(), $, token, amount);
+        SiloALMFLib2.receiveFlashLoanV3(platform(), $, token, amount);
     }
 
     /// @inheritdoc IUniswapV3FlashCallback
     function uniswapV3FlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
+        SiloALMFLib2.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
 
     /// @inheritdoc IAlgebraFlashCallback
     function algebraFlashCallback(uint fee0, uint fee1, bytes calldata userData) external {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
-        SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
+        SiloALMFLib2.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
     //endregion ----------------------------------- Flash loan
 
@@ -202,7 +203,7 @@ contract SiloALMFStrategy is
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        return SiloALMFLib.getSpecificName(_getLeverageLendingBaseStorage());
+        return SiloALMFLib2.getSpecificName(_getLeverageLendingBaseStorage());
     }
 
     /// @inheritdoc ILeverageLendingStrategy
@@ -266,6 +267,8 @@ contract SiloALMFStrategy is
     function _rebalanceDebt(uint newLtv) internal override returns (uint resultLtv) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
+        require(!isPaused(), SiloALMFLib.Paused());
+
         SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
         SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
@@ -299,6 +302,8 @@ contract SiloALMFStrategy is
     {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
 
+        require(!isPaused(), SiloALMFLib.Paused());
+
         SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         __assets = assets();
         (__amounts, __rewardAssets, __rewardAmounts) =
@@ -324,6 +329,8 @@ contract SiloALMFStrategy is
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
 
+        require(!isPaused(), SiloALMFLib.Paused());
+
         SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         value = SiloALMFLib.depositAssets($, $base, amounts[0], _assets[0]);
         SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
@@ -333,6 +340,8 @@ contract SiloALMFStrategy is
     function _withdrawAssets(uint value, address receiver) internal override returns (uint[] memory amountsOut) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        require(!isPaused(), SiloALMFLib.Paused());
 
         SiloALMFLib.prepareWriteOp(platform(), $.collateralAsset);
         amountsOut = SiloALMFLib.withdrawAssets(platform(), $, $base, value, receiver);
@@ -389,4 +398,34 @@ contract SiloALMFStrategy is
     }
 
     //endregion ----------------------------------- FarmingStrategy
+
+    //region ----------------------------------- Additional temporally functions
+    function isPaused() public view returns (bool) {
+        // todo probably we need flag Paused in the storage
+        return totalCollateralToRedeposit() != 0;
+    }
+
+    /// @dev True if there is no deposit of "collateral type"
+    function totalCollateralToRedeposit() public view returns (uint) {
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        return SiloALMFLib.totalCollateralToRedeposit($.lendingVault);
+    }
+
+    /// @notice Withdraw {value_} of Collateral and re-deposit it as Protected collateral
+    /// @dev To cover losses put amount of collateral on the strategy balance and call redeposit(1)
+    /// @param amount_ Amount of collateral to withdraw
+    /// @param opKind_ 0 - withdraw, 1 - deposit
+    function reDeposit(uint opKind_, uint amount_) external onlyOperator {
+        address _platform = platform();
+        LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
+        address collateralAsset = $.collateralAsset;
+
+        require(totalCollateralToRedeposit() != 0 || opKind_ != 0, IControllable.TooLowValue(0));
+
+        SiloALMFLib.prepareWriteOp(_platform, collateralAsset);
+        SiloALMFLib.reDeposit($, amount_, opKind_);
+        SiloALMFLib.unprepareWriteOp(_platform, collateralAsset);
+    }
+
+    //endregion ----------------------------------- Additional temporally functions
 }
