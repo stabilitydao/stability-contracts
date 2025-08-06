@@ -51,7 +51,6 @@ contract AaveStrategy is StrategyBase {
     /// @custom:storage-location erc7201:stability.AaveStrategy
     struct AaveStrategyStorage {
         uint lastSharePrice;
-
         /// @dev Deprecated since 1.3.0, use underlying() instead
         address aToken;
     }
@@ -68,14 +67,7 @@ contract AaveStrategy is StrategyBase {
         }
         address[] memory _assets = new address[](1);
         _assets[0] = IAToken(addresses[2]).UNDERLYING_ASSET_ADDRESS();
-        __StrategyBase_init(
-            addresses[0],
-            StrategyIdLib.AAVE,
-            addresses[1],
-            _assets,
-            addresses[2],
-            type(uint).max
-        );
+        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE, addresses[1], _assets, addresses[2], type(uint).max);
         _getStorage().aToken = addresses[2];
 
         IERC20(_assets[0]).forceApprove(IAToken(addresses[2]).POOL(), type(uint).max);
