@@ -233,4 +233,14 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
 
     function cachePrices(bool clear) external {}
+
+    function maxWithdrawUnderlying(address cVault_, address account) external view returns (uint amount) {}
+
+    function withdrawUnderlying(
+        address cVault_,
+        uint amount,
+        uint minUnderlyingOut,
+        address receiver,
+        address owner
+    ) external returns (uint underlyingOut) {}
 }

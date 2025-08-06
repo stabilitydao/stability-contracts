@@ -77,7 +77,9 @@ interface IMetaVault is IStabilityVault {
     error IncorrectRebalanceArgs();
     error IncorrectVault();
     error NotWhitelisted();
+    error VaultNotFound(address vault);
 
+    //region --------------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -127,6 +129,14 @@ interface IMetaVault is IStabilityVault {
     /// @notice True if the {addr} is in last-block-defense whitelist
     function whitelisted(address addr) external view returns (bool);
 
+    /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
+    /// @param account Address of the account for which the maximum withdraw amount is calculated.
+    /// @return amount Maximum amount that can be withdrawn from the vault for the given account.
+    /// This is max amount that can be passed to `withdraw` function.
+    function maxWithdrawUnderlying(address cVault_, address account) external view returns (uint amount);
+    //endregion --------------------------------------- View functions
+
+    //region --------------------------------------- Write functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -181,4 +191,22 @@ interface IMetaVault is IStabilityVault {
     /// @notice Allow to cache assets and vaults prices in the transient cache
     /// @param clear True - clear the cache, false - prepare the cache
     function cachePrices(bool clear) external;
+
+    /// @notice Withdraw underlying from the given cVault
+    /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
+    /// The cVault can belong to the MetaVault directly or to a child MetaVaults.
+    /// @param amount Amount of meta-vault tokens to be withdrawn
+    /// @param minUnderlyingOut Minimum amount of underlying to be received
+    /// @param receiver Address to receive underlying
+    /// @param owner Address of the owner of the meta-vault tokens
+    /// @return underlyingOut Amount of underlying received
+    function withdrawUnderlying(
+        address cVault_,
+        uint amount,
+        uint minUnderlyingOut,
+        address receiver,
+        address owner
+    ) external returns (uint underlyingOut);
+
+    //endregion --------------------------------------- Write functions
 }
