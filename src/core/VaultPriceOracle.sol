@@ -28,6 +28,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         mapping(address => mapping(uint => mapping(address => Observation))) observations;
         mapping(address validator => bool authorized) authorizedValidators;
         address[] validatorList;
+        address[] vaultList;
         uint minQuorum;
         uint maxPriceAge;
     }
@@ -50,6 +51,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         address platform_,
         uint minQuorum_,
         address[] memory validators_,
+        address[] memory vaults_,
         uint maxPriceAge_
     ) public initializer {
         VaultPriceOracleStorage storage $ = _getStorage();
@@ -61,6 +63,10 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
             $.authorizedValidators[validators_[i]] = true;
             $.validatorList.push(validators_[i]);
         }
+
+        for (uint j = 0; j < vaults_.length; j++) {
+            $.vaultList.push(vaults_[j]);
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -71,7 +77,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     function submitPrice(address vault_, uint price_, uint roundId_) external onlyValidator {
         VaultPriceOracleStorage storage $ = _getStorage();
         uint currentRoundId = $.vaultPrices[vault_].roundId == 0 ? 1 : $.vaultPrices[vault_].roundId;
-        require(roundId_ == currentRoundId, "Invalid roundId");
+        require(roundId_ == currentRoundId, IVaultPriceOracle.InvalidRoundId());
 
         $.observations[vault_][currentRoundId][msg.sender] = Observation(price_, block.timestamp);
         emit PriceSubmitted(vault_, msg.sender, price_, currentRoundId);
@@ -84,7 +90,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @inheritdoc IVaultPriceOracle
     function addValidator(address validator_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(!$.authorizedValidators[validator_], "Validator already authorized");
+        require(!$.authorizedValidators[validator_], IVaultPriceOracle.ValidatorAlreadyAuthorized());
         $.authorizedValidators[validator_] = true;
         $.validatorList.push(validator_);
         emit ValidatorAdded(validator_);
@@ -93,7 +99,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @inheritdoc IVaultPriceOracle
     function removeValidator(address validator_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require($.authorizedValidators[validator_], "Validator not authorized");
+        require($.authorizedValidators[validator_], IVaultPriceOracle.NotAuthorizedValidator());
         $.authorizedValidators[validator_] = false;
         for (uint i = 0; i < $.validatorList.length; i++) {
             if ($.validatorList[i] == validator_) {
@@ -105,6 +111,42 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         emit ValidatorRemoved(validator_);
     }
 
+    /// @inheritdoc IVaultPriceOracle
+    function addVault(address vault_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
+        $.vaultList.push(vault_);
+        emit VaultAdded(vault_);
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function removeVault(address vault_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
+        for (uint i = 0; i < $.vaultList.length; i++) {
+            if ($.vaultList[i] == vault_) {
+                $.vaultList[i] = $.vaultList[$.vaultList.length - 1];
+                $.vaultList.pop();
+                emit VaultRemoved(vault_);
+                break;
+            }
+        }
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function setMinQuorum(uint minQuorum_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(minQuorum_ > 0, IVaultPriceOracle.MinQuorumMustBeGreaterThanZero());
+        $.minQuorum = minQuorum_;
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function setMaxPriceAge(uint maxPriceAge_) external onlyGovernanceOrMultisig {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(maxPriceAge_ > 0, IVaultPriceOracle.MaxPriceAgeMustBeGreaterThanZero());
+        $.maxPriceAge = maxPriceAge_;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -113,8 +155,8 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     function getLatestPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId) {
         VaultPriceOracleStorage storage $ = _getStorage();
         AggregatedData memory data = $.vaultPrices[vault_];
-        require(data.timestamp > 0, "No data available");
-        require(block.timestamp <= data.timestamp + $.maxPriceAge, "Price too old");
+        require(data.timestamp > 0, IVaultPriceOracle.NoDataAvailable());
+        require(block.timestamp <= data.timestamp + $.maxPriceAge, IVaultPriceOracle.PriceTooOld());
         return (data.price, data.timestamp, data.roundId);
     }
 
@@ -143,10 +185,35 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     }
 
     /// @inheritdoc IVaultPriceOracle
+    function vaultList(uint index_) external view returns (address) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        require(index_ < $.vaultList.length, IVaultPriceOracle.IndexOutOfBounds());
+        return $.vaultList[index_];
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function vaultList() external view returns (address[] memory) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        return $.vaultList;
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function vaultListLength() external view returns (uint) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        return $.vaultList.length;
+    }
+
+    /// @inheritdoc IVaultPriceOracle
     function validatorList(uint index_) external view returns (address) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(index_ < $.validatorList.length, "Index out of bounds");
+        require(index_ < $.validatorList.length, IVaultPriceOracle.IndexOutOfBounds());
         return $.validatorList[index_];
+    }
+
+    /// @inheritdoc IVaultPriceOracle
+    function validatorList() external view returns (address[] memory) {
+        VaultPriceOracleStorage storage $ = _getStorage();
+        return $.validatorList;
     }
 
     /// @inheritdoc IVaultPriceOracle
@@ -276,6 +343,6 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
 
     function _requireValidator() internal view {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require($.authorizedValidators[msg.sender], "Not authorized validator");
+        require($.authorizedValidators[msg.sender], IVaultPriceOracle.NotAuthorizedValidator());
     }
 }

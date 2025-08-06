@@ -6,6 +6,20 @@ pragma solidity ^0.8.28;
 /// @notice Interface for the VaultPriceOracle contract, which aggregates prices from multiple oracles for vaults using a quorum-based median mechanism.
 interface IVaultPriceOracle {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CUSTOM ERRORS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    error InvalidRoundId();
+    error ValidatorAlreadyAuthorized();
+    error InvalidVaultAddress();
+    error MinQuorumMustBeGreaterThanZero();
+    error MaxPriceAgeMustBeGreaterThanZero();
+    error NoDataAvailable();
+    error PriceTooOld();
+    error IndexOutOfBounds();
+    error NotAuthorizedValidator();
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
@@ -50,6 +64,14 @@ interface IVaultPriceOracle {
     /// @param validator The address of the removed validator.
     event ValidatorRemoved(address indexed validator);
 
+    /// @notice Emitted when vault is added to the oracle.
+    /// @param vault The address of the added vault.
+    event VaultAdded(address indexed vault);
+
+    /// @notice Emitted when vault is removed from the oracle.
+    /// @param vault The address of the removed vault.
+    event VaultRemoved(address indexed vault);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -83,8 +105,23 @@ interface IVaultPriceOracle {
     /// @return The address of the validator at that index.
     function validatorList(uint index_) external view returns (address);
 
+    /// @notice Retrieves the list of all authorized validators.
+    /// @return An array of addresses representing the validators.
+    function validatorList() external view returns (address[] memory);
+
     /// @notice Retrieves the number of validators.
     function validatorListLength() external view returns (uint);
+
+    /// @notice Retrieves a vault address from the list by index.
+    /// @param index_ The index in the vault list.
+    function vaultList(uint index_) external view returns (address);
+
+    /// @notice Returns the list of all vaults being monitored by this oracle.
+    /// @return An array of addresses representing the vaults.
+    function vaultList() external view returns (address[] memory);
+
+    /// @notice Returns the number of vaults being monitored by this oracle.
+    function vaultListLength() external view returns (uint);
 
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
@@ -106,7 +143,13 @@ interface IVaultPriceOracle {
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address platform_, uint minQuorum_, address[] memory validator_, uint maxPriceAge_) external;
+    function initialize(
+        address platform_,
+        uint minQuorum_,
+        address[] memory validator_,
+        address[] memory vaults_,
+        uint maxPriceAge_
+    ) external;
 
     /// @notice Submits a price for a vault in the current round.
     /// @dev Can only be called by authorized validators.
@@ -124,4 +167,22 @@ interface IVaultPriceOracle {
     /// @dev Restricted to governance or multisig.
     /// @param validator_ The address of the validator to remove.
     function removeValidator(address validator_) external;
+
+    /// @notice Sets the minimum quorum required for aggregation.
+    /// @dev Restricted to governance or multisig.
+    function setMinQuorum(uint minQuorum_) external;
+
+    /// @notice Sets the maximum age allowed for a price before it's considered stale.
+    /// @dev Restricted to governance or multisig.
+    function setMaxPriceAge(uint maxPriceAge_) external;
+
+    /// @notice Adds a new vault to be monitored by the oracle.
+    /// @dev Restricted to governance or multisig.
+    /// @param vault_ The address of the vault to add.
+    function addVault(address vault_) external;
+
+    /// @notice Removes a vault from being monitored by the oracle.
+    /// @dev Restricted to governance or multisig.
+    /// @param vault_ The address of the vault to remove.
+    function removeVault(address vault_) external;
 }
