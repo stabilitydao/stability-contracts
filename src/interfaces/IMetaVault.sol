@@ -194,7 +194,7 @@ interface IMetaVault is IStabilityVault {
 
     /// @notice Withdraw underlying from the given cVault
     /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
-    /// The cVault can belong to the MetaVault directly or to a child MetaVaults.
+    /// The cVault can belong to the MetaVault directly or belong to one of its sub-meta-vaults.
     /// @param amount Amount of meta-vault tokens to be withdrawn
     /// @param minUnderlyingOut Minimum amount of underlying to be received
     /// @param receiver Address to receive underlying
