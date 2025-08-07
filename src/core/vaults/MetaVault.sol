@@ -19,6 +19,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.5.0: withdrawUnderlying - #360
 ///   1.4.2: add cachePrices - #348, use USD_THRESHOLD_REMOVE_VAULT in removeVault
 ///   1.4.1: add LastBlockDefenseDisableMode
 ///   1.4.0: - add maxDeposit, implement multi-deposit for MultiVault - #330
@@ -45,7 +46,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.4.2";
+    string public constant VERSION = "1.5.0";
 
     /// @inheritdoc IMetaVault
     uint public constant USD_THRESHOLD = 1e13;
@@ -97,10 +98,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     struct WithdrawUnderlyingLocals {
+        uint vaultSharePriceUsd;
+        uint totalSupply;
         address[] assets;
         uint[] minAmounts;
         uint[] amountsOut;
-}
+    }
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Initialization
@@ -270,6 +273,125 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         (_cachedVaultForDeposit, _cachedVaultForWithdraw) =
             clear ? (address(0), address(0)) : MetaVaultLib.vaultForDepositWithdraw($);
     }
+
+    /// todo remove
+    function withdrawUnderlyingEmergency2(
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts
+    ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        // todo check if cVault is broken and it allows to withdraw emergency
+
+        address targetVault = _getTargetVault($, cVault_);
+
+        uint len = owners.length;
+        require(len == amounts.length, IControllable.IncorrectArrayLength());
+
+        underlyingOut = new uint[](len);
+        for (uint i; i < len; ++i) {
+            uint amount = amounts[i] == 0 ? balanceOf(owners[i]) : amounts[i];
+            underlyingOut[i] = _withdrawUnderlying($, targetVault, cVault_, amount, 0, owners[i], owners[i], true);
+        }
+    }
+
+    /// @inheritdoc IMetaVault
+    function withdrawUnderlyingEmergency(
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut
+    ) external override onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+        //slither-disable-next-line uninitialized-local
+        WithdrawUnderlyingLocals memory v;
+
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        // todo check if cVault is broken and it allows to withdraw emergency
+
+        address _targetVault = _getTargetVault($, cVault_);
+
+        uint len = owners.length;
+        require(len == amounts.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
+
+        v.totalSupply = totalSupply();
+        uint _totalShares = $.totalShares;
+
+        uint total = 0;
+        underlyingOut = new uint[](len);
+        uint[] memory sharesToBurn = new uint[](len);
+
+        for (uint i; i < len; ++i) {
+            uint balance = _balanceOf($, owners[i], v.totalSupply);
+            if (amounts[i] == 0) {
+                amounts[i] = balance;
+            } else {
+                require(amounts[i] <= balance, ERC20InsufficientBalance(owners[i], balance, amounts[i]));
+            }
+            require(amounts[i] != 0, IControllable.IncorrectBalance());
+            total += amounts[i];
+            sharesToBurn[i] = _amountToShares(amounts[i], _totalShares, v.totalSupply);
+            require(sharesToBurn[i] != 0, ZeroSharesToBurn(amounts[i]));
+        }
+        require(total != 0, IControllable.IncorrectZeroArgument());
+
+        // don't check last block protection here, because it is an emergency withdraw
+        // _beforeDepositOrWithdraw($, owner);
+
+        // ensure that the target vault has required amount of meta-vault tokens
+        // todo how to check it for all users? require(total <= maxWithdrawUnderlying(cVault_, owner), TooHighAmount());
+
+        (v.vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
+
+        v.assets = new address[](1);
+        v.assets[0] = IVault(cVault_).strategy().underlying();
+
+        v.amountsOut = new uint[](1);
+        v.minAmounts = new uint[](1);
+
+        uint totalUnderlying;
+        if (_targetVault == cVault_) {
+            // withdraw underlying from the target cVault vault
+            v.amountsOut = IStabilityVault(_targetVault).withdrawAssets(
+                v.assets,
+                _getTargetVaultSharesToWithdraw(total, v.vaultSharePriceUsd, true),
+                v.minAmounts,
+                address(this),
+                address(this)
+            );
+            totalUnderlying = v.amountsOut[0];
+        } else {
+            // withdraw underlying from the child meta-vault
+            totalUnderlying = IMetaVault(_targetVault).withdrawUnderlying(
+                cVault_,
+                _getTargetVaultSharesToWithdraw(total, v.vaultSharePriceUsd, true),
+                0,
+                address(this),
+                address(this)
+            );
+        }
+
+        for (uint i; i < len; ++i) {
+            _burn($, owners[i], amounts[i], sharesToBurn[i]);
+            v.amountsOut[0] = Math.mulDiv(totalUnderlying, amounts[i], total, Math.Rounding.Floor);
+            underlyingOut[i] = v.amountsOut[0];
+            require(v.amountsOut[0] >= minUnderlyingOut[i], ExceedSlippage(v.amountsOut[0], minUnderlyingOut[i]));
+            IERC20(IVault(cVault_).strategy().underlying()).transfer(owners[i], v.amountsOut[0]);
+
+            // disable last block protection in the emergency
+            // $.lastTransferBlock[owners[i]] = block.number;
+
+            // todo mint receipt/recovery token if the cVault is broken one
+
+            // todo emit event with amoun tof recovery tokens
+
+            emit WithdrawAssets(msg.sender, owners[i], v.assets, amounts[i], v.amountsOut);
+        }
+
+        // todo we can have not zero underlying balance in result .. do we need to do anything with it?
+    }
+
     //endregion --------------------------------- Restricted action
 
     //region --------------------------------- User actions
@@ -367,27 +489,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         return _withdrawUnderlying($, targetVault, cVault_, amount, minUnderlyingOut, receiver, owner, mintReceiptToken);
-    }
-
-    function withdrawUnderlyingEmergency(
-        address cVault_,
-        address[] memory owners,
-        uint[] memory amounts
-    ) external override onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
-
-        // todo check if cVault is broken and it allows to withdraw emergency
-
-        address targetVault = _getTargetVault($, cVault_);
-
-        uint len = owners.length;
-        require(len == amounts.length, IControllable.IncorrectArrayLength());
-
-        underlyingOut = new uint[](len);
-        for (uint i; i < len; ++i) {
-            uint amount = amounts[i] == 0 ? balanceOf(owners[i]) : amounts[i];
-            underlyingOut[i] = _withdrawUnderlying($, targetVault, cVault_, amount, 0, owners[i], owners[i], true);
-        }
     }
 
     /// @inheritdoc IERC20
@@ -692,8 +793,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address _targetVault = _getTargetVault($, cVault_);
         if (_targetVault == cVault_) {
             (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-                _targetVault,
-                IStabilityVault(_targetVault).maxWithdraw(address(this), 1)
+                _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this), 1)
             );
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
         } else {
@@ -744,7 +844,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         );
 
         return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
-
     }
 
     function _update(MetaVaultStorage storage $, address from, address to, uint amount) internal {
@@ -917,25 +1016,26 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address owner,
         bool mintReceiptToken
     ) internal returns (uint underlyingOut) {
+        //slither-disable-next-line uninitialized-local
+        WithdrawUnderlyingLocals memory v;
+
         require(amount != 0, IControllable.IncorrectZeroArgument());
 
-        uint _totalSupply = totalSupply();
+        v.totalSupply = totalSupply();
         require(
-            amount <= _balanceOf($, owner, _totalSupply),
-            ERC20InsufficientBalance(owner, balanceOf(owner), amount)
+            amount <= _balanceOf($, owner, v.totalSupply), ERC20InsufficientBalance(owner, balanceOf(owner), amount)
         );
 
         _beforeDepositOrWithdraw($, owner);
 
-        uint sharesToBurn = _amountToShares(amount, $.totalShares, _totalSupply);
+        uint sharesToBurn = _amountToShares(amount, $.totalShares, v.totalSupply);
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         // ensure that the target vault has required amount of meta-vault tokens
         require(amount <= maxWithdrawUnderlying(cVault_, owner), TooHighAmount());
-        (uint vaultSharePriceUsd,) = IStabilityVault(targetVault_).price();
 
-        //slither-disable-next-line uninitialized-local
-        WithdrawUnderlyingLocals memory v;
+        (v.vaultSharePriceUsd,) = IStabilityVault(targetVault_).price();
+
         v.assets = new address[](1);
         v.assets[0] = IVault(cVault_).strategy().underlying();
 
@@ -946,7 +1046,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             // withdraw underlying from the target cVault vault
             v.amountsOut = IStabilityVault(targetVault_).withdrawAssets(
                 v.assets,
-                _getTargetVaultSharesToWithdraw(amount, vaultSharePriceUsd, true),
+                _getTargetVaultSharesToWithdraw(amount, v.vaultSharePriceUsd, true),
                 v.minAmounts,
                 receiver,
                 address(this)
@@ -956,7 +1056,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             // withdraw underlying from the child meta-vault
             underlyingOut = IMetaVault(targetVault_).withdrawUnderlying(
                 cVault_,
-                _getTargetVaultSharesToWithdraw(amount, vaultSharePriceUsd, true),
+                _getTargetVaultSharesToWithdraw(amount, v.vaultSharePriceUsd, true),
                 minUnderlyingOut,
                 receiver,
                 address(this)
@@ -973,7 +1073,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             // todo emit event
         }
 
-        emit WithdrawAssets(msg.sender, owner, v.assets, amount, v.minAmounts);
+        emit WithdrawAssets(msg.sender, owner, v.assets, amount, v.amountsOut);
     }
 
     function _withdrawAssets(

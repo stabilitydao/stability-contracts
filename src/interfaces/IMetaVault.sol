@@ -214,11 +214,13 @@ interface IMetaVault is IStabilityVault {
     /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
     /// @param owners Addresses of the owners of the meta-vault tokens
     /// @param amounts Amounts of meta-vault tokens to be withdrawn for each owner (0 - withdraw all)
+    /// @param minUnderlyingOut Minimum amount of underlying to be received for each owner
     /// @return underlyingOut Amounts of underlying received for each owner
     function withdrawUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
-        uint[] memory amounts
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut
     ) external returns (uint[] memory underlyingOut);
     //endregion --------------------------------------- Write functions
 }

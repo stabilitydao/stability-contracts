@@ -291,7 +291,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @notice IStrategy
-    function maxWithdrawAssets(uint /*mode*/) public view virtual returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint /*mode*/ ) public view virtual returns (uint[] memory amounts) {
         // by default zero-length array is returned to indicate that all available amounts can be withdrawn
         return amounts;
     }

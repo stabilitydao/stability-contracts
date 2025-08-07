@@ -4,6 +4,15 @@ pragma solidity ^0.8.28;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 interface IWrappedMetaVault is IERC4626 {
+    event WithdrawUnderlying(
+        address indexed sender,
+        address indexed receiver,
+        address indexed owner,
+        address underlying,
+        uint underlyingOut,
+        uint assetsAmountIn
+    );
+
     error Slippage(uint value, uint threshold);
 
     /// @custom:storage-location erc7201:stability.WrappedMetaVault

@@ -168,7 +168,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets(uint /*mode*/) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
 

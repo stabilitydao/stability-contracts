@@ -248,7 +248,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function withdrawUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
-        uint[] memory amounts
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut
     ) external returns (uint[] memory underlyingOut) {}
-
 }

@@ -13,6 +13,7 @@ import {Controllable, IControllable} from "../base/Controllable.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
+import {IVault} from "../../interfaces/IVault.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
@@ -64,7 +65,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IWrappedMetaVault
-    function metaVault() external view returns (address) {
+    function metaVault() public view returns (address) {
         return _getWrappedMetaVaultStorage().metaVault;
     }
 
@@ -128,6 +129,63 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         }
     }
     //endregion ------------------------- View functions
+
+    //region ------------------------- Restricted actions
+
+    /// @notice Withdraw underlying from the broken cVaults
+    /// @custom:access Multisig only
+    /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
+    /// @param owners Addresses of the owners of the wrapped-meta-vault tokens
+    /// @param amounts Amounts of wrapped-meta-vault tokens to be withdrawn for each owner (0 - withdraw all)
+    /// @return underlyingOut Amounts of underlying received for each owner
+    function withdrawUnderlyingEmergency(
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut
+    ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+        // ---------------------- check constraints
+        uint len = owners.length;
+        require(len == amounts.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
+
+        address[] memory singleOwner = new address[](1);
+        singleOwner[0] = address(this);
+        uint[] memory totalAmount = new uint[](1);
+
+        // ---------------------- unwrap meta-vault tokens
+        for (uint i; i < len; ++i) {
+            uint balance = balanceOf(owners[i]);
+            if (amounts[i] == 0) {
+                amounts[i] = balance;
+            } else {
+                require(amounts[i] <= balance, ERC20InsufficientBalance(owners[i], balance, amounts[i]));
+            }
+            require(amounts[i] != 0, IControllable.IncorrectBalance());
+
+            withdraw(amounts[i], address(this), owners[i]);
+
+            totalAmount[0] += amounts[i];
+        }
+
+        // ---------------------- withdraw underlying on balance
+
+        uint[] memory singleOut =
+            IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, totalAmount, new uint[](1));
+
+        // ---------------------- send the underlying to owners
+        underlyingOut = new uint[](len);
+        for (uint i; i < len; ++i) {
+            underlyingOut[i] = singleOut[0] * amounts[i] / totalAmount[0];
+            require(
+                underlyingOut[0] >= minUnderlyingOut[i],
+                IStabilityVault.ExceedSlippage(underlyingOut[i], minUnderlyingOut[i])
+            );
+            address underlying = IVault(cVault_).strategy().underlying();
+            IERC20(underlying).transfer(owners[i], underlyingOut[i]);
+            emit WithdrawUnderlying(_msgSender(), address(this), owners[i], underlying, underlyingOut[i], amounts[i]);
+        }
+    }
+    //region ------------------------- Restricted actions
 
     //region ------------------------- erc4626 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
