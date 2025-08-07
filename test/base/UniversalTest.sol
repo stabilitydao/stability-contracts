@@ -416,7 +416,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*             MAX DEPOSIT, MAX WITHDRAW, POOL TVL            */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
-                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets();
+                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets(0);
                     (, uint[] memory assetAmounts) = strategy.assetsAmounts();
                     assertEq(
                         maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,

@@ -188,7 +188,7 @@ contract AaveStrategy is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
         address aToken = _getStorage().aToken;
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -199,7 +199,7 @@ contract AaveStrategy is StrategyBase {
         uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
+        amounts[0] = mode == 0 ? Math.min(availableLiquidity, aTokenBalance) : aTokenBalance;
     }
 
     function _previewDepositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {

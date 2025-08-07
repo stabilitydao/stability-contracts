@@ -11,6 +11,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.5.1: add maxWithdrawAssets(uint) - #360
 ///   2.5.0: add maxDepositAssets - #330
 ///   2.4.0: add poolTvl, maxWithdrawAssets - #326
 ///   2.3.0: add fuseMode - #305
@@ -31,7 +32,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.5.0";
+    string public constant VERSION_STRATEGY_BASE = "2.5.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -286,6 +287,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @notice IStrategy
     function maxWithdrawAssets() public view virtual returns (uint[] memory amounts) {
+        return maxWithdrawAssets(0);
+    }
+
+    /// @notice IStrategy
+    function maxWithdrawAssets(uint /*mode*/) public view virtual returns (uint[] memory amounts) {
         // by default zero-length array is returned to indicate that all available amounts can be withdrawn
         return amounts;
     }

@@ -222,7 +222,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
         address aToken = aaveToken();
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -233,7 +233,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
+        amounts[0] = mode == 0 ? Math.min(availableLiquidity, aTokenBalance) : aTokenBalance;
     }
 
     /// @inheritdoc StrategyBase

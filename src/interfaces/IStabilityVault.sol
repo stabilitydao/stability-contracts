@@ -68,7 +68,15 @@ interface IStabilityVault is IERC20, IERC20Metadata {
     /// @return amount Maximum amount that can be withdrawn from the vault for the given account.
     /// This is max amount that can be passed to `withdraw` function.
     /// The implementation should take into account IStrategy.maxWithdrawAssets
+    /// @dev It's alias of IStabilityVault.maxWithdraw(account, 0) for backwords compatibility.
     function maxWithdraw(address account) external view returns (uint amount);
+
+    /// @return amount Maximum amount that can be withdrawn from the vault for the given account.
+    /// This is max amount that can be passed to `withdraw` function.
+    /// The implementation should take into account IStrategy.maxWithdrawAssets
+    /// @param mode 0 - Return amount that can be withdrawn in assets
+    ///             1 - Return amount that can be withdrawn in underlying
+    function maxWithdraw(address account, uint mode) external view returns (uint amount);
 
     /// @return maxAmounts Maximum amounts that can be deposited to the vault for the given account.
     /// This is max amounts of {assets} that can be passed to `depositAssets` function as {amountsMax}.

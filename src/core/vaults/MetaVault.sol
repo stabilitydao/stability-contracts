@@ -356,32 +356,37 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address owner
     ) external override returns (uint underlyingOut) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
+
+        // todo set it to true if cVault_ is broken
+        bool mintReceiptToken = false;
+
         address targetVault = _getTargetVault($, cVault_);
 
         if (msg.sender != owner) {
             _spendAllowanceOrBlock(owner, msg.sender, amount);
         }
 
-        return _withdrawUnderlying($, targetVault, cVault_, amount, minUnderlyingOut, receiver, owner);
+        return _withdrawUnderlying($, targetVault, cVault_, amount, minUnderlyingOut, receiver, owner, mintReceiptToken);
     }
 
     function withdrawUnderlyingEmergency(
         address cVault_,
-        address[] memory users,
+        address[] memory owners,
         uint[] memory amounts
-    ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+    ) external override onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+
         // todo check if cVault is broken and it allows to withdraw emergency
 
-        MetaVaultStorage storage $ = _getMetaVaultStorage();
         address targetVault = _getTargetVault($, cVault_);
 
-        uint len = users.length;
+        uint len = owners.length;
         require(len == amounts.length, IControllable.IncorrectArrayLength());
 
         underlyingOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            uint amount = amounts[i] == 0 ? balanceOf(users[i]) : amounts[i];
-            _withdrawUnderlying($, targetVault, cVault_, amount, 0, users[i], users[i]);
+            uint amount = amounts[i] == 0 ? balanceOf(owners[i]) : amounts[i];
+            underlyingOut[i] = _withdrawUnderlying($, targetVault, cVault_, amount, 0, owners[i], owners[i], true);
         }
     }
 
@@ -613,6 +618,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) external view virtual returns (uint amount) {
+        return maxWithdraw(account, 0);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account, uint mode) public view virtual returns (uint amount) {
         uint userBalance = balanceOf(account);
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
@@ -620,7 +630,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             for (uint i; i < $.vaults.length; ++i) {
                 address _targetVault = $.vaults[i];
                 (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-                    _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+                    _targetVault,
+                    mode == 0
+                        ? IStabilityVault(_targetVault).maxWithdraw(address(this))
+                        : IStabilityVault(_targetVault).maxWithdraw(address(this), mode)
                 );
                 amount += maxMetaVaultTokensToWithdraw;
                 if (userBalance < amount) return userBalance;
@@ -633,7 +646,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
             // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
             (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-                _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this))
+                _targetVault,
+                mode == 0
+                    ? IStabilityVault(_targetVault).maxWithdraw(address(this))
+                    : IStabilityVault(_targetVault).maxWithdraw(address(this), mode)
             );
 
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
@@ -669,22 +685,18 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function maxWithdrawUnderlying(address cVault_, address account) external view override returns (uint amount) {
+    function maxWithdrawUnderlying(address cVault_, address account) public view override returns (uint amount) {
         uint userBalance = balanceOf(account);
-        console.log("maxWithdrawUnderlying", address(this), userBalance);
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         address _targetVault = _getTargetVault($, cVault_);
         if (_targetVault == cVault_) {
             (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
                 _targetVault,
-                IStabilityVault(_targetVault).maxWithdraw(address(this))
+                IStabilityVault(_targetVault).maxWithdraw(address(this), 1)
             );
-            console.log("maxWithdrawUnderlying.1", _maxWithdrawFromVault(userBalance, _targetVault), userBalance);
-
             return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
         } else {
-            console.log("maxWithdrawUnderlying.2", IMetaVault(_targetVault).maxWithdrawUnderlying(cVault_, address(this)));
             (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
                 _targetVault, IMetaVault(_targetVault).maxWithdrawUnderlying(cVault_, address(this))
             );
@@ -727,7 +739,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function _maxWithdrawFromVault(uint userBalance, address targetVault_) internal view returns (uint amount) {
         // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
         // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
-        console.log("maxWithdraw", targetVault_, address(this), IStabilityVault(targetVault_).maxWithdraw(address(this)));
         (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
             targetVault_, IStabilityVault(targetVault_).maxWithdraw(address(this))
         );
@@ -903,7 +914,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint amount,
         uint minUnderlyingOut,
         address receiver,
-        address owner
+        address owner,
+        bool mintReceiptToken
     ) internal returns (uint underlyingOut) {
         require(amount != 0, IControllable.IncorrectZeroArgument());
 
@@ -919,11 +931,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         require(sharesToBurn != 0, ZeroSharesToBurn(amount));
 
         // ensure that the target vault has required amount of meta-vault tokens
-        (uint maxAmountToWithdrawFromVault, uint vaultSharePriceUsd) = _maxAmountToWithdrawFromVault(targetVault_);
-        require(
-            amount <= maxAmountToWithdrawFromVault,
-            MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
-        );
+        require(amount <= maxWithdrawUnderlying(cVault_, owner), TooHighAmount());
+        (uint vaultSharePriceUsd,) = IStabilityVault(targetVault_).price();
 
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingLocals memory v;
@@ -958,7 +967,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         $.lastTransferBlock[receiver] = block.number;
 
-        // todo mint receipt token if the cVault is broken one
+        if (mintReceiptToken) {
+            // todo mint receipt/recovery token if the cVault is broken one
+
+            // todo emit event
+        }
 
         emit WithdrawAssets(msg.sender, owner, v.assets, amount, v.minAmounts);
     }

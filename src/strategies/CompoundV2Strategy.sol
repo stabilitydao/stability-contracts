@@ -182,7 +182,7 @@ contract CompoundV2Strategy is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
         address _underlying = _getStrategyBaseStorage()._underlying;
         address asset = IVToken(_underlying).underlying();
 
@@ -195,7 +195,7 @@ contract CompoundV2Strategy is StrategyBase {
         uint underlyingBalance = _tokensToAmount(cTokenBalance, exchangeRate);
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(underlyingBalance, availableLiquidity);
+        amounts[0] = mode == 0 ? Math.min(underlyingBalance, availableLiquidity) : underlyingBalance;
     }
 
     /// @notice IStrategy

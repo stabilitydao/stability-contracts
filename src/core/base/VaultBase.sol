@@ -485,8 +485,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) public view virtual returns (uint vaultShares) {
+        return maxWithdraw(account, 0);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account, uint mode) public view virtual returns (uint vaultShares) {
         uint balance = balanceOf(account);
-        uint[] memory amounts = strategy().maxWithdrawAssets();
+        uint[] memory amounts = strategy().maxWithdrawAssets(mode);
         if (amounts.length == 0) {
             // strategy allows to withdraw full amount
             // so all vault shares can be withdrawn
