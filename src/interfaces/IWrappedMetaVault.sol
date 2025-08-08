@@ -10,7 +10,9 @@ interface IWrappedMetaVault is IERC4626 {
         address indexed owner,
         address underlying,
         uint underlyingOut,
-        uint assetsAmountIn
+        uint assetsAmountIn,
+        address recoveryToken,
+        uint recoveryAmount
     );
 
     error Slippage(uint value, uint threshold);

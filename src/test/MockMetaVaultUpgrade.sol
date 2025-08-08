@@ -250,5 +250,8 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
         address[] memory owners,
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
-    ) external returns (uint[] memory underlyingOut) {}
+    ) external returns (
+        uint[] memory amountOut,
+        uint[] memory recoveryAmountOut
+    ) {}
 }

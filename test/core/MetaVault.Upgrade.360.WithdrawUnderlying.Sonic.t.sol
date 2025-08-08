@@ -31,7 +31,8 @@ import {console, Test} from "forge-std/Test.sol";
 /// #360 - withdraw underlying from MetaVaults
 contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     // uint public constant FORK_BLOCK = 40824190; // Jul-30-2025 02:39:35 AM +UTC (before the hack of 04 aug 2025)
-    uint public constant FORK_BLOCK = 41962444; // Aug-07-2025 05:43:49 AM +UTC
+    // uint public constant FORK_BLOCK = 41962444; // Aug-07-2025 05:43:49 AM +UTC
+    uint public constant FORK_BLOCK = 42104063; // Aug-08-2025 06:16:39 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public multisig;
@@ -41,7 +42,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     address internal user;
     address internal user2;
 
-    address[17] internal LARGEST_META_USD_HOLDERS;
+    address[15] internal LARGEST_META_USD_HOLDERS;
 
     address[12] internal LARGEST_WRAPPED_META_USD_HOLDERS;
 
@@ -59,12 +60,11 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // all holders with balances > 1000 metaUSD except wrapped metaUSD
         LARGEST_META_USD_HOLDERS = [
             0x8901D9cf0272A2876525ee25Fcbb9E423c4B95f6,
-            0x59603A3AB3e33F07A2B9a4419399d502a1Fb6a95,
-            0xb1E615255CC8DD83F2AB9E332c1624b0A6B3Ad80,
-            0xc2d5904602e2d76D3D04EC28A5A1c52E136C4475,
-            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
-            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
             0x97006dB48f27A1312BbeD5E96dE146A97A78E396,
+            0x59603A3AB3e33F07A2B9a4419399d502a1Fb6a95,
+            0xc2d5904602e2d76D3D04EC28A5A1c52E136C4475,
+            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
+            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
             0x34F6eA796d06870db4dD5775D9e665539Bc6bBA0,
             0xa9714f7291251Bc1b0D0dBA6481959Ef814E171a,
             0xd63295C755F84FCd57663Ea2e2f9E6fee1830139,
@@ -73,7 +73,6 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             0x288a2395f027F65684D836754bA43Afa20CA09e6,
             0x5027457c50A3b45772baFE70e2E6f05D98514ad4,
             0xec8e3A07d6c5c172e821588EF1749b739A06b20E,
-            0xaBf0f7bD0Dc8Ce44b084B4B66b8Db97F1b9Ce419,
             0xdF5e92e18c282B61b509Fb3223BaC6c4d0C8dEE6
         ];
 
@@ -86,104 +85,14 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
             0x859C08DDB344FaCf01027FE7e75C5DFA6230c7dE,
             0x60e2A70a4Ba833Fe94AF82f01742e7bfd8e18FA0,
-            0xB7391a758869f5a9950506BA403366f03caF3a29,
             0x3e796a8eed2d57b334796F8356D882827770d7Fd,
             0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8,
-            0x2C00637a8CF228B8e882aB0BDfCDA22c159E1E6C
+            0x2C00637a8CF228B8e882aB0BDfCDA22c159E1E6C,
+            0x8f80791DcdAeb64794F53d4ab1c27BF4c21A4F41
         ];
     }
 
-    //    /// @notice Withdraw underlying from the given AMF-subvault
-    //    function testWithdrawFromSubvaultDirectlyAMF() public {
-    //        vm.prank(multisig);
-    //        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-    //
-    //        (, IStabilityVault vault) = _prepareSubVaultToWithdraw(
-    //            SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0
-    //        );
-    //        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-    //
-    //        // ----------------------------------- detect underlying and amount to withdraw
-    //        IStrategy strategy = IVault(address(vault)).strategy();
-    //
-    //        vm.prank(multisig);
-    //        AaveMerklFarmStrategy(address(strategy)).setUnderlying();
-    //
-    //        assertNotEq(strategy.underlying(), address(0), "Underlying should not be zero address");
-    //
-    //        // ----------------------------------- withdraw underlying from the given vault
-    //        address[] memory assets = new address[](1);
-    //        assets[0] = strategy.underlying();
-    //
-    //        address holder = SonicConstantsLib.METAVAULT_metaUSDC;
-    //        uint expectedUnderlying = Math.mulDiv(
-    //            vault.balanceOf(holder),
-    //            strategy.total(),
-    //            vault.totalSupply(),
-    //            Math.Rounding.Ceil
-    //        );
-    //
-    //        uint balanceUnderlyingBefore = IERC20(assets[0]).balanceOf(holder);
-    //        uint amountToWithdraw = vault.maxWithdraw(holder);
-    //
-    //        vm.prank(holder);
-    //        vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
-    //
-    //        uint balanceUnderlyingAfter = IERC20(assets[0]).balanceOf(holder);
-    //
-    //        assertEq(
-    //            balanceUnderlyingAfter - balanceUnderlyingBefore, expectedUnderlying, "Withdrawn amount should match expected value"
-    //        );
-    //    }
-    //
-    //    function testWithdrawFromChildMetavaultAMF() public {
-    //        vm.prank(multisig);
-    //        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-    //
-    //        address holder = SonicConstantsLib.METAVAULT_metaUSD;
-    //        (IMetaVault subMetaVault, IStabilityVault vault) = _prepareSubVaultToWithdraw(
-    //            SonicConstantsLib.METAVAULT_metaUSDC,
-    //            SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0
-    //        );
-    //        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-    //        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
-    //
-    //        // ----------------------------------- detect underlying and amount to withdraw
-    //        IStrategy strategy = IVault(address(vault)).strategy();
-    //
-    //        vm.prank(multisig);
-    //        AaveMerklFarmStrategy(address(strategy)).setUnderlying();
-    //
-    //        assertNotEq(strategy.underlying(), address(0), "AMF: Underlying should not be zero address 1");
-    //
-    //        // ----------------------------------- withdraw underlying through sub-MetaVault
-    //        address[] memory assets = new address[](1);
-    //        assets[0] = strategy.underlying();
-    //
-    //        uint amountToWithdraw = subMetaVault.maxWithdrawUnderlying(address(vault), holder);
-    //        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(IAToken(assets[0]).UNDERLYING_ASSET_ADDRESS());
-    //        (uint priceMetaVault,) = subMetaVault.price();
-    //        // Assume here that AToken to asset is 1:1
-    //        uint expectedUnderlying = amountToWithdraw * priceMetaVault
-    //            / priceAsset
-    //            * 10 ** IERC20Metadata(assets[0]).decimals() // decimals of the underlying asset
-    //            / 1e18;
-    //        uint balanceUnderlyingBefore = IERC20(assets[0]).balanceOf(holder);
-    //
-    //        vm.prank(holder);
-    //        MetaVault(address(subMetaVault)).withdrawUnderlying(address(vault), amountToWithdraw, 0, holder, holder);
-    //
-    //        uint balanceUnderlyingAfter = IERC20(assets[0]).balanceOf(holder);
-    //
-    //        assertApproxEqAbs(
-    //            balanceUnderlyingAfter - balanceUnderlyingBefore,
-    //            expectedUnderlying,
-    //            1,
-    //            "AMF: Withdrawn amount should match expected value 1"
-    //        );
-    //    }
-
-    function testDepositWithdrawUnderlyingFromChildMetavaultAMF() public {
+    function testDepositWithdrawUnderlyingFromChildMetaVaultAMF() public {
         vm.prank(multisig);
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
 
@@ -227,7 +136,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         vm.prank(user);
         MetaVault(address(subMetaVault)).withdrawUnderlying(address(vault), amountToWithdraw, 0, user, user);
-        console.log("amountToWithdraw", amountToWithdraw);
+        // console.log("amountToWithdraw", amountToWithdraw);
 
         uint balanceUnderlyingAfter = IERC20(assets[0]).balanceOf(user);
 
@@ -457,13 +366,20 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint holderBalance = _metaVault.balanceOf(holder);
             uint maxWithdrawUnderlying = _metaVault.maxWithdrawUnderlying(address(vault), holder);
             uint maxWithdraw = _metaVault.maxWithdraw(holder);
-            assertLt(maxWithdraw, maxWithdrawUnderlying, "Meta vault doesn't have enough liquidity after credix hack");
+            assertLt(maxWithdraw, maxWithdrawUnderlying, "Meta vault doesn't have enough liquidity after credix incident");
 
-            vm.expectRevert(abi.encodeWithSelector(IMetaVault.TooHighAmount.selector));
+            // vm.expectRevert(abi.encodeWithSelector(IMetaVault.TooHighAmount.selector));
             vm.prank(holder);
-            MetaVault(address(_metaVault)).withdrawUnderlying(
+            try MetaVault(address(_metaVault)).withdrawUnderlying(
                 address(vault), maxWithdrawUnderlying + 1, 0, holder, holder
-            );
+            ) {
+                require(false, "Error IMetaVault.TooHighAmount wasn't thrown");
+            } catch (bytes memory reason) {
+                require(
+                    reason.length >= 4 && bytes4(reason) == IMetaVault.TooHighAmount.selector,
+                    "Some other error was thrown instead of IMetaVault.TooHighAmount"
+                );
+            }
 
             uint expectedUnderlying = _getExpectedUnderlying(strategy, _metaVault, maxWithdrawUnderlying);
 
@@ -515,16 +431,30 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         {
             uint snapshot = vm.snapshotState();
 
+            uint[] memory balancesBefore = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                balancesBefore[i] = IERC20(strategy.underlying()).balanceOf(owners[i]);
+            }
+
             uint gas = gasleft();
             vm.prank(multisig);
-            uint[] memory amountsOut =
+            (uint[] memory amountsOut, uint[] memory recoveryAmountOut) =
                 _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut);
 
-            assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M");
+            assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
 
             for (uint i = 0; i < count; ++i) {
                 // console.log("i, amountOut", i, amountsOut[i]);
                 assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 1, "Withdrawn amount should match expected value 5");
+            }
+
+            for (uint i = 0; i < count; ++i) {
+                assertApproxEqAbs(IERC20(strategy.underlying()).balanceOf(owners[i]) - balancesBefore[i], amountsOut[i], 1, "Owner should receive correct amount of underlying 5");
+                address recoveryToken = address(0); // todo get recovery token address
+                if (recoveryToken != address(0)) {
+                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    // todo check value of recoveryAmountOut[i]
+                }
             }
 
             vm.revertToState(snapshot);
@@ -553,7 +483,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             }
 
             vm.expectRevert(IControllable.IncorrectBalance.selector);
-            vm.prank(address(this));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), owners2, amounts, minAmountsOut);
 
             vm.revertToState(snapshot);
@@ -570,8 +500,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
                     : 0; // by default withdraw all
             }
 
-            vm.expectRevert(IMetaVault.ZeroSharesToBurn.selector);
-            vm.prank(address(this));
+            vm.expectRevert(abi.encodeWithSelector(IMetaVault.ZeroSharesToBurn.selector, 1));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts2, minAmountsOut);
 
             vm.revertToState(snapshot);
@@ -582,7 +512,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint snapshot = vm.snapshotState();
 
             vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-            vm.prank(address(this));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), new address[](0), new uint[](0), new uint[](0));
 
             vm.revertToState(snapshot);
@@ -593,15 +523,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint snapshot = vm.snapshotState();
 
             vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-            vm.prank(address(this));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, new uint[](0));
 
             vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-            vm.prank(address(this));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), owners, new uint[](0), minAmountsOut);
 
             vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-            vm.prank(address(this));
+            vm.prank(multisig);
             _metaVault.withdrawUnderlyingEmergency(address(vault), new address[](0), amounts, minAmountsOut);
 
             vm.revertToState(snapshot);
@@ -616,9 +546,16 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
                 minAmountsOut2[i] = i == 0 ? minAmountsOut[i] + 2 : minAmountsOut[i];
             }
 
-            vm.expectRevert(IStabilityVault.ExceedSlippage.selector);
-            vm.prank(address(this));
-            _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut2);
+            // vm.expectRevert(IStabilityVault.ExceedSlippage.selector);
+            vm.prank(multisig);
+            try _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut2)  {
+                require(false, "Error IStabilityVault.ExceedSlippage wasn't thrown 5");
+            } catch (bytes memory reason) {
+                require(
+                    reason.length >= 4 && bytes4(reason) == IStabilityVault.ExceedSlippage.selector,
+                    "Some other error was thrown instead of IStabilityVault.ExceedSlippage 5"
+                );
+            }
 
             vm.revertToState(snapshot);
         }
@@ -630,50 +567,192 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
     function testWrappedWithdrawUnderlyingEmergency() public {
         // ---------------------------- set up contracts
+        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
         _upgradeWrappedMetaVault();
 
-        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
-        // IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        // ---------------------------- set up c-vault 1
+        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        _upgradeAmfStrategy(address(vault1.strategy()));
+        _upgradeCVault(address(vault1));
+        {
+            IStrategy strategy1 = IVault(address(vault1)).strategy();
 
-        _upgradeAmfStrategy(address(vault.strategy()));
-        _upgradeCVault(address(vault));
+            vm.prank(multisig);
+            AaveMerklFarmStrategy(address(strategy1)).setUnderlying();
+        }
 
-        IStrategy strategy = IVault(address(vault)).strategy();
+        // ---------------------------- set up c-vault 2
+        IVault vault2 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa5);
+        _upgradeAmfStrategy(address(vault2.strategy()));
+        _upgradeCVault(address(vault2));
+        {
+            IStrategy strategy2 = IVault(address(vault2)).strategy();
+
+            vm.prank(multisig);
+            AaveMerklFarmStrategy(address(strategy2)).setUnderlying();
+        }
+
+        // --------------------------- whitelist Wrapped in MetaVault
+        IMetaVault _metaVault = IMetaVault(_wrappedMetaVault.metaVault());
 
         vm.prank(multisig);
-        AaveMerklFarmStrategy(address(strategy)).setUnderlying();
+        _metaVault.changeWhitelist(address(_wrappedMetaVault), true);
 
-        // --------------------------- prepare to withdraw underlying in emergency
-        uint count = LARGEST_WRAPPED_META_USD_HOLDERS.length;
+        // --------------------------- withdraw underlying in emergency (vault 1)
+        {
+            uint count = 1;
+            address[] memory owners = new address[](count);
+            uint[] memory amounts = new uint[](count);
+            uint[] memory minAmountsOut = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
+                amounts[i] = _metaVault.maxWithdrawUnderlying(address(vault1), address(_wrappedMetaVault));
+                minAmountsOut[i] = _getExpectedUnderlying(vault1.strategy(), _metaVault, amounts[i] - 1);
+            }
+
+            uint gas = gasleft();
+            vm.prank(multisig);
+            (uint[] memory amountsOut, uint[] memory recoveryAmountOut) =
+                _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, minAmountsOut);
+
+            assertLt(gas - gasleft(), 15e6, "Gas used for withdrawUnderlyingEmergency should be less than 15M 6");
+
+            for (uint i = 0; i < count; ++i) {
+                // console.log("i, amountOut", i, amountsOut[i]);
+                assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 2, "Withdrawn amount should match expected value 6");
+
+                address recoveryToken = address(0); // todo get recovery token address
+                if (recoveryToken != address(0)) {
+                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    // todo check value of recoveryAmountOut[i]
+                }
+            }
+        }
+
+        // --------------------------- withdraw underlying in emergency (vault 2)
+        {
+            uint count = LARGEST_WRAPPED_META_USD_HOLDERS.length;
+            address[] memory owners = new address[](count);
+            uint[] memory shares = new uint[](count);
+            uint[] memory minAmountsOut = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
+                shares[i] = 0;
+                minAmountsOut[i] = _getExpectedUnderlying(
+                    vault2.strategy(),
+                    _metaVault,
+                    _wrappedMetaVault.balanceOf(owners[i])
+                ) - 1;
+            }
+
+            uint[] memory balancesUnderlyingBefore = new uint[](count);
+            uint[] memory balancesWrappedBefore = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                balancesUnderlyingBefore[i] = IERC20(vault2.strategy().underlying()).balanceOf(owners[i]);
+                balancesWrappedBefore[i] = _wrappedMetaVault.balanceOf(owners[i]);
+            }
+
+            uint gas = gasleft();
+            vm.prank(multisig);
+            (uint[] memory amountsOut, uint[] memory recoveryAmountOut) =
+                _wrappedMetaVault.redeemUnderlyingEmergency(address(vault2), owners, shares, minAmountsOut);
+
+            assertLt(gas - gasleft(), 15e6, "Gas used for withdrawUnderlyingEmergency should be less than 15M 7");
+
+            for (uint i = 0; i < count; ++i) {
+                // console.log("i, amountOut", i, amountsOut[i], owners[i]);
+                assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 2, "Withdrawn amount should match expected value 7");
+            }
+
+            for (uint i = 0; i < count; ++i) {
+                assertApproxEqAbs(
+                    IERC20(vault2.strategy().underlying()).balanceOf(owners[i]) - balancesUnderlyingBefore[i],
+                    amountsOut[i],
+                    1,
+                    "Owner should receive correct amount of underlying 7"
+                );
+
+                address recoveryToken = address(0); // todo get recovery token address
+                if (recoveryToken != address(0)) {
+                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    // todo check value of recoveryAmountOut[i]
+                }
+
+                assertApproxEqAbs(
+                    balancesWrappedBefore[i] - _wrappedMetaVault.balanceOf(owners[i]),
+                    balancesWrappedBefore[i],
+                    1,
+                    "Owner should spend expected amount of wrapped metaUSD 7"
+                );
+            }
+
+        }
+    }
+
+    function testWrappedWithdrawUnderlyingEmergencyBadPaths() public {
+        // ---------------------------- set up contracts
+        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        _upgradeWrappedMetaVault();
+
+        // ---------------------------- set up c-vault 1
+        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        _upgradeAmfStrategy(address(vault1.strategy()));
+        _upgradeCVault(address(vault1));
+        {
+            IStrategy strategy1 = IVault(address(vault1)).strategy();
+
+            vm.prank(multisig);
+            AaveMerklFarmStrategy(address(strategy1)).setUnderlying();
+        }
+
+        // --------------------------- whitelist Wrapped in MetaVault
+        IMetaVault _metaVault = IMetaVault(_wrappedMetaVault.metaVault());
+
+        vm.prank(multisig);
+        _metaVault.changeWhitelist(address(_wrappedMetaVault), true);
+
+        // --------------------------- prepare data
+        uint count = 1;
         address[] memory owners = new address[](count);
         uint[] memory amounts = new uint[](count);
         uint[] memory minAmountsOut = new uint[](count);
         for (uint i = 0; i < count; ++i) {
             owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
-            amounts[i] = 0;
-            minAmountsOut[i] = 0; // todo
+            amounts[i] = _metaVault.maxWithdrawUnderlying(address(vault1), address(_wrappedMetaVault));
+            minAmountsOut[i] = _getExpectedUnderlying(vault1.strategy(), _metaVault, amounts[i] - 1);
         }
 
-        // --------------------------- withdraw underlying in emergency (success)
+        // --------------------------- not multisig, not governance
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.prank(address(this));
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, minAmountsOut);
+
+        // --------------------------- incorrect arrays
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(multisig);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), new address[](5), amounts, minAmountsOut);
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(multisig);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, new uint[](5), minAmountsOut);
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(multisig);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, new uint[](0));
+
         {
-            uint snapshot = vm.snapshotState();
+            address[] memory wrongOwners = new address[](1);
+            wrongOwners[0] = address(this);
 
-            uint gas = gasleft();
+            vm.expectRevert(IControllable.IncorrectBalance.selector);
             vm.prank(multisig);
-            uint[] memory amountsOut =
-                _wrappedMetaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut);
-
-            assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M");
-
-            for (uint i = 0; i < count; ++i) {
-                console.log("i, amountOut", i, amountsOut[i]);
-                // todo assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 1, "Withdrawn amount should match expected value 5");
-            }
-
-            vm.revertToState(snapshot);
+            _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), wrongOwners, new uint[](1), new uint[](1));
         }
     }
 

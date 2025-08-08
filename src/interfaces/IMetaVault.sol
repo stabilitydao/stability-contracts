@@ -78,7 +78,7 @@ interface IMetaVault is IStabilityVault {
     error IncorrectVault();
     error NotWhitelisted();
     error VaultNotFound(address vault);
-    error TooHighAmount();
+    error TooHighAmount(uint amount, uint maxAmount);
 
     //region --------------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -210,17 +210,21 @@ interface IMetaVault is IStabilityVault {
     ) external returns (uint underlyingOut);
 
     /// @notice Withdraw underlying from the broken cVaults
-    /// @custom:access Multisig only
+    /// @custom:access Governance, multisig or whitelisted addresses (i.e. wrapped meta-vaults)
     /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
     /// @param owners Addresses of the owners of the meta-vault tokens
     /// @param amounts Amounts of meta-vault tokens to be withdrawn for each owner (0 - withdraw all)
     /// @param minUnderlyingOut Minimum amount of underlying to be received for each owner
-    /// @return underlyingOut Amounts of underlying received for each owner
+    /// @return amountOut Amounts of underlying received for each owner.
+    /// @return recoveryAmountOut Amounts of recovery tokens received for each owner.
     function withdrawUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
-    ) external returns (uint[] memory underlyingOut);
+    ) external returns (
+        uint[] memory amountOut,
+        uint[] memory recoveryAmountOut
+    );
     //endregion --------------------------------------- Write functions
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -14,6 +15,7 @@ import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
 import {IVault} from "../../interfaces/IVault.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 
@@ -57,6 +59,15 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             string.concat("Wrapped ", IERC20Metadata(metaVault_).name()),
             string.concat("w", IERC20Metadata(metaVault_).symbol())
         );
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      DATA TYPES                            */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    struct WithdrawUnderlyingEmergencyLocal {
+        uint[] totalShares;
+        uint totalAssets;
+        uint totalSupply;
     }
 
     //region ------------------------- View functions
@@ -130,62 +141,111 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     }
     //endregion ------------------------- View functions
 
-    //region ------------------------- Restricted actions
+    //region ------------------------- Emergency actions
 
-    /// @notice Withdraw underlying from the broken cVaults
+    /// @notice Redeem underlying from the broken cVaults
     /// @custom:access Multisig only
     /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
     /// @param owners Addresses of the owners of the wrapped-meta-vault tokens
-    /// @param amounts Amounts of wrapped-meta-vault tokens to be withdrawn for each owner (0 - withdraw all)
-    /// @return underlyingOut Amounts of underlying received for each owner
-    function withdrawUnderlyingEmergency(
+    /// @param shares Amount of shares to be redeemed for each owner (0 - redeem all shares on the owner's balance)
+    /// @return underlyingOut Amounts of underlying received by each owner
+    /// @return recoveryTokenOut Amounts of recovery tokens received by each owner (if any)
+    function redeemUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
-        uint[] memory amounts,
+        uint[] memory shares,
         uint[] memory minUnderlyingOut
-    ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut) {
+    ) external onlyGovernanceOrMultisig returns (
+        uint[] memory underlyingOut,
+        uint[] memory recoveryTokenOut
+    ) {
+        //slither-disable-next-line uninitialized-local
+        WithdrawUnderlyingEmergencyLocal memory v;
+
+        address recoveryToken = address(0); // todo
+
         // ---------------------- check constraints
         uint len = owners.length;
-        require(len == amounts.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
+        require(len == shares.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
 
         address[] memory singleOwner = new address[](1);
         singleOwner[0] = address(this);
-        uint[] memory totalAmount = new uint[](1);
 
-        // ---------------------- unwrap meta-vault tokens
-        for (uint i; i < len; ++i) {
-            uint balance = balanceOf(owners[i]);
-            if (amounts[i] == 0) {
-                amounts[i] = balance;
-            } else {
-                require(amounts[i] <= balance, ERC20InsufficientBalance(owners[i], balance, amounts[i]));
+        uint[] memory assets = new uint[](len);
+
+        {
+            // pre-calculate totalAssets qnd totalSupply
+            v.totalShares = new uint[](1);
+            v.totalAssets = totalAssets();
+            v.totalSupply = totalSupply();
+
+            // ---------------------- unwrap meta-vault tokens
+            for (uint i; i < len; ++i) {
+                uint balance = balanceOf(owners[i]);
+                if (shares[i] == 0) {
+                    shares[i] = balance;
+                } else {
+                    require(shares[i] <= balance, ERC4626ExceededMaxRedeem(owners[i], shares[i], balance));
+                }
+                require(shares[i] != 0, IControllable.IncorrectBalance());
+
+                // ------------------- redeem (shares[i], address(this), owners[i]);
+                assets[i] = Math.mulDiv(shares[i], v.totalAssets + 1, v.totalSupply + 10 ** _decimalsOffset(), Math.Rounding.Floor);
+
+                // -------------------_withdraw(_msgSender(), receiver, owner, assets, shares);
+                _burn(owners[i], shares[i]);
+                emit Withdraw(msg.sender, address(this), owners[i], assets[i], shares[i]);
+                // keep unwrapped MetaVault tokens on balance
+
+                v.totalShares[0] += shares[i];
             }
-            require(amounts[i] != 0, IControllable.IncorrectBalance());
 
-            withdraw(amounts[i], address(this), owners[i]);
-
-            totalAmount[0] += amounts[i];
-        }
-
-        // ---------------------- withdraw underlying on balance
-
-        uint[] memory singleOut =
-            IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, totalAmount, new uint[](1));
-
-        // ---------------------- send the underlying to owners
-        underlyingOut = new uint[](len);
-        for (uint i; i < len; ++i) {
-            underlyingOut[i] = singleOut[0] * amounts[i] / totalAmount[0];
-            require(
-                underlyingOut[0] >= minUnderlyingOut[i],
-                IStabilityVault.ExceedSlippage(underlyingOut[i], minUnderlyingOut[i])
+            // ---------------------- withdraw total underlying on balance
+            uint[] memory singleOut;
+            (singleOut, ) = IMetaVault(metaVault()).withdrawUnderlyingEmergency(
+                cVault_,
+                singleOwner,
+                v.totalShares,
+                new uint[](1)
             );
-            address underlying = IVault(cVault_).strategy().underlying();
-            IERC20(underlying).transfer(owners[i], underlyingOut[i]);
-            emit WithdrawUnderlying(_msgSender(), address(this), owners[i], underlying, underlyingOut[i], amounts[i]);
+
+            underlyingOut = new uint[](len);
+            for (uint i; i < len; ++i) {
+                underlyingOut[i] = singleOut[0] * shares[i] / v.totalShares[0];
+                require(
+                    underlyingOut[0] >= minUnderlyingOut[i],
+                    IStabilityVault.ExceedSlippage(underlyingOut[i], minUnderlyingOut[i])
+                );
+            }
         }
+
+        // ---------------------- send recovery tokens and underlying to the owners
+        address underlying = IVault(cVault_).strategy().underlying();
+        recoveryTokenOut = new uint[](len);
+        for (uint i; i < len; ++i) {
+            IERC20(underlying).transfer(owners[i], underlyingOut[i]);
+
+            recoveryTokenOut[i] = recoveryToken == address(0) ? 0 : assets[i];
+            if (recoveryToken != address(0)) {
+                IERC20(recoveryToken).transfer(owners[i], recoveryTokenOut[i]);
+            }
+
+            emit WithdrawUnderlying(
+                _msgSender(),
+                address(this),
+                owners[i],
+                underlying,
+                underlyingOut[i],
+                assets[i],
+                recoveryToken,
+                recoveryTokenOut[i]
+            );
+        }
+
+        return (underlyingOut, recoveryTokenOut);
     }
-    //region ------------------------- Restricted actions
+
+    //region ------------------------- Emergency actions
 
     //region ------------------------- erc4626 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
