@@ -155,10 +155,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         address[] memory owners,
         uint[] memory shares,
         uint[] memory minUnderlyingOut
-    ) external onlyGovernanceOrMultisig returns (
-        uint[] memory underlyingOut,
-        uint[] memory recoveryTokenOut
-    ) {
+    ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut, uint[] memory recoveryTokenOut) {
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingEmergencyLocal memory v;
 
@@ -190,7 +187,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
                 require(shares[i] != 0, IControllable.IncorrectBalance());
 
                 // ------------------- redeem (shares[i], address(this), owners[i]);
-                assets[i] = Math.mulDiv(shares[i], v.totalAssets + 1, v.totalSupply + 10 ** _decimalsOffset(), Math.Rounding.Floor);
+                assets[i] = Math.mulDiv(
+                    shares[i], v.totalAssets + 1, v.totalSupply + 10 ** _decimalsOffset(), Math.Rounding.Floor
+                );
 
                 // -------------------_withdraw(_msgSender(), receiver, owner, assets, shares);
                 _burn(owners[i], shares[i]);
@@ -202,18 +201,14 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             // ---------------------- withdraw total underlying on balance
             uint[] memory singleOut;
-            (singleOut, ) = IMetaVault(metaVault()).withdrawUnderlyingEmergency(
-                cVault_,
-                singleOwner,
-                v.totalShares,
-                new uint[](1)
-            );
+            (singleOut,) =
+                IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, v.totalShares, new uint[](1));
 
             underlyingOut = new uint[](len);
             for (uint i; i < len; ++i) {
                 underlyingOut[i] = singleOut[0] * shares[i] / v.totalShares[0];
                 require(
-                    underlyingOut[0] >= minUnderlyingOut[i],
+                    underlyingOut[i] >= minUnderlyingOut[i],
                     IStabilityVault.ExceedSlippage(underlyingOut[i], minUnderlyingOut[i])
                 );
             }

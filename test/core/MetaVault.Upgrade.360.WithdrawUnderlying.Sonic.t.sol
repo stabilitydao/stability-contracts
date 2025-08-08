@@ -46,6 +46,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
     address[12] internal LARGEST_WRAPPED_META_USD_HOLDERS;
 
+    struct WrappedTestLocal {
+        uint totalShares;
+        uint totalSupplyBefore;
+        uint totalAssetsBefore;
+        uint totalAmountsOut;
+        uint[] balancesUnderlyingBefore;
+        uint[] balancesWrappedBefore;
+    }
+
     constructor() {
         user = makeAddr("user");
         user2 = makeAddr("user2");
@@ -366,7 +375,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint holderBalance = _metaVault.balanceOf(holder);
             uint maxWithdrawUnderlying = _metaVault.maxWithdrawUnderlying(address(vault), holder);
             uint maxWithdraw = _metaVault.maxWithdraw(holder);
-            assertLt(maxWithdraw, maxWithdrawUnderlying, "Meta vault doesn't have enough liquidity after credix incident");
+            assertLt(
+                maxWithdraw, maxWithdrawUnderlying, "Meta vault doesn't have enough liquidity after credix incident"
+            );
 
             // vm.expectRevert(abi.encodeWithSelector(IMetaVault.TooHighAmount.selector));
             vm.prank(holder);
@@ -427,7 +438,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             minAmountsOut[i] = _getExpectedUnderlying(strategy, _metaVault, _metaVault.balanceOf(owners[i])) - 1;
         }
 
-        // --------------------------- withdraw underlying in emergency (success)
+        // --------------------------- withdraw underlying in emergency by gov (success)
         {
             uint snapshot = vm.snapshotState();
 
@@ -449,12 +460,64 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             }
 
             for (uint i = 0; i < count; ++i) {
-                assertApproxEqAbs(IERC20(strategy.underlying()).balanceOf(owners[i]) - balancesBefore[i], amountsOut[i], 1, "Owner should receive correct amount of underlying 5");
+                assertApproxEqAbs(
+                    IERC20(strategy.underlying()).balanceOf(owners[i]) - balancesBefore[i],
+                    amountsOut[i],
+                    1,
+                    "Owner should receive correct amount of underlying 5"
+                );
                 address recoveryToken = address(0); // todo get recovery token address
                 if (recoveryToken != address(0)) {
-                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    assertApproxEqAbs(
+                        IERC20(recoveryToken).balanceOf(owners[i]),
+                        recoveryAmountOut[i],
+                        1,
+                        "Owner should receive expected amount of recovery token 5"
+                    );
                     // todo check value of recoveryAmountOut[i]
                 }
+            }
+
+            vm.revertToState(snapshot);
+        }
+
+        // --------------------------- withdraw underlying in emergency by metavault (success)
+        {
+            uint snapshot = vm.snapshotState();
+
+            address caller = makeAddr("upperMetaVault");
+            vm.prank(multisig);
+            _metaVault.changeWhitelist(caller, true);
+
+            uint[] memory balancesBefore = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                balancesBefore[i] = IERC20(strategy.underlying()).balanceOf(owners[i]);
+            }
+
+            uint gas = gasleft();
+            vm.prank(caller);
+            (uint[] memory amountsOut, uint[] memory recoveryAmountOut) =
+                _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut);
+
+            assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
+
+            for (uint i = 0; i < count; ++i) {
+                // console.log("i, amountOut", i, amountsOut[i]);
+                assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 1, "Withdrawn amount should match expected value 5");
+            }
+
+            for (uint i = 0; i < count; ++i) {
+                assertApproxEqAbs(
+                    IERC20(strategy.underlying()).balanceOf(owners[i]) - balancesBefore[i],
+                    amountsOut[i],
+                    1,
+                    "Owner should receive correct amount of underlying 5"
+                );
+                assertEq(
+                    recoveryAmountOut[i],
+                    0,
+                    "No reward tokens were minted because the caller is whitelisted (so it's a Wrapped/MetaVault)"
+                );
             }
 
             vm.revertToState(snapshot);
@@ -548,7 +611,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             // vm.expectRevert(IStabilityVault.ExceedSlippage.selector);
             vm.prank(multisig);
-            try _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut2)  {
+            try _metaVault.withdrawUnderlyingEmergency(address(vault), owners, amounts, minAmountsOut2) {
                 require(false, "Error IStabilityVault.ExceedSlippage wasn't thrown 5");
             } catch (bytes memory reason) {
                 require(
@@ -626,33 +689,40 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
                 address recoveryToken = address(0); // todo get recovery token address
                 if (recoveryToken != address(0)) {
-                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    assertApproxEqAbs(
+                        IERC20(recoveryToken).balanceOf(owners[i]),
+                        recoveryAmountOut[i],
+                        1,
+                        "Owner should receive expected amount of recovery token 5"
+                    );
                     // todo check value of recoveryAmountOut[i]
                 }
             }
         }
 
-        // --------------------------- withdraw underlying in emergency (vault 2)
+        // --------------------------- withdraw underlying in emergency (vault 2), check balances and wrapped state
         {
+            WrappedTestLocal memory v;
+            v.totalSupplyBefore = _wrappedMetaVault.totalSupply();
+            v.totalAssetsBefore = _wrappedMetaVault.totalAssets();
+
             uint count = LARGEST_WRAPPED_META_USD_HOLDERS.length;
             address[] memory owners = new address[](count);
             uint[] memory shares = new uint[](count);
             uint[] memory minAmountsOut = new uint[](count);
             for (uint i = 0; i < count; ++i) {
                 owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
-                shares[i] = 0;
-                minAmountsOut[i] = _getExpectedUnderlying(
-                    vault2.strategy(),
-                    _metaVault,
-                    _wrappedMetaVault.balanceOf(owners[i])
-                ) - 1;
+                shares[i] = 0; // use all balance
+                minAmountsOut[i] =
+                    _getExpectedUnderlying(vault2.strategy(), _metaVault, _wrappedMetaVault.balanceOf(owners[i])) - 1;
+                v.totalShares += _wrappedMetaVault.balanceOf(owners[i]);
             }
 
-            uint[] memory balancesUnderlyingBefore = new uint[](count);
-            uint[] memory balancesWrappedBefore = new uint[](count);
+            v.balancesUnderlyingBefore = new uint[](count);
+            v.balancesWrappedBefore = new uint[](count);
             for (uint i = 0; i < count; ++i) {
-                balancesUnderlyingBefore[i] = IERC20(vault2.strategy().underlying()).balanceOf(owners[i]);
-                balancesWrappedBefore[i] = _wrappedMetaVault.balanceOf(owners[i]);
+                v.balancesUnderlyingBefore[i] = IERC20(vault2.strategy().underlying()).balanceOf(owners[i]);
+                v.balancesWrappedBefore[i] = _wrappedMetaVault.balanceOf(owners[i]);
             }
 
             uint gas = gasleft();
@@ -662,14 +732,17 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             assertLt(gas - gasleft(), 15e6, "Gas used for withdrawUnderlyingEmergency should be less than 15M 7");
 
+            // --------------------------- check amount out
             for (uint i = 0; i < count; ++i) {
                 // console.log("i, amountOut", i, amountsOut[i], owners[i]);
                 assertApproxEqAbs(amountsOut[i], minAmountsOut[i], 2, "Withdrawn amount should match expected value 7");
+                v.totalAmountsOut += amountsOut[i];
             }
 
+            // --------------------------- check balances
             for (uint i = 0; i < count; ++i) {
                 assertApproxEqAbs(
-                    IERC20(vault2.strategy().underlying()).balanceOf(owners[i]) - balancesUnderlyingBefore[i],
+                    IERC20(vault2.strategy().underlying()).balanceOf(owners[i]) - v.balancesUnderlyingBefore[i],
                     amountsOut[i],
                     1,
                     "Owner should receive correct amount of underlying 7"
@@ -677,18 +750,42 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
                 address recoveryToken = address(0); // todo get recovery token address
                 if (recoveryToken != address(0)) {
-                    assertApproxEqAbs(IERC20(recoveryToken).balanceOf(owners[i]), recoveryAmountOut[i], 1, "Owner should receive expected amount of recovery token 5");
+                    assertApproxEqAbs(
+                        IERC20(recoveryToken).balanceOf(owners[i]),
+                        recoveryAmountOut[i],
+                        1,
+                        "Owner should receive expected amount of recovery token 5"
+                    );
                     // todo check value of recoveryAmountOut[i]
                 }
 
                 assertApproxEqAbs(
-                    balancesWrappedBefore[i] - _wrappedMetaVault.balanceOf(owners[i]),
-                    balancesWrappedBefore[i],
+                    v.balancesWrappedBefore[i] - _wrappedMetaVault.balanceOf(owners[i]),
+                    v.balancesWrappedBefore[i],
                     1,
                     "Owner should spend expected amount of wrapped metaUSD 7"
                 );
             }
 
+            // --------------------------- check total supply and total assets
+            {
+                (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
+                    IAToken(vault2.strategy().underlying()).UNDERLYING_ASSET_ADDRESS()
+                );
+                assertApproxEqAbs(
+                    v.totalSupplyBefore - _wrappedMetaVault.totalSupply(),
+                    v.totalShares,
+                    1,
+                    "Total supply should decrease by total shares withdrawn 7"
+                );
+
+                assertApproxEqAbs(
+                    v.totalAssetsBefore - _wrappedMetaVault.totalAssets(), // usd18
+                    v.totalAmountsOut * priceAsset / 10 ** IERC20Metadata(vault2.strategy().underlying()).decimals(), // usd18
+                    1e13, // < 5e-6 usd
+                    "Total assets should decrease by total amounts out withdrawn 7"
+                );
+            }
         }
     }
 

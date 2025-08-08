@@ -222,9 +222,6 @@ interface IMetaVault is IStabilityVault {
         address[] memory owners,
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
-    ) external returns (
-        uint[] memory amountOut,
-        uint[] memory recoveryAmountOut
-    );
+    ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut);
     //endregion --------------------------------------- Write functions
 }
