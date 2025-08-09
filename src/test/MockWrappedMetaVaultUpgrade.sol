@@ -45,4 +45,9 @@ contract MockWrappedMetaVaultUpgrade is Controllable, ERC4626Upgradeable, IWrapp
     function withdraw(uint, address, address, uint) external returns (uint) {}
 
     function redeem(uint, address, address, uint) external returns (uint) {}
+
+    function setRecoveryToken(address cVault_, address recoveryToken_) external {}
+
+    function recoveryToken(address cVault_) external view returns (address) {}
+
 }

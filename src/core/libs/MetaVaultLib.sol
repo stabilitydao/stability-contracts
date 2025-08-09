@@ -14,6 +14,7 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IMintedERC20} from "../../interfaces/IMintedERC20.sol";
 
 library MetaVaultLib {
     using SafeERC20 for IERC20;
@@ -32,6 +33,7 @@ library MetaVaultLib {
         uint balance;
         uint totalUnderlying;
         uint totalAmounts;
+        address recoveryToken;
         address[] assets;
         uint[] minAmounts;
         uint[] amountsOut;
@@ -154,6 +156,10 @@ library MetaVaultLib {
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingLocals memory v;
 
+        // only broken vaults with not zero recovery token are allowed for emergency withdraw
+        v.recoveryToken = $.recoveryTokens[cVault_];
+        require(v.recoveryToken != address(0), IMetaVault.RecoveryTokenNotSet(cVault_));
+
         address _targetVault = _getTargetVault($, cVault_);
 
         uint len = owners.length;
@@ -229,17 +235,19 @@ library MetaVaultLib {
                 v.amountsOut[0] >= minUnderlyingOut[i],
                 IStabilityVault.ExceedSlippage(v.amountsOut[0], minUnderlyingOut[i])
             );
+
             IERC20(IVault(cVault_).strategy().underlying()).transfer(owners[i], amountsOut[i]);
+            emit IStabilityVault.WithdrawAssets(msg.sender, owners[i], v.assets, amounts[i], v.amountsOut);
 
             // disable last block protection in the emergency
             // $.lastTransferBlock[owners[i]] = block.number;
 
             if (!$.lastBlockDefenseWhitelist[msg.sender]) {
-                // todo mint receipt/recovery token in amount amount[i] for owners[i]
+                recoveryAmountOut[i] = amounts[i];
+                IMintedERC20(v.recoveryToken).mint(owners[i], recoveryAmountOut[i]);
 
                 // todo emit event with amount of recovery tokens
 
-                emit IStabilityVault.WithdrawAssets(msg.sender, owners[i], v.assets, amounts[i], v.amountsOut);
             } else {
                 // the caller is a wrapped/meta-vault
                 // it mints its own recovery tokens
@@ -347,12 +355,15 @@ library MetaVaultLib {
         // burning and updating defense-last-block is implemented outside
 
         // todo set it to true if cVault_ is broken AND the token is a user (not a metavault)
-        bool mintReceiptToken = !$.lastBlockDefenseWhitelist[msg.sender]; // todo AND cVault is broken
 
-        if (mintReceiptToken) {
-            // todo mint receipt/recovery token if the cVault is broken one
+        if (!$.lastBlockDefenseWhitelist[msg.sender]) {
+            // the user is not metavault so recovery tokens should be minted for broken vaults
+            address recoveryToken = $.recoveryTokens[cVault_];
+            if (recoveryToken != address(0)) {
+                IMintedERC20(recoveryToken).mint(receiver, amount);
 
-            // todo emit event
+                // todo emit event
+            }
         }
 
         emit IStabilityVault.WithdrawAssets(msg.sender, owner, v.assets, amount, v.amountsOut);

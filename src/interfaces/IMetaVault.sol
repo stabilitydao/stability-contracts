@@ -43,6 +43,8 @@ interface IMetaVault is IStabilityVault {
         bool lastBlockDefenseDisabled;
         /// @dev Whitelist for addresses (strategies) that are able to temporarily disable last-block-defense
         mapping(address owner => bool whitelisted) lastBlockDefenseWhitelist;
+        /// @dev Recovery tokens for broken c-vaults
+        mapping(address cVault => address recoveryToken) recoveryTokens;
     }
 
     /// @notice Types of last-block-defense disable modes
@@ -79,6 +81,7 @@ interface IMetaVault is IStabilityVault {
     error NotWhitelisted();
     error VaultNotFound(address vault);
     error TooHighAmount(uint amount, uint maxAmount);
+    error RecoveryTokenNotSet(address cVault_);
 
     //region --------------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -135,6 +138,9 @@ interface IMetaVault is IStabilityVault {
     /// @return amount Maximum amount that can be withdrawn from the vault for the given account.
     /// This is max amount that can be passed to `withdraw` function.
     function maxWithdrawUnderlying(address cVault_, address account) external view returns (uint amount);
+
+    /// @notice Recovery token for the given cVault. Zero for not-broken vaults
+    function recoveryToken(address cVault_) external view returns (address);
     //endregion --------------------------------------- View functions
 
     //region --------------------------------------- Write functions
@@ -223,5 +229,10 @@ interface IMetaVault is IStabilityVault {
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
     ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut);
+
+    /// @notice Set recovery token address for the given cVault
+    /// @custom:access Governance, multisig
+    function setRecoveryToken(address cVault_, address recoveryToken_) external;
+
     //endregion --------------------------------------- Write functions
 }

@@ -271,8 +271,6 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
             _requireGovernanceOrMultisig();
         }
 
-        // todo check if cVault is broken and it allows to withdraw emergency
-
         uint[] memory sharesToBurn;
         (amountsOut, recoveryAmountOut, sharesToBurn) =
             MetaVaultLib.withdrawUnderlyingEmergency($, platform(), cVault_, owners, amounts, minUnderlyingOut);
@@ -286,6 +284,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         return (amountsOut, recoveryAmountOut);
     }
 
+    /// @inheritdoc IMetaVault
+    function setRecoveryToken(address cVault_, address recoveryToken_) external onlyOperator {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $.recoveryTokens[cVault_] = recoveryToken_;
+    }
     //endregion --------------------------------- Restricted action
 
     //region --------------------------------- User actions
@@ -582,6 +585,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /// @inheritdoc IMetaVault
     function maxWithdrawUnderlying(address cVault_, address account) public view override returns (uint amount) {
         return MetaVaultLib.maxWithdrawUnderlying(_getMetaVaultStorage(), platform(), cVault_, account);
+    }
+
+    /// @inheritdoc IMetaVault
+    function recoveryToken(address cVault_) external view override returns (address) {
+        return _getMetaVaultStorage().recoveryTokens[cVault_];
     }
     //endregion --------------------------------- View functions
 

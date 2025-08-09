@@ -251,4 +251,8 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
     ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut) {}
+
+    function setRecoveryToken(address cVault_, address recoveryToken_) external {}
+
+    function recoveryToken(address cVault_) external view returns (address) {}
 }

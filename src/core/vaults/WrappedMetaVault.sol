@@ -18,6 +18,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
+import {IMintedERC20} from "../../interfaces/IMintedERC20.sol";
 
 /// @title Wrapped rebase MetaVault
 /// Changelog:
@@ -140,9 +141,20 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             return super.maxDeposit(receiver);
         }
     }
+
+    /// @inheritdoc IWrappedMetaVault
+    function recoveryToken(address cVault_) public view returns (address) {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        return $.recoveryTokens[cVault_];
+    }
     //endregion ------------------------- View functions
 
-    //region ------------------------- Emergency actions
+    //region ------------------------- Restricted actions
+    /// @inheritdoc IWrappedMetaVault
+    function setRecoveryToken(address cVault_, address recoveryToken_) external onlyOperator {
+        WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
+        $.recoveryTokens[cVault_] = recoveryToken_;
+    }
 
     /// @notice Redeem underlying from the broken cVaults
     /// @custom:access Multisig only
@@ -160,7 +172,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingEmergencyLocal memory v;
 
-        address recoveryToken = address(0); // todo
+        address _recoveryToken = recoveryToken(cVault_);
+        require(_recoveryToken != address(0), IWrappedMetaVault.RecoveryTokenNotSet(cVault_));
 
         // ---------------------- check constraints
         uint len = owners.length;
@@ -221,10 +234,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         for (uint i; i < len; ++i) {
             IERC20(underlying).transfer(owners[i], underlyingOut[i]);
 
-            recoveryTokenOut[i] = recoveryToken == address(0) ? 0 : assets[i];
-            if (recoveryToken != address(0)) {
-                IERC20(recoveryToken).transfer(owners[i], recoveryTokenOut[i]);
-            }
+            recoveryTokenOut[i] = _recoveryToken == address(0) ? 0 : assets[i];
+            IMintedERC20(_recoveryToken).mint(owners[i], recoveryTokenOut[i]);
 
             emit WithdrawUnderlying(
                 _msgSender(),
@@ -233,7 +244,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
                 underlying,
                 underlyingOut[i],
                 assets[i],
-                recoveryToken,
+                _recoveryToken,
                 recoveryTokenOut[i]
             );
         }
@@ -241,7 +252,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         return (underlyingOut, recoveryTokenOut);
     }
 
-    //region ------------------------- Emergency actions
+    //endregion ------------------------- Restricted actions
 
     //region ------------------------- erc4626 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
