@@ -19,6 +19,7 @@ library MetaVaultLib {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    /// @notice Not perform operations with value less than threshold
     uint public constant USD_THRESHOLD = 1e13;
 
     /// @notice Vault can be removed if its TVL is less than this value
@@ -57,7 +58,7 @@ library MetaVaultLib {
 
         address[] memory vaultAssets = IStabilityVault(vault).assets();
 
-        if (_isMultiVault($)) {
+        if (isMultiVault($)) {
             // check asset
             require(vaultAssets.length == 1, IMetaVault.IncorrectVault());
             require(vaultAssets[0] == $.assets.values()[0], IMetaVault.IncorrectVault());
@@ -116,7 +117,7 @@ library MetaVaultLib {
     }
 
     function cachePrices(IMetaVault.MetaVaultStorage storage $, IPriceReader priceReader_, bool clear) external {
-        require(!_isMultiVault($), IMetaVault.IncorrectVault());
+        require(!isMultiVault($), IMetaVault.IncorrectVault());
 
         if (clear) {
             // clear exist cache
@@ -133,6 +134,15 @@ library MetaVaultLib {
         }
     }
 
+    /// @notice Withdraw underlying from the vault in emergency mode, don't burn shares
+    /// @param platform_ Platform address
+    /// @param cVault_ Address of the cVault to withdraw underlying from
+    /// @param owners Owners of the shares to withdraw underlying for
+    /// @param amounts Amounts of meta-vault tokens to withdraw underlying for each owner
+    /// @param minUnderlyingOut Minimal amounts of underlying to receive for each owner
+    /// @return amountsOut Amounts of underlying withdrawn for each owner
+    /// @return recoveryAmountOut Amounts of recovery tokens minted for each owner
+    /// @return sharesToBurn Amounts of shares to burn for each owner
     function withdrawUnderlyingEmergency(
         IMetaVault.MetaVaultStorage storage $,
         address platform_,
@@ -149,7 +159,7 @@ library MetaVaultLib {
         uint len = owners.length;
         require(len == amounts.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
 
-        v.totalSupply = _totalSupply($, platform_);
+        v.totalSupply = totalSupply($, platform_);
 
         amountsOut = new uint[](len);
         sharesToBurn = new uint[](len);
@@ -157,7 +167,7 @@ library MetaVaultLib {
         {
             uint _totalShares = $.totalShares;
             for (uint i; i < len; ++i) {
-                v.balance = _balanceOf($, owners[i], v.totalSupply);
+                v.balance = balanceOf($, owners[i], v.totalSupply);
                 if (amounts[i] == 0) {
                     amounts[i] = v.balance;
                 } else {
@@ -167,17 +177,19 @@ library MetaVaultLib {
                 }
                 require(amounts[i] != 0, IControllable.IncorrectBalance());
                 v.totalAmounts += amounts[i];
-                sharesToBurn[i] = _amountToShares(amounts[i], _totalShares, v.totalSupply);
+                sharesToBurn[i] = amountToShares(amounts[i], _totalShares, v.totalSupply);
                 require(sharesToBurn[i] != 0, IMetaVault.ZeroSharesToBurn(amounts[i]));
             }
+
+            // total amount of meta-vault tokens to withdraw underlying for all owners
             require(v.totalAmounts != 0, IControllable.IncorrectZeroArgument());
         }
 
         // don't check last block protection here, because it is an emergency withdraw
         // _beforeDepositOrWithdraw($, owner);
 
-        // ensure that the target vault has required amount of meta-vault tokens
-        // todo how to check it for all users? require(total <= maxWithdrawUnderlying(cVault_, owner), TooHighAmount());
+        // for simplicity we don't check that the target vault has required amount of meta-vault tokens
+        // assume that this check will be done in the target vault
 
         (v.vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
 
@@ -210,7 +222,7 @@ library MetaVaultLib {
 
         recoveryAmountOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            // burn shares should be called outside
+            // assume that burn shares will be called outside, just report the amount of shares to burn
             v.amountsOut[0] = Math.mulDiv(v.totalUnderlying, amounts[i], v.totalAmounts, Math.Rounding.Floor);
             amountsOut[i] = v.amountsOut[0];
             require(
@@ -234,7 +246,7 @@ library MetaVaultLib {
             }
         }
 
-        // todo we can have not zero underlying balance in result .. do we need to do anything with it?
+        // todo we can have not zero (dust) underlying balance in result .. do we need to do anything with it?
 
         return (amountsOut, recoveryAmountOut, sharesToBurn);
     }
@@ -271,35 +283,39 @@ library MetaVaultLib {
     function _withdrawUnderlying(
         IMetaVault.MetaVaultStorage storage $,
         address platform_,
-        address targetVault_,
         address cVault_,
         uint amount,
         uint minUnderlyingOut,
         address receiver,
-        address owner,
-        bool mintReceiptToken
+        address owner
     ) external returns (uint underlyingOut, uint sharesToBurn) {
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingLocals memory v;
 
+        if (msg.sender != owner) {
+            _spendAllowanceOrBlock($, owner, msg.sender, amount);
+        }
+
         require(amount != 0, IControllable.IncorrectZeroArgument());
 
-        v.totalSupply = _totalSupply($, platform_);
+        address _targetVault = MetaVaultLib._getTargetVault($, cVault_);
+
+        v.totalSupply = totalSupply($, platform_);
         {
-            uint balance = _balanceOf($, owner, v.totalSupply);
+            uint balance = balanceOf($, owner, v.totalSupply);
             require(amount <= balance, IERC20Errors.ERC20InsufficientBalance(owner, balance, amount));
         }
 
-        sharesToBurn = _amountToShares(amount, $.totalShares, v.totalSupply);
+        sharesToBurn = amountToShares(amount, $.totalShares, v.totalSupply);
         require(sharesToBurn != 0, IMetaVault.ZeroSharesToBurn(amount));
 
         // ensure that the target vault has required amount of meta-vault tokens
         {
-            uint maxAmount = _maxWithdrawUnderlying($, platform_, cVault_, owner);
+            uint maxAmount = maxWithdrawUnderlying($, platform_, cVault_, owner);
             require(amount <= maxAmount, IMetaVault.TooHighAmount(amount, maxAmount));
         }
 
-        (v.vaultSharePriceUsd,) = IStabilityVault(targetVault_).price();
+        (v.vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
 
         v.assets = new address[](1);
         v.assets[0] = IVault(cVault_).strategy().underlying();
@@ -307,9 +323,9 @@ library MetaVaultLib {
         v.minAmounts = new uint[](1);
         v.minAmounts[0] = minUnderlyingOut;
 
-        if (targetVault_ == cVault_) {
+        if (_targetVault == cVault_) {
             // withdraw underlying from the target cVault vault
-            v.amountsOut = IStabilityVault(targetVault_).withdrawAssets(
+            v.amountsOut = IStabilityVault(_targetVault).withdrawAssets(
                 v.assets,
                 _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
                 v.minAmounts,
@@ -319,7 +335,7 @@ library MetaVaultLib {
             underlyingOut = v.amountsOut[0];
         } else {
             // withdraw underlying from the child meta-vault
-            underlyingOut = IMetaVault(targetVault_).withdrawUnderlying(
+            underlyingOut = IMetaVault(_targetVault).withdrawUnderlying(
                 cVault_,
                 _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
                 minUnderlyingOut,
@@ -330,6 +346,9 @@ library MetaVaultLib {
 
         // burning and updating defense-last-block is implemented outside
 
+        // todo set it to true if cVault_ is broken AND the token is a user (not a metavault)
+        bool mintReceiptToken = !$.lastBlockDefenseWhitelist[msg.sender]; // todo AND cVault is broken
+
         if (mintReceiptToken) {
             // todo mint receipt/recovery token if the cVault is broken one
 
@@ -337,6 +356,95 @@ library MetaVaultLib {
         }
 
         emit IStabilityVault.WithdrawAssets(msg.sender, owner, v.assets, amount, v.amountsOut);
+    }
+
+    function _withdrawAssets(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address targetVault_,
+        address[] memory assets_,
+        uint amount,
+        uint[] memory minAssetAmountsOut,
+        address receiver,
+        address owner
+    ) external returns (uint[] memory amountsOut, uint sharesToBurn) {
+        // assume that last block defense is already checked in the caller
+
+        if (msg.sender != owner) {
+            _spendAllowanceOrBlock($, owner, msg.sender, amount);
+        }
+
+        // ensure that provided assets correspond to the target vault
+        // assume that user should call {assetsForWithdraw} before calling this function and get correct list of assets
+        checkProvidedAssets(assets_, targetVault_);
+
+        require(amount != 0, IControllable.IncorrectZeroArgument());
+
+        uint _totalSupply = totalSupply($, platform_);
+        {
+            uint balance = balanceOf($, owner, _totalSupply);
+            require(amount <= balance, IERC20Errors.ERC20InsufficientBalance(owner, balance, amount));
+        }
+
+        require (assets_.length == minAssetAmountsOut.length, IControllable.IncorrectArrayLength());
+
+        sharesToBurn = MetaVaultLib.amountToShares(amount, $.totalShares, _totalSupply);
+        require(sharesToBurn != 0, IMetaVault.ZeroSharesToBurn(amount));
+
+        if (MetaVaultLib.isMultiVault($)) {
+            // withdraw the amount from all sub-vaults starting from the target vault
+            amountsOut = _withdrawFromMultiVault($, platform_, $.vaults, assets_, amount, receiver, targetVault_);
+
+            // check slippage
+            for (uint j; j < assets_.length; ++j) {
+                require(
+                    amountsOut[j] >= minAssetAmountsOut[j],
+                    IStabilityVault.ExceedSlippage(amountsOut[j], minAssetAmountsOut[j])
+                );
+            }
+        } else {
+            // ensure that the target vault has required amount
+            uint vaultSharePriceUsd;
+            {
+                uint maxAmountToWithdrawFromVault;
+                (maxAmountToWithdrawFromVault, vaultSharePriceUsd) =
+                    _maxAmountToWithdrawFromVault($, platform_, targetVault_);
+                require(
+                    amount <= maxAmountToWithdrawFromVault,
+                    IMetaVault.MaxAmountForWithdrawPerTxReached(amount, maxAmountToWithdrawFromVault)
+                );
+            }
+
+            // withdraw the amount from the target vault
+            amountsOut = IStabilityVault(targetVault_).withdrawAssets(
+                assets_,
+                _getTargetVaultSharesToWithdraw($, platform_, amount, vaultSharePriceUsd, true),
+                minAssetAmountsOut,
+                receiver,
+                address(this)
+            );
+        }
+
+        emit IStabilityVault.WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
+    }
+
+    function transferFrom(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address from,
+        address to,
+        uint amount
+    ) external {
+        // assume that last block defense is already checked in the caller
+
+        require(to != address(0), IERC20Errors.ERC20InvalidReceiver(to));
+        _spendAllowanceOrBlock($, from, msg.sender, amount);
+
+        uint shareTransfer = MetaVaultLib.amountToShares(amount, $.totalShares, totalSupply($, platform_));
+        $.shareBalance[from] -= shareTransfer;
+        $.shareBalance[to] += shareTransfer;
+
+        // update() should be called in the caller
     }
 
     //endregion --------------------------------- Actions
@@ -382,6 +490,223 @@ library MetaVaultLib {
             }
         }
     }
+
+    function isMultiVault(IMetaVault.MetaVaultStorage storage $) internal view returns (bool) {
+        return CommonLib.eq($._type, VaultTypeLib.MULTIVAULT);
+    }
+
+    function amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {
+        return totalSupply_ == 0
+            ? 0
+            : Math.mulDiv(amount, totalShares_, totalSupply_, Math.Rounding.Floor);
+    }
+
+    function balanceOf(
+        IMetaVault.MetaVaultStorage storage $,
+        address account,
+        uint totalSupply_
+    ) internal view returns (uint) {
+        uint _totalShares = $.totalShares;
+        return _totalShares == 0
+            ? 0
+            : Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
+    }
+
+    function price(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_
+    ) public view returns (uint price_, bool trusted_) {
+        address _pegAsset = $.pegAsset;
+        return _pegAsset == address(0)
+            ? (1e18, true)
+            : IPriceReader(IPlatform(platform_).priceReader()).getPrice(_pegAsset);
+    }
+
+    function tvl(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_
+    ) public view returns (uint tvl_, bool trusted_) {
+        IPriceReader priceReader = IPriceReader(IPlatform(platform_).priceReader());
+        bool notSafePrice;
+
+        // get deposited TVL of used vaults
+        address[] memory _vaults = $.vaults;
+        uint len = _vaults.length;
+        for (uint i; i < len; ++i) {
+            (uint vaultSharePrice, bool safe) = priceReader.getVaultPrice(_vaults[i]);
+            if (!safe) {
+                notSafePrice = true;
+            }
+            uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
+            tvl_ += Math.mulDiv(vaultSharePrice, vaultSharesBalance, 1e18, Math.Rounding.Floor);
+        }
+
+        // get TVL of assets on contract balance
+        address[] memory _assets = $.assets.values();
+        len = _assets.length;
+        uint[] memory assetsOnBalance = new uint[](len);
+        for (uint i; i < len; ++i) {
+            assetsOnBalance[i] = IERC20(_assets[i]).balanceOf(address(this));
+        }
+        (uint assetsTvlUsd,,, bool trustedAssetsPrices) = priceReader.getAssetsPrice(_assets, assetsOnBalance);
+        tvl_ += assetsTvlUsd;
+        if (!trustedAssetsPrices) {
+            notSafePrice = true;
+        }
+
+        trusted_ = !notSafePrice;
+    }
+
+    function totalSupply(IMetaVault.MetaVaultStorage storage $, address platform_) public view returns (uint) {
+        // totalSupply is balance of peg asset
+        (uint tvlUsd,) = tvl($, platform_);
+        (uint priceAsset,) = price($, platform_);
+        return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
+    }
+
+    function maxWithdrawUnderlying(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address cVault_,
+        address account
+    ) public view returns (uint amount) {
+        uint userBalance = balanceOf($, account, totalSupply($, platform_));
+
+        address _targetVault = _getTargetVault($, cVault_);
+        if (_targetVault == cVault_) {
+            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                $, platform_, _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this), 1)
+            );
+            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+        } else {
+            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
+                $, platform_, _targetVault, IMetaVault(_targetVault).maxWithdrawUnderlying(cVault_, address(this))
+            );
+
+            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+        }
+    }
+
+    function internalSharePrice(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_
+    ) external view returns (uint sharePrice, int apr, uint storedSharePrice, uint storedTime) {
+        uint totalShares = $.totalShares;
+        if (totalShares != 0) {
+            sharePrice = Math.mulDiv(totalSupply($, platform_), 1e18, totalShares, Math.Rounding.Ceil);
+            storedSharePrice = $.storedSharePrice;
+            storedTime = $.storedTime;
+            if (storedTime != 0) {
+                apr = _computeApr(sharePrice, int(sharePrice) - int(storedSharePrice), block.timestamp - storedTime);
+            }
+        }
+        return (sharePrice, apr, storedSharePrice, storedTime);
+    }
+
+    function previewDepositAssets(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address _targetVault,
+        address[] memory assets_,
+        uint[] memory amountsMax
+    ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
+        uint targetVaultSharesOut;
+        uint targetVaultStrategyValueOut;
+        (uint targetVaultSharePrice,) = IStabilityVault(_targetVault).price();
+        (amountsConsumed, targetVaultSharesOut, targetVaultStrategyValueOut) =
+            IStabilityVault(_targetVault).previewDepositAssets(assets_, amountsMax);
+        {
+            uint usdOut = Math.mulDiv(targetVaultSharePrice, targetVaultSharesOut, 1e18, Math.Rounding.Floor);
+            sharesOut = _usdAmountToMetaVaultBalance($, platform_, usdOut);
+        }
+        uint _totalShares = $.totalShares;
+        valueOut = _totalShares == 0
+            ? sharesOut
+            : MetaVaultLib.amountToShares(sharesOut, $.totalShares, totalSupply($, platform_));
+    }
+
+    function maxWithdrawMultiVault(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        uint userBalance,
+        uint mode
+    ) external view returns (uint amount) {
+        for (uint i; i < $.vaults.length; ++i) {
+            address _targetVault = $.vaults[i];
+            (uint maxMetaVaultTokensToWithdraw,) = MetaVaultLib._maxAmountToWithdrawFromVaultForShares(
+                $,
+                platform_,
+                _targetVault,
+                mode == 0
+                    ? IStabilityVault(_targetVault).maxWithdraw(address(this))
+                    : IStabilityVault(_targetVault).maxWithdraw(address(this), mode)
+            );
+            amount += maxMetaVaultTokensToWithdraw;
+            if (userBalance < amount) return userBalance;
+        }
+
+        return amount;
+    }
+
+    function maxWithdrawMetaVault(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        uint userBalance,
+        address _targetVault,
+        uint mode
+    ) external view returns (uint amount) {
+        // Use reverse logic of withdrawAssets() to calculate max amount of MetaVault balance that can be withdrawn
+        // The logic is the same as for {_maxAmountToWithdrawFromVault} but balance is taken for the given account
+        (uint maxMetaVaultTokensToWithdraw,) = MetaVaultLib._maxAmountToWithdrawFromVaultForShares(
+            $,
+            platform_,
+            _targetVault,
+            mode == 0
+                ? IStabilityVault(_targetVault).maxWithdraw(address(this))
+                : IStabilityVault(_targetVault).maxWithdraw(address(this), mode)
+        );
+
+        return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+    }
+
+    function maxDepositMultiVault(
+        IMetaVault.MetaVaultStorage storage $,
+        address account
+    ) external view returns (uint[] memory maxAmounts) {
+        // MultiVault supports depositing to all sub-vaults
+        // so we need to calculate summary max deposit amounts for all sub-vaults
+        // but result cannot exceed type(uint).max
+        for (uint i; i < $.vaults.length; ++i) {
+            address _targetVault = $.vaults[i];
+
+            if (i == 0) {
+                // lazy initialization of maxAmounts
+                maxAmounts = new uint[](IStabilityVault(_targetVault).assets().length);
+            }
+            uint[] memory _amounts = IStabilityVault(_targetVault).maxDeposit(account);
+            for (uint j; j < _amounts.length; ++j) {
+                if (maxAmounts[j] != type(uint).max) {
+                    maxAmounts[j] = _amounts[j] == type(uint).max ? type(uint).max : maxAmounts[j] + _amounts[j];
+                }
+            }
+        }
+
+        return maxAmounts;
+    }
+
+    /// @notice Ensures that the assets array corresponds to the assets of the given vault.
+    /// For simplicity we assume that the assets cannot be reordered.
+    function checkProvidedAssets(address[] memory assets_, address vault) internal view {
+        address[] memory assetsToCheck = IStabilityVault(vault).assets();
+        if (assets_.length != assetsToCheck.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
+        for (uint i; i < assets_.length; ++i) {
+            if (assets_[i] != assetsToCheck[i]) {
+                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
+            }
+        }
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
@@ -423,10 +748,6 @@ library MetaVaultLib {
             total += proportions_[i];
         }
         require(total == 1e18, IMetaVault.IncorrectProportions());
-    }
-
-    function _isMultiVault(IMetaVault.MetaVaultStorage storage $) internal view returns (bool) {
-        return CommonLib.eq($._type, VaultTypeLib.MULTIVAULT);
     }
 
     /// @notice Find meta vault that contains the given {cVault_}
@@ -479,85 +800,13 @@ library MetaVaultLib {
         }
     }
 
-    function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {
-        if (totalSupply_ == 0) {
-            return 0;
-        }
-        return Math.mulDiv(amount, totalShares_, totalSupply_, Math.Rounding.Floor);
-    }
-
-    function _balanceOf(
-        IMetaVault.MetaVaultStorage storage $,
-        address account,
-        uint totalSupply_
-    ) internal view returns (uint) {
-        uint _totalShares = $.totalShares;
-        if (_totalShares == 0) {
-            return 0;
-        }
-        return Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
-    }
-
     function _metaVaultBalanceToUsdAmount(
         IMetaVault.MetaVaultStorage storage $,
         address platform_,
         uint amount
     ) internal view returns (uint) {
-        (uint priceAsset,) = _price($, platform_);
+        (uint priceAsset,) = price($, platform_);
         return Math.mulDiv(amount, priceAsset, 1e18, Math.Rounding.Ceil);
-    }
-
-    function _price(
-        IMetaVault.MetaVaultStorage storage $,
-        address platform_
-    ) public view returns (uint price_, bool trusted_) {
-        address _pegAsset = $.pegAsset;
-        if (_pegAsset == address(0)) {
-            return (1e18, true);
-        }
-        (price_, trusted_) = IPriceReader(IPlatform(platform_).priceReader()).getPrice(_pegAsset);
-    }
-
-    function _tvl(
-        IMetaVault.MetaVaultStorage storage $,
-        address platform_
-    ) internal view returns (uint tvl_, bool trusted_) {
-        IPriceReader priceReader = IPriceReader(IPlatform(platform_).priceReader());
-        bool notSafePrice;
-
-        // get deposited TVL of used vaults
-        address[] memory _vaults = $.vaults;
-        uint len = _vaults.length;
-        for (uint i; i < len; ++i) {
-            (uint vaultSharePrice, bool safe) = priceReader.getVaultPrice(_vaults[i]);
-            if (!safe) {
-                notSafePrice = true;
-            }
-            uint vaultSharesBalance = IERC20(_vaults[i]).balanceOf(address(this));
-            tvl_ += Math.mulDiv(vaultSharePrice, vaultSharesBalance, 1e18, Math.Rounding.Floor);
-        }
-
-        // get TVL of assets on contract balance
-        address[] memory _assets = $.assets.values();
-        len = _assets.length;
-        uint[] memory assetsOnBalance = new uint[](len);
-        for (uint i; i < len; ++i) {
-            assetsOnBalance[i] = IERC20(_assets[i]).balanceOf(address(this));
-        }
-        (uint assetsTvlUsd,,, bool trustedAssetsPrices) = priceReader.getAssetsPrice(_assets, assetsOnBalance);
-        tvl_ += assetsTvlUsd;
-        if (!trustedAssetsPrices) {
-            notSafePrice = true;
-        }
-
-        trusted_ = !notSafePrice;
-    }
-
-    function _totalSupply(IMetaVault.MetaVaultStorage storage $, address platform_) internal view returns (uint) {
-        // totalSupply is balance of peg asset
-        (uint tvlUsd,) = _tvl($, platform_);
-        (uint priceAsset,) = _price($, platform_);
-        return Math.mulDiv(tvlUsd, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
     /// @dev Shared implementation for {maxWithdraw} and {maxWithdrawAmountTx}
@@ -582,30 +831,121 @@ library MetaVaultLib {
         address platform_,
         uint usdAmount
     ) internal view returns (uint) {
-        (uint priceAsset,) = _price($, platform_);
+        (uint priceAsset,) = price($, platform_);
         return Math.mulDiv(usdAmount, 1e18, priceAsset, Math.Rounding.Floor);
     }
 
-    function _maxWithdrawUnderlying(
+    /// @notice Withdraw the {amount} from multiple sub-vaults starting with the {targetVault_}.
+    /// @dev Slippage is checked outside this function.
+    /// @param amount Amount of meta-vault tokens to withdraw.
+    function _withdrawFromMultiVault(
         IMetaVault.MetaVaultStorage storage $,
         address platform_,
-        address cVault_,
-        address account
-    ) public view returns (uint amount) {
-        uint userBalance = _balanceOf($, account, _totalSupply($, platform_));
+        address[] memory vaults_,
+        address[] memory assets_,
+        uint amount,
+        address receiver,
+        address targetVault_
+    ) internal returns (uint[] memory amountsOut) {
+        uint totalAmount = amount;
 
-        address _targetVault = _getTargetVault($, cVault_);
-        if (_targetVault == cVault_) {
-            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-                $, platform_, _targetVault, IStabilityVault(_targetVault).maxWithdraw(address(this), 1)
-            );
-            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
-        } else {
-            (uint maxMetaVaultTokensToWithdraw,) = _maxAmountToWithdrawFromVaultForShares(
-                $, platform_, _targetVault, IMetaVault(_targetVault).maxWithdrawUnderlying(cVault_, address(this))
-            );
+        // ------------------- set target vault on the first position in vaults_
+        setTargetVaultFirst(targetVault_, vaults_);
 
-            return Math.min(userBalance, maxMetaVaultTokensToWithdraw);
+        // ------------------- withdraw from vaults until requested amount is withdrawn
+        uint len = vaults_.length;
+        amountsOut = new uint[](assets_.length);
+        for (uint i; i < len; ++i) {
+            (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
+                _getAmountToWithdrawFromVault($, platform_, vaults_[i], totalAmount, address(this));
+            if (targetVaultSharesToWithdraw != 0) {
+                uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
+                    assets_,
+                    targetVaultSharesToWithdraw,
+                    new uint[](assets_.length), // minAssetAmountsOut is checked outside
+                    receiver,
+                    address(this)
+                );
+                for (uint j; j < assets_.length; ++j) {
+                    amountsOut[j] += _amountsOut[j];
+                }
+                totalAmount -= amountToWithdraw;
+                if (totalAmount == 0) break;
+            }
+        }
+
+        // ------------------- ensure that all requested amount is withdrawn
+        require(totalAmount == 0, IMetaVault.MaxAmountForWithdrawPerTxReached(amount, amount - totalAmount));
+
+        return amountsOut;
+    }
+
+    /// @notice Get the amount to withdraw from the vault and the target shares to withdraw.
+    /// The amount is limited by the max withdraw amount of the vault.
+    /// @param amount Amount of meta-vault tokens
+    /// @param vault Vault to withdraw from
+    /// @param owner Owner of the shares to withdraw
+    /// @return amountToWithdraw Amount of meta-vault tokens to withdraw
+    /// @return targetVaultSharesToWithdraw Amount of shares to withdraw from the vault
+    function _getAmountToWithdrawFromVault(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address vault,
+        uint amount,
+        address owner
+    ) internal view returns (uint amountToWithdraw, uint targetVaultSharesToWithdraw) {
+        (uint maxAmount, uint vaultSharePriceUsd) =
+            _maxAmountToWithdrawFromVaultForShares($, platform_, vault, IStabilityVault(vault).maxWithdraw(owner));
+        amountToWithdraw = Math.min(amount, maxAmount);
+        targetVaultSharesToWithdraw =
+            MetaVaultLib._getTargetVaultSharesToWithdraw($, platform_, amountToWithdraw, vaultSharePriceUsd, false);
+    }
+
+    /// @notice Get the maximum amount of meta-vault tokens that can be withdrawn from the vault
+    /// without taking into account maxWithdraw limit.
+    function _maxAmountToWithdrawFromVault(
+        IMetaVault.MetaVaultStorage storage $,
+        address platform_,
+        address vault
+    ) internal view returns (uint maxAmount, uint vaultSharePrice) {
+        return _maxAmountToWithdrawFromVaultForShares($, platform_, vault, IERC20(vault).balanceOf(address(this)));
+    }
+
+    /// @notice Find target vault in {vaults} and move it on the first position.
+    function setTargetVaultFirst(
+        address targetVault,
+        address[] memory vaults_
+    ) internal pure returns (address[] memory) {
+        uint len = vaults_.length;
+        for (uint i; i < len; ++i) {
+            if (vaults_[i] == targetVault) {
+                // first withdraw should be from the target vault
+                // the order of other vaults does not matter because the rebalancer is called often enough
+                (vaults_[0], vaults_[i]) = (vaults_[i], vaults_[0]);
+                break;
+            }
+        }
+        return vaults_;
+    }
+
+    function _computeApr(uint tvl_, int earned, uint duration) internal pure returns (int) {
+        return (tvl_ == 0 || duration == 0)
+            ? int(0)
+            : earned * int(1e18) * 100_000 * int(365) / int(tvl_) / int(duration * 1e18 / 1 days);
+    }
+
+    function _spendAllowanceOrBlock(
+        IMetaVault.MetaVaultStorage storage $,
+        address owner,
+        address spender,
+        uint amount
+    ) internal {
+        uint currentAllowance = $.allowance[owner][spender];
+        if (owner != msg.sender && currentAllowance != type(uint).max) {
+            require(
+                currentAllowance >= amount, IERC20Errors.ERC20InsufficientAllowance(spender, currentAllowance, amount)
+            );
+            $.allowance[owner][spender] = currentAllowance - amount;
         }
     }
 

@@ -209,7 +209,7 @@ interface IMetaVault is IStabilityVault {
         address owner
     ) external returns (uint underlyingOut);
 
-    /// @notice Withdraw underlying from the broken cVaults
+    /// @notice Withdraw underlying from the broken cVaults, mint recovery tokens if the caller is not whitelisted
     /// @custom:access Governance, multisig or whitelisted addresses (i.e. wrapped meta-vaults)
     /// @param cVault_ Address of the target cVault from which underlying will be withdrawn.
     /// @param owners Addresses of the owners of the meta-vault tokens
