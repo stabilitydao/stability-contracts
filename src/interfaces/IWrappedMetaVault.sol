@@ -22,7 +22,6 @@ interface IWrappedMetaVault is IERC4626 {
     struct WrappedMetaVaultStorage {
         address metaVault;
         bool isMulti;
-
         /// @dev Recovery tokens for broken c-vaults
         mapping(address cVault => address recoveryToken) recoveryTokens;
     }
@@ -69,5 +68,4 @@ interface IWrappedMetaVault is IERC4626 {
     /// @notice Set recovery token address for the given cVault
     /// @custom:access Governance, multisig
     function setRecoveryToken(address cVault_, address recoveryToken_) external;
-
 }

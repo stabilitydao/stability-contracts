@@ -379,9 +379,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _beforeDepositOrWithdraw($, owner);
 
         uint sharesToBurn;
-        (underlyingOut, sharesToBurn) = MetaVaultLib._withdrawUnderlying(
-            $, platform(), cVault_, amount, minUnderlyingOut, receiver, owner
-        );
+        (underlyingOut, sharesToBurn) =
+            MetaVaultLib._withdrawUnderlying($, platform(), cVault_, amount, minUnderlyingOut, receiver, owner);
 
         _burn($, owner, amount, sharesToBurn);
         $.lastTransferBlock[receiver] = block.number;

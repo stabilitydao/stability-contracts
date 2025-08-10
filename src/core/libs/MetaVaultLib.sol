@@ -243,11 +243,9 @@ library MetaVaultLib {
             // $.lastTransferBlock[owners[i]] = block.number;
 
             if (!$.lastBlockDefenseWhitelist[msg.sender]) {
+                // 1 meta-vault token => 1 recovery token
                 recoveryAmountOut[i] = amounts[i];
                 IMintedERC20(v.recoveryToken).mint(owners[i], recoveryAmountOut[i]);
-
-                // todo emit event with amount of recovery tokens
-
             } else {
                 // the caller is a wrapped/meta-vault
                 // it mints its own recovery tokens
@@ -397,7 +395,7 @@ library MetaVaultLib {
             require(amount <= balance, IERC20Errors.ERC20InsufficientBalance(owner, balance, amount));
         }
 
-        require (assets_.length == minAssetAmountsOut.length, IControllable.IncorrectArrayLength());
+        require(assets_.length == minAssetAmountsOut.length, IControllable.IncorrectArrayLength());
 
         sharesToBurn = MetaVaultLib.amountToShares(amount, $.totalShares, _totalSupply);
         require(sharesToBurn != 0, IMetaVault.ZeroSharesToBurn(amount));
@@ -507,9 +505,7 @@ library MetaVaultLib {
     }
 
     function amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {
-        return totalSupply_ == 0
-            ? 0
-            : Math.mulDiv(amount, totalShares_, totalSupply_, Math.Rounding.Floor);
+        return totalSupply_ == 0 ? 0 : Math.mulDiv(amount, totalShares_, totalSupply_, Math.Rounding.Floor);
     }
 
     function balanceOf(

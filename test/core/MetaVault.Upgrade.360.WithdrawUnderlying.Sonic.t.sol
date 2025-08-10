@@ -56,12 +56,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint totalAssets;
         uint totalAmountsOut;
         uint wrappedPrice;
+        uint totalSupplyRecoveryToken;
+        uint strategyBalanceUnderlying;
+        uint wrappedBalanceUnderlying;
         uint[] userBalanceUnderlying;
         uint[] userBalancesWrapped;
+        uint[] userBalanceRecoveryToken;
     }
 
     struct State {
-        uint totalAssets; // for wrapped only
         uint totalSupply;
         uint price;
         uint internalSharePrice;
@@ -74,22 +77,20 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     }
 
     struct MultiState {
-        uint totalAssets; // for wrapped only
         uint totalSupply;
         uint price;
         uint internalSharePrice;
         uint strategyBalanceUnderlying;
         uint wrappedPrice;
-
         uint[] userBalanceUnderlying;
         uint[] userBalanceMetaVaultTokens;
         uint[] userBalanceRecoveryToken;
         uint[] maxWithdrawUnderlying;
-
         uint userBalanceUnderlyingTotal;
         uint userBalanceMetaVaultTokensTotal;
         uint userBalanceRecoveryTokenTotal;
         uint maxWithdrawUnderlyingTotal;
+        uint metaVaultBalanceUnderlying;
     }
 
     struct ArraysForMetaVault {
@@ -105,7 +106,6 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint[] expectedUnderlying;
         uint[] minAmountsOut;
     }
-
 
     constructor() {
         user = makeAddr("user");
@@ -257,14 +257,18 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         address holder = HOLDER_META_USDC;
 
-        State memory stateBefore = _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        State memory stateBefore =
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, subMetaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
-        MetaVault(address(subMetaVault)).withdrawUnderlying(address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder);
+        MetaVault(address(subMetaVault)).withdrawUnderlying(
+            address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder
+        );
         // console.log("amountToWithdraw", amountToWithdraw);
 
-        State memory stateAfter = _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        State memory stateAfter =
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -282,10 +286,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         );
 
         assertApproxEqAbs(
-            stateAfter.userBalanceMetaVaultTokens,
-            0,
-            1e6,
-            "MetaUSDC: User should have no shares left after withdraw 1"
+            stateAfter.userBalanceMetaVaultTokens, 0, 1e6, "MetaUSDC: User should have no shares left after withdraw 1"
         );
 
         assertApproxEqAbs(
@@ -308,11 +309,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             "MetaUSDC: All recovery tokens should be minted to the user 1"
         );
 
-        assertEq(
-            stateAfter.wrappedPrice,
-            stateBefore.wrappedPrice,
-            "MetaUSDC: wrapped price shouldn't change 1"
-        );
+        assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSDC: wrapped price shouldn't change 1");
     }
 
     /// @dev MetaUSDC.withdrawUnderlyingEmergency => cVault
@@ -346,7 +343,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         address holder = HOLDER_META_USDC;
 
-        State memory stateBefore = _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        State memory stateBefore =
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, subMetaVault, stateBefore.maxWithdrawUnderlying);
 
         {
@@ -360,11 +358,14 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             minUnderlyingOut[0] = expectedUnderlying;
 
             vm.prank(multisig);
-            MetaVault(address(subMetaVault)).withdrawUnderlyingEmergency(address(vault), owners, amounts, minUnderlyingOut);
+            MetaVault(address(subMetaVault)).withdrawUnderlyingEmergency(
+                address(vault), owners, amounts, minUnderlyingOut
+            );
         }
         // console.log("amountToWithdraw", amountToWithdraw);
 
-        State memory stateAfter = _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+        State memory stateAfter =
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -382,10 +383,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         );
 
         assertApproxEqAbs(
-            stateAfter.userBalanceMetaVaultTokens,
-            0,
-            1e6,
-            "MetaUSDC: User should have no shares left after withdraw 2"
+            stateAfter.userBalanceMetaVaultTokens, 0, 1e6, "MetaUSDC: User should have no shares left after withdraw 2"
         );
 
         assertApproxEqAbs(
@@ -408,11 +406,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             "MetaUSDC: All recovery tokens should be minted to the user 2"
         );
 
-        assertEq(
-            stateAfter.wrappedPrice,
-            stateBefore.wrappedPrice,
-            "MetaUSDC: wrapped price shouldn't change 2"
-        );
+        assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSDC: wrapped price shouldn't change 2");
     }
     //endregion --------------------------------------- Tests for MetaUSDC/MetaScUSD (sub-meta-vaults)
 
@@ -431,7 +425,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
 
         // ----------------------------------- set up recovery tokens
-        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, ) = _setUpRecoveryTokenMetaUsd(vault);
+        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC,) = _setUpRecoveryTokenMetaUsd(vault);
 
         // ----------------------------------- detect underlying and amount to withdraw
         IStrategy strategy = IVault(address(vault)).strategy();
@@ -444,13 +438,17 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address holder = LARGEST_META_USD_HOLDERS[5];
 
         // ----------------------------------- withdraw all underlying
-        State memory stateBefore = _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        State memory stateBefore =
+            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, _metaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
-        MetaVault(address(_metaVault)).withdrawUnderlying(address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder);
+        MetaVault(address(_metaVault)).withdrawUnderlying(
+            address(vault), stateBefore.maxWithdrawUnderlying, 0, holder, holder
+        );
 
-        State memory stateAfter = _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        State memory stateAfter =
+            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -468,10 +466,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         );
 
         assertApproxEqAbs(
-            stateAfter.userBalanceMetaVaultTokens,
-            0,
-            1e6,
-            "MetaUSDC: User should have no shares left after withdraw 1"
+            stateAfter.userBalanceMetaVaultTokens, 0, 1e6, "MetaUSDC: User should have no shares left after withdraw 1"
         );
 
         assertApproxEqAbs(
@@ -494,17 +489,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             "MetaUSDC: All recovery tokens should be minted to the user 1"
         );
 
-        assertEq(
-            stateAfter.wrappedPrice,
-            stateBefore.wrappedPrice,
-            "MetaUSDC: wrapped price shouldn't change 1"
-        );
+        assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSDC: wrapped price shouldn't change 1");
 
-        assertEq(
-            recoveryTokenMetaUSDC.totalSupply(),
-            0,
-            "MetaUSDC: sub vault shouldn't mint its recovery tokens"
-        );
+        assertEq(recoveryTokenMetaUSDC.totalSupply(), 0, "MetaUSDC: sub vault shouldn't mint its recovery tokens");
     }
 
     /// @dev Bad paths for MetaUSD.withdrawUnderlying => MetaUSDC => CVault
@@ -705,7 +692,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         AaveMerklFarmStrategy(address(strategy)).setUnderlying();
 
         // ----------------------------------- set up recovery tokens
-        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, ) = _setUpRecoveryTokenMetaUsd(vault);
+        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC,) = _setUpRecoveryTokenMetaUsd(vault);
 
         // --------------------------- prepare to withdraw underlying in emergency
         (ArraysForMetaVault memory ar, MultiState memory stateBefore) = _getArraysForMetaUSD(_metaVault, strategy);
@@ -719,9 +706,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
 
-        MultiState memory stateAfter = _getMetaVaultMultiState(
-            _metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-        );
+        MultiState memory stateAfter =
+            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         // ----------------------------------- check results
         for (uint i = 0; i < count; ++i) {
@@ -745,7 +731,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         for (uint i; i < count; ++i) {
             assertApproxEqAbs(
-                stateAfter.userBalanceUnderlying[i]- stateBefore.userBalanceUnderlying[i],
+                stateAfter.userBalanceUnderlying[i] - stateBefore.userBalanceUnderlying[i],
                 ar.expectedUnderlying[i],
                 1,
                 "MetaUSD: User receives expected underlying amount 4"
@@ -785,16 +771,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             "MetaUSD: All recovery tokens should be minted to the users"
         );
 
-        assertEq(
-            stateAfter.wrappedPrice,
-            stateBefore.wrappedPrice,
-            "MetaUSD: wrapped price shouldn't change 1"
-        );
+        assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSD: wrapped price shouldn't change 1");
 
-        assertEq(
-            recoveryTokenMetaUSDC.totalSupply(),
-            0,
-            "MetaUSD: sub vault shouldn't mint its recovery tokens"
+        assertEq(recoveryTokenMetaUSDC.totalSupply(), 0, "MetaUSD: sub vault shouldn't mint its recovery tokens");
+
+        assertApproxEqAbs(
+            stateAfter.metaVaultBalanceUnderlying, 0, count, "MetaUSD: metavault shouldn't have underlying 1"
         );
     }
 
@@ -817,7 +799,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         AaveMerklFarmStrategy(address(strategy)).setUnderlying();
 
         // ----------------------------------- set up recovery tokens
-        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, ) = _setUpRecoveryTokenMetaUsd(vault);
+        (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC,) = _setUpRecoveryTokenMetaUsd(vault);
 
         // --------------------------- prepare to withdraw underlying in emergency
         (ArraysForMetaVault memory ar, MultiState memory stateBefore) = _getArraysForMetaUSD(_metaVault, strategy);
@@ -831,13 +813,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint gas = gasleft();
         vm.prank(caller);
         (uint[] memory amountsOut, uint[] memory recoveryAmountOut) =
-                            _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, ar.amounts, ar.minAmountsOut);
+            _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, ar.amounts, ar.minAmountsOut);
 
         assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
 
-        MultiState memory stateAfter = _getMetaVaultMultiState(
-            _metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-        );
+        MultiState memory stateAfter =
+            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         // ----------------------------------- check results
         for (uint i = 0; i < count; ++i) {
@@ -861,7 +842,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         for (uint i; i < count; ++i) {
             assertApproxEqAbs(
-                stateAfter.userBalanceUnderlying[i]- stateBefore.userBalanceUnderlying[i],
+                stateAfter.userBalanceUnderlying[i] - stateBefore.userBalanceUnderlying[i],
                 ar.expectedUnderlying[i],
                 1,
                 "MetaUSD: User receives expected underlying amount 5"
@@ -895,23 +876,11 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             "MetaUSD: internal share price should not change after withdraw underlying 5"
         );
 
-        assertEq(
-            recoveryToken.totalSupply(),
-            0,
-            "MetaUSD should mint zero recovery tokens"
-        );
+        assertEq(recoveryToken.totalSupply(), 0, "MetaUSD should mint zero recovery tokens");
 
-        assertEq(
-            stateAfter.wrappedPrice,
-            stateBefore.wrappedPrice,
-            "MetaUSD: wrapped price shouldn't change 1"
-        );
+        assertEq(stateAfter.wrappedPrice, stateBefore.wrappedPrice, "MetaUSD: wrapped price shouldn't change 1");
 
-        assertEq(
-            recoveryTokenMetaUSDC.totalSupply(),
-            0,
-            "MetaUSD: sub vault shouldn't mint its recovery tokens"
-        );
+        assertEq(recoveryTokenMetaUSDC.totalSupply(), 0, "MetaUSD: sub vault shouldn't mint its recovery tokens");
     }
 
     /// @dev Bad paths for MetaUSD.withdrawUnderlyingEmergency => MetaUSDC => CVault
@@ -936,7 +905,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         _setUpRecoveryTokenMetaUsd(vault);
 
         // --------------------------- prepare to withdraw underlying in emergency
-        (ArraysForMetaVault memory ar, ) = _getArraysForMetaUSD(_metaVault, strategy);
+        (ArraysForMetaVault memory ar,) = _getArraysForMetaUSD(_metaVault, strategy);
         uint count = ar.owners.length;
 
         // --------------------------- fail to withdraw: not multisig
@@ -1040,8 +1009,18 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         }
 
         //---------------------------- try to withdraw from not-broken vault
+        {
+            uint snapshot = vm.snapshotState();
 
-        // todo
+            vm.prank(multisig);
+            _metaVault.setRecoveryToken(address(vault), address(0)); // (!) make c-vault is not broken
+
+            vm.expectRevert(abi.encodeWithSelector(IMetaVault.RecoveryTokenNotSet.selector, address(vault)));
+            vm.prank(multisig);
+            _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, ar.amounts, ar.minAmountsOut);
+
+            vm.revertToState(snapshot);
+        }
     }
     //endregion --------------------------------------- Tests for MetaUSD
 
@@ -1082,12 +1061,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         MockERC20[4] memory recoveryTokens = _setUpRecoveryTokenWrapped([address(vault1), address(vault2)]);
 
         // --------------------------- state before withdrawing
-        WrappedState memory stateBefore = _getWrappedState(vault2,_wrappedMetaVault);
+        WrappedState memory stateBefore = _getWrappedState(vault2, _wrappedMetaVault);
 
         // --------------------------- withdraw underlying in emergency (vault 1)
         uint[] memory recoveryAmountOut1;
         {
-            (ArraysForWrapped memory ar, ) = _getArraysForWrapped(_wrappedMetaVault, vault1, 1, false);
+            (ArraysForWrapped memory ar,) = _getArraysForWrapped(_wrappedMetaVault, vault1, 1, false);
             uint count = ar.owners.length;
 
             uint[] memory amountsOut;
@@ -1101,83 +1080,107 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             for (uint i = 0; i < count; ++i) {
                 // console.log("i, amountOut", i, amountsOut[i]);
-                assertApproxEqAbs(amountsOut[i], ar.minAmountsOut[i], 2, "Withdrawn amount should match expected value 6");
-            }
-        }
-
-        // --------------------------- withdraw underlying in emergency (vault 2), check balances and wrapped state
-        (ArraysForWrapped memory ar, ) = _getArraysForWrapped(_wrappedMetaVault, vault1, LARGEST_WRAPPED_META_USD_HOLDERS.length, true);
-        uint count = ar.owners.length;
-
-        uint gas = gasleft();
-        vm.prank(multisig);
-        (uint[] memory amountsOut, uint[] memory recoveryAmountOut2) =
-            _wrappedMetaVault.redeemUnderlyingEmergency(address(vault2), ar.owners, ar.shares, ar.minAmountsOut);
-
-        assertLt(gas - gasleft(), 15e6, "Gas used for withdrawUnderlyingEmergency should be less than 15M 7");
-
-        // --------------------------- state after withdrawing
-        WrappedState memory stateAfter = _getWrappedState(vault2,_wrappedMetaVault);
-
-        // --------------------------- check amount out
-        for (uint i = 0; i < count; ++i) {
-            // console.log("i, amountOut", i, amountsOut[i], owners[i]);
-            assertApproxEqAbs(amountsOut[i], ar.minAmountsOut[i], 2, "Withdrawn amount should match expected value 7");
-            stateBefore.totalAmountsOut += amountsOut[i];
-        }
-
-        // --------------------------- check results
-        for (uint i = 0; i < count; ++i) {
-            assertApproxEqAbs(
-                IERC20(vault2.strategy().underlying()).balanceOf(ar.owners[i]) - stateBefore.userBalanceUnderlying[i],
-                amountsOut[i],
-                1,
-                "Owner should receive correct amount of underlying of vault2 7"
-            );
-
-            assertApproxEqAbs(
-                stateBefore.userBalancesWrapped[i] - _wrappedMetaVault.balanceOf(ar.owners[i]),
-                stateBefore.userBalancesWrapped[i],
-                1,
-                "Owner should spend all wrapped shares 7"
-            );
-
-            assertApproxEqAbs(
-                i == 0
-                    ? recoveryAmountOut1[i] + recoveryAmountOut2[i]
-                    : recoveryAmountOut2[i],
-                recoveryTokens[0].balanceOf(ar.owners[i]),
-                1,
-                "Owner should receive expected amount of recovery tokens 7"
-            );
-
-            for (uint j = 1; j < recoveryTokens.length; ++j) {
-                assertEq(
-                    recoveryTokens[j].balanceOf(ar.owners[i]),
-                    0,
-                    "Owner should NOT receive any recovery tokens except wrapped's one 7"
+                assertApproxEqAbs(
+                    amountsOut[i], ar.minAmountsOut[i], 2e3, "Withdrawn amount should match expected value 6"
                 );
             }
         }
 
-        assertEq(stateBefore.wrappedPrice, stateAfter.wrappedPrice, "Wrapped price should not change 7");
+        WrappedState memory stateMiddle = _getWrappedState(vault2, _wrappedMetaVault);
 
-        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-            IAToken(vault2.strategy().underlying()).UNDERLYING_ASSET_ADDRESS()
-        );
-        assertApproxEqAbs(
-            stateBefore.totalSupply - stateAfter.totalSupply,
-            stateBefore.totalShares,
-            1,
-            "Total supply should decrease by total shares withdrawn 7"
-        );
+        // --------------------------- withdraw underlying in emergency (vault 2), check balances and wrapped state
+        {
+            (ArraysForWrapped memory ar,) =
+                _getArraysForWrapped(_wrappedMetaVault, vault1, LARGEST_WRAPPED_META_USD_HOLDERS.length, true);
+            uint count = ar.owners.length;
 
-        assertApproxEqAbs(
-            stateBefore.totalAssets - stateAfter.totalAssets, // usd18
-            stateBefore.totalAmountsOut * priceAsset / 10 ** IERC20Metadata(vault2.strategy().underlying()).decimals(), // usd18
-            1e13, // < 5e-6 usd
-            "Total assets should decrease by total amounts out withdrawn 7"
-        );
+            uint gas = gasleft();
+            vm.prank(multisig);
+            (uint[] memory amountsOut, uint[] memory recoveryAmountOut2) =
+                _wrappedMetaVault.redeemUnderlyingEmergency(address(vault2), ar.owners, ar.shares, ar.minAmountsOut);
+
+            assertLt(gas - gasleft(), 15e6, "Gas used for withdrawUnderlyingEmergency should be less than 15M 7");
+
+            // --------------------------- state after withdrawing
+            WrappedState memory stateAfter = _getWrappedState(vault2, _wrappedMetaVault);
+
+            // --------------------------- check amount out
+            for (uint i = 0; i < count; ++i) {
+                // console.log("i, amountOut", i, amountsOut[i], owners[i]);
+                assertApproxEqAbs(
+                    amountsOut[i], ar.minAmountsOut[i], 2e3, "Withdrawn amount should match expected value 7"
+                );
+                stateBefore.totalAmountsOut += amountsOut[i];
+            }
+
+            // --------------------------- check results
+            for (uint i = 0; i < count; ++i) {
+                assertApproxEqAbs(
+                    IERC20(vault2.strategy().underlying()).balanceOf(ar.owners[i])
+                        - stateBefore.userBalanceUnderlying[i],
+                    amountsOut[i],
+                    1,
+                    "Owner should receive correct amount of underlying of vault2 7"
+                );
+
+                assertApproxEqAbs(stateAfter.userBalancesWrapped[i], 0, 1, "Owner should spend all wrapped shares 7");
+
+                assertApproxEqAbs(
+                    i == 0 ? recoveryAmountOut1[i] + recoveryAmountOut2[i] : recoveryAmountOut2[i],
+                    stateAfter.userBalanceRecoveryToken[i],
+                    1,
+                    "Owner should receive expected amount of recovery tokens 7"
+                );
+
+                for (uint j = 1; j < recoveryTokens.length; ++j) {
+                    assertEq(
+                        recoveryTokens[j].balanceOf(ar.owners[i]),
+                        0,
+                        "Owner should NOT receive any recovery tokens except wrapped's one 7"
+                    );
+                }
+            }
+
+            assertEq(stateBefore.wrappedPrice, stateAfter.wrappedPrice, "Wrapped price should not change 7");
+
+            assertApproxEqAbs(
+                stateBefore.totalSupply - stateAfter.totalSupply,
+                stateBefore.totalShares,
+                1,
+                "Total supply should decrease by total shares withdrawn 7"
+            );
+
+            (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
+                IAToken(vault2.strategy().underlying()).UNDERLYING_ASSET_ADDRESS()
+            );
+            assertApproxEqAbs(
+                (stateMiddle.totalAssets - stateAfter.totalAssets), // meta vault tokens, usd 18
+                stateBefore.totalAmountsOut * priceAsset
+                    / 10 ** IERC20Metadata(vault2.strategy().underlying()).decimals(), // usd 18
+                1e13, // < 1e-5 usd
+                "Total assets should decrease by total amounts out withdrawn 7"
+            );
+
+            for (uint i = 1; i < 4; ++i) {
+                assertEq(recoveryTokens[i].totalSupply(), 0, "Only wrapped recovery token should be minted 7");
+            }
+
+            assertApproxEqAbs(
+                stateBefore.totalAssets - stateAfter.totalAssets,
+                stateAfter.totalSupplyRecoveryToken,
+                1e11, // rounding error
+                "Expected amount of wrapped recovery tokens were minted 7"
+            );
+
+            assertApproxEqAbs(
+                stateBefore.strategyBalanceUnderlying - stateAfter.strategyBalanceUnderlying,
+                stateBefore.totalAmountsOut + stateAfter.wrappedBalanceUnderlying,
+                1,
+                "Strategy should lose expected amount of underlying 7"
+            );
+
+            assertLt(stateAfter.wrappedBalanceUnderlying, 10, "Wrapped should have no underlying on balance 7");
+        }
     }
 
     /// @dev WrappedMetaVault.redeemUnderlyingEmergency => MetaUSD => MetaUSDC => CVault (bad paths)
@@ -1266,16 +1269,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address user_,
         address wrapped
     ) internal view returns (State memory state) {
-        state.totalAssets = 0; // not applicable
         state.totalSupply = metaVault_.totalSupply();
-        (state.price, ) = metaVault_.price();
+        (state.price,) = metaVault_.price();
         (state.internalSharePrice,,,) = metaVault_.internalSharePrice();
         state.strategyBalanceUnderlying = IERC20(strategy_.underlying()).balanceOf(address(strategy_));
         state.userBalanceMetaVaultTokens = metaVault_.balanceOf(user_);
         state.userBalanceUnderlying = IERC20(strategy_.underlying()).balanceOf(user_);
         state.userBalanceRecoveryToken = IERC20(metaVault_.recoveryToken(strategy_.vault())).balanceOf(user_);
         state.maxWithdrawUnderlying = metaVault_.maxWithdrawUnderlying(strategy_.vault(), user_);
-        (state.wrappedPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(wrapped);
+        (state.wrappedPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(wrapped);
 
         return state;
     }
@@ -1286,12 +1288,11 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address[] memory owners,
         address wrapped
     ) internal view returns (MultiState memory state) {
-        state.totalAssets = 0; // not applicable
         state.totalSupply = metaVault_.totalSupply();
-        (state.price, ) = metaVault_.price();
+        (state.price,) = metaVault_.price();
         (state.internalSharePrice,,,) = metaVault_.internalSharePrice();
         state.strategyBalanceUnderlying = IERC20(strategy_.underlying()).balanceOf(address(strategy_));
-        (state.wrappedPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(wrapped);
+        (state.wrappedPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(wrapped);
 
         state.userBalanceMetaVaultTokens = new uint[](owners.length);
         state.userBalanceUnderlying = new uint[](owners.length);
@@ -1311,6 +1312,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             state.maxWithdrawUnderlyingTotal += state.maxWithdrawUnderlying[i];
         }
 
+        state.metaVaultBalanceUnderlying = IERC20(strategy_.underlying()).balanceOf(address(metaVault_));
+
         return state;
     }
 
@@ -1329,12 +1332,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             ret.amounts[i] = 0;
         }
 
-        stateBefore = _getMetaVaultMultiState(
-            metaVault_, strategy_, ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-        );
+        stateBefore =
+            _getMetaVaultMultiState(metaVault_, strategy_, ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         for (uint i = 0; i < count; ++i) {
-            ret.expectedUnderlying[i] = _getExpectedUnderlying(strategy_, metaVault_, stateBefore.maxWithdrawUnderlying[i]);
+            ret.expectedUnderlying[i] =
+                _getExpectedUnderlying(strategy_, metaVault_, stateBefore.maxWithdrawUnderlying[i]);
             ret.minAmountsOut[i] = ret.expectedUnderlying[i] - 1;
         }
 
@@ -1352,61 +1355,81 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         ret.expectedUnderlying = new uint[](count);
         ret.minAmountsOut = new uint[](count);
 
-        IStrategy _strategy = vault_.strategy();
         IMetaVault _metaVault = IMetaVault(_wrappedMetaVault.metaVault());
+        (uint priceMetaVaultToken,) = _metaVault.price();
 
+        (uint wrappedPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(address(_wrappedMetaVault));
         for (uint i = 0; i < count; ++i) {
             ret.owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
             ret.shares[i] = useAllBalance
                 ? 0
-                : _metaVault.maxWithdrawUnderlying(address(vault_), address(_wrappedMetaVault));
+                : Math.mulDiv(
+                    _metaVault.maxWithdrawUnderlying(address(vault_), address(_wrappedMetaVault)) * 999 / 1000,
+                    priceMetaVaultToken,
+                    wrappedPrice,
+                    Math.Rounding.Floor
+                ); // wrapped shares = meta vault tokens * price of meta vault token / price of wrapped
         }
 
-        stateBefore = _getMetaVaultMultiState(
-            _metaVault, _strategy, ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-        );
-
-        for (uint i = 0; i < count; ++i) {
-            ret.expectedUnderlying[i] = _getExpectedUnderlying(
-                _strategy,
-                _metaVault,
-                useAllBalance
-                    ? _wrappedMetaVault.balanceOf(ret.owners[i])
-                    : ret.shares[i] - 1
+        {
+            stateBefore = _getMetaVaultMultiState(
+                _metaVault, vault_.strategy(), ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
             );
-            ret.minAmountsOut[i] = ret.expectedUnderlying[i] - 1;
+
+            for (uint i = 0; i < count; ++i) {
+                uint shares = (useAllBalance ? _wrappedMetaVault.balanceOf(ret.owners[i]) : ret.shares[i] - 1);
+                ret.expectedUnderlying[i] =
+                    _getExpectedUnderlying(vault_.strategy(), _metaVault, shares * wrappedPrice / 1e18);
+                ret.minAmountsOut[i] = ret.expectedUnderlying[i] - 1;
+            }
         }
 
         return (ret, stateBefore);
     }
 
-    function _getWrappedState(IVault vault2, IWrappedMetaVault wrapped) internal view returns (WrappedState memory state) {
+    function _getWrappedState(
+        IVault vault2,
+        IWrappedMetaVault wrapped
+    ) internal view returns (WrappedState memory state) {
         WrappedState memory v;
+        address recoveryTokenWrapped = wrapped.recoveryToken(vault2.strategy().vault());
 
         v.totalSupply = wrapped.totalSupply();
         v.totalAssets = wrapped.totalAssets();
-        (v.wrappedPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(address(wrapped));
+        v.totalSupplyRecoveryToken = IERC20(recoveryTokenWrapped).totalSupply();
+        (v.wrappedPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(address(wrapped));
 
         v.userBalanceUnderlying = new uint[](LARGEST_WRAPPED_META_USD_HOLDERS.length);
         v.userBalancesWrapped = new uint[](LARGEST_WRAPPED_META_USD_HOLDERS.length);
+        v.userBalanceRecoveryToken = new uint[](LARGEST_WRAPPED_META_USD_HOLDERS.length);
         for (uint i = 0; i < LARGEST_WRAPPED_META_USD_HOLDERS.length; ++i) {
-            v.userBalanceUnderlying[i] = IERC20(vault2.strategy().underlying()).balanceOf(LARGEST_WRAPPED_META_USD_HOLDERS[i]);
+            v.userBalanceUnderlying[i] =
+                IERC20(vault2.strategy().underlying()).balanceOf(LARGEST_WRAPPED_META_USD_HOLDERS[i]);
             v.userBalancesWrapped[i] = wrapped.balanceOf(LARGEST_WRAPPED_META_USD_HOLDERS[i]);
+            v.userBalanceRecoveryToken[i] = IERC20(recoveryTokenWrapped).balanceOf(LARGEST_WRAPPED_META_USD_HOLDERS[i]);
         }
+
+        v.strategyBalanceUnderlying = IERC20(vault2.strategy().underlying()).balanceOf(address(vault2.strategy()));
+        v.wrappedBalanceUnderlying = IERC20(vault2.strategy().underlying()).balanceOf(address(wrapped));
 
         for (uint i = 0; i < LARGEST_WRAPPED_META_USD_HOLDERS.length; ++i) {
             v.totalShares += wrapped.balanceOf(LARGEST_WRAPPED_META_USD_HOLDERS[i]);
         }
+        //        console.log("totalSupply", v.totalSupply);
+        //        console.log("totalAssets", v.totalAssets);
+        //        console.log("wrappedPrice", v.wrappedPrice);
+        //        console.log("totalShares", v.totalShares);
+        //        console.log("totalSupplyRecoveryToken", v.totalSupplyRecoveryToken);
+
         return v;
     }
     //endregion ---------------------------------------------- States
 
     //region ---------------------------------------------- Internal
-    function _setUpRecoveryTokenMetaUsd(IStabilityVault vault_) internal returns (
-        MockERC20 recoveryToken,
-        MockERC20 recoveryTokenMetaUSDC,
-        MockERC20 recoveryTokenMetaScUsd
-    ){
+    function _setUpRecoveryTokenMetaUsd(IStabilityVault vault_)
+        internal
+        returns (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, MockERC20 recoveryTokenMetaScUsd)
+    {
         // ----------------------------------- set up recovery tokens
         recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
         vm.prank(multisig);
@@ -1414,11 +1437,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         recoveryTokenMetaUSDC = new MockERC20("MetaUSDC Recovery Token", "RUSDC", 18);
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(address(vault_), address(recoveryTokenMetaUSDC));
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+            address(vault_), address(recoveryTokenMetaUSDC)
+        );
 
         recoveryTokenMetaScUsd = new MockERC20("MetaScUsd Recovery Token", "RScUSD", 18);
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(address(vault_), address(recoveryTokenMetaScUsd));
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+            address(vault_), address(recoveryTokenMetaScUsd)
+        );
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
@@ -1427,13 +1454,18 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
     }
 
-    function _setUpRecoveryTokenWrapped(address[2] memory vaults_) internal returns (MockERC20[4] memory recoveryTokens){
+    function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
+        internal
+        returns (MockERC20[4] memory recoveryTokens)
+    {
         // ----------------------------------- set up recovery tokens
         recoveryTokens[0] = new MockERC20("Recovery Token", "RW", 18);
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(vaults_[i], address(recoveryTokens[0]));
+                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(
+                    vaults_[i], address(recoveryTokens[0])
+                );
             }
         }
 
@@ -1449,7 +1481,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(vaults_[i], address(recoveryTokens[2]));
+                IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+                    vaults_[i], address(recoveryTokens[2])
+                );
             }
         }
 
@@ -1457,12 +1491,16 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(vaults_[i], address(recoveryTokens[3]));
+                IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+                    vaults_[i], address(recoveryTokens[3])
+                );
             }
         }
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, true
+        );
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
