@@ -265,7 +265,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address[] memory owners,
         uint[] memory amounts,
         uint[] memory minUnderlyingOut
-    ) external override returns (uint[] memory amountsOut, uint[] memory recoveryAmountOut) {
+    ) external override nonReentrant returns (uint[] memory amountsOut, uint[] memory recoveryAmountOut) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         if (!$.lastBlockDefenseWhitelist[msg.sender]) {
             _requireGovernanceOrMultisig();
@@ -373,7 +373,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint minUnderlyingOut,
         address receiver,
         address owner
-    ) external override returns (uint underlyingOut) {
+    ) external override nonReentrant returns (uint underlyingOut) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
 
         _beforeDepositOrWithdraw($, owner);
@@ -420,7 +420,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMetaVault
-    function USD_THRESHOLD() external pure returns (uint) {
+    function USD_THRESHOLD() external pure override returns (uint) {
         return MetaVaultLib.USD_THRESHOLD;
     }
 

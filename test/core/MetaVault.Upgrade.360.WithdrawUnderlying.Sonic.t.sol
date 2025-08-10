@@ -1021,6 +1021,29 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             vm.revertToState(snapshot);
         }
+
+        //---------------------------- try to withdraw too much for the user
+        {
+            uint snapshot = vm.snapshotState();
+
+            uint[] memory amounts2 = new uint[](count);
+            for (uint i = 0; i < count; ++i) {
+                amounts2[i] = _metaVault.maxWithdrawUnderlying(address(vault), ar.owners[i]) + 1; // ask for more than max withdraw
+            }
+
+            // vm.expectRevert(IERC20Errors.ERC20InsufficientBalance.selector);
+            vm.prank(multisig);
+            try _metaVault.withdrawUnderlyingEmergency(address(vault), ar.owners, amounts2, ar.minAmountsOut) {
+                require(false, "Error IERC20Errors.ERC20InsufficientBalance wasn't thrown");
+            } catch (bytes memory reason) {
+                require(
+                    reason.length >= 4 && bytes4(reason) == IERC20Errors.ERC20InsufficientBalance.selector,
+                    "Some other error was thrown instead of ERC20InsufficientBalance"
+                );
+            }
+
+            vm.revertToState(snapshot);
+        }
     }
     //endregion --------------------------------------- Tests for MetaUSD
 
@@ -1206,37 +1229,29 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         // --------------------------- set up recovery tokens and whitelist
         _setUpRecoveryTokenWrapped([address(vault1), address(0)]);
-        IMetaVault _metaVault = IMetaVault(_wrappedMetaVault.metaVault());
 
         // --------------------------- prepare data
-        uint count = 1;
-        address[] memory owners = new address[](count);
-        uint[] memory amounts = new uint[](count);
-        uint[] memory minAmountsOut = new uint[](count);
-        for (uint i = 0; i < count; ++i) {
-            owners[i] = LARGEST_WRAPPED_META_USD_HOLDERS[i];
-            amounts[i] = _metaVault.maxWithdrawUnderlying(address(vault1), address(_wrappedMetaVault));
-            minAmountsOut[i] = _getExpectedUnderlying(vault1.strategy(), _metaVault, amounts[i] - 1);
-        }
+        (ArraysForWrapped memory ar,) = _getArraysForWrapped(_wrappedMetaVault, vault1, 1, false);
 
         // --------------------------- not multisig, not governance
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
         vm.prank(address(this));
-        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, minAmountsOut);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, ar.shares, ar.minAmountsOut);
 
         // --------------------------- incorrect arrays
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         vm.prank(multisig);
-        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), new address[](5), amounts, minAmountsOut);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), new address[](5), ar.shares, ar.minAmountsOut);
 
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         vm.prank(multisig);
-        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, new uint[](5), minAmountsOut);
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, new uint[](5), ar.minAmountsOut);
 
         vm.expectRevert(IControllable.IncorrectArrayLength.selector);
         vm.prank(multisig);
-        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, new uint[](0));
+        _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, ar.shares, new uint[](0));
 
+        // --------------------------- incorrect balance (zero shares)
         {
             address[] memory wrongOwners = new address[](1);
             wrongOwners[0] = address(this);
@@ -1255,7 +1270,49 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             vm.expectRevert(abi.encodeWithSelector(IMetaVault.RecoveryTokenNotSet.selector, address(vault1)));
             vm.prank(multisig);
-            _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), owners, amounts, minAmountsOut);
+            _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, ar.shares, ar.minAmountsOut);
+
+            vm.revertToState(snapshot);
+        }
+
+        // --------------------------- ERC4626ExceededMaxRedeem
+        {
+            uint snapshot = vm.snapshotState();
+
+            uint[] memory shares2 = new uint[](1);
+            shares2[0] = ar.shares[0] * 1000; // ask for more than max withdraw
+
+            // vm.expectRevert(IControllable.IncorrectBalance.selector);
+            vm.prank(multisig);
+            try _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, shares2, ar.minAmountsOut) {
+                require(false, "Error ERC4626Upgradeable.ERC4626ExceededMaxRedeem wasn't thrown");
+            } catch (bytes memory reason) {
+                require(
+                    reason.length >= 4 && bytes4(reason) == ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector,
+                    "Some other error was thrown instead of ERC4626ExceededMaxRedeem"
+                );
+            }
+
+            vm.revertToState(snapshot);
+        }
+
+        // --------------------------- ExceedSlippage
+        {
+            uint snapshot = vm.snapshotState();
+
+            uint[] memory minAmountsOut2 = new uint[](1);
+            minAmountsOut2[0] = ar.minAmountsOut[0] * 1000;
+
+            // vm.expectRevert(IControllable.IncorrectBalance.selector);
+            vm.prank(multisig);
+            try _wrappedMetaVault.redeemUnderlyingEmergency(address(vault1), ar.owners, ar.shares, minAmountsOut2) {
+                require(false, "Error IStabilityVault.ExceedSlippage wasn't thrown");
+            } catch (bytes memory reason) {
+                require(
+                    reason.length >= 4 && bytes4(reason) == IStabilityVault.ExceedSlippage.selector,
+                    "Some other error was thrown instead of ExceedSlippage"
+                );
+            }
 
             vm.revertToState(snapshot);
         }

@@ -217,6 +217,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             // ---------------------- withdraw total underlying on balance
             uint[] memory singleOut; // total amount of withdrawn underlying
+            // slither-disable-next-line unused-return
             (singleOut,) =
                 IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, v.assetsTotal, new uint[](1));
 
@@ -235,7 +236,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         address underlying = IVault(cVault_).strategy().underlying();
         recoveryTokenOut = new uint[](len);
         for (uint i; i < len; ++i) {
-            IERC20(underlying).transfer(owners[i], underlyingOut[i]);
+            IERC20(underlying).safeTransfer(owners[i], underlyingOut[i]);
 
             // mint 1 recovery token for 1 meta vault token
             recoveryTokenOut[i] = _recoveryToken == address(0) ? 0 : assets[i];
