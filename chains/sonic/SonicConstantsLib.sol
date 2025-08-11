@@ -41,6 +41,7 @@ library SonicConstantsLib {
     address public constant VAULT_C_Credix_USDC_AMFa5 = 0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7;
     address public constant VAULT_C_Silo_USDC_36_eS3 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
     address public constant VAULT_C_Credix_scUSD_AMFa0 = 0x25a2E994deb1009b0b6BB7cba30Bc25aFe8be016;
+    address public constant VAULT_C_Credix_scUSD_AMFa5 = 0xF63614b859c9e8103d73Bb49E002e27F3776aF93;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;

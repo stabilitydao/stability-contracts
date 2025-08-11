@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -66,9 +67,10 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*                      DATA TYPES                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     struct WithdrawUnderlyingEmergencyLocal {
-        uint[] assetsTotal;
+        uint[] metaVaultTotal;
         uint totalAssets;
         uint totalSupply;
+        uint decimals;
     }
 
     //region ------------------------- View functions
@@ -188,9 +190,12 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
         {
             // pre-calculate totalAssets qnd totalSupply to be able to use burning in cycle
-            v.assetsTotal = new uint[](1);
+            v.metaVaultTotal = new uint[](1);
             v.totalAssets = totalAssets(); // meta vault tokens
             v.totalSupply = totalSupply(); // shares of the wrapped vault
+            v.decimals = IERC20Metadata(IMetaVault(metaVault()).assets()[0]).decimals();
+            console.log("metavault decimals", IERC20Metadata(IMetaVault(metaVault()).assets()[0]).decimals());
+            console.log("wrapped decimals", IERC20Metadata(address(this)).decimals());
 
             // ---------------------- unwrap meta-vault tokens
             for (uint i; i < len; ++i) {
@@ -208,23 +213,28 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
                 );
 
                 // ------------------- = _withdraw(_msgSender(), receiver, owner, assets, shares);
+                console.log("burn", assets[i], shares[i], minUnderlyingOut[i]);
                 _burn(owners[i], shares[i]);
                 emit Withdraw(msg.sender, address(this), owners[i], assets[i], shares[i]);
                 // keep unwrapped MetaVault tokens on balance
 
-                v.assetsTotal[0] += assets[i];
+                v.metaVaultTotal[0] += assets[i] * 10 ** (18 - v.decimals);
+                console.log("assets, multi", assets[i], assets[i] * 10 ** (18 - v.decimals));
             }
 
             // ---------------------- withdraw total underlying on balance
+            console.log("v.metaVaultTotal", v.metaVaultTotal[0]);
+            console.log("balance", IMetaVault(metaVault()).balanceOf(singleOwner[0]));
+
             uint[] memory singleOut; // total amount of withdrawn underlying
             // slither-disable-next-line unused-return
             (singleOut,) =
-                IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, v.assetsTotal, new uint[](1));
+                IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, v.metaVaultTotal, new uint[](1));
 
             // ---------------------- calculate underlying for each owner
             underlyingOut = new uint[](len);
             for (uint i; i < len; ++i) {
-                underlyingOut[i] = singleOut[0] * assets[i] / v.assetsTotal[0];
+                underlyingOut[i] = singleOut[0] * assets[i] * 10 ** (18 - v.decimals) / v.metaVaultTotal[0];
                 require(
                     underlyingOut[i] >= minUnderlyingOut[i],
                     IStabilityVault.ExceedSlippage(underlyingOut[i], minUnderlyingOut[i])

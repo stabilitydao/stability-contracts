@@ -1,0 +1,883 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {IAToken} from "../../src/integrations/aave/IAToken.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
+import {MockERC20} from "../../lib/solady/test/utils/mocks/MockERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {console, Test} from "forge-std/Test.sol";
+
+contract WrapperMetaUsdRestartSonicTest is Test {
+    uint public constant FORK_BLOCK = 42495521; // Aug-11-2025 10:19:32 AM +UTC
+
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    IMetaVaultFactory public metaVaultFactory;
+    IPriceReader public priceReader;
+    address public multisig;
+    IWrappedMetaVault public wrappedMetaVault;
+
+    address[30] internal WRAPPED_META_USD_LARGEST_HOLDERS;
+    address[37] internal META_USD_LARGEST_HOLDERS;
+    address[32] internal WRAPPED_META_USDC_LARGEST_HOLDERS;
+    // address[] internal constant META_USDC_LARGEST_HOLDERS;  // no holders
+    address[55] internal WRAPPED_META_SCUSD_LARGEST_HOLDERS;
+    address[2] internal META_SCUSD_LARGEST_HOLDERS;
+
+    // broken vaults in metaUSDC
+    address public constant VAULT_1_USDC = SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0;
+    address public constant VAULT_2_USDC = SonicConstantsLib.VAULT_C_Credix_USDC_AMFa5;
+
+    // broken vaults in metascUSD
+    address public constant VAULT_3_scUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa0;
+    address public constant VAULT_4_scUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa5;
+
+    address[4] internal CREDIX_VAULTS;
+    address[] internal recoveryTokens;
+
+    struct UserAddresses {
+        address[] wmetaUSDOwner;
+        address[] metaUSDOwner;
+        address[] wmetaUsdcOwner;
+        //address[] metaUsdcOwner;
+        address[] wmetaScUsdOwner;
+        address[] metaScUsdOwner;
+    }
+
+    struct UserBalances {
+        uint[] wmetaUSDBalance;
+        uint[] metaUSDBalance;
+        uint[] wmetaUsdcBalance;
+        //uint[] metaUsdcBalance;
+        uint[] wmetaScUsdBalance;
+        uint[] metaScUsdBalance;
+    }
+
+    struct State {
+        uint wrappedPrice;
+        uint usdcPrice;
+
+        uint metaUSDMultisigBalance;
+        uint metaUsdTotalSupply;
+
+        uint[] vaultUnderlyingBalance;
+
+        UserBalances metaVault;
+        UserBalances[4] underlying;
+        UserBalances[] recoveryToken;
+
+        uint[4] credixVaultTotalSupply;
+    }
+
+    struct WithdrawUnderlyingLocal {
+        IMetaVault metaVault;
+        address[] owners;
+        uint[] minAmountsOut;
+        uint count;
+        uint decimals;
+    }
+
+    constructor() {
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
+        multisig = IPlatform(PLATFORM).multisig();
+        console.log("Multisig address:", multisig);
+        priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+        metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
+        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+
+        CREDIX_VAULTS = [
+            VAULT_1_USDC,
+            VAULT_2_USDC,
+            VAULT_3_scUSD,
+            VAULT_4_scUSD
+        ];
+
+        WRAPPED_META_USD_LARGEST_HOLDERS = [
+            0x6e8C150224D6e9B646889b96EFF6f7FD742e2C22,
+            0xCCdDbBbd1E36a6EDA3a84CdCee2040A86225Ba71,
+            0x287939376DCc571b5ee699DD8E72199989424A2E,
+            0x859C08DDB344FaCf01027FE7e75C5DFA6230c7dE,
+            0x6F11663766bB213003cD74EB09ff4c67145023c5,
+            0x06C319099BaC1a2b2797c55eF06667B4Ce62D226,
+            0x76Da6c90d2b16b2e420377623e347d5AD8263837,
+            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
+            0xc109C45330576048B35686275372e8a84DAeD552,
+            0x60e2A70a4Ba833Fe94AF82f01742e7bfd8e18FA0,
+            0x698eDaCD0cc284aB731e1c57662f3d3989E8adB7,
+            0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8,
+            0x97006dB48f27A1312BbeD5E96dE146A97A78E396,
+            0x8f80791DcdAeb64794F53d4ab1c27BF4c21A4F41,
+            0xD5541c0De06aE99D9D66E5c0bb24b0206d653CB8,
+            0x5e149861BdA09B595e71F7031Ead42fCf6882a4a,
+            0x000066320a467dE62B1548f46465abBB82662331,
+            0x249a947f9Bf78F0e1E3F4304d744c5AD7aBcAb12,
+            0xf0a85BA66b3F0858Dc466Cd2BD75c5aAD0cB3A19,
+            0x789D42f23cf436eD62421c68beFfE570157F2B2d,
+            0xda17792426279c05738811726C76BB025715DD5f,
+            0x6967C1BBACce1eB79F92db11b28169C6BB635Ed6,
+            0xb33B51e0575530493e8118e922A1d2b7e8DEB351,
+            0x1AB8aa28Ae574654d494956e5d5cc8CE7C0BDcAD,
+            0xF1dCce3a6c321176C62b71c091E3165CC9C3816E,
+            0x593D7d712E6B79b63e3bbe6f1cC8b8C11Fc8aBe4,
+            0x3D6991085Ab1ae3926cB96f25684C40a364B6856,
+            0x681cAA36d91AeB81F0c65b3dE0B7bDDFbCCaFDc8,
+            0x23Cd671c5FB77251579Ae915Dc3581Bf099338ee,
+            0x2450D0eefFe24d5243320937564c071Ae0C2683c
+        ];
+
+        META_USD_LARGEST_HOLDERS = [
+            0x8901D9cf0272A2876525ee25Fcbb9E423c4B95f6,
+            0x97006dB48f27A1312BbeD5E96dE146A97A78E396,
+            0x59603A3AB3e33F07A2B9a4419399d502a1Fb6a95,
+            0xc2d5904602e2d76D3D04EC28A5A1c52E136C4475,
+            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
+            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
+            0x698eDaCD0cc284aB731e1c57662f3d3989E8adB7,
+            0x34F6eA796d06870db4dD5775D9e665539Bc6bBA0,
+            0xa9714f7291251Bc1b0D0dBA6481959Ef814E171a,
+            0x8C9C2f167792254C651FcA36CA40Ed9a229e5921,
+            0xaC207c599e4A07F9A8cc5E9cf49B02E20AB7ba69,
+            0x5027457c50A3b45772baFE70e2E6f05D98514ad4,
+            0xec8e3A07d6c5c172e821588EF1749b739A06b20E,
+            0xB19f6698d63D51Cfa0D6eb4490ca83Fcd640F462,
+            0x30A26c2837e9Ad41Ea5955949F00402DbF86f124,
+            0x587ed0683581fE5bD127A3CE4450cFCe7E00629c,
+            0xb4cE0c954bB129D8039230F701bb6503dca1Ee8c,
+            0x02fFb9B4bBC29f9A59b20C541d369C5add62a5a3,
+            0x685dcbC1AFF2C2fB41d0747Aa125b28e93150D54,
+            0x029953c81d3e27F60844A8E16c6F4535997310B2,
+            0x17B72bf643a1c8356D2bB264A42bFCD4dfa3661C,
+            0xa4410ad338CfC95416c99Aa4B7Bfdf3571Be7c12,
+            0x5D00Ef140D2438B544Bb3809675a9F27264f8217,
+            0x2C00637a8CF228B8e882aB0BDfCDA22c159E1E6C,
+            0x2a1842baC18058078F682e1996f763480081174A,
+            0xCCCCCCf25584cAFbD4d80E9464361Af1e7280b44,
+            0xDe39832d15466129Fc5E85b8d1E612b24Cdea012,
+            0xA51A6F181D7BdE6F4fc445Ff844fa9329616C01a,
+            0xebdB6fc1DBde7139348B379408f447400EF07065,
+            0x1563C4751Ad2be48Fd17464B73585B6ba8b6A5f0,
+            0x874f1BcFf7BECb45C95f5582a7c5EC936f81684B,
+            0x5E340b4907365814B789eDD30E150601879C1104,
+            0x9726d0e8Bd180A2136110EeD2Eb56fFDE8C98C7D,
+            0x593851CA21Bfd716a9FC71c744e8b1CdF101535b,
+            0x4282341588F94c158bFAA40AE2C9F3ABfdAc647f,
+            0x1C1732e19D016F20f59aDe301375B1572a0981c2,
+            0xC02D68B1287534d8D12a9bE01A5B4ef5A1771bA3
+        ];
+
+        WRAPPED_META_USDC_LARGEST_HOLDERS = [
+            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
+            0x25cc6D2eAa941c8bA7B67Ee588565b5aC5D392Db,
+            0xbA1333333333a1BA1108E8412f11850A5C319bA9,
+            0xbf21Ba013A41b443b7b21eaAbBB647ceC360fa68,
+            0x5e8AfE101Ce69963233629000519636812a0B778,
+            0x34c8e61d2AE926d8088317726a89AA05861Bbc41,
+            0x99F1cE9D0b95D5D9B3929D0079bdB27628e7eFd7,
+            0xd36036e589803016CF6d510950ecbe75a0b28c29,
+            0xB3baaf17E80010a3aF533b776b08077c9065DbE1,
+            0xaBf0f7bD0Dc8Ce44b084B4B66b8Db97F1b9Ce419,
+            0x441921132b11Fdc628F25Fe80D7369143FA6c18E,
+            0x8b51E11B673b8A47b3558af8380AdD9AcFC19356,
+            0x5754Dc0453dD0f19C3AF670E49f133F6c27553E7,
+            0x69EBBA5e2b429592483b5687a392436BA3Ac15b5,
+            0x6d6b0d6EFED507ec2304F0eab83d2E814DDe99Ab,
+            0x2C636dfBc7FEC91B88B6F5d05e0CFc87645acEd7,
+            0xdf6D62cCfe81D47DD648be9bA33eaf330A2F0195,
+            0xAF1bff74708098dB603e48aaEbEC1BBAe03Dcf11,
+            0x82784592893afcDec068050c6a10A7d0233293f9,
+            0xf1196bF726ed9227507f5a8b7C87Ae177124dB2B,
+            0xdD82D88183290BEa46c286A4C43395820dd46a6C,
+            0xAFA0E9B4693acBCd679Be4B4a53b5589B25139c5,
+            0x24bfaE3526E246cF75D0BdB494cA7860948d37aC,
+            0xe0D01EFEe7A9740F8e702F086dd4FcaE87926Abf,
+            0xA78d705E517863749fB1C48783134B168d75c2dC,
+            0xeC97f1c07b29e21CECe5581fc3354c3fEaC7DB7B,
+            0x7044C9382E76b6a32a817A5156A36b9fbCEFb61e,
+            0x6D1E0084a6910a8803ab7c22483A1a2Db3F1001a,
+            0x04261F3A4f4E244B80ED7e3d8b7fF28Abd6c4Dc9,
+            0x02443d1fCb2a76C99Bf9BDf89de7F048d26eaDbA,
+            0xc5E0250037195850E4D987CA25d6ABa68ef5fEe8,
+            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
+        ];
+
+        WRAPPED_META_SCUSD_LARGEST_HOLDERS = [
+            0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
+            0xbA1333333333a1BA1108E8412f11850A5C319bA9,
+            0x029953c81d3e27F60844A8E16c6F4535997310B2,
+            0xbf21Ba013A41b443b7b21eaAbBB647ceC360fa68,
+            0xa765A629f11f538F6d67e3fDF799BaEd1506017d,
+            0x34c8e61d2AE926d8088317726a89AA05861Bbc41,
+            0x5e8AfE101Ce69963233629000519636812a0B778,
+            0xd36036e589803016CF6d510950ecbe75a0b28c29,
+            0xC5042F9d9a18e95547864438455c8F05b4987399,
+            0xB3baaf17E80010a3aF533b776b08077c9065DbE1,
+            0xaBf0f7bD0Dc8Ce44b084B4B66b8Db97F1b9Ce419,
+            0x698eDaCD0cc284aB731e1c57662f3d3989E8adB7,
+            0x441921132b11Fdc628F25Fe80D7369143FA6c18E,
+            0x27d475C8279FE603647A976CF55b657b0cef8070,
+            0x8b51E11B673b8A47b3558af8380AdD9AcFC19356,
+            0x99F1cE9D0b95D5D9B3929D0079bdB27628e7eFd7,
+            0x1f95B1FF006311bAa9865BA48382A144f8135FE7,
+            0x5754Dc0453dD0f19C3AF670E49f133F6c27553E7,
+            0x224b920120AD0c30aedb5AFD01056405ec8E00F8,
+            0x69EBBA5e2b429592483b5687a392436BA3Ac15b5,
+            0xEE25A745ceA4e061c7A163396e79ae90BA804040,
+            0x6d6b0d6EFED507ec2304F0eab83d2E814DDe99Ab,
+            0x2C636dfBc7FEC91B88B6F5d05e0CFc87645acEd7,
+            0xdf6D62cCfe81D47DD648be9bA33eaf330A2F0195,
+            0x92Fa9b5d84587170E56a780793Ba5d3F3591623d,
+            0x25cc6D2eAa941c8bA7B67Ee588565b5aC5D392Db,
+            0xAF1bff74708098dB603e48aaEbEC1BBAe03Dcf11,
+            0x81819e54706F4205DDB70d8c57B4DDAD46e3484a,
+            0x82784592893afcDec068050c6a10A7d0233293f9,
+            0xf1196bF726ed9227507f5a8b7C87Ae177124dB2B,
+            0xAad23a77205429720b50972C2D74F9CC8b757e25,
+            0x288a2395f027F65684D836754bA43Afa20CA09e6,
+            0xdD82D88183290BEa46c286A4C43395820dd46a6C,
+            0x2f50fFD44daCA5f4B420d89B9F609d5bB30E4B53,
+            0x0D7720DF68cfC04534D02C2669e51652b0E77791,
+            0xAFA0E9B4693acBCd679Be4B4a53b5589B25139c5,
+            0x24bfaE3526E246cF75D0BdB494cA7860948d37aC,
+            0x730a1EAA28f844e7f02aE910b32644D7584f675C,
+            0xe0D01EFEe7A9740F8e702F086dd4FcaE87926Abf,
+            0xA09BC385421f18D5d5072924f9d3709bB2B76281,
+            0xA78d705E517863749fB1C48783134B168d75c2dC,
+            0xeC97f1c07b29e21CECe5581fc3354c3fEaC7DB7B,
+            0xc4137Cd4FE5B811C77CB3f0f0EbA28755E96099e,
+            0x7044C9382E76b6a32a817A5156A36b9fbCEFb61e,
+            0x6D1E0084a6910a8803ab7c22483A1a2Db3F1001a,
+            0x04261F3A4f4E244B80ED7e3d8b7fF28Abd6c4Dc9,
+            0x02443d1fCb2a76C99Bf9BDf89de7F048d26eaDbA,
+            0x4f639310A05b36f525711fd52AFCe2770851f988,
+            0xE765c1f860D1d949aF634E0CAc67bbe161b8Eb58,
+            0xF681a2f3A9a773B4fab46d6725F43B1762674698,
+            0x0FC587968C33acda9a16C5fa6E66258fF8aA2F61,
+            0xe5707753E0Db37D338817EB81Ee431264E755458,
+            0xb616d066fb1aB1384D47A5a70Ce00af515445A6d,
+            0xb153560DDDE28d3b86F018d030D573E7e34a3388,
+            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
+        ];
+
+        META_SCUSD_LARGEST_HOLDERS = [
+            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A,
+            0x1f95B1FF006311bAa9865BA48382A144f8135FE7
+        ];
+    }
+
+    /// @notice Restart MetaUSD: withdraw all broken underlying, replace it by real assets and recovery tokens
+    function testRestartMetaUSD() public {
+        UserAddresses memory users = _getUsers();
+        // ---------------------------------- upgrade strategies and vaults
+        console.log("Upgrade");
+        {
+            _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+            _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+            _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+            _upgradeWrappedMetaVaults();
+
+            for (uint i; i < 4; ++i) {
+                _upgradeAmfStrategy(address(IVault(CREDIX_VAULTS[i]).strategy()));
+                _upgradeCVault(CREDIX_VAULTS[i]);
+
+                {
+                    IStrategy _strategy = IVault(CREDIX_VAULTS[i]).strategy();
+
+                    vm.prank(multisig);
+                    AaveMerklFarmStrategy(address(_strategy)).setUnderlying();
+                }
+            }
+        }
+
+        // ---------------------------------- set up recovery tokens
+        console.log("Set up");
+        {
+            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+
+            _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD);
+            _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC);
+            _createRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD);
+        }
+
+        // ---------------------------------- whitelist vaults
+        console.log("Whitelist");
+        {
+            _whitelistVault(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+
+            _whitelistVault(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.METAVAULT_metaUSD);
+            _whitelistVault(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+
+            _whitelistVault(SonicConstantsLib.METAVAULT_metascUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _whitelistVault(SonicConstantsLib.METAVAULT_metascUSD, SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+        }
+
+        // ---------------------------------- save initial state
+        console.log("Get state");
+        State memory state0 = _getState(users);
+
+        // ---------------------------------- withdraw underlying in emergency, provide recovery tokens for large users
+        console.log("Withdraw underlying to users");
+        {
+            // metaScUsd vault
+            for (uint i = 2; i < 4; i++) {
+                console.log("Withdraw from MetaScUsd.CVault", i, CREDIX_VAULTS[i]);
+                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, CREDIX_VAULTS[i], users.wmetaScUsdOwner);
+                _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metascUSD, CREDIX_VAULTS[i], users.metaScUsdOwner);
+            }
+
+            // metaUSD vault
+            for (uint i; i < 4; i++) {
+                console.log("Withdraw from MetaUSD.CVault", i, CREDIX_VAULTS[i]);
+                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, CREDIX_VAULTS[i], users.wmetaUSDOwner);
+                _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metaUSD, CREDIX_VAULTS[i], users.metaUSDOwner);
+            }
+
+            // metaUsdc vault
+            for (uint i; i < 2; i++) {
+                console.log("Withdraw from MetaUsdc.CVault", i, CREDIX_VAULTS[i]);
+                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, CREDIX_VAULTS[i], users.wmetaUsdcOwner);
+                // _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metaUSDC, CREDIX_VAULTS[i], users);
+            }
+
+        }
+
+        // ---------------------------------- check current state
+        console.log("Get state");
+        State memory stateMiddle = _getState(users);
+
+        // ---------------------------------- deposit into metaUSD by multisig to be able to withdraw all left broken underlying
+        console.log("Deposit to metaUSD");
+        {
+            uint amountUsdcToDeposit = stateMiddle.metaUsdTotalSupply * 1e18 / stateMiddle.usdcPrice;
+            deal(SonicConstantsLib.TOKEN_USDC, multisig, amountUsdcToDeposit);
+
+            vm.prank(multisig);
+            IERC20(SonicConstantsLib.TOKEN_USDC).approve(SonicConstantsLib.METAVAULT_metaUSD, amountUsdcToDeposit);
+
+            address[] memory assets = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).assetsForDeposit();
+            uint[] memory amountsMax = new uint[](assets.length);
+            amountsMax[0] = amountUsdcToDeposit;
+
+            vm.prank(multisig);
+            IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).depositAssets(assets, amountsMax, 0, multisig);
+
+            assertGt(
+                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).totalSupply(),
+                stateMiddle.metaUsdTotalSupply * 2,
+                "Total supply of meta vault tokens should increase at least twice"
+            );
+        }
+
+
+        // ---------------------------------- withdraw underlying in emergency for multisig
+        console.log("Withdraw underlying to multisig");
+        {
+            address[] memory govUsers = new address[](1);
+            govUsers[0] = multisig;
+            for (uint i; i < 4; i++) {
+                console.log("Withdraw leftovers from MetaUSD.CVault", i, CREDIX_VAULTS[i]);
+                _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metaUSD, CREDIX_VAULTS[i], govUsers);
+            }
+        }
+
+
+        // ---------------------------------- check current state: ensure that there is 0 broken underlying in metaUSD
+        State memory stateFinal = _getState(users);
+
+        {
+            for (uint i; i < 4; i++) {
+                assertEq(stateFinal.credixVaultTotalSupply[i], 0, "Underlying balance in Credix vault should be 0");
+            }
+
+            assertApproxEqAbs(stateFinal.wrappedPrice, state0.wrappedPrice, 1, "Wrapped price should be the same");
+        }
+
+        // ---------------------------------- ensure that exist users are able to withdraw their funds
+
+
+        // ---------------------------------- ensure that new users can deposit and withdraw
+    }
+
+    //region ---------------------------------------------- Main logic
+    function _redeemUnderlyingEmergency(address wrapped_, address cVault_, address[] memory users) internal {
+        WithdrawUnderlyingLocal memory v;
+
+        console.log("_redeemUnderlyingEmergency.start", wrapped_, cVault_);
+        v.metaVault = IMetaVault(IWrappedMetaVault(wrapped_).metaVault());
+
+        v.owners = new address[](users.length);
+        uint[] memory shares = new uint[](users.length);
+        v.minAmountsOut = new uint[](users.length);
+        v.decimals = IWrappedMetaVault(wrapped_).decimals();
+        console.log("Wrapped decimals", v.decimals);
+
+        uint totalMetaVaultTokensToWithdraw;
+        uint totalMetaVaultTokens = v.metaVault.maxWithdrawUnderlying(cVault_, wrapped_) * 9999 / 10000;
+        console.log("totalMetaVaultTokens", totalMetaVaultTokens);
+
+        if (totalMetaVaultTokens != 0) {
+//            (uint priceMetaVaultToken,) = _metaVault.price();
+            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18 / IWrappedMetaVault(wrapped_).totalSupply();
+            console.log("totalAssets", IWrappedMetaVault(wrapped_).totalAssets());
+            console.log("totalSupply", IWrappedMetaVault(wrapped_).totalSupply());
+
+            for (uint i = 0; i < users.length; ++i) {
+                uint maxShares = IWrappedMetaVault(wrapped_).balanceOf(users[i]);
+                if (maxShares < 2) continue;
+
+                uint maxAmount = maxShares * wrappedPrice / 1e18;
+                // console.log("user, maxShares, maxAmount", users[i], maxShares, maxAmount);
+
+                uint amount = totalMetaVaultTokensToWithdraw + maxAmount > totalMetaVaultTokens
+                    ? totalMetaVaultTokens - totalMetaVaultTokensToWithdraw
+                    : maxAmount;
+                // console.log("totalMetaVaultTokensToWithdraw, totalMetaVaultTokens", totalMetaVaultTokensToWithdraw, totalMetaVaultTokens);
+
+                if (amount < 2) {
+                    // console.log("User is skipped", i, users[i]);
+                    continue; // Skip users with no balance
+                }
+
+                v.owners[v.count] = users[i];
+                shares[v.count] = amount * 1e18 / wrappedPrice;
+
+                v.minAmountsOut[v.count] = _getExpectedUnderlying(
+                    IVault(cVault_).strategy(),
+                    v.metaVault,
+                    (shares[v.count] - 1) * wrappedPrice / 1e18
+                );
+                totalMetaVaultTokensToWithdraw += amount;
+
+                v.count++;
+                if (totalMetaVaultTokensToWithdraw == totalMetaVaultTokens) break;
+            }
+
+            if (v.count != 0) {
+                (v.owners, shares, v.minAmountsOut) = _reduceArrays(v.count, v.owners, shares, v.minAmountsOut);
+
+                _showAmounts(wrapped_, cVault_, v.owners, shares, v.minAmountsOut, true);
+
+                vm.prank(multisig);
+                WrappedMetaVault(wrapped_).redeemUnderlyingEmergency(cVault_, v.owners, shares, v.minAmountsOut);
+            }
+        }
+        console.log("_redeemUnderlyingEmergency.END");
+    }
+
+    function _withdrawUnderlyingEmergency(address metaVault_, address cVault_, address[] memory users) internal {
+        WithdrawUnderlyingLocal memory v;
+
+        console.log("_withdrawUnderlyingEmergency.start", metaVault_, cVault_);
+        v.owners = new address[](users.length);
+        uint[] memory amounts = new uint[](users.length);
+        v.minAmountsOut = new uint[](users.length);
+        v.metaVault = IMetaVault(metaVault_);
+
+        uint snapshot = vm.snapshotState();
+        for (uint i = 0; i < users.length; ++i) {
+            uint maxAmount = v.metaVault.maxWithdrawUnderlying(cVault_, users[i]);
+            if (maxAmount < (10 ** v.metaVault.decimals())) continue;
+            uint balance = v.metaVault.balanceOf(users[i]);
+
+            vm.roll(block.number + 6);
+            vm.prank(users[i]);
+            v.metaVault.withdrawUnderlying(cVault_, maxAmount, 0, users[i], users[i]);
+            vm.roll(block.number + 6);
+
+            amounts[v.count] = maxAmount == balance ? 0 : maxAmount;
+            v.owners[v.count] = users[i];
+            v.minAmountsOut[v.count] = _getExpectedUnderlying(IVault(cVault_).strategy(), v.metaVault, maxAmount) - 1;
+            v.count++;
+
+            if (maxAmount != balance) break;
+        }
+        vm.revertToState(snapshot);
+
+        if (v.count != 0) {
+            (v.owners, amounts, v.minAmountsOut) = _reduceArrays(v.count, v.owners, amounts, v.minAmountsOut);
+
+            _showAmounts(metaVault_, cVault_, v.owners, amounts, v.minAmountsOut, false);
+
+            vm.prank(multisig);
+            v.metaVault.withdrawUnderlyingEmergency(cVault_, v.owners, amounts, v.minAmountsOut);
+        }
+        console.log("_withdrawUnderlyingEmergency.END");
+    }
+    //endregion ---------------------------------------------- Main logic
+
+    //region ---------------------------------------------- Internal
+    function _setUpRecoveryTokenMetaUsd(IStabilityVault vault_)
+    internal
+    returns (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, MockERC20 recoveryTokenMetaScUsd)
+    {
+        // ----------------------------------- set up recovery tokens
+        recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(address(vault_), address(recoveryToken));
+
+        recoveryTokenMetaUSDC = new MockERC20("MetaUSDC Recovery Token", "RUSDC", 18);
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+            address(vault_), address(recoveryTokenMetaUSDC)
+        );
+
+        recoveryTokenMetaScUsd = new MockERC20("MetaScUsd Recovery Token", "RScUSD", 18);
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+            address(vault_), address(recoveryTokenMetaScUsd)
+        );
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
+    }
+
+    function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
+    internal
+    returns (MockERC20[4] memory _recoveryTokens)
+    {
+        // ----------------------------------- set up recovery tokens
+        _recoveryTokens[0] = new MockERC20("Recovery Token", "RW", 18);
+        for (uint i = 0; i < vaults_.length; ++i) {
+            if (vaults_[i] != address(0)) {
+                vm.prank(multisig);
+                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(
+                    vaults_[i], address(_recoveryTokens[0])
+                );
+            }
+        }
+
+        _recoveryTokens[1] = new MockERC20("MetaUSD Recovery Token", "RUSD", 18);
+        for (uint i = 0; i < vaults_.length; ++i) {
+            if (vaults_[i] != address(0)) {
+                vm.prank(multisig);
+                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(vaults_[i], address(_recoveryTokens[1]));
+            }
+        }
+
+        _recoveryTokens[2] = new MockERC20("MetaUSDC Recovery Token", "RUSDC", 18);
+        for (uint i = 0; i < vaults_.length; ++i) {
+            if (vaults_[i] != address(0)) {
+                vm.prank(multisig);
+                IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+                    vaults_[i], address(_recoveryTokens[2])
+                );
+            }
+        }
+
+        _recoveryTokens[3] = new MockERC20("MetaScUsd Recovery Token", "RScUSD", 18);
+        for (uint i = 0; i < vaults_.length; ++i) {
+            if (vaults_[i] != address(0)) {
+                vm.prank(multisig);
+                IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+                    vaults_[i], address(_recoveryTokens[3])
+                );
+            }
+        }
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, true
+        );
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
+
+        return _recoveryTokens;
+    }
+
+    function _getExpectedUnderlying(
+        IStrategy strategy,
+        IMetaVault metaVault_,
+        uint amountToWithdraw
+    ) internal view returns (uint) {
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
+            IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS()
+        );
+        (uint priceMetaVault,) = metaVault_.price();
+
+        // Assume here that AToken to asset is 1:1
+        return amountToWithdraw * priceMetaVault / priceAsset * 10 ** IERC20Metadata(strategy.underlying()).decimals() // decimals of the underlying asset
+            / 1e18;
+    }
+
+    function _getMetaVaultTokensByUnderlying(
+        IStrategy strategy,
+        IMetaVault metaVault_,
+        uint underlyingAmount
+    ) internal view returns (uint) {
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
+            IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS()
+        );
+        (uint priceMetaVault,) = metaVault_.price();
+
+        // Assume here that AToken to asset is 1:1
+        return underlyingAmount * 1e18 / priceMetaVault * priceAsset / 10 ** IERC20Metadata(strategy.underlying()).decimals(); // decimals of the underlying asset
+    }
+
+    function _getUsers() internal view returns (UserAddresses memory dest) {
+        dest.wmetaUSDOwner = _toDynamicArray(WRAPPED_META_USD_LARGEST_HOLDERS);
+        dest.metaUSDOwner = _toDynamicArray(META_USD_LARGEST_HOLDERS);
+        dest.wmetaUsdcOwner = _toDynamicArray(WRAPPED_META_USDC_LARGEST_HOLDERS);
+        //dest.metaUsdcOwner = _toDynamicArray(META_USDC_LARGEST_HOLDERS);
+        dest.wmetaScUsdOwner = _toDynamicArray(WRAPPED_META_SCUSD_LARGEST_HOLDERS);
+        dest.metaScUsdOwner = _toDynamicArray(META_SCUSD_LARGEST_HOLDERS);
+
+        return dest;
+    }
+
+    function _getState(UserAddresses memory users) internal view returns (State memory state) {
+        state.vaultUnderlyingBalance = new uint[](4);
+        state.vaultUnderlyingBalance[0] = IERC20(IVault(VAULT_1_USDC).strategy().underlying()).balanceOf(VAULT_1_USDC);
+        state.vaultUnderlyingBalance[1] = IERC20(IVault(VAULT_2_USDC).strategy().underlying()).balanceOf(VAULT_2_USDC);
+        state.vaultUnderlyingBalance[2] = IERC20(IVault(VAULT_3_scUSD).strategy().underlying()).balanceOf(VAULT_3_scUSD);
+        state.vaultUnderlyingBalance[3] = IERC20(IVault(VAULT_4_scUSD).strategy().underlying()).balanceOf(VAULT_4_scUSD);
+
+        state.metaVault.wmetaUSDBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSD, users.wmetaUSDOwner);
+        state.metaVault.metaUSDBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSD, users.metaUSDOwner);
+        state.metaVault.wmetaUsdcBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSDC, users.wmetaUsdcOwner);
+        //state.metaVault.metaUsdcBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSDC, users.metaUsdcOwner);
+        state.metaVault.wmetaScUsdBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metascUSD, users.wmetaScUsdOwner);
+        state.metaVault.metaScUsdBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metascUSD, users.metaScUsdOwner);
+
+        for (uint i; i < 4; ++i) {
+            state.underlying[i].wmetaUSDBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUSDOwner);
+            state.underlying[i].metaUSDBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaUSDOwner);
+            state.underlying[i].wmetaUsdcBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUsdcOwner);
+            //state.underlying[i].metaUsdcBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaUsdcOwner);
+            state.underlying[i].wmetaScUsdBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaScUsdOwner);
+            state.underlying[i].metaScUsdBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaScUsdOwner);
+        }
+
+        state.recoveryToken = new UserBalances[](recoveryTokens.length);
+        for (uint i; i < recoveryTokens.length; ++i) {
+            state.recoveryToken[i].wmetaUSDBalance = _getUserBalances(recoveryTokens[i], users.wmetaUSDOwner);
+            state.recoveryToken[i].metaUSDBalance = _getUserBalances(recoveryTokens[i], users.metaUSDOwner);
+            state.recoveryToken[i].wmetaUsdcBalance = _getUserBalances(recoveryTokens[i], users.wmetaUsdcOwner);
+            //state.recoveryToken[i].metaUsdcBalance = _getUserBalances(recoveryTokens[i], users.metaUsdcOwner);
+            state.recoveryToken[i].wmetaScUsdBalance = _getUserBalances(recoveryTokens[i], users.wmetaScUsdOwner);
+            state.recoveryToken[i].metaScUsdBalance = _getUserBalances(recoveryTokens[i], users.metaScUsdOwner);
+        }
+
+        state.metaUSDMultisigBalance = IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(multisig);
+        state.metaUsdTotalSupply = IERC20(SonicConstantsLib.METAVAULT_metaUSD).totalSupply();
+
+        (state.wrappedPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
+            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+        );
+        console.log("Wrapped price", state.wrappedPrice);
+
+        (state.usdcPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_USDC);
+
+        for (uint i; i < 4; ++i) {
+            state.credixVaultTotalSupply[i] = IVault(CREDIX_VAULTS[i]).totalSupply();
+            console.log("Credix vault", i, CREDIX_VAULTS[i], state.credixVaultTotalSupply[i]);
+        }
+
+        return state;
+    }
+
+    function _getUserBalances(address metaVault_, address[] memory users) internal view returns (uint[] memory balances) {
+        balances = new uint[](users.length);
+        for (uint i = 0; i < users.length; ++i) {
+            balances[i] = IERC20(metaVault_).balanceOf(users[i]);
+        }
+        return balances;
+    }
+
+    function _createRecoveryToken(address metaVault_) internal returns (MockERC20) {
+        MockERC20 _recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
+
+        for (uint i; i < CREDIX_VAULTS.length; ++i) {
+            vm.prank(multisig);
+            IMetaVault(metaVault_).setRecoveryToken(CREDIX_VAULTS[i], address(_recoveryToken));
+        }
+
+        recoveryTokens.push(address(_recoveryToken));
+        return _recoveryToken;
+    }
+
+    function _whitelistVault(address metaVault_, address userToWhiteList) internal {
+        vm.prank(multisig);
+        IMetaVault(metaVault_).changeWhitelist(userToWhiteList, true);
+    }
+
+    function _reduceArrays(
+        uint count,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minAmountsOut
+    ) internal pure returns (
+        address[] memory reducedOwners,
+        uint[] memory reducedAmounts,
+        uint[] memory reducedMinAmountsOut
+    ) {
+        if (count != 0) {
+            reducedOwners = new address[](count);
+            reducedAmounts = new uint[](count);
+            reducedMinAmountsOut = new uint[](count);
+
+            for (uint i = 0; i < count; ++i) {
+                reducedOwners[i] = owners[i];
+                reducedAmounts[i] = amounts[i];
+                reducedMinAmountsOut[i] = minAmountsOut[i];
+            }
+        }
+
+        return (reducedOwners, reducedAmounts, reducedMinAmountsOut);
+    }
+    //endregion ---------------------------------------------- Internal
+
+    //region ---------------------------------------------- _toDynamicArray
+    function _toDynamicArray(address[30] memory arr) internal pure returns (address[] memory dynamicArray) {
+        dynamicArray = new address[](arr.length);
+        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+    }
+    function _toDynamicArray(address[37] memory arr) internal pure returns (address[] memory dynamicArray) {
+        dynamicArray = new address[](arr.length);
+        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+    }
+    function _toDynamicArray(address[32] memory arr) internal pure returns (address[] memory dynamicArray) {
+        dynamicArray = new address[](arr.length);
+        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+    }
+    function _toDynamicArray(address[55] memory arr) internal pure returns (address[] memory dynamicArray) {
+        dynamicArray = new address[](arr.length);
+        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+    }
+    function _toDynamicArray(address[2] memory arr) internal pure returns (address[] memory dynamicArray) {
+        dynamicArray = new address[](arr.length);
+        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+    }
+    //endregion ---------------------------------------------- _toDynamicArray
+
+    //region ---------------------------------------------- Helpers
+    function _upgradeMetaVault(address metaVault_) internal {
+        address vaultImplementation = address(new MetaVault());
+        vm.prank(multisig);
+        metaVaultFactory.setMetaVaultImplementation(vaultImplementation);
+        address[] memory metaProxies = new address[](1);
+        metaProxies[0] = address(metaVault_);
+        vm.prank(multisig);
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
+    }
+
+    function _upgradeAmfStrategy(address strategy_) public {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        // deploy new impl and upgrade
+        address strategyImplementation = address(new AaveMerklFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.AAVE_MERKL_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategy_);
+    }
+
+    function _upgradeSiloStrategy(address strategy_) public {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        // deploy new impl and upgrade
+        address strategyImplementation = address(new SiloStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategy_);
+    }
+
+    function _upgradeCVault(address cVault_) internal {
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+
+        // deploy new impl and upgrade
+        address vaultImplementation = address(new CVault());
+        vm.prank(multisig);
+        factory.setVaultConfig(
+            IFactory.VaultConfig({
+                vaultType: VaultTypeLib.COMPOUNDING,
+                implementation: vaultImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                buildingPrice: 1e10
+            })
+        );
+        factory.upgradeVaultProxy(address(cVault_));
+    }
+
+    function _upgradeWrappedMetaVaults() internal {
+        address newWrapperImplementation = address(new WrappedMetaVault());
+
+        vm.startPrank(multisig);
+        metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
+
+        address[] memory proxies = new address[](3);
+        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC;
+        proxies[2] = SonicConstantsLib.WRAPPED_METAVAULT_metascUSD;
+
+        metaVaultFactory.upgradeMetaProxies(proxies);
+        vm.stopPrank();
+    }
+
+    function _showAmounts(
+        address parentVault,
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minAmountsOut,
+        bool shares
+    ) internal pure {
+        console.log("============ Start withdraw (meta/wrapped, c-vault):", parentVault, cVault_);
+        console.log("owner", shares ? "shares" : "amounts", "minAmountsOut");
+        for (uint i = 0; i < owners.length; ++i) {
+            console.log(owners[i], amounts[i], minAmountsOut[i]);
+        }
+        console.log("============ End withdraw");
+    }
+    //endregion ---------------------------------------------- Helpers
+}
