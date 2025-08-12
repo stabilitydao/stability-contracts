@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-
 import {Controllable, IControllable, IPlatform} from "../base/Controllable.sol";
 import {
     ERC20Upgradeable,
