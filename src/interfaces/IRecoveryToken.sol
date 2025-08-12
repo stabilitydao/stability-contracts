@@ -17,4 +17,7 @@ interface IRecoveryToken {
 
     /// @notice Pause transfers from address
     function setAddressPaused(address account, bool paused) external;
+
+    /// @notice The account is paused for transfers
+    function paused(address account) external view returns (bool);
 }

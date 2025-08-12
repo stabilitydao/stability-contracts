@@ -221,13 +221,15 @@ interface IMetaVault is IStabilityVault {
     /// @param owners Addresses of the owners of the meta-vault tokens
     /// @param amounts Amounts of meta-vault tokens to be withdrawn for each owner (0 - withdraw all)
     /// @param minUnderlyingOut Minimum amount of underlying to be received for each owner
+    /// @param pausedRecoveryTokens If true, the recovery token will be set on puase for the given owner after minting
     /// @return amountOut Amounts of underlying received for each owner.
     /// @return recoveryAmountOut Amounts of recovery tokens received for each owner.
     function withdrawUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
         uint[] memory amounts,
-        uint[] memory minUnderlyingOut
+        uint[] memory minUnderlyingOut,
+        bool[] memory pausedRecoveryTokens
     ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut);
 
     /// @notice Set recovery token address for the given cVault

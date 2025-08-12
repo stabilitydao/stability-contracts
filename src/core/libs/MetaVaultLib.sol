@@ -14,7 +14,7 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IMintedERC20} from "../../interfaces/IMintedERC20.sol";
+import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";
 
 library MetaVaultLib {
     using SafeERC20 for IERC20;
@@ -137,8 +137,7 @@ library MetaVaultLib {
     }
 
     /// @notice Withdraw underlying from the vault in emergency mode, don't burn shares
-    /// @param platform_ Platform address
-    /// @param cVault_ Address of the cVault to withdraw underlying from
+    /// @param platformCVault_ [Platform address, Address of the cVault to withdraw underlying from]
     /// @param owners Owners of the shares to withdraw underlying for
     /// @param amounts Amounts of meta-vault tokens to withdraw underlying for each owner
     /// @param minUnderlyingOut Minimal amounts of underlying to receive for each owner
@@ -147,25 +146,28 @@ library MetaVaultLib {
     /// @return sharesToBurn Amounts of shares to burn for each owner
     function withdrawUnderlyingEmergency(
         IMetaVault.MetaVaultStorage storage $,
-        address platform_,
-        address cVault_,
+        address[2] memory platformCVault_,
         address[] memory owners,
         uint[] memory amounts,
-        uint[] memory minUnderlyingOut
+        uint[] memory minUnderlyingOut,
+        bool[] memory pausedRecoveryTokens
     ) external returns (uint[] memory amountsOut, uint[] memory recoveryAmountOut, uint[] memory sharesToBurn) {
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingLocals memory v;
 
         // only broken vaults with not zero recovery token are allowed for emergency withdraw
-        v.recoveryToken = $.recoveryTokens[cVault_];
-        require(v.recoveryToken != address(0), IMetaVault.RecoveryTokenNotSet(cVault_));
+        v.recoveryToken = $.recoveryTokens[platformCVault_[1]];
+        require(v.recoveryToken != address(0), IMetaVault.RecoveryTokenNotSet(platformCVault_[1]));
 
-        address _targetVault = _getTargetVault($, cVault_);
+        address _targetVault = _getTargetVault($, platformCVault_[1]);
 
         uint len = owners.length;
-        require(len == amounts.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
+        require(
+            len == amounts.length && len == minUnderlyingOut.length && len == pausedRecoveryTokens.length,
+            IControllable.IncorrectArrayLength()
+        );
 
-        v.totalSupply = totalSupply($, platform_);
+        v.totalSupply = totalSupply($, platformCVault_[0]);
 
         amountsOut = new uint[](len);
         sharesToBurn = new uint[](len);
@@ -200,16 +202,16 @@ library MetaVaultLib {
         (v.vaultSharePriceUsd,) = IStabilityVault(_targetVault).price();
 
         v.assets = new address[](1);
-        v.assets[0] = IVault(cVault_).strategy().underlying();
+        v.assets[0] = IVault(platformCVault_[1]).strategy().underlying();
 
         v.amountsOut = new uint[](1);
         v.minAmounts = new uint[](1);
 
-        if (_targetVault == cVault_) {
+        if (_targetVault == platformCVault_[1]) {
             // withdraw underlying from the target cVault vault
             v.amountsOut = IStabilityVault(_targetVault).withdrawAssets(
                 v.assets,
-                _getTargetVaultSharesToWithdraw($, platform_, v.totalAmounts, v.vaultSharePriceUsd, true),
+                _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
                 v.minAmounts,
                 address(this),
                 address(this)
@@ -218,8 +220,8 @@ library MetaVaultLib {
         } else {
             // withdraw underlying from the child meta-vault
             v.totalUnderlying = IMetaVault(_targetVault).withdrawUnderlying(
-                cVault_,
-                _getTargetVaultSharesToWithdraw($, platform_, v.totalAmounts, v.vaultSharePriceUsd, true),
+                platformCVault_[1],
+                _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
                 0,
                 address(this),
                 address(this)
@@ -236,7 +238,7 @@ library MetaVaultLib {
                 IStabilityVault.ExceedSlippage(v.amountsOut[0], minUnderlyingOut[i])
             );
 
-            IERC20(IVault(cVault_).strategy().underlying()).transfer(owners[i], amountsOut[i]);
+            IERC20(IVault(platformCVault_[1]).strategy().underlying()).transfer(owners[i], amountsOut[i]);
             emit IStabilityVault.WithdrawAssets(msg.sender, owners[i], v.assets, amounts[i], v.amountsOut);
 
             // disable last block protection in the emergency
@@ -245,7 +247,11 @@ library MetaVaultLib {
             if (!$.lastBlockDefenseWhitelist[msg.sender]) {
                 // 1 meta-vault token => 1 recovery token
                 recoveryAmountOut[i] = amounts[i];
-                IMintedERC20(v.recoveryToken).mint(owners[i], recoveryAmountOut[i]);
+                IRecoveryToken(v.recoveryToken).mint(owners[i], recoveryAmountOut[i]);
+
+                if (pausedRecoveryTokens[i]) {
+                    IRecoveryToken(v.recoveryToken).setAddressPaused(owners[i], true);
+                }
             } else {
                 // the caller is a wrapped/meta-vault
                 // it mints its own recovery tokens
@@ -356,7 +362,7 @@ library MetaVaultLib {
             address recoveryToken = $.recoveryTokens[cVault_];
             // broken vault has not empty recovery token
             if (recoveryToken != address(0)) {
-                IMintedERC20(recoveryToken).mint(receiver, amount);
+                IRecoveryToken(recoveryToken).mint(receiver, amount);
             }
         }
 

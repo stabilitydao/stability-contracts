@@ -74,10 +74,10 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
     }
 
     /// @inheritdoc IRecoveryToken
-    function setAddressPaused(address account, bool paused) external onlyTargetOrMultisig {
+    function setAddressPaused(address account, bool paused_) external onlyTargetOrMultisig {
         RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
-        $.pausedAccounts[account] = paused;
-        emit AccountPaused(account, paused);
+        $.pausedAccounts[account] = paused_;
+        emit AccountPaused(account, paused_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -97,6 +97,11 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
     /// @inheritdoc IRecoveryToken
     function target() public view returns (address) {
         return _getRecoveryTokenStorage().target;
+    }
+
+    /// @inheritdoc IRecoveryToken
+    function paused(address account) public view returns (bool) {
+        return _getRecoveryTokenStorage().pausedAccounts[account];
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

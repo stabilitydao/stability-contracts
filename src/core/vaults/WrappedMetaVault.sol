@@ -17,7 +17,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
-import {IMintedERC20} from "../../interfaces/IMintedERC20.sol";
+import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";
 
 /// @title Wrapped rebase MetaVault
 /// Changelog:
@@ -66,10 +66,11 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /*                      DATA TYPES                            */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     struct WithdrawUnderlyingEmergencyLocal {
-        uint[] metaVaultTotal;
+        address recoveryToken;
         uint totalAssets;
         uint totalSupply;
         uint decimals;
+        uint[] metaVaultTotal;
     }
 
     //region ------------------------- View functions
@@ -162,24 +163,29 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     /// The vault must be broken (it should have not empty recovery token).
     /// @param owners Addresses of the owners of the wrapped-meta-vault tokens
     /// @param shares Amount of shares to be redeemed for each owner (0 - redeem all shares on the owner's balance)
+    /// @param pausedRecoveryTokens If true set recovery token of the given user paused
     /// @return underlyingOut Amounts of underlying received by each owner
     /// @return recoveryTokenOut Amounts of recovery tokens received by each owner
     function redeemUnderlyingEmergency(
         address cVault_,
         address[] memory owners,
         uint[] memory shares,
-        uint[] memory minUnderlyingOut
+        uint[] memory minUnderlyingOut,
+        bool[] memory pausedRecoveryTokens
     ) external onlyGovernanceOrMultisig returns (uint[] memory underlyingOut, uint[] memory recoveryTokenOut) {
         //slither-disable-next-line uninitialized-local
         WithdrawUnderlyingEmergencyLocal memory v;
 
         // ---------------------- ensure that the given cVault is broken (it has not empty recovery token)
-        address _recoveryToken = recoveryToken(cVault_);
-        require(_recoveryToken != address(0), IWrappedMetaVault.RecoveryTokenNotSet(cVault_));
+        v.recoveryToken = recoveryToken(cVault_);
+        require(v.recoveryToken != address(0), IWrappedMetaVault.RecoveryTokenNotSet(cVault_));
 
         // ---------------------- check constraints
         uint len = owners.length;
-        require(len == shares.length && len == minUnderlyingOut.length, IControllable.IncorrectArrayLength());
+        require(
+            len == shares.length && len == minUnderlyingOut.length && len == pausedRecoveryTokens.length,
+            IControllable.IncorrectArrayLength()
+        );
 
         // ---------------------- burn shares, calculate total amount of meta vault tokens to withdraw
         address[] memory singleOwner = new address[](1);
@@ -222,7 +228,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             uint[] memory singleOut; // total amount of withdrawn underlying
             // slither-disable-next-line unused-return
             (singleOut,) = IMetaVault(metaVault()).withdrawUnderlyingEmergency(
-                cVault_, singleOwner, v.metaVaultTotal, new uint[](1)
+                cVault_, singleOwner, v.metaVaultTotal, new uint[](1), new bool[](1)
             );
 
             // ---------------------- calculate underlying for each owner
@@ -243,8 +249,12 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             IERC20(underlying).safeTransfer(owners[i], underlyingOut[i]);
 
             // mint 1 recovery token for 1 meta vault token
-            recoveryTokenOut[i] = _recoveryToken == address(0) ? 0 : assets[i];
-            IMintedERC20(_recoveryToken).mint(owners[i], recoveryTokenOut[i]);
+            recoveryTokenOut[i] = v.recoveryToken == address(0) ? 0 : assets[i];
+            IRecoveryToken(v.recoveryToken).mint(owners[i], recoveryTokenOut[i]);
+
+            if (pausedRecoveryTokens[i]) {
+                IRecoveryToken(v.recoveryToken).setAddressPaused(owners[i], true);
+            }
 
             emit WithdrawUnderlying(
                 _msgSender(),
@@ -253,7 +263,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
                 underlying,
                 underlyingOut[i],
                 assets[i],
-                _recoveryToken,
+                v.recoveryToken,
                 recoveryTokenOut[i]
             );
         }

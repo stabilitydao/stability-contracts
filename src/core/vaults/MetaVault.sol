@@ -264,7 +264,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         address cVault_,
         address[] memory owners,
         uint[] memory amounts,
-        uint[] memory minUnderlyingOut
+        uint[] memory minUnderlyingOut,
+        bool[] memory pausedRecoveryTokens
     ) external override nonReentrant returns (uint[] memory amountsOut, uint[] memory recoveryAmountOut) {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         if (!$.lastBlockDefenseWhitelist[msg.sender]) {
@@ -272,8 +273,9 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         }
 
         uint[] memory sharesToBurn;
-        (amountsOut, recoveryAmountOut, sharesToBurn) =
-            MetaVaultLib.withdrawUnderlyingEmergency($, platform(), cVault_, owners, amounts, minUnderlyingOut);
+        (amountsOut, recoveryAmountOut, sharesToBurn) = MetaVaultLib.withdrawUnderlyingEmergency(
+            $, [platform(), cVault_], owners, amounts, minUnderlyingOut, pausedRecoveryTokens
+        );
 
         uint len = owners.length;
         for (uint i; i < len; ++i) {
