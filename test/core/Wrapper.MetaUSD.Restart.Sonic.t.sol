@@ -38,11 +38,11 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     address public multisig;
     IWrappedMetaVault public wrappedMetaVault;
 
-    address[30] internal WRAPPED_META_USD_LARGEST_HOLDERS;
-    address[37] internal META_USD_LARGEST_HOLDERS;
-    address[32] internal WRAPPED_META_USDC_LARGEST_HOLDERS;
+    address[26] internal WRAPPED_META_USD_LARGEST_HOLDERS;
+    address[36] internal META_USD_LARGEST_HOLDERS;
+    address[33] internal WRAPPED_META_USDC_LARGEST_HOLDERS;
     // address[] internal constant META_USDC_LARGEST_HOLDERS;  // no holders
-    address[55] internal WRAPPED_META_SCUSD_LARGEST_HOLDERS;
+    address[58] internal WRAPPED_META_SCUSD_LARGEST_HOLDERS;
     address[2] internal META_SCUSD_LARGEST_HOLDERS;
 
     // broken vaults in metaUSDC
@@ -135,16 +135,15 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0x287939376DCc571b5ee699DD8E72199989424A2E,
             0x859C08DDB344FaCf01027FE7e75C5DFA6230c7dE,
             0x6F11663766bB213003cD74EB09ff4c67145023c5,
-            0x06C319099BaC1a2b2797c55eF06667B4Ce62D226,
             0x76Da6c90d2b16b2e420377623e347d5AD8263837,
-            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
+            0x06C319099BaC1a2b2797c55eF06667B4Ce62D226,
             0xc109C45330576048B35686275372e8a84DAeD552,
+            0x27d475C8279FE603647A976CF55b657b0cef8070,
             0x60e2A70a4Ba833Fe94AF82f01742e7bfd8e18FA0,
-            0x698eDaCD0cc284aB731e1c57662f3d3989E8adB7,
+            0xD5541c0De06aE99D9D66E5c0bb24b0206d653CB8,
             0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8,
             0x97006dB48f27A1312BbeD5E96dE146A97A78E396,
             0x8f80791DcdAeb64794F53d4ab1c27BF4c21A4F41,
-            0xD5541c0De06aE99D9D66E5c0bb24b0206d653CB8,
             0x5e149861BdA09B595e71F7031Ead42fCf6882a4a,
             0x000066320a467dE62B1548f46465abBB82662331,
             0x249a947f9Bf78F0e1E3F4304d744c5AD7aBcAb12,
@@ -153,13 +152,10 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xda17792426279c05738811726C76BB025715DD5f,
             0x6967C1BBACce1eB79F92db11b28169C6BB635Ed6,
             0xb33B51e0575530493e8118e922A1d2b7e8DEB351,
+            0xe8B8f2467d096740f9F71a3a98B3E424FBc98531,
             0x1AB8aa28Ae574654d494956e5d5cc8CE7C0BDcAD,
-            0xF1dCce3a6c321176C62b71c091E3165CC9C3816E,
-            0x593D7d712E6B79b63e3bbe6f1cC8b8C11Fc8aBe4,
-            0x3D6991085Ab1ae3926cB96f25684C40a364B6856,
-            0x681cAA36d91AeB81F0c65b3dE0B7bDDFbCCaFDc8,
-            0x23Cd671c5FB77251579Ae915Dc3581Bf099338ee,
-            0x2450D0eefFe24d5243320937564c071Ae0C2683c
+            0xBCAA4c21c674DFD89e8C4e550d1e02eA099c8afb,
+            0xF1dCce3a6c321176C62b71c091E3165CC9C3816E
         ];
 
         META_USD_LARGEST_HOLDERS = [
@@ -168,7 +164,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0x59603A3AB3e33F07A2B9a4419399d502a1Fb6a95,
             0xc2d5904602e2d76D3D04EC28A5A1c52E136C4475,
             0xCE785cccAa0c163E6f83b381eBD608F98f694C44,
-            0xf29593aC58C78ECC0bF1d0e8B55E819c5B521aE4,
             0x698eDaCD0cc284aB731e1c57662f3d3989E8adB7,
             0x34F6eA796d06870db4dD5775D9e665539Bc6bBA0,
             0xa9714f7291251Bc1b0D0dBA6481959Ef814E171a,
@@ -178,11 +173,11 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xec8e3A07d6c5c172e821588EF1749b739A06b20E,
             0xB19f6698d63D51Cfa0D6eb4490ca83Fcd640F462,
             0x30A26c2837e9Ad41Ea5955949F00402DbF86f124,
+            0x029953c81d3e27F60844A8E16c6F4535997310B2,
             0x587ed0683581fE5bD127A3CE4450cFCe7E00629c,
             0xb4cE0c954bB129D8039230F701bb6503dca1Ee8c,
             0x02fFb9B4bBC29f9A59b20C541d369C5add62a5a3,
             0x685dcbC1AFF2C2fB41d0747Aa125b28e93150D54,
-            0x029953c81d3e27F60844A8E16c6F4535997310B2,
             0x17B72bf643a1c8356D2bB264A42bFCD4dfa3661C,
             0xa4410ad338CfC95416c99Aa4B7Bfdf3571Be7c12,
             0x5D00Ef140D2438B544Bb3809675a9F27264f8217,
@@ -215,6 +210,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xaBf0f7bD0Dc8Ce44b084B4B66b8Db97F1b9Ce419,
             0x441921132b11Fdc628F25Fe80D7369143FA6c18E,
             0x8b51E11B673b8A47b3558af8380AdD9AcFC19356,
+            0x32Bcd41D2093212b647A789DC7Ff6B1021D9Ea98,
             0x5754Dc0453dD0f19C3AF670E49f133F6c27553E7,
             0x69EBBA5e2b429592483b5687a392436BA3Ac15b5,
             0x6d6b0d6EFED507ec2304F0eab83d2E814DDe99Ab,
@@ -234,7 +230,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0x04261F3A4f4E244B80ED7e3d8b7fF28Abd6c4Dc9,
             0x02443d1fCb2a76C99Bf9BDf89de7F048d26eaDbA,
             0xc5E0250037195850E4D987CA25d6ABa68ef5fEe8,
-            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
+            0x27e7EF864A1143d95D4f0d3391232475B545F9AE
         ];
 
         WRAPPED_META_SCUSD_LARGEST_HOLDERS = [
@@ -256,6 +252,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0x99F1cE9D0b95D5D9B3929D0079bdB27628e7eFd7,
             0x1f95B1FF006311bAa9865BA48382A144f8135FE7,
             0x5754Dc0453dD0f19C3AF670E49f133F6c27553E7,
+            0x32Bcd41D2093212b647A789DC7Ff6B1021D9Ea98,
             0x224b920120AD0c30aedb5AFD01056405ec8E00F8,
             0x69EBBA5e2b429592483b5687a392436BA3Ac15b5,
             0xEE25A745ceA4e061c7A163396e79ae90BA804040,
@@ -271,6 +268,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xAad23a77205429720b50972C2D74F9CC8b757e25,
             0x288a2395f027F65684D836754bA43Afa20CA09e6,
             0xdD82D88183290BEa46c286A4C43395820dd46a6C,
+            0x0E8a00AE00a153A087BCcD1b89efCc78209B3ab8,
             0x2f50fFD44daCA5f4B420d89B9F609d5bB30E4B53,
             0x0D7720DF68cfC04534D02C2669e51652b0E77791,
             0xAFA0E9B4693acBCd679Be4B4a53b5589B25139c5,
@@ -285,6 +283,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0x6D1E0084a6910a8803ab7c22483A1a2Db3F1001a,
             0x04261F3A4f4E244B80ED7e3d8b7fF28Abd6c4Dc9,
             0x02443d1fCb2a76C99Bf9BDf89de7F048d26eaDbA,
+            0x27e7EF864A1143d95D4f0d3391232475B545F9AE,
             0x4f639310A05b36f525711fd52AFCe2770851f988,
             0xE765c1f860D1d949aF634E0CAc67bbe161b8Eb58,
             0xF681a2f3A9a773B4fab46d6725F43B1762674698,
@@ -486,6 +485,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.wmetaScUsdOwner.length; ++i) {
+                console.log("user", users.wmetaScUsdOwner[i]);
                 assertApproxEqAbs(stateFinal.metaVault.wmetaScUsdBalance[i], 0, 1, "Large user has no wmetaScUSD");
             }
 
@@ -660,6 +660,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
 
         // ---------------------------------- ensure that new users can deposit and withdraw
+        // todo
     }
 
     //region ---------------------------------------------- Main logic
@@ -1028,8 +1029,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         for (uint i; i < 4; ++i) {
             state.credixVaultTotalSupply[i] = IVault(CREDIX_VAULTS[i]).totalSupply();
-//            console.log("Credix vault", i, CREDIX_VAULTS[i], state.credixVaultTotalSupply[i]);
-//            console.log("Credix vault mv", i, CREDIX_VAULTS[i], state.credixVaultMetavaultBalance[i]);
+            console.log("Credix vault", i, CREDIX_VAULTS[i], state.credixVaultTotalSupply[i]);
+            console.log("Credix vault mv", i, CREDIX_VAULTS[i], state.credixVaultMetavaultBalance[i]);
         }
 
         return state;
@@ -1094,19 +1095,19 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     //endregion ---------------------------------------------- Internal
 
     //region ---------------------------------------------- _toDynamicArray
-    function _toDynamicArray(address[30] memory arr) internal pure returns (address[] memory dynamicArray) {
+    function _toDynamicArray(address[26] memory arr) internal pure returns (address[] memory dynamicArray) {
         dynamicArray = new address[](arr.length);
         for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
     }
-    function _toDynamicArray(address[37] memory arr) internal pure returns (address[] memory dynamicArray) {
+    function _toDynamicArray(address[36] memory arr) internal pure returns (address[] memory dynamicArray) {
         dynamicArray = new address[](arr.length);
         for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
     }
-    function _toDynamicArray(address[32] memory arr) internal pure returns (address[] memory dynamicArray) {
+    function _toDynamicArray(address[33] memory arr) internal pure returns (address[] memory dynamicArray) {
         dynamicArray = new address[](arr.length);
         for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
     }
-    function _toDynamicArray(address[55] memory arr) internal pure returns (address[] memory dynamicArray) {
+    function _toDynamicArray(address[58] memory arr) internal pure returns (address[] memory dynamicArray) {
         dynamicArray = new address[](arr.length);
         for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
     }
