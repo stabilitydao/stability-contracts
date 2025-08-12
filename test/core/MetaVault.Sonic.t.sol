@@ -33,8 +33,8 @@ import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 
-contract MetaVaultSonicTest is Test {
-    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    contract MetaVaultSonicTest is Test {
+        address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
     address[] public metaVaults;
     IPriceReader public priceReader;
