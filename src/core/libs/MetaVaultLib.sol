@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -352,16 +351,12 @@ library MetaVaultLib {
         }
 
         // burning and updating defense-last-block is implemented outside
-
-        // todo set it to true if cVault_ is broken AND the token is a user (not a metavault)
-
         if (!$.lastBlockDefenseWhitelist[msg.sender]) {
             // the user is not metavault so recovery tokens should be minted for broken vaults
             address recoveryToken = $.recoveryTokens[cVault_];
+            // broken vault has not empty recovery token
             if (recoveryToken != address(0)) {
                 IMintedERC20(recoveryToken).mint(receiver, amount);
-
-                // todo emit event
             }
         }
 
