@@ -4,9 +4,9 @@ pragma solidity ^0.8.28;
 import {Test, console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
+import {IMetaProxy} from "../../src/interfaces/IMetaProxy.sol";
+import {MetaVaultFactory, IMetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {RecoveryToken, IRecoveryToken, IControllable} from "../../src/core/vaults/RecoveryToken.sol";
 
 contract RecoveryTokenSonicTest is Test {
@@ -66,6 +66,30 @@ contract RecoveryTokenSonicTest is Test {
 
         vm.prank(address(1));
         IERC20(address(recToken)).transfer(address(10), 1);
+    }
+
+    function test_RecoveryToken_upgrade() public {
+        vm.prank(multisig);
+        IRecoveryToken recToken =
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_metaUSD);
+
+        address recoveryTokenImplementation = address(new RecoveryToken());
+
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+
+        vm.prank(multisig);
+        metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+
+        address[] memory metaProxies = new address[](1);
+        metaProxies[0] = address(recToken);
+        vm.prank(multisig);
+        metaVaultFactory.upgradeMetaProxies(metaProxies);
+        assertEq(IMetaProxy(address(recToken)).implementation(), recoveryTokenImplementation);
+
+        vm.prank(recToken.target());
+        recToken.mint(address(1), 1);
     }
 
     function _upgradePlatform() internal {
