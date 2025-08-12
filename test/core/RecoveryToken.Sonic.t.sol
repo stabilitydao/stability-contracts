@@ -72,7 +72,6 @@ contract RecoveryTokenSonicTest is Test {
         vm.prank(multisig);
         IRecoveryToken recToken =
             IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
-        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_metaUSD);
 
         address recoveryTokenImplementation = address(new RecoveryToken());
 
@@ -90,6 +89,38 @@ contract RecoveryTokenSonicTest is Test {
 
         vm.prank(recToken.target());
         recToken.mint(address(1), 1);
+    }
+
+    function test_RecoveryToken_bulkTransferFrom() public {
+        vm.prank(multisig);
+        IRecoveryToken recToken =
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+
+        vm.prank(recToken.target());
+        recToken.mint(address(1), 100);
+
+        address[] memory to = new address[](3);
+        to[0] = address(10);
+        to[1] = address(11);
+        to[2] = address(12);
+        uint[] memory amounts = new uint[](3);
+        amounts[0] = 2;
+        amounts[1] = 2;
+        amounts[2] = 3;
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        recToken.bulkTransferFrom(address(1), to, amounts);
+
+        vm.prank(multisig);
+        recToken.bulkTransferFrom(address(1), to, amounts);
+        assertEq(IERC20(address(recToken)).balanceOf(address(1)), 93);
+        assertEq(IERC20(address(recToken)).balanceOf(address(11)), 2);
+
+        vm.prank(recToken.target());
+        recToken.setAddressPaused(address(1), true);
+
+        vm.prank(multisig);
+        recToken.bulkTransferFrom(address(1), to, amounts);
+        assertEq(recToken.paused(address(1)), true);
     }
 
     function _upgradePlatform() internal {

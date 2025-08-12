@@ -78,6 +78,27 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
         emit AccountPaused(account, paused_);
     }
 
+    /// @inheritdoc IRecoveryToken
+    function bulkTransferFrom(
+        address from,
+        address[] calldata to,
+        uint[] calldata amounts
+    ) external onlyGovernanceOrMultisig {
+        uint len = to.length;
+        require(len == amounts.length && len != 0, IControllable.IncorrectArrayLength());
+        RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
+        bool wasPaused = $.pausedAccounts[from];
+        if (wasPaused) {
+            $.pausedAccounts[from] = false;
+        }
+        for (uint i; i < len; ++i) {
+            _transfer(from, to[i], amounts[i]);
+        }
+        if (wasPaused) {
+            $.pausedAccounts[from] = true;
+        }
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERC20 HOOKS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

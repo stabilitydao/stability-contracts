@@ -18,6 +18,9 @@ interface IRecoveryToken {
     /// @notice Pause transfers from address
     function setAddressPaused(address account, bool paused) external;
 
+    /// @notice Bulk transfer by governance
+    function bulkTransferFrom(address from, address[] calldata to, uint[] calldata amounts) external;
+
     /// @notice The account is paused for transfers
     function paused(address account) external view returns (bool);
 }
