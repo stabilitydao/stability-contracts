@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {console} from "forge-std/console.sol";
 
-import {Controllable, IControllable} from "../base/Controllable.sol";
+import {Controllable, IControllable, IPlatform} from "../base/Controllable.sol";
 import {
     ERC20Upgradeable,
     IERC20,
@@ -32,6 +32,21 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
     /// @custom:storage-location erc7201:stability.RecoveryToken
     struct RecoveryTokenStorage {
         address target;
+        mapping(address account => bool paused) pausedAccounts;
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                         MODIFIERS                          */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    modifier onlyTarget() virtual {
+        _requireTarget();
+        _;
+    }
+
+    modifier onlyTargetOrMultisig() virtual {
+        _requireTargetOrMultisig();
+        _;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -49,9 +64,30 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
         $.target = target_;
     }
 
-    function mint(address account, uint amount) external {
-        require(_getRecoveryTokenStorage().target == msg.sender, IncorrectMsgSender());
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                      RESTRICTED ACTIONS                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @inheritdoc IRecoveryToken
+    function mint(address account, uint amount) external onlyTarget {
         _mint(account, amount);
+    }
+
+    /// @inheritdoc IRecoveryToken
+    function setAddressPaused(address account, bool paused) external onlyTargetOrMultisig {
+        RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
+        $.pausedAccounts[account] = paused;
+        emit AccountPaused(account, paused);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                           ERC20 HOOKS                      */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _update(address from, address to, uint value) internal override {
+        RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
+        require($.pausedAccounts[from] == false, TransfersPausedForAccount(from));
+        super._update(from, to, value);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -66,6 +102,16 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function _requireTarget() internal view {
+        require(_getRecoveryTokenStorage().target == msg.sender, IncorrectMsgSender());
+    }
+
+    function _requireTargetOrMultisig() internal view {
+        address _target = _getRecoveryTokenStorage().target;
+        address multisig = IPlatform(platform()).multisig();
+        require(_target == msg.sender || multisig == msg.sender, IncorrectMsgSender());
+    }
 
     function _getRecoveryTokenStorage() internal pure returns (RecoveryTokenStorage storage $) {
         //slither-disable-next-line assembly
