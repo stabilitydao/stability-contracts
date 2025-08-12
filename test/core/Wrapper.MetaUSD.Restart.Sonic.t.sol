@@ -22,7 +22,6 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {MockERC20} from "../../lib/solady/test/utils/mocks/MockERC20.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -112,6 +111,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         IMetaVault metaVault;
         address[] owners;
         uint[] minAmountsOut;
+        bool[] paused;
         uint count;
         uint decimals;
     }
@@ -695,6 +695,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         v.owners = new address[](users.length);
         uint[] memory shares = new uint[](users.length);
         v.minAmountsOut = new uint[](users.length);
+        v.paused = new bool[](users.length);
         v.decimals = IWrappedMetaVault(wrapped_).decimals();
 
         uint totalMetaVaultTokensToWithdraw;
@@ -739,12 +740,15 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             if (v.count != 0) {
-                (v.owners, shares, v.minAmountsOut) = _reduceArrays(v.count, v.owners, shares, v.minAmountsOut);
+                (v.owners, shares, v.minAmountsOut, v.paused) =
+                    _reduceArrays(v.count, v.owners, shares, v.minAmountsOut, v.paused);
 
                 _showAmounts(wrapped_, cVault_, v.owners, shares, v.minAmountsOut, true);
 
                 vm.prank(multisig);
-                WrappedMetaVault(wrapped_).redeemUnderlyingEmergency(cVault_, v.owners, shares, v.minAmountsOut);
+                WrappedMetaVault(wrapped_).redeemUnderlyingEmergency(
+                    cVault_, v.owners, shares, v.minAmountsOut, v.paused
+                );
             }
         }
         //console.log("_redeemUnderlyingEmergency.END");
@@ -758,6 +762,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         uint[] memory amounts = new uint[](users.length);
         v.minAmountsOut = new uint[](users.length);
         v.metaVault = IMetaVault(metaVault_);
+        v.paused = new bool[](users.length);
 
         uint snapshot = vm.snapshotState();
         for (uint i = 0; i < users.length; ++i) {
@@ -780,12 +785,13 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         vm.revertToState(snapshot);
 
         if (v.count != 0) {
-            (v.owners, amounts, v.minAmountsOut) = _reduceArrays(v.count, v.owners, amounts, v.minAmountsOut);
+            (v.owners, amounts, v.minAmountsOut, v.paused) =
+                _reduceArrays(v.count, v.owners, amounts, v.minAmountsOut, v.paused);
 
             _showAmounts(metaVault_, cVault_, v.owners, amounts, v.minAmountsOut, false);
 
             vm.prank(multisig);
-            v.metaVault.withdrawUnderlyingEmergency(cVault_, v.owners, amounts, v.minAmountsOut);
+            v.metaVault.withdrawUnderlyingEmergency(cVault_, v.owners, amounts, v.minAmountsOut, v.paused);
         }
         //console.log("_withdrawUnderlyingEmergency.END");
     }
@@ -868,93 +874,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     //endregion ---------------------------------------------- Main logic
 
     //region ---------------------------------------------- Internal
-    function _setUpRecoveryTokenMetaUsd(IStabilityVault vault_)
-        internal
-        returns (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, MockERC20 recoveryTokenMetaScUsd)
-    {
-        // ----------------------------------- set up recovery tokens
-        recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(address(vault_), address(recoveryToken));
-
-        recoveryTokenMetaUSDC = new MockERC20("MetaUSDC Recovery Token", "RUSDC", 18);
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
-            address(vault_), address(recoveryTokenMetaUSDC)
-        );
-
-        recoveryTokenMetaScUsd = new MockERC20("MetaScUsd Recovery Token", "RScUSD", 18);
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
-            address(vault_), address(recoveryTokenMetaScUsd)
-        );
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
-    }
-
-    function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
-        internal
-        returns (MockERC20[4] memory _recoveryTokens)
-    {
-        // ----------------------------------- set up recovery tokens
-        _recoveryTokens[0] = new MockERC20("Recovery Token", "RW", 18);
-        for (uint i = 0; i < vaults_.length; ++i) {
-            if (vaults_[i] != address(0)) {
-                vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(
-                    vaults_[i], address(_recoveryTokens[0])
-                );
-            }
-        }
-
-        _recoveryTokens[1] = new MockERC20("MetaUSD Recovery Token", "RUSD", 18);
-        for (uint i = 0; i < vaults_.length; ++i) {
-            if (vaults_[i] != address(0)) {
-                vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(
-                    vaults_[i], address(_recoveryTokens[1])
-                );
-            }
-        }
-
-        _recoveryTokens[2] = new MockERC20("MetaUSDC Recovery Token", "RUSDC", 18);
-        for (uint i = 0; i < vaults_.length; ++i) {
-            if (vaults_[i] != address(0)) {
-                vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
-                    vaults_[i], address(_recoveryTokens[2])
-                );
-            }
-        }
-
-        _recoveryTokens[3] = new MockERC20("MetaScUsd Recovery Token", "RScUSD", 18);
-        for (uint i = 0; i < vaults_.length; ++i) {
-            if (vaults_[i] != address(0)) {
-                vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
-                    vaults_[i], address(_recoveryTokens[3])
-                );
-            }
-        }
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, true
-        );
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
-
-        return _recoveryTokens;
-    }
-
     function _getExpectedUnderlying(
         IStrategy strategy,
         IMetaVault metaVault_,
@@ -1068,8 +987,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         for (uint i; i < 4; ++i) {
             state.credixVaultTotalSupply[i] = IVault(CREDIX_VAULTS[i]).totalSupply();
-            console.log("Credix vault", i, CREDIX_VAULTS[i], state.credixVaultTotalSupply[i]);
-            console.log("Credix vault mv", i, CREDIX_VAULTS[i], state.credixVaultMetavaultBalance[i]);
+            //            console.log("Credix vault", i, CREDIX_VAULTS[i], state.credixVaultTotalSupply[i]);
+            //            console.log("Credix vault mv", i, CREDIX_VAULTS[i], state.credixVaultMetavaultBalance[i]);
         }
 
         return state;
@@ -1084,18 +1003,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             balances[i] = IERC20(metaVault_).balanceOf(users[i]);
         }
         return balances;
-    }
-
-    function _createMockedRecoveryToken(address metaVault_) internal returns (MockERC20) {
-        MockERC20 _recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
-
-        for (uint i; i < CREDIX_VAULTS.length; ++i) {
-            vm.prank(multisig);
-            IMetaVault(metaVault_).setRecoveryToken(CREDIX_VAULTS[i], address(_recoveryToken));
-        }
-
-        recoveryTokens.push(address(_recoveryToken));
-        return _recoveryToken;
     }
 
     function _createRealRecoveryToken(address metaVault_, bytes32 salt) internal returns (address _recoveryToken) {
@@ -1122,25 +1029,33 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         uint count,
         address[] memory owners,
         uint[] memory amounts,
-        uint[] memory minAmountsOut
+        uint[] memory minAmountsOut,
+        bool[] memory paused
     )
         internal
         pure
-        returns (address[] memory reducedOwners, uint[] memory reducedAmounts, uint[] memory reducedMinAmountsOut)
+        returns (
+            address[] memory reducedOwners,
+            uint[] memory reducedAmounts,
+            uint[] memory reducedMinAmountsOut,
+            bool[] memory reducedPaused
+        )
     {
         if (count != 0) {
             reducedOwners = new address[](count);
             reducedAmounts = new uint[](count);
             reducedMinAmountsOut = new uint[](count);
+            reducedPaused = new bool[](count);
 
             for (uint i = 0; i < count; ++i) {
                 reducedOwners[i] = owners[i];
                 reducedAmounts[i] = amounts[i];
                 reducedMinAmountsOut[i] = minAmountsOut[i];
+                reducedPaused[i] = paused[i];
             }
         }
 
-        return (reducedOwners, reducedAmounts, reducedMinAmountsOut);
+        return (reducedOwners, reducedAmounts, reducedMinAmountsOut, reducedPaused);
     }
 
     function _getTotalAmountRecoveryTokens(
