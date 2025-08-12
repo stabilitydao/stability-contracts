@@ -1,31 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {RecoveryToken} from "../../src/core/vaults/RecoveryToken.sol";
 import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IRecoveryToken} from "../../src/interfaces/IRecoveryToken.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
+import {MockERC20} from "../../lib/solady/test/utils/mocks/MockERC20.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
-import {MockERC20} from "../../lib/solady/test/utils/mocks/MockERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {console, Test} from "forge-std/Test.sol";
 
 contract WrapperMetaUsdRestartSonicTest is Test {
@@ -38,12 +41,18 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     address public multisig;
     IWrappedMetaVault public wrappedMetaVault;
 
-    address[26] internal WRAPPED_META_USD_LARGEST_HOLDERS;
-    address[36] internal META_USD_LARGEST_HOLDERS;
-    address[33] internal WRAPPED_META_USDC_LARGEST_HOLDERS;
+    uint internal constant COUNT_WRAPPED_META_USD_USERS = 26;
+    uint internal constant COUNT_META_USD_USERS = 36;
+    uint internal constant COUNT_WRAPPED_META_USDC_USERS = 33;
+    uint internal constant COUNT_WRAPPED_META_SCUSD_USERS = 55;
+    uint internal constant COUNT_META_SCUSD_USERS = 2;
+
+    address[COUNT_WRAPPED_META_USD_USERS] internal WRAPPED_META_USD_LARGEST_HOLDERS;
+    address[COUNT_META_USD_USERS] internal META_USD_LARGEST_HOLDERS;
+    address[COUNT_WRAPPED_META_USDC_USERS] internal WRAPPED_META_USDC_LARGEST_HOLDERS;
     // address[] internal constant META_USDC_LARGEST_HOLDERS;  // no holders
-    address[58] internal WRAPPED_META_SCUSD_LARGEST_HOLDERS;
-    address[2] internal META_SCUSD_LARGEST_HOLDERS;
+    address[COUNT_WRAPPED_META_SCUSD_USERS] internal WRAPPED_META_SCUSD_LARGEST_HOLDERS;
+    address[COUNT_META_SCUSD_USERS] internal META_SCUSD_LARGEST_HOLDERS;
 
     // broken vaults in metaUSDC
     address public constant VAULT_1_USDC = SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0;
@@ -84,24 +93,17 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         uint wmetaUSDPriceDirectCalculations;
         uint wmetaUsdcPrice;
         uint wmetaScUsdPrice;
-
         uint usdcPrice;
-
         uint metaUSDMultisigBalance;
         uint metaUSDTotalSupply;
-
         uint metaUsdcMultisigBalance;
         uint metaUsdcTotalSupply;
-
         uint metaScUsdMultisigBalance;
         uint metaScUsdTotalSupply;
-
         uint[] vaultUnderlyingBalance;
-
         UserBalances metaVault;
         UserBalances[4] underlying;
         UserBalances[] recoveryToken;
-
         uint[4] credixVaultTotalSupply;
         uint[4] credixVaultMetavaultBalance;
     }
@@ -122,12 +124,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
         wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
-        CREDIX_VAULTS = [
-            VAULT_1_USDC,
-            VAULT_2_USDC,
-            VAULT_3_scUSD,
-            VAULT_4_scUSD
-        ];
+        CREDIX_VAULTS = [VAULT_1_USDC, VAULT_2_USDC, VAULT_3_scUSD, VAULT_4_scUSD];
 
         WRAPPED_META_USD_LARGEST_HOLDERS = [
             0x6e8C150224D6e9B646889b96EFF6f7FD742e2C22,
@@ -288,16 +285,15 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xE765c1f860D1d949aF634E0CAc67bbe161b8Eb58,
             0xF681a2f3A9a773B4fab46d6725F43B1762674698,
             0x0FC587968C33acda9a16C5fa6E66258fF8aA2F61,
-            0xe5707753E0Db37D338817EB81Ee431264E755458,
-            0xb616d066fb1aB1384D47A5a70Ce00af515445A6d,
-            0xb153560DDDE28d3b86F018d030D573E7e34a3388,
-            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
+            0xe5707753E0Db37D338817EB81Ee431264E755458
+        // todo
+            //            0xb616d066fb1aB1384D47A5a70Ce00af515445A6d,
+            //            0xb153560DDDE28d3b86F018d030D573E7e34a3388,
+            //            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
         ];
 
-        META_SCUSD_LARGEST_HOLDERS = [
-            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A,
-            0x1f95B1FF006311bAa9865BA48382A144f8135FE7
-        ];
+        META_SCUSD_LARGEST_HOLDERS =
+            [0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A, 0x1f95B1FF006311bAa9865BA48382A144f8135FE7];
 
         SMALL_USERS = [
             0x4f82e73EDb06d29Ff62C91EC8f5Ff06571bdeb29,
@@ -334,15 +330,26 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         }
 
         // ---------------------------------- set up recovery tokens
-        console.log("Set up");
+        console.log("Set up recovery tokens");
         {
-            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
-            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
-            _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+            _upgradePlatform();
+            _setupMetaVaultFactory();
 
-            _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD);
-            _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC);
-            _createRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD);
+            //            _createMockedRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            //            _createMockedRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            //            _createMockedRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+            //
+            //            _createMockedRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD);
+            //            _createMockedRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC);
+            //            _createMockedRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD);
+
+            _createRealRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 0x00);
+            _createRealRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, bytes32(uint(0x01)));
+            _createRealRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, bytes32(uint(0x02)));
+
+            _createRealRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD, bytes32(uint(0x03)));
+            _createRealRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC, bytes32(uint(0x04)));
+            _createRealRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD, bytes32(uint(0x05)));
         }
 
         // ---------------------------------- whitelist vaults
@@ -365,19 +372,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             while (targetIndex == vaultIndex1 || targetIndex == vaultIndex2) {
                 targetIndex--;
             }
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metascUSD,
-                vaultIndex1,
-                targetIndex,
-                1e16
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metascUSD, vaultIndex1, targetIndex, 1e16);
 
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metascUSD,
-                vaultIndex2,
-                targetIndex,
-                1e16
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metascUSD, vaultIndex2, targetIndex, 1e16);
         }
 
         // ---------------------------------- save initial state
@@ -390,24 +387,31 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             // metaScUsd vault
             for (uint i = 2; i < 4; i++) {
                 console.log("!!!!!!!!!! Withdraw from MetaScUsd.CVault", i, CREDIX_VAULTS[i]);
-                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, CREDIX_VAULTS[i], users.wmetaScUsdOwner);
-                _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metascUSD, CREDIX_VAULTS[i], users.metaScUsdOwner);
+                _redeemUnderlyingEmergency(
+                    SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, CREDIX_VAULTS[i], users.wmetaScUsdOwner
+                );
+                _withdrawUnderlyingEmergency(
+                    SonicConstantsLib.METAVAULT_metascUSD, CREDIX_VAULTS[i], users.metaScUsdOwner
+                );
             }
 
             // metaUSD vault
             for (uint i; i < 4; i++) {
                 console.log("!!!!!!!!!! Withdraw from MetaUSD.CVault", i, CREDIX_VAULTS[i]);
-                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, CREDIX_VAULTS[i], users.wmetaUSDOwner);
+                _redeemUnderlyingEmergency(
+                    SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, CREDIX_VAULTS[i], users.wmetaUSDOwner
+                );
                 _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metaUSD, CREDIX_VAULTS[i], users.metaUSDOwner);
             }
 
             // metaUsdc vault
             for (uint i; i < 2; i++) {
                 console.log("!!!!!!!!!! Withdraw from MetaUsdc.CVault", i, CREDIX_VAULTS[i]);
-                _redeemUnderlyingEmergency(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, CREDIX_VAULTS[i], users.wmetaUsdcOwner);
+                _redeemUnderlyingEmergency(
+                    SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, CREDIX_VAULTS[i], users.wmetaUsdcOwner
+                );
                 // _withdrawUnderlyingEmergency(SonicConstantsLib.METAVAULT_metaUSDC, CREDIX_VAULTS[i], users);
             }
-
         }
 
         // ---------------------------------- check current state
@@ -454,24 +458,67 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
         }
 
-
         // ---------------------------------- check current state: ensure that there is 0 broken underlying in metaUSD
         State memory stateFinal = _getState(users);
 
         {
             for (uint i; i < 4; i++) {
-                assertApproxEqAbs(stateFinal.credixVaultMetavaultBalance[i], 0, 10, "Underlying balance in Credix vault should be 0");
+                assertApproxEqAbs(
+                    stateFinal.credixVaultMetavaultBalance[i], 0, 10, "Underlying balance in Credix vault should be 0"
+                );
             }
-            assertApproxEqAbs(stateFinal.credixVaultTotalSupply[0], 1516866797820516256053, 10, "Vault 1 - only direct deposits should be left");
-            assertApproxEqAbs(stateFinal.credixVaultTotalSupply[1], 7629744040403949565711, 10, "Vault 2 - only direct deposits should be left");
-            assertApproxEqAbs(stateFinal.credixVaultTotalSupply[2], 15006462608827822933, 10, "Vault 3 - only direct deposits should be left");
-            assertApproxEqAbs(stateFinal.credixVaultTotalSupply[3], 100853433576210056223, 10, "Vault 4 - only direct deposits should be left");
+            assertApproxEqAbs(
+                stateFinal.credixVaultTotalSupply[0],
+                1516866797820516256053,
+                10,
+                "Vault 1 - only direct deposits should be left"
+            );
+            assertApproxEqAbs(
+                stateFinal.credixVaultTotalSupply[1],
+                7629744040403949565711,
+                10,
+                "Vault 2 - only direct deposits should be left"
+            );
+            assertApproxEqAbs(
+                stateFinal.credixVaultTotalSupply[2],
+                15006462608827822933,
+                10,
+                "Vault 3 - only direct deposits should be left"
+            );
+            assertApproxEqAbs(
+                stateFinal.credixVaultTotalSupply[3],
+                100853433576210056223,
+                10,
+                "Vault 4 - only direct deposits should be left"
+            );
 
-            assertApproxEqAbs(stateFinal.wmetaUSDPrice, state0.wmetaUSDPrice, 1, "USD-Wrapped price should be the same 1");
-            assertApproxEqAbs(stateFinal.wmetaUSDPriceDirectCalculations, state0.wmetaUSDPriceDirectCalculations, state0.wmetaUSDPriceDirectCalculations / 100_000, "USD-Wrapped price should be the same 2");
-            assertApproxEqAbs(stateFinal.wmetaUSDPrice, state0.wmetaUSDPriceDirectCalculations, state0.wmetaUSDPriceDirectCalculations / 100_000, "USD-Wrapped price should be the same 3");
-            assertApproxEqAbs(stateFinal.wmetaUsdcPrice, state0.wmetaUsdcPrice, state0.wmetaUsdcPrice / 100_000, "Usdc-Wrapped price should be the same");
-            assertApproxEqAbs(stateFinal.wmetaScUsdPrice, state0.wmetaScUsdPrice, state0.wmetaScUsdPrice / 100_000, "ScUsd-Wrapped price should be the same");
+            assertApproxEqAbs(
+                stateFinal.wmetaUSDPrice, state0.wmetaUSDPrice, 1, "USD-Wrapped price should be the same 1"
+            );
+            assertApproxEqAbs(
+                stateFinal.wmetaUSDPriceDirectCalculations,
+                state0.wmetaUSDPriceDirectCalculations,
+                state0.wmetaUSDPriceDirectCalculations / 100_000,
+                "USD-Wrapped price should be the same 2"
+            );
+            assertApproxEqAbs(
+                stateFinal.wmetaUSDPrice,
+                state0.wmetaUSDPriceDirectCalculations,
+                state0.wmetaUSDPriceDirectCalculations / 100_000,
+                "USD-Wrapped price should be the same 3"
+            );
+            assertApproxEqAbs(
+                stateFinal.wmetaUsdcPrice,
+                state0.wmetaUsdcPrice,
+                state0.wmetaUsdcPrice / 100_000,
+                "Usdc-Wrapped price should be the same"
+            );
+            assertApproxEqAbs(
+                stateFinal.wmetaScUsdPrice,
+                state0.wmetaScUsdPrice,
+                state0.wmetaScUsdPrice / 100_000,
+                "ScUsd-Wrapped price should be the same"
+            );
         }
 
         // ---------------------------------- check meta vault balances
@@ -485,7 +532,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.wmetaScUsdOwner.length; ++i) {
-                console.log("user", users.wmetaScUsdOwner[i]);
+                // console.log("user", users.wmetaScUsdOwner[i]);
                 assertApproxEqAbs(stateFinal.metaVault.wmetaScUsdBalance[i], 0, 1, "Large user has no wmetaScUSD");
             }
 
@@ -497,7 +544,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
                 assertApproxEqAbs(stateFinal.metaVault.metaScUsdBalance[i], 0, 1, "Large user has no metaScUSD");
             }
         }
-
 
         // ---------------------------------- check amounts of recovery tokens
         {
@@ -511,7 +557,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.wmetaUsdcOwner.length; ++i) {
-//                console.log("eq", i, state0.metaVault.wmetaUsdcBalance[i] * state0.wmetaUsdcPrice / 1e18, stateFinal.recoveryToken[1].wmetaUsdcBalance[i]);
+                //                console.log("eq", i, state0.metaVault.wmetaUsdcBalance[i] * state0.wmetaUsdcPrice / 1e18, stateFinal.recoveryToken[1].wmetaUsdcBalance[i]);
                 assertApproxEqAbs(
                     state0.metaVault.wmetaUsdcBalance[i] * state0.wmetaUsdcPrice / 1e18, // amount of meta vault tokens
                     stateFinal.recoveryToken[1].wmetaUsdcBalance[i],
@@ -521,7 +567,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.wmetaScUsdOwner.length; ++i) {
-//                console.log("eq", i, state0.metaVault.wmetaScUsdBalance[i] * state0.wmetaScUsdPrice / 1e18, stateFinal.recoveryToken[2].wmetaScUsdBalance[i]);
+                //                console.log("eq", i, state0.metaVault.wmetaScUsdBalance[i] * state0.wmetaScUsdPrice / 1e18, stateFinal.recoveryToken[2].wmetaScUsdBalance[i]);
                 assertApproxEqAbs(
                     state0.metaVault.wmetaScUsdBalance[i] * state0.wmetaScUsdPrice / 1e18, // amount of meta vault tokens
                     stateFinal.recoveryToken[2].wmetaScUsdBalance[i],
@@ -531,7 +577,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.metaUSDOwner.length; ++i) {
-//                console.log("eq", i, state0.metaVault.metaUSDBalance[i], stateFinal.recoveryToken[3].metaUSDBalance[i]);
+                //                console.log("eq", i, state0.metaVault.metaUSDBalance[i], stateFinal.recoveryToken[3].metaUSDBalance[i]);
                 assertApproxEqAbs(
                     state0.metaVault.metaUSDBalance[i],
                     stateFinal.recoveryToken[3].metaUSDBalance[i],
@@ -541,7 +587,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             }
 
             for (uint i; i < users.metaScUsdOwner.length; ++i) {
-//                console.log("eq", i, state0.metaVault.metaScUsdBalance[i], stateFinal.recoveryToken[5].metaScUsdBalance[i]);
+                //                console.log("eq", i, state0.metaVault.metaScUsdBalance[i], stateFinal.recoveryToken[5].metaScUsdBalance[i]);
                 assertApproxEqAbs(
                     state0.metaVault.metaScUsdBalance[i],
                     stateFinal.recoveryToken[5].metaScUsdBalance[i],
@@ -583,14 +629,12 @@ contract WrapperMetaUsdRestartSonicTest is Test {
                 "Total supply of metaScUSD recovery token should be equal to sum of balances"
             );
 
-
             assertEq(
                 IERC20(recoveryTokens[4]).totalSupply(),
                 IERC20(recoveryTokens[4]).balanceOf(multisig),
                 "Total supply of metaUSDC recovery token should be equal to multisig balance" // no large users for metaUSDC
             );
         }
-
 
         // ---------------------------------- remove broken vaults
         {
@@ -600,19 +644,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             while (targetIndex == vaultIndex1 || targetIndex == vaultIndex2) {
                 targetIndex--;
             }
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metaUSDC,
-                vaultIndex1,
-                targetIndex,
-                0
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metaUSDC, vaultIndex1, targetIndex, 0);
 
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metaUSDC,
-                vaultIndex2,
-                targetIndex,
-                0
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metaUSDC, vaultIndex2, targetIndex, 0);
 
             vaultIndex1 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_3_scUSD);
             vaultIndex2 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_4_scUSD);
@@ -620,19 +654,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             while (targetIndex == vaultIndex1 || targetIndex == vaultIndex2) {
                 targetIndex--;
             }
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metascUSD,
-                vaultIndex1,
-                targetIndex,
-                0
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metascUSD, vaultIndex1, targetIndex, 0);
 
-            _setProportion(
-                SonicConstantsLib.METAVAULT_metascUSD,
-                vaultIndex2,
-                targetIndex,
-                0
-            );
+            _setProportion(SonicConstantsLib.METAVAULT_metascUSD, vaultIndex2, targetIndex, 0);
 
             vm.prank(multisig);
             IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(VAULT_1_USDC);
@@ -647,7 +671,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(VAULT_4_scUSD);
         }
 
-
         // ---------------------------------- ensure that exist small users are able to withdraw their funds
         {
             _withdrawAsSmallUserFromWrapped(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SMALL_USERS[0]);
@@ -657,7 +680,6 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             _withdrawAsSmallUserFromMetaVault(SonicConstantsLib.METAVAULT_metaUSDC, SMALL_USERS[4]);
             _withdrawAsSmallUserFromMetaVault(SonicConstantsLib.METAVAULT_metascUSD, SMALL_USERS[5]);
         }
-
 
         // ---------------------------------- ensure that new users can deposit and withdraw
         // todo
@@ -679,8 +701,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         uint totalMetaVaultTokens = v.metaVault.maxWithdrawUnderlying(cVault_, wrapped_) * 9999 / 10000;
 
         if (totalMetaVaultTokens != 0) {
-//            (uint priceMetaVaultToken,) = _metaVault.price();
-            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18 / IWrappedMetaVault(wrapped_).totalSupply();
+            //            (uint priceMetaVaultToken,) = _metaVault.price();
+            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
+                / IWrappedMetaVault(wrapped_).totalSupply();
 
             for (uint i = 0; i < users.length; ++i) {
                 uint maxShares = IWrappedMetaVault(wrapped_).balanceOf(users[i]);
@@ -703,11 +726,13 @@ contract WrapperMetaUsdRestartSonicTest is Test {
                 shares[v.count] = amount * 1e18 / wrappedPrice;
 
                 v.minAmountsOut[v.count] = _getExpectedUnderlying(
-                    IVault(cVault_).strategy(),
-                    v.metaVault,
-                    (shares[v.count] - 1) * wrappedPrice / 1e18
+                    IVault(cVault_).strategy(), v.metaVault, (shares[v.count] - 1) * wrappedPrice / 1e18
                 );
                 totalMetaVaultTokensToWithdraw += amount;
+
+                if (amount == maxAmount) {
+                    shares[v.count] = 0;
+                }
 
                 v.count++;
                 if (totalMetaVaultTokensToWithdraw == totalMetaVaultTokens) break;
@@ -784,8 +809,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         vm.prank(multisig);
         _metaVault.depositAssets(assets, amountsMax, 0, multisig);
 
-//        console.log("deposit to metavault", metaVault_, amountsMax[0], assets[0]);
-//        console.log("user balance after", _metaVault.balanceOf(multisig));
+        //        console.log("deposit to metavault", metaVault_, amountsMax[0], assets[0]);
+        //        console.log("user balance after", _metaVault.balanceOf(multisig));
 
         assertGt(
             _metaVault.totalSupply(),
@@ -810,7 +835,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         IWrappedMetaVault(wrapped_).withdraw(_balance, receiver, user, type(uint).max);
 
         uint actual = IERC20(_asset).balanceOf(receiver);
-        assertApproxEqAbs(actual, expected, expected / 100_000, "Small user should receive expected amount of underlying asset 1");
+        assertApproxEqAbs(
+            actual, expected, expected / 100_000, "Small user should receive expected amount of underlying asset 1"
+        );
     }
 
     function _withdrawAsSmallUserFromMetaVault(address metaVault_, address user) internal {
@@ -819,8 +846,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         address[] memory _assets = IMetaVault(metaVault_).assetsForWithdraw();
 
-        (uint price, ) = IMetaVault(metaVault_).price();
-        (uint priceAsset, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(_assets[0]);
+        (uint price,) = IMetaVault(metaVault_).price();
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(_assets[0]);
 
         uint expectedUsd = _balance * price / 1e18 / 10 ** (18 - IERC20Metadata(_assets[0]).decimals());
 
@@ -831,14 +858,19 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         IMetaVault(metaVault_).withdrawAssets(_assets, _balance, new uint[](1));
         uint balanceAfter = IERC20(_assets[0]).balanceOf(user);
 
-        assertApproxEqAbs((balanceAfter - balanceBefore) * priceAsset / 1e18, expectedUsd, expectedUsd / 100_000, "Small user should receive expected amount of underlying asset 2");
+        assertApproxEqAbs(
+            (balanceAfter - balanceBefore) * priceAsset / 1e18,
+            expectedUsd,
+            expectedUsd / 100_000,
+            "Small user should receive expected amount of underlying asset 2"
+        );
     }
     //endregion ---------------------------------------------- Main logic
 
     //region ---------------------------------------------- Internal
     function _setUpRecoveryTokenMetaUsd(IStabilityVault vault_)
-    internal
-    returns (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, MockERC20 recoveryTokenMetaScUsd)
+        internal
+        returns (MockERC20 recoveryToken, MockERC20 recoveryTokenMetaUSDC, MockERC20 recoveryTokenMetaScUsd)
     {
         // ----------------------------------- set up recovery tokens
         recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
@@ -865,8 +897,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     }
 
     function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
-    internal
-    returns (MockERC20[4] memory _recoveryTokens)
+        internal
+        returns (MockERC20[4] memory _recoveryTokens)
     {
         // ----------------------------------- set up recovery tokens
         _recoveryTokens[0] = new MockERC20("Recovery Token", "RW", 18);
@@ -883,7 +915,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(vaults_[i], address(_recoveryTokens[1]));
+                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(
+                    vaults_[i], address(_recoveryTokens[1])
+                );
             }
         }
 
@@ -947,7 +981,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         (uint priceMetaVault,) = metaVault_.price();
 
         // Assume here that AToken to asset is 1:1
-        return underlyingAmount * 1e18 / priceMetaVault * priceAsset / 10 ** IERC20Metadata(strategy.underlying()).decimals(); // decimals of the underlying asset
+        return underlyingAmount * 1e18 / priceMetaVault * priceAsset
+            / 10 ** IERC20Metadata(strategy.underlying()).decimals(); // decimals of the underlying asset
     }
 
     function _getUsers() internal view returns (UserAddresses memory dest) {
@@ -968,20 +1003,28 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         state.vaultUnderlyingBalance[2] = IERC20(IVault(VAULT_3_scUSD).strategy().underlying()).balanceOf(VAULT_3_scUSD);
         state.vaultUnderlyingBalance[3] = IERC20(IVault(VAULT_4_scUSD).strategy().underlying()).balanceOf(VAULT_4_scUSD);
 
-        state.metaVault.wmetaUSDBalance = _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, users.wmetaUSDOwner);
+        state.metaVault.wmetaUSDBalance =
+            _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, users.wmetaUSDOwner);
         state.metaVault.metaUSDBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSD, users.metaUSDOwner);
-        state.metaVault.wmetaUsdcBalance = _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, users.wmetaUsdcOwner);
+        state.metaVault.wmetaUsdcBalance =
+            _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, users.wmetaUsdcOwner);
         //state.metaVault.metaUsdcBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metaUSDC, users.metaUsdcOwner);
-        state.metaVault.wmetaScUsdBalance = _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, users.wmetaScUsdOwner);
+        state.metaVault.wmetaScUsdBalance =
+            _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, users.wmetaScUsdOwner);
         state.metaVault.metaScUsdBalance = _getUserBalances(SonicConstantsLib.METAVAULT_metascUSD, users.metaScUsdOwner);
 
         for (uint i; i < 4; ++i) {
-            state.underlying[i].wmetaUSDBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUSDOwner);
-            state.underlying[i].metaUSDBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaUSDOwner);
-            state.underlying[i].wmetaUsdcBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUsdcOwner);
+            state.underlying[i].wmetaUSDBalance =
+                _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUSDOwner);
+            state.underlying[i].metaUSDBalance =
+                _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaUSDOwner);
+            state.underlying[i].wmetaUsdcBalance =
+                _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaUsdcOwner);
             //state.underlying[i].metaUsdcBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaUsdcOwner);
-            state.underlying[i].wmetaScUsdBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaScUsdOwner);
-            state.underlying[i].metaScUsdBalance = _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaScUsdOwner);
+            state.underlying[i].wmetaScUsdBalance =
+                _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.wmetaScUsdOwner);
+            state.underlying[i].metaScUsdBalance =
+                _getUserBalances(IVault(CREDIX_VAULTS[i]).strategy().underlying(), users.metaScUsdOwner);
         }
 
         state.recoveryToken = new UserBalances[](recoveryTokens.length);
@@ -1003,24 +1046,20 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         state.metaScUsdMultisigBalance = IERC20(SonicConstantsLib.METAVAULT_metascUSD).balanceOf(multisig);
         state.metaScUsdTotalSupply = IERC20(SonicConstantsLib.METAVAULT_metascUSD).totalSupply();
 
-//        console.log("Multisig balances metaUSD, metaUSDC, metaScUSD", state.metaUSDMultisigBalance, state.metaUsdcMultisigBalance, state.metaScUsdMultisigBalance);
-//        console.log("Total supply metaUSD, metaUSDC, metaScUSD", state.metaUSDTotalSupply, state.metaUsdcTotalSupply, state.metaScUsdTotalSupply);
+        //        console.log("Multisig balances metaUSD, metaUSDC, metaScUSD", state.metaUSDMultisigBalance, state.metaUsdcMultisigBalance, state.metaScUsdMultisigBalance);
+        //        console.log("Total supply metaUSD, metaUSDC, metaScUSD", state.metaUSDTotalSupply, state.metaUsdcTotalSupply, state.metaScUsdTotalSupply);
 
-        (state.wmetaUSDPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-        );
-        state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).totalAssets()
-            * 1e18
-            / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).totalSupply();
-        state.wmetaUsdcPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC).totalAssets()
-            * 1e18
+        (state.wmetaUSDPrice,) =
+            IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD)
+            .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).totalSupply();
+        state.wmetaUsdcPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC).totalAssets() * 1e18
             / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC).totalSupply();
-        state.wmetaScUsdPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD).totalAssets()
-            * 1e18
+        state.wmetaScUsdPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD).totalAssets() * 1e18
             / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD).totalSupply();
-//        console.log("Prices metaUSD, metaUSDC, metaScUSD", state.wmetaUSDPrice, state.wmetaUsdcPrice, state.wmetaScUsdPrice);
+        //        console.log("Prices metaUSD, metaUSDC, metaScUSD", state.wmetaUSDPrice, state.wmetaUsdcPrice, state.wmetaScUsdPrice);
 
-        (state.usdcPrice, ) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_USDC);
+        (state.usdcPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_USDC);
 
         state.credixVaultMetavaultBalance[0] = IVault(CREDIX_VAULTS[0]).balanceOf(SonicConstantsLib.METAVAULT_metaUSDC);
         state.credixVaultMetavaultBalance[1] = IVault(CREDIX_VAULTS[1]).balanceOf(SonicConstantsLib.METAVAULT_metaUSDC);
@@ -1036,7 +1075,10 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         return state;
     }
 
-    function _getUserBalances(address metaVault_, address[] memory users) internal view returns (uint[] memory balances) {
+    function _getUserBalances(
+        address metaVault_,
+        address[] memory users
+    ) internal view returns (uint[] memory balances) {
         balances = new uint[](users.length);
         for (uint i = 0; i < users.length; ++i) {
             balances[i] = IERC20(metaVault_).balanceOf(users[i]);
@@ -1044,8 +1086,23 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         return balances;
     }
 
-    function _createRecoveryToken(address metaVault_) internal returns (MockERC20) {
+    function _createMockedRecoveryToken(address metaVault_) internal returns (MockERC20) {
         MockERC20 _recoveryToken = new MockERC20("Recovery Token", "RUSD", 18);
+
+        for (uint i; i < CREDIX_VAULTS.length; ++i) {
+            vm.prank(multisig);
+            IMetaVault(metaVault_).setRecoveryToken(CREDIX_VAULTS[i], address(_recoveryToken));
+        }
+
+        recoveryTokens.push(address(_recoveryToken));
+        return _recoveryToken;
+    }
+
+    function _createRealRecoveryToken(address metaVault_, bytes32 salt) internal returns (address _recoveryToken) {
+        vm.prank(multisig);
+        _recoveryToken = metaVaultFactory.deployRecoveryToken(salt, metaVault_);
+
+        assertEq(IRecoveryToken(_recoveryToken).target(), metaVault_, "recovery token target should be metaVault_");
 
         for (uint i; i < CREDIX_VAULTS.length; ++i) {
             vm.prank(multisig);
@@ -1066,11 +1123,11 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         address[] memory owners,
         uint[] memory amounts,
         uint[] memory minAmountsOut
-    ) internal pure returns (
-        address[] memory reducedOwners,
-        uint[] memory reducedAmounts,
-        uint[] memory reducedMinAmountsOut
-    ) {
+    )
+        internal
+        pure
+        returns (address[] memory reducedOwners, uint[] memory reducedAmounts, uint[] memory reducedMinAmountsOut)
+    {
         if (count != 0) {
             reducedOwners = new address[](count);
             reducedAmounts = new uint[](count);
@@ -1086,7 +1143,10 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         return (reducedOwners, reducedAmounts, reducedMinAmountsOut);
     }
 
-    function _getTotalAmountRecoveryTokens(address recoveryToken, uint[] memory balances) internal view returns (uint total) {
+    function _getTotalAmountRecoveryTokens(
+        address recoveryToken,
+        uint[] memory balances
+    ) internal view returns (uint total) {
         for (uint i = 0; i < balances.length; ++i) {
             total += balances[i];
         }
@@ -1095,25 +1155,59 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     //endregion ---------------------------------------------- Internal
 
     //region ---------------------------------------------- _toDynamicArray
-    function _toDynamicArray(address[26] memory arr) internal pure returns (address[] memory dynamicArray) {
+    function _toDynamicArray(address[COUNT_WRAPPED_META_USD_USERS] memory arr)
+        internal
+        pure
+        returns (address[] memory dynamicArray)
+    {
         dynamicArray = new address[](arr.length);
-        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+        for (uint i = 0; i < arr.length; ++i) {
+            dynamicArray[i] = arr[i];
+        }
     }
-    function _toDynamicArray(address[36] memory arr) internal pure returns (address[] memory dynamicArray) {
+
+    function _toDynamicArray(address[COUNT_META_USD_USERS] memory arr)
+        internal
+        pure
+        returns (address[] memory dynamicArray)
+    {
         dynamicArray = new address[](arr.length);
-        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+        for (uint i = 0; i < arr.length; ++i) {
+            dynamicArray[i] = arr[i];
+        }
     }
-    function _toDynamicArray(address[33] memory arr) internal pure returns (address[] memory dynamicArray) {
+
+    function _toDynamicArray(address[COUNT_WRAPPED_META_USDC_USERS] memory arr)
+        internal
+        pure
+        returns (address[] memory dynamicArray)
+    {
         dynamicArray = new address[](arr.length);
-        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+        for (uint i = 0; i < arr.length; ++i) {
+            dynamicArray[i] = arr[i];
+        }
     }
-    function _toDynamicArray(address[58] memory arr) internal pure returns (address[] memory dynamicArray) {
+
+    function _toDynamicArray(address[COUNT_WRAPPED_META_SCUSD_USERS] memory arr)
+        internal
+        pure
+        returns (address[] memory dynamicArray)
+    {
         dynamicArray = new address[](arr.length);
-        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+        for (uint i = 0; i < arr.length; ++i) {
+            dynamicArray[i] = arr[i];
+        }
     }
-    function _toDynamicArray(address[2] memory arr) internal pure returns (address[] memory dynamicArray) {
+
+    function _toDynamicArray(address[COUNT_META_SCUSD_USERS] memory arr)
+        internal
+        pure
+        returns (address[] memory dynamicArray)
+    {
         dynamicArray = new address[](arr.length);
-        for (uint i = 0; i < arr.length; ++i) dynamicArray[i] = arr[i];
+        for (uint i = 0; i < arr.length; ++i) {
+            dynamicArray[i] = arr[i];
+        }
     }
     //endregion ---------------------------------------------- _toDynamicArray
 
@@ -1247,6 +1341,30 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         // _showProportions(metaVault_);
         // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+    }
+
+    function _upgradePlatform() internal {
+        metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
+
+        address[] memory proxies = new address[](1);
+        proxies[0] = address(metaVaultFactory);
+
+        address[] memory implementations = new address[](1);
+        implementations[0] = address(new MetaVaultFactory());
+
+        vm.prank(multisig);
+        IPlatform(PLATFORM).announcePlatformUpgrade("2025.08.0-alpha", proxies, implementations);
+
+        skip(1 days);
+
+        vm.prank(multisig);
+        IPlatform(PLATFORM).upgrade();
+    }
+
+    function _setupMetaVaultFactory() internal {
+        address recoveryTokenImplementation = address(new RecoveryToken());
+        vm.prank(multisig);
+        metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
     }
 
     //endregion ---------------------------------------------- Helpers

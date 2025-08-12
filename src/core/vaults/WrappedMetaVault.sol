@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {
     ERC4626Upgradeable,
     IERC4626,
@@ -214,7 +213,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
                 _burn(owners[i], shares[i]);
                 emit Withdraw(msg.sender, address(this), owners[i], assets[i], shares[i]);
                 // keep unwrapped MetaVault tokens on balance
-                console.log("owner, shares, balance", owners[i], shares[i], balance);
+                // console.log("owner, shares, balance", owners[i], shares[i], balance);
 
                 v.metaVaultTotal[0] += assets[i] * 10 ** (18 - v.decimals);
             }
@@ -222,8 +221,9 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             // ---------------------- withdraw total underlying on balance
             uint[] memory singleOut; // total amount of withdrawn underlying
             // slither-disable-next-line unused-return
-            (singleOut,) =
-                IMetaVault(metaVault()).withdrawUnderlyingEmergency(cVault_, singleOwner, v.metaVaultTotal, new uint[](1));
+            (singleOut,) = IMetaVault(metaVault()).withdrawUnderlyingEmergency(
+                cVault_, singleOwner, v.metaVaultTotal, new uint[](1)
+            );
 
             // ---------------------- calculate underlying for each owner
             underlyingOut = new uint[](len);
