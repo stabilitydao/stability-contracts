@@ -10,8 +10,10 @@ import {MetaVaultFactory, IMetaVaultFactory} from "../../src/core/MetaVaultFacto
 import {RecoveryToken, IRecoveryToken, IControllable} from "../../src/core/vaults/RecoveryToken.sol";
 
 contract RecoveryTokenSonicTest is Test {
-    uint public constant FORK_BLOCK = 42480655; // Aug-11-2025 07:50:37 AM +UTC
+    uint public constant FORK_BLOCK = 42789000; // Aug-13-2025 10:30:56 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    bytes32 public constant SALT = 0xf7d97ca0d2c29912ea70ac9c5152ddcb9b06dee7964dd262ed7eacee5964b107;
+    address public constant PREDICTED_ADDRESS = 0x000078392f3cF4262500FFeB7d803F90477ECC11;
     address public multisig;
     IMetaVaultFactory public metaVaultFactory;
 
@@ -23,15 +25,16 @@ contract RecoveryTokenSonicTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        _upgradePlatform();
+        // _upgradePlatform();
         _setupMetaVaultFactory();
     }
 
     function test_RecoveryToken() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(SALT, SonicConstantsLib.METAVAULT_metaUSD));
         assertEq(recToken.target(), SonicConstantsLib.METAVAULT_metaUSD);
+        assertEq(address(recToken), PREDICTED_ADDRESS);
 
         // mint
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
