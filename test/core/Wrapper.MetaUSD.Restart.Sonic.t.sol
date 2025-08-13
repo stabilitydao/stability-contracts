@@ -286,7 +286,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xF681a2f3A9a773B4fab46d6725F43B1762674698,
             0x0FC587968C33acda9a16C5fa6E66258fF8aA2F61,
             0xe5707753E0Db37D338817EB81Ee431264E755458
-            // todo
+            // todo remove 999/1000 below
             //            0xb616d066fb1aB1384D47A5a70Ce00af515445A6d,
             //            0xb153560DDDE28d3b86F018d030D573E7e34a3388,
             //            0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
@@ -972,6 +972,9 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
         state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD)
             .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).totalSupply();
+        //        console.log("state.wmetaUSDPrice", state.wmetaUSDPrice);
+        //        console.log("state.wmetaUSDPriceDirectCalculations", state.wmetaUSDPriceDirectCalculations);
+
         state.wmetaUsdcPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC).totalAssets() * 1e18
             / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC).totalSupply();
         state.wmetaScUsdPrice = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD).totalAssets() * 1e18
