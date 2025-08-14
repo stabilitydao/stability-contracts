@@ -7,11 +7,12 @@ import {
     IERC20,
     IERC20Metadata
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";
 
 /// @title Incident impact recovery token
 /// @author Alien Deployer (https://github.com/a17)
-contract RecoveryToken is Controllable, ERC20Upgradeable, IRecoveryToken {
+contract RecoveryToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IRecoveryToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
