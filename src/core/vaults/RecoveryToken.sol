@@ -7,7 +7,8 @@ import {
     IERC20,
     IERC20Metadata
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {ERC20BurnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";
 
 /// @title Incident impact recovery token
