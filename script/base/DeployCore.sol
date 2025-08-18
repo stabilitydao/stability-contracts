@@ -102,13 +102,11 @@ abstract contract DeployCore {
         vars.revenueRouter = RevenueRouter(address(vars.proxy));
         vars.revenueRouter.initialize(address(vars.platform), address(0), address(vars.feeTreasury));
 
-
         // VaultPriceOracle
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new VaultPriceOracle()));
         vars.vaultPriceOracle = VaultPriceOracle(address(vars.proxy));
         vars.vaultPriceOracle.initialize(address(vars.platform), p.minQuorum, p.validators, p.vaults, p.maxPriceAge);
-
 
         // setup platform
         vars.platform.setup(
