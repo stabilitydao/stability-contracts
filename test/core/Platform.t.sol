@@ -72,7 +72,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(1)
+                revenueRouter: address(1),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -115,7 +116,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(0)
+                revenueRouter: address(0),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",
@@ -484,7 +486,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(0)
+                revenueRouter: address(0),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",

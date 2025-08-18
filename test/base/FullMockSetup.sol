@@ -20,6 +20,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;
@@ -98,7 +99,8 @@ abstract contract FullMockSetup is MockSetup {
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
                 zap: address(0),
-                revenueRouter: address(revenueRouter)
+                revenueRouter: address(revenueRouter),
+                vaultPriceOracle: address(0)
             }),
             IPlatform.PlatformSettings({
                 networkName: "Localhost Ethereum",

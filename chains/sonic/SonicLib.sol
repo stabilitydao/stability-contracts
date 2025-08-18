@@ -69,6 +69,14 @@ library SonicLib {
         p.fee = 30_000;
         p.feeShareVaultManager = 10_000;
         p.feeShareStrategyLogic = 40_000;
+        p.minQuorum = 3;
+        p.maxPriceAge = 1 days;
+        // TODO add validators
+        p.validators = new address[](1);
+        p.validators[0] = 0x754341F215cBc80D8548b853Fd1F60C3FDaE6B26;
+        // TODO add vaults
+        p.vaults = new address[](1);
+        p.vaults[0] = 0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

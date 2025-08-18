@@ -134,6 +134,8 @@ contract Platform is Controllable, IPlatform {
         address revenueRouter;
         /// @inheritdoc IPlatform
         address metaVaultFactory;
+        /// @inheritdoc IPlatform
+        address vaultPriceOracle;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -172,6 +174,7 @@ contract Platform is Controllable, IPlatform {
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
         $.revenueRouter = addresses.revenueRouter;
+        $.vaultPriceOracle = addresses.vaultPriceOracle;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -449,6 +452,12 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         emit MetaVaultFactory(metaVaultFactory_);
         $.metaVaultFactory = metaVaultFactory_;
+    }
+
+    function setupVaultPriceOracle(address vaultPriceOracle_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit VaultPriceOracle(vaultPriceOracle_);
+        $.vaultPriceOracle = vaultPriceOracle_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -767,6 +776,11 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function metaVaultFactory() external view returns (address) {
         return _getStorage().metaVaultFactory;
+    }
+
+    /// @inheritdoc IPlatform
+    function vaultPriceOracle() external view returns (address) {
+        return _getStorage().vaultPriceOracle;
     }
 
     /// @inheritdoc IPlatform

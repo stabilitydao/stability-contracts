@@ -18,6 +18,7 @@ import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract DeployCore {
     struct DeployPlatformVars {
@@ -33,6 +34,7 @@ abstract contract DeployCore {
         Zap zap;
         RevenueRouter revenueRouter;
         FeeTreasury feeTreasury;
+        VaultPriceOracle vaultPriceOracle;
     }
 
     function _deployCore(IPlatformDeployer.DeployPlatformParams memory p) internal returns (address) {
@@ -100,6 +102,14 @@ abstract contract DeployCore {
         vars.revenueRouter = RevenueRouter(address(vars.proxy));
         vars.revenueRouter.initialize(address(vars.platform), address(0), address(vars.feeTreasury));
 
+
+        // VaultPriceOracle
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new VaultPriceOracle()));
+        vars.vaultPriceOracle = VaultPriceOracle(address(vars.proxy));
+        vars.vaultPriceOracle.initialize(address(vars.platform), p.minQuorum, p.validators, p.vaults, p.maxPriceAge);
+
+
         // setup platform
         vars.platform.setup(
             IPlatform.SetupAddresses({
@@ -114,7 +124,8 @@ abstract contract DeployCore {
                 targetExchangeAsset: p.targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
                 zap: address(vars.zap),
-                revenueRouter: address(vars.revenueRouter)
+                revenueRouter: address(vars.revenueRouter),
+                vaultPriceOracle: address(vars.vaultPriceOracle)
             }),
             IPlatform.PlatformSettings({
                 networkName: p.networkName,

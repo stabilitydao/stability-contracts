@@ -67,6 +67,7 @@ interface IPlatform {
     event Bridge(address bridge_);
     event RevenueRouter(address revenueRouter_);
     event MetaVaultFactory(address metaVaultFactory);
+    event VaultPriceOracle(address vaultPriceOracle_);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -107,6 +108,7 @@ interface IPlatform {
         address hardWorker;
         address zap;
         address revenueRouter;
+        address vaultPriceOracle;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -183,6 +185,10 @@ interface IPlatform {
     /// @notice Factory of MetaVaults
     /// @return Address of the MetaVault factory
     function metaVaultFactory() external view returns (address);
+
+    /// @notice vaultPriceOracle
+    /// @return Address of the vault price oracle
+    function vaultPriceOracle() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
