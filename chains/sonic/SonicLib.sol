@@ -43,6 +43,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
+import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -71,12 +72,14 @@ library SonicLib {
         p.feeShareStrategyLogic = 40_000;
         p.minQuorum = 3;
         p.maxPriceAge = 1 days;
-        // TODO add validators
         p.validators = new address[](1);
         p.validators[0] = 0x754341F215cBc80D8548b853Fd1F60C3FDaE6B26;
-        // TODO add vaults
         p.vaults = new address[](1);
         p.vaults[0] = 0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7;
+        p.vaultPriceThresholds = new uint[](1);
+        p.vaultPriceThresholds[0] = 1;
+        p.vaultStaleness = new uint[](1);
+        p.vaultStaleness[0] = 1 hours;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

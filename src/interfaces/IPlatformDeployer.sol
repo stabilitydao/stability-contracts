@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IVaultPriceOracle} from "./IVaultPriceOracle.sol";
+
 interface IPlatformDeployer {
     struct DeployPlatformParams {
         address multisig;
@@ -20,5 +22,7 @@ interface IPlatformDeployer {
         uint maxPriceAge;
         address[] validators;
         address[] vaults;
+        uint[] vaultPriceThresholds;
+        uint[] vaultStaleness;
     }
 }

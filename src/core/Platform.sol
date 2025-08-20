@@ -23,6 +23,7 @@ import {IVault} from "../interfaces/IVault.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.5.0: IPlatform.vaultPriceOracle()
 ///   1.4.0: IPlatform.metaVaultFactory()
 ///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
 ///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
@@ -32,6 +33,7 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// @author ruby (https://github.com/alexandersazonof)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -41,7 +43,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.5.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;

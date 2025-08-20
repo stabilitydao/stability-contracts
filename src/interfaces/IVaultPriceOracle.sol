@@ -18,6 +18,7 @@ interface IVaultPriceOracle {
     error PriceTooOld();
     error IndexOutOfBounds();
     error NotAuthorizedValidator();
+    error VaultNotFound();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -36,6 +37,13 @@ interface IVaultPriceOracle {
         uint price;
         uint timestamp;
         uint roundId;
+    }
+
+    /// @notice Structure representing the data for a vault in the oracle.
+    /// @dev Contains the price threshold and staleness period for the vault.
+    struct VaultData {
+        uint priceThreshold;
+        uint staleness;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -103,25 +111,25 @@ interface IVaultPriceOracle {
     /// @notice Retrieves an validator address from the list by index.
     /// @param index_ The index in the oracle list.
     /// @return The address of the validator at that index.
-    function validatorList(uint index_) external view returns (address);
+    function validators(uint index_) external view returns (address);
 
     /// @notice Retrieves the list of all authorized validators.
     /// @return An array of addresses representing the validators.
-    function validatorList() external view returns (address[] memory);
+    function validators() external view returns (address[] memory);
 
     /// @notice Retrieves the number of validators.
-    function validatorListLength() external view returns (uint);
+    function validatorsLength() external view returns (uint);
 
     /// @notice Retrieves a vault address from the list by index.
     /// @param index_ The index in the vault list.
-    function vaultList(uint index_) external view returns (address);
+    function vaults(uint index_) external view returns (address);
 
     /// @notice Returns the list of all vaults being monitored by this oracle.
     /// @return An array of addresses representing the vaults.
-    function vaultList() external view returns (address[] memory);
+    function vaults() external view returns (address[] memory);
 
     /// @notice Returns the number of vaults being monitored by this oracle.
-    function vaultListLength() external view returns (uint);
+    function vaultsLength() external view returns (uint);
 
     /// @notice Returns the minimum quorum required for aggregation.
     /// @return The minimum number of submissions needed.
@@ -139,17 +147,15 @@ interface IVaultPriceOracle {
     /// @return roundId The associated round ID.
     function getLatestPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
 
+    /// @notice Retrieves the price threshold and staleness for a specific vault.
+    /// @param vault_ The address of the vault.
+    /// @return priceThreshold The price threshold for the vault.
+    /// @return staleness The staleness period for the vault.
+    function vaultData(address vault_) external view returns (uint priceThreshold, uint staleness);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function initialize(
-        address platform_,
-        uint minQuorum_,
-        address[] memory validator_,
-        address[] memory vaults_,
-        uint maxPriceAge_
-    ) external;
 
     /// @notice Submits a price for a vault in the current round.
     /// @dev Can only be called by authorized validators.
@@ -179,7 +185,9 @@ interface IVaultPriceOracle {
     /// @notice Adds a new vault to be monitored by the oracle.
     /// @dev Restricted to governance or multisig.
     /// @param vault_ The address of the vault to add.
-    function addVault(address vault_) external;
+    /// @param priceThreshold_ The price threshold for the vault.
+    /// @param staleness_ The staleness period for the vault.
+    function addVault(address vault_, uint priceThreshold_, uint staleness_) external;
 
     /// @notice Removes a vault from being monitored by the oracle.
     /// @dev Restricted to governance or multisig.

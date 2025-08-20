@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console, Vm} from "forge-std/Test.sol";
-import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
-import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {Controllable, IControllable} from "../../src/core/base/Controllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {MockSetup} from "../base/MockSetup.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
+import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 contract VaultPriceOracleTest is Test, MockSetup {
     VaultPriceOracle public oracle;
     address[] public validators;
     address[] public vaults;
+    uint[] public thresholds;
+    uint[] public staleness;
     address public vault;
     address public multisig;
     uint constant MIN_QUORUM = 3;
@@ -28,6 +30,10 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vault = makeAddr("vault");
         vaults = new address[](1);
         vaults[0] = vault;
+        thresholds = new uint[](1);
+        thresholds[0] = 1; // 1% price change threshold
+        staleness = new uint[](1);
+        staleness[0] = 1 days; // 1 day staleness
         multisig = makeAddr("multisig");
 
         // Deploy implementation
@@ -47,7 +53,16 @@ contract VaultPriceOracleTest is Test, MockSetup {
         );
 
         // Initialize
-        oracle.initialize(address(platform), MIN_QUORUM, validators, vaults, MAX_PRICE_AGE);
+        oracle.initialize(address(platform));
+
+        oracle.setMaxPriceAge(MAX_PRICE_AGE);
+        oracle.setMinQuorum(MIN_QUORUM);
+        for (uint i = 0; i < validators.length; i++) {
+            oracle.addValidator(validators[i]);
+        }
+        for (uint i = 0; i < vaults.length; i++) {
+            oracle.addVault(vaults[i], thresholds[i], staleness[i]);
+        }
 
         // Mock platform() for subsequent calls
         vm.mockCall(
@@ -62,25 +77,36 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Check validators
         for (uint i = 0; i < validators.length; i++) {
             assertTrue(oracle.authorizedValidator(validators[i]), "Validator not authorized");
-            assertEq(oracle.validatorList(i), validators[i], "Validator list incorrect");
+            assertEq(oracle.validators(i), validators[i], "Validator list incorrect");
         }
 
         // Check vaults
-        assertEq(oracle.vaultList(0), vaults[0], "Vault list incorrect");
-        assertEq(oracle.vaultListLength(), 1, "Vault list length incorrect");
+        assertEq(oracle.vaults(0), vaults[0], "Vault list incorrect");
+        assertEq(oracle.vaultsLength(), 1, "Vault list length incorrect");
 
         // Test reinitialization revert
         address[] memory emptyValidators = new address[](0);
         address[] memory emptyVaults = new address[](0);
+        uint[] memory emptyThresholds = new uint[](0);
+        uint[] memory emptyStaleness = new uint[](0);
         vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
-        oracle.initialize(address(platform), MIN_QUORUM, emptyValidators, emptyVaults, MAX_PRICE_AGE);
+        oracle.initialize(address(platform));
+
+        oracle.setMaxPriceAge(MAX_PRICE_AGE);
+        oracle.setMinQuorum(MIN_QUORUM);
+        for (uint i = 0; i < emptyValidators.length; i++) {
+            oracle.addValidator(emptyValidators[i]);
+        }
+        for (uint i = 0; i < emptyVaults.length; i++) {
+            oracle.addVault(emptyVaults[i], emptyThresholds[i], emptyStaleness[i]);
+        }
 
         // Test zero platform address revert
         VaultPriceOracle newOracle = new VaultPriceOracle();
         Proxy newProxy = new Proxy();
         newProxy.initProxy(address(newOracle));
         vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-        VaultPriceOracle(address(newProxy)).initialize(address(0), MIN_QUORUM, validators, vaults, MAX_PRICE_AGE);
+        VaultPriceOracle(address(newProxy)).initialize(address(0));
     }
 
     function testAddAndRemoveValidator() public {
@@ -96,7 +122,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.prank(address(this));
         oracle.addValidator(newValidator);
         assertTrue(oracle.authorizedValidator(newValidator), "New validator not authorized");
-        assertEq(oracle.validatorList(5), newValidator, "New validator not in list");
+        assertEq(oracle.validators(5), newValidator, "New validator not in list");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bool validatorAdded = false;
         for (uint i = 0; i < entries.length; i++) {
@@ -112,7 +138,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         address anotherValidator = makeAddr("anotherValidator");
         oracle.addValidator(anotherValidator);
         assertTrue(oracle.authorizedValidator(anotherValidator), "Multisig add failed");
-        assertEq(oracle.validatorList(6), anotherValidator, "Another validator not in list");
+        assertEq(oracle.validators(6), anotherValidator, "Another validator not in list");
 
         // Cannot add duplicate
         vm.prank(address(this));
@@ -132,7 +158,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         bool found = false;
         for (uint i = 0; i < 6; i++) {
             // 5 initial + 1 added
-            if (oracle.validatorList(i) == newValidator) {
+            if (oracle.validators(i) == newValidator) {
                 found = true;
             }
         }
@@ -154,23 +180,28 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Test index out of bounds
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.validatorList(7);
+        oracle.validators(7);
     }
 
     function testAddAndRemoveVault() public {
         address newVault = makeAddr("newVault");
+        uint newPriceThreshold = 2; // 2% price change threshold
+        uint newStaleness = 2 days; // 2 days staleness
 
         // Only governance or multisig can add
         vm.prank(makeAddr("notAuthorized"));
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
-        oracle.addVault(newVault);
+        oracle.addVault(newVault, newPriceThreshold, newStaleness);
 
         // Add new vault
         vm.recordLogs();
         vm.prank(address(this));
-        oracle.addVault(newVault);
-        assertEq(oracle.vaultList(1), newVault, "New vault not in list");
-        assertEq(oracle.vaultListLength(), 2, "Vault list length incorrect");
+        oracle.addVault(newVault, newPriceThreshold, newStaleness);
+        assertEq(oracle.vaults(1), newVault, "New vault not in list");
+        assertEq(oracle.vaultsLength(), 2, "Vault list length incorrect");
+        (uint priceThreshold, uint stalenessValue) = oracle.vaultData(newVault);
+        assertEq(priceThreshold, newPriceThreshold, "Incorrect price threshold for new vault");
+        assertEq(stalenessValue, newStaleness, "Incorrect staleness for new vault");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bool vaultAdded = false;
         for (uint i = 0; i < entries.length; i++) {
@@ -184,13 +215,16 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Add as multisig
         vm.prank(multisig);
         address anotherVault = makeAddr("anotherVault");
-        oracle.addVault(anotherVault);
-        assertEq(oracle.vaultList(2), anotherVault, "Another vault not in list");
+        oracle.addVault(anotherVault, 3, 3 days);
+        assertEq(oracle.vaults(2), anotherVault, "Another vault not in list");
+        (priceThreshold, stalenessValue) = oracle.vaultData(anotherVault);
+        assertEq(priceThreshold, 3, "Incorrect price threshold for another vault");
+        assertEq(stalenessValue, 3 days, "Incorrect staleness for another vault");
 
         // Cannot add zero address
         vm.prank(address(this));
         vm.expectRevert(IVaultPriceOracle.InvalidVaultAddress.selector);
-        oracle.addVault(address(0));
+        oracle.addVault(address(0), newPriceThreshold, newStaleness);
 
         // Only governance or multisig can remove
         vm.prank(makeAddr("notAuthorized"));
@@ -202,14 +236,16 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.prank(address(this));
         oracle.removeVault(newVault);
         bool found = false;
-        for (uint i = 0; i < 2; i++) {
-            // 2 vaults remaining
-            if (oracle.vaultList(i) == newVault) {
+        for (uint i = 0; i < oracle.vaultsLength(); i++) {
+            if (oracle.vaults(i) == newVault) {
                 found = true;
             }
         }
         assertFalse(found, "Removed vault still in list");
-        assertEq(oracle.vaultListLength(), 2, "Vault list length incorrect");
+        assertEq(oracle.vaultsLength(), 2, "Vault list length incorrect");
+        (priceThreshold, stalenessValue) = oracle.vaultData(newVault);
+        assertEq(priceThreshold, 0, "Vault data not cleared: priceThreshold");
+        assertEq(stalenessValue, 0, "Vault data not cleared: staleness");
         entries = vm.getRecordedLogs();
         bool vaultRemoved = false;
         for (uint i = 0; i < entries.length; i++) {
@@ -225,8 +261,9 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.expectRevert(IVaultPriceOracle.InvalidVaultAddress.selector);
         oracle.removeVault(address(0));
 
-        // Remove non-existent vault (no revert, as contract doesn't check existence)
+        // Cannot remove non-existent vault
         vm.prank(address(this));
+        vm.expectRevert(IVaultPriceOracle.VaultNotFound.selector);
         oracle.removeVault(makeAddr("nonExistentVault"));
     }
 
@@ -407,23 +444,23 @@ contract VaultPriceOracleTest is Test, MockSetup {
     }
 
     function testValidatorList() public {
-        assertEq(oracle.validatorList(0), validators[0], "Validator list incorrect");
-        assertEq(oracle.validatorListLength(), 5, "Validator list length incorrect");
-        address[] memory validatorList = oracle.validatorList();
+        assertEq(oracle.validators(0), validators[0], "Validator list incorrect");
+        assertEq(oracle.validatorsLength(), 5, "Validator list length incorrect");
+        address[] memory validatorList = oracle.validators();
         for (uint i = 0; i < validators.length; i++) {
             assertEq(validatorList[i], validators[i], "Validator list array incorrect");
         }
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.validatorList(5);
+        oracle.validators(5);
     }
 
     function testVaultList() public {
-        assertEq(oracle.vaultList(0), vaults[0], "Vault list incorrect");
-        assertEq(oracle.vaultListLength(), 1, "Vault list length incorrect");
-        address[] memory vaultList = oracle.vaultList();
+        assertEq(oracle.vaults(0), vaults[0], "Vault list incorrect");
+        assertEq(oracle.vaultsLength(), 1, "Vault list length incorrect");
+        address[] memory vaultList = oracle.vaults();
         assertEq(vaultList[0], vaults[0], "Vault list array incorrect");
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.vaultList(1);
+        oracle.vaults(1);
     }
 
     function testMinQuorum() public {
@@ -459,11 +496,12 @@ contract VaultPriceOracleTest is Test, MockSetup {
         VaultPriceOracle newOracle = new VaultPriceOracle();
         Proxy newProxy = new Proxy();
         newProxy.initProxy(address(newOracle));
-        // No revert expected, as contract allows duplicates
-        VaultPriceOracle(address(newProxy)).initialize(
-            address(platform), MIN_QUORUM, duplicateValidators, vaults, MAX_PRICE_AGE
-        );
-        assertEq(oracle.validatorListLength(), 5, "Validator list length incorrect");
+
+        vm.mockCall(address(platform), abi.encodeWithSelector(IPlatform.multisig.selector), abi.encode(multisig));
+        vm.mockCall(address(platform), abi.encodeWithSelector(IPlatform.governance.selector), abi.encode(address(this)));
+
+        VaultPriceOracle(address(newProxy)).initialize(address(platform));
+        assertEq(oracle.validatorsLength(), 5, "Validator list length incorrect");
     }
 
     function testSubmitPriceWithHighQuorum() public {

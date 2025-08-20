@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author ruby (https://github.com/alexandersazonof)
 interface IPlatform {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */

@@ -106,7 +106,7 @@ abstract contract DeployCore {
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new VaultPriceOracle()));
         vars.vaultPriceOracle = VaultPriceOracle(address(vars.proxy));
-        vars.vaultPriceOracle.initialize(address(vars.platform), p.minQuorum, p.validators, p.vaults, p.maxPriceAge);
+        vars.vaultPriceOracle.initialize(address(vars.platform));
 
         // setup platform
         vars.platform.setup(
