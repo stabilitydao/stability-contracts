@@ -18,11 +18,6 @@ contract DeployVaultPriceOracle is Script {
         VaultPriceOracle vaultPriceOracle = VaultPriceOracle(address(proxy));
         vaultPriceOracle.initialize(address(PLATFORM));
 
-        vaultPriceOracle.setMaxPriceAge(MAX_PRICE_AGE);
-        vaultPriceOracle.setMinQuorum(MIN_QUORUM);
-        vaultPriceOracle.addValidator(0x754341F215cBc80D8548b853Fd1F60C3FDaE6B26);
-        vaultPriceOracle.addVault(0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7, 1, 1 hours);
-
         vm.stopBroadcast();
     }
 
