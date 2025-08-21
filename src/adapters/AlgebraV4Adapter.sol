@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -23,7 +24,7 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1"; // todo
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -129,12 +130,19 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     function getPrice(address pool, address tokenIn, address, /*tokenOut*/ uint amount) public view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
         address token1 = IAlgebraPool(pool).token1();
+        console.log("token0", token0);
+        console.log("token1", token1);
 
         uint tokenInDecimals = tokenIn == token0 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         uint tokenOutDecimals =
             tokenIn == token1 ? IERC20Metadata(token0).decimals() : IERC20Metadata(token1).decimals();
         //slither-disable-next-line unused-return
         (uint160 sqrtPriceX96,,,,,) = IAlgebraPool(pool).globalState();
+        console.log("sqrtPriceX96", sqrtPriceX96);
+        console.log("tokenInDecimals", tokenInDecimals);
+        console.log("tokenOutDecimals", tokenOutDecimals);
+        console.log("amount", amount);
+        console.log("result", UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount));
 
         return UniswapV3MathLib.calcPriceOut(tokenIn, token0, sqrtPriceX96, tokenInDecimals, tokenOutDecimals, amount);
     }

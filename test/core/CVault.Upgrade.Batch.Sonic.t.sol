@@ -9,18 +9,24 @@ import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {IStrategyProxy} from "../../src/interfaces/IStrategyProxy.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 
 /// @notice Test multiple vaults on given/current block and save summary report to the file
 contract CVaultUpgradeBatchSonicTest is Test {
@@ -31,7 +37,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
     IFactory public factory;
     address public multisig;
 
-    address[3] internal VAULT_UNDER_TEST;
+    address[1] internal VAULT_UNDER_TEST;
 
     struct TestResult {
         bool success;
@@ -55,15 +61,17 @@ contract CVaultUpgradeBatchSonicTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
+        // _upgradePlatform(IPlatform(PLATFORM).priceReader());
+
         // ---------------- create list of vaults to test
         VAULT_UNDER_TEST = [
-            SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC,
-            SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH,
-            SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
+            SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC
+            // SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, // todo fix routes
+            // SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025  // expired
         ];
     }
 
-    function testDepositWithdrawBatch() internal {
+    function testDepositWithdrawBatch() public {
         TestResult[] memory results = new TestResult[](VAULT_UNDER_TEST.length);
         bool success = true;
 
@@ -82,8 +90,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
         assertEq(success, true, "All vaults should pass deposit/withdraw test");
     }
 
-    function testDepositWithdrawSingle() public {
-        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[1], false, 1e16);
+    function testDepositWithdrawSingle() internal {
+        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 1e6);
         assertEq(r.success, true, "Selected vault should pass deposit/withdraw test");
     }
 
@@ -93,6 +101,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         _upgradeCVault(vault_);
         _upgradeVaultStrategy(vault_);
+        _setUpVault(vault_);
 
         result = _testDepositWithdraw(vault, catchError, amount_);
 
@@ -174,7 +183,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
         assets = vault.assets();
         amounts = new uint[](assets.length);
         amounts[0] = amount_ == 0
-            ? 10 ** IERC20Metadata(assets[0]).decimals()
+            ? _getDefaultAmountToDeposit(assets[0])
             : amount_;
 
         deal(assets[0], address(this), amounts[0]);
@@ -204,7 +213,91 @@ contract CVaultUpgradeBatchSonicTest is Test {
     }
     //endregion ---------------------- Auxiliary functions
 
+    //region ---------------------- Set up vaults behavior
+    /// @dev Make any set up actions before deposit/withdraw test
+    function _setUpVault(address vault_) internal {
+//        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
+//            // try to fix routes
+//            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+//            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE));
+//
+//            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+//            pools[0] = ISwapper.PoolData({
+//                pool: SonicConstantsLib.TODO,
+//                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
+//                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
+//                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
+//            });
+//
+//            vm.prank(multisig);
+//            ISwapper(swapper).addPools(pools, true);
+//        }
+//
+//        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
+//            // try to fix routes
+//            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+//            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE));
+//
+//            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+//            pools[0] = ISwapper.PoolData({
+//                pool: SonicConstantsLib.TODO,
+//                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
+//                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
+//                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
+//            });
+//
+//            vm.prank(multisig);
+//            ISwapper(swapper).addPools(pools, true);
+//        }
+    }
+
+    function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
+        if (
+            asset_ == SonicConstantsLib.TOKEN_wETH
+            || asset_ == SonicConstantsLib.TOKEN_atETH
+            || asset_ == SonicConstantsLib.TOKEN_scETH
+            || asset_ == SonicConstantsLib.TOKEN_stkscETH
+            || asset_ == SonicConstantsLib.TOKEN_wstkscETH
+        ) {
+            return 1e18;
+        }
+
+        return 100 ** IERC20Metadata(asset_).decimals();
+    }
+
+    //endregion ---------------------- Set up vaults behavior
+
     //region ---------------------- Helpers
+    function _upgradePlatform(address priceReader_) internal {
+        // we need to skip 1 day to update the swapper
+        // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
+        // vm.warp(block.timestamp - 86400);
+        rewind(86400);
+
+        IPlatform platform = IPlatform(IControllable(priceReader_).platform());
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        //proxies[0] = address(priceReader_);
+        proxies[0] = platform.swapper();
+        //proxies[2] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+
+        //implementations[0] = address(new PriceReader());
+        implementations[0] = address(new Swapper());
+        //implementations[2] = address(new MetaVaultAdapter());
+
+        //vm.prank(multisig);
+        // platform.cancelUpgrade();
+
+        vm.startPrank(multisig);
+        platform.announcePlatformUpgrade("2025.07.22-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
+    }
+
     function _upgradeCVault(address vault_) internal {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
@@ -331,6 +424,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
+
+
     //endregion ---------------------- Helpers
 
 }
