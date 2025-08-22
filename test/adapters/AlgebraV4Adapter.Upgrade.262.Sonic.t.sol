@@ -42,7 +42,7 @@ contract AlgebraV4AdapterUpgrade262SonicTest is Test {
                 tokenIn: SonicConstantsLib.TOKEN_bUSDCe20,
                 tokenOut: SonicConstantsLib.TOKEN_wstkscUSD
             });
-            price0 = swapper.getPriceForRoute(routes, 1e18);
+            price0 = swapper.getPriceForRoute(routes, 1e6);
         }
 
         {
@@ -54,7 +54,7 @@ contract AlgebraV4AdapterUpgrade262SonicTest is Test {
                 tokenIn: SonicConstantsLib.TOKEN_bUSDCe20,
                 tokenOut: SonicConstantsLib.TOKEN_wstkscUSD
             });
-            price1 = swapper.getPriceForRoute(routes, 1e18);
+            price1 = swapper.getPriceForRoute(routes, 1e6);
         }
 
         assertNotEq(price0, 0, "ERC4626 returns not zero price");
