@@ -27,6 +27,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {IStrategyProxy} from "../../src/interfaces/IStrategyProxy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 
 /// @notice Test multiple vaults on given/current block and save summary report to the file
 contract CVaultUpgradeBatchSonicTest is Test {
@@ -61,7 +62,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        // _upgradePlatform(IPlatform(PLATFORM).priceReader());
+        _upgradePlatform(IPlatform(PLATFORM).priceReader());
 
         // ---------------- create list of vaults to test
         VAULT_UNDER_TEST = [
@@ -71,7 +72,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
         ];
     }
 
-    function testDepositWithdrawBatch() public {
+    function testDepositWithdrawBatch() internal {
         TestResult[] memory results = new TestResult[](VAULT_UNDER_TEST.length);
         bool success = true;
 
@@ -90,8 +91,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
         assertEq(success, true, "All vaults should pass deposit/withdraw test");
     }
 
-    function testDepositWithdrawSingle() internal {
-        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 1e6);
+    function testDepositWithdrawSingle() public {
+        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 90e6);
         assertEq(r.success, true, "Selected vault should pass deposit/withdraw test");
     }
 
@@ -216,23 +217,26 @@ contract CVaultUpgradeBatchSonicTest is Test {
     //region ---------------------- Set up vaults behavior
     /// @dev Make any set up actions before deposit/withdraw test
     function _setUpVault(address vault_) internal {
-//        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
-//            // try to fix routes
-//            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-//            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE));
-//
-//            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
-//            pools[0] = ISwapper.PoolData({
-//                pool: SonicConstantsLib.TODO,
-//                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
-//                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-//                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
-//            });
-//
-//            vm.prank(multisig);
-//            ISwapper(swapper).addPools(pools, true);
-//        }
-//
+        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC
+        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
+            // try to fix routes
+            // Currently we have a route: wstkscUSD => scUSD => USDC but there is no liquidity in the shadow pool
+            // Set up new route: wstkscUSD => bUSDCe20 => USDC
+            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
+
+            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+            pools[0] = ISwapper.PoolData({
+                pool: SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
+                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
+                tokenOut: address(SonicConstantsLib.TOKEN_bUSDCe20)
+            });
+
+            vm.prank(multisig);
+            ISwapper(swapper).addPools(pools, true);
+        }
+
 //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
 //            // try to fix routes
 //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
@@ -276,16 +280,16 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         IPlatform platform = IPlatform(IControllable(priceReader_).platform());
 
-        address[] memory proxies = new address[](1);
-        address[] memory implementations = new address[](1);
+        address[] memory proxies = new address[](2);
+        address[] memory implementations = new address[](2);
 
         //proxies[0] = address(priceReader_);
         proxies[0] = platform.swapper();
-        //proxies[2] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.META_VAULT))).proxy;
+        proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
 
         //implementations[0] = address(new PriceReader());
         implementations[0] = address(new Swapper());
-        //implementations[2] = address(new MetaVaultAdapter());
+        implementations[1] = address(new AlgebraV4Adapter());
 
         //vm.prank(multisig);
         // platform.cancelUpgrade();

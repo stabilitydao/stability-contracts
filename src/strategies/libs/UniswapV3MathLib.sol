@@ -18,34 +18,6 @@ library UniswapV3MathLib {
         uint128 liquidity;
     }
 
-    function calcPriceOut(
-        address tokenIn,
-        address token0,
-        uint160 sqrtPriceX96,
-        uint tokenInDecimals,
-        uint tokenOutDecimals,
-        uint amount
-    ) external pure returns (uint price) {
-        tokenOutDecimals; // hide warning, compatibility with previous version of calcPriceOut()
-        if (tokenIn == token0) {
-            // decimal IN = decimal 0, decimal OUT = decimal 1
-            // price0in1 * 10^decimal1 = sqrtPriceX96^2 / 2**192 * 10^decimal0
-            uint sqrtPriceX18 = FixedPointMathLib.mulDivUp(sqrtPriceX96, 1e18, 2**96);
-            price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
-        } else {
-            // decimal IN = decimal 1, decimal OUT = decimal 0
-            // price0in1 = sqrtPriceX96^2 / 2**192 * 10^decimal0 / 10^decimal1
-            // (1 / price0in1) = 2**192 / sqrtPriceX96^2 * 10^decimal1 / 10^decimal0
-            // (1 / price0in1) * 10^decimal0 = 2**192 / sqrtPriceX96^2 * 10^decimal1
-            uint sqrtPriceX18 = FixedPointMathLib.mulDiv(2**96, 1e18, sqrtPriceX96);
-            price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
-        }
-
-        return amount == 0
-            ? price
-            : price * amount / (10 ** tokenInDecimals);
-    }
-
     /// @notice Calculates the price of token IN in terms of token OUT.
     /// @param tokenIn Address of token IN.
     /// @param token0 Address of token0 in the pool.
@@ -55,7 +27,7 @@ library UniswapV3MathLib {
     /// @param tokenOutDecimals Decimals of token OUT.
     /// @param amount Amount in terms of token IN. Can be 0. Decimals {tokenInDecimals}
     /// @return price Price of amount (or 1 if amount is 0) of token IN in terms of token OUT. Decimals {tokenOutDecimals}
-    function calcPriceOut3(
+    function calcPriceOut(
         address tokenIn,
         address token0,
         uint160 sqrtPriceX96,
@@ -64,10 +36,10 @@ library UniswapV3MathLib {
         uint amount
     ) external pure returns (uint price) {
         tokenOutDecimals; // hide warning, compatibility with previous version of calcPriceOut()
+
         if (tokenIn == token0) {
             // decimal IN = decimal 0, decimal OUT = decimal 1
             // price0in1 * 10^decimal1 = sqrtPriceX96^2 / 2**192 * 10^decimal0
-
             uint sqrtPriceX18 = FixedPointMathLib.mulDivUp(sqrtPriceX96, 1e18, 2**96);
             price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
         } else {
@@ -75,7 +47,6 @@ library UniswapV3MathLib {
             // price0in1 = sqrtPriceX96^2 / 2**192 * 10^decimal0 / 10^decimal1
             // (1 / price0in1) = 2**192 / sqrtPriceX96^2 * 10^decimal1 / 10^decimal0
             // (1 / price0in1) * 10^decimal0 = 2**192 / sqrtPriceX96^2 * 10^decimal1
-
             uint sqrtPriceX18 = FixedPointMathLib.mulDiv(2**96, 1e18, sqrtPriceX96);
             price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
         }
@@ -85,7 +56,8 @@ library UniswapV3MathLib {
             : price * amount / (10 ** tokenInDecimals);
     }
 
-    function calcPriceOut2(
+    /// @notice Old version of calcPriceOut. It has problems i.e. with decimals 6:6 and large sqrtPriceX96 values.
+    function calcPriceOutDeprecated(
         address tokenIn,
         address token0,
         uint160 sqrtPriceX96,
