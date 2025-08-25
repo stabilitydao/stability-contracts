@@ -38,7 +38,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
     IFactory public factory;
     address public multisig;
 
-    address[1] internal VAULT_UNDER_TEST;
+    address[2] internal VAULT_UNDER_TEST;
 
     struct TestResult {
         bool success;
@@ -48,6 +48,9 @@ contract CVaultUpgradeBatchSonicTest is Test {
         uint lossPercent;
         /// @dev Total earnings of the user in percents after all vault operations, 100% = 1e18; 0 for negative earnings
         uint earningsPercent;
+
+        uint amountDeposited;
+        uint amountWithdrawn;
     }
 
     constructor() {
@@ -62,12 +65,12 @@ contract CVaultUpgradeBatchSonicTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        _upgradePlatform(IPlatform(PLATFORM).priceReader());
+        // _upgradePlatform(IPlatform(PLATFORM).priceReader());
 
         // ---------------- create list of vaults to test
         VAULT_UNDER_TEST = [
-            SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC
-            // SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, // todo fix routes
+            SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC,
+            SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH
             // SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025  // expired
         ];
     }
@@ -92,7 +95,9 @@ contract CVaultUpgradeBatchSonicTest is Test {
     }
 
     function testDepositWithdrawSingle() public {
-        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 90e6);
+        TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 100e6);
+        // TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[1], false, 1e18);
+        showResults(r);
         assertEq(r.success, true, "Selected vault should pass deposit/withdraw test");
     }
 
@@ -126,6 +131,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
     }
 
     function _testDepositWithdraw(IStabilityVault vault, bool catchError, uint amount_) internal returns (TestResult memory result) {
+        uint balance0 = IERC20(vault.assets()[0]).balanceOf(address(this));
+
         // --------------- prepare amount to deposit
         (address[] memory assets, uint[] memory depositAmounts) = _dealAndApprove(vault, address(this), amount_);
         uint balanceBefore = IERC20(assets[0]).balanceOf(address(this));
@@ -148,17 +155,17 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         // --------------- withdraw
         if (result.success) {
-            uint maxWithdraw = vault.maxWithdraw(address(this));
+            uint amountToWithdraw = vault.balanceOf(address(this));
 
             gas0 = gasleft();
             if (catchError) {
-                try vault.withdrawAssets(assets, maxWithdraw, new uint[](1)) {
+                try vault.withdrawAssets(assets, amountToWithdraw, new uint[](1)) {
                     result.success = true;
                 } catch {
                     result.success = false;
                 }
             } else {
-                vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
+                vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
                 result.success = true;
             }
             result.totalGasConsumed = gas0 - gasleft();
@@ -173,6 +180,9 @@ contract CVaultUpgradeBatchSonicTest is Test {
             result.lossPercent = (balanceBefore - balanceAfter) * 1e18 / balanceBefore;
             result.earningsPercent = 0;
         }
+
+        result.amountDeposited = depositAmounts[0];
+        result.amountWithdrawn = balanceAfter > balance0 ? balanceAfter - balance0 : 0;
 
         return result;
     }
@@ -197,7 +207,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
     function _saveResults(TestResult[] memory results) internal {
         string memory fileName = "./tmp/CVault.Upgrade.Batch.Sonic.results.csv";
-        string memory content = "VaultAddress;VaultName;Success;TotalGasConsumed;LossPercent(1000=1%);EarningsPercent(1000=1%)\n";
+        string memory content = "VaultAddress;VaultName;Success;TotalGasConsumed;AmountDeposited;AmountWithdrawn;LossPercent(1000=1%);EarningsPercent(1000=1%)\n";
         for (uint i = 0; i < results.length; i++) {
 
             content = string(abi.encodePacked(
@@ -206,53 +216,108 @@ contract CVaultUpgradeBatchSonicTest is Test {
                 IStabilityVault(VAULT_UNDER_TEST[i]).symbol(), ";",
                 results[i].success ? "1" : "0", ";",
                 Strings.toString(results[i].totalGasConsumed), ";",
+                Strings.toString(results[i].amountDeposited), ";",
+                Strings.toString(results[i].amountWithdrawn), ";",
                 Strings.toString(results[i].lossPercent * 100_000 / 1e18), ";",
                 Strings.toString(results[i].earningsPercent * 100_000 / 1e18), "\n"
             ));
         }
         vm.writeFile(fileName, content);
     }
+
+    function showResults(TestResult memory r) internal pure {
+        console.log("Success:", r.success);
+        console.log("TotalGasConsumed:", r.totalGasConsumed);
+        console.log("LossPercent(1000=1%):", r.lossPercent * 100_000 / 1e18);
+        console.log("EarningsPercent(1000=1%):", r.earningsPercent * 100_000 / 1e18);
+        console.log("AmountDeposited:", r.amountDeposited);
+        console.log("AmountWithdrawn:", r.amountWithdrawn);
+    }
+
+    function _adjustParamsSetDepositParam0(ILeverageLendingStrategy strategy, uint depositParam0_) internal {
+        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
+        for (uint i; i < params.length; i++) {
+            console.log("param", i, params[i]);
+        }
+        for (uint i; i < addresses.length; i++) {
+            console.log("address", i, addresses[i]);
+        }
+
+        params[0] = depositParam0_;
+
+        vm.prank(multisig);
+        strategy.setUniversalParams(params, addresses);
+    }
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Set up vaults behavior
     /// @dev Make any set up actions before deposit/withdraw test
     function _setUpVault(address vault_) internal {
-        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC
-        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
-            // try to fix routes
-            // Currently we have a route: wstkscUSD => scUSD => USDC but there is no liquidity in the shadow pool
-            // Set up new route: wstkscUSD => bUSDCe20 => USDC
-            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
 
-            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+        if (false) {
+            // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC using fixed AlgebraV4-adapter
+            if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
+                // try to fix routes
+                // Currently we have a route: wstkscUSD => scUSD => USDC but there is no liquidity in the shadow pool
+                // Set up new route: wstkscUSD => bUSDCe20 => USDC
+                ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+                bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
+
+                ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+                pools[0] = ISwapper.PoolData({
+                    pool: SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD,
+                    ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
+                    tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
+                    tokenOut: address(SonicConstantsLib.TOKEN_bUSDCe20)
+                });
+
+                vm.prank(multisig);
+                ISwapper(swapper).addPools(pools, true);
+            }
+        }
+        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC using beets-v3 adapter
+        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
+            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+
+            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
             pools[0] = ISwapper.PoolData({
-                pool: SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD,
-                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
+                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
                 tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-                tokenOut: address(SonicConstantsLib.TOKEN_bUSDCe20)
+                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_scUSD)
+            });
+            pools[1] = ISwapper.PoolData({
+                pool: SonicConstantsLib.SILO_VAULT_46_scUSD,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_scUSD),
+                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
             });
 
             vm.prank(multisig);
             ISwapper(swapper).addPools(pools, true);
         }
 
-//        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
-//            // try to fix routes
-//            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-//            bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE));
-//
-//            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
-//            pools[0] = ISwapper.PoolData({
-//                pool: SonicConstantsLib.TODO,
-//                ammAdapter: (IPlatform(PLATFORM).ammAdapter(_hash)).proxy,
-//                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
-//                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
-//            });
-//
-//            vm.prank(multisig);
-//            ISwapper(swapper).addPools(pools, true);
-//        }
+        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
+        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
+            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+
+            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
+            pools[0] = ISwapper.PoolData({
+                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
+                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
+                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_bscETH)
+            });
+            pools[1] = ISwapper.PoolData({
+                pool: SonicConstantsLib.SILO_VAULT_47_bscETH,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
+                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_bscETH),
+                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
+            });
+
+            vm.prank(multisig);
+            ISwapper(swapper).addPools(pools, true);
+        }
     }
 
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
@@ -266,7 +331,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
             return 1e18;
         }
 
-        return 100 ** IERC20Metadata(asset_).decimals();
+        return 10 * 10 ** IERC20Metadata(asset_).decimals();
     }
 
     //endregion ---------------------- Set up vaults behavior
@@ -280,16 +345,16 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         IPlatform platform = IPlatform(IControllable(priceReader_).platform());
 
-        address[] memory proxies = new address[](2);
-        address[] memory implementations = new address[](2);
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
 
         //proxies[0] = address(priceReader_);
-        proxies[0] = platform.swapper();
-        proxies[1] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
+        // proxies[0] = platform.swapper();
+        proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
 
         //implementations[0] = address(new PriceReader());
-        implementations[0] = address(new Swapper());
-        implementations[1] = address(new AlgebraV4Adapter());
+        // implementations[0] = address(new Swapper());
+        implementations[0] = address(new AlgebraV4Adapter());
 
         //vm.prank(multisig);
         // platform.cancelUpgrade();
