@@ -75,16 +75,16 @@ contract SialUpgradeMaxLtvSonic is Test {
         address vault_ = SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC;
         IStabilityVault vault = IStabilityVault(vault_);
 
-        _testWithdrawOnly(vault_, HOLDER_1);
-        _testWithdrawOnly(vault_, HOLDER_2);
-        _testWithdrawOnly(vault_, HOLDER_3);
-        _testWithdrawOnly(vault_, HOLDER_4);
-        _testWithdrawOnly(vault_, HOLDER_5);
+        _testWithdrawOnly(vault_, HOLDER_1, 436983127);
+        _testWithdrawOnly(vault_, HOLDER_2, 783121065);
+        _testWithdrawOnly(vault_, HOLDER_3, 2484744085);
+        _testWithdrawOnly(vault_, HOLDER_4, 1734149530);
+        _testWithdrawOnly(vault_, HOLDER_5, 26080160);
     }
 
 
     //region ---------------------- Auxiliary functions
-    function _testWithdrawOnly(address vault_, address holder_) internal {
+    function _testWithdrawOnly(address vault_, address holder_, uint expectedAmount) internal {
         IStabilityVault vault = IStabilityVault(vault_);
 
         _upgradeCVault(vault_);
@@ -96,7 +96,8 @@ contract SialUpgradeMaxLtvSonic is Test {
 
         vm.prank(holder_);
         uint[] memory withdrawn = vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
-        console.log("!!!!! withdrawn", withdrawn[0], holder_);
+        // console.log("!!!!! withdrawn", withdrawn[0], holder_, expectedAmount  * 100 / 104);
+        assertGt(withdrawn[0], expectedAmount  * 100 / 104, "max 4% loss");
     }
 
 
