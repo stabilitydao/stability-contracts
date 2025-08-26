@@ -57,6 +57,11 @@ jobs:
           SONIC_RPC_URL: ${{secrets.SONIC_RPC_URL}}
         id: coverage
 
+	- name: Generate detailed coverage summary
+        run: |
+          forge coverage --report summary > coverage_summary.txt 2>&1 || { echo "Coverage failed, see logs"; cat coverage_summary.txt; exit 1; }
+        id: coverage_summary
+
       - name: Upload coverage lcov report to Codecov
         uses: codecov/codecov-action@v3
         env:
@@ -73,12 +78,3 @@ jobs:
         with:
           name: lcov-report
           path: lcov.info
-
-      - name: Run debug coverage report
-        run: forge coverage --report debug > coverage_debug.txt
-      - name: Upload debug report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-debug
-          path: coverage_debug.txt
-
