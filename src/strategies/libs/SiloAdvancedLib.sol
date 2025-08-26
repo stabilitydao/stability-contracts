@@ -721,7 +721,7 @@ library SiloAdvancedLib {
 
         uint targetLtv = Math.max(
             state.maxLtv,
-            state.ltv * 1e18 / INTERNAL_PRECISION * 1003/1000 // todo move to config
+            state.ltv * 1e18 / INTERNAL_PRECISION * 1003 / 1000 // todo move to config
         );
 
         uint[] memory flashAmounts = new uint[](1);
