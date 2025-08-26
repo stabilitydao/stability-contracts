@@ -73,3 +73,11 @@ jobs:
         with:
           name: lcov-report
           path: lcov.info
+
+     - name: Run debug coverage report
+       run: forge coverage --report debug > coverage_debug.txt
+     - name: Upload debug report
+       uses: actions/upload-artifact@v4
+       with:
+         name: coverage-debug
+         path: coverage_debug.txt
