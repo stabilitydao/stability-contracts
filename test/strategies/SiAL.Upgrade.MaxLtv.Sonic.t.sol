@@ -56,7 +56,6 @@ contract SialUpgradeMaxLtvSonic is Test {
         uint lossPercent;
         /// @dev Total earnings of the user in percents after all vault operations, 100% = 1e18; 0 for negative earnings
         uint earningsPercent;
-
         uint amountDeposited;
         uint amountWithdrawn;
     }
@@ -73,7 +72,6 @@ contract SialUpgradeMaxLtvSonic is Test {
 
     function testWithdrawOnly() public {
         address vault_ = SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC;
-        IStabilityVault vault = IStabilityVault(vault_);
 
         _testWithdrawOnly(vault_, HOLDER_1, 436983127);
         _testWithdrawOnly(vault_, HOLDER_2, 783121065);
@@ -81,7 +79,6 @@ contract SialUpgradeMaxLtvSonic is Test {
         _testWithdrawOnly(vault_, HOLDER_4, 1734149530);
         _testWithdrawOnly(vault_, HOLDER_5, 26080160);
     }
-
 
     //region ---------------------- Auxiliary functions
     function _testWithdrawOnly(address vault_, address holder_, uint expectedAmount) internal {
@@ -97,15 +94,14 @@ contract SialUpgradeMaxLtvSonic is Test {
         vm.prank(holder_);
         uint[] memory withdrawn = vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
         // console.log("!!!!! withdrawn", withdrawn[0], holder_, expectedAmount  * 100 / 104);
-        assertGt(withdrawn[0], expectedAmount  * 100 / 104, "max 4% loss");
+        assertGt(withdrawn[0], expectedAmount * 100 / 104, "max 4% loss");
     }
-
 
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Set up vaults behavior
     /// @dev Make any set up actions before deposit/withdraw test
-    function _setUpVault(address vault_) internal {
+    function _setUpVault() internal {
         ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
@@ -204,5 +200,4 @@ contract SialUpgradeMaxLtvSonic is Test {
     }
 
     //endregion ---------------------- Helpers
-
 }
