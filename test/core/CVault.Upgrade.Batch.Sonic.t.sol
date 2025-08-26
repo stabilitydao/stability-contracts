@@ -34,11 +34,17 @@ contract CVaultUpgradeBatchSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
-    uint public constant FORK_BLOCK = 43911991; // Aug-21-2025 04:58:57 AM +UTC
+    uint public constant FORK_BLOCK = 44570424; // Aug-26-2025 07:45:25 AM +UTC
+    // uint public constant FORK_BLOCK = 43911991; // Aug-21-2025 04:58:57 AM +UTC
+
     IFactory public factory;
     address public multisig;
 
     address[2] internal VAULT_UNDER_TEST;
+
+    address public constant HOLDER_1 = 0x23b8Cc22C4c82545F4b451B11E2F17747A730810;
+    address public constant HOLDER_2 = 0x98a0efc622cDc86B38484Ce6A6729606D26e500e;
+    address public constant HOLDER_3 = 0xA534e734446CAe195d65d920fA47305F0dC55934;
 
     struct TestResult {
         bool success;
@@ -75,7 +81,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
         ];
     }
 
-    function testDepositWithdrawBatch() internal {
+    function testDepositWithdrawBatch() public {
         TestResult[] memory results = new TestResult[](VAULT_UNDER_TEST.length);
         bool success = true;
 
@@ -96,12 +102,50 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
     function testDepositWithdrawSingle() public {
         TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[0], false, 100e6);
-        // TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[1], false, 1e18);
+        // TestResult memory r = _testDepositWithdrawSingleVault(VAULT_UNDER_TEST[1], false, 0.1e18);
         showResults(r);
         assertEq(r.success, true, "Selected vault should pass deposit/withdraw test");
     }
 
+    function testWithdrawOnly() public {
+        address vault_ = VAULT_UNDER_TEST[0];
+        IStabilityVault vault = IStabilityVault(vault_);
+
+        ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
+
+//        vm.prank(multisig);
+//        _strategy.setTargetLeveragePercent(5000);
+
+        (uint[] memory params, address[] memory addresses) = _strategy.getUniversalParams();
+        for (uint i; i < params.length; i++) {
+            console.log("param", i, params[i]);
+        }
+        for (uint i; i < addresses.length; i++) {
+            console.log("address", i, addresses[i]);
+        }
+
+        _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_1);
+        _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_2);
+        _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_3);
+    }
+
+
     //region ---------------------- Auxiliary functions
+    function _testWithdrawOnly(address vault_, address holder_) internal {
+        IStabilityVault vault = IStabilityVault(vault_);
+
+        _upgradeCVault(vault_);
+        _upgradeVaultStrategy(vault_);
+        _setUpVault(vault_);
+
+        address[] memory assets = vault.assets();
+        uint amountToWithdraw = vault.balanceOf(holder_);
+
+        vm.prank(holder_);
+        uint[] memory withdrawn = vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
+        console.log("withdrawn", withdrawn[0]);
+    }
+
     function _testDepositWithdrawSingleVault(address vault_, bool catchError, uint amount_) internal returns (TestResult memory result) {
         IStabilityVault vault = IStabilityVault(vault_);
 
@@ -295,6 +339,10 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
             vm.prank(multisig);
             ISwapper(swapper).addPools(pools, true);
+
+            {
+                ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
+            }
         }
 
         // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
