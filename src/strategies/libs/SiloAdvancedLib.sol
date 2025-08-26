@@ -810,7 +810,6 @@ library SiloAdvancedLib {
         console.log("collateralAmountToWithdraw", collateralAmountToWithdraw);
         console.log("state.maxLeverage", state.maxLeverage);
         console.log("state.ltv", state.ltv);
-        uint targetLtv = state.ltv * 1e18 / INTERNAL_PRECISION * 1003/1000;
 
         uint targetLtv = Math.max(
             state.maxLtv,

@@ -45,6 +45,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
     address public constant HOLDER_1 = 0x23b8Cc22C4c82545F4b451B11E2F17747A730810;
     address public constant HOLDER_2 = 0x98a0efc622cDc86B38484Ce6A6729606D26e500e;
     address public constant HOLDER_3 = 0xA534e734446CAe195d65d920fA47305F0dC55934;
+    address public constant HOLDER_4 = 0x64758ef549B0e7714C2c69aE6097810D3c970d69;
+    address public constant HOLDER_5 = 0x2a1842baC18058078F682e1996f763480081174A;
 
     struct TestResult {
         bool success;
@@ -127,6 +129,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
         _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_1);
         _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_2);
         _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_3);
+        _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_4);
+        _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_5);
     }
 
 
@@ -143,7 +147,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         vm.prank(holder_);
         uint[] memory withdrawn = vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
-        console.log("withdrawn", withdrawn[0]);
+        console.log("!!!!! withdrawn", withdrawn[0], holder_);
     }
 
     function _testDepositWithdrawSingleVault(address vault_, bool catchError, uint amount_) internal returns (TestResult memory result) {
