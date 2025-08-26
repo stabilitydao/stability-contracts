@@ -812,6 +812,11 @@ library SiloAdvancedLib {
         console.log("state.ltv", state.ltv);
         uint targetLtv = state.ltv * 1e18 / INTERNAL_PRECISION * 1003/1000;
 
+        uint targetLtv = Math.max(
+            state.maxLtv,
+            state.ltv * 1e18 / INTERNAL_PRECISION * 1003/1000 // todo move to config
+        );
+
         uint[] memory flashAmounts = new uint[](1);
         flashAmounts[0] = collateralAmountToWithdraw * targetLtv / 1e18 * state.priceCtoB * state.withdrawParam0
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18 // priceCtoB has decimals 1e18
