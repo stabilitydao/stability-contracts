@@ -133,7 +133,6 @@ contract CVaultUpgradeBatchSonicTest is Test {
         _testWithdrawOnly(VAULT_UNDER_TEST[0], HOLDER_5);
     }
 
-
     //region ---------------------- Auxiliary functions
     function _testWithdrawOnly(address vault_, address holder_) internal {
         IStabilityVault vault = IStabilityVault(vault_);
