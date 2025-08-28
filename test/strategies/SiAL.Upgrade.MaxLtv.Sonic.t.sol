@@ -86,7 +86,7 @@ contract SialUpgradeMaxLtvSonic is Test {
 
         _upgradeCVault(vault_);
         _upgradeVaultStrategy(vault_);
-        _setUpVault(vault_);
+        _setUpVault();
 
         address[] memory assets = vault.assets();
         uint amountToWithdraw = vault.balanceOf(holder_);
