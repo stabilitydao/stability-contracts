@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "forge-std/Test.sol";
-import "../../chains/RealLib.sol";
-import "../base/chains/RealSetup.sol";
+import {RealLib} from "../../chains/RealLib.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {RealSetup} from "../base/chains/RealSetup.sol";
 
 contract SwapperRealTest is Test, RealSetup {
     ISwapper public swapper;

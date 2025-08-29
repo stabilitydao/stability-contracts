@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import "../IDataStorageOperator.sol";
+import {IDataStorageOperator} from "../IDataStorageOperator.sol";
 
 /// @title Pool state that never changes
 /// @dev Credit to Uniswap Labs under GPL-2.0-or-later license:

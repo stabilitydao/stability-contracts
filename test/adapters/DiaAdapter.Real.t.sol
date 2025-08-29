@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/RealSetup.sol";
+import {RealSetup} from "../base/chains/RealSetup.sol";
+import {DiaAdapter} from "../../src/adapters/DiaAdapter.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {RealLib} from "../../chains/RealLib.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract DiaAdapterTest is RealSetup {
     DiaAdapter public adapter;

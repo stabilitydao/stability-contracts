@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/PolygonSetup.sol";
-import "../base/UniversalTest.sol";
-import "../../src/integrations/defiedge/IDefiEdgeStrategyFactory.sol";
+import {PolygonSetup, PolygonLib} from "../base/chains/PolygonSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {IDefiEdgeStrategyFactory} from "../../src/integrations/defiedge/IDefiEdgeStrategyFactory.sol";
 
 contract DefiEdgeQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

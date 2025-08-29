@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import "../../src/strategies/TridentPearlFarmStrategy.sol";
+import {TridentPearlFarmStrategy, StrategyIdLib} from "../../src/strategies/TridentPearlFarmStrategy.sol";
 import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
 import {RealLib} from "../../chains/RealLib.sol";
 

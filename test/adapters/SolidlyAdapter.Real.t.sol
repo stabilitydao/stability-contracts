@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";

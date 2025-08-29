@@ -3,14 +3,15 @@ pragma solidity ^0.8.28;
 
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Test, console} from "forge-std/Test.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/strategies/libs/StrategyIdLib.sol";
-import "../../src/test/MockStrategy.sol";
-import "../../src/test/MockAmmAdapter.sol";
-import "../base/FullMockSetup.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {Proxy, IControllable} from "../../src/core/proxy/Proxy.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {MockStrategy} from "../../src/test/MockStrategy.sol";
+import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
+import {FullMockSetup} from "../base/FullMockSetup.sol";
 import {IVault, IStabilityVault} from "../../src/interfaces/IVault.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;

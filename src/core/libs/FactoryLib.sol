@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./CommonLib.sol";
-import "./VaultTypeLib.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/ISwapper.sol";
-import "../../interfaces/IFactory.sol";
-import "../../interfaces/IPriceReader.sol";
-import "../../interfaces/IVault.sol";
-import "../../interfaces/IRVault.sol";
-import "../../interfaces/IVaultProxy.sol";
-import "../../interfaces/IStrategyProxy.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {CommonLib} from "./CommonLib.sol";
+import {VaultTypeLib} from "./VaultTypeLib.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {IVault} from "../../interfaces/IVault.sol";
+import {IRVault} from "../../interfaces/IRVault.sol";
+import {IVaultProxy} from "../../interfaces/IVaultProxy.sol";
+import {IStrategyProxy} from "../../interfaces/IStrategyProxy.sol";
 
 library FactoryLib {
     using SafeERC20 for IERC20;

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../../src/adapters/ChainlinkAdapter.sol";
-import "../../src/adapters/UniswapV3Adapter.sol";
-import "../../src/adapters/AlgebraAdapter.sol";
-import "../../src/adapters/KyberAdapter.sol";
-import "../../src/adapters/CurveAdapter.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
+import {CurveAdapter} from "../../src/adapters/CurveAdapter.sol";
 import {BalancerComposableStableAdapter} from "../../src/adapters/BalancerComposableStableAdapter.sol";
 import {BalancerWeightedAdapter} from "../../src/adapters/BalancerWeightedAdapter.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
@@ -16,6 +15,8 @@ import {ERC4626Adapter} from "../../src/adapters/ERC4626Adapter.sol";
 import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {

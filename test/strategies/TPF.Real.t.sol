@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/RealSetup.sol";
-import "../base/UniversalTest.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {console} from "forge-std/Test.sol";
+import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
+import {UniversalTest, StrategyIdLib, IFactory} from "../base/UniversalTest.sol";
 import {IVoter} from "../../src/integrations/pearl/IVoter.sol";
+import {IGaugeV2CL} from "../../src/integrations/pearl/IGaugeV2CL.sol";
 
 contract TridentPearlFarmStrategyTest is RealSetup, UniversalTest {
     address public constant VOTER = 0x4C44cFBBc35e68a31b693b3926F11a40abA5f93B;

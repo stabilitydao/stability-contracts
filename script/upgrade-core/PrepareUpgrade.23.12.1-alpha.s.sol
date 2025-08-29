@@ -2,12 +2,12 @@
 pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
-import "forge-std/Script.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/Zap.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/vaults/RMVault.sol";
+import {Script} from "forge-std/Script.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {Zap} from "../../src/core/Zap.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
 
 contract PrepareUpgrade1 is Script {
     function run() external {

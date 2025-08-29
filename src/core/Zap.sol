@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "./base/Controllable.sol";
-import "./libs/ConstantsLib.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IZap.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {ConstantsLib} from "./libs/ConstantsLib.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IZap} from "../../src/interfaces/IZap.sol";
 
 /// @title Implementation of ZAP feature in the Stability platform.
 /// ZAP feature simplifies the DeFi investment process.

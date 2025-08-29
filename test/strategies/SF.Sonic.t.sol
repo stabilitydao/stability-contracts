@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../../chains/sonic/SonicLib.sol";
-import "../base/UniversalTest.sol";
+import {SonicLib} from "../../chains/sonic/SonicLib.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract SwapXFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {

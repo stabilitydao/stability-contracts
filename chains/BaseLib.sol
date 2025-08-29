@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../src/core/proxy/Proxy.sol";
-import "../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../src/adapters/ChainlinkAdapter.sol";
-import "../src/integrations/convex/IConvexRewardPool.sol";
-import "../src/integrations/gamma/IHypervisor.sol";
-import "../src/strategies/libs/StrategyIdLib.sol";
-import "../src/strategies/libs/ALMPositionNameLib.sol";
-import "../src/strategies/libs/StrategyDeveloperLib.sol";
-import "../src/strategies/CompoundFarmStrategy.sol";
-import "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
-import "../src/interfaces/IFactory.sol";
-import "../src/interfaces/IPlatform.sol";
-import "../src/interfaces/ISwapper.sol";
-import "../src/interfaces/IPlatformDeployer.sol";
-import "../script/libs/LogDeployLib.sol";
-import "../script/libs/DeployAdapterLib.sol";
+import {Proxy} from "../src/core/proxy/Proxy.sol";
+import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
+import {ChainlinkAdapter} from "../src/adapters/ChainlinkAdapter.sol";
+import {IConvexRewardPool} from "../src/integrations/convex/IConvexRewardPool.sol";
+import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
+import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
+import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
+import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
+import {CompoundFarmStrategy} from "../src/strategies/CompoundFarmStrategy.sol";
+import {GammaUniswapV3MerklFarmStrategy} from "../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import {IFactory} from "../src/interfaces/IFactory.sol";
+import {IPlatform} from "../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../src/interfaces/ISwapper.sol";
+import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
+import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
+import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
+import {CVault} from "../src/core/vaults/CVault.sol";
+import {CommonLib} from "../src/core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
+import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
 
 /// @dev Base network [chainId: 8453] data library
 ///      ┳┓

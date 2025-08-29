@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../interfaces/IAmmAdapter.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 
 contract MockAmmAdapter is IAmmAdapter {
     string internal constant _DEX_ADAPTER_ID = "MOCKSWAP";

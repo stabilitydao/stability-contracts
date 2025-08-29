@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../base/UniversalTest.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract BeetsWeightedFarmStrategyTest is SonicSetup, UniversalTest {
     function testBWF() public universalTest {

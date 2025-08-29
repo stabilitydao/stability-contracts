@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/vaults/RMVault.sol";
-import "../../src/strategies/YearnStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
+import {YearnStrategy} from "../../src/strategies/YearnStrategy.sol";
 
 contract PrepareUpgrade5 is Script {
     function run() external {

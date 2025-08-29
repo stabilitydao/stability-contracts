@@ -6,7 +6,7 @@ import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLev
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {Swapper} from "../../src/core/Swapper.sol";

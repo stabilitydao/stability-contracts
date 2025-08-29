@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../base/VaultBase.sol";
-import "../libs/VaultTypeLib.sol";
-import "../../interfaces/IRVault.sol";
-import "../libs/CommonLib.sol";
-import "../base/RVaultBase.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {VaultBase} from "../base/VaultBase.sol";
+import {IVault} from "../../interfaces/IVault.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
+import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
+import {IRVault} from "../../interfaces/IRVault.sol";
+import {CommonLib} from "../libs/CommonLib.sol";
+import {RVaultBase} from "../base/RVaultBase.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @notice Rewarding unmanaged vault.
 ///         Vault has 0% compound ratio, buy-back reward token and additional default boost reward tokens with default vesting duration.

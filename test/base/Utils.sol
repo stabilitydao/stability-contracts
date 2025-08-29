@@ -2,9 +2,9 @@
 pragma solidity ^0.8.23;
 
 import {Test, console} from "forge-std/Test.sol";
-import "@solady/utils/LibString.sol";
+import {LibString} from "@solady/utils/LibString.sol";
 import {Base64 as SoladyBase64} from "@solady/utils/Base64.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 
 abstract contract Utils is Test {

@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/interfaces/IAmmAdapter.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../base/chains/PolygonSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {PolygonSetup} from "../base/chains/PolygonSetup.sol";
+import {PolygonLib} from "../../chains/PolygonLib.sol";
+import {ICAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
 
 contract CurveAdapterTest is PolygonSetup {
     bytes32 public _hash;

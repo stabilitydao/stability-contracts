@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {console} from "forge-std/Test.sol";
-import "../base/chains/PolygonSetup.sol";
-import "../../src/core/libs/VaultTypeLib.sol";
-import "../../src/interfaces/IPriceReader.sol";
-import "../../src/strategies/libs/StrategyIdLib.sol";
+import {PolygonSetup, IERC20, PolygonLib} from "../base/chains/PolygonSetup.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {IZap} from "../../src/interfaces/IZap.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
 
 contract ZapTest is PolygonSetup {
     IPriceReader public priceReader;
