@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {VaultBase} from "../base/VaultBase.sol";
@@ -12,7 +11,6 @@ import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IManagedVault} from "../../interfaces/IManagedVault.sol";
-import {IRVault} from "../../interfaces/IRVault.sol";
 
 /// @notice Rewarding managed vault.
 /// @dev This vault implementation contract is used by VaultProxy instances deployed by the Factory.

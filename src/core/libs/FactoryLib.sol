@@ -12,7 +12,6 @@ import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
-import {IVault} from "../../interfaces/IVault.sol";
 import {IRVault} from "../../interfaces/IRVault.sol";
 import {IVaultProxy} from "../../interfaces/IVaultProxy.sol";
 import {IStrategyProxy} from "../../interfaces/IStrategyProxy.sol";

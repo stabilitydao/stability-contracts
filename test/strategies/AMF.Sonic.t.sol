@@ -9,7 +9,7 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {console} from "forge-std/Test.sol";
 
 contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {

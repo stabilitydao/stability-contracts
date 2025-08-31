@@ -16,8 +16,6 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {ISwapper} from "../interfaces/ISwapper.sol";
-import {IVault} from "../interfaces/IVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";

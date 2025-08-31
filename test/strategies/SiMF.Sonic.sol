@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
 
 contract SiloManagedFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {

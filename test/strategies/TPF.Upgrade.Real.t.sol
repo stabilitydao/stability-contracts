@@ -7,7 +7,6 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {TridentPearlFarmStrategy, StrategyIdLib} from "../../src/strategies/TridentPearlFarmStrategy.sol";
 import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
-import {RealLib} from "../../chains/RealLib.sol";
 
 contract TPFUpgradeTest is Test {
     address public constant PLATFORM = 0xB7838d447deece2a9A5794De0f342B47d0c1B9DC;

@@ -1,22 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
-import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
-import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
@@ -25,7 +16,6 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
-import {IStrategyProxy} from "../../src/interfaces/IStrategyProxy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 

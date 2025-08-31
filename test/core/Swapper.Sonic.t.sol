@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "forge-std/Test.sol";
-import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 

@@ -6,7 +6,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Controllable} from "../core/base/Controllable.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
     using SafeERC20 for IERC20;

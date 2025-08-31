@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";

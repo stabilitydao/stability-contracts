@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
@@ -8,8 +9,8 @@ import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {PendleERC4626WithAdapterSY} from "../../src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol";
 import {PendleWrappedMetaVaultAdapter} from "../../src/periphery/PendleWrappedMetaVaultAdapter.sol";
-import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
-import {console} from "forge-std/Test.sol";
+import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
+// import {console} from "forge-std/Test.sol";
 
 contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     address internal multisig;

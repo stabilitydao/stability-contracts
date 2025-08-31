@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {CommonLib} from "../core/libs/CommonLib.sol";
-import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -12,32 +9,21 @@ import {IFactory} from "../interfaces/IFactory.sol";
 import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.sol";
 import {ILeverageLendingStrategy} from "../interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {IPriceReader} from "../interfaces/IPriceReader.sol";
-import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
-import {ISiloLens} from "../integrations/silo/ISiloLens.sol";
-import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IMerklStrategy} from "../interfaces/IMerklStrategy.sol";
 import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
-import {IVaultMainV3} from "../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {SiloALMFLib} from "./libs/SiloALMFLib.sol";
 import {SiloALMFLib2} from "./libs/SiloALMFLib2.sol";
-import {StrategyLib} from "./libs/StrategyLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
-import {XStaking} from "../tokenomics/XStaking.sol";
 import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
-import {IMetaVault} from "../interfaces/IMetaVault.sol";
-import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
-import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
 
 /// @title Silo V2 advanced leverage Merkl farm strategy
 /// Changelog:

@@ -2,17 +2,10 @@
 pragma solidity ^0.8.28;
 
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
-import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {StrategyLib} from "./StrategyLib.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";

@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
@@ -27,8 +26,6 @@ import {IFlashLoanRecipient} from "../integrations/balancer/IFlashLoanRecipient.
 import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3FlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
-import {IBVault} from "../integrations/balancer/IBVault.sol";
-import {LeverageLendingLib} from "./libs/LeverageLendingLib.sol";
 
 /// @title Silo V2 leverage strategy
 /// Changelog:

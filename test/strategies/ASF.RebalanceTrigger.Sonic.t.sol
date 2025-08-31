@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {SonicLib, ALMLib} from "../../chains/sonic/SonicLib.sol";
+import {Test} from "forge-std/Test.sol";
+import {ALMLib} from "../../chains/sonic/SonicLib.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
 import {IALM} from "../../src/interfaces/IALM.sol";
 import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";

@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {PolygonSetup, IERC20} from "../base/chains/PolygonSetup.sol";
 import {PolygonLib, StrategyIdLib, console, CommonLib, IFactory, IPriceReader} from "../../chains/PolygonLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";

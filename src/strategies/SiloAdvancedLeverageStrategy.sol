@@ -21,13 +21,11 @@ import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3Flash
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
-import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:

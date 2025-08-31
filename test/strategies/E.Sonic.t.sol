@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
+// import {console, Test} from "forge-std/Test.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
 contract EulerStrategyTestSonic is SonicSetup, UniversalTest {

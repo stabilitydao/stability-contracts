@@ -9,7 +9,6 @@ import {ALMLib} from "../libs/ALMLib.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
 import {IALM} from "../../interfaces/IALM.sol";
-import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
 import {IHardWorker} from "../../interfaces/IHardWorker.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";

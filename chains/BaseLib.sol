@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import {Proxy} from "../src/core/proxy/Proxy.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ChainlinkAdapter} from "../src/adapters/ChainlinkAdapter.sol";
-import {IConvexRewardPool} from "../src/integrations/convex/IConvexRewardPool.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";

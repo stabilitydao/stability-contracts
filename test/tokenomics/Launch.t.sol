@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Allocator} from "../../src/tokenomics/Allocator.sol";
 import {Sale} from "../../src/tokenomics/Sale.sol";

@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {PolygonSetup, PolygonLib} from "../base/chains/PolygonSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {IMultiPositionManager} from "../../src/integrations/steer/IMultiPositionManager.sol";
 
 contract SteerQuickSwapMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {

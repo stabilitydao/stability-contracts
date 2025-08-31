@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
@@ -11,7 +11,6 @@ import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IRevenueRouter} from "../../src/interfaces/IRevenueRouter.sol";
 
 contract XStakingTest is Test, MockSetup {

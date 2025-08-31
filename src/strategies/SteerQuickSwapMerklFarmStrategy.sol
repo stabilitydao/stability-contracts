@@ -19,10 +19,8 @@ import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
 import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
-import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
-import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 import {IMultiPositionManager} from "../integrations/steer/IMultiPositionManager.sol";
 

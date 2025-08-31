@@ -9,17 +9,15 @@ import {
     FarmingStrategyBase,
     StrategyBase,
     IFarmingStrategy,
-    IStrategy,
     IFactory,
-    IControllable,
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
-import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import {SonicLib, SonicConstantsLib, StrategyIdLib} from "../../chains/sonic/SonicLib.sol";
+import {SonicConstantsLib, StrategyIdLib} from "../../chains/sonic/SonicLib.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {IBalancerGauge} from "../../src/integrations/balancer/IBalancerGauge.sol";
 

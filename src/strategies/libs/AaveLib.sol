@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IFactory} from "../../interfaces/IFactory.sol";
-import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 import {IAToken} from "../../integrations/aave/IAToken.sol";
 
 library AaveLib {

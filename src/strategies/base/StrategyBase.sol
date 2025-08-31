@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Controllable, IControllable} from "../../core/base/Controllable.sol";
-import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {StrategyLib} from "../libs/StrategyLib.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVault} from "../../interfaces/IVault.sol";

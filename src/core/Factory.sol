@@ -9,7 +9,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {Controllable} from "./base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {CommonLib} from "./libs/CommonLib.sol";
-import {VaultTypeLib} from "./libs/VaultTypeLib.sol";
 import {FactoryLib} from "./libs/FactoryLib.sol";
 import {FactoryNamingLib} from "./libs/FactoryNamingLib.sol";
 import {DeployerLib} from "./libs/DeployerLib.sol";

@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.24;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 /// @notice Restored from 0xbA1333333333a1BA1108E8412f11850A5C319bA9 (sonic)
 interface IVaultMainV3 {
   struct TokenConfig {

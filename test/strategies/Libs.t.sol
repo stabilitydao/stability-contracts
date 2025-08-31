@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IQMFLib} from "../../src/strategies/libs/IQMFLib.sol";
 import {IRMFLib} from "../../src/strategies/libs/IRMFLib.sol";
 
