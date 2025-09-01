@@ -30,6 +30,7 @@ import {IXSilo} from "../integrations/silo/IXSilo.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
 /// Changelog:
+///   1.2.2: StrategyBase 2.5.1
 ///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.2.0: - Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
 ///     - farm.addresses[1] is xSilo address. claimRewards will redeem xSilo to Silo asset - #335
@@ -42,7 +43,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.2.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -172,7 +173,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
         ISiloVault siloVault = _getSiloVault();
         amounts = new uint[](1);
         amounts[0] = siloVault.maxWithdraw(address(this));

@@ -3,8 +3,10 @@ pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
 import "../base/chains/RealSetup.sol";
+import "../base/chains/SonicSetup.sol";
 
-contract ZapTestReal is RealSetup {
+// todo: replace Real-logic by Sonic-logic
+contract ZapTestReal is SonicSetup {
     IZap public zap;
 
     struct ZapTestVars {
@@ -15,13 +17,13 @@ contract ZapTestReal is RealSetup {
         uint[] swapAmounts;
     }
 
-    function setUp() public {
+    function _setUp() internal {
         _init();
         _deployVaults();
         zap = IZap(platform.zap());
     }
 
-    function testZapReal() public {
+    function _testZapReal() internal {
         address vault = factory.deployedVault(0);
 
         ZapTestVars memory v;

@@ -29,6 +29,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
+///   1.1.0: add support of underlying operations - #360
 ///   1.0.0: initial release
 /// @author dvpublic (https://github.com/dvpublic)
 contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
@@ -39,7 +40,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveMerklFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_MERKL_FARM_STRATEGY_STORAGE_LOCATION =
@@ -54,6 +55,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         uint lastSharePrice;
     }
 
+    //region ----------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -76,13 +78,20 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
             StrategyIdLib.AAVE_MERKL_FARM,
             addresses[1],
             _assets,
-            address(0),
+            farm.addresses[0],
             0 // exchangeAssetIndex
         );
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         IERC20(_assets[0]).forceApprove(IAToken(farm.addresses[0]).POOL(), type(uint).max);
     }
+
+    /// @notice Set the underlying asset for the strategy for the case when it wasn't set during initialization
+    function setUnderlying() external onlyOperator {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base._underlying = aaveToken();
+    }
+    //endregion ----------------------- Initialization and restricted actions
 
     //region ----------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -213,7 +222,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
         address aToken = aaveToken();
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -224,7 +233,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
+        amounts[0] = mode == 0 ? Math.min(availableLiquidity, aTokenBalance) : aTokenBalance;
     }
 
     /// @inheritdoc StrategyBase
@@ -235,6 +244,10 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         amounts_[0] = StrategyLib.balance(aaveToken());
     }
 
+    function _previewDepositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {
+        amountsConsumed = new uint[](1);
+        amountsConsumed[0] = amount;
+    }
     //endregion ----------------------- View functions
 
     //region ----------------------- Strategy base
@@ -378,6 +391,24 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total();
+    }
+
+    /// @inheritdoc StrategyBase
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        AaveMerklFarmStrategyStorage storage $ = _getStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        amountsConsumed = _previewDepositUnderlying(amount);
+
+        if ($.lastSharePrice == 0) {
+            $.lastSharePrice = _getSharePrice($base._underlying);
+        }
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawUnderlying(uint amount, address receiver) internal override {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IERC20($base._underlying).safeTransfer(receiver, amount);
     }
 
     //endregion ----------------------- Strategy base

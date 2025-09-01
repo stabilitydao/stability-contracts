@@ -4,12 +4,26 @@ pragma solidity ^0.8.28;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 interface IWrappedMetaVault is IERC4626 {
+    event WithdrawUnderlying(
+        address indexed sender,
+        address indexed receiver,
+        address indexed owner,
+        address underlying,
+        uint underlyingOut,
+        uint assetsAmountIn,
+        address recoveryToken,
+        uint recoveryAmount
+    );
+
     error Slippage(uint value, uint threshold);
+    error RecoveryTokenNotSet(address cVault);
 
     /// @custom:storage-location erc7201:stability.WrappedMetaVault
     struct WrappedMetaVaultStorage {
         address metaVault;
         bool isMulti;
+        /// @dev Recovery tokens for broken c-vaults
+        mapping(address cVault => address recoveryToken) recoveryTokens;
     }
 
     /// @dev Init
@@ -47,4 +61,11 @@ interface IWrappedMetaVault is IERC4626 {
     /// @param minAssets The minimum amount of underlying tokens to be received (slippage protection)
     /// @return assets The amount of underlying tokens withdrawn
     function redeem(uint shares, address receiver, address owner, uint minAssets) external returns (uint);
+
+    /// @notice Recovery token for the given cVault. Zero for not-broken vaults
+    function recoveryToken(address cVault_) external view returns (address);
+
+    /// @notice Set recovery token address for the given cVault
+    /// @custom:access Governance, multisig
+    function setRecoveryToken(address cVault_, address recoveryToken_) external;
 }
