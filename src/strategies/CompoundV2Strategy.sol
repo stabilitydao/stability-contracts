@@ -21,6 +21,8 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Earns APR by lending assets on Compound V2 protocol.
 /// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///   1.0.1: StrategyBase 2.5.1
 contract CompoundV2Strategy is StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -29,7 +31,7 @@ contract CompoundV2Strategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CompoundV2Strategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant COMPOUND_V2_STRATEGY_STORAGE_LOCATION =
