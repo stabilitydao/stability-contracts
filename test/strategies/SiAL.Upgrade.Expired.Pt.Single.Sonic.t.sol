@@ -66,15 +66,12 @@ contract SiALUpgradeExpiredPtSingleTest is Test {
         uint balanceAfter = IERC20(assets[0]).balanceOf(holder_);
 
         assertApproxEqAbs(
-            withdrawn[0],
-            expectedWithdraw,
-            2 * expectedWithdraw / 100,
-            "Withdrawn amount should be close to expected"
+            withdrawn[0], expectedWithdraw, 2 * expectedWithdraw / 100, "Withdrawn amount should be close to expected"
         );
 
         assertGt(balanceAfter - balanceBefore, 0, "Withdrawn balance should be greater than 0");
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "Withdrawn balance should match the returned value");
-    }    //endregion ---------------------------------------- Internal logic
+    } //endregion ---------------------------------------- Internal logic
 
     //region ---------------------------------------- Helpers
     function _getExpectedWithdraw(IVault vault, address holder) internal view returns (uint expectedWithdraw) {
@@ -165,4 +162,3 @@ contract SiALUpgradeExpiredPtSingleTest is Test {
     }
     //endregion ---------------------------------------- Helpers
 }
-

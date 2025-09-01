@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
+
 import {FixedPointMathLib} from "../../../lib/solady/src/utils/FixedPointMathLib.sol";
 
 library UniswapV3MathLib {
@@ -40,20 +41,18 @@ library UniswapV3MathLib {
         if (tokenIn == token0) {
             // decimal IN = decimal 0, decimal OUT = decimal 1
             // price0in1 * 10^decimal1 = sqrtPriceX96^2 / 2**192 * 10^decimal0
-            uint sqrtPriceX18 = FixedPointMathLib.mulDivUp(sqrtPriceX96, 1e18, 2**96);
-            price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
+            uint sqrtPriceX18 = FixedPointMathLib.mulDivUp(sqrtPriceX96, 1e18, 2 ** 96);
+            price = sqrtPriceX18 * sqrtPriceX18 * 10 ** tokenInDecimals / 1e18 / 1e18;
         } else {
             // decimal IN = decimal 1, decimal OUT = decimal 0
             // price0in1 = sqrtPriceX96^2 / 2**192 * 10^decimal0 / 10^decimal1
             // (1 / price0in1) = 2**192 / sqrtPriceX96^2 * 10^decimal1 / 10^decimal0
             // (1 / price0in1) * 10^decimal0 = 2**192 / sqrtPriceX96^2 * 10^decimal1
-            uint sqrtPriceX18 = FixedPointMathLib.mulDiv(2**96, 1e18, sqrtPriceX96);
-            price = sqrtPriceX18 * sqrtPriceX18 * 10**tokenInDecimals / 1e18 / 1e18;
+            uint sqrtPriceX18 = FixedPointMathLib.mulDiv(2 ** 96, 1e18, sqrtPriceX96);
+            price = sqrtPriceX18 * sqrtPriceX18 * 10 ** tokenInDecimals / 1e18 / 1e18;
         }
 
-        return amount == 0
-            ? price
-            : price * amount / (10 ** tokenInDecimals);
+        return amount == 0 ? price : price * amount / (10 ** tokenInDecimals);
     }
 
     /// @notice Old version of calcPriceOut. It has problems i.e. with decimals 6:6 and large sqrtPriceX96 values.

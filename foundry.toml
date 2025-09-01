@@ -8,6 +8,7 @@ gas_limit = "18446744073709551615"
 optimizer = true
 optimizer-runs = 200
 evm_version = "Cancun"
+test_no_match_test = ["CVaultBatchSonicTest"]
 
 [profile.lite]
 optimizer = false

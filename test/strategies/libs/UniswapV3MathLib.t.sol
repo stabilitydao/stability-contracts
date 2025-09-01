@@ -53,7 +53,7 @@ contract UniswapV3MathLibTests is Test {
             6,
             2e6
         );
-        assertEq(price, 2*1030, "Expected amount of wstkscUSD for 2 bUSDCe20");
+        assertEq(price, 2 * 1030, "Expected amount of wstkscUSD for 2 bUSDCe20");
 
         //----------------------- Token 0 is token OUT
         price = UniswapV3MathLib.calcPriceOut(
@@ -74,7 +74,7 @@ contract UniswapV3MathLibTests is Test {
             6,
             3e6
         );
-        assertApproxEqAbs(price, 3*970661832, 100, "Expected amount of bUSDCe20 for 3 wstkscUSD");
+        assertApproxEqAbs(price, 3 * 970661832, 100, "Expected amount of bUSDCe20 for 3 wstkscUSD");
     }
 
     /// @dev Calculate prices for two tokens with decimals 18 and 6
@@ -83,43 +83,23 @@ contract UniswapV3MathLibTests is Test {
 
         //----------------------- Token 0 is token IN
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wS,
-            45035495122636274992972,
-            18,
-            6,
-            0
+            SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 18, 6, 0
         );
         assertEq(price, 323110, "Expected price of wS in USDC");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wS,
-            45035495122636274992972,
-            18,
-            6,
-            1e18
+            SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 18, 6, 1e18
         );
         assertEq(price, 323110, "Expected amount of wS for 1 USDC");
 
         //----------------------- Token 0 is token OUT
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wS,
-            45035495122636274992972,
-            6,
-            18,
-            0
+            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 6, 18, 0
         );
         assertApproxEqAbs(price, 3094918977041563606, 20, "Expected price of USDC in wS");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wS,
-            45035495122636274992972,
-            6,
-            18,
-            1e6
+            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 6, 18, 1e6
         );
         assertApproxEqAbs(price, 3094918977041563606, 100, "Expected amount of USDC for 1 wS");
     }
@@ -132,8 +112,8 @@ contract UniswapV3MathLibTests is Test {
                     uint d0 = decimals[i];
                     uint d1 = decimals[j];
 
-                    uint price = prices18[p] * 10**d1 / 1e18;
-                    uint sqrtPriceX96 = Math.sqrt(price * (2**192 / 10**d0));
+                    uint price = prices18[p] * 10 ** d1 / 1e18;
+                    uint sqrtPriceX96 = Math.sqrt(price * (2 ** 192 / 10 ** d0));
 
                     uint priceOutDirect = UniswapV3MathLib.calcPriceOut(
                         SonicConstantsLib.TOKEN_USDC, // any address
@@ -143,18 +123,18 @@ contract UniswapV3MathLibTests is Test {
                         d1,
                         0
                     );
-//                    uint priceOutOld = UniswapV3MathLib.calcPriceOutDeprecated(
-//                        SonicConstantsLib.TOKEN_USDC, // any address
-//                        SonicConstantsLib.TOKEN_USDC, // same address
-//                        uint160(sqrtPriceX96),
-//                        d0,
-//                        d1,
-//                        0
-//                    );
+                    //                    uint priceOutOld = UniswapV3MathLib.calcPriceOutDeprecated(
+                    //                        SonicConstantsLib.TOKEN_USDC, // any address
+                    //                        SonicConstantsLib.TOKEN_USDC, // same address
+                    //                        uint160(sqrtPriceX96),
+                    //                        d0,
+                    //                        d1,
+                    //                        0
+                    //                    );
 
-//                    console.log("D0, D1, 10*p_expected/p_calculated", d0, d1, price*1e18/priceOutDirect);
-//                    console.log("price exact, price calculated, price old", price, priceOutDirect, priceOutOld);
-                    assertApproxEqAbs(price, priceOutDirect, price/1e5, "Prices should be equal");
+                    //                    console.log("D0, D1, 10*p_expected/p_calculated", d0, d1, price*1e18/priceOutDirect);
+                    //                    console.log("price exact, price calculated, price old", price, priceOutDirect, priceOutOld);
+                    assertApproxEqAbs(price, priceOutDirect, price / 1e5, "Prices should be equal");
                 }
             }
         }
@@ -168,8 +148,8 @@ contract UniswapV3MathLibTests is Test {
                     uint d0 = decimals[i];
                     uint d1 = decimals[j];
 
-                    uint price = prices18[p] * 10**d1 / 1e18;
-                    uint sqrtPriceX96 = Math.sqrt(price * (2**192 / 10**d0));
+                    uint price = prices18[p] * 10 ** d1 / 1e18;
+                    uint sqrtPriceX96 = Math.sqrt(price * (2 ** 192 / 10 ** d0));
 
                     uint priceOut = UniswapV3MathLib.calcPriceOut(
                         SonicConstantsLib.TOKEN_wETH, // token In is token 1
@@ -180,17 +160,17 @@ contract UniswapV3MathLibTests is Test {
                         0
                     );
 
-                    uint priceExpected = 10**d0 * 10**d1 / price;
+                    uint priceExpected = 10 ** d0 * 10 ** d1 / price;
 
-//                    console.log("D0, D1, 10*p_expected/p_calculated", d0, d1, priceExpected*1e18/priceOut);
-//                    console.log("price exact, price calculated", priceExpected, priceOut, sqrtPriceX96);
-                    assertApproxEqAbs(priceExpected, priceOut, priceExpected/1e5, "Prices should be equal");
+                    //                    console.log("D0, D1, 10*p_expected/p_calculated", d0, d1, priceExpected*1e18/priceOut);
+                    //                    console.log("price exact, price calculated", priceExpected, priceOut, sqrtPriceX96);
+                    assertApproxEqAbs(priceExpected, priceOut, priceExpected / 1e5, "Prices should be equal");
                 }
             }
         }
     }
 
-    function testKnownPrices() external view{
+    function testKnownPrices() external view {
         address[COUNT_KNOWN_PRICES] memory tokens0 = [
             SonicConstantsLib.TOKEN_USDC,
             SonicConstantsLib.TOKEN_wS,
@@ -262,7 +242,7 @@ contract UniswapV3MathLibTests is Test {
                 0
             );
             // console.log(i, price, expectedPrices[i]);
-            assertApproxEqAbs(price, expectedPrices[i], price/10_000, "Price should be close to expected");
+            assertApproxEqAbs(price, expectedPrices[i], price / 10_000, "Price should be close to expected");
 
             uint priceOld = UniswapV3MathLib.calcPriceOutDeprecated(
                 tokens0[i],
@@ -273,9 +253,9 @@ contract UniswapV3MathLibTests is Test {
                 0
             );
 
-//            console.log("price, priceOld", price, priceOld);
+            //            console.log("price, priceOld", price, priceOld);
             if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
-                assertApproxEqAbs(price, priceOld, price/10_000, "Price should be close to previous one");
+                assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
 
@@ -290,7 +270,9 @@ contract UniswapV3MathLibTests is Test {
                 0
             );
             // console.log(i, price, expectedReversePrices[i]);
-            assertApproxEqAbs(price, expectedReversePrices[i], price/10_000, "Reverse price should be close to expected");
+            assertApproxEqAbs(
+                price, expectedReversePrices[i], price / 10_000, "Reverse price should be close to expected"
+            );
 
             uint priceOld = UniswapV3MathLib.calcPriceOutDeprecated(
                 tokens1[i],
@@ -301,12 +283,11 @@ contract UniswapV3MathLibTests is Test {
                 0
             );
 
-//            console.log("price, priceOld", price, priceOld);
+            //            console.log("price, priceOld", price, priceOld);
             if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
-                assertApproxEqAbs(price, priceOld, price/10_000, "Price should be close to previous one");
+                assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
-
     }
 
     function testAmounts() external view {
@@ -318,8 +299,8 @@ contract UniswapV3MathLibTests is Test {
                     uint d1 = decimals[j];
                     uint amountIn = 1_000_000_000; // very large amount without decimals
 
-                    uint price = prices18[p] * 10**d1 / 1e18;
-                    uint sqrtPriceX96 = Math.sqrt(price * (2**192 / 10**d0));
+                    uint price = prices18[p] * 10 ** d1 / 1e18;
+                    uint sqrtPriceX96 = Math.sqrt(price * (2 ** 192 / 10 ** d0));
 
                     uint priceOutDirect = UniswapV3MathLib.calcPriceOut(
                         SonicConstantsLib.TOKEN_USDC, // any address
@@ -327,17 +308,17 @@ contract UniswapV3MathLibTests is Test {
                         uint160(sqrtPriceX96),
                         d0,
                         d1,
-                        amountIn * 10**d0
+                        amountIn * 10 ** d0
                     );
 
                     // console.log("price, priceOutDirect", price, priceOutDirect);
-                    assertApproxEqAbs(amountIn * price, priceOutDirect, priceOutDirect/1e5, "Prices should be equal");
+                    assertApproxEqAbs(amountIn * price, priceOutDirect, priceOutDirect / 1e5, "Prices should be equal");
                 }
             }
         }
     }
 
-    function testKnownAmounts() external view{
+    function testKnownAmounts() external view {
         address[COUNT_KNOWN_PRICES] memory tokens0 = [
             SonicConstantsLib.TOKEN_USDC,
             SonicConstantsLib.TOKEN_wS,
@@ -406,10 +387,10 @@ contract UniswapV3MathLibTests is Test {
                 uint160(sqrtPricesX96[i]),
                 IERC20Metadata(tokens0[i]).decimals(),
                 IERC20Metadata(tokens1[i]).decimals(),
-                5 * 10**IERC20Metadata(tokens0[i]).decimals()
+                5 * 10 ** IERC20Metadata(tokens0[i]).decimals()
             );
             // console.log(i, price, 5 * expectedPrices[i]);
-            assertApproxEqAbs(price, 5 * expectedPrices[i], price/10_000, "Price should be close to expected");
+            assertApproxEqAbs(price, 5 * expectedPrices[i], price / 10_000, "Price should be close to expected");
 
             uint priceOld = UniswapV3MathLib.calcPriceOutDeprecated(
                 tokens0[i],
@@ -417,12 +398,12 @@ contract UniswapV3MathLibTests is Test {
                 uint160(sqrtPricesX96[i]),
                 IERC20Metadata(tokens0[i]).decimals(),
                 IERC20Metadata(tokens1[i]).decimals(),
-                5 * 10**IERC20Metadata(tokens0[i]).decimals()
+                5 * 10 ** IERC20Metadata(tokens0[i]).decimals()
             );
 
             // console.log("price, priceOld", price, priceOld);
             if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
-                assertApproxEqAbs(price, priceOld, price/10_000, "Price should be close to previous one");
+                assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
 
@@ -434,10 +415,12 @@ contract UniswapV3MathLibTests is Test {
                 uint160(sqrtPricesX96[i]),
                 IERC20Metadata(tokens1[i]).decimals(),
                 IERC20Metadata(tokens0[i]).decimals(),
-                3 * 10**IERC20Metadata(tokens1[i]).decimals()
+                3 * 10 ** IERC20Metadata(tokens1[i]).decimals()
             );
             // console.log(i, price, 3 * expectedReversePrices[i]);
-            assertApproxEqAbs(price, 3 * expectedReversePrices[i], price/10_000, "Reverse price should be close to expected");
+            assertApproxEqAbs(
+                price, 3 * expectedReversePrices[i], price / 10_000, "Reverse price should be close to expected"
+            );
 
             uint priceOld = UniswapV3MathLib.calcPriceOutDeprecated(
                 tokens1[i],
@@ -445,12 +428,12 @@ contract UniswapV3MathLibTests is Test {
                 uint160(sqrtPricesX96[i]),
                 IERC20Metadata(tokens1[i]).decimals(),
                 IERC20Metadata(tokens0[i]).decimals(),
-                3 * 10**IERC20Metadata(tokens1[i]).decimals()
+                3 * 10 ** IERC20Metadata(tokens1[i]).decimals()
             );
 
             // console.log("price, priceOld", price, priceOld);
             if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
-                assertApproxEqAbs(price, priceOld, price/10_000, "Price should be close to previous one");
+                assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
     }
