@@ -32,7 +32,8 @@ import {console, Test} from "forge-std/Test.sol";
 
 contract WrapperMetaUsdRestartSonicTest is Test {
     // uint public constant FORK_BLOCK = 42601861; // Aug-12-2025 03:58:17 AM +UTC
-    uint public constant FORK_BLOCK = 42622282; // Aug-12-2025 07:58:50 AM +UTC
+    // uint public constant FORK_BLOCK = 42622282; // Aug-12-2025 07:58:50 AM +UTC
+    uint public constant FORK_BLOCK = 42789000; // Aug-13-2025 10:30:56 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
@@ -332,7 +333,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         // ---------------------------------- set up recovery tokens
         console.log("Set up recovery tokens");
         {
-            _upgradePlatform();
+            // _upgradePlatform();
             _setupMetaVaultFactory();
 
             //            _createMockedRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
