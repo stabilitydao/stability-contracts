@@ -126,5 +126,7 @@ contract MockVaultUpgrade is Controllable, ERC20Upgradeable, IVault {
 
     function maxWithdraw(address account) external view virtual returns (uint amount) {}
 
+    function maxWithdraw(address account, uint mode) external view virtual returns (uint amount) {}
+
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
 }

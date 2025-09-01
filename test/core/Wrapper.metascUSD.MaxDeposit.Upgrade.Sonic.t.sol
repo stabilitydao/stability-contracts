@@ -152,7 +152,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         wmcMaxWithdraw = [
             wrappedMetaVault.maxWithdraw(address(this)),
             metaVault.maxWithdraw(address(wrappedMetaVault)),
-            IVault(VAULT_WITH_EULER_STRATEGY).maxWithdraw(address(metaVault))
+            IVault(VAULT_WITH_EULER_STRATEGY).maxWithdraw(address(metaVault), 0)
         ];
         //        console.log("max W", wmcMaxWithdraw[0]);
         //        console.log("max M", wmcMaxWithdraw[1]);

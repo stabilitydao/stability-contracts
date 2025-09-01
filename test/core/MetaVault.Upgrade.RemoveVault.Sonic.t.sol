@@ -94,7 +94,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     /// @notice Ensure that the vault has enough liquidity to withdraw all assets
     function _isVaultRemovable(uint valueIndex) internal view returns (bool) {
         address vault = metaVault.vaults()[valueIndex];
-        return IStabilityVault(vault).maxWithdraw(address(metaVault))
+        return IStabilityVault(vault).maxWithdraw(address(metaVault), 0)
             == IStabilityVault(vault).balanceOf(address(metaVault));
     }
 

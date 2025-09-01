@@ -35,6 +35,17 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
     address public constant VAULT_C_WMETAUSD_USDC_121 = 0xe965c5114F689BF9184D9300F3af4A378c6934A9;
     address public constant VAULT_C_WMETAUSD_scUSD_125 = 0x58D310a1A490f0daa86608998E08852630000151;
+    address public constant VAULT_C_Enclabs_USDC_CVv8 = 0xEfDF0f2B8D056009Bd50125B76567110aD52ec91;
+    address public constant VAULT_C_Silo_USDC_36_eS3 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
+
+    // broken Credix vaults
+    address public constant VAULT_C_Credix_USDC_AMFa0 = 0xd627ed348569Ff34750a1Fb5Fd13ea849cCF3440;
+    address public constant VAULT_C_Credix_USDC_AMFa5 = 0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7;
+    address public constant VAULT_C_Credix_scUSD_AMFa0 = 0x25a2E994deb1009b0b6BB7cba30Bc25aFe8be016;
+    address public constant VAULT_C_Credix_scUSD_AMFa5 = 0xF63614b859c9e8103d73Bb49E002e27F3776aF93;
+
+    address public constant VAULT_C_Credix_wS_AMFa0 = 0xA6F8bC82Ab88F74cE6c69feB8A4d2F5181A49647;
+    address public constant VAULT_C_Credix_wS_AMFa5 = 0x561c88552A9379246Bc5BdD82F9F196231C435F3;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;

@@ -14,6 +14,7 @@ import {RealLib} from "../../chains/RealLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
+// todo: replace Real by other chain if needed
 contract SolidlyAdapterTest is Test {
     address public constant PLATFORM = 0xB7838d447deece2a9A5794De0f342B47d0c1B9DC;
     IAmmAdapter public adapter;
@@ -23,8 +24,8 @@ contract SolidlyAdapterTest is Test {
     address public constant STRATEGY = 0xF85530577DCB8A00C2254a1C7885F847230C3097;
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("REAL_RPC_URL")));
-        vm.rollFork(1225288); // dec 1 2024
+        //        vm.selectFork(vm.createFork(vm.envString("REAL_RPC_URL")));
+        //        vm.rollFork(1225288); // dec 1 2024
     }
 
     function _addAdapter() internal {
@@ -38,7 +39,7 @@ contract SolidlyAdapterTest is Test {
         IPlatform(PLATFORM).addAmmAdapter(id, address(proxy));
     }
 
-    function testViewMethods() public {
+    function _testViewMethods() internal {
         _addAdapter();
 
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
@@ -72,7 +73,7 @@ contract SolidlyAdapterTest is Test {
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);
     }
 
-    function testSwaps() public {
+    function _testSwaps() internal {
         _addAdapter();
 
         deal(RealLib.TOKEN_USDC, address(adapter), 1000e6);

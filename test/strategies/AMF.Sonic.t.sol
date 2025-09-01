@@ -9,6 +9,7 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {console, Test} from "forge-std/Test.sol";
 
 contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
@@ -115,6 +116,22 @@ contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         );
 
         vm.revertToState(snapshot);
+    }
+
+    /// @notice Deal doesn't work with aave tokens. So, deal the asset and mint aTokens instead.
+    /// @dev https://github.com/foundry-rs/forge-std/issues/140
+    function _dealUnderlying(address underlying, address to, uint amount) internal override {
+        IPool pool = IPool(IAToken(underlying).POOL());
+
+        address asset = IAToken(underlying).UNDERLYING_ASSET_ADDRESS();
+
+        deal(asset, to, amount);
+
+        vm.prank(to);
+        IERC20(asset).approve(address(pool), amount);
+
+        vm.prank(to);
+        pool.deposit(asset, amount, to, 0);
     }
 
     //region -------------------------------- Internal logic

@@ -25,6 +25,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.7.1: Add maxWithdraw with mode - #360
 ///   2.7.0: Add maxDeposit - #330; refactoring to reduce size.
 ///   2.6.0: Add maxWithdraw - #326
 ///   2.5.0: Use strategy.fuseMode to detect fuse mode - #305
@@ -51,7 +52,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.7.0";
+    string public constant VERSION_VAULT_BASE = "2.7.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -485,8 +486,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
     /// @inheritdoc IStabilityVault
     function maxWithdraw(address account) public view virtual returns (uint vaultShares) {
+        return maxWithdraw(account, 0);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account, uint mode) public view virtual returns (uint vaultShares) {
         uint balance = balanceOf(account);
-        uint[] memory amounts = strategy().maxWithdrawAssets();
+        uint[] memory amounts = strategy().maxWithdrawAssets(mode);
         if (amounts.length == 0) {
             // strategy allows to withdraw full amount
             // so all vault shares can be withdrawn
