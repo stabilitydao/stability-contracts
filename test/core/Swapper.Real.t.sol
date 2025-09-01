@@ -4,11 +4,13 @@ pragma solidity ^0.8.23;
 import {Test} from "forge-std/Test.sol";
 import "../../chains/RealLib.sol";
 import "../base/chains/RealSetup.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
 
-contract SwapperRealTest is Test, RealSetup {
+// todo: replace Real-logic by Sonic-logic
+contract SwapperRealTest is Test, SonicSetup {
     ISwapper public swapper;
 
-    function setUp() public {
+    function _setUp() internal {
         _init();
         swapper = ISwapper(platform.swapper());
         _deal(RealLib.TOKEN_USDC, address(this), 1000e6);
@@ -23,7 +25,7 @@ contract SwapperRealTest is Test, RealSetup {
         IERC20(RealLib.TOKEN_RWA).approve(address(swapper), type(uint).max);
     }
 
-    function testSwaps() public {
+    function _testSwaps() internal {
         uint got;
         swapper.swap(RealLib.TOKEN_USDC, RealLib.TOKEN_DAI, 100e6, 1_000); // 1%
         got = IERC20(RealLib.TOKEN_DAI).balanceOf(address(this));

@@ -115,9 +115,9 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         uint amountToLeave = 100e6; // leave some USDC in the pool
         {
             IAToken aToken = IAToken(AaveStrategy(address(strategy)).aaveToken());
-            uint availableLiquidity = strategy.maxWithdrawAssets()[0];
+            uint availableLiquidity = strategy.maxWithdrawAssets(0)[0];
             _borrowAlmostAllCashAave(IPool(aToken.POOL()), availableLiquidity, amountToLeave);
-            availableLiquidity = strategy.maxWithdrawAssets()[0];
+            availableLiquidity = strategy.maxWithdrawAssets(0)[0];
         }
 
         // ------------------- get maxWithdraw for wrapped/meta-vault/c-vault
@@ -157,7 +157,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
             wrappedMetaVault.maxWithdraw(address(this)),
             metaVault.maxWithdraw(address(wrappedMetaVault)),
             multiVault.maxWithdraw(address(metaVault)),
-            IVault(VAULT_WITH_AAVE_STRATEGY).maxWithdraw(address(multiVault))
+            IVault(VAULT_WITH_AAVE_STRATEGY).maxWithdraw(address(multiVault), 0)
         ];
         //        console.log("max W", wmcMaxWithdraw[0]);
         //        console.log("max M", wmcMaxWithdraw[1]);

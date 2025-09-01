@@ -11,8 +11,13 @@ import {IOracle} from "../integrations/dia/IOracle.sol";
 /// Changelog:
 ///   1.1.0: add updatePriceFeed; only gov or multisig can removePriceFeeds
 /// @author Alien Deployer (https://github.com/a17)
+/// @custom:deprecated The adapter was used on Real only and now it's not used anymore
+/// If we decided to use it on other chain we need to add new tests for it
 contract DiaAdapter is Controllable, IOracleAdapter {
     using EnumerableSet for EnumerableSet.AddressSet;
+
+    // Exclude from coverage report
+    function test() public {}
 
     /// @inheritdoc IControllable
     string public constant VERSION = "1.1.0";

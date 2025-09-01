@@ -59,7 +59,7 @@ contract EUpgradeTest is Test {
         _borrowAlmostAllCash(eulerVault, cash);
 
         uint balanceAssets = eulerVault.convertToAssets(eulerVault.balanceOf(address(strategy)));
-        uint availableLiquidity = strategy.maxWithdrawAssets()[0];
+        uint availableLiquidity = strategy.maxWithdrawAssets(0)[0];
 
         // ------------------- amount of vault tokens that can be withdrawn
         uint balanceToWithdraw =

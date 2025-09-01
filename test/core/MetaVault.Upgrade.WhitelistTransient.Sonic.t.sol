@@ -72,7 +72,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
 
     //region ------------------------- Internal logic
     function _tryDepositWithdrawTransfer(address user_, bool shouldRevert) internal {
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
 
         // ------------------------ deposit
         assets = metaVault.assetsForDeposit();
@@ -103,7 +103,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
         vm.prank(user_);
         IStabilityVault(metaVault).transfer(address(this), balance);
 
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
     }
     //endregion ------------------------- Internal logic
 
