@@ -456,6 +456,7 @@ contract Platform is Controllable, IPlatform {
         $.metaVaultFactory = metaVaultFactory_;
     }
 
+    /// @inheritdoc IPlatform
     function setupVaultPriceOracle(address vaultPriceOracle_) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
         emit VaultPriceOracle(vaultPriceOracle_);

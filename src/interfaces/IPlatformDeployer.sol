@@ -18,11 +18,5 @@ interface IPlatformDeployer {
         uint fee;
         uint feeShareVaultManager;
         uint feeShareStrategyLogic;
-        uint minQuorum;
-        uint maxPriceAge;
-        address[] validators;
-        address[] vaults;
-        uint[] vaultPriceThresholds;
-        uint[] vaultStaleness;
     }
 }
