@@ -28,6 +28,15 @@ import {console, Test} from "forge-std/Test.sol";
 import {IStrategyProxy} from "../../src/interfaces/IStrategyProxy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {IAToken} from "../../src/integrations/aave/IAToken.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {BeetsStableFarm} from "../../src/strategies/BeetsStableFarm.sol";
+import {BeetsWeightedFarm} from "../../src/strategies/BeetsWeightedFarm.sol";
+import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
+import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
+import {GammaUniswapV3MerklFarmStrategy} from "../../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
+import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
+import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 
 /// @notice Test multiple vaults on given/current block and save summary report to the file
 contract CVaultUpgradeBatchSonicTest is Test {
@@ -89,6 +98,14 @@ contract CVaultUpgradeBatchSonicTest is Test {
         }
         console.log("<<<< Finish Batch Sonic CVault upgrade test <<<<");
 
+        {
+            uint countFailed;
+            for (uint i = 0; i < results.length; i++) {
+                if (!results[i].success) countFailed++;
+            }
+            console.log("Results success/failed/total", _deployedVaults.length - countFailed, countFailed, _deployedVaults.length);
+        }
+
         _saveResults(results, _deployedVaults);
 
         // todo assertEq(success, true, "All vaults should pass deposit/withdraw test");
@@ -99,6 +116,25 @@ contract CVaultUpgradeBatchSonicTest is Test {
         TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
         showResults(r);
         assertEq(r.success, true, "Selected vault should pass deposit/withdraw test");
+    }
+
+    /// @dev Auxiliary test to set up _deal function
+    function testDial() internal {
+        address[] memory _deployedVaults = factory.deployedVaults();
+        for (uint i = 0; i < _deployedVaults.length; i++) {
+            uint status = factory.vaultStatus(_deployedVaults[i]);
+            if (status == 1) {
+                console.log(i);
+                IStabilityVault _vault = IStabilityVault(_deployedVaults[i]);
+                console.log(i);
+                address[] memory assets = _vault.assets();
+
+                console.log(i);
+                console.log("Vault, asset", _deployedVaults[i], IERC20Metadata(_deployedVaults[i]).symbol(), assets[0]);
+                _dealAndApprove(_vault, address(this), 0);
+                console.log("done");
+            }
+        }
     }
 
     //region ---------------------- Auxiliary functions
@@ -197,7 +233,11 @@ contract CVaultUpgradeBatchSonicTest is Test {
             ? _getDefaultAmountToDeposit(assets[0])
             : amount_;
 
-        deal(assets[0], address(this), amounts[0]);
+        if (assets[0] == SonicConstantsLib.TOKEN_aUSDC) {
+            _dealAave(assets[0], address(this), amounts[0]);
+        } else {
+            deal(assets[0], address(this), amounts[0]);
+        }
 
         vm.prank(user);
         IERC20(assets[0]).approve(address(vault), amounts[0]);
@@ -206,10 +246,8 @@ contract CVaultUpgradeBatchSonicTest is Test {
     }
 
     function _saveResults(TestResult[] memory results, address[] memory vaults_) internal {
-        string memory fileName = "./tmp/CVault.Upgrade.Batch.Sonic.results.csv";
         string memory content = "Status;VaultAddress;VaultName;Success;TotalGasConsumed;AmountDeposited;AmountWithdrawn;LossPercent(1000=1%);EarningsPercent(1000=1%)\n";
         for (uint i = 0; i < results.length; i++) {
-
             content = string(abi.encodePacked(
                 content,
                 Strings.toString(results[i].status), ";",
@@ -223,7 +261,7 @@ contract CVaultUpgradeBatchSonicTest is Test {
                 Strings.toString(results[i].earningsPercent * 100_000 / 1e18), "\n"
             ));
         }
-        vm.writeFile(fileName, content);
+        vm.writeFile("./tmp/CVault.Upgrade.Batch.Sonic.results.csv", content);
     }
 
     function showResults(TestResult memory r) internal pure {
@@ -248,6 +286,22 @@ contract CVaultUpgradeBatchSonicTest is Test {
 
         vm.prank(multisig);
         strategy.setUniversalParams(params, addresses);
+    }
+
+    /// @notice Deal doesn't work with aave tokens. So, deal the asset and mint aTokens instead.
+    /// @dev https://github.com/foundry-rs/forge-std/issues/140
+    function _dealAave(address aToken_, address to, uint amount) internal {
+        IPool pool = IPool(IAToken(aToken_).POOL());
+
+        address asset = IAToken(aToken_).UNDERLYING_ASSET_ADDRESS();
+
+        deal(asset, to, amount);
+
+        vm.prank(to);
+        IERC20(asset).approve(address(pool), amount);
+
+        vm.prank(to);
+        pool.deposit(asset, amount, to, 0);
     }
     //endregion ---------------------- Auxiliary functions
 
@@ -377,6 +431,20 @@ contract CVaultUpgradeBatchSonicTest is Test {
             _upgradeIchiSwapxFarmStrategy(address(strategy));
         } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
             _upgradeSiALStrategy(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.BEETS_STABLE_FARM)) {
+            _upgradeBeetsStable(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.BEETS_WEIGHTED_FARM)) {
+            _upgradeBeetsWeightedFarm(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.EQUALIZER_FARM)) {
+            _upgradeEqualizerFarm(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SWAPX_FARM)) {
+            _upgradeSwapXFarm(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM)) {
+            _upgradeGammaUniswapV3MerklFarm(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.ALM_SHADOW_FARM)) {
+            _upgradeAlmShadowFarm(address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_LEVERAGE)) {
+            _upgradeSiloLeverage(address(strategy));
         } else {
             console.log("Error: strategy is not upgraded", strategy.strategyLogicId());
         }
@@ -476,7 +544,138 @@ contract CVaultUpgradeBatchSonicTest is Test {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
+    function _upgradeBeetsStable(address strategyAddress) internal {
+        address strategyImplementation = address(new BeetsStableFarm());
 
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.BEETS_STABLE_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeBeetsWeightedFarm(address strategyAddress) internal {
+        address strategyImplementation = address(new BeetsWeightedFarm());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.BEETS_WEIGHTED_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeEqualizerFarm(address strategyAddress) internal {
+        address strategyImplementation = address(new EqualizerFarmStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.EQUALIZER_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeSwapXFarm(address strategyAddress) internal {
+        address strategyImplementation = address(new SwapXFarmStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SWAPX_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeGammaUniswapV3MerklFarm(address strategyAddress) internal {
+        address strategyImplementation = address(new GammaUniswapV3MerklFarmStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeAlmShadowFarm(address strategyAddress) internal {
+        address strategyImplementation = address(new ALMShadowFarmStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.ALM_SHADOW_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeSiloLeverage(address strategyAddress) internal {
+        address strategyImplementation = address(new SiloLeverageStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO_LEVERAGE,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
     //endregion ---------------------- Helpers
 
 }
