@@ -599,4 +599,10 @@ contract PlatformTest is Test {
     function testOther() public pure {
         assertEq(StrategyDeveloperLib.getDeveloper("unknown"), address(0));
     }
+
+    function testSetupVaultPriceOracle() public {
+        platform.initialize(address(this), "23.11.0-dev");
+        platform.setupVaultPriceOracle(address(123));
+        assertEq(platform.vaultPriceOracle(), address(123));
+    }
 }
