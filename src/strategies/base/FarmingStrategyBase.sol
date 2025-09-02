@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {StrategyBase, StrategyLib, IControllable, IStrategy, IERC165} from "./StrategyBase.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {ISiloVault} from "../../integrations/silo/ISiloVault.sol";
+import {StrategyBase, StrategyLib, IControllable, IStrategy, IERC165} from "./StrategyBase.sol";
 
 /// @title Base farming strategy
 /// @author Alien Deployer (https://github.com/a17)
 /// Changelog:
-///   1.3.4: _liquidateRewards is virtual
+///   1.3.4: liquidateRewards is virtual, use StrategyBase 2.5.0
 ///   1.3.3: StrategyBase 2.2.0
 ///   1.3.2: refreshFarmingAssets bugfix
 ///   1.3.1: liquidateRewards fix

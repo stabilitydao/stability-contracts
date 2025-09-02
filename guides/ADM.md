@@ -1,4 +1,4 @@
-# Platform Administration Guide V5
+# Platform Administration Guide V6
 
 ## Dedicated sender actions
 
@@ -270,7 +270,7 @@ Call it via Safe Transaction Builder:
 * developer: 0x0000000000000000000000000000000000000000 (zero address for upgrades and NFT receiver address for new logic)
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
-* Upgrade vault's strategy [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
+* Upgrade all vault's strategies [UpgradeHelper sonicscan](https://sonicscan.org/address/0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A)
 
 ### Init contest gems rewards
 
@@ -296,7 +296,7 @@ Use `IPlatform.announcePlatformUpgrade`
 
 ### Disable last block defense
 
-Use `IStabilityVault.setLastBlockDefenseDisabled` method for target vaults.
+Use `IStabilityVault.setLastBlockDefenseDisabled` method for each target vault.
 
 Call it via Safe Transaction Builder:
 
@@ -311,3 +311,59 @@ Call it via Safe Transaction Builder:
 [{"type": "function","name": "setLastBlockDefenseDisabled","inputs": [{"name": "isDisabled","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
 `
 </details>
+
+### Disable doHardWorkOnDeposit
+
+Use `IVault.setDoHardWorkOnDeposit` method for each target vault.
+
+Call it via Safe Transaction Builder:
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `<vault address>`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setDoHardWorkOnDeposit","inputs": [{"name": "value","type": "bool","internalType": "bool"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+### Add vault to MetaVault
+
+Use `IMetaVault.addVault` method for MetaVault.
+
+* Prepare vault
+  * setDoHardWorkOnDeposit: false
+  * setLastBlockDefenseDisabled: true
+  * setCustomVaultFee: 20000
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `<MetaVault address>`
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "addVault","inputs": [{"name": "vault","type": "address","internalType": "address"}, {"name": "newTargetProportions","type": "uint256[]","internalType": "uint256[]"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+
+### Set vault fee
+
+Use `IPlatform.setCustomVaultFee`.
+
+* [New transasction](https://app.safe.global/apps/open?safe=sonic:0xF564EBaC1182578398E94868bea1AbA6ba339652&appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder)
+* Connect signer wallet
+* Address: `0x4Aca671A420eEB58ecafE83700686a2AD06b20D8` (Platform)
+* platformFee: `20000` (20%)
+
+<details>
+  <summary>ABI</summary>
+
+`
+[{"type": "function","name": "setCustomVaultFee","inputs": [{"name": "vault","type": "address","internalType": "address"}, {"name": "platformFee","type": "uint256","internalType": "uint256"}],"outputs": [],"stateMutability": "nonpayable"}]
+`
+</details>
+

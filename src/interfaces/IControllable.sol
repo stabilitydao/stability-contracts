@@ -6,6 +6,7 @@ pragma solidity ^0.8.28;
 ///      which provides authorization capabilities and infrastructure contract addresses.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 interface IControllable {
     //region ----- Custom Errors -----
     error IncorrectZeroArgument();
@@ -24,8 +25,10 @@ interface IControllable {
     error ETHTransferFailed();
     error IncorrectInitParams();
     error InsufficientBalance();
+    error IncorrectBalance();
     error IncorrectLtv(uint ltv);
     error TooLowValue(uint value);
+    error IncorrectAssetsList(address[] assets_, address[] expectedAssets_);
     //endregion -- Custom Errors -----
 
     event ContractInitialized(address platform, uint ts, uint block);

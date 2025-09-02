@@ -6,6 +6,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 interface IMetaVaultFactory {
     event NewMetaVaultImplementation(address implementation);
     event NewWrappedMetaVaultImplementation(address implementation);
+    event NewRecoveryTokenImplementation(address implementation);
     event NewMetaVault(
         address metaVault,
         string type_,
@@ -16,6 +17,7 @@ interface IMetaVaultFactory {
         uint[] proportions_
     );
     event NewWrappedMetaVault(address wrappedMetaVault, address metaVault);
+    event NewRecoveryToken(address recoveryToken, address target);
 
     /// @custom:storage-location erc7201:stability.MetaVaultFactory
     struct MetaVaultFactoryStorage {
@@ -27,6 +29,8 @@ interface IMetaVaultFactory {
         EnumerableSet.AddressSet metaVaults;
         /// @inheritdoc IMetaVaultFactory
         mapping(address metaVault => address wrappedMetaVault) wrapper;
+        /// @inheritdoc IMetaVaultFactory
+        address recoveryTokenImplementation;
     }
 
     /// @notice Initialize proxied contract
@@ -39,6 +43,10 @@ interface IMetaVaultFactory {
     /// @notice Update Wrapped MetaVault implementation address
     /// @param newImplementation Address of new deployed Wrapped MetaVault implementation
     function setWrappedMetaVaultImplementation(address newImplementation) external;
+
+    /// @notice Update RecoveryToken implementation address
+    /// @param newImplementation Address of new deployed RecoveryToken implementation
+    function setRecoveryTokenImplementation(address newImplementation) external;
 
     /// @notice Deploy new MetaVault
     /// @param salt Salt to get CREATE2 deployment address
@@ -65,6 +73,9 @@ interface IMetaVaultFactory {
     /// @return proxy Address of deployed WrappedMetaVaultProxy contract
     function deployWrapper(bytes32 salt, address metaVault) external returns (address proxy);
 
+    /// @notice Deploy new RecoveryToken for target
+    function deployRecoveryToken(bytes32 salt, address target) external returns (address proxy);
+
     /// @notice Upgrade MetaVaults and wrappers implementation
     /// @param metaProxies Addresses of proxies for upgrade
     function upgradeMetaProxies(address[] memory metaProxies) external;
@@ -76,6 +87,10 @@ interface IMetaVaultFactory {
     /// @notice Get address of Wrapped MetaVault implementation
     /// @return Wrapped MetaVault implementation address
     function wrappedMetaVaultImplementation() external view returns (address);
+
+    /// @notice Get address of RecoveryToken implementation
+    /// @return RecoveryToken implementation address
+    function recoveryTokenImplementation() external view returns (address);
 
     /// @dev Get CREATE2 address
     /// @param salt Provided salt for CREATE2
@@ -93,6 +108,9 @@ interface IMetaVaultFactory {
 
     /// @dev Get keccak256 hash of WrappedMetaVaultProxy creationCode for CREATE2
     function getWrappedMetaVaultProxyInitCodeHash() external view returns (bytes32);
+
+    /// @dev Get keccak256 hash of RecoveryTokenProxy creationCode for CREATE2
+    function getRecoveryTokenProxyInitCodeHash() external view returns (bytes32);
 
     /// @notice Deployed MetaVaults
     function metaVaults() external view returns (address[] memory);

@@ -7,9 +7,13 @@ import {IMetaProxy} from "../interfaces/IMetaProxy.sol";
 import {MetaVaultProxy} from "./proxy/MetaVaultProxy.sol";
 import {IMetaVault, EnumerableSet} from "../interfaces/IMetaVault.sol";
 import {WrappedMetaVaultProxy} from "./proxy/WrappedMetaVaultProxy.sol";
+import {RecoveryTokenProxy} from "./proxy/RecoveryTokenProxy.sol";
 import {IWrappedMetaVault} from "../interfaces/IWrappedMetaVault.sol";
+import {IRecoveryToken} from "../interfaces/IRecoveryToken.sol";
 
 /// @title Factory of MetaVaults and WrappedMetaVaults
+/// Changelog:
+///   1.1.0: RecoveryToken
 /// @author Alien Deployer (https://github.com/a17)
 contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -19,7 +23,7 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVaultFactory")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant METAVAULTFACTORY_STORAGE_LOCATION =
@@ -50,6 +54,13 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
         MetaVaultFactoryStorage storage $ = _getStorage();
         $.wrappedMetaVaultImplementation = newImplementation;
         emit NewWrappedMetaVaultImplementation(newImplementation);
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function setRecoveryTokenImplementation(address newImplementation) external onlyGovernanceOrMultisig {
+        MetaVaultFactoryStorage storage $ = _getStorage();
+        $.recoveryTokenImplementation = newImplementation;
+        emit NewRecoveryTokenImplementation(newImplementation);
     }
 
     /// @inheritdoc IMetaVaultFactory
@@ -86,6 +97,14 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     }
 
     /// @inheritdoc IMetaVaultFactory
+    function deployRecoveryToken(bytes32 salt, address target) external onlyOperator returns (address proxy) {
+        proxy = address(new RecoveryTokenProxy{salt: salt}());
+        IMetaProxy(proxy).initProxy();
+        IRecoveryToken(proxy).initialize(platform(), target);
+        emit NewRecoveryToken(proxy, target);
+    }
+
+    /// @inheritdoc IMetaVaultFactory
     function upgradeMetaProxies(address[] memory metaProxies) external onlyOperator {
         uint len = metaProxies.length;
         for (uint i; i < len; ++i) {
@@ -108,6 +127,11 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     }
 
     /// @inheritdoc IMetaVaultFactory
+    function recoveryTokenImplementation() external view returns (address) {
+        return _getStorage().recoveryTokenImplementation;
+    }
+
+    /// @inheritdoc IMetaVaultFactory
     function getMetaVaultProxyInitCodeHash() external pure returns (bytes32) {
         return keccak256(abi.encodePacked(type(MetaVaultProxy).creationCode));
     }
@@ -115,6 +139,11 @@ contract MetaVaultFactory is Controllable, IMetaVaultFactory {
     /// @inheritdoc IMetaVaultFactory
     function getWrappedMetaVaultProxyInitCodeHash() external pure returns (bytes32) {
         return keccak256(abi.encodePacked(type(WrappedMetaVaultProxy).creationCode));
+    }
+
+    /// @inheritdoc IMetaVaultFactory
+    function getRecoveryTokenProxyInitCodeHash() external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(type(RecoveryTokenProxy).creationCode));
     }
 
     /// @inheritdoc IMetaVaultFactory

@@ -12,7 +12,7 @@
 
 * **[Strategy Developer's Guide V3](guides/Strategy.md)**
 * **[Core Developer's Guide](guides/Core.md)**
-* **[Platform Administration Guide V5](guides/ADM.md)**
+* **[Platform Administration Guide V6](guides/ADM.md)**
 * **[Deploy Guide](guides/Deploy.md)**
 * **[All deployments](guides/AllDeployments.md)**
 
@@ -22,9 +22,9 @@
 
 [<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/stabilitydao/stability-contracts?logo=solidity">](https://docs.soliditylang.org/en/)
 
-### 🏷️ Issues
+### 🏷️ Projects
 
-[🔨 Q2 2025 🧊 Stability BETA Development | CONTRACTS](https://github.com/orgs/stabilitydao/projects/9/views/6)
+[🔨 Q3 2025 🧊 Stability BETA Development | CONTRACTS](https://github.com/orgs/stabilitydao/projects/10/views/2)
 
 ## Coverage
 
@@ -39,4 +39,7 @@
 
 ## Audits
 
+[Scopes](./audits/scopes.md)
+
+* [Spearbit Cantina audit, competition v25.05.0-alpha](audits/report-cantina.pdf) | [metavault security](audits/scopes.md)
 * [Initial vault audit v24.01.1-alpha](audits/initial-audit-stability-platform-v24.01.1-alpha.md) | [critical scope](audits/scopes.md)

@@ -30,6 +30,10 @@ import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 
 /// @title Earn SwapX farm rewards by Ichi ALM
 /// Changelog:
+///   1.3.3: StrategyBase 2.5.1
+///   1.3.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   1.3.1: Refactoring to reduce contract size - #326
+///   1.3.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   1.2.0: add MerklStrategyBase, update _claimRevenue to earn SwapX gems, decrease code size
 ///   1.1.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
@@ -41,7 +45,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.3";
 
     uint internal constant PRECISION = 10 ** 18;
 
@@ -212,15 +216,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
 
     /// @inheritdoc StrategyBase
     function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        assets_ = __$__._assets;
-        uint value = __$__.total;
-        IICHIVaultV4 _underlying = IICHIVaultV4(__$__._underlying);
-        (uint amount0, uint amount1) = _underlying.getTotalAmounts();
-        uint totalSupply = _underlying.totalSupply();
-        amounts_ = new uint[](2);
-        amounts_[0] = amount0 * value / totalSupply;
-        amounts_[1] = amount1 * value / totalSupply;
+        return ISFLib._assetsAmounts(_getStrategyBaseStorage());
     }
 
     /// @inheritdoc StrategyBase

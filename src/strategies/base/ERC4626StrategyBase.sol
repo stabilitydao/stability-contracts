@@ -2,7 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyBase} from "./StrategyBase.sol";
 import {StrategyLib} from "../libs/StrategyLib.sol";
@@ -10,15 +14,18 @@ import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
-import {console} from "forge-std/console.sol";
-
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// Changelog:
-///     1.0.3: total, _depositUnderlying, _withdrawUnderlying, _liquidateRewards, _claimRevenue are virtual
+///     1.0.6: total, _depositUnderlying, _withdrawUnderlying, _liquidateRewards, _claimRevenue are virtual
+///     1.0.5: Add default implementation for poolTvl and maxWithdrawAsset, use StrategyBase 2.4.0 - #326
+///     1.0.4: Fix revenue formula - #304
+///     1.0.3: _assetsAmounts is virtual
 ///     1.0.2: _depositAssets and _withdrawAssets are virtual
 /// @author Alien Deployer (https://github.com/a17)
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract ERC4626StrategyBase is StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -27,7 +34,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.3";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.6";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
@@ -101,13 +108,35 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
     }
 
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+
+        address asset = u.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price,) = priceReader.getPrice(asset);
+
+        return u.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets(uint /*mode*/ ) public view virtual override returns (uint[] memory amounts) {
+        StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
+        IERC4626 u = IERC4626(__$__._underlying);
+        amounts = new uint[](1);
+        amounts[0] = u.maxWithdraw(address(this));
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool) internal virtual override returns (uint value) {
-        console.log("deposit", amounts[0]);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
         value = IERC4626(u).deposit(amounts[0], address(this));
@@ -119,7 +148,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositUnderlying(uint amount) internal virtual override returns (uint[] memory amountsConsumed) {
-        console.log("_depositUnderlying", amount);
         amountsConsumed = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
@@ -184,7 +212,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         uint value,
         address receiver
     ) internal virtual override returns (uint[] memory amountsOut) {
-        console.log("_withdrawAssets", value);
         amountsOut = new uint[](1);
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         amountsOut[0] = IERC4626(__$__._underlying).redeem(value, receiver, address(this));
@@ -197,13 +224,19 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+    function _assetsAmounts()
+        internal
+        view
+        virtual
+        override
+        returns (address[] memory assets_, uint[] memory amounts_)
+    {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         assets_ = __$__._assets;
         address u = __$__._underlying;
         amounts_ = new uint[](1);
+
         amounts_[0] = IERC4626(u).convertToAssets(IERC20(u).balanceOf(address(this)));
-        console.log("_assetsAmounts", amounts_[0]);
     }
 
     /// @inheritdoc StrategyBase
@@ -218,7 +251,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        console.log("_claimRevenue");
         ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         address u = __$__._underlying;
@@ -242,9 +274,6 @@ abstract contract ERC4626StrategyBase is StrategyBase {
 
     function _getSharePrice(address u) internal view returns (uint) {
         // totalSupply cant be zero in our integrations
-        console.log("_getSharePrice", IERC4626(u).totalAssets() * 1e18 / IERC4626(u).totalSupply());
-        console.log("totalAssets", IERC4626(u).totalAssets());
-        console.log("totalSupply", IERC4626(u).totalSupply());
         return IERC4626(u).totalAssets() * 1e18 / IERC4626(u).totalSupply();
     }
 
@@ -259,7 +288,10 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         uint oldSharePrice = $.lastSharePrice;
         // nosemgrep
         if (newSharePrice > oldSharePrice && oldSharePrice != 0) {
-            amounts[0] = StrategyLib.balance(u) * newSharePrice * (newSharePrice - oldSharePrice) / oldSharePrice / 1e18;
+            // revenue = amount * delta
+            //      delta = (newSharePrice - oldSharePrice) / oldSharePrice
+            //      amount = balance * oldSharePrice
+            amounts[0] = StrategyLib.balance(u) * (newSharePrice - oldSharePrice) / 1e18;
         }
     }
 }

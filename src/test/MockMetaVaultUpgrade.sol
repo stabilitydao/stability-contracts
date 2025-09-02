@@ -61,6 +61,9 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     /// @inheritdoc IMetaVault
     function addVault(address, uint[] memory) external {}
 
+    /// @inheritdoc IMetaVault
+    function removeVault(address) external {}
+
     /// @inheritdoc IStabilityVault
     function setName(string calldata newName) external {}
 
@@ -178,6 +181,8 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
         return 18;
     }
 
+    function maxWithdraw(address account) external view virtual returns (uint amount) {}
+    function maxWithdraw(address account, uint mode) external view virtual returns (uint amount) {}
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -211,4 +216,44 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function _amountToShares(uint amount, uint totalShares_, uint totalSupply_) internal pure returns (uint) {}
 
     function _spendAllowanceOrBlock(address owner, address spender, uint amount) internal {}
+
+    function deposit(uint, address, uint) external returns (uint) {}
+
+    function mint(uint, address, uint) external returns (uint) {}
+
+    function withdraw(uint, address, address, uint) external returns (uint) {}
+
+    function redeem(uint, address, address, uint) external returns (uint) {}
+
+    function changeWhitelist(address addr, bool addToWhitelist) external {}
+
+    function whitelisted(address addr) external view returns (bool) {}
+
+    function setLastBlockDefenseDisabledTx(uint disableMode) external {}
+
+    function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
+
+    function cachePrices(bool clear) external {}
+
+    function maxWithdrawUnderlying(address cVault_, address account) external view returns (uint amount) {}
+
+    function withdrawUnderlying(
+        address cVault_,
+        uint amount,
+        uint minUnderlyingOut,
+        address receiver,
+        address owner
+    ) external returns (uint underlyingOut) {}
+
+    function withdrawUnderlyingEmergency(
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut,
+        bool[] memory pauseRecoveryTokens
+    ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut) {}
+
+    function setRecoveryToken(address cVault_, address recoveryToken_) external {}
+
+    function recoveryToken(address cVault_) external view returns (address) {}
 }

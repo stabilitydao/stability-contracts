@@ -18,12 +18,19 @@ import {IAprOracle} from "../../interfaces/IAprOracle.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @notice Base vault implementation for compounders and harvesters.
 ///         User can deposit and withdraw a changing set of assets managed by the strategy.
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.7.1: Add maxWithdraw with mode - #360
+///   2.7.0: Add maxDeposit - #330; refactoring to reduce size.
+///   2.6.0: Add maxWithdraw - #326
+///   2.5.0: Use strategy.fuseMode to detect fuse mode - #305
+///   2.4.2: Check provided assets in deposit/withdrawAssets - #308
+///   2.4.1: Use mulDiv - #300
 ///   2.4.0: IStabilityVault.lastBlockDefenseDisabled()
 ///   2.3.0: IStabilityVault.assets()
 ///   2.2.0: hardWorkMintFeeCallback use revenueRouter
@@ -35,15 +42,17 @@ import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 ///   1.0.1: add receiver and owner args to withdrawAssets method
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUpgradeable, IVault {
     using SafeERC20 for IERC20;
+    using Math for uint;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.4.0";
+    string public constant VERSION_VAULT_BASE = "2.7.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -67,19 +76,19 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         uint _totalSupply;
         uint totalValue;
         uint len;
-        address[] assets;
-        IStrategy strategy;
-        address underlying;
-        uint[] amountsConsumed;
         uint value;
         uint mintAmount;
+        address underlying;
+        IStrategy strategy;
+        address[] assets;
+        uint[] amountsConsumed;
     }
 
     /// @notice Data structure containing local variables for function getApr() to avoid stack too deep.
     struct GetAprVars {
+        address underlying;
         address[] strategyAssets;
         uint[] proportions;
-        address underlying;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -105,6 +114,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.doHardWorkOnDeposit = IStrategy(strategy_).isHardWorkOnDepositAllowed();
     }
 
+    //region --------------------------------- Callbacks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CALLBACKS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -124,7 +134,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IRevenueRouter(revenueRouter).processFeeVault(address(this), feeShares);
         }
     }
+    //endregion --------------------------------- Callbacks
 
+    //region --------------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -200,7 +212,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.lastBlockDefenseDisabled = isDisabled;
         emit LastBlockDefenseDisabled(isDisabled);
     }
+    //endregion --------------------------------- Restricted actions
 
+    //region --------------------------------- User actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -234,7 +248,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         v._totalSupply = totalSupply();
         v.totalValue = v.strategy.total();
         // nosemgrep
-        if (v._totalSupply != 0 && v.totalValue == 0) {
+        if (v.strategy.fuseMode() != uint(IStrategy.FuseMode.FUSE_OFF_0)) {
             revert FuseTrigger();
         }
 
@@ -252,6 +266,8 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IERC20(v.underlying).safeTransferFrom(msg.sender, address(v.strategy), v.value);
             (v.amountsConsumed) = v.strategy.depositUnderlying(v.value);
         } else {
+            // assets_ and v.assets must match exactly, see #308; we can't rely on the strategy to validate this
+            _ensureAssetsCorrespondence(v.assets, assets_);
             (v.amountsConsumed, v.value) = v.strategy.previewDepositAssetsWrite(assets_, amountsMax);
             // nosemgrep
             for (uint i; i < v.len; ++i) {
@@ -303,7 +319,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line unused-return
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
     }
+    //endregion --------------------------------- User actions
 
+    //region --------------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -347,13 +365,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function price() external view returns (uint price_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        IPriceReader priceReader = _getPriceReader();
         uint _tvl;
         //slither-disable-next-line unused-return
         (_tvl,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
         uint __totalSupply = totalSupply();
         if (__totalSupply > 0) {
-            price_ = _tvl * 1e18 / __totalSupply;
+            price_ = Math.mulDiv(_tvl, 1e18, __totalSupply, Math.Rounding.Floor);
         }
     }
 
@@ -361,7 +379,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     function tvl() public view returns (uint tvl_, bool trusted_) {
         VaultBaseStorage storage $ = _getVaultBaseStorage();
         (address[] memory _assets, uint[] memory _amounts) = $.strategy.assetsAmounts();
-        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        IPriceReader priceReader = _getPriceReader();
         //slither-disable-next-line unused-return
         (tvl_,,, trusted_) = priceReader.getAssetsPrice(_assets, _amounts);
     }
@@ -466,6 +484,58 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return $.doHardWorkOnDeposit;
     }
 
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account) public view virtual returns (uint vaultShares) {
+        return maxWithdraw(account, 0);
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxWithdraw(address account, uint mode) public view virtual returns (uint vaultShares) {
+        uint balance = balanceOf(account);
+        uint[] memory amounts = strategy().maxWithdrawAssets(mode);
+        if (amounts.length == 0) {
+            // strategy allows to withdraw full amount
+            // so all vault shares can be withdrawn
+            return balance;
+        } else {
+            // strategy allows to withdraw only part of the assets
+            // so we need to calculate how many vault shares can be withdrawn
+
+            // Full assets amounts under strategy control
+            (, uint[] memory assetAmounts) = strategy().assetsAmounts();
+            if (assetAmounts.length == 1) {
+                // We need to calculate what part of the vault shares can be withdrawn
+                uint minPart = assetAmounts[0] == 0 ? 0 : amounts[0] * 1e18 / assetAmounts[0];
+
+                return Math.min(
+                    balance, // user vault shares balance
+                    minPart < 1e18 ? totalSupply() * minPart / 1e18 : totalSupply() // vault shares can be withdrawn
+                );
+            } else {
+                // stub; we'll probably need some other impl for multi-assets strategies if there are any
+                return balance;
+            }
+        }
+    }
+
+    /// @inheritdoc IStabilityVault
+    function maxDeposit(address /* account */ ) external view returns (uint[] memory maxAmounts) {
+        uint[] memory amounts = strategy().maxDepositAssets();
+        if (amounts.length == 1) {
+            return amounts;
+        }
+
+        // either the strategy has no limit on deposits (length == 0)
+        // or the strategy has multiple assets (length > 1, use stub implementation for now)
+        uint len = strategy().assets().length;
+        maxAmounts = new uint[](len);
+        for (uint i = 0; i < len; ++i) {
+            maxAmounts[i] = type(uint).max;
+        }
+    }
+    //endregion --------------------------------- View functions
+
+    //region --------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -527,12 +597,12 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         address[] memory assets_
     ) internal view returns (uint mintAmount, uint initialShares) {
         if (totalSupply_ > 0) {
-            mintAmount = value_ * totalSupply_ / totalValue_;
+            mintAmount = value_.mulDiv(totalSupply_, totalValue_, Math.Rounding.Floor);
             initialShares = 0; // hide warning
         } else {
             // calc mintAmount for USD amount of value
             // its setting sharePrice to 1e18
-            IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+            IPriceReader priceReader = _getPriceReader();
             //slither-disable-next-line unused-return
             (mintAmount,,,) = priceReader.getAssetsPrice(assets_, amountsConsumed);
 
@@ -571,31 +641,36 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
 
         IStrategy _strategy = $.strategy;
         uint localTotalSupply = totalSupply();
-        uint totalValue = _strategy.total();
 
         uint[] memory amountsOut;
 
         {
             address underlying = _strategy.underlying();
             // nosemgrep
-            bool isUnderlyingWithdrawal = assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
-
             // fuse is not triggered
-            if (totalValue > 0) {
-                uint value = amountShares * totalValue / localTotalSupply;
-                if (isUnderlyingWithdrawal) {
+            if (_strategy.fuseMode() == uint(IStrategy.FuseMode.FUSE_OFF_0)) {
+                uint totalValue = _strategy.total();
+                uint value = Math.mulDiv(amountShares, totalValue, localTotalSupply, Math.Rounding.Ceil);
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = value;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
+                    // we should ensure that assets match to prevent incorrect slippage check below
+                    _ensureAssetsCorrespondence(assets_, _strategy.assets());
                     amountsOut = _strategy.withdrawAssets(assets_, value, receiver);
                 }
             } else {
-                if (isUnderlyingWithdrawal) {
+                // Fuse was triggered and all actives were transferred from the underlying pool to the strategy balance.
+                // Deposit is NOT allowed in this mode, we can ignore any tokens of underlying pool
+                // that were added on the strategy balance directly.
+                if (_isUnderlyingWithdrawal(assets_, underlying)) {
                     amountsOut = new uint[](1);
                     amountsOut[0] = amountShares * IERC20(underlying).balanceOf(address(_strategy)) / localTotalSupply;
                     _strategy.withdrawUnderlying(amountsOut[0], receiver);
                 } else {
+                    // we should ensure that assets match to prevent incorrect slippage check below
+                    _ensureAssetsCorrespondence(assets_, _strategy.assets());
                     amountsOut = _strategy.transferAssets(amountShares, localTotalSupply, receiver);
                 }
             }
@@ -616,6 +691,10 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         return amountsOut;
     }
 
+    function _isUnderlyingWithdrawal(address[] memory assets_, address underlying) internal pure returns (bool) {
+        return assets_.length == 1 && underlying != address(0) && underlying == assets_[0];
+    }
+
     function _beforeWithdraw(VaultBaseStorage storage $, address owner) internal {
         if (!$.lastBlockDefenseDisabled) {
             if ($.withdrawRequests[owner] + _WITHDRAW_REQUEST_BLOCKS >= block.number) {
@@ -633,4 +712,22 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             $.withdrawRequests[to] = block.number;
         }
     }
+
+    /// @notice Ensures that the assets array corresponds to the assets of the strategy.
+    /// For simplicity we assume that the assets cannot be reordered.
+    function _ensureAssetsCorrespondence(address[] memory assets_, address[] memory assetsToCheck) internal pure {
+        if (assets_.length != assetsToCheck.length) {
+            revert IControllable.IncorrectArrayLength();
+        }
+        for (uint i; i < assets_.length; ++i) {
+            if (assets_[i] != assetsToCheck[i]) {
+                revert IControllable.IncorrectAssetsList(assets_, assetsToCheck);
+            }
+        }
+    }
+
+    function _getPriceReader() internal view returns (IPriceReader) {
+        return IPriceReader(IPlatform(platform()).priceReader());
+    }
+    //endregion --------------------------------- Internal logic
 }

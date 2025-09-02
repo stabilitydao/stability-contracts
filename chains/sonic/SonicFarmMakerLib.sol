@@ -222,6 +222,20 @@ library SonicFarmMakerLib {
         return farm;
     }
 
+    function _makeSiloFarm(address gauge, address siloVault, address rewardToken) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardToken;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = siloVault;
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
     function _makeSiloManagedFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
@@ -235,12 +249,54 @@ library SonicFarmMakerLib {
         farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
         farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
 
-        farm.addresses = new address[](1);
+        farm.addresses = new address[](2);
         farm.addresses[0] = managedVault;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
 
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
     }
 
+    function _makeSiloALMFarm(
+        address collateralSiloVault,
+        address borrowSiloVault,
+        address flashLoanUsdc,
+        address siloLens
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_ALMF_FARM;
+
+        farm.rewardAssets = new address[](2);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
+
+        farm.addresses = new address[](4);
+        farm.addresses[0] = collateralSiloVault;
+        farm.addresses[1] = borrowSiloVault;
+        farm.addresses[2] = flashLoanUsdc;
+        farm.addresses[3] = siloLens;
+
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeAaveMerklFarm(address atoken) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.AAVE_MERKL_FARM;
+
+        farm.rewardAssets = new address[](2);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_USDC;
+
+        farm.addresses = new address[](1);
+        farm.addresses[0] = atoken;
+
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 }

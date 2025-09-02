@@ -1,28 +1,37 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {CommonLib} from "../core/libs/CommonLib.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {EulerLib} from "./base/EulerLib.sol";
-import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {IEulerVault} from "../integrations/euler/IEulerVault.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 
 /// @title Earns APR by lending assets on Euler.finance
 /// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///   1.2.2: StrategyBase 2.5.1
+///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   1.2.0: Add maxWithdrawAsset, poolTvl, use StrategyBase 2.4.0 - #326,
+///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
+///   1.0.1: Use ERC4626StrategyBase 1.0.4 with fixed revenue formula - #304
 contract EulerStrategy is ERC4626StrategyBase {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.2.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -88,6 +97,5 @@ contract EulerStrategy is ERC4626StrategyBase {
     function isHardWorkOnDepositAllowed() external pure returns (bool) {
         return true;
     }
-
     //endregion ----------------------- View functions
 }

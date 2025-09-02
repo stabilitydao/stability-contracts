@@ -1,24 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IMetaVaultAmmAdapter} from "../interfaces/IMetaVaultAmmAdapter.sol";
 import {Controllable} from "./base/Controllable.sol";
-import {ISwapper} from "../interfaces/ISwapper.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice On-chain price quoter and swapper. It works by predefined routes using AMM adapters.
 /// @dev Inspired by TetuLiquidator
 /// Changelog:
+///   1.3.0: - exclude cycling routes - #261
+///          - support of dynamic routes for metaUSD - #330
 ///   1.2.0: support long routes up to 8 hops
 ///   1.1.0: support long routes up to 6 hops
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
 contract Swapper is Controllable, ISwapper {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -26,7 +31,7 @@ contract Swapper is Controllable, ISwapper {
     //region ----- Constants -----
 
     /// @dev Version of Swapper implementation
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     uint public constant ROUTE_LENGTH_MAX = 8;
 
@@ -318,7 +323,7 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL for in
         // find the best Pool for token IN
-        PoolData memory poolDataIn = $.pools[tokenIn];
+        PoolData memory poolDataIn = _getPoolData($, tokenIn, true);
         if (poolDataIn.pool == address(0)) {
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenIn");
         }
@@ -341,13 +346,10 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL for out
         // find the largest pool for token out
-        PoolData memory poolDataOut = $.pools[tokenOut];
+        PoolData memory poolDataOut = _getPoolData($, tokenOut, false);
         if (poolDataOut.pool == address(0)) {
             return (_cutRoute(route, 0), "Swapper: Not found pool for tokenOut");
         }
-
-        // need to swap directions for tokenOut pool
-        (poolDataOut.tokenIn, poolDataOut.tokenOut) = (poolDataOut.tokenOut, poolDataOut.tokenIn);
 
         // if the largest pool for tokenOut contains tokenIn it is the best way
         if (tokenIn == poolDataOut.tokenIn) {
@@ -379,7 +381,7 @@ contract Swapper is Controllable, ISwapper {
         // ------------------------------------------------------------------------
 
         // --- POOL2 for in
-        PoolData memory poolDataIn2 = $.pools[poolDataIn.tokenOut];
+        PoolData memory poolDataIn2 = _getPoolData($, poolDataIn.tokenOut, true);
         if (poolDataIn2.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenIn2");
         }
@@ -405,13 +407,10 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL2 for out
         // find the largest pool for token out
-        PoolData memory poolDataOut2 = $.pools[poolDataOut.tokenIn];
+        PoolData memory poolDataOut2 = _getPoolData($, poolDataOut.tokenIn, false);
         if (poolDataOut2.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenOut2");
         }
-
-        // need to swap directions for tokenOut2 pool
-        (poolDataOut2.tokenIn, poolDataOut2.tokenOut) = (poolDataOut2.tokenOut, poolDataOut2.tokenIn);
 
         // if we can swap between largest pools the route is ended
         if (poolDataIn.tokenOut == poolDataOut2.tokenIn) {
@@ -460,7 +459,7 @@ contract Swapper is Controllable, ISwapper {
         }
 
         // --- POOL3 for in
-        PoolData memory poolDataIn3 = $.pools[poolDataIn2.tokenOut];
+        PoolData memory poolDataIn3 = _getPoolData($, poolDataIn2.tokenOut, true);
         if (poolDataIn3.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenIn3");
         }
@@ -483,13 +482,10 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL3 for out
         // find the largest pool for token out 2
-        PoolData memory poolDataOut3 = $.pools[poolDataOut2.tokenIn];
+        PoolData memory poolDataOut3 = _getPoolData($, poolDataOut2.tokenIn, false);
         if (poolDataOut3.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenOut3");
         }
-
-        // need to swap directions for tokenOut3 pool
-        (poolDataOut3.tokenIn, poolDataOut3.tokenOut) = (poolDataOut3.tokenOut, poolDataOut3.tokenIn);
 
         // if we can swap between largest pools the route is ended
         if (poolDataIn.tokenOut == poolDataOut3.tokenIn) {
@@ -521,7 +517,7 @@ contract Swapper is Controllable, ISwapper {
         }
 
         // --- POOL4 for in
-        PoolData memory poolDataIn4 = $.pools[poolDataIn3.tokenOut];
+        PoolData memory poolDataIn4 = _getPoolData($, poolDataIn3.tokenOut, true);
         if (poolDataIn4.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenIn4");
         }
@@ -551,13 +547,10 @@ contract Swapper is Controllable, ISwapper {
 
         // --- POOL4 for out
         // find the largest pool for token out 3
-        PoolData memory poolDataOut4 = $.pools[poolDataOut3.tokenIn];
+        PoolData memory poolDataOut4 = _getPoolData($, poolDataOut3.tokenIn, false);
         if (poolDataOut4.pool == address(0)) {
             return (_cutRoute(route, 0), "L: Not found pool for tokenOut4");
         }
-
-        // need to swap directions for tokenOut3 pool
-        (poolDataOut4.tokenIn, poolDataOut4.tokenOut) = (poolDataOut4.tokenOut, poolDataOut4.tokenIn);
 
         // if we can swap between largest pools the route is ended
         if (poolDataIn.tokenOut == poolDataOut4.tokenIn) {
@@ -623,11 +616,45 @@ contract Swapper is Controllable, ISwapper {
 
     //region ----- Internal logic -----
 
+    /// @notice Fix dynamic route on the fly
+    function _getPoolData(
+        SwapperStorage storage $,
+        address token,
+        bool isTokenIn
+    ) internal view returns (PoolData memory poolData) {
+        poolData = $.pools[token];
+
+        if (poolData.tokenIn == token) {
+            if (isTokenIn) {
+                if (poolData.tokenIn == poolData.tokenOut) {
+                    // support of dynamic route: tokenOut is selected on the fly
+                    IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_VAULT))) {
+                        poolData.tokenOut = IMetaVaultAmmAdapter(address(ammAdapter)).assetForWithdraw(poolData.pool);
+                    }
+                }
+            } else {
+                if (poolData.tokenIn == poolData.tokenOut) {
+                    // support of dynamic route: tokenOut is selected on the fly
+                    IAmmAdapter ammAdapter = IAmmAdapter(poolData.ammAdapter);
+                    if (keccak256(bytes(ammAdapter.ammAdapterId())) == keccak256(bytes(AmmAdapterIdLib.META_VAULT))) {
+                        // we assign tokenOut here because in/out tokens are swapped below
+                        poolData.tokenOut = IMetaVaultAmmAdapter(address(ammAdapter)).assetForDeposit(poolData.pool);
+                    }
+                }
+
+                // need to swap directions for tokenOut pool
+                (poolData.tokenIn, poolData.tokenOut) = (poolData.tokenOut, poolData.tokenIn);
+            }
+        }
+    }
+
     //slither-disable-next-line reentrancy-events
     function _swap(PoolData[] memory route, uint amount, uint priceImpactTolerance) internal {
         if (route.length == 0) {
             revert IControllable.IncorrectArrayLength();
         }
+
         uint routeLength = route.length;
         // nosemgrep
         for (uint i; i < routeLength; i++) {
@@ -646,6 +673,7 @@ contract Swapper is Controllable, ISwapper {
                 recipient = msg.sender;
             }
 
+            // if it is the last step of the route we need to check if we have enough price impact tolerance
             IAmmAdapter(data.ammAdapter).swap(data.pool, data.tokenIn, data.tokenOut, recipient, priceImpactTolerance);
         }
 
@@ -658,7 +686,24 @@ contract Swapper is Controllable, ISwapper {
         for (uint i; i < length; ++i) {
             result[i] = route[i];
         }
-        return result;
+        return _removeCycling(result);
+    }
+
+    /// @notice #261: Detect and remove cycling in the route
+    function _removeCycling(PoolData[] memory data) internal pure returns (PoolData[] memory result) {
+        result = data;
+        if (data.length >= 4) {
+            if (
+                data[0].tokenIn == data[1].tokenOut && data[0].tokenOut == data[1].tokenIn
+                    && data[2].tokenIn == data[0].tokenIn // for safety
+            ) {
+                // exclude first two pools
+                result = new PoolData[](data.length - 2);
+                for (uint i = 2; i < data.length; ++i) {
+                    result[i - 2] = data[i];
+                }
+            }
+        }
     }
 
     function _addBcAsset(address asset) internal {

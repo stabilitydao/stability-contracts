@@ -3,14 +3,14 @@ pragma solidity ^0.8.28;
 
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {
-FarmingStrategyBase,
-StrategyBase,
-StrategyLib,
-IControllable,
-IPlatform,
-IFarmingStrategy,
-IStrategy,
-IFactory
+    FarmingStrategyBase,
+    StrategyBase,
+    StrategyLib,
+    IControllable,
+    IPlatform,
+    IFarmingStrategy,
+    IStrategy,
+    IFactory
 } from "./base/FarmingStrategyBase.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
@@ -72,9 +72,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         override(MerklStrategyBase, FarmingStrategyBase, StrategyBase)
         returns (bool)
     {
-        return
-            FarmingStrategyBase.supportsInterface(interfaceId)
-            || MerklStrategyBase.supportsInterface(interfaceId)
+        return FarmingStrategyBase.supportsInterface(interfaceId) || MerklStrategyBase.supportsInterface(interfaceId)
             || super.supportsInterface(interfaceId);
     }
 
@@ -133,26 +131,61 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     }
 
     /// @inheritdoc IStrategy
-    function autoCompoundingByUnderlyingProtocol() public view virtual
-    override (StrategyBase, ERC4626StrategyBase)
-    returns (bool) {
+    function autoCompoundingByUnderlyingProtocol()
+        public
+        view
+        virtual
+        override(StrategyBase, ERC4626StrategyBase)
+        returns (bool)
+    {
         return true;
     }
 
-    function total() public view
-    override (StrategyBase, ERC4626StrategyBase)
-    returns (uint) {
+    function total() public view override(StrategyBase, ERC4626StrategyBase) returns (uint) {
         return ERC4626StrategyBase.total();
     }
 
     /// @inheritdoc IStrategy
-    function isReadyForHardWork() external view override (ERC4626StrategyBase, IStrategy) virtual returns (bool isReady) {
+    function isReadyForHardWork()
+        external
+        view
+        virtual
+        override(ERC4626StrategyBase, IStrategy)
+        returns (bool isReady)
+    {
         (address[] memory __assets, uint[] memory amounts) = getRevenue();
         isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
         console.log("isReadyForHardWork", isReady, amounts[0], amounts.length);
         return amounts[0] != 0; // todo
     }
 
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets(uint mode)
+        public
+        view
+        override(ERC4626StrategyBase, StrategyBase)
+        returns (uint[] memory amounts)
+    {
+        // todo
+        return ERC4626StrategyBase.maxWithdrawAssets(mode);
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override(ERC4626StrategyBase, StrategyBase) returns (uint tvlUsd) {
+        // todo
+        return ERC4626StrategyBase.poolTvl();
+        //        IFactory.Farm memory farm = _getFarm();
+        //        ISilo siloVault = ISilo(farm.addresses[1]);
+        //
+        //        address asset = siloVault.asset();
+        //        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+        //
+        //        // get price of 1 amount of asset in USD with decimals 18
+        //        // assume that {trusted} value doesn't matter here
+        //        (uint price,) = priceReader.getPrice(asset);
+        //
+        //        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+    }
     //endregion ----------------------- View functions
 
     //region ----------------------- Strategy base
@@ -161,12 +194,16 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc ERC4626StrategyBase
-    function _depositUnderlying(uint amount) internal override (ERC4626StrategyBase, StrategyBase) returns (uint[] memory amountsConsumed) {
+    function _depositUnderlying(uint amount)
+        internal
+        override(ERC4626StrategyBase, StrategyBase)
+        returns (uint[] memory amountsConsumed)
+    {
         return ERC4626StrategyBase._depositUnderlying(amount);
     }
 
     /// @inheritdoc ERC4626StrategyBase
-    function _withdrawUnderlying(uint amount, address receiver) internal override (ERC4626StrategyBase, StrategyBase) {
+    function _withdrawUnderlying(uint amount, address receiver) internal override(ERC4626StrategyBase, StrategyBase) {
         ERC4626StrategyBase._withdrawUnderlying(amount, receiver);
     }
 
@@ -182,14 +219,14 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
     /// @inheritdoc StrategyBase
     function _claimRevenue()
-    internal
-    override (ERC4626StrategyBase, StrategyBase)
-    returns (
-        address[] memory __assets,
-        uint[] memory __amounts,
-        address[] memory __rewardAssets,
-        uint[] memory __rewardAmounts
-    )
+        internal
+        override(ERC4626StrategyBase, StrategyBase)
+        returns (
+            address[] memory __assets,
+            uint[] memory __amounts,
+            address[] memory __rewardAssets,
+            uint[] memory __rewardAmounts
+        )
     {
         ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
@@ -205,7 +242,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
 
     function _getRewards() internal view returns (address[] memory __assets, uint[] memory amounts) {
         // Merkl rewards: assume they are added on the balance automatically

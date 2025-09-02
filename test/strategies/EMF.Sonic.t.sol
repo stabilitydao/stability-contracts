@@ -8,13 +8,13 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(21094354); // Apr-19-2025 10:09:35 PM +UTC
+        vm.rollFork(45436518); // Sep-02-2025 03:36:10 AM +UTC
         makePoolVolumePriceImpactTolerance = 9_000;
     }
 
     function testEMF() public universalTest {
-        _addStrategy(42);
-        _addStrategy(43);
+        _addStrategy(62);
+        _addStrategy(63);
     }
 
     function _addStrategy(uint farmId) internal {

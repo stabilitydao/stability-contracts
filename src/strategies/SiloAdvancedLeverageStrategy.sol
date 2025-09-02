@@ -31,6 +31,11 @@ import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.4.1: StrategyBase 2.5.1
+///   2.4.0: Support of expired PT. depositParams1 = 1 means PT expired mode - #352
+///   2.3.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   2.3.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
+///   2.3.0: Use StrategyBase 2.3.0 - add fuseMode
 ///   2.2.0:
 ///     * Change logic of withdraw with increasing LTV
 ///     * use LeverageLendingBase 1.2.2
@@ -65,7 +70,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.2.0";
+    string public constant VERSION = "2.4.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

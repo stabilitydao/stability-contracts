@@ -17,6 +17,8 @@ import "../integrations/chainlink/IFeedRegistryInterface.sol";
 import "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
+/// Changelog:
+///   1.5.1: Refactoring to reduce contract size - #326
 /// @author Alien Deployer (https://github.com/a17)
 contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -26,7 +28,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.5.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -268,9 +270,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
         IDefiEdgeStrategy _underlying = IDefiEdgeStrategy(__$__._underlying);
         {
             IDefiEdgeStrategy.Tick memory ticks_ = _underlying.ticks(0);
-            int24[] memory ticks = new int24[](2);
-            ticks[0] = ticks_.tickLower;
-            ticks[1] = ticks_.tickUpper;
+            int24[] memory ticks = _ticksToArr(ticks_);
             (, amountsConsumed) = ICAmmAdapter(address(ammAdapter())).getLiquidityForAmounts(pool(), amountsMax, ticks);
         }
 
@@ -330,9 +330,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
             (uint128 currentLiquidity,,,,,) =
                 _pool.positions(_computePositionKey(address(_underlying), tick.tickLower, tick.tickUpper));
             if (currentLiquidity > 0) {
-                int24[] memory _ticks = new int24[](2);
-                _ticks[0] = tick.tickLower;
-                _ticks[1] = tick.tickUpper;
+                int24[] memory _ticks = _ticksToArr(tick);
                 uint[] memory amounts = _adapter.getAmountsForLiquidity(address(_pool), _ticks, currentLiquidity);
                 amounts_[0] += amounts[0];
                 amounts_[1] += amounts[1];
@@ -343,9 +341,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     function _getProportion0(address pool_) internal view returns (uint) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IDefiEdgeStrategy.Tick memory ticks_ = IDefiEdgeStrategy(__$__._underlying).ticks(0);
-        int24[] memory ticks = new int24[](2);
-        ticks[0] = ticks_.tickLower;
-        ticks[1] = ticks_.tickUpper;
+        int24[] memory ticks = _ticksToArr(ticks_);
         return ICAmmAdapter(address(ammAdapter())).getProportions(pool_, ticks)[0];
     }
 
@@ -353,5 +349,10 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
         assembly {
             key := or(shl(24, or(shl(24, owner), and(bottomTick, 0xFFFFFF))), and(topTick, 0xFFFFFF))
         }
+    }
+
+    function _ticksToArr(IDefiEdgeStrategy.Tick memory ticks_) internal pure returns (int24[] memory ticks) {
+        ticks = new int24[](2);
+        (ticks[0], ticks[1]) = (ticks_.tickLower, ticks_.tickUpper);
     }
 }

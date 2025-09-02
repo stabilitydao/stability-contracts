@@ -48,6 +48,15 @@ interface IStrategy is IERC165 {
         string _id;
         uint _exchangeAssetIndex;
         uint customPriceImpactTolerance;
+        /// @inheritdoc IStrategy
+        uint fuseOn;
+    }
+
+    enum FuseMode {
+        FUSE_OFF_0,
+        /// @notice Fuse mode is on (emergency stop was called).
+        /// All assets were transferred from the underlying pool to the strategy balance, no deposits are allowed.
+        FUSE_ON_1
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -181,14 +190,14 @@ interface IStrategy is IERC165 {
 
     /// @notice Invest strategy assets. Amounts of assets must be already on strategy contract balance.
     /// Only vault can call this.
-    /// @param amounts Anounts of strategy assets
+    /// @param amounts Amounts of strategy assets
     /// @return value Liquidity value or underlying token amount
     function depositAssets(uint[] memory amounts) external returns (uint value);
 
     /// @notice Invest underlying asset. Asset must be already on strategy contract balance.
     /// Only vault can call this.
     /// @param amount Amount of underlying asset to invest
-    /// @return amountsConsumed Cosumed amounts of invested assets
+    /// @return amountsConsumed Consumed amounts of invested assets
     function depositUnderlying(uint amount) external returns (uint[] memory amountsConsumed);
 
     /// @dev For specified amount of shares and assets_, withdraw strategy assets from farm/pool/staking and send to receiver if possible
@@ -205,14 +214,14 @@ interface IStrategy is IERC165 {
 
     /// @notice Wothdraw underlying invested and send to receiver
     /// Only vault can call this.
-    /// @param amount Ampunt of underlying asset to withdraw
+    /// @param amount Amount of underlying asset to withdraw
     /// @param receiver User of vault which withdraw underlying from the vault
     function withdrawUnderlying(uint amount, address receiver) external;
 
     /// @dev For specified amount of shares, transfer strategy assets from contract balance and send to receiver if possible
     /// This method is called by vault w/o underlying on triggered fuse mode.
     /// Only vault can call this.
-    /// @param amount Ampunt of liquidity value that user withdraw
+    /// @param amount Amount of liquidity value that user withdraw
     /// @param totalAmount Total amount of strategy liquidity
     /// @param receiver User of vault which withdraw assets
     /// @return amountsOut Amounts of strategy assets sent to user
@@ -235,4 +244,28 @@ interface IStrategy is IERC165 {
     /// @notice Custom price impact tolerance instead default need for specific cases where low liquidity in pools
     /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
     function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
+
+    /// @notice Total amount of assets available in the lending protocol for withdraw
+    /// It's normal situation when user is not able to withdraw all
+    /// because there are not enough reserves available in the protocol right now
+    /// @dev This function is replaced by more flexible maxWithdrawAssets(uint mode) function.
+    function maxWithdrawAssets() external view returns (uint[] memory amounts);
+
+    /// @notice Total amount of assets available in the lending protocol for withdraw
+    /// It's normal situation when user is not able to withdraw all
+    /// because there are not enough reserves available in the protocol right now
+    /// @param mode 0 - Return amount that can be withdrawn in assets
+    ///             1 - Return amount that can be withdrawn in underlying
+    /// @return amounts Empty array (zero length) is returned if all available amount can be withdrawn
+    function maxWithdrawAssets(uint mode) external view returns (uint[] memory amounts);
+
+    /// @notice Underlying pool TVL in the terms of USD
+    function poolTvl() external view returns (uint tvlUsd);
+
+    /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
+    function fuseMode() external view returns (uint);
+
+    /// @notice Maximum amounts of assets that can be deposited into the strategy
+    /// @return amounts Empty array (zero length) is returned if there are no limits on deposits
+    function maxDepositAssets() external view returns (uint[] memory amounts);
 }

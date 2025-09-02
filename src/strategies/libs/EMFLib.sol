@@ -22,8 +22,13 @@ import {console} from "forge-std/console.sol";
 library EMFLib {
     using SafeERC20 for IERC20;
 
-    function initVariants(address platform_, string memory strategyLogicId) external view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(
+        address platform_,
+        string memory strategyLogicId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         addresses = new address[](0);
         ticks = new int24[](0);

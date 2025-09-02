@@ -231,6 +231,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             nums,
                             ticks
                         );
+
                         f.strategyLogicId = goodStrategyId;
 
                         factory.updateFarm(nums[0], f);
@@ -334,6 +335,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 for (uint j; j < assets.length; ++j) {
                     (uint price,) = IPriceReader(platform.priceReader()).getPrice(assets[j]);
 
+                    // console.log("!!!!", assets[j]);
                     require(price > 0, "UniversalTest: price is zero. Forget to add swapper routes?");
                     depositAmounts[j] = 1000 * 10 ** IERC20Metadata(assets[j]).decimals() * 1e18 / price;
                 }
@@ -409,6 +411,27 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     }
                     assertEq(isEmpty, false, "Withdraw assets zero amount");
                 }
+
+                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+                /*             MAX DEPOSIT, MAX WITHDRAW, POOL TVL            */
+                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+                {
+                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets(0);
+                    (, uint[] memory assetAmounts) = strategy.assetsAmounts();
+                    assertEq(
+                        maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,
+                        true,
+                        "maxWithdraw has same length as assetAmounts OR it's empty (there are no limits for withdraw)"
+                    );
+
+                    uint[] memory maxDeposit = strategy.maxDepositAssets();
+                    assertEq(
+                        maxDeposit.length == assetAmounts.length || maxDeposit.length == 0,
+                        true,
+                        "maxDeposit has same length as assetAmounts OR it's empty (there are no limits for deposit)"
+                    );
+                }
+                assertNotEq(strategy.poolTvl(), 0, "Assume that internal pool has some TVL");
 
                 if (vars.isLPStrategy && makePoolVolume) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -657,7 +680,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         // first other user need to deposit to not hold vault only with dead shares
                         underlyingAmounts[0] = totalWas / 100;
-                        deal(underlying, address(100), underlyingAmounts[0]);
+                        _dealUnderlying(underlying, address(100), underlyingAmounts[0]);
                         vm.startPrank(address(100));
                         IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
@@ -667,7 +690,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
-                        deal(underlying, address(this), totalWas);
+                        _dealUnderlying(underlying, address(this), totalWas);
                         assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                         IERC20(underlying).approve(tempVault, totalWas);
 
@@ -856,5 +879,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         swapper.swapWithRoute(poolData, amount1, makePoolVolumePriceImpactTolerance);
 
         _rebalance();
+    }
+
+    /// @notice Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
+    /// @dev https://github.com/foundry-rs/forge-std/issues/140
+    function _dealUnderlying(address underlying, address to, uint amount) internal virtual {
+        deal(underlying, to, amount);
     }
 }

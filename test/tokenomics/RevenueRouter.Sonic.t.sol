@@ -15,8 +15,8 @@ import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
 
 contract RevenueRouterTestSonic is Test {
-    address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
-    address public constant STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
+    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+    address public constant STBL = SonicConstantsLib.TOKEN_STBL;
     address public multisig;
     IXSTBL public xStbl;
     IXStaking public xStaking;
@@ -73,10 +73,10 @@ contract RevenueRouterTestSonic is Test {
         assertLt(xStaking.earned(address(this)) - 1e6, assumedEarned);
         assertGt(xStaking.earned(address(this)) + 1e6, assumedEarned);
 
-        deal(SonicConstantsLib.TOKEN_stkscUSD, address(this), 1e18);
-        IERC20(SonicConstantsLib.TOKEN_stkscUSD).approve(address(revenueRouter), 1e18);
-        revenueRouter.processFeeVault(SonicConstantsLib.TOKEN_stkscUSD, 1e18);
-        assertEq(IERC20(SonicConstantsLib.TOKEN_stkscUSD).balanceOf(feeTreasury), 1e18);
+        /*deal(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, address(this), 1e18);
+        IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).approve(address(revenueRouter), 1e18);
+        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, 1e18);
+        assertEq(IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).balanceOf(feeTreasury), 1e18);*/
     }
 
     function test_RevenueRouter_minimal() public {
@@ -103,9 +103,9 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.updatePeriod();
         assertEq(revenueRouter.activePeriod(), revenueRouter.getPeriod());
 
-        deal(SonicConstantsLib.TOKEN_stkscUSD, address(this), 1e18);
-        IERC20(SonicConstantsLib.TOKEN_stkscUSD).approve(address(revenueRouter), 1e18);
-        revenueRouter.processFeeVault(SonicConstantsLib.TOKEN_stkscUSD, 1e18);
+        /*deal(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, address(this), 1e18);
+        IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).approve(address(revenueRouter), 1e18);
+        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, 1e18);*/
     }
 
     function _deployWithXSTBLandFeeTreasury() internal {

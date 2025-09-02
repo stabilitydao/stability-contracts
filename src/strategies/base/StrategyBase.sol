@@ -12,6 +12,10 @@ import {console} from "forge-std/console.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.5.1: add maxWithdrawAssets(uint) - #360
+///   2.5.0: add maxDepositAssets - #330
+///   2.4.0: add poolTvl, maxWithdrawAssets - #326
+///   2.3.0: add fuseMode - #305
 ///   2.2.0: extractFees use RevenueRouter
 ///   2.1.3: call hardWorkMintFeeCallback always
 ///   2.1.2: call hardWorkMintFeeCallback only on positive amounts
@@ -29,7 +33,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.2.0";
+    string public constant VERSION_STRATEGY_BASE = "2.5.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -54,6 +58,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
             (id_, vault_, assets_, underlying_, exchangeAssetIndex_);
     }
 
+    //region -------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -164,7 +169,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 } else {
                     (, uint[] memory __assetsAmounts) = assetsAmounts();
                     uint[] memory virtualRevenueAmounts = new uint[](__assets.length);
-                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 365 days / 30;
+                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 365 days / 15;
                     IVault(_vault).hardWorkMintFeeCallback(__assets, virtualRevenueAmounts);
                 }
                 // call empty method only for coverage or them can be overriden
@@ -182,6 +187,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
     function emergencyStopInvesting() external onlyGovernanceOrMultisig {
         // slither-disable-next-line unused-return
         _withdrawAssets(total(), address(this));
+
+        // Activate fuse mode. In the fuse mode all assets are transferred
+        // from the underlying pool to the strategy balance, no deposits are allowed after that.
+        _getStrategyBaseStorage().fuseOn = uint(IStrategy.FuseMode.FUSE_ON_1);
     }
 
     /// @inheritdoc IStrategy
@@ -189,7 +198,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.customPriceImpactTolerance = priceImpactTolerance;
     }
+    //endregion -------------------- Restricted actions
 
+    //region -------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -287,17 +298,48 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return _getStrategyBaseStorage().customPriceImpactTolerance;
     }
 
+    /// @notice IStrategy
+    function maxWithdrawAssets() public view virtual returns (uint[] memory amounts) {
+        return maxWithdrawAssets(0);
+    }
+
+    /// @notice IStrategy
+    function maxWithdrawAssets(uint /*mode*/ ) public view virtual returns (uint[] memory amounts) {
+        // by default zero-length array is returned to indicate that all available amounts can be withdrawn
+        return amounts;
+    }
+
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual returns (uint tvlUsd) {
+        // by default max uint is returned to indicate that pool TVL is not calculated
+        return type(uint).max;
+    }
+
+    /// @notice IStrategy
+    function maxDepositAssets() public view virtual returns (uint[] memory amounts) {
+        // by default zero-length array is returned to indicate that there are no limits on deposit amounts
+        return amounts;
+    }
+
+    //endregion -------------------- View functions
+
+    //region -------------------- Default implementations
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                  Default implementations                   */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @inheritdoc IStrategy
+    function fuseMode() external view returns (uint) {
+        return _getStrategyBaseStorage().fuseOn;
+    }
+
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
-    /// @return Cosumed amounts of invested assets
+    /// @return Consumed amounts of invested assets
     function _depositUnderlying(uint /*amount*/ ) internal virtual returns (uint[] memory /*amountsConsumed*/ ) {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
-    /// @dev Wothdraw underlying invested and send to receiver
+    /// @dev Withdraw underlying invested and send to receiver
     function _withdrawUnderlying(uint, /*amount*/ address /*receiver*/ ) internal virtual {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
@@ -334,7 +376,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
             revert NotReadyForHardWork();
         }
     }
+    //endregion -------------------- Default implementations
 
+    //region -------------------- Must be implemented by derived contracts
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*         Must be implemented by derived contracts           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -447,7 +491,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     {
         return _previewDepositAssets(amountsMax);
     }
+    //endregion -------------------- Must be implemented by derived contracts
 
+    //region -------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -464,4 +510,5 @@ abstract contract StrategyBase is Controllable, IStrategy {
             revert IControllable.NotVault();
         }
     }
+    //endregion -------------------- Internal logic
 }

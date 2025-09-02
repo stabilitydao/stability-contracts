@@ -21,12 +21,20 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {IXSilo} from "../integrations/silo/IXSilo.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards
+/// Changelog:
+///   1.2.2: StrategyBase 2.5.1
+///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
+///   1.2.0: - Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
+///     - farm.addresses[1] is xSilo address. claimRewards will redeem xSilo to Silo asset - #335
+///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloManagedFarmStrategy is FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -35,7 +43,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.2.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -48,7 +56,7 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 1 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -150,6 +158,27 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         return FarmMechanicsLib.AUTO;
     }
 
+    /// @inheritdoc IStrategy
+    function poolTvl() public view virtual override returns (uint tvlUsd) {
+        ISiloVault siloVault = _getSiloVault();
+
+        address asset = siloVault.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price,) = priceReader.getPrice(asset);
+
+        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+    }
+
+    /// @inheritdoc IStrategy
+    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
+        ISiloVault siloVault = _getSiloVault();
+        amounts = new uint[](1);
+        amounts[0] = siloVault.maxWithdraw(address(this));
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -227,7 +256,8 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
         }
 
         // ------------------- calculate earned amounts
-        ISiloVault siloVault = _getSiloVault();
+        address[] memory farmAddresses = _getFarm().addresses;
+        ISiloVault siloVault = ISiloVault(farmAddresses[0]);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
 
@@ -241,13 +271,23 @@ contract SiloManagedFarmStrategy is FarmingStrategyBase {
             IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
             ISiloIncentivesControllerForVault c = ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
 
-            //IDistributionManager.AccruedRewards[] memory accruedRewards =
+            // IDistributionManager.AccruedRewards[] memory accruedRewards =
             c.claimRewards(address(this));
         }
 
+        address xSilo = farmAddresses.length >= 2 ? farmAddresses[1] : address(0);
+        address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
+
         // ------------------- take into account only rewards registered in the farm
         for (uint i; i < rwLen; ++i) {
-            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]) - balanceBefore[i];
+            __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
+            if (__rewardAssets[i] == xSilo) {
+                if (__rewardAmounts[i] != 0) {
+                    // instant exit with penalty 50%
+                    __rewardAmounts[i] = IXSilo(xSilo).redeemSilo(__rewardAmounts[i], 0);
+                }
+                __rewardAssets[i] = silo;
+            }
         }
     }
 

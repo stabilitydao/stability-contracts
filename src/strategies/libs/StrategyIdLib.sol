@@ -32,4 +32,7 @@ library StrategyIdLib {
     string internal constant AAVE = "Aave";
     string internal constant EULER = "Euler"; // https://euler.finance/
     string internal constant SILO_MANAGED_FARM = "Silo Managed Farm";
+    string internal constant SILO_ALMF_FARM = "Silo Advanced Leverage Merkl Farm";
+    string internal constant AAVE_MERKL_FARM = "Aave Merkl Farm";
+    string internal constant COMPOUND_V2 = "Compound V2";
 }

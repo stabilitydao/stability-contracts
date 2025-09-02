@@ -18,6 +18,8 @@
 
 * **Frontend** `0x15487495cce9210795f9C2E0e1A7238E336dFc32` [sonicscan](https://sonicscan.org/address/0x15487495cce9210795f9C2E0e1A7238E336dFc32)
 * **RebalanceHelper** `0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319` [sonicscan](https://sonicscan.org/address/0xA8416005bCDa0d9Fd694e08A6B90E04477Ee2319)
+* **UpgradeHelper** `0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A` [sonicscan](https://sonicscan.org/address/0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A)
+* Pendle SY adapter `0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C` [sonicscan](https://sonicscan.org/address/0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C)
 
 ### Tokenomics
 
@@ -46,6 +48,14 @@
 * BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
 * BalancerWeighted: 0x7D6641cf68E5169c11d91266D3E410130dE70B9E
 * Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
+* MetaUSD: 0xf1f5d27877e44c93d2892701a887fb0a102a1815
+
+### Oracles
+
+* minimal wmetaUSD `0x440A6bf579069Fa4e7C3C9fe634B34D2C78C584c` [sonicscan](https://sonicscan.org/address/0x440a6bf579069fa4e7c3c9fe634b34d2c78c584c#readContract)
+* minimal wmetaUSD (for PriceReader) `0xA1d695B4CE5493804dd1C12f39E7fdD696232C47` [sonicscan](https://sonicscan.org/address/0xA1d695B4CE5493804dd1C12f39E7fdD696232C47#readContract)
+* minimal wmetaS `0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7` [sonicscan](https://sonicscan.org/address/0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7#readContract)
+* minimal wmetaS (for PriceReader) `0x89563a0d6917a893b3b4de49f56d8bc35541038d` [sonicscan](https://sonicscan.org/address/0x89563a0d6917a893b3b4de49f56d8bc35541038d#readContract)
 
 ## Polygon [137]
 
