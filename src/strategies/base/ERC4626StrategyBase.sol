@@ -18,8 +18,8 @@ import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// Changelog:
-///     1.0.7: compound_, processRevenue are virtual - #251
-///     1.0.6: total, _depositUnderlying, _withdrawUnderlying, _liquidateRewards, _claimRevenue are virtual
+///     1.0.6: total, _depositUnderlying, _withdrawUnderlying, _liquidateRewards, _claimRevenue,
+///            compound_, processRevenue are virtual - #251
 ///     1.0.5: Add default implementation for poolTvl and maxWithdrawAsset, use StrategyBase 2.4.0 - #326
 ///     1.0.4: Fix revenue formula - #304
 ///     1.0.3: _assetsAmounts is virtual
@@ -35,7 +35,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.7";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.6";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =

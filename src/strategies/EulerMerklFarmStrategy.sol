@@ -87,7 +87,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        return EMFLib.initVariants(platform_, strategyLogicId());
+        (variants, addresses, nums, ticks) = EMFLib.initVariants(platform_, strategyLogicId());
     }
 
     /// @inheritdoc IStrategy
@@ -174,6 +174,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         // cash = totalAssets - totalBorrows but we can use cash() directly
@@ -185,6 +186,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         IFactory.Farm memory farm = _getFarm();
         IEulerVault eulerVault = IEulerVault(farm.addresses[1]);
 
+        // slither-disable-next-line unused-return
         (uint16 supplyCap,) = eulerVault.caps();
         uint amountSupplyCap = EMFLib._resolve(supplyCap);
 
