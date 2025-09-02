@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {
     FarmingStrategyBase,
@@ -12,21 +13,19 @@ import {
     IStrategy,
     IFactory
 } from "./base/FarmingStrategyBase.sol";
-import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {EMFLib} from "./libs/EMFLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
-import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IEVault} from "../integrations/euler/IEVault.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
-import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
-import {console} from "forge-std/console.sol";
+import {IEulerVault} from "../integrations/euler/IEulerVault.sol";
 
 /// @title Lend asset on Euler and earn Merkl rewards
 /// @author Jude (https://github.com/iammrjude)
@@ -58,6 +57,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
         __ERC4626StrategyBase_init(StrategyIdLib.EULER_MERKL_FARM, addresses[0], addresses[1], farm.addresses[1]);
         __FarmingStrategyBase_init(addresses[0], nums[0]);
+        _getStrategyBaseStorage()._exchangeAssetIndex = 0;
     }
 
     //region ----------------------- View functions
@@ -104,7 +104,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        console.log("getSpecificName");
         IFactory.Farm memory farm = _getFarm();
         address asset = IEVault(farm.addresses[1]).asset();
         string memory symbol = IERC20Metadata(asset).symbol();
@@ -113,7 +112,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
-        console.log("description.1");
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return EMFLib.generateDescription(farm);
@@ -121,7 +119,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
     /// @inheritdoc IStrategy
     function isHardWorkOnDepositAllowed() external pure returns (bool allowed) {
-        console.log("isHardWorkOnDepositAllowed");
         allowed = false;
     }
 
@@ -138,7 +135,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         override(StrategyBase, ERC4626StrategyBase)
         returns (bool)
     {
-        return true;
+        return false;
     }
 
     function total() public view override(StrategyBase, ERC4626StrategyBase) returns (uint) {
@@ -155,8 +152,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     {
         (address[] memory __assets, uint[] memory amounts) = getRevenue();
         isReady = amounts[0] > ISwapper(IPlatform(platform()).swapper()).threshold(__assets[0]);
-        console.log("isReadyForHardWork", isReady, amounts[0], amounts.length);
-        return amounts[0] != 0; // todo
+        return amounts[0] != 0;
     }
 
     /// @inheritdoc IStrategy
@@ -166,26 +162,39 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         override(ERC4626StrategyBase, StrategyBase)
         returns (uint[] memory amounts)
     {
-        // todo
         return ERC4626StrategyBase.maxWithdrawAssets(mode);
     }
 
     /// @inheritdoc IStrategy
     function poolTvl() public view virtual override(ERC4626StrategyBase, StrategyBase) returns (uint tvlUsd) {
-        // todo
-        return ERC4626StrategyBase.poolTvl();
-        //        IFactory.Farm memory farm = _getFarm();
-        //        ISilo siloVault = ISilo(farm.addresses[1]);
-        //
-        //        address asset = siloVault.asset();
-        //        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
-        //
-        //        // get price of 1 amount of asset in USD with decimals 18
-        //        // assume that {trusted} value doesn't matter here
-        //        (uint price,) = priceReader.getPrice(asset);
-        //
-        //        return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
+        IFactory.Farm memory farm = _getFarm();
+        IEulerVault eulerVault = IEulerVault(farm.addresses[1]);
+
+        address asset = eulerVault.asset();
+        IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
+
+        // get price of 1 amount of asset in USD with decimals 18
+        // assume that {trusted} value doesn't matter here
+        (uint price,) = priceReader.getPrice(asset);
+
+        // cash = totalAssets - totalBorrows but we can use cash() directly
+        return eulerVault.cash() * price / (10 ** IERC20Metadata(asset).decimals());
     }
+
+    /// @notice IStrategy
+    function maxDepositAssets() public view virtual override returns (uint[] memory amounts) {
+        IFactory.Farm memory farm = _getFarm();
+        IEulerVault eulerVault = IEulerVault(farm.addresses[1]);
+
+        (uint16 supplyCap, ) = eulerVault.caps();
+        uint amountSupplyCap = EMFLib._resolve(supplyCap);
+
+        uint totalSupply = eulerVault.totalAssets(); // = convertToAssets(totalSupply())
+
+        amounts = new uint[](1);
+        amounts[0] = amountSupplyCap > totalSupply ? (amountSupplyCap - totalSupply) : 0;
+    }
+
     //endregion ----------------------- View functions
 
     //region ----------------------- Strategy base
@@ -213,8 +222,8 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(ERC4626StrategyBase, FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
-        console.log("_liquidateRewards");
-        return FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+        // currently rEUL are not supported here
+        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
     /// @inheritdoc StrategyBase
@@ -235,7 +244,41 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         (__assets, __amounts) = _getRevenue(newSharePrice, u);
         $.lastSharePrice = newSharePrice;
         (__rewardAssets, __rewardAmounts) = _getRewards();
-        console.log("_claimRevenue", __amounts[0], __rewardAmounts[0]);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _processRevenue(
+        address[] memory, /*assets_*/
+        uint[] memory /*amountsRemaining*/
+    ) internal pure override(ERC4626StrategyBase, StrategyBase) returns (bool needCompound) {
+        needCompound = true;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _compound() internal override(ERC4626StrategyBase, StrategyBase) {
+        address[] memory _assets = assets();
+        uint len = _assets.length;
+        uint[] memory amounts = new uint[](len);
+
+        //slither-disable-next-line uninitialized-local
+        bool notZero;
+
+        for (uint i; i < len; ++i) {
+            amounts[i] = StrategyLib.balance(_assets[i]);
+            if (amounts[i] != 0) {
+                notZero = true;
+            }
+        }
+        if (notZero) {
+            _depositAssets(amounts, false);
+        }
+
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        // This strategy doesn't use $base.total at all
+        // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
+        // so, we set it twice: here (new value) and in _claimRevenue (old value)
+        $base.total = total();
     }
     //endregion ----------------------- Strategy base
 

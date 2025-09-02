@@ -4,19 +4,10 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IEVault} from "../../integrations/euler/IEVault.sol";
-import {UniswapV3MathLib} from "../libs/UniswapV3MathLib.sol";
-import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
-import {IStrategy} from "../../interfaces/IStrategy.sol";
-import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
-import {StrategyLib} from "./StrategyLib.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IMerklDistributor} from "../../integrations/merkl/IMerklDistributor.sol";
-import {console} from "forge-std/console.sol";
 
 /// @title Library for EMF strategy code splitting
 library EMFLib {
@@ -66,5 +57,23 @@ library EMFLib {
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " Merkl rewards"
         );
+    }
+
+    /// @notice Modified version of AmountCapLib.resolve from Euler codebase
+    /// to convert cap-values to uint256 values
+    /// @dev AmountCaps are 16-bit decimal floating point values:
+    /// * The least significant 6 bits are the exponent
+    /// * The most significant 10 bits are the mantissa, scaled by 100
+    /// * The special value of 0 means limit is not set
+    ///   * This is so that uninitialized storage implies no limit
+    ///   * For an actual cap value of 0, use a zero mantissa and non-zero exponent
+    function _resolve(uint256 amountCap) internal pure returns (uint256) {
+        if (amountCap == 0) return type(uint256).max;
+
+        unchecked {
+        // Cannot overflow because this is less than 2**256:
+        //   10**(2**6 - 1) * (2**10 - 1) = 1.023e+66
+            return 10 ** (amountCap & 63) * (amountCap >> 6) / 100;
+        }
     }
 }

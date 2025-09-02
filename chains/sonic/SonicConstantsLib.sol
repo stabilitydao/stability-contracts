@@ -71,8 +71,7 @@ library SonicConstantsLib {
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
-    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
-    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
+
     // metawS
     address public constant VAULT_C_wS_SiMF_Valmore = 0xA70F074EE09DF3C0AB7e9eb0c058941fF65B8Efe;
     address public constant VAULT_C_wS_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
@@ -448,10 +447,6 @@ library SonicConstantsLib {
     // address public constant ICHI_EQUALIZER_VAULT_GATEWAY = 0x4c8c0D2Ca19a97896AA9135449e6d6471a53FC5f;
     // address public constant ICHI_EQUALIZER_VAULT_DEPLOYER = 0x0b2a31D95B1a4c8b1e772599ffcB8875FB4e2d33;
 
-    // Euler
-    address public constant EULER_MERKL_USDC_MEV_Capital = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
-    address public constant EULER_MERKL_USDC_Re7_Labs = 0x3D9e5462A940684073EED7e4a13d19AE0Dcd13bc;
-
     // -------------------------- Vicuna
     // address public constant VICUNA_POOL = 0xaa1C02a83362BcE106dFf6eB65282fE8B97A1665;
     address public constant STABILITY_SONIC_wS = 0x9E581fC9181f99c3c4DAB344B91C55DaEb9413fe;
@@ -501,6 +496,10 @@ library SonicConstantsLib {
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     // Euler
+    address public constant EULER_MERKL_USDC_MEV_Capital = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
+    address public constant EULER_MERKL_USDC_Re7_Labs = 0x3D9e5462A940684073EED7e4a13d19AE0Dcd13bc;
+    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
+    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
     address public constant EULER_VAULT_USDC_MEV = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
     address public constant EULER_VAULT_scETH_MEV = 0x0806af1762Bdd85B167825ab1a64E31CF9497038;
     address public constant EULER_VAULT_wstkscETH_MEV = 0x05d57366B862022F76Fe93316e81E9f24218bBfC;

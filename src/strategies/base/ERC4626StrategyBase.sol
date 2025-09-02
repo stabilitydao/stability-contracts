@@ -170,12 +170,12 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     function _processRevenue(
         address[] memory, /*assets_*/
         uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {
+    ) internal virtual pure override returns (bool needCompound) {
         // do nothing
     }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {
+    function _compound() internal virtual override {
         // do nothing
     }
 
