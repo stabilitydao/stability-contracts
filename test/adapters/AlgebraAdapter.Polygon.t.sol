@@ -49,14 +49,14 @@ contract AlgebraAdapterTest is PolygonSetup {
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDCe_DAI, PolygonLib.TOKEN_USDCe, 276240);
-        assertEq(price, 991632976171952929);
+        assertEq(price, 991632976172244213); // #262: calcPriceOut was changed: 991632976171952929);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDCe_DAI, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);
         // console.log(price);
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDCe_DAI, PolygonLib.TOKEN_USDCe, 276420);
-        assertEq(price, 1009643073886184998);
+        assertEq(price, 1009643073887200295); // #262: calcPriceOut was changed: 1009643073886184998);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_QUICKSWAPV3_USDCe_DAI, PolygonLib.TOKEN_DAI, 276420);
         assertEq(price, 990449);

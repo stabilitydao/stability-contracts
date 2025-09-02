@@ -325,7 +325,10 @@ contract CVaultBatchSonicTest is Test {
                 )
             );
         }
-        vm.writeFile("./tmp/CVault.Upgrade.Batch.Sonic.results.csv", content);
+        if (!vm.exists("./tmp")) {
+            vm.createDir("./tmp", true);
+        }
+        vm.writeFile("./tmp/CVault.Batch.Sonic.results.csv", content);
     }
 
     function showResults(TestResult memory r) internal pure {
