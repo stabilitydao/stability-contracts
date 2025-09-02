@@ -301,7 +301,13 @@ contract CVaultBatchSonicTest is Test {
                     IStabilityVault(vaults_[i]).symbol(),
                     ";",
                     Strings.toString(results[i].result),
-                    ";",
+                    ";"
+                )
+            );
+
+            content = string(
+                abi.encodePacked(
+                    content,
                     Strings.toString(results[i].totalGasConsumed),
                     ";",
                     Strings.toString(results[i].amountDeposited),
