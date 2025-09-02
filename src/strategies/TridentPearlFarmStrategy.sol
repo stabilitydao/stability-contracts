@@ -16,8 +16,12 @@ import {IGaugeV2CL} from "../integrations/pearl/IGaugeV2CL.sol";
 
 /// @title Earn Pearl emission by staking Trident ALM tokens to gauge
 /// @author Alien Deployer (https://github.com/a17)
+/// @custom:deprecated The strategy was used on Real only and now deprecated
 contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
+
+    // Exclude from coverage report
+    function test() public {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */

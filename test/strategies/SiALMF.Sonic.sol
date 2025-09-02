@@ -505,7 +505,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
 
         // ---------------------------- try to deposit maxDeposit - unlimited flash loan is available
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
         (uint deposited,) = _tryToDeposit(strategy, maxDepositAssets, REVERT_NO);
@@ -525,7 +525,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
 
         // ---------------------------- try to deposit maxDeposit + 1% - unlimited flash loan is available
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(getUnlimitedFlashAmount(), ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
         for (uint i = 0; i < maxDepositAssets.length; i++) {
@@ -539,7 +539,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
 
         // ---------------------------- try to deposit maxDeposit with limited flash loan
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
         _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
         uint[] memory maxDepositAssets = strategy.maxDepositAssets();
 
@@ -556,7 +556,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
 
         // ---------------------------- try to deposit maxDeposit + 1% with limited flash loan
-        uint snapshot = vm.snapshot();
+        uint snapshot = vm.snapshotState();
         address flashLoanVault = _setUpFlashLoanVault(0, ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2);
 
         uint farmId = _currentFarmId();

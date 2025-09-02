@@ -26,6 +26,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns incentives and supply APR on Silo V2
 /// Changelog:
+///   1.2.2: StrategyBase 2.5.1
 ///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
 ///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
@@ -40,7 +41,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.2.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -168,7 +169,7 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
 

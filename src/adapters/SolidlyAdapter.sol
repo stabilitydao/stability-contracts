@@ -16,8 +16,13 @@ import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 
 /// @title AMM adapter for Solidly forks
 /// @author Alien Deployer (https://github.com/a17)
+/// @custom:deprecated The adapter was used on Real only and now it's not used anymore
+/// If we decided to use it on other chain we need to add new tests for it
 contract SolidlyAdapter is Controllable, IAmmAdapter {
     using SafeERC20 for IERC20;
+
+    // Exclude from coverage report
+    function test() public {}
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
