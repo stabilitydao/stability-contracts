@@ -14,16 +14,16 @@ contract SiloManagedFarmStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiMFSonic() public universalTest {
+        _addStrategy(42);
+        _addStrategy(43);
+        _addStrategy(44);
+        _addStrategy(45);
         _addStrategy(46);
         _addStrategy(47);
         _addStrategy(48);
         _addStrategy(49);
         _addStrategy(50);
         _addStrategy(51);
-        _addStrategy(52);
-        _addStrategy(53);
-        _addStrategy(54);
-        _addStrategy(55);
     }
 
     function _addStrategy(uint farmId) internal {
