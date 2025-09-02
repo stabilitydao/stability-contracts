@@ -107,8 +107,8 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         {
             uint maxDeposit = _strategy.maxDepositAssets()[0];
             uint[] memory amountsToDeposit = new uint[](1);
-            amountsToDeposit[0] = maxDeposit * 1/10;
-            (uint deposited, ) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
+            amountsToDeposit[0] = maxDeposit * 1 / 10;
+            (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
 
             // --------------------- Ensure that we can withdraw all
             uint shapshot = vm.snapshotState();
@@ -121,7 +121,9 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
             uint[] memory withdrawn = _vault.withdrawAssets(_vault.assets(), maxWithdraw, expectedAmounts);
 
             assertApproxEqAbs(withdrawn[0], deposited, deposited / 100, "Should be able to withdraw all deposited");
-            assertApproxEqAbs(withdrawn[0], expectedAmounts[0], expectedAmounts[0] / 100, "Should be equal to expected amount");
+            assertApproxEqAbs(
+                withdrawn[0], expectedAmounts[0], expectedAmounts[0] / 100, "Should be equal to expected amount"
+            );
 
             vm.revertToState(shapshot);
         }
@@ -166,7 +168,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         // --------------------- Deposit to the strategy
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = _strategy.maxDepositAssets()[0] / 10;
-        (uint deposited, ) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
+        (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
 
         (uint priceAsset,) = IPriceReader(_platform.priceReader()).getPrice(_vault.assets()[0]);
 
@@ -174,8 +176,13 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         uint tvlUsdAfter = _strategy.poolTvl();
 
         // --------------------- Check poolTvl values
-        assertApproxEqAbs(cashAfter, cashBefore + deposited,  1, "Euler cash should increase on deposited amount");
-        assertApproxEqAbs(tvlUsdAfter, tvlUsdBefore + deposited * priceAsset * 1e18 / 1e18 / 1e6,  1, "TVL should increase on deposited amount");
+        assertApproxEqAbs(cashAfter, cashBefore + deposited, 1, "Euler cash should increase on deposited amount");
+        assertApproxEqAbs(
+            tvlUsdAfter,
+            tvlUsdBefore + deposited * priceAsset * 1e18 / 1e18 / 1e6,
+            1,
+            "TVL should increase on deposited amount"
+        );
     }
 
     function _testEarningRewards() internal {
@@ -186,7 +193,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         uint[] memory amountsToDeposit = new uint[](1);
         amountsToDeposit[0] = 100e6;
 
-        (uint deposited, ) = _tryToDepositToVault(address(_vault), amountsToDeposit, address(this), true);
+        (uint deposited,) = _tryToDepositToVault(address(_vault), amountsToDeposit, address(this), true);
 
         // --------------------- Hardwork
         vm.warp(block.timestamp + 3 days);
@@ -239,11 +246,11 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
         uint collateralAmountETH;
         {
-            (uint16 supplyCap, ) = collateralVault.caps();
+            (uint16 supplyCap,) = collateralVault.caps();
             uint amountSupplyCap = EMFLib._resolve(supplyCap);
 
             uint totalSupply = collateralVault.totalAssets(); // = convertToAssets(totalSupply())
-            collateralAmountETH = (amountSupplyCap > totalSupply ? (amountSupplyCap - totalSupply) : 0) * 9/10;
+            collateralAmountETH = (amountSupplyCap > totalSupply ? (amountSupplyCap - totalSupply) : 0) * 9 / 10;
         }
 
         deal(SonicConstantsLib.TOKEN_wETH, address(this), collateralAmountETH);
@@ -258,7 +265,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
             borrowAmount = collateralAmountETH * priceEth / priceUsdc * percent18 / 1e18; // borrow % of collateral in USDC
 
-            borrowAmount = Math.min(borrowAmount, eulerVault.cash() * 9/10);
+            borrowAmount = Math.min(borrowAmount, eulerVault.cash() * 9 / 10);
         }
 
         // console.log("Enabling borrow controller...");
@@ -269,7 +276,8 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
         IEVC.BatchItem[] memory items = new IEVC.BatchItem[](2);
 
-        bytes memory depositData = abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmountETH, address(this));
+        bytes memory depositData =
+            abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmountETH, address(this));
         items[0] = IEVC.BatchItem({
             targetContract: address(collateralVault),
             onBehalfOfAccount: address(this),

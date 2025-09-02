@@ -8,7 +8,6 @@ import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
 import {StrategyLib} from "../libs/StrategyLib.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IVault} from "../../interfaces/IVault.sol";
-import {console} from "forge-std/console.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
@@ -117,16 +116,12 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @inheritdoc IStrategy
     function doHardWork() external onlyVault {
-        console.log("doHardWork.1");
         _beforeDoHardWork();
-        console.log("doHardWork.2");
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         address _vault = $.vault;
-        console.log("doHardWork.3");
         //slither-disable-next-line unused-return
         (uint tvl,) = IVault(_vault).tvl();
         if (tvl > 0) {
-            console.log("doHardWork.4.$._exchangeAssetIndex", $._exchangeAssetIndex);
             address _platform = platform();
             uint exchangeAssetIndex = $._exchangeAssetIndex;
 
@@ -136,30 +131,23 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 address[] memory __rewardAssets,
                 uint[] memory __rewardAmounts
             ) = _claimRevenue();
-            console.log("doHardWork.5");
 
             //slither-disable-next-line uninitialized-local
             uint totalBefore;
             if (!autoCompoundingByUnderlyingProtocol()) {
-                console.log("doHardWork.6");
                 __amounts[exchangeAssetIndex] +=
                     _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
-                console.log("doHardWork.6.1");
                 uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, __assets, __amounts);
 
-                console.log("doHardWork.6.2");
                 bool needCompound = _processRevenue(__assets, amountsRemaining);
 
-                console.log("doHardWork.6.3");
                 totalBefore = $.total;
 
-                console.log("doHardWork.6.4");
                 if (needCompound) {
                     _compound();
                 }
             } else {
-                console.log("doHardWork.7");
                 // maybe this is not final logic
                 // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
                 // but for many strategies linked to CVault if this feature will be implemented
@@ -178,7 +166,6 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 _compound();
             }
 
-            console.log("doHardWork.8");
             StrategyLib.emitApr($, _platform, __assets, __amounts, tvl, totalBefore);
         }
     }

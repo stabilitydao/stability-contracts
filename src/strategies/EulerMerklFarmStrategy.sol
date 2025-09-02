@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {
     FarmingStrategyBase,
@@ -186,7 +185,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         IFactory.Farm memory farm = _getFarm();
         IEulerVault eulerVault = IEulerVault(farm.addresses[1]);
 
-        (uint16 supplyCap, ) = eulerVault.caps();
+        (uint16 supplyCap,) = eulerVault.caps();
         uint amountSupplyCap = EMFLib._resolve(supplyCap);
 
         uint totalSupply = eulerVault.totalAssets(); // = convertToAssets(totalSupply())

@@ -67,12 +67,12 @@ library EMFLib {
     /// * The special value of 0 means limit is not set
     ///   * This is so that uninitialized storage implies no limit
     ///   * For an actual cap value of 0, use a zero mantissa and non-zero exponent
-    function _resolve(uint256 amountCap) internal pure returns (uint256) {
-        if (amountCap == 0) return type(uint256).max;
+    function _resolve(uint amountCap) internal pure returns (uint) {
+        if (amountCap == 0) return type(uint).max;
 
         unchecked {
-        // Cannot overflow because this is less than 2**256:
-        //   10**(2**6 - 1) * (2**10 - 1) = 1.023e+66
+            // Cannot overflow because this is less than 2**256:
+            //   10**(2**6 - 1) * (2**10 - 1) = 1.023e+66
             return 10 ** (amountCap & 63) * (amountCap >> 6) / 100;
         }
     }
