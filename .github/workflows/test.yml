@@ -35,7 +35,7 @@ jobs:
 
       - name: Run forge test
         run: |
-          forge test --nmc CVaultBatchSonicTest -vvv
+          forge test --nmc SkipOnCiTest -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage --nmc CVaultBatchSonicTest --report lcov
+          forge coverage --nmc SkipOnCiTest --report lcov
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}

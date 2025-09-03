@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
@@ -40,7 +41,7 @@ import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 
 /// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Sonic.results.csv"
-contract CVaultBatchSonicTest is Test {
+contract CVaultBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
@@ -48,12 +49,16 @@ contract CVaultBatchSonicTest is Test {
 
     IFactory public factory;
     address public multisig;
+    uint public selectedBlock;
 
     uint public constant RESULT_FAIL = 0;
     uint public constant RESULT_SUCCESS = 1;
     uint public constant RESULT_SKIPPED = 2;
     uint public constant ERROR_TYPE_DEPOSIT = 1;
     uint public constant ERROR_TYPE_WITHDRAW = 2;
+
+    /// @notice OS is not supported by deal
+    address public constant HOLDER_TOKEN_OS = 0xA7bC226C9586DcD93FF1b0B038C04e89b37C8fa7;
 
     struct TestResult {
         uint result;
@@ -69,16 +74,20 @@ contract CVaultBatchSonicTest is Test {
         uint amountDeposited;
         uint amountWithdrawn;
         uint status;
+        uint vaultTvlUsd;
     }
 
     constructor() {
-        // ---------------- use current block by default or given block from env var
-        uint _block = vm.envOr("SONIC_VAULT_BATCH_BLOCK", uint(FORK_BLOCK));
+        // ---------------- select block for test
+        uint _block = vm.envOr("VAULT_BATCH_TEST_SONIC_BLOCK", uint(FORK_BLOCK));
         if (_block == 0) {
+            // use latest block if VAULT_BATCH_TEST_SONIC_BLOCK is set to 0
             vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         } else {
+            // use block from VAULT_BATCH_TEST_SONIC_BLOCK or pre-defined block if VAULT_BATCH_TEST_SONIC_BLOCK is not set
             vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), _block));
         }
+        selectedBlock = block.number;
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -93,13 +102,25 @@ contract CVaultBatchSonicTest is Test {
 
         console.log(">>>>> Start Batch Sonic CVault upgrade test >>>>>");
         for (uint i = 0; i < _deployedVaults.length; i++) {
+            (results[i].vaultTvlUsd,) = IStabilityVault(_deployedVaults[i]).tvl();
+
             uint status = factory.vaultStatus(_deployedVaults[i]);
-            if (status == 1 && !shouldBeSkipped(_deployedVaults[i])) {
+            bool skipped;
+            if (status != 1) {
+                results[i].result = RESULT_SKIPPED;
+                results[i].errorReason = "Status is not 1";
+            } else if (isExpiredPt(_deployedVaults[i])) {
+                results[i].result = RESULT_SKIPPED;
+                results[i].errorReason = "PT market is expired";
+            } else if (results[i].vaultTvlUsd == 0) {
+                results[i].result = RESULT_SKIPPED;
+                results[i].errorReason = "Zero tvl";
+            } else {
                 uint snapshot = vm.snapshotState();
                 results[i] = _testDepositWithdrawSingleVault(_deployedVaults[i], true, 0);
                 vm.revertToState(snapshot);
-            } else {
-                results[i].result = RESULT_SKIPPED;
+            }
+            if (skipped) {
                 console.log("SKIPPED:", IERC20Metadata(_deployedVaults[i]).symbol(), address(_deployedVaults[i]));
             }
             results[i].status = status;
@@ -127,10 +148,12 @@ contract CVaultBatchSonicTest is Test {
         _saveResults(results, _deployedVaults);
     }
 
+    //region ---------------------- Auxiliary tests
+    /// @notice Auxiliary test to debug particular vaults
     function testDepositWithdrawSingle() internal {
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
-        TestResult memory r = _testDepositWithdrawSingleVault(0x6F6Ff72fD58132a4BB879a1ad492d24a91Db064a, false, 1e18);
+        TestResult memory r = _testDepositWithdrawSingleVault(0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D, false, 0);
         showResults(r);
         assertEq(r.result, RESULT_SUCCESS, "Selected vault should pass deposit/withdraw test");
     }
@@ -141,18 +164,16 @@ contract CVaultBatchSonicTest is Test {
         for (uint i = 0; i < _deployedVaults.length; i++) {
             uint status = factory.vaultStatus(_deployedVaults[i]);
             if (status == 1) {
-                console.log(i);
                 IStabilityVault _vault = IStabilityVault(_deployedVaults[i]);
-                console.log(i);
                 address[] memory assets = _vault.assets();
 
-                console.log(i);
                 console.log("Vault, asset", _deployedVaults[i], IERC20Metadata(_deployedVaults[i]).symbol(), assets[0]);
                 _dealAndApprove(_vault, address(this), 0);
                 console.log("done");
             }
         }
     }
+    //endregion ---------------------- Auxiliary tests
 
     //region ---------------------- Auxiliary functions
     function _testDepositWithdrawSingleVault(
@@ -190,6 +211,7 @@ contract CVaultBatchSonicTest is Test {
         uint amount_
     ) internal returns (TestResult memory result) {
         uint balance0 = IERC20(vault.assets()[0]).balanceOf(address(this));
+        (result.vaultTvlUsd,) = vault.tvl();
 
         // --------------- prepare amount to deposit
         (address[] memory assets, uint[] memory depositAmounts) = _dealAndApprove(vault, address(this), amount_);
@@ -220,7 +242,6 @@ contract CVaultBatchSonicTest is Test {
 
         // --------------- withdraw
         if (result.result == RESULT_SUCCESS) {
-            console.log("withdraw");
             uint amountToWithdraw = vault.balanceOf(address(this));
 
             gas0 = gasleft();
@@ -275,7 +296,7 @@ contract CVaultBatchSonicTest is Test {
             if (assets[i] == SonicConstantsLib.TOKEN_aUSDC) {
                 _dealAave(assets[i], address(this), amounts[i]);
             } else if (assets[i] == SonicConstantsLib.TOKEN_OS) {
-                _dealOS(assets[i], address(this), amounts[i]);
+                _transferAmountFromHolder(assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
             } else {
                 deal(assets[i], address(this), amounts[i]);
             }
@@ -288,8 +309,17 @@ contract CVaultBatchSonicTest is Test {
     }
 
     function _saveResults(TestResult[] memory results, address[] memory vaults_) internal {
-        string memory content =
-            "Status;VaultAddress;VaultName;Result(0-fail,1-success,2-skip);TotalGasConsumed;AmountDeposited;AmountWithdrawn;LossPercent(1000=1%);EarningsPercent(1000=1%);ErrorText;ErrorType(1-deposit,2-withdraw)\n";
+        // --------------- first line - block number
+        string memory content = string(abi.encodePacked("BlockNumber", ";", Strings.toString(selectedBlock), "\n"));
+        // --------------- second line - header
+        content = string(
+            abi.encodePacked(
+                content,
+                "Status;VaultAddress;VaultName;Result;TotalGasConsumed;AmountDeposited;AmountWithdrawn;LossPercent(1000=1%);EarningsPercent(1000=1%);ErrorText;ErrorType;TVL\n"
+            )
+        );
+
+        //
         for (uint i = 0; i < results.length; i++) {
             content = string(
                 abi.encodePacked(
@@ -300,7 +330,9 @@ contract CVaultBatchSonicTest is Test {
                     ";",
                     IStabilityVault(vaults_[i]).symbol(),
                     ";",
-                    Strings.toString(results[i].result),
+                    results[i].result == RESULT_SUCCESS
+                        ? "success"
+                        : results[i].result == RESULT_FAIL ? "fail" : "skipped",
                     ";"
                 )
             );
@@ -320,7 +352,13 @@ contract CVaultBatchSonicTest is Test {
                     ";",
                     results[i].errorReason,
                     ";",
-                    Strings.toString(results[i].errorType),
+                    results[i].errorType == 0
+                        ? ""
+                        : results[i].errorType == ERROR_TYPE_DEPOSIT
+                            ? "deposit"
+                            : results[i].errorType == ERROR_TYPE_WITHDRAW ? "withdraw" : "unknown",
+                    ";",
+                    Strings.toString(results[i].vaultTvlUsd),
                     "\n"
                 )
             );
@@ -375,29 +413,20 @@ contract CVaultBatchSonicTest is Test {
 
     /// @dev Attempt of dealing OS token gives the error: [FAIL: stdStorage find(StdStorage): Failed to write value.]
     /// Let's try to deal wS instead and swap it to OS
-    function _dealOS(address aToken_, address to, uint amount) internal {
-        // todo
-        //        address tempAddress = makeAddr("addr");
-        //
-        //        deal(address(SonicConstantsLib.TOKEN_wS), tempAddress, 10 * amount);
-        //
-        //        ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //        vm.prank(tempAddress);
-        //        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(swapper), 10 * amount);
-        //
-        //        vm.prank(tempAddress);
-        //        swapper.swap(SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_OS, 10 * amount, 0);
-        //
-        //        vm.prank(tempAddress);
-        //        IERC20(SonicConstantsLib.TOKEN_OS).transfer(to, amount);
+    function _transferAmountFromHolder(address token_, address to, uint amount, address holder_) internal {
+        uint balance = IERC20(token_).balanceOf(holder_);
+
+        uint amountToTransfer = Math.min(amount, balance);
+
+        vm.prank(holder_);
+        IERC20(token_).transfer(to, amountToTransfer);
     }
     //endregion ---------------------- Deal assets
 
     //region ---------------------- Set up vaults behavior
 
-    /// @notice Some vaults should be skipped due to various reasons (i.e. PT market is expired and doesn't allow deposit)
-    function shouldBeSkipped(address vault_) internal pure returns (bool ret) {
+    /// @notice PT market is expired and doesn't allow deposit, so it should be skipped in the test
+    function isExpiredPt(address vault_) internal pure returns (bool ret) {
         ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
             || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
             || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
@@ -519,7 +548,7 @@ contract CVaultBatchSonicTest is Test {
         );
         factory.upgradeVaultProxy(address(vault_));
     }
-    //region ---------------------- Helpers
+    //endregion ---------------------- Helpers
 
     //region ---------------------- Upgrade strategies
     function _upgradeVaultStrategy(address vault_) internal {
