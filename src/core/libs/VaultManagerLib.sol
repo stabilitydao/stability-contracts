@@ -342,21 +342,6 @@ library VaultManagerLib {
             CommonLib.formatApr(platformData.fee),
             "</text>"
         );
-        vars.h += vars.step;
-        output = string.concat(
-            output,
-            '<text transform="matrix(1 0 0 1 50 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Manager share</text><text transform="matrix(1 0 0 1 300 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
-            CommonLib.formatApr(platformData.feeShareVaultManager),
-            "</text>"
-        );
         //endregion -- Platform -----
 
         //region ----- Name, description -----

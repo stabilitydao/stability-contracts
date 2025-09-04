@@ -46,7 +46,7 @@ contract YearnStrategyTest is PolygonSetup, UniversalTest {
             // for some vault we setup ecosystem fee
             vm.startPrank(address(0));
             platform.setEcosystemRevenueReceiver(address(10));
-            platform.setFees(6_000, 30_000, 30_000, 40_000);
+            platform.setFees(6_000);
             vm.stopPrank();
         }
     }

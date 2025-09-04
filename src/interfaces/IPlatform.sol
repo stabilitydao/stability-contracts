@@ -47,7 +47,7 @@ interface IPlatform {
     );
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
-    event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+    event FeesChanged(uint fee, uint, uint, uint);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewAmmAdapter(string id, address proxy);
     event EcosystemRevenueReceiver(address receiver);
@@ -82,9 +82,6 @@ interface IPlatform {
         string networkName;
         bytes32 networkExtra;
         uint fee;
-        uint feeShareVaultManager;
-        uint feeShareStrategyLogic;
-        uint feeShareEcosystem;
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
     }
@@ -209,13 +206,10 @@ interface IPlatform {
 
     /// @notice Get platform revenue fee settings
     /// @return fee Revenue fee % (between MIN_FEE - MAX_FEE) with DENOMINATOR precision.
-    /// @return feeShareVaultManager Revenue fee share % of VaultManager tokenId owner
-    /// @return feeShareStrategyLogic Revenue fee share % of StrategyLogic tokenId owner
-    /// @return feeShareEcosystem Revenue fee share % of ecosystemFeeReceiver
     function getFees()
         external
         view
-        returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+        returns (uint fee, uint, uint, uint);
 
     /// @notice Get custom vault platform fee
     /// @return fee revenue fee % with DENOMINATOR precision

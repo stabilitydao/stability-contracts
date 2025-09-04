@@ -13,13 +13,6 @@ library VaultBaseLib {
 
     struct MintFeesVars {
         uint feePlatform;
-        uint feeShareVaultManager;
-        uint feeShareStrategyLogic;
-        uint feeShareEcosystem;
-        uint vaultSharesForPlatform;
-        uint vaultSharesForVaultManager;
-        uint vaultSharesForStrategyLogic;
-        uint vaultSharesForEcosystem;
     }
 
     function hardWorkMintFeeCallback(

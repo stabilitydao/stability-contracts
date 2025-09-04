@@ -23,6 +23,7 @@ import {IVault} from "../interfaces/IVault.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem
 ///   1.4.0: IPlatform.metaVaultFactory()
 ///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
 ///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
@@ -41,7 +42,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.5.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -51,12 +52,6 @@ contract Platform is Controllable, IPlatform {
 
     /// @dev Maximal revenue fee
     uint public constant MAX_FEE = 50_000; // 50%
-
-    /// @dev Minimal VaultManager tokenId owner fee share
-    uint public constant MIN_FEE_SHARE_VAULT_MANAGER = 10_000; // 10%
-
-    /// @dev Minimal StrategyLogic tokenId owner fee share
-    uint public constant MIN_FEE_SHARE_STRATEGY_LOGIC = 10_000; // 10%
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.Platform")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PLATFORM_STORAGE_LOCATION =
@@ -126,9 +121,9 @@ contract Platform is Controllable, IPlatform {
         EnumerableSet.AddressSet defaultBoostRewardTokens;
         EnumerableSet.AddressSet dexAggregators;
         uint fee;
-        uint feeShareVaultManager;
-        uint feeShareStrategyLogic;
-        uint feeShareEcosystem;
+        uint __deprecated1;
+        uint __deprecated2;
+        uint __deprecated3;
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
@@ -190,9 +185,7 @@ contract Platform is Controllable, IPlatform {
         emit RevenueRouter(addresses.revenueRouter);
         $.networkName = settings.networkName;
         $.networkExtra = settings.networkExtra;
-        _setFees(
-            settings.fee, settings.feeShareVaultManager, settings.feeShareStrategyLogic, settings.feeShareEcosystem
-        );
+        _setFees(settings.fee);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
         emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
     }
@@ -298,13 +291,8 @@ contract Platform is Controllable, IPlatform {
         $.platformUpgradeTimelock = 0;
     }
 
-    function setFees(
-        uint fee,
-        uint feeShareVaultManager,
-        uint feeShareStrategyLogic,
-        uint feeShareEcosystem
-    ) external onlyGovernanceOrMultisig {
-        _setFees(fee, feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem);
+    function setFees(uint fee) external onlyGovernanceOrMultisig {
+        _setFees(fee);
     }
 
     /// @inheritdoc IPlatform
@@ -476,10 +464,10 @@ contract Platform is Controllable, IPlatform {
     function getFees()
         public
         view
-        returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem)
+        returns (uint fee, uint, uint, uint)
     {
         PlatformStorage storage $ = _getStorage();
-        return ($.fee, $.feeShareVaultManager, $.feeShareStrategyLogic, $.feeShareEcosystem);
+        return ($.fee, 0, 0, 0);
     }
 
     /// @inheritdoc IPlatform
@@ -493,12 +481,7 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line uninitialized-local
         PlatformSettings memory platformSettings;
-        (
-            platformSettings.fee,
-            platformSettings.feeShareVaultManager,
-            platformSettings.feeShareStrategyLogic,
-            platformSettings.feeShareEcosystem
-        ) = getFees();
+        (platformSettings.fee,,,) = getFees();
         platformSettings.networkName = $.networkName;
         platformSettings.networkExtra = $.networkExtra;
         platformSettings.minInitialBoostPerDay = $.minInitialBoostPerDay;
@@ -809,36 +792,13 @@ contract Platform is Controllable, IPlatform {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _setFees(
-        uint fee,
-        uint feeShareVaultManager,
-        uint feeShareStrategyLogic,
-        uint feeShareEcosystem
-    ) internal {
+    function _setFees(uint fee) internal {
         PlatformStorage storage $ = _getStorage();
-        address ecosystemRevenueReceiver_ = $.ecosystemRevenueReceiver;
-        // nosemgrep
-        if (feeShareEcosystem != 0 && ecosystemRevenueReceiver_ == address(0)) {
-            revert IControllable.IncorrectZeroArgument();
-            // revert IncorrectFee(0,0);
-        }
         if (fee < MIN_FEE || fee > MAX_FEE) {
             revert IncorrectFee(MIN_FEE, MAX_FEE);
         }
-        if (feeShareVaultManager < MIN_FEE_SHARE_VAULT_MANAGER) {
-            revert IncorrectFee(MIN_FEE_SHARE_VAULT_MANAGER, 0);
-        }
-        if (feeShareStrategyLogic < MIN_FEE_SHARE_STRATEGY_LOGIC) {
-            revert IncorrectFee(MIN_FEE_SHARE_STRATEGY_LOGIC, 0);
-        }
-        if (feeShareVaultManager + feeShareStrategyLogic + feeShareEcosystem > ConstantsLib.DENOMINATOR) {
-            revert IncorrectFee(0, ConstantsLib.DENOMINATOR);
-        }
         $.fee = fee;
-        $.feeShareVaultManager = feeShareVaultManager;
-        $.feeShareStrategyLogic = feeShareStrategyLogic;
-        $.feeShareEcosystem = feeShareEcosystem;
-        emit FeesChanged(fee, feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem);
+        emit FeesChanged(fee, 0, 0, 0);
     }
 
     function _setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) internal {

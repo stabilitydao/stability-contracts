@@ -214,8 +214,6 @@ library PolygonLib {
         p.gelatoMinBalance = 1e18;
         p.gelatoDepositAmount = 2e18;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

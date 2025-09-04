@@ -56,9 +56,6 @@ contract FactoryTest is Test, MockSetup {
                 networkName: "Localhost Ethereum",
                 networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })

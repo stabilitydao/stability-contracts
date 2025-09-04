@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 interface IPlatformDeployer {
     struct DeployPlatformParams {
@@ -14,7 +14,5 @@ interface IPlatformDeployer {
         uint gelatoMinBalance;
         uint gelatoDepositAmount;
         uint fee;
-        uint feeShareVaultManager;
-        uint feeShareStrategyLogic;
     }
 }

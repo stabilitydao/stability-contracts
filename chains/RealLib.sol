@@ -100,8 +100,6 @@ library RealLib {
         p.gelatoMinBalance = 1e16;
         p.gelatoDepositAmount = 2e16;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

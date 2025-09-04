@@ -120,9 +120,6 @@ abstract contract DeployCore {
                 networkName: p.networkName,
                 networkExtra: p.networkExtra,
                 fee: p.fee,
-                feeShareVaultManager: p.feeShareVaultManager,
-                feeShareStrategyLogic: p.feeShareStrategyLogic,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
