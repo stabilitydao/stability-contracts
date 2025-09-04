@@ -43,6 +43,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
+import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -245,6 +246,7 @@ library SonicLib {
         );
         _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
@@ -274,7 +276,8 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](45);
+        pools = new ISwapper.AddPoolData[](46);
+
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SWAPX_CL_wS_stS, AmmAdapterIdLib.ALGEBRA_V4, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS);
@@ -341,15 +344,16 @@ library SonicLib {
         // dynamic route: tokenIn is equal to tokenOut (actual tokenOut is selected on the fly)
         pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaS, AmmAdapterIdLib.META_VAULT, SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.METAVAULT_metaS); // 44
 
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_EUL, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_EUL, SonicConstantsLib.TOKEN_USDC); // 45
         //endregion ----- Pools ----
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](62);
+        _farms = new IFactory.Farm[](64);
         uint i;
 
-        _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS);
-        _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_USDC_scUSD);
+        _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_wS_stS); //0
+        _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_USDC_scUSD); //1
         _farms[i++] = SonicFarmMakerLib._makeEqualizerFarm(SonicConstantsLib.EQUALIZER_GAUGE_USDC_WETH);
         _farms[i++] = SonicFarmMakerLib._makeEqualizerFarm(SonicConstantsLib.EQUALIZER_GAUGE_wS_stS);
         _farms[i++] = SonicFarmMakerLib._makeEqualizerFarm(SonicConstantsLib.EQUALIZER_GAUGE_wS_USDC);
@@ -431,6 +435,10 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_wS); // farm 59
         _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_USDC); // farm 60
         _farms[i++] = SonicFarmMakerLib._makeAaveMerklFarm(SonicConstantsLib.STABILITY_CREDIX_MARKET_SONIC_scUSD); // farm 61
+
+        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_MEV_Capital); //62
+        _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_Re7_Labs); //63
+
     }
 
     function _makePoolData(
