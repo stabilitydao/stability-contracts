@@ -85,6 +85,7 @@ library SonicConstantsLib {
     address public constant VAULT_LEV_SiL_stS_S = 0x709833e5B4B98aAb812d175510F94Bc91CFABD89;
     address public constant VAULT_LEV_SiL_S_stS = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
     address public constant VAULT_LEV_SiAL_wstkscUSD_USDC = 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1;
+    address public constant VAULT_LEV_SiAL_wstkscETH_WETH = 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -161,6 +162,8 @@ library SonicConstantsLib {
     address public constant POOL_BEETS_scUSD_stS = 0x25ca5451CD5a50AB1d324B5E64F32C0799661891;
     address public constant POOL_BEETS_USDC_stS = 0x713FB5036dC70012588d77a5B066f1Dd05c712d7;
     address public constant POOL_BEETS_V3_SILO_VAULT_25_wS_anS = 0x944D4AE892dE4BFd38742Cc8295d6D5164c5593C;
+    address public constant POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD = 0x54Ca9aad90324C022bBeD0A94b7380c03aA5884A;
+    address public constant POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH = 0x8620Fcf1aBDF72d35A0577e0Bc9653E1F088Fc34;
     address public constant POOL_BEETS_BeetsFragmentsS1_stS = 0xf633a43E5cCf858A27dD1d74A23BE15ea5aa28f3;
     address public constant POOL_SUSHI_wS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
@@ -386,6 +389,7 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_25_wS = 0x016C306e103FbF48EC24810D078C65aD13c5f11B;
     address public constant SILO_VAULT_46_PT_aUSDC_14AUG = 0x558d6D6D53270ae8ba622daF123983D9F3c21792;
     address public constant SILO_VAULT_46_scUSD = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
+    address public constant SILO_VAULT_47_bscETH = 0x24c74B30d1a4261608E84Bf5a618693032681DAc;
     address public constant SILO_VAULT_40_PT_stS_29MAY = 0x058766008d237faF3B05eeEebABc73C64d677bAE;
     address public constant SILO_VAULT_40_wS = 0x24F7692af5231d559219d07c65276Ad8C8ceE9A3;
     address public constant SILO_VAULT_37_PT_wstkscUSD_29MAY = 0x854475b78880767e246163031b5bE44f14426c26;
