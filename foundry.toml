@@ -36,3 +36,6 @@ base = { key = "${BASESCAN_API_KEY}", chain = 8453  }
 arbitrum = { key = "${ARBITRUMSCAN_API_KEY}", chain = 42161  }
 ethereum = { key = "${ETHERSCAN_API_KEY}", chain = 1  }
 sonic = { key = "${ETHERSCAN_API_KEY}", chain = 146, url = "https://api.etherscan.io/v2/api?chainid=146" }
+
+[lint]
+ignore = ["src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol"]
