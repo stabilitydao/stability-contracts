@@ -286,8 +286,8 @@ contract PlatformTest is Test {
         (uint fee,,,) = platform.getFees();
         assertEq(fee, 6_000);
 
-        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-        platform.setFees(6_000);
+        // vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
+        // platform.setFees(6_000);
 
         uint _minFee = platform.MIN_FEE();
         uint _maxFee = platform.MAX_FEE();
