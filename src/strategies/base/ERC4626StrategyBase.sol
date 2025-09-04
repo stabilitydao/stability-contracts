@@ -11,11 +11,16 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {StrategyBase} from "./StrategyBase.sol";
 import {StrategyLib} from "../libs/StrategyLib.sol";
 import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 
 /// @notice Hold ERC4626 vault shares, emit APR and collect fees
 /// Changelog:
-///     1.1.0: Add default implementation for poolTvl and maxWithdrawAsset, use StrategyBase 2.4.0 - #326
+///     1.0.6: total, _depositUnderlying, _withdrawUnderlying, _liquidateRewards, _claimRevenue,
+///            compound_, processRevenue are virtual - #251
+///     1.0.5: Add default implementation for poolTvl and maxWithdrawAsset, use StrategyBase 2.4.0 - #326
 ///     1.0.4: Fix revenue formula - #304
 ///     1.0.3: _assetsAmounts is virtual
 ///     1.0.2: _depositAssets and _withdrawAssets are virtual
@@ -30,7 +35,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of ERC4626StrategyBase implementation
-    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.5";
+    string public constant VERSION_ERC4626_STRATEGY_BASE = "1.0.6";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.ERC4626StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ERC4626_STRATEGY_BASE_STORAGE_LOCATION =
@@ -74,7 +79,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function total() public view override returns (uint) {
+    function total() public view virtual override returns (uint) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         return StrategyLib.balance(__$__._underlying);
     }
@@ -143,7 +148,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+    function _depositUnderlying(uint amount) internal virtual override returns (uint[] memory amountsConsumed) {
         amountsConsumed = new uint[](1);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address u = $base._underlying;
@@ -158,7 +163,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
         address, /*exchangeAsset*/
         address[] memory, /*rewardAssets_*/
         uint[] memory /*rewardAmounts_*/
-    ) internal pure override returns (uint earnedExchangeAsset) {
+    ) internal virtual override returns (uint earnedExchangeAsset) {
         // do nothing
     }
 
@@ -166,12 +171,12 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     function _processRevenue(
         address[] memory, /*assets_*/
         uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {
+    ) internal pure virtual override returns (bool needCompound) {
         // do nothing
     }
 
     /// @inheritdoc StrategyBase
-    function _compound() internal override {
+    function _compound() internal virtual override {
         // do nothing
     }
 
@@ -214,7 +219,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     }
 
     /// @inheritdoc StrategyBase
-    function _withdrawUnderlying(uint amount, address receiver) internal override {
+    function _withdrawUnderlying(uint amount, address receiver) internal virtual override {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IERC20(__$__._underlying).safeTransfer(receiver, amount);
     }
@@ -238,6 +243,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /// @inheritdoc StrategyBase
     function _claimRevenue()
         internal
+        virtual
         override
         returns (
             address[] memory __assets,
