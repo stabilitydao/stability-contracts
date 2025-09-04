@@ -461,11 +461,7 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function getFees()
-        public
-        view
-        returns (uint fee, uint, uint, uint)
-    {
+    function getFees() public view returns (uint fee, uint, uint, uint) {
         PlatformStorage storage $ = _getStorage();
         return ($.fee, 0, 0, 0);
     }

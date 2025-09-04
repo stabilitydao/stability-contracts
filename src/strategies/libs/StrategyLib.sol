@@ -80,11 +80,8 @@ library StrategyLib {
         address[] memory assets_,
         uint[] memory amounts_
     ) external returns (uint[] memory amountsRemaining) {
-        ExtractFeesVars memory vars = ExtractFeesVars({
-            platform: IPlatform(platform),
-            feePlatform: 0,
-            amountPlatform: 0
-        });
+        ExtractFeesVars memory vars =
+            ExtractFeesVars({platform: IPlatform(platform), feePlatform: 0, amountPlatform: 0});
 
         (vars.feePlatform,,,) = vars.platform.getFees();
         try vars.platform.getCustomVaultFee(vault) returns (uint vaultCustomFee) {

@@ -206,10 +206,7 @@ interface IPlatform {
 
     /// @notice Get platform revenue fee settings
     /// @return fee Revenue fee % (between MIN_FEE - MAX_FEE) with DENOMINATOR precision.
-    function getFees()
-        external
-        view
-        returns (uint fee, uint, uint, uint);
+    function getFees() external view returns (uint fee, uint, uint, uint);
 
     /// @notice Get custom vault platform fee
     /// @return fee revenue fee % with DENOMINATOR precision
