@@ -74,7 +74,7 @@ abstract contract FullMockSetup is MockSetup {
         proxy = new Proxy();
         proxy.initProxy(address(new HardWorker()));
         HardWorker hardworker = HardWorker(payable(address(proxy)));
-        hardworker.initialize(address(platform), address(0), 0, 0);
+        hardworker.initialize(address(platform));
 
         proxy = new Proxy();
         proxy.initProxy(address(new RevenueRouter()));

@@ -88,9 +88,6 @@ library ArbitrumLib {
         p.networkName = "Arbitrum";
         p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x2959bc), bytes3(0x000000)));
         p.targetExchangeAsset = TOKEN_USDC;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e16;
-        p.gelatoDepositAmount = 2e16;
         p.fee = 6_000;
     }
 

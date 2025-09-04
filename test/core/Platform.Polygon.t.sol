@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "../base/chains/PolygonSetup.sol";
@@ -216,7 +216,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         (canExec, execPayload) = hw.checkerServer();
         assertEq(canExec, true, "Must exec");
-        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotServerOrGelato.selector));
+        vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotServer.selector));
         vm.prank(address(666));
         (bool success,) = address(hw).call(execPayload);
         (success,) = address(hw).call(execPayload);
@@ -224,7 +224,6 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
         hw.setDedicatedServerMsgSender(address(this), true);
         assertEq(hw.maxHwPerCall(), 5);
-        assertNotEq(hw.gelatoTaskId(), bytes32(0x00));
         assertEq(hw.excludedVaults(address(this)), false);
         vm.prank(platform.multisig());
         hw.setDedicatedServerMsgSender(address(this), true);
@@ -280,9 +279,7 @@ contract PlatformPolygonTest is PolygonSetup {
 
         skip(1 days);
 
-        (canExec, execPayload) = hw.checkerGelato();
-        assertEq(canExec, true, "HardWorker call not success 2");
-        vm.startPrank(hw.dedicatedGelatoMsgSender());
+        // vm.startPrank(hw.dedicatedServerMsgSender());
 
         vm.deal(address(hw), 0);
         vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
@@ -299,7 +296,6 @@ contract PlatformPolygonTest is PolygonSetup {
             true,
             string.concat("HardWorker.call failed 3. execPayload length: ", CommonLib.u2s(execPayload.length))
         );
-        assertGt(hw.gelatoBalance(), 0);
         vm.stopPrank();
 
         skip(1 days);
@@ -317,14 +313,13 @@ contract PlatformPolygonTest is PolygonSetup {
         }
 
         vm.startPrank(platform.multisig());
-        hw.setDelays(1 hours, 2 hours);
+        hw.setDelay(1 hours);
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        hw.setDelays(1 hours, 2 hours);
+        hw.setDelay(1 hours);
         vm.stopPrank();
 
-        (uint delayServer, uint delayGelato) = hw.getDelays();
+        uint delayServer = hw.getDelay();
         assertEq(delayServer, 1 hours);
-        assertEq(delayGelato, 2 hours);
 
         address[] memory vaultsForHardWork = new address[](1);
         address vault_ = factory.deployedVault(10);
@@ -341,35 +336,26 @@ contract PlatformPolygonTest is PolygonSetup {
         canReceive = true;
         hw.call(vaultsForHardWork);
 
-        //Still yellow!
-        vm.startPrank(address(hw.dedicatedGelatoMsgSender()));
-
         //lower
         deal(address(hw), 0);
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
-        assertGt(hw.gelatoMinBalance(), address(hw).balance);
         // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         hw.call(vaultsForHardWork);
 
         //equal
-        deal(address(hw), hw.gelatoMinBalance());
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
-        assertEq(address(hw).balance, hw.gelatoMinBalance());
         // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
         hw.call(vaultsForHardWork);
 
         //higher
         deal(address(hw), type(uint).max);
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
-        assertGt(address(hw).balance, hw.gelatoMinBalance());
         hw.call(vaultsForHardWork);
 
         vm.stopPrank();
 
         skip(1 hours);
         skip(100);
-        (canExec,) = hw.checkerGelato();
-        assertEq(canExec, false, "Must not exec");
         (canExec,) = hw.checkerServer();
         assertEq(canExec, true);
     }

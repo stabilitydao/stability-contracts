@@ -66,9 +66,6 @@ library EthereumLib {
         p.networkName = "Ethereum";
         p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7c85c6), bytes3(0xffffff)));
         p.targetExchangeAsset = TOKEN_USDC;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e18;
-        p.gelatoDepositAmount = 2e18;
         p.fee = 6_000;
     }
 

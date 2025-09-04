@@ -82,7 +82,7 @@ abstract contract DeployCore {
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new HardWorker()));
         vars.hardWorker = HardWorker(payable(address(vars.proxy)));
-        vars.hardWorker.initialize(address(vars.platform), p.gelatoAutomate, p.gelatoMinBalance, p.gelatoDepositAmount);
+        vars.hardWorker.initialize(address(vars.platform));
 
         // Zap
         vars.proxy = new Proxy();

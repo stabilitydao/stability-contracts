@@ -111,9 +111,6 @@ library PolygonLib {
     address public constant POOL_CURVE_crvUSD_DAI = 0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
     address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
 
-    // Gelato
-    address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
-
     // QuickSwap V3
     address public constant QUICKSWAP_POSITION_MANAGER = 0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
 
@@ -210,9 +207,6 @@ library PolygonLib {
         p.networkName = "Polygon";
         p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)));
         p.targetExchangeAsset = TOKEN_USDCe;
-        p.gelatoAutomate = GELATO_AUTOMATE;
-        p.gelatoMinBalance = 1e18;
-        p.gelatoDepositAmount = 2e18;
         p.fee = 6_000;
     }
 

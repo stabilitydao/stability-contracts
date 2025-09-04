@@ -10,9 +10,6 @@ interface IPlatformDeployer {
         string networkName;
         bytes32 networkExtra;
         address targetExchangeAsset;
-        address gelatoAutomate;
-        uint gelatoMinBalance;
-        uint gelatoDepositAmount;
         uint fee;
     }
 }
