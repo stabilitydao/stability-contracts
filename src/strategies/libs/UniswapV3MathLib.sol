@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {FixedPointMathLib} from "../../../lib/solady/src/utils/FixedPointMathLib.sol";
+
 library UniswapV3MathLib {
     uint8 internal constant RESOLUTION = 96;
     uint internal constant Q96 = 0x1000000000000000000000000;
@@ -17,7 +19,44 @@ library UniswapV3MathLib {
         uint128 liquidity;
     }
 
+    /// @notice Calculates the price of token IN in terms of token OUT.
+    /// @param tokenIn Address of token IN.
+    /// @param token0 Address of token0 in the pool.
+    /// @param sqrtPriceX96 Current sqrt price of the pool in Q64.96 format.
+    /// sqrtPriceX96 = sqrt(price0in1 * 10^decimals1 / 10^decimals0) * 2**96, where price0in1 has no decimals.
+    /// @param tokenInDecimals Decimals of token IN.
+    /// @param tokenOutDecimals Decimals of token OUT.
+    /// @param amount Amount in terms of token IN. Can be 0. Decimals {tokenInDecimals}
+    /// @return price Price of amount (or 1 if amount is 0) of token IN in terms of token OUT. Decimals {tokenOutDecimals}
     function calcPriceOut(
+        address tokenIn,
+        address token0,
+        uint160 sqrtPriceX96,
+        uint tokenInDecimals,
+        uint tokenOutDecimals,
+        uint amount
+    ) external pure returns (uint price) {
+        tokenOutDecimals; // hide warning, compatibility with previous version of calcPriceOut()
+
+        if (tokenIn == token0) {
+            // decimal IN = decimal 0, decimal OUT = decimal 1
+            // price0in1 * 10^decimal1 = sqrtPriceX96^2 / 2**192 * 10^decimal0
+            uint sqrtPriceX18 = FixedPointMathLib.mulDivUp(sqrtPriceX96, 1e18, 2 ** 96);
+            price = sqrtPriceX18 * sqrtPriceX18 * 10 ** tokenInDecimals / 1e18 / 1e18;
+        } else {
+            // decimal IN = decimal 1, decimal OUT = decimal 0
+            // price0in1 = sqrtPriceX96^2 / 2**192 * 10^decimal0 / 10^decimal1
+            // (1 / price0in1) = 2**192 / sqrtPriceX96^2 * 10^decimal1 / 10^decimal0
+            // (1 / price0in1) * 10^decimal0 = 2**192 / sqrtPriceX96^2 * 10^decimal1
+            uint sqrtPriceX18 = FixedPointMathLib.mulDiv(2 ** 96, 1e18, sqrtPriceX96);
+            price = sqrtPriceX18 * sqrtPriceX18 * 10 ** tokenInDecimals / 1e18 / 1e18;
+        }
+
+        return amount == 0 ? price : price * amount / (10 ** tokenInDecimals);
+    }
+
+    /// @notice Old version of calcPriceOut. It has problems i.e. with decimals 6:6 and large sqrtPriceX96 values.
+    function calcPriceOutDeprecated(
         address tokenIn,
         address token0,
         uint160 sqrtPriceX96,
