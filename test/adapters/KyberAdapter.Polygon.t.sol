@@ -49,7 +49,7 @@ contract KyberAdapterTest is PolygonSetup {
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDCe_DAI, PolygonLib.TOKEN_USDCe, 276240);
-        assertEq(price, 991632976171952929);
+        assertEq(price, 991632976172244213); // #252: calcPriceOut was changed, 991632976171952929);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDCe_DAI, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);

@@ -53,14 +53,14 @@ contract UniswapV3AdapterTest is PolygonSetup {
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_USDCe, 276240);
-        assertEq(price, 991632976171952929);
+        assertEq(price, 991632976172244213, "sqr(78896014320100183410150535286544012)/2^192 = 991632976172.244213157"); // #252: calcPriceOut was changed, prev price was 991632976171952929);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);
         // console.log(price);
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_USDCe, 276420);
-        assertEq(price, 1009643073886184998);
+        assertEq(price, 1009643073887200295, "sqr(79609247523252521483209703753505346)/2^192 = 1009643073887.20029579"); // #252: calcPriceOut was changed, prev price was 1009643073886184998);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_UNISWAPV3_USDCe_DAI_100, PolygonLib.TOKEN_DAI, 276420);
         assertEq(price, 990449);

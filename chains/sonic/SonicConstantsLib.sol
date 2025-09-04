@@ -86,6 +86,7 @@ library SonicConstantsLib {
     address public constant VAULT_LEV_SiL_S_stS = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
     address public constant VAULT_LEV_SiAL_wstkscUSD_USDC = 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1;
     address public constant VAULT_LEV_SiAL_wstkscETH_WETH = 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047;
+    address public constant VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025 = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
