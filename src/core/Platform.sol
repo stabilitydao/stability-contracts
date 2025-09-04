@@ -23,7 +23,8 @@ import {IVault} from "../interfaces/IVault.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
-///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName, networkExtra
+///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName,
+///          networkExtra, aprOracle
 ///   1.4.0: IPlatform.metaVaultFactory()
 ///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
 ///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
@@ -84,7 +85,7 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address priceReader;
         /// @inheritdoc IPlatform
-        address aprOracle;
+        address __deprecated1;
         /// @inheritdoc IPlatform
         address swapper;
         /// @inheritdoc IPlatform
@@ -95,8 +96,8 @@ contract Platform is Controllable, IPlatform {
         address zap;
         /// @inheritdoc IPlatform
         address bridge;
-        string __deprecated1;
-        bytes32 __deprecated2;
+        string __deprecated2;
+        bytes32 __deprecated3;
         /// @inheritdoc IPlatform
         uint minInitialBoostPerDay;
         /// @inheritdoc IPlatform
@@ -119,9 +120,9 @@ contract Platform is Controllable, IPlatform {
         EnumerableSet.AddressSet defaultBoostRewardTokens;
         EnumerableSet.AddressSet dexAggregators;
         uint fee;
-        uint __deprecated3;
         uint __deprecated4;
         uint __deprecated5;
+        uint __deprecated6;
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
@@ -160,7 +161,6 @@ contract Platform is Controllable, IPlatform {
         $.buildingPayPerVaultToken = addresses.buildingPayPerVaultToken;
         $.vaultManager = addresses.vaultManager;
         $.strategyLogic = addresses.strategyLogic;
-        $.aprOracle = addresses.aprOracle;
         $.targetExchangeAsset = addresses.targetExchangeAsset;
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
@@ -174,7 +174,7 @@ contract Platform is Controllable, IPlatform {
             addresses.buildingPermitToken,
             addresses.vaultManager,
             addresses.strategyLogic,
-            addresses.aprOracle,
+            address(0),
             addresses.hardWorker,
             address(0),
             addresses.zap,
@@ -699,12 +699,6 @@ contract Platform is Controllable, IPlatform {
     function priceReader() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.priceReader;
-    }
-
-    /// @inheritdoc IPlatform
-    function aprOracle() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.aprOracle;
     }
 
     /// @inheritdoc IPlatform

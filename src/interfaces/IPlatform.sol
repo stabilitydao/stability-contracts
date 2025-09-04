@@ -39,7 +39,7 @@ interface IPlatform {
         address buildingPermitToken_,
         address vaultManager_,
         address strategyLogic_,
-        address aprOracle_,
+        address,
         address hardWorker,
         address rebalancer,
         address zap,
@@ -97,7 +97,6 @@ interface IPlatform {
         address buildingPayPerVaultToken;
         address vaultManager;
         address strategyLogic;
-        address aprOracle;
         address targetExchangeAsset;
         address hardWorker;
         address zap;
@@ -150,10 +149,6 @@ interface IPlatform {
     /// @notice Combining oracle and DeX spot prices
     /// @return Address of PriceReader proxy
     function priceReader() external view returns (address);
-
-    /// @notice Providing underlying assets APRs on-chain
-    /// @return Address of AprOracle proxy
-    function aprOracle() external view returns (address);
 
     /// @notice On-chain price quoter and swapper
     /// @return Address of Swapper proxy

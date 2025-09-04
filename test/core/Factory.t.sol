@@ -46,7 +46,6 @@ contract FactoryTest is Test, MockSetup {
                 buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(0),
                 zap: address(0),

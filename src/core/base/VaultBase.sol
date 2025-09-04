@@ -14,8 +14,6 @@ import {IVault, IStabilityVault} from "../../interfaces/IVault.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IAprOracle} from "../../interfaces/IAprOracle.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IRevenueRouter} from "../../interfaces/IRevenueRouter.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -25,6 +23,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.8.0: not use AprOracle
 ///   2.7.1: Add maxWithdraw with mode - #360
 ///   2.7.0: Add maxDeposit - #330; refactoring to reduce size.
 ///   2.6.0: Add maxWithdraw - #326
@@ -52,7 +51,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.7.1";
+    string public constant VERSION_VAULT_BASE = "2.8.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
@@ -422,39 +421,14 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         }
         uint strategyAssetsLength = v.strategyAssets.length;
         address[] memory queryAprAssets = new address[](assetsLengthTmp);
-        // nosemgrep
         for (uint i; i < strategyAssetsLength; ++i) {
             queryAprAssets[i] = v.strategyAssets[i];
         }
         if (v.underlying != address(0)) {
             queryAprAssets[assetsLengthTmp - 1] = v.underlying;
         }
-        uint[] memory queryAprs = IAprOracle(IPlatform(platform()).aprOracle()).getAprs(queryAprAssets);
-        assetsLengthTmp = 0;
-        uint queryAprsLength = queryAprs.length;
-        // nosemgrep
-        for (uint i; i < queryAprsLength; ++i) {
-            if (queryAprs[i] > 0) {
-                ++assetsLengthTmp;
-            }
-        }
-        assetsWithApr = new address[](assetsLengthTmp);
-        assetsAprs = new uint[](assetsLengthTmp);
-        //slither-disable-next-line uninitialized-local
-        uint k;
-        // nosemgrep
-        for (uint i; i < queryAprsLength; ++i) {
-            if (queryAprs[i] > 0) {
-                assetsWithApr[k] = queryAprAssets[i];
-                assetsAprs[k] = queryAprs[i];
-                if (i < strategyAssetsLength) {
-                    totalApr += assetsAprs[k] * v.proportions[i] / 1e18;
-                } else {
-                    totalApr += assetsAprs[k];
-                }
-                ++k;
-            }
-        }
+        assetsWithApr = new address[](0);
+        assetsAprs = new uint[](0);
     }
 
     /// @inheritdoc IVault

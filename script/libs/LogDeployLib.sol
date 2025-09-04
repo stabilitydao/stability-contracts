@@ -11,7 +11,6 @@ import "../../src/core/VaultManager.sol";
 import "../../src/core/StrategyLogic.sol";
 import "../../src/core/vaults/CVault.sol";
 import "../../src/core/PriceReader.sol";
-import "../../src/core/AprOracle.sol";
 import "../../src/core/Swapper.sol";
 import "../../src/core/HardWorker.sol";
 import "../../src/core/Zap.sol";

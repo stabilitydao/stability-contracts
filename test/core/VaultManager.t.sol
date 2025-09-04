@@ -13,7 +13,6 @@ import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {MockStrategy} from "../../src/test/MockStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {IAprOracle} from "../../src/interfaces/IAprOracle.sol";
 import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {Utils} from "../base/Utils.sol";
@@ -98,25 +97,6 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         // set last hardwork apr
         MockStrategy(address(vault.strategy())).setLastApr(12_387);
         MockStrategy(address(rVault.strategy())).setLastApr(12_387);
-
-        // set underlying and tokenB APRs
-        address _aprOracle = platform.aprOracle();
-        address[] memory assetToSetApr = new address[](2);
-        uint[] memory aprsToSet = new uint[](2);
-        assetToSetApr[0] = address(lp);
-        assetToSetApr[1] = address(tokenB);
-        aprsToSet[0] = 4_013;
-        aprsToSet[1] = 2_000;
-        IAprOracle(_aprOracle).setAprs(assetToSetApr, aprsToSet);
-
-        //test require
-        assetToSetApr = new address[](2);
-        uint[] memory _aprsToSet = new uint[](1);
-        assetToSetApr[0] = address(lp);
-        assetToSetApr[1] = address(tokenB);
-        _aprsToSet[0] = 4_013;
-        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
-        IAprOracle(_aprOracle).setAprs(assetToSetApr, _aprsToSet);
 
         // svg
         string memory name;

@@ -14,7 +14,6 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {MockERC721} from "../../src/test/MockERC721.sol";
 import {MockSetup} from "./MockSetup.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
@@ -67,11 +66,6 @@ abstract contract FullMockSetup is MockSetup {
         priceReader.addAdapter(address(chainlinkAdapter));
 
         proxy = new Proxy();
-        proxy.initProxy(address(new AprOracle()));
-        AprOracle aprOracle = AprOracle(address(proxy));
-        aprOracle.initialize(address(platform));
-
-        proxy = new Proxy();
         proxy.initProxy(address(new HardWorker()));
         HardWorker hardworker = HardWorker(payable(address(proxy)));
         hardworker.initialize(address(platform));
@@ -94,7 +88,6 @@ abstract contract FullMockSetup is MockSetup {
                 buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
                 zap: address(0),

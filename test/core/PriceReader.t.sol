@@ -74,7 +74,6 @@ contract PriceReaderTest is Test, MockSetup {
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(7),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(11),
