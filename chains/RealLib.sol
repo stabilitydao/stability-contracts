@@ -93,8 +93,6 @@ library RealLib {
         p.version = "24.06.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = TOKEN_USDC;
-        p.networkName = "Real";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xeeeeee), bytes3(0x000000)));
         p.targetExchangeAsset = TOKEN_USDC;
         p.fee = 6_000;
     }

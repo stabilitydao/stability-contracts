@@ -18,12 +18,12 @@ import {IVaultManager} from "../interfaces/IVaultManager.sol";
 import {IVault} from "../interfaces/IVault.sol";
 
 /// @notice The main contract of the platform.
-///         It stores core and infrastructure addresses, list of operators, fee settings, allows plaform upgrades etc.
+///         It stores core and infrastructure addresses, list of operators, fee settings, allows platform upgrades etc.
 ///         ┏┓┏┳┓┏┓┳┓┳┓ ┳┏┳┓┓┏  ┏┓┓ ┏┓┏┳┓┏┓┏┓┳┓┳┳┓
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
-///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem
+///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName, networkExtra
 ///   1.4.0: IPlatform.metaVaultFactory()
 ///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
 ///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
@@ -95,10 +95,8 @@ contract Platform is Controllable, IPlatform {
         address zap;
         /// @inheritdoc IPlatform
         address bridge;
-        /// @inheritdoc IPlatform
-        string networkName;
-        /// @inheritdoc IPlatform
-        bytes32 networkExtra;
+        string __deprecated1;
+        bytes32 __deprecated2;
         /// @inheritdoc IPlatform
         uint minInitialBoostPerDay;
         /// @inheritdoc IPlatform
@@ -121,9 +119,9 @@ contract Platform is Controllable, IPlatform {
         EnumerableSet.AddressSet defaultBoostRewardTokens;
         EnumerableSet.AddressSet dexAggregators;
         uint fee;
-        uint __deprecated1;
-        uint __deprecated2;
         uint __deprecated3;
+        uint __deprecated4;
+        uint __deprecated5;
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
@@ -183,8 +181,6 @@ contract Platform is Controllable, IPlatform {
             address(0)
         );
         emit RevenueRouter(addresses.revenueRouter);
-        $.networkName = settings.networkName;
-        $.networkExtra = settings.networkExtra;
         _setFees(settings.fee);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
         emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
@@ -478,8 +474,6 @@ contract Platform is Controllable, IPlatform {
         //slither-disable-next-line uninitialized-local
         PlatformSettings memory platformSettings;
         (platformSettings.fee,,,) = getFees();
-        platformSettings.networkName = $.networkName;
-        platformSettings.networkExtra = $.networkExtra;
         platformSettings.minInitialBoostPerDay = $.minInitialBoostPerDay;
         platformSettings.minInitialBoostDuration = $.minInitialBoostDuration;
         return platformSettings;
@@ -758,18 +752,6 @@ contract Platform is Controllable, IPlatform {
     function minInitialBoostPerDay() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
         return $.minInitialBoostPerDay;
-    }
-
-    /// @inheritdoc IPlatform
-    function networkExtra() external view returns (bytes32) {
-        PlatformStorage storage $ = _getStorage();
-        return $.networkExtra;
-    }
-
-    /// @inheritdoc IPlatform
-    function networkName() external view returns (string memory) {
-        PlatformStorage storage $ = _getStorage();
-        return $.networkName;
     }
 
     /// @inheritdoc IPlatform

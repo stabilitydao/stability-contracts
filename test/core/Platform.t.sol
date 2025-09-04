@@ -75,8 +75,6 @@ contract PlatformTest is Test {
                 revenueRouter: address(1)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
@@ -90,11 +88,6 @@ contract PlatformTest is Test {
         assertEq(platform.revenueRouter(), address(1));
         platform.setupRevenueRouter(address(1001));
         assertEq(platform.revenueRouter(), address(1001));
-
-        assertEq(platform.networkName(), "Localhost Ethereum");
-        assertEq(
-            platform.networkExtra(), CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)))
-        );
 
         assertEq(platform.ecosystemRevenueReceiver(), address(0));
 
@@ -115,8 +108,6 @@ contract PlatformTest is Test {
                 revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: bytes32(0),
                 fee: 6_000,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
@@ -466,8 +457,6 @@ contract PlatformTest is Test {
                 revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days

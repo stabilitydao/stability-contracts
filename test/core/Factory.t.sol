@@ -53,8 +53,6 @@ contract FactoryTest is Test, MockSetup {
                 revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days

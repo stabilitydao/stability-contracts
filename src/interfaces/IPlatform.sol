@@ -79,8 +79,6 @@ interface IPlatform {
     }
 
     struct PlatformSettings {
-        string networkName;
-        bytes32 networkExtra;
         uint fee;
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
@@ -181,9 +179,6 @@ interface IPlatform {
     /// @return Address of the MetaVault factory
     function metaVaultFactory() external view returns (address);
 
-    /// @notice Name of current EVM network
-    function networkName() external view returns (string memory);
-
     /// @notice Minimal initial boost rewards per day USD amount which needs to create rewarding vault
     function minInitialBoostPerDay() external view returns (uint);
 
@@ -194,12 +189,6 @@ interface IPlatform {
     /// @dev This function is an external view function, meaning it doesn't modify the state.
     /// @return uint representing the timestamp of the platform upgrade timelock.
     function platformUpgradeTimelock() external view returns (uint);
-
-    /// @dev Extra network data
-    /// @return 0-2 bytes - color
-    ///         3-5 bytes - background color
-    ///         6-31 bytes - free
-    function networkExtra() external view returns (bytes32);
 
     /// @notice Pending platform upgrade data
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory);

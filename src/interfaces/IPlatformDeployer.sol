@@ -7,8 +7,6 @@ interface IPlatformDeployer {
         string version;
         address buildingPermitToken;
         address buildingPayPerVaultToken;
-        string networkName;
-        bytes32 networkExtra;
         address targetExchangeAsset;
         uint fee;
     }

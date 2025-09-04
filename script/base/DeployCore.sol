@@ -117,8 +117,6 @@ abstract contract DeployCore {
                 revenueRouter: address(vars.revenueRouter)
             }),
             IPlatform.PlatformSettings({
-                networkName: p.networkName,
-                networkExtra: p.networkExtra,
                 fee: p.fee,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days

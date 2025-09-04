@@ -82,8 +82,6 @@ library BaseLib {
         p.version = "24.06.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = TOKEN_USDC;
-        p.networkName = "Base";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x2356f0), bytes3(0x000000)));
         p.targetExchangeAsset = TOKEN_USDC;
         p.fee = 6_000;
     }

@@ -63,8 +63,6 @@ library EthereumLib {
         p.version = "24.06.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = TOKEN_WETH;
-        p.networkName = "Ethereum";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7c85c6), bytes3(0xffffff)));
         p.targetExchangeAsset = TOKEN_USDC;
         p.fee = 6_000;
     }

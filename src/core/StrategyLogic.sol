@@ -11,7 +11,7 @@ import "../interfaces/IStrategy.sol";
 /// @notice The developed strategy logic is tokenized into StrategyLogic NFT.
 ///         The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
 /// Changelog:
-///   1.1.0: remove platformData.feeShareStrategyLogic
+///   1.1.0: remove platformData.feeShareStrategyLogic, platformData.networkExtra
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)

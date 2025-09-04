@@ -17,7 +17,7 @@ import "../interfaces/IManagedVault.sol";
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
 /// Changelog:
-///   1.1.0: remove platformData.feeShareVaultManager
+///   1.1.0: remove platformData.feeShareVaultManager, platformData.networkExtra
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)

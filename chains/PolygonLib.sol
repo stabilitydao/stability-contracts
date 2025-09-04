@@ -204,8 +204,6 @@ library PolygonLib {
         p.version = "24.06.0-alpha";
         p.buildingPermitToken = TOKEN_PM;
         p.buildingPayPerVaultToken = TOKEN_SDIV;
-        p.networkName = "Polygon";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)));
         p.targetExchangeAsset = TOKEN_USDCe;
         p.fee = 6_000;
     }
