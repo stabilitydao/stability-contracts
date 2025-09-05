@@ -5,12 +5,9 @@ import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IMetaVaultAmmAdapter} from "../../src/interfaces/IMetaVaultAmmAdapter.sol";
-import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 
 contract MetaVaultAdapterUpgrade101Test is SonicSetup {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

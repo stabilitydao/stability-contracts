@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/UniversalTest.sol";
-import "../base/chains/RealSetup.sol";
-import "../base/chains/SonicSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {console} from "forge-std/Test.sol";
+import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
+import {UniversalTest, StrategyIdLib, IFactory} from "../base/UniversalTest.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {IVoter} from "../../src/integrations/pearl/IVoter.sol";
+import {IGaugeV2CL} from "../../src/integrations/pearl/IGaugeV2CL.sol";
+// import "../base/UniversalTest.sol";
+// import "../base/chains/RealSetup.sol";
 
 // todo: replace Real-logic by Sonic-logic
 contract TridentPearlFarmStrategyTest is SonicSetup, /* RealSetup */ UniversalTest {

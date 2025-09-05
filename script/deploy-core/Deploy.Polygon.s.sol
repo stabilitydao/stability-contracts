@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../chains/PolygonLib.sol";
+import {Script} from "forge-std/Script.sol";
+import {PolygonLib} from "../../chains/PolygonLib.sol";
 import {DeployCore} from "../base/DeployCore.sol";
 
 contract DeployPolygon is Script, DeployCore {

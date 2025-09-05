@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/BaseSetup.sol";
-import "../base/UniversalTest.sol";
+import {BaseSetup} from "../base/chains/BaseSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract CompoundFarmStrategyTest is BaseSetup, UniversalTest {
     function testCFBase() public universalTest {

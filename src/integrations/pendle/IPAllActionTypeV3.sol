@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.28;
 
-import "./IPSwapAggregator.sol";
-import "./IPLimitRouter.sol";
+import {SwapData} from "./IPSwapAggregator.sol";
+import {FillOrderParams} from "./IPLimitRouter.sol";
 import {IPYieldToken} from "./IPYieldToken.sol";
 
 /*

@@ -5,10 +5,6 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
 import {SonicConstantsLib} from "chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "src/strategies/libs/StrategyIdLib.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 
 contract SiloStrategyTest is SonicSetup, UniversalTest {
     constructor() {

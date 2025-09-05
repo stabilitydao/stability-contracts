@@ -1,29 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../src/core/proxy/Proxy.sol";
-import "../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../src/adapters/ChainlinkAdapter.sol";
-import "../src/interfaces/IFactory.sol";
-import "../src/interfaces/IPlatform.sol";
-import "../src/interfaces/ISwapper.sol";
-import "../src/interfaces/IPlatformDeployer.sol";
-import "../src/integrations/convex/IConvexRewardPool.sol";
-import "../script/libs/LogDeployLib.sol";
-import "../script/libs/DeployAdapterLib.sol";
-import "../src/strategies/libs/StrategyIdLib.sol";
-import "../src/strategies/libs/ALMPositionNameLib.sol";
-import "../src/strategies/libs/StrategyDeveloperLib.sol";
-import "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
-import "../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
-import "../src/strategies/CompoundFarmStrategy.sol";
-import "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
-import "../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
-import "../src/strategies/IchiRetroMerklFarmStrategy.sol";
-import "../src/strategies/GammaRetroMerklFarmStrategy.sol";
-import "../src/strategies/CurveConvexFarmStrategy.sol";
-import "../src/strategies/YearnStrategy.sol";
-import "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
+import {Proxy} from "../src/core/proxy/Proxy.sol";
+import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
+import {ChainlinkAdapter} from "../src/adapters/ChainlinkAdapter.sol";
+import {IFactory} from "../src/interfaces/IFactory.sol";
+import {IPlatform} from "../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../src/interfaces/ISwapper.sol";
+import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
+import {IConvexRewardPool} from "../src/integrations/convex/IConvexRewardPool.sol";
+import {LogDeployLib, console, RMVault, RVault, PriceReader, IPriceReader} from "../script/libs/LogDeployLib.sol";
+import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
+import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
+import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
+import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
+import {GammaQuickSwapMerklFarmStrategy} from "../src/strategies/GammaQuickSwapMerklFarmStrategy.sol";
+import {QuickSwapStaticMerklFarmStrategy} from "../src/strategies/QuickSwapStaticMerklFarmStrategy.sol";
+import {CompoundFarmStrategy} from "../src/strategies/CompoundFarmStrategy.sol";
+import {DefiEdgeQuickSwapMerklFarmStrategy} from "../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import {IchiQuickSwapMerklFarmStrategy} from "../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import {IchiRetroMerklFarmStrategy} from "../src/strategies/IchiRetroMerklFarmStrategy.sol";
+import {GammaRetroMerklFarmStrategy} from "../src/strategies/GammaRetroMerklFarmStrategy.sol";
+import {CurveConvexFarmStrategy} from "../src/strategies/CurveConvexFarmStrategy.sol";
+import {YearnStrategy} from "../src/strategies/YearnStrategy.sol";
+import {SteerQuickSwapMerklFarmStrategy} from "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
+import {CVault} from "../src/core/vaults/CVault.sol";
+import {CommonLib} from "../src/core/libs/CommonLib.sol";
+import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
+import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
+import {IDefiEdgeStrategy} from "../src/integrations/defiedge/IDefiEdgeStrategy.sol";
+import {IICHIVault} from "../src/integrations/ichi/IICHIVault.sol";
 
 /// @dev Polygon network [chainId: 137] data library
 ///      ┏┓  ┓

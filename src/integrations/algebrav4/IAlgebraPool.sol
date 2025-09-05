@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import "./pool/IAlgebraPoolImmutables.sol";
-import "./pool/IAlgebraPoolState.sol";
-import "./pool/IAlgebraPoolActions.sol";
-import "./pool/IAlgebraPoolPermissionedActions.sol";
-import "./pool/IAlgebraPoolEvents.sol";
-import "./pool/IAlgebraPoolErrors.sol";
+import {IAlgebraPoolImmutables} from "./pool/IAlgebraPoolImmutables.sol";
+import {IAlgebraPoolState} from "./pool/IAlgebraPoolState.sol";
+import {IAlgebraPoolActions} from "./pool/IAlgebraPoolActions.sol";
+import {IAlgebraPoolPermissionedActions} from "./pool/IAlgebraPoolPermissionedActions.sol";
+import {IAlgebraPoolEvents} from "./pool/IAlgebraPoolEvents.sol";
+import {IAlgebraPoolErrors} from "./pool/IAlgebraPoolErrors.sol";
 
 /// @title The interface for a Algebra Pool
 /// @dev The pool interface is broken up into many smaller pieces.

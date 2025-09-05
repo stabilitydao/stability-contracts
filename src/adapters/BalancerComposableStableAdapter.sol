@@ -8,7 +8,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
-import {Errors} from "./libs/balancer/BalancerErrors.sol";
 import {FixedPoint} from "./libs/balancer/FixedPoint.sol";
 import {ScaleLib} from "./libs/balancer/ScaleLib.sol";
 import {StableMath} from "./libs/balancer/StableMath.sol";

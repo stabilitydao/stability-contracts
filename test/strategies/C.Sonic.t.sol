@@ -11,7 +11,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVToken} from "../../src/integrations/compoundv2/IVToken.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {console} from "forge-std/Test.sol";
 
 contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     uint public constant FORK_BLOCK = 40868489; // Jul-30-2025 11:16:51 AM +UTC

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../interfaces/IAmmAdapter.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 
 /// @title Liquidity providing strategy
 /// @author Alien Deployer (https://github.com/a17)

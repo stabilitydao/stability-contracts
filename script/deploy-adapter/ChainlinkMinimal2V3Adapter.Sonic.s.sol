@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {ChainlinkMinimal2V3Adapter} from "../../src/adapters/ChainlinkMinimal2V3Adapter.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract DeployChainlinkMinimal2V3AdapterSonic is Script {

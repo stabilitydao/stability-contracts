@@ -2,10 +2,10 @@
 pragma solidity ^0.8.23;
 
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "./CommonLib.sol";
-import "../../interfaces/IVaultManager.sol";
-import "../../interfaces/IPlatform.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {CommonLib} from "./CommonLib.sol";
+import {IVaultManager} from "../../interfaces/IVaultManager.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @dev Library for VaultManager's tokenURI generation with SVG image and other metadata
 library VaultManagerLib {

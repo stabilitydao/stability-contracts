@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "../base/chains/PolygonSetup.sol";
-import "../../src/core/libs/VaultTypeLib.sol";
-import "../../src/interfaces/IVaultManager.sol";
-import "../../src/interfaces/IHardWorker.sol";
-import "../../src/strategies/libs/ALMPositionNameLib.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {PolygonSetup, IERC20} from "../base/chains/PolygonSetup.sol";
+import {PolygonLib, StrategyIdLib, console, CommonLib, IFactory, IPriceReader} from "../../chains/PolygonLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
+import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
+import {ALMPositionNameLib} from "../../src/strategies/libs/ALMPositionNameLib.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {IRVault} from "../../src/interfaces/IRVault.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IDefiEdgeStrategyFactory} from "../../src/integrations/defiedge/IDefiEdgeStrategyFactory.sol";
 
 contract PlatformPolygonTest is PolygonSetup {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

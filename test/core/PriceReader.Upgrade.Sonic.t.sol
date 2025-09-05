@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console, Vm} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {PriceReader, IPriceReader, IPlatform} from "../../src/core/PriceReader.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";

@@ -2,16 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {LPStrategyBase, ILPStrategy, IStrategy, IERC165, StrategyBase} from "./base/LPStrategyBase.sol";
+import {LPStrategyBase, ILPStrategy, IERC165, StrategyBase} from "./base/LPStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
-import {
-    FarmingStrategyBase,
-    IFarmingStrategy,
-    IControllable,
-    IFactory,
-    IPlatform,
-    StrategyLib
-} from "./base/FarmingStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";

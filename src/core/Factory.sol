@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./base/Controllable.sol";
-import "./libs/CommonLib.sol";
-import "./libs/VaultTypeLib.sol";
-import "./libs/FactoryLib.sol";
-import "./libs/FactoryNamingLib.sol";
-import "./libs/DeployerLib.sol";
-import "./libs/VaultStatusLib.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IVaultProxy.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IStrategyProxy.sol";
-import "../interfaces/IVaultManager.sol";
-import "../interfaces/IStrategyLogic.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {CommonLib} from "./libs/CommonLib.sol";
+import {FactoryLib} from "./libs/FactoryLib.sol";
+import {FactoryNamingLib} from "./libs/FactoryNamingLib.sol";
+import {DeployerLib} from "./libs/DeployerLib.sol";
+import {VaultStatusLib} from "./libs/VaultStatusLib.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IVaultProxy} from "../interfaces/IVaultProxy.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IStrategyProxy} from "../interfaces/IStrategyProxy.sol";
+import {IVaultManager} from "../interfaces/IVaultManager.sol";
+import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.

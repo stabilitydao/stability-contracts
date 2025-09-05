@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../script/libs/LogDeployLib.sol";
+import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
@@ -16,6 +16,11 @@ import {ILiquidBoxFactory} from "../src/integrations/pearl/ILiquidBoxFactory.sol
 import {ILiquidBox} from "../src/integrations/pearl/ILiquidBox.sol";
 import {IGaugeV2CL} from "../src/integrations/pearl/IGaugeV2CL.sol";
 import {TridentPearlFarmStrategy} from "../src/strategies/TridentPearlFarmStrategy.sol";
+import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
+import {CVault} from "../src/core/vaults/CVault.sol";
+import {IPriceReader} from "../src/interfaces/IPriceReader.sol";
+import {Proxy} from "../src/core/proxy/Proxy.sol";
+import {PriceReader} from "../src/core/PriceReader.sol";
 
 /// @dev Re.al network [chainId: 111188] data library
 /// ______            _

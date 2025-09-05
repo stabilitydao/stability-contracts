@@ -3,18 +3,10 @@ pragma solidity ^0.8.28;
 
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
-import {
-    MetaVault,
-    IMetaVault,
-    IStabilityVault,
-    IPlatform,
-    IPriceReader,
-    IControllable
-} from "../../src/core/vaults/MetaVault.sol";
+import {MetaVault, IMetaVault, IStabilityVault, IPlatform, IPriceReader} from "../../src/core/vaults/MetaVault.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
@@ -22,7 +14,6 @@ import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Platform} from "../../src/core/Platform.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
@@ -31,7 +22,7 @@ import {ISilo} from "../../src/integrations/silo/ISilo.sol";
 import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {Test, console, Vm} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";

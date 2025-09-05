@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Controllable} from "./base/Controllable.sol";
@@ -13,9 +11,6 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IProxy} from "../interfaces/IProxy.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
-import {IPriceReader} from "../interfaces/IPriceReader.sol";
-import {IVaultManager} from "../interfaces/IVaultManager.sol";
-import {IVault} from "../interfaces/IVault.sol";
 
 /// @notice The main contract of the platform.
 ///         It stores core and infrastructure addresses, list of operators, fee settings, allows platform upgrades etc.

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-import "../../chains/sonic/SonicLib.sol";
-import "../base/UniversalTest.sol";
-import "../../src/integrations/balancer/IBalancerGauge.sol";
+import {SonicConstantsLib, StrategyIdLib} from "../../chains/sonic/SonicLib.sol";
+import {UniversalTest} from "../base/UniversalTest.sol";
+import {IBalancerGauge} from "../../src/integrations/balancer/IBalancerGauge.sol";
 
 contract BeetsStableFarmStrategyTest is SonicSetup, UniversalTest {
     function testBSF() public universalTest {

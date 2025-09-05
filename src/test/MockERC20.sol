@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "./interfaces/IMockERC20.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IMockERC20} from "./interfaces/IMockERC20.sol";
 
 contract MockERC20 is IMockERC20, ERC20Upgradeable {
     uint8 internal _decimals;

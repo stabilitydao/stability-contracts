@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "./base/Controllable.sol";
-import "./libs/StrategyLogicLib.sol";
-import "../interfaces/IStrategyLogic.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/IStrategy.sol";
+import {ERC721EnumerableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {StrategyLogicLib} from "./libs/StrategyLogicLib.sol";
+import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @notice The developed strategy logic is tokenized into StrategyLogic NFT.
 ///         The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.

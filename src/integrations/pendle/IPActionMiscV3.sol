@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
-import "./IPAllActionTypeV3.sol";
+import {
+  TokenInput, TokenOutput, LimitOrderData, ExitPreExpReturnParams,
+  ExitPostExpReturnParams, RedeemYtIncomeToTokenStruct
+} from "./IPAllActionTypeV3.sol";
+import {SwapDataExtra} from "./IPSwapAggregator.sol";
 
 /// @notice Restored from 0x373Dba2055Ad40cb4815148bC47cd1DC16e92E44
 interface IPActionMiscV3 {
