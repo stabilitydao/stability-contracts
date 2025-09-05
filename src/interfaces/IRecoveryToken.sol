@@ -23,4 +23,7 @@ interface IRecoveryToken {
 
     /// @notice The account is paused for transfers
     function paused(address account) external view returns (bool);
+
+    /// @notice change default 18 decimals to {decimals_}
+    function setDecimals(uint8 decimals_) external;
 }
