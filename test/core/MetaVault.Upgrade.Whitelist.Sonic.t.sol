@@ -163,6 +163,7 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
             vm.expectRevert(IStabilityVault.WaitAFewBlocks.selector);
         }
         vm.prank(user);
+        /// forge-lint: disable-next-line
         IStabilityVault(metaVault).transfer(address(this), balance);
 
         vm.revertToState(snapshot);

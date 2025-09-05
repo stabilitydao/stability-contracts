@@ -68,19 +68,13 @@ contract PlatformTest is Test {
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(1)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
@@ -94,11 +88,6 @@ contract PlatformTest is Test {
         platform.setupRevenueRouter(address(1001));
         assertEq(platform.revenueRouter(), address(1001));
 
-        assertEq(platform.networkName(), "Localhost Ethereum");
-        assertEq(
-            platform.networkExtra(), CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)))
-        );
-
         assertEq(platform.ecosystemRevenueReceiver(), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
@@ -111,19 +100,13 @@ contract PlatformTest is Test {
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: bytes32(0),
                 fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })
@@ -285,38 +268,23 @@ contract PlatformTest is Test {
 
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
-        platform.setFees(1, 1, 1, 1);
+        platform.setFees(1);
 
         vm.startPrank(govAddr);
-        platform.setFees(6_000, 30_000, 30_000, 0);
-        (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) = platform.getFees();
+        platform.setFees(6_000);
+        (uint fee,,,) = platform.getFees();
         assertEq(fee, 6_000);
-        assertEq(feeShareVaultManager, 30_000);
-        assertEq(feeShareStrategyLogic, 30_000);
-        assertEq(feeShareEcosystem, 0);
 
-        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-        platform.setFees(6_000, 30_000, 30_000, 5);
+        // vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
+        // platform.setFees(6_000);
 
         uint _minFee = platform.MIN_FEE();
         uint _maxFee = platform.MAX_FEE();
 
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(3_000, 30_000, 30_000, 0);
+        platform.setFees(3_000);
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(51_000, 19_000, 30_000, 0);
-
-        _minFee = platform.MIN_FEE_SHARE_VAULT_MANAGER();
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 3_000, 30_000, 0);
-
-        _minFee = platform.MIN_FEE_SHARE_STRATEGY_LOGIC();
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 30_000, 3_000, 0);
-
-        _maxFee = ConstantsLib.DENOMINATOR;
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, 0, _maxFee));
-        platform.setFees(10_000, 60_000, 50_000, 0);
+        platform.setFees(51_000);
 
         platform.setCustomVaultFee(address(1), 22_222);
         assertEq(platform.getCustomVaultFee(address(1)), 22_222);
@@ -480,19 +448,13 @@ contract PlatformTest is Test {
                 buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })

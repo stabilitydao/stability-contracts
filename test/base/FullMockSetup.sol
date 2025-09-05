@@ -12,7 +12,6 @@ import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {MockSetup} from "./MockSetup.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
@@ -65,14 +64,9 @@ abstract contract FullMockSetup is MockSetup {
         priceReader.addAdapter(address(chainlinkAdapter));
 
         proxy = new Proxy();
-        proxy.initProxy(address(new AprOracle()));
-        AprOracle aprOracle = AprOracle(address(proxy));
-        aprOracle.initialize(address(platform));
-
-        proxy = new Proxy();
         proxy.initProxy(address(new HardWorker()));
         HardWorker hardworker = HardWorker(payable(address(proxy)));
-        hardworker.initialize(address(platform), address(0), 0, 0);
+        hardworker.initialize(address(platform));
 
         proxy = new Proxy();
         proxy.initProxy(address(new RevenueRouter()));
@@ -92,19 +86,13 @@ abstract contract FullMockSetup is MockSetup {
                 buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
                 zap: address(0),
                 revenueRouter: address(revenueRouter)
             }),
             IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
                 fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })

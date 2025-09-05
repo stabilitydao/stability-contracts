@@ -41,7 +41,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     uint public constant FORK_BLOCK = 37591249; // Jul-08-2025 10:21:19 AM +UTC
     uint public constant MULTI_VAULT_INDEX = 0;
     uint public constant META_VAULT_INDEX = 1;
-    uint public constant VALUE_buildingPayPerVaultTokenAmount = 5e24;
+    uint public constant VALUE_BUILDING_PAY_PER_VAULT_TOKEN_AMOUNT = 5e24;
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
@@ -851,9 +851,9 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _createVaultsAndStrategies(Factory factory) internal returns (address[] memory vaults) {
-        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_buildingPayPerVaultTokenAmount);
+        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_BUILDING_PAY_PER_VAULT_TOKEN_AMOUNT);
         IERC20(IPlatform(PLATFORM).buildingPayPerVaultToken()).approve(
-            address(factory), VALUE_buildingPayPerVaultTokenAmount
+            address(factory), VALUE_BUILDING_PAY_PER_VAULT_TOKEN_AMOUNT
         );
 
         uint farmId = factory.farmsLength() - 1;

@@ -8,7 +8,6 @@ import {VaultManager} from "../../src/core/VaultManager.sol";
 import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {Zap} from "../../src/core/Zap.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
@@ -24,7 +23,6 @@ abstract contract DeployCore {
         StrategyLogic strategyLogic;
         PriceReader priceReader;
         Swapper swapper;
-        AprOracle aprOracle;
         HardWorker hardWorker;
         Zap zap;
         RevenueRouter revenueRouter;
@@ -68,17 +66,11 @@ abstract contract DeployCore {
         vars.swapper = Swapper(address(vars.proxy));
         vars.swapper.initialize(address(vars.platform));
 
-        // AprOracle
-        vars.proxy = new Proxy();
-        vars.proxy.initProxy(address(new AprOracle()));
-        vars.aprOracle = AprOracle(address(vars.proxy));
-        vars.aprOracle.initialize(address(vars.platform));
-
         // HardWorker
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new HardWorker()));
         vars.hardWorker = HardWorker(payable(address(vars.proxy)));
-        vars.hardWorker.initialize(address(vars.platform), p.gelatoAutomate, p.gelatoMinBalance, p.gelatoDepositAmount);
+        vars.hardWorker.initialize(address(vars.platform));
 
         // Zap
         vars.proxy = new Proxy();
@@ -106,19 +98,13 @@ abstract contract DeployCore {
                 buildingPayPerVaultToken: p.buildingPayPerVaultToken,
                 vaultManager: address(vars.vaultManager),
                 strategyLogic: address(vars.strategyLogic),
-                aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: p.targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
                 zap: address(vars.zap),
                 revenueRouter: address(vars.revenueRouter)
             }),
             IPlatform.PlatformSettings({
-                networkName: p.networkName,
-                networkExtra: p.networkExtra,
                 fee: p.fee,
-                feeShareVaultManager: p.feeShareVaultManager,
-                feeShareStrategyLogic: p.feeShareStrategyLogic,
-                feeShareEcosystem: 0,
                 minInitialBoostPerDay: 30e18, // $30
                 minInitialBoostDuration: 30 * 86400 // 30 days
             })

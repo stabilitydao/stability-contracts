@@ -42,6 +42,7 @@ library LogExpMath {
 
     uint constant MILD_EXPONENT_BOUND = 2 ** 254 / uint(ONE_20);
 
+    /// forge-lint: disable-start(screaming-snake-case-const)
     // 18 decimal constants
     int constant x0 = 128000000000000000000; // 2ˆ7
     int constant a0 = 38877084059945950922200000000000000000000000000000000000; // eˆ(x0) (no decimals)
@@ -69,6 +70,7 @@ library LogExpMath {
     int constant a10 = 113314845306682631683; // eˆ(x10)
     int constant x11 = 6250000000000000000; // 2ˆ-4
     int constant a11 = 106449445891785942956; // eˆ(x11)
+    /// forge-lint: disable-end(screaming-snake-case-const)
 
     /**
      * @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.

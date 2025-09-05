@@ -59,8 +59,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
     address public constant VAULT_2_USDC = SonicConstantsLib.VAULT_C_Credix_USDC_AMFa5;
 
     // broken vaults in metascUSD
-    address public constant VAULT_3_scUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa0;
-    address public constant VAULT_4_scUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa5;
+    address public constant VAULT_3_SCUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa0;
+    address public constant VAULT_4_SCUSD = SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa5;
 
     address[4] internal CREDIX_VAULTS;
 
@@ -125,7 +125,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
         wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
-        CREDIX_VAULTS = [VAULT_1_USDC, VAULT_2_USDC, VAULT_3_scUSD, VAULT_4_scUSD];
+        CREDIX_VAULTS = [VAULT_1_USDC, VAULT_2_USDC, VAULT_3_SCUSD, VAULT_4_SCUSD];
 
         WRAPPED_META_USD_LARGEST_HOLDERS = [
             0x6e8C150224D6e9B646889b96EFF6f7FD742e2C22,
@@ -367,8 +367,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         // ---------------------------------- set target proportions of scUsd-broken c-vaults to 0
         {
-            uint vaultIndex1 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_3_scUSD);
-            uint vaultIndex2 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_4_scUSD);
+            uint vaultIndex1 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_3_SCUSD);
+            uint vaultIndex2 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_4_SCUSD);
             uint targetIndex = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).vaults().length - 1;
             while (targetIndex == vaultIndex1 || targetIndex == vaultIndex2) {
                 targetIndex--;
@@ -649,8 +649,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
             _setProportion(SonicConstantsLib.METAVAULT_metaUSDC, vaultIndex2, targetIndex, 0);
 
-            vaultIndex1 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_3_scUSD);
-            vaultIndex2 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_4_scUSD);
+            vaultIndex1 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_3_SCUSD);
+            vaultIndex2 = _getVaultIndex(SonicConstantsLib.METAVAULT_metascUSD, VAULT_4_SCUSD);
             targetIndex = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).vaults().length - 1;
             while (targetIndex == vaultIndex1 || targetIndex == vaultIndex2) {
                 targetIndex--;
@@ -666,10 +666,10 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(VAULT_2_USDC);
 
             vm.prank(multisig);
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(VAULT_3_scUSD);
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(VAULT_3_SCUSD);
 
             vm.prank(multisig);
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(VAULT_4_scUSD);
+            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(VAULT_4_SCUSD);
         }
 
         // ---------------------------------- ensure that exist small users are able to withdraw their funds
@@ -920,8 +920,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         state.vaultUnderlyingBalance = new uint[](4);
         state.vaultUnderlyingBalance[0] = IERC20(IVault(VAULT_1_USDC).strategy().underlying()).balanceOf(VAULT_1_USDC);
         state.vaultUnderlyingBalance[1] = IERC20(IVault(VAULT_2_USDC).strategy().underlying()).balanceOf(VAULT_2_USDC);
-        state.vaultUnderlyingBalance[2] = IERC20(IVault(VAULT_3_scUSD).strategy().underlying()).balanceOf(VAULT_3_scUSD);
-        state.vaultUnderlyingBalance[3] = IERC20(IVault(VAULT_4_scUSD).strategy().underlying()).balanceOf(VAULT_4_scUSD);
+        state.vaultUnderlyingBalance[2] = IERC20(IVault(VAULT_3_SCUSD).strategy().underlying()).balanceOf(VAULT_3_SCUSD);
+        state.vaultUnderlyingBalance[3] = IERC20(IVault(VAULT_4_SCUSD).strategy().underlying()).balanceOf(VAULT_4_SCUSD);
 
         state.metaVault.wmetaUSDBalance =
             _getUserBalances(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, users.wmetaUSDOwner);

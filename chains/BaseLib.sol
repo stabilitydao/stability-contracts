@@ -85,15 +85,8 @@ library BaseLib {
         p.version = "24.06.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = TOKEN_USDC;
-        p.networkName = "Base";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x2356f0), bytes3(0x000000)));
         p.targetExchangeAsset = TOKEN_USDC;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e16;
-        p.gelatoDepositAmount = 2e16;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {

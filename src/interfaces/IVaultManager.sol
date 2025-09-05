@@ -87,8 +87,8 @@ interface IVaultManager is IERC721Metadata {
     /// @return strategy
     /// @return strategyAssets
     /// @return underlying
-    /// @return assetsWithApr Assets with underlying APRs that can be provided by AprOracle
-    /// @return assetsAprs APRs of assets with APR. Matched by index wuth previous param.
+    /// @return assetsWithApr Deprecated
+    /// @return assetsAprs Deprecated
     /// @return lastHardWork Last HardWork time
     function vaultInfo(address vault)
         external

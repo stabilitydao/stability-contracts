@@ -118,6 +118,7 @@ contract ISFUpgrade3Test is Test {
         hw.setDedicatedServerMsgSender(address(this), true);
         address[] memory vaultsForHardWork = new address[](1);
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
         assertEq(IERC20(SonicConstantsLib.TOKEN_GEMSx).balanceOf(STRATEGY), 0);
 

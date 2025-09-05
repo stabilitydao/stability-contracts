@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ERC721EnumerableUpgradeable} from
@@ -24,6 +24,8 @@ import {IStrategy} from "../interfaces/IStrategy.sol";
 ///         Deployment rights of a vault are tokenized in VaultManager NFT.
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
+/// Changelog:
+///   1.1.0: remove platformData.feeShareVaultManager, platformData.networkExtra
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -31,7 +33,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultManager")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant VAULTMANAGER_STORAGE_LOCATION =

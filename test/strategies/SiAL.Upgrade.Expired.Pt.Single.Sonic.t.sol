@@ -25,13 +25,13 @@ import {Swapper} from "../../src/core/Swapper.sol";
 contract SiALUpgradeExpiredPtSingleTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
-    address public constant HOLDER_VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025 = 0xB48894f4318a310A3bC6E96bFa77307e8aa6196E;
+    address public constant HOLDER_VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025 = 0xB48894f4318a310A3bC6E96bFa77307e8aa6196E;
 
     function testVaultSiAL_aSonUSDC_scUSD_14AUG2025() public {
         _withdrawFromExpiredPtVault(
             43926167, // Aug-21-2025 07:32:46 AM +UTC
             SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025,
-            HOLDER_VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
+            HOLDER_VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025
         );
     }
 

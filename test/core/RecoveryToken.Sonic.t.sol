@@ -60,16 +60,19 @@ contract RecoveryTokenSonicTest is Test {
 
         // transfer
         vm.prank(address(3));
+        /// forge-lint: disable-next-line
         IERC20(address(recToken)).transfer(address(10), 5);
 
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IRecoveryToken.TransfersPausedForAccount.selector, address(1)));
+        /// forge-lint: disable-next-line
         IERC20(address(recToken)).transfer(address(10), 1);
 
         vm.prank(multisig);
         recToken.setAddressPaused(address(1), false);
 
         vm.prank(address(1));
+        /// forge-lint: disable-next-line
         IERC20(address(recToken)).transfer(address(10), 1);
 
         vm.expectRevert();

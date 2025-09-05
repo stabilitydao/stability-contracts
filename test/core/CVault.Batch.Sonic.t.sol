@@ -419,6 +419,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         uint amountToTransfer = Math.min(amount, balance);
 
         vm.prank(holder_);
+        /// forge-lint: disable-next-line
         IERC20(token_).transfer(to, amountToTransfer);
     }
     //endregion ---------------------- Deal assets

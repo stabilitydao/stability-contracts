@@ -666,6 +666,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         _dealAndApprove(address(this), currentStrategy, strategy.assets(), amounts_);
         vm.prank(address(this));
+        /// forge-lint: disable-next-line
         wrappedMetaVault.transfer(address(strategy), amounts_[0]);
 
         // ----------------------------- Try to deposit assets to the strategy

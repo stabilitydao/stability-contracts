@@ -39,7 +39,7 @@ interface IPlatform {
         address buildingPermitToken_,
         address vaultManager_,
         address strategyLogic_,
-        address aprOracle_,
+        address,
         address hardWorker,
         address rebalancer,
         address zap,
@@ -47,7 +47,7 @@ interface IPlatform {
     );
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
-    event FeesChanged(uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+    event FeesChanged(uint fee, uint, uint, uint);
     event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewAmmAdapter(string id, address proxy);
     event EcosystemRevenueReceiver(address receiver);
@@ -79,12 +79,7 @@ interface IPlatform {
     }
 
     struct PlatformSettings {
-        string networkName;
-        bytes32 networkExtra;
         uint fee;
-        uint feeShareVaultManager;
-        uint feeShareStrategyLogic;
-        uint feeShareEcosystem;
         uint minInitialBoostPerDay;
         uint minInitialBoostDuration;
     }
@@ -102,7 +97,6 @@ interface IPlatform {
         address buildingPayPerVaultToken;
         address vaultManager;
         address strategyLogic;
-        address aprOracle;
         address targetExchangeAsset;
         address hardWorker;
         address zap;
@@ -156,10 +150,6 @@ interface IPlatform {
     /// @return Address of PriceReader proxy
     function priceReader() external view returns (address);
 
-    /// @notice Providing underlying assets APRs on-chain
-    /// @return Address of AprOracle proxy
-    function aprOracle() external view returns (address);
-
     /// @notice On-chain price quoter and swapper
     /// @return Address of Swapper proxy
     function swapper() external view returns (address);
@@ -184,9 +174,6 @@ interface IPlatform {
     /// @return Address of the MetaVault factory
     function metaVaultFactory() external view returns (address);
 
-    /// @notice Name of current EVM network
-    function networkName() external view returns (string memory);
-
     /// @notice Minimal initial boost rewards per day USD amount which needs to create rewarding vault
     function minInitialBoostPerDay() external view returns (uint);
 
@@ -198,24 +185,12 @@ interface IPlatform {
     /// @return uint representing the timestamp of the platform upgrade timelock.
     function platformUpgradeTimelock() external view returns (uint);
 
-    /// @dev Extra network data
-    /// @return 0-2 bytes - color
-    ///         3-5 bytes - background color
-    ///         6-31 bytes - free
-    function networkExtra() external view returns (bytes32);
-
     /// @notice Pending platform upgrade data
     function pendingPlatformUpgrade() external view returns (PlatformUpgrade memory);
 
     /// @notice Get platform revenue fee settings
     /// @return fee Revenue fee % (between MIN_FEE - MAX_FEE) with DENOMINATOR precision.
-    /// @return feeShareVaultManager Revenue fee share % of VaultManager tokenId owner
-    /// @return feeShareStrategyLogic Revenue fee share % of StrategyLogic tokenId owner
-    /// @return feeShareEcosystem Revenue fee share % of ecosystemFeeReceiver
-    function getFees()
-        external
-        view
-        returns (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem);
+    function getFees() external view returns (uint fee, uint, uint, uint);
 
     /// @notice Get custom vault platform fee
     /// @return fee revenue fee % with DENOMINATOR precision

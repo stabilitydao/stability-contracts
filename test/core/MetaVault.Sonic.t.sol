@@ -155,6 +155,7 @@ contract MetaVaultSonicTest is Test {
             {
                 uint user1BalanceBefore = IERC20(metavault).balanceOf(address(1));
                 vm.prank(address(1));
+                /// forge-lint: disable-next-line
                 IERC20(metavault).transfer(address(2), user1BalanceBefore);
                 assertLe(IERC20(metavault).balanceOf(address(1)), 1, "mv-u-1");
                 assertGe(IERC20(metavault).balanceOf(address(2)), user1BalanceBefore - 1);
@@ -176,6 +177,7 @@ contract MetaVaultSonicTest is Test {
                 // reverts
                 vm.expectRevert();
                 vm.prank(address(3));
+                /// forge-lint: disable-next-line
                 IERC20(metavault).transfer(address(0), 1);
             }
 
@@ -199,6 +201,7 @@ contract MetaVaultSonicTest is Test {
                 // transfer
                 vm.prank(address(3));
                 vm.expectRevert(abi.encodeWithSelector(IStabilityVault.WaitAFewBlocks.selector));
+                /// forge-lint: disable-next-line
                 IERC20(metavault).transfer(address(10), bal);
 
                 // deposit

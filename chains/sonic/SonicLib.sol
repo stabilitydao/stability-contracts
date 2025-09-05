@@ -61,15 +61,8 @@ library SonicLib {
         p.version = "25.01.0-alpha";
         p.buildingPermitToken = address(0);
         p.buildingPayPerVaultToken = SonicConstantsLib.TOKEN_wS;
-        p.networkName = "Sonic";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xfec160), bytes3(0x000000)));
         p.targetExchangeAsset = SonicConstantsLib.TOKEN_wS;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e16;
-        p.gelatoDepositAmount = 2e16;
         p.fee = 30_000;
-        p.feeShareVaultManager = 10_000;
-        p.feeShareStrategyLogic = 40_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {
