@@ -91,7 +91,9 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
 
         // increase share price
         tokenA.mint(777e18 * 2);
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(vault.strategy()), 777555555e12);
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(rVault.strategy()), 777555555e12);
 
         // set last hardwork apr

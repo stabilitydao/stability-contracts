@@ -35,6 +35,7 @@ contract EFUpgradeTest is Test {
         ///////
 
         vm.expectRevert();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         // deploy new impl and upgrade
@@ -54,6 +55,7 @@ contract EFUpgradeTest is Test {
 
         factory.upgradeStrategyProxy(STRATEGY);
 
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
     }
 }

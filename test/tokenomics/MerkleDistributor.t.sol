@@ -130,6 +130,7 @@ contract MerkleDistributorTest is Test, MockSetup {
 
         // salvage
         tokenB.mint(1e20);
+        /// forge-lint: disable-next-line
         tokenB.transfer(address(merkleDistributor), 1e20);
         merkleDistributor.salvage(address(tokenB), 0.5e19, address(this));
         merkleDistributor.salvage(address(tokenB), 0, address(this));

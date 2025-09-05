@@ -33,6 +33,7 @@ abstract contract PolygonSetup is ChainSetup, DeployCore {
     function _deal(address token, address to, uint amount) internal override {
         if (token == PolygonLib.TOKEN_USDC) {
             vm.prank(0xf89d7b9c864f589bbF53a82105107622B35EaA40); // Bybit: Hot Wallet
+            /// forge-lint: disable-next-line
             IERC20(token).transfer(to, amount);
         } else {
             deal(token, to, amount);

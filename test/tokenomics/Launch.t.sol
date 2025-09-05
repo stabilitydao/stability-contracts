@@ -146,6 +146,7 @@ contract LaunchTest is Test, MockSetup {
         // try transfer
         vm.startPrank(address(11));
         vm.expectRevert("Not transferable");
+        /// forge-lint: disable-next-line
         IERC20(receiptToken).transfer(address(1), 1);
         vm.stopPrank();
 

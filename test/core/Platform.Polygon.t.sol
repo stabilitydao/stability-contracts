@@ -339,24 +339,27 @@ contract PlatformPolygonTest is PolygonSetup {
         vm.txGasPrice(15e10);
         vm.deal(address(hw), 200e18);
         vm.expectRevert(abi.encodeWithSelector(IControllable.ETHTransferFailed.selector));
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
         canReceive = true;
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         //lower
         deal(address(hw), 0);
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
-        // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         //equal
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
-        // vm.expectRevert(abi.encodeWithSelector(IHardWorker.NotEnoughETH.selector));
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         //higher
         deal(address(hw), type(uint).max);
         deal(stategyRevenueAssets[0], address(IVault(vault_).strategy()), 1e14);
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         vm.stopPrank();

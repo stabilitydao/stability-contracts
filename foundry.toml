@@ -38,4 +38,5 @@ ethereum = { key = "${ETHERSCAN_API_KEY}", chain = 1  }
 sonic = { key = "${ETHERSCAN_API_KEY}", chain = 146, url = "https://api.etherscan.io/v2/api?chainid=146" }
 
 [lint]
+exclude_lints = ["mixed-case-function", "mixed-case-variable"]
 ignore = ["src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol"]

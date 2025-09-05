@@ -30,6 +30,7 @@ abstract contract BaseSetup is ChainSetup, DeployCore {
     function _deal(address token, address to, uint amount) internal override {
         if (token == BaseLib.TOKEN_USDC) {
             vm.prank(0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A);
+            /// forge-lint: disable-next-line
             IERC20(token).transfer(to, amount);
         } else {
             deal(token, to, amount);
