@@ -9,7 +9,6 @@ import {Factory, IFactory} from "../../src/core/Factory.sol";
 import {VaultManager} from "../../src/core/VaultManager.sol";
 import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
 import {PriceReader, IPriceReader} from "../../src/core/PriceReader.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {Zap} from "../../src/core/Zap.sol";
