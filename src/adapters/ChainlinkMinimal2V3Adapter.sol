@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
-import "../integrations/chainlink/IAggregatorV3Interface.sol";
+import {IAggregatorInterfaceMinimal} from "../integrations/chainlink/IAggregatorInterfaceMinimal.sol";
+import {IAggregatorV3Interface} from "../integrations/chainlink/IAggregatorV3Interface.sol";
 
 /// @notice Convert IAggregatorInterfaceMinimal to IAggregatorV3Interface
 contract ChainlinkMinimal2V3Adapter is IAggregatorV3Interface {

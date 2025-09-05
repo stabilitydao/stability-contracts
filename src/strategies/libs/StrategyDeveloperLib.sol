@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./StrategyIdLib.sol";
-import "../../core/libs/CommonLib.sol";
+import {StrategyIdLib} from "./StrategyIdLib.sol";
+import {CommonLib} from "../../core/libs/CommonLib.sol";
 
 /// @dev Strategy developer addresses used when strategy implementation was deployed at a network.
 ///      StrategyLogic NFT is minted to the address of a strategy developer.

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/ArbitrumSetup.sol";
-import "../base/UniversalTest.sol";
+import {ArbitrumSetup} from "../base/chains/ArbitrumSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract CompoundFarmStrategyTest is ArbitrumSetup, UniversalTest {
     function testCFArbitrum() public universalTest {

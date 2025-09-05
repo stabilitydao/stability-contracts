@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {SiloAdvancedLib} from "../../../src/strategies/libs/SiloAdvancedLib.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract SiloAdvancedLibUnitTests is Test {
     function setUp() public {

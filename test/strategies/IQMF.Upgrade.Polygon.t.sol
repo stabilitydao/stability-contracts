@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Test.sol";
-import "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
-import "../../chains/PolygonLib.sol";
-import "../../src/integrations/merkl/IMerklDistributor.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Test} from "forge-std/Test.sol";
+import {
+    IchiQuickSwapMerklFarmStrategy,
+    IFarmingStrategy,
+    IStrategy
+} from "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
+import {PolygonLib, IFactory, IPlatform, StrategyIdLib} from "../../chains/PolygonLib.sol";
+import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
 
 contract IQMFUpgradeTest is Test {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;

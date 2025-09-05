@@ -2,15 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
-import "../../chains/PolygonLib.sol";
-import "../../src/core/Platform.sol";
-import "../../src/core/Swapper.sol";
-import "../../src/adapters/UniswapV3Adapter.sol";
-import "../../src/adapters/AlgebraAdapter.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/adapters/KyberAdapter.sol";
-import "../base/chains/PolygonSetup.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
+import {Proxy, IControllable} from "../../src/core/proxy/Proxy.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
+import {PolygonSetup, PolygonLib, IERC20} from "../base/chains/PolygonSetup.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 
 contract SwapperPolygonTest is Test, PolygonSetup {
     Swapper public swapper;

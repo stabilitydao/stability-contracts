@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/interfaces/ICAmmAdapter.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../base/chains/PolygonSetup.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ICAmmAdapter, IAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {PolygonSetup, PolygonLib} from "../base/chains/PolygonSetup.sol";
+import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
 
 contract AlgebraAdapterTest is PolygonSetup {
     bytes32 public _hash;

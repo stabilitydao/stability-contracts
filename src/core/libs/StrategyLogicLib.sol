@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "./CommonLib.sol";
-import "../../interfaces/IStrategyLogic.sol";
-import "../../interfaces/IPlatform.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {CommonLib} from "./CommonLib.sol";
+import {IStrategyLogic} from "../../interfaces/IStrategyLogic.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @dev Library for StrategyLogic's tokenURI generation with SVG image and other metadata
 /// @author Alien Deployer (https://github.com/a17)

@@ -5,9 +5,8 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-// import {IDistributionManager} from "../../src/integrations/silo/IDistributionManager.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
@@ -24,7 +23,7 @@ import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrat
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test, Vm} from "forge-std/Test.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 /// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {

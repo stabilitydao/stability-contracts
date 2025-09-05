@@ -6,12 +6,12 @@ import {
     FarmingStrategyBase,
     StrategyBase,
     StrategyLib,
-    IControllable,
     IPlatform,
     IFarmingStrategy,
-    IStrategy,
     IFactory
 } from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {EMFLib} from "./libs/EMFLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";

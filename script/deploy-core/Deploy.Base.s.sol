@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../chains/BaseLib.sol";
+import {Script} from "forge-std/Script.sol";
+import {BaseLib} from "../../chains/BaseLib.sol";
 import {DeployCore} from "../base/DeployCore.sol";
 
 contract DeployBase is Script, DeployCore {

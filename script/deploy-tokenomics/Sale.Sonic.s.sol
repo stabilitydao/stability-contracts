@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {Sale} from "../../src/tokenomics/Sale.sol";
 import {SaleReceiptToken} from "../../src/tokenomics/SaleReceiptToken.sol";
 

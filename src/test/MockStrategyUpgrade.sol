@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./MockStrategy.sol";
+import {MockStrategy} from "./MockStrategy.sol";
 
 contract MockStrategyUpgrade is MockStrategy {
     function newFunc() external pure returns (uint) {

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IAmmAdapter} from "./IAmmAdapter.sol";
 
 /// @dev Get price, swap, liquidity calculations. Used by strategies and swapper

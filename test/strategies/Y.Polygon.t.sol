@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/PolygonSetup.sol";
-import "../base/UniversalTest.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {PolygonSetup} from "../base/chains/PolygonSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {PolygonLib} from "../../chains/PolygonLib.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
 contract YearnStrategyTest is PolygonSetup, UniversalTest {
     constructor() {

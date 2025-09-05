@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {console, Test} from "forge-std/Test.sol";
+// import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {

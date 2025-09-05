@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/adapters/AlgebraAdapter.sol";
-import "../../src/adapters/UniswapV3Adapter.sol";
-import "../../src/adapters/KyberAdapter.sol";
-import "../../src/core/Zap.sol";
+import {Script} from "forge-std/Script.sol";
+import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
+import {Zap} from "../../src/core/Zap.sol";
 
 contract PrepareUpgrade2 is Script {
     function run() external {

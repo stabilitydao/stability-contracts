@@ -9,8 +9,6 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IALM} from "../../src/interfaces/IALM.sol";
-import {IZap} from "../../src/interfaces/IZap.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 

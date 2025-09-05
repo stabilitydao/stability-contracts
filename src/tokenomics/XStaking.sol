@@ -8,7 +8,6 @@ import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
-import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @title Staking contract for xSTBL
 /// Inspired by VoteModule from Ramses/Shadow codebase

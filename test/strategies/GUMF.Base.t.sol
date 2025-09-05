@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/BaseSetup.sol";
-import "../base/UniversalTest.sol";
+import {BaseSetup} from "../base/chains/BaseSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
 
 contract GammaUniswapV3MerklFarmStrategyTest is BaseSetup, UniversalTest {
     function testGUMF() public universalTest {

@@ -2,20 +2,21 @@
 pragma solidity ^0.8.23;
 
 import {console} from "forge-std/Test.sol";
-import "../../src/core/proxy/Proxy.sol";
-import "../../src/core/vaults/RMVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/Platform.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/VaultManager.sol";
-import "../../src/core/StrategyLogic.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/PriceReader.sol";
-import "../../src/core/AprOracle.sol";
-import "../../src/core/Swapper.sol";
-import "../../src/core/HardWorker.sol";
-import "../../src/core/Zap.sol";
-import "../../src/interfaces/IPlatform.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {Factory, IFactory} from "../../src/core/Factory.sol";
+import {VaultManager} from "../../src/core/VaultManager.sol";
+import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
+import {PriceReader, IPriceReader} from "../../src/core/PriceReader.sol";
+import {AprOracle} from "../../src/core/AprOracle.sol";
+import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
+import {HardWorker} from "../../src/core/HardWorker.sol";
+import {Zap} from "../../src/core/Zap.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IOracleAdapter} from "../../src/interfaces/IOracleAdapter.sol";
 
 library LogDeployLib {
     function logDeployAmmAdapters(address platform, bool showLog) internal view {

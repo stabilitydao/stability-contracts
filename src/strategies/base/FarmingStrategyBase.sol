@@ -4,8 +4,7 @@ pragma solidity ^0.8.28;
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IFarmingStrategy} from "../../interfaces/IFarmingStrategy.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {ISiloVault} from "../../integrations/silo/ISiloVault.sol";
-import {StrategyBase, StrategyLib, IControllable, IStrategy, IERC165} from "./StrategyBase.sol";
+import {StrategyBase, StrategyLib, IERC165} from "./StrategyBase.sol";
 
 /// @title Base farming strategy
 /// @author Alien Deployer (https://github.com/a17)

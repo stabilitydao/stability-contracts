@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/Zap.sol";
+import {Script} from "forge-std/Script.sol";
+import {Zap} from "../../src/core/Zap.sol";
 
 contract PrepareUpgrade7 is Script {
     function run() external {

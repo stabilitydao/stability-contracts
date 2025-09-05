@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../core/base/UpgradeableProxy.sol";
-import "../../interfaces/IControllable.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IFactory.sol";
-import "../../interfaces/IVaultProxy.sol";
+import {UpgradeableProxy} from "../../core/base/UpgradeableProxy.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
+import {IVaultProxy} from "../../interfaces/IVaultProxy.sol";
 
 /// @title EIP1967 Upgradeable proxy implementation for built by factory vaults
 /// @author Alien Deployer (https://github.com/a17)

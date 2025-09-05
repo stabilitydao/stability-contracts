@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/Factory.sol";
+import {Script} from "forge-std/Script.sol";
+import {Factory} from "../../src/core/Factory.sol";
 
 contract PrepareUpgrade6 is Script {
     function run() external {
