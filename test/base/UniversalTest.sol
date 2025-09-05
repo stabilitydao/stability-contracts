@@ -421,7 +421,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*             MAX DEPOSIT, MAX WITHDRAW, POOL TVL            */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 {
-                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets();
+                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets(0);
                     (, uint[] memory assetAmounts) = strategy.assetsAmounts();
                     assertEq(
                         maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,
@@ -685,7 +685,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         // first other user need to deposit to not hold vault only with dead shares
                         underlyingAmounts[0] = totalWas / 100;
-                        deal(underlying, address(100), underlyingAmounts[0]);
+                        _dealUnderlying(underlying, address(100), underlyingAmounts[0]);
                         vm.startPrank(address(100));
                         IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
@@ -695,7 +695,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
-                        deal(underlying, address(this), totalWas);
+                        _dealUnderlying(underlying, address(this), totalWas);
                         assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                         IERC20(underlying).approve(tempVault, totalWas);
 
@@ -884,5 +884,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         swapper.swapWithRoute(poolData, amount1, makePoolVolumePriceImpactTolerance);
 
         _rebalance();
+    }
+
+    /// @notice Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
+    /// @dev https://github.com/foundry-rs/forge-std/issues/140
+    function _dealUnderlying(address underlying, address to, uint amount) internal virtual {
+        deal(underlying, to, amount);
     }
 }

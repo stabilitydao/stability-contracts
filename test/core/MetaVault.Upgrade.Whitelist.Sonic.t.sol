@@ -165,7 +165,7 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
         vm.prank(user);
         IStabilityVault(metaVault).transfer(address(this), balance);
 
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
     }
     //endregion ------------------------- Internal logic
 

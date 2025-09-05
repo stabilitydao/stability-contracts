@@ -21,6 +21,8 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Earns APR by lending assets on AAVE
 /// Changelog:
+///   1.3.1: StrategyBase 2.5.1
+///   1.3.0: Add support of underlying operations - #360
 ///   1.2.1: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.2.0: Add maxWithdrawAsset, poolTvl, aaveToken, use StrategyBase 2.4.0 - #326
 ///   1.1.0: Use StrategyBase 2.3.0 - add fuseMode
@@ -35,7 +37,7 @@ contract AaveStrategy is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.1";
+    string public constant VERSION = "1.3.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.AaveStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AAVE_STRATEGY_STORAGE_LOCATION =
@@ -48,9 +50,11 @@ contract AaveStrategy is StrategyBase {
     /// @custom:storage-location erc7201:stability.AaveStrategy
     struct AaveStrategyStorage {
         uint lastSharePrice;
+        /// @dev Deprecated since 1.3.0, use underlying() instead
         address aToken;
     }
 
+    //region ----------------------- Initialization and restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -62,11 +66,18 @@ contract AaveStrategy is StrategyBase {
         }
         address[] memory _assets = new address[](1);
         _assets[0] = IAToken(addresses[2]).UNDERLYING_ASSET_ADDRESS();
-        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE, addresses[1], _assets, address(0), type(uint).max);
+        __StrategyBase_init(addresses[0], StrategyIdLib.AAVE, addresses[1], _assets, addresses[2], type(uint).max);
         _getStorage().aToken = addresses[2];
 
         IERC20(_assets[0]).forceApprove(IAToken(addresses[2]).POOL(), type(uint).max);
     }
+
+    /// @notice Set the underlying asset for the strategy for the case when it wasn't set during initialization
+    function setUnderlying() external onlyOperator {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        $base._underlying = _getStorage().aToken;
+    }
+    //endregion ----------------------- Initialization and restricted actions
 
     //region ----------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -176,7 +187,7 @@ contract AaveStrategy is StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets() public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint mode) public view override returns (uint[] memory amounts) {
         address aToken = _getStorage().aToken;
         address asset = IAToken(aToken).UNDERLYING_ASSET_ADDRESS();
 
@@ -187,7 +198,12 @@ contract AaveStrategy is StrategyBase {
         uint aTokenBalance = IERC20(aToken).balanceOf(address(this));
 
         amounts = new uint[](1);
-        amounts[0] = Math.min(availableLiquidity, aTokenBalance);
+        amounts[0] = mode == 0 ? Math.min(availableLiquidity, aTokenBalance) : aTokenBalance;
+    }
+
+    function _previewDepositUnderlying(uint amount) internal pure override returns (uint[] memory amountsConsumed) {
+        amountsConsumed = new uint[](1);
+        amountsConsumed[0] = amount;
     }
     //endregion ----------------------- View functions
 
@@ -314,6 +330,25 @@ contract AaveStrategy is StrategyBase {
         __rewardAssets = new address[](0);
         __rewardAmounts = new uint[](0);
     }
+
+    /// @inheritdoc StrategyBase
+    function _depositUnderlying(uint amount) internal override returns (uint[] memory amountsConsumed) {
+        AaveStrategyStorage storage $ = _getStorage();
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+
+        amountsConsumed = _previewDepositUnderlying(amount);
+
+        if ($.lastSharePrice == 0) {
+            $.lastSharePrice = _getSharePrice($base._underlying);
+        }
+    }
+
+    /// @inheritdoc StrategyBase
+    function _withdrawUnderlying(uint amount, address receiver) internal override {
+        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        IERC20($base._underlying).safeTransfer(receiver, amount);
+    }
+
     //endregion ----------------------- Strategy base
 
     //region ----------------------- Internal logic

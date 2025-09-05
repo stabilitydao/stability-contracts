@@ -19,6 +19,9 @@ import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";
 /// @author Uni3Swapper (https://github.com/tetu-io/tetu-liquidator/blob/master/contracts/swappers/Uni3Swapper.sol)
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///  1.0.4: fix UniswapV3MathLib.calcPriceOut - #262
 contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -27,7 +30,7 @@ contract UniswapV3Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.3";
+    string public constant VERSION = "1.0.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */

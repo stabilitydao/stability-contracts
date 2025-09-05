@@ -55,7 +55,7 @@ contract SiUpgradeTest is Test {
 
         // ------------------- borrow almost all cash
         uint balanceAssets = silo.convertToAssets(silo.balanceOf(address(strategy)));
-        uint availableLiquidity = strategy.maxWithdrawAssets()[0];
+        uint availableLiquidity = strategy.maxWithdrawAssets(0)[0];
         uint maxWithdraw4626 = silo.maxWithdraw(address(strategy));
 
         assertEq(availableLiquidity, maxWithdraw4626, "strategy.maxWithdrawAssets uses IE4626.maxWithdraw");

@@ -23,6 +23,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
+import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
 /// @notice Fix a problem in MetaVaultAdapter that produced a false-positive ExceedSlippage error
 contract SiALMFUpgradeScUsdTest is Test {
@@ -68,9 +69,11 @@ contract SiALMFUpgradeScUsdTest is Test {
         //        _upgradeWrappedMetaVault();
         _upgradeCVault(address(vault));
 
-        _upgradeStrategy();
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
         _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse);
+
+        _upgradeALMFStrategy(address(strategy));
+        _upgradeSMFStrategy(address(IVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse).strategy()));
     }
 
     /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
@@ -126,7 +129,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     }
 
     //region ------------------------------------ Helpers
-    function _upgradeStrategy() internal {
+    function _upgradeALMFStrategy(address strategy_) internal {
         address strategyImplementation = address(new SiloALMFStrategy());
         vm.prank(multisig);
         factory.setStrategyLogicConfig(
@@ -141,7 +144,25 @@ contract SiALMFUpgradeScUsdTest is Test {
             address(this)
         );
 
-        factory.upgradeStrategyProxy(address(strategy));
+        factory.upgradeStrategyProxy(strategy_);
+    }
+
+    function _upgradeSMFStrategy(address strategy_) internal {
+        address strategyImplementation = address(new SiloManagedFarmStrategy());
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.SILO_MANAGED_FARM,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: true,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategy_);
     }
 
     function _upgradePlatform(address priceReader_) internal {

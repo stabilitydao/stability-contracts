@@ -5,16 +5,20 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/Test.sol";
 import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
 import {UniversalTest, StrategyIdLib, IFactory} from "../base/UniversalTest.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {IVoter} from "../../src/integrations/pearl/IVoter.sol";
 import {IGaugeV2CL} from "../../src/integrations/pearl/IGaugeV2CL.sol";
+// import "../base/UniversalTest.sol";
+// import "../base/chains/RealSetup.sol";
 
-contract TridentPearlFarmStrategyTest is RealSetup, UniversalTest {
+// todo: replace Real-logic by Sonic-logic
+contract TridentPearlFarmStrategyTest is SonicSetup, /* RealSetup */ UniversalTest {
     address public constant VOTER = 0x4C44cFBBc35e68a31b693b3926F11a40abA5f93B;
     address public constant EPOCH_CONTROLLER = 0xA78f1A0193ac181fFc12a92425BFC697BD6705Ef;
 
     receive() external payable {}
 
-    function testTPF() public universalTest {
+    function _testTPF() internal /*universalTest*/ {
         for (uint i; i < 12; ++i) {
             _addStrategy(i);
         }

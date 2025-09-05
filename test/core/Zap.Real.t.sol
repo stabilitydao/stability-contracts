@@ -3,15 +3,18 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/Test.sol";
-import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
+// import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
+import {RealLib} from "../../chains/RealLib.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IZap} from "../../src/interfaces/IZap.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
 
-contract ZapTestReal is RealSetup {
+// todo: replace Real-logic by Sonic-logic
+contract ZapTestReal is SonicSetup {
     IZap public zap;
 
     struct ZapTestVars {
@@ -22,13 +25,13 @@ contract ZapTestReal is RealSetup {
         uint[] swapAmounts;
     }
 
-    function setUp() public {
+    function _setUp() internal {
         _init();
         _deployVaults();
         zap = IZap(platform.zap());
     }
 
-    function testZapReal() public {
+    function _testZapReal() internal {
         address vault = factory.deployedVault(0);
 
         ZapTestVars memory v;

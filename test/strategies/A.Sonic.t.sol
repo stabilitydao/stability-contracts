@@ -2,7 +2,10 @@
 pragma solidity ^0.8.28;
 
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {IAToken} from "../../src/integrations/aave/IAToken.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
 // import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
@@ -41,5 +44,21 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
                 strategyInitNums: new uint[](0)
             })
         );
+    }
+
+    /// @notice Deal doesn't work with aave tokens. So, deal the asset and mint aTokens instead.
+    /// @dev https://github.com/foundry-rs/forge-std/issues/140
+    function _dealUnderlying(address underlying, address to, uint amount) internal override {
+        IPool pool = IPool(IAToken(underlying).POOL());
+
+        address asset = IAToken(underlying).UNDERLYING_ASSET_ADDRESS();
+
+        deal(asset, to, amount);
+
+        vm.prank(to);
+        IERC20(asset).approve(address(pool), amount);
+
+        vm.prank(to);
+        pool.deposit(asset, amount, to, 0);
     }
 }

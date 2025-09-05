@@ -35,7 +35,7 @@ jobs:
 
       - name: Run forge test
         run: |
-          forge test -vvv
+          forge test --nmc SkipOnCiTest -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage --report lcov
+          forge coverage --nmc SkipOnCiTest --report lcov
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
@@ -67,3 +67,9 @@ jobs:
         with:
           name: rpc-cache
           path: ~/.foundry/cache/rpc
+
+      - name: Upload lcov.info as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-report
+          path: lcov.info

@@ -270,7 +270,7 @@ Call it via Safe Transaction Builder:
 * developer: 0x0000000000000000000000000000000000000000 (zero address for upgrades and NFT receiver address for new logic)
 * Add transaction, Create batch, Simulate, Send batch, Sign
 * Ask other signers to confirm and execute
-* Upgrade vault's strategy [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
+* Upgrade all vault's strategies [UpgradeHelper sonicscan](https://sonicscan.org/address/0x8AA4e3cfd805D33c0215dCAb9a5c9223ab3d938A)
 
 ### Init contest gems rewards
 

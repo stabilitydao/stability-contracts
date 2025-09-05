@@ -18,6 +18,9 @@ import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 /// @notice AMM adapter for working with Algebra V4 Integral AMMs used in SwapX.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///  1.0.1: fix UniswapV3MathLib.calcPriceOut - #262
 contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     using SafeERC20 for IERC20;
 
@@ -26,7 +29,7 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */

@@ -20,6 +20,28 @@ library SonicConstantsLib {
     address public constant METAVAULT_metawS = 0x555555554776B14B30597d1032E48f9e16db22A4;
     address public constant WRAPPED_METAVAULT_metawS = 0xffFFFFFf2fcBeFAe12F1372C56edC769BD411685;
 
+    // recovery tokens
+    // 4:0x000078392f3cF4262500FFeB7d803F90477ECC11:0xf7d97ca0d2c29912ea70ac9c5152ddcb9b06dee7964dd262ed7eacee5964b107
+    address public constant RECOVERY_TOKEN_CREDIX_metaUSD = 0x000078392f3cF4262500FFeB7d803F90477ECC11;
+    // 4:2:0x00001b2c60cD041a478521008CE6efeC475bb9Aa:0x0f57b03888fa9bfe3953faa21aeaf29e6b38eaadfd56e36c0dc02feccacb949e
+    address public constant RECOVERY_TOKEN_CREDIX_wmetaUSD = 0x00001b2c60cD041a478521008CE6efeC475bb9Aa;
+    // 4:2:0x000039e047614a907a8042658b16656d17261b22:0x865405b302d988624d90c5876c437d3b8bcc02ef0c278313d36d00ba7385a165
+    address public constant RECOVERY_TOKEN_CREDIX_metaUSDC = 0x000039e047614a907a8042658b16656d17261b22;
+    // 4:2:0x0000a59C549b4250a2931ac6054e1426a87DA0EE:0x41092afb484f46da1b656462e3acf827e21a5265637a0efed476b0436620084f
+    address public constant RECOVERY_TOKEN_CREDIX_wmetaUSDC = 0x0000a59C549b4250a2931ac6054e1426a87DA0EE;
+    // 4:0x0000B68458Cbec5819cFf320001Fc303D694a933:0x888caa02efa9be74807a679a5658357af03d65a4adf8f54eb422327850dcf97f
+    address public constant RECOVERY_TOKEN_CREDIX_metascUSD = 0x0000B68458Cbec5819cFf320001Fc303D694a933;
+    // 4:2:0x0000c3b22bbD290588361E4B5C424F3AB0d0a3cc:0x312b7613d266caa80cc8d5531945b57ebda8c51757a104285f90db7eea2ff731
+    address public constant RECOVERY_TOKEN_CREDIX_wmetascUSD = 0x0000c3b22bbD290588361E4B5C424F3AB0d0a3cc;
+    // 5:2:0x000006539BA0B4f5452186Af40aAB959bDEa4344:0x8c2470bc845af47b4c3261076a227c43034749374fd433cd416d0f262ef132d7
+    address public constant RECOVERY_TOKEN_CREDIX_metaS = 0x000006539BA0B4f5452186Af40aAB959bDEa4344;
+    // 4:0x0000Dd8cEa00EA3336f5849590d69bbfc93A85bb:0x9e256e176c38b058e5b3f74127521721c0f789e95f14a1cee181e58defd50c24
+    address public constant RECOVERY_TOKEN_CREDIX_wmetaS = 0x0000Dd8cEa00EA3336f5849590d69bbfc93A85bb;
+    // 4:2:0x0000F386594164dd373868EE25632F149cb27A55:0x70b156e925a4776534699f1f53296331b03d7c1b717c2a7115af2abf6cc44d1f
+    address public constant RECOVERY_TOKEN_CREDIX_metawS = 0x0000F386594164dd373868EE25632F149cb27A55;
+    // 4:2:0x0000be6fD4F4DefFA49768d7140d76D8588Fb9ff:0xd1d3388737f87279328c74af2d0e6155dfe12d57b81ce1ad7d58f6776832b201
+    address public constant RECOVERY_TOKEN_CREDIX_wmetawS = 0x0000be6fD4F4DefFA49768d7140d76D8588Fb9ff;
+
     // Vaults used in MetaVaults
     // metaUSDC
     address public constant VAULT_C_USDC_SiF = 0xa51e7204054464e656B3658e7dBb63d9b0f150f1;
@@ -35,11 +57,21 @@ library SonicConstantsLib {
     address public constant VAULT_C_USDC_SiMF_Greenhouse = 0x9443C25624c8ab74FaDE003bC76D2aC35244b925;
     address public constant VAULT_C_WMETAUSD_USDC_121 = 0xe965c5114F689BF9184D9300F3af4A378c6934A9;
     address public constant VAULT_C_WMETAUSD_scUSD_125 = 0x58D310a1A490f0daa86608998E08852630000151;
+    address public constant VAULT_C_Enclabs_USDC_CVv8 = 0xEfDF0f2B8D056009Bd50125B76567110aD52ec91;
+    address public constant VAULT_C_Silo_USDC_36_eS3 = 0x38274302e0Dd5779b4E0A3E401023cFB48fF5c23;
+
+    // broken Credix vaults
+    address public constant VAULT_C_Credix_USDC_AMFa0 = 0xd627ed348569Ff34750a1Fb5Fd13ea849cCF3440;
+    address public constant VAULT_C_Credix_USDC_AMFa5 = 0x7bCEc157a1d10f00391e9E782de5998fABCc1aA7;
+    address public constant VAULT_C_Credix_scUSD_AMFa0 = 0x25a2E994deb1009b0b6BB7cba30Bc25aFe8be016;
+    address public constant VAULT_C_Credix_scUSD_AMFa5 = 0xF63614b859c9e8103d73Bb49E002e27F3776aF93;
+
+    address public constant VAULT_C_Credix_wS_AMFa0 = 0xA6F8bC82Ab88F74cE6c69feB8A4d2F5181A49647;
+    address public constant VAULT_C_Credix_wS_AMFa5 = 0x561c88552A9379246Bc5BdD82F9F196231C435F3;
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
-    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
-    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
+
     // metawS
     address public constant VAULT_C_wS_SiMF_Valmore = 0xA70F074EE09DF3C0AB7e9eb0c058941fF65B8Efe;
     address public constant VAULT_C_wS_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
@@ -54,6 +86,7 @@ library SonicConstantsLib {
     address public constant VAULT_LEV_SiL_S_stS = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
     address public constant VAULT_LEV_SiAL_wstkscUSD_USDC = 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1;
     address public constant VAULT_LEV_SiAL_wstkscETH_WETH = 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047;
+    address public constant VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025 = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -116,6 +149,8 @@ library SonicConstantsLib {
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
+    address public constant TOKEN_rEUL = 0x09E6cab47B7199b9d3839A2C40654f246d518a80;
+    address public constant TOKEN_EUL = 0x8e15C8D399e86d4FD7B427D42f06c60cDD9397e7;
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
     address public constant TOKEN_xSILO = 0x4451765739b2D7BCe5f8BC95Beaf966c45E1Dcc9;
     address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
@@ -466,6 +501,10 @@ library SonicConstantsLib {
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     // Euler
+    address public constant EULER_MERKL_USDC_MEV_Capital = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
+    address public constant EULER_MERKL_USDC_Re7_Labs = 0x3D9e5462A940684073EED7e4a13d19AE0Dcd13bc;
+    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
+    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
     address public constant EULER_VAULT_USDC_MEV = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
     address public constant EULER_VAULT_scETH_MEV = 0x0806af1762Bdd85B167825ab1a64E31CF9497038;
     address public constant EULER_VAULT_wstkscETH_MEV = 0x05d57366B862022F76Fe93316e81E9f24218bBfC;
@@ -477,7 +516,9 @@ library SonicConstantsLib {
     address public constant EULER_VAULT_wS_MEV = 0x90a804D316A06E00755444D56b9eF52e5C4F4D73;
     address public constant EULER_VAULT_wS_Re7 = 0x4c0AF5d6Bcb10B3C05FB5F3a846999a3d87534C7;
     address public constant EULER_VAULT_WETH_MEV = 0xa5cd24d9792F4F131f5976Af935A505D19c8Db2b;
-    // todo more addresses: https://app.euler.finance/?network=sonic
+    // more addresses: https://app.euler.finance/?network=sonic
+
+    address public constant POOL_SHADOW_CL_USDC_EUL = 0x6d3A3a6866794A0EDEdDF07b48aA744b393251be;
 
     // Stability Market
     address public constant LENDING_FEE_TREASURY = 0x3950b3a43fa0687561Bc5c8E32D2EE826D88a661;
@@ -491,5 +532,4 @@ library SonicConstantsLib {
     address public constant ENCLABS_VTOKEN_CORE_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
     address public constant ENCLABS_VTOKEN_CORE_stS = 0xe544e51bF20AB186B6b7b1A9095C8BC1E3f203f5;
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
-
 }

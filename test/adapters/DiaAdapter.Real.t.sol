@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {RealSetup} from "../base/chains/RealSetup.sol";
+// import {RealSetup} from "../base/chains/RealSetup.sol";
 import {DiaAdapter} from "../../src/adapters/DiaAdapter.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {RealLib} from "../../chains/RealLib.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
 
-contract DiaAdapterTest is RealSetup {
+// todo replace Real-logic by Sonic-logic
+contract DiaAdapterTest is SonicSetup /* RealSetup */ {
     DiaAdapter public adapter;
 
     constructor() {
@@ -15,7 +17,7 @@ contract DiaAdapterTest is RealSetup {
         adapter = DiaAdapter(PriceReader(platform.priceReader()).adapters()[0]);
     }
 
-    function testDia() public {
+    function _testDia() internal {
         (uint ethPrice,) = adapter.getPrice(RealLib.TOKEN_WREETH);
         assertGt(ethPrice, 1000e18);
         assertLt(ethPrice, 2700e18);

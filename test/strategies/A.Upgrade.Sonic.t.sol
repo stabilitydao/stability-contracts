@@ -53,7 +53,7 @@ contract AUpgradeTest is Test {
 
         // ------------------- our balance and max available liquidity in AAVE token
         uint aTokenBalance = aToken.balanceOf(address(strategy));
-        uint availableLiquidity = strategy.maxWithdrawAssets()[0];
+        uint availableLiquidity = strategy.maxWithdrawAssets(0)[0];
 
         // ------------------- amount of vault tokens that can be withdrawn
         uint balanceToWithdraw =

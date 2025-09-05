@@ -182,6 +182,7 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     }
 
     function maxWithdraw(address account) external view virtual returns (uint amount) {}
+    function maxWithdraw(address account, uint mode) external view virtual returns (uint amount) {}
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -233,4 +234,26 @@ contract MockMetaVaultUpgrade is Controllable, IMetaVault {
     function maxDeposit(address account) external view returns (uint[] memory maxAmounts) {}
 
     function cachePrices(bool clear) external {}
+
+    function maxWithdrawUnderlying(address cVault_, address account) external view returns (uint amount) {}
+
+    function withdrawUnderlying(
+        address cVault_,
+        uint amount,
+        uint minUnderlyingOut,
+        address receiver,
+        address owner
+    ) external returns (uint underlyingOut) {}
+
+    function withdrawUnderlyingEmergency(
+        address cVault_,
+        address[] memory owners,
+        uint[] memory amounts,
+        uint[] memory minUnderlyingOut,
+        bool[] memory pauseRecoveryTokens
+    ) external returns (uint[] memory amountOut, uint[] memory recoveryAmountOut) {}
+
+    function setRecoveryToken(address cVault_, address recoveryToken_) external {}
+
+    function recoveryToken(address cVault_) external view returns (address) {}
 }

@@ -442,7 +442,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         }
         sy_.deposit(user, asset_, amount, shares * 999 / 1000);
 
-        vm.revertTo(snapshot);
+        vm.revertToState(snapshot);
     }
 
     function _tryToRedeemFromSY(
