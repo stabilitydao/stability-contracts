@@ -7,14 +7,14 @@ import {LPStrategyBase, ILPStrategy, VaultTypeLib} from "./base/LPStrategyBase.s
 import {
     FarmingStrategyBase,
     IFarmingStrategy,
-    IStrategy,
     StrategyBase,
     IFactory,
-    IControllable,
     IERC165,
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";

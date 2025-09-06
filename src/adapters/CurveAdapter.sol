@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "../core/libs/ConstantsLib.sol";
-import "../core/base/Controllable.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../interfaces/IAmmAdapter.sol";
-import "../integrations/curve/IStableSwapNG.sol";
-import "../integrations/curve/IStableSwapNGPool.sol";
-import "../integrations/curve/IStableSwapViews.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
+import {Controllable} from "../core/base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
+import {IStableSwapNG} from "../integrations/curve/IStableSwapNG.sol";
+import {IStableSwapNGPool} from "../integrations/curve/IStableSwapNGPool.sol";
+import {IStableSwapViews} from "../integrations/curve/IStableSwapViews.sol";
 
 /// @title AMM adapter for Curve StableSwap-NG pools with 2-8 tokens
 /// @dev AMM source code https://github.com/curvefi/stableswap-ng/blob/main/contracts/main/CurveStableSwapNG.vy

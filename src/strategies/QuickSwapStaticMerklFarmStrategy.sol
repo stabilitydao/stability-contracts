@@ -2,22 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {LPStrategyBase, StrategyBase, IStrategy, ILPStrategy, IERC165} from "./base/LPStrategyBase.sol";
+import {LPStrategyBase, StrategyBase, ILPStrategy, IERC165} from "./base/LPStrategyBase.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
-import {
-    FarmingStrategyBase,
-    IFarmingStrategy,
-    IControllable,
-    IFactory,
-    IPlatform,
-    StrategyLib
-} from "./base/FarmingStrategyBase.sol";
+import {FarmingStrategyBase, IFarmingStrategy, IFactory, IPlatform, StrategyLib} from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {QSMFLib} from "./libs/QSMFLib.sol";
-import {UniswapV3MathLib} from "./libs/UniswapV3MathLib.sol";
 import {INonfungiblePositionManager} from "../integrations/algebra/INonfungiblePositionManager.sol";
-import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";

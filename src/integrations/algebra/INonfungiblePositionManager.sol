@@ -76,4 +76,6 @@ interface INonfungiblePositionManager {
             uint128 tokensOwed0,
             uint128 tokensOwed1
         );
+
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
 }

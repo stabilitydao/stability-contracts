@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./CommonLib.sol";
-import "./VaultTypeLib.sol";
-import "../../interfaces/IPlatform.sol";
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/IFactory.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {CommonLib} from "./CommonLib.sol";
+import {VaultTypeLib} from "./VaultTypeLib.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {IFactory} from "../../interfaces/IFactory.sol";
 
 library FactoryNamingLib {
     function getStrategyData(

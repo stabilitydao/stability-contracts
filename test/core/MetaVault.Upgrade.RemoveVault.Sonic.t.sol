@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../src/strategies/AaveStrategy.sol";
+import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -22,7 +21,7 @@ import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test, Vm} from "forge-std/Test.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 /// @dev #336: add removeVault function to MetaVault, fix potential division on zero
 contract MetaVaultSonicUpgradeRemoveVault is Test {

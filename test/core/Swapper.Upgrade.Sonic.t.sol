@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {Swapper} from "../../src/core/Swapper.sol";

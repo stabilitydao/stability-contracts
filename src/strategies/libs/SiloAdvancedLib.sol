@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
-import {IBVault} from "../../integrations/balancer/IBVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,9 +16,6 @@ import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
 import {ISilo} from "../../integrations/silo/ISilo.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
-import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
-import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
-import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {IWETH} from "../../integrations/weth/IWETH.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -719,8 +715,13 @@ library SiloAdvancedLib {
         // we use maxLeverage and maxLtv, so result ltv will reduce
         uint collateralAmountToWithdraw = value * state.maxLeverage / INTERNAL_PRECISION;
 
+        uint targetLtv = Math.max(
+            state.maxLtv,
+            state.ltv * 1e18 / INTERNAL_PRECISION * 1003 / 1000 // todo move to config
+        );
+
         uint[] memory flashAmounts = new uint[](1);
-        flashAmounts[0] = collateralAmountToWithdraw * state.maxLtv / 1e18 * state.priceCtoB * state.withdrawParam0
+        flashAmounts[0] = collateralAmountToWithdraw * targetLtv / 1e18 * state.priceCtoB * state.withdrawParam0
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18 // priceCtoB has decimals 1e18
             / INTERNAL_PRECISION // withdrawParam0
             / (10 ** IERC20Metadata(v.collateralAsset).decimals());

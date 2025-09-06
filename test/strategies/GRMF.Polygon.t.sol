@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/PolygonSetup.sol";
-import "../base/UniversalTest.sol";
-import "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
+import {PolygonSetup, PolygonLib} from "../base/chains/PolygonSetup.sol";
+import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
+import {GammaRetroMerklFarmStrategy, GRMFLib} from "../../src/strategies/GammaRetroMerklFarmStrategy.sol";
 
 contract GammaRetroMerklFarmStrategyTest is PolygonSetup, UniversalTest {
     constructor() {

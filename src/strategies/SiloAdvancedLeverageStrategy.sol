@@ -21,17 +21,15 @@ import {IUniswapV3FlashCallback} from "../integrations/uniswapv3/IUniswapV3Flash
 import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebraFlashCallback.sol";
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 import {LeverageLendingBase} from "./base/LeverageLendingBase.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SiloAdvancedLib} from "./libs/SiloAdvancedLib.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {StrategyLib} from "./libs/StrategyLib.sol";
-import {XStaking} from "../tokenomics/XStaking.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
-///   2.4.1: StrategyBase 2.5.1
+///   2.4.1: Urgent max ltv fix, StrategyBase 2.5.1
 ///   2.4.0: Support of expired PT. depositParams1 = 1 means PT expired mode - #352
 ///   2.3.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   2.3.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets

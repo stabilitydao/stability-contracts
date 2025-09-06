@@ -2,19 +2,29 @@
 pragma solidity ^0.8.23;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./base/LPStrategyBase.sol";
-import "./base/MerklStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/DQMFLib.sol";
-import "./libs/StrategyIdLib.sol";
-import "./libs/FarmMechanicsLib.sol";
-import "./libs/ALMPositionNameLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
-import "../interfaces/ICAmmAdapter.sol";
-import "../integrations/defiedge/IDefiEdgeStrategy.sol";
-import "../integrations/defiedge/IDefiEdgeStrategyFactory.sol";
-import "../integrations/chainlink/IFeedRegistryInterface.sol";
-import "../integrations/algebra/IAlgebraPool.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {LPStrategyBase} from "./base/LPStrategyBase.sol";
+import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
+import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
+import {StrategyBase, StrategyLib} from "./base/StrategyBase.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {DQMFLib} from "./libs/DQMFLib.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
+import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
+import {IDefiEdgeStrategy} from "../integrations/defiedge/IDefiEdgeStrategy.sol";
+import {IDefiEdgeStrategyFactory} from "../integrations/defiedge/IDefiEdgeStrategyFactory.sol";
+import {IFeedRegistryInterface} from "../integrations/chainlink/IFeedRegistryInterface.sol";
+import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
 /// Changelog:

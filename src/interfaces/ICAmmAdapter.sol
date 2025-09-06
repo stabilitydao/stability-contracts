@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import "./IAmmAdapter.sol";
+import {IAmmAdapter} from "./IAmmAdapter.sol";
 
 /// @dev Adapter for interacting with Concentrated Automated Market Maker
 /// based on liquidity pool of 2 tokens.

@@ -3,10 +3,10 @@ pragma solidity ^0.8.23;
 
 import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "./periphery/IPoolInitializer.sol";
-import "./periphery/IERC721Permit.sol";
-import "./periphery/IPeripheryPayments.sol";
-import "./periphery/IPeripheryImmutableState.sol";
+import {IPoolInitializer} from "./periphery/IPoolInitializer.sol";
+import {IERC721Permit} from "./periphery/IERC721Permit.sol";
+import {IPeripheryPayments} from "./periphery/IPeripheryPayments.sol";
+import {IPeripheryImmutableState} from "./periphery/IPeripheryImmutableState.sol";
 
 /// @title Non-fungible token for positions
 /// @notice Wraps Uniswap V3 positions in a non-fungible token interface which allows for them to be transferred

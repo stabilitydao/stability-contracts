@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console, Vm} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {MockAggregatorV3Interface} from "../../src/test/MockAggregatorV3Interface.sol";

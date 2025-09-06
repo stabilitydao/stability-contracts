@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../../src/interfaces/ICAmmAdapter.sol";
-import "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import "../base/chains/PolygonSetup.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ICAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
+import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {PolygonSetup} from "../base/chains/PolygonSetup.sol";
+import {PolygonLib} from "../../chains/PolygonLib.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
 
 contract KyberAdapterTest is PolygonSetup {
     bytes32 public _hash;
@@ -49,7 +53,7 @@ contract KyberAdapterTest is PolygonSetup {
         uint price;
 
         price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDCe_DAI, PolygonLib.TOKEN_USDCe, 276240);
-        assertEq(price, 991632976171952929);
+        assertEq(price, 991632976172244213); // #252: calcPriceOut was changed, 991632976171952929);
         // console.log(price);
         price = adapter.getPriceAtTick(PolygonLib.POOL_KYBER_USDCe_DAI, PolygonLib.TOKEN_DAI, 276240);
         assertEq(price, 1008437);

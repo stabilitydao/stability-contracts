@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {RevenueRouter, IRevenueRouter, IControllable} from "../../src/tokenomics/RevenueRouter.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
+import {RevenueRouter, IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 
 contract RevenueRouterUpgrade3TestSonic is Test {
     uint public constant FORK_BLOCK = 38301556; // Jul-13-2025 09:27:35 AM +UTC

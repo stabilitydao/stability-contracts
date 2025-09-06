@@ -6,7 +6,6 @@ import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";

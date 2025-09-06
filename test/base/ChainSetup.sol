@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
-import "../../src/core/Platform.sol";
-import "../../src/core/Factory.sol";
+import {Test} from "forge-std/Test.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {Factory} from "../../src/core/Factory.sol";
 
 abstract contract ChainSetup is Test {
     Platform public platform;

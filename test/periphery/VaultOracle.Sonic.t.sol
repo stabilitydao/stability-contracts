@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";

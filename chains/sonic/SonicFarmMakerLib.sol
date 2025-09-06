@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ISiloIncentivesControllerForVault} from "../../src/integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IBalancerGauge} from "../../src/integrations/balancer/IBalancerGauge.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IGaugeEquivalent} from "../../src/integrations/equalizer/IGaugeEquivalent.sol";
@@ -10,10 +9,7 @@ import {IGaugeV2} from "../../src/integrations/swapx/IGaugeV2.sol";
 import {IGaugeV3} from "../../src/integrations/shadow/IGaugeV3.sol";
 import {IHypervisor} from "../../src/integrations/gamma/IHypervisor.sol";
 import {IICHIVault} from "../../src/integrations/ichi/IICHIVault.sol";
-import {IIncentivesClaimingLogic} from "../../src/integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesController} from "../../src/integrations/silo/ISiloIncentivesController.sol";
-import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
-import {IVaultIncentivesModule} from "../../src/integrations/silo/IVaultIncentivesModule.sol";
 import {SonicConstantsLib} from "./SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
@@ -58,6 +54,24 @@ library SonicFarmMakerLib {
         farm.addresses[1] = hypervisor;
         farm.nums = new uint[](1);
         farm.nums[0] = preset;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
+
+    function _makeEulerMerklFarm(
+        address vault
+        // address[] memory rewardAssets
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.pool = address(0);
+        farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.addresses = new address[](2);
+        farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
+        farm.addresses[1] = vault;
+        farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
     }

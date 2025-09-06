@@ -71,8 +71,7 @@ library SonicConstantsLib {
 
     // metascUSD
     address public constant VAULT_C_scUSD_S_46 = 0x14d17757e88Df8f59069fFa573570A50ed652866;
-    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
-    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
+
     // metawS
     address public constant VAULT_C_wS_SiMF_Valmore = 0xA70F074EE09DF3C0AB7e9eb0c058941fF65B8Efe;
     address public constant VAULT_C_wS_SiF_54 = 0x86a4a379d9a2a3B3f0e1f8Aa477c82f646344458;
@@ -86,6 +85,8 @@ library SonicConstantsLib {
     address public constant VAULT_LEV_SiL_stS_S = 0x709833e5B4B98aAb812d175510F94Bc91CFABD89;
     address public constant VAULT_LEV_SiL_S_stS = 0x2fBeBA931563feAAB73e8C66d7499c49c8AdA224;
     address public constant VAULT_LEV_SiAL_wstkscUSD_USDC = 0x908Db38302177901b10fFa74fA80AdAeB0351Ff1;
+    address public constant VAULT_LEV_SiAL_wstkscETH_WETH = 0x46bc0F0073FF1a6281d401cDC6cd56Cec0495047;
+    address public constant VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025 = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959;
 
     // ERC20
     address public constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
@@ -148,6 +149,8 @@ library SonicConstantsLib {
     address public constant TOKEN_bUSDCe20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BeetsFragmentsS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
+    address public constant TOKEN_rEUL = 0x09E6cab47B7199b9d3839A2C40654f246d518a80;
+    address public constant TOKEN_EUL = 0x8e15C8D399e86d4FD7B427D42f06c60cDD9397e7;
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
     address public constant TOKEN_xSILO = 0x4451765739b2D7BCe5f8BC95Beaf966c45E1Dcc9;
     address public constant TOKEN_beS = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
@@ -160,6 +163,8 @@ library SonicConstantsLib {
     address public constant POOL_BEETS_scUSD_stS = 0x25ca5451CD5a50AB1d324B5E64F32C0799661891;
     address public constant POOL_BEETS_USDC_stS = 0x713FB5036dC70012588d77a5B066f1Dd05c712d7;
     address public constant POOL_BEETS_V3_SILO_VAULT_25_wS_anS = 0x944D4AE892dE4BFd38742Cc8295d6D5164c5593C;
+    address public constant POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD = 0x54Ca9aad90324C022bBeD0A94b7380c03aA5884A;
+    address public constant POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH = 0x8620Fcf1aBDF72d35A0577e0Bc9653E1F088Fc34;
     address public constant POOL_BEETS_BeetsFragmentsS1_stS = 0xf633a43E5cCf858A27dD1d74A23BE15ea5aa28f3;
     address public constant POOL_SUSHI_wS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
@@ -385,6 +390,7 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_25_wS = 0x016C306e103FbF48EC24810D078C65aD13c5f11B;
     address public constant SILO_VAULT_46_PT_aUSDC_14AUG = 0x558d6D6D53270ae8ba622daF123983D9F3c21792;
     address public constant SILO_VAULT_46_scUSD = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
+    address public constant SILO_VAULT_47_bscETH = 0x24c74B30d1a4261608E84Bf5a618693032681DAc;
     address public constant SILO_VAULT_40_PT_stS_29MAY = 0x058766008d237faF3B05eeEebABc73C64d677bAE;
     address public constant SILO_VAULT_40_wS = 0x24F7692af5231d559219d07c65276Ad8C8ceE9A3;
     address public constant SILO_VAULT_37_PT_wstkscUSD_29MAY = 0x854475b78880767e246163031b5bE44f14426c26;
@@ -495,6 +501,10 @@ library SonicConstantsLib {
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
 
     // Euler
+    address public constant EULER_MERKL_USDC_MEV_Capital = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
+    address public constant EULER_MERKL_USDC_Re7_Labs = 0x3D9e5462A940684073EED7e4a13d19AE0Dcd13bc;
+    address public constant VAULT_C_scUSD_Euler_MevCapital = 0xfbb02D242527f3B56AF3f087AcddaA25D5E8ACC4;
+    address public constant VAULT_C_scUSD_Euler_Re7Labs = 0xB94b31f3dEdaADbdA6AA1cEc4f49749273929972;
     address public constant EULER_VAULT_USDC_MEV = 0x196F3C7443E940911EE2Bb88e019Fd71400349D9;
     address public constant EULER_VAULT_scETH_MEV = 0x0806af1762Bdd85B167825ab1a64E31CF9497038;
     address public constant EULER_VAULT_wstkscETH_MEV = 0x05d57366B862022F76Fe93316e81E9f24218bBfC;
@@ -506,7 +516,9 @@ library SonicConstantsLib {
     address public constant EULER_VAULT_wS_MEV = 0x90a804D316A06E00755444D56b9eF52e5C4F4D73;
     address public constant EULER_VAULT_wS_Re7 = 0x4c0AF5d6Bcb10B3C05FB5F3a846999a3d87534C7;
     address public constant EULER_VAULT_WETH_MEV = 0xa5cd24d9792F4F131f5976Af935A505D19c8Db2b;
-    // todo more addresses: https://app.euler.finance/?network=sonic
+    // more addresses: https://app.euler.finance/?network=sonic
+
+    address public constant POOL_SHADOW_CL_USDC_EUL = 0x6d3A3a6866794A0EDEdDF07b48aA744b393251be;
 
     // Stability Market
     address public constant LENDING_FEE_TREASURY = 0x3950b3a43fa0687561Bc5c8E32D2EE826D88a661;
@@ -520,5 +532,4 @@ library SonicConstantsLib {
     address public constant ENCLABS_VTOKEN_CORE_wS = 0xc96a4cd13C8fCB9886DE0CdF7152B9F930D67E96;
     address public constant ENCLABS_VTOKEN_CORE_stS = 0xe544e51bF20AB186B6b7b1A9095C8BC1E3f203f5;
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
-
 }
