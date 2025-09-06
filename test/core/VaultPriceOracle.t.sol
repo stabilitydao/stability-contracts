@@ -422,7 +422,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.submitPrice(vault, prices[2], roundId);
 
         // Aggregation happened: median of [1005,1010,5] sorted [5,1005,1010] -> 1005, roundId = 2
-        (uint price, ,) = oracle.getLatestPrice(vault);
+        (uint price,,) = oracle.getLatestPrice(vault);
         console.log("Actual price:", price);
         assertEq(price, 1005, "Incorrect median price");
     }
