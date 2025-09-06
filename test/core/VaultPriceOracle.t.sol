@@ -77,11 +77,11 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Check validators
         for (uint i = 0; i < validators.length; i++) {
             assertTrue(oracle.authorizedValidator(validators[i]), "Validator not authorized");
-            assertEq(oracle.validators(i), validators[i], "Validator list incorrect");
+            assertEq(oracle.validatorByIndex(i), validators[i], "Validator list incorrect");
         }
 
         // Check vaults
-        assertEq(oracle.vaults(0), vaults[0], "Vault list incorrect");
+        assertEq(oracle.vaultByIndex(0), vaults[0], "Vault list incorrect");
         assertEq(oracle.vaultsLength(), 1, "Vault list length incorrect");
 
         // Test reinitialization revert
@@ -122,7 +122,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.prank(address(this));
         oracle.addValidator(newValidator);
         assertTrue(oracle.authorizedValidator(newValidator), "New validator not authorized");
-        assertEq(oracle.validators(5), newValidator, "New validator not in list");
+        assertEq(oracle.validatorByIndex(5), newValidator, "New validator not in list");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bool validatorAdded = false;
         for (uint i = 0; i < entries.length; i++) {
@@ -138,7 +138,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         address anotherValidator = makeAddr("anotherValidator");
         oracle.addValidator(anotherValidator);
         assertTrue(oracle.authorizedValidator(anotherValidator), "Multisig add failed");
-        assertEq(oracle.validators(6), anotherValidator, "Another validator not in list");
+        assertEq(oracle.validatorByIndex(6), anotherValidator, "Another validator not in list");
 
         // Cannot add duplicate
         vm.prank(address(this));
@@ -158,7 +158,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         bool found = false;
         for (uint i = 0; i < 6; i++) {
             // 5 initial + 1 added
-            if (oracle.validators(i) == newValidator) {
+            if (oracle.validatorByIndex(i) == newValidator) {
                 found = true;
             }
         }
@@ -180,7 +180,16 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
         // Test index out of bounds
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.validators(7);
+        oracle.validatorByIndex(7);
+
+        // Remove all validators
+        for (uint i = 0; i < 6; i++) {
+            vm.prank(address(this));
+            oracle.removeValidator(oracle.validatorByIndex(0)); // Always remove the first one
+        }
+
+        // check that no validators remain
+        assertEq(oracle.validatorsLength(), 0, "Not all validators removed");
     }
 
     function testAddAndRemoveVault() public {
@@ -197,7 +206,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.recordLogs();
         vm.prank(address(this));
         oracle.addVault(newVault, newPriceThreshold, newStaleness);
-        assertEq(oracle.vaults(1), newVault, "New vault not in list");
+        assertEq(oracle.vaultByIndex(1), newVault, "New vault not in list");
         assertEq(oracle.vaultsLength(), 2, "Vault list length incorrect");
         (uint priceThreshold, uint stalenessValue) = oracle.vaultData(newVault);
         assertEq(priceThreshold, newPriceThreshold, "Incorrect price threshold for new vault");
@@ -216,7 +225,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.prank(multisig);
         address anotherVault = makeAddr("anotherVault");
         oracle.addVault(anotherVault, 3, 3 days);
-        assertEq(oracle.vaults(2), anotherVault, "Another vault not in list");
+        assertEq(oracle.vaultByIndex(2), anotherVault, "Another vault not in list");
         (priceThreshold, stalenessValue) = oracle.vaultData(anotherVault);
         assertEq(priceThreshold, 3, "Incorrect price threshold for another vault");
         assertEq(stalenessValue, 3 days, "Incorrect staleness for another vault");
@@ -237,7 +246,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.removeVault(newVault);
         bool found = false;
         for (uint i = 0; i < oracle.vaultsLength(); i++) {
-            if (oracle.vaults(i) == newVault) {
+            if (oracle.vaultByIndex(i) == newVault) {
                 found = true;
             }
         }
@@ -265,6 +274,14 @@ contract VaultPriceOracleTest is Test, MockSetup {
         vm.prank(address(this));
         vm.expectRevert(IVaultPriceOracle.VaultNotFound.selector);
         oracle.removeVault(makeAddr("nonExistentVault"));
+
+        // Remove all vaults
+        for (uint i = 0; i < 2; i++) {
+            vm.prank(address(this));
+            oracle.removeVault(oracle.vaultByIndex(0)); // Always remove the first one
+        }
+        // check that no vaults remain
+        assertEq(oracle.vaultsLength(), 0, "Not all vaults removed");
     }
 
     function testSetMinQuorum() public {
@@ -405,7 +422,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         oracle.submitPrice(vault, prices[2], roundId);
 
         // Aggregation happened: median of [1005,1010,5] sorted [5,1005,1010] -> 1005, roundId = 2
-        (uint price, uint timestamp, uint rId) = oracle.getLatestPrice(vault);
+        (uint price, ,) = oracle.getLatestPrice(vault);
         console.log("Actual price:", price);
         assertEq(price, 1005, "Incorrect median price");
     }
@@ -437,7 +454,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
 
     function testVaultPrices() public {
         // No data yet
-        (uint price, uint timestamp, uint rId) = oracle.vaultPrices(vault);
+        (uint price, uint timestamp, uint rId) = oracle.vaultPrice(vault);
         assertEq(price, 0, "Price should be 0");
         assertEq(timestamp, 0, "Timestamp should be 0");
         assertEq(rId, 0, "RoundId should be 0");
@@ -445,7 +462,7 @@ contract VaultPriceOracleTest is Test, MockSetup {
         // Submit and aggregate
         testSubmitPriceAndAggregation();
 
-        (price, timestamp, rId) = oracle.vaultPrices(vault);
+        (price, timestamp, rId) = oracle.vaultPrice(vault);
         assertEq(price, 105, "Incorrect price");
         assertEq(timestamp, block.timestamp, "Incorrect timestamp");
         assertEq(rId, 2, "Incorrect roundId");
@@ -468,34 +485,36 @@ contract VaultPriceOracleTest is Test, MockSetup {
     }
 
     function testValidatorList() public {
-        assertEq(oracle.validators(0), validators[0], "Validator list incorrect");
+        assertEq(oracle.validatorByIndex(0), validators[0], "Validator list incorrect");
         assertEq(oracle.validatorsLength(), 5, "Validator list length incorrect");
         address[] memory validatorList = oracle.validators();
         for (uint i = 0; i < validators.length; i++) {
             assertEq(validatorList[i], validators[i], "Validator list array incorrect");
         }
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.validators(5);
+        oracle.validatorByIndex(5);
     }
 
     function testVaultList() public {
-        assertEq(oracle.vaults(0), vaults[0], "Vault list incorrect");
+        assertEq(oracle.vaultByIndex(0), vaults[0], "Vault list incorrect");
         assertEq(oracle.vaultsLength(), 1, "Vault list length incorrect");
         address[] memory vaultList = oracle.vaults();
-        assertEq(vaultList[0], vaults[0], "Vault list array incorrect");
+        for (uint i = 0; i < vaults.length; i++) {
+            assertEq(vaultList[i], vaults[i], "Vault list array incorrect");
+        }
         vm.expectRevert(IVaultPriceOracle.IndexOutOfBounds.selector);
-        oracle.vaults(1);
+        oracle.vaultByIndex(1);
     }
 
-    function testMinQuorum() public {
+    function testMinQuorum() public view {
         assertEq(oracle.minQuorum(), MIN_QUORUM, "Min quorum incorrect");
     }
 
-    function testMaxPriceAge() public {
+    function testMaxPriceAge() public view {
         assertEq(oracle.maxPriceAge(), MAX_PRICE_AGE, "Max price age incorrect");
     }
 
-    function testStorageSlot() public {
+    function testStorageSlot() public pure {
         bytes32 namespaceHash = keccak256(abi.encodePacked("erc7201:stability.VaultPriceOracle"));
         bytes32 expectedSlot = 0xa68171b251d015e5a139782486873a18b874637da10a73c080418fb52ac37300;
         bytes32 calculatedSlot = keccak256(abi.encode(uint(namespaceHash) - 1)) & ~bytes32(uint(0xff));

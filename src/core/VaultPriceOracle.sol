@@ -24,13 +24,15 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
 
     /// @custom:storage-location erc7201:stability.VaultPriceOracle
     struct VaultPriceOracleStorage {
-        mapping(address => AggregatedData) vaultPrices;
-        mapping(address => mapping(uint => mapping(address => Observation))) observations;
+        mapping(address vault => AggregatedData) vaultPrices;
+        mapping(address vault => mapping(uint roundId => mapping(address validator => Observation))) observations;
         mapping(address validator => bool authorized) authorizedValidators;
         mapping(address vault => VaultData) vaultData;
         address[] validators;
         address[] vaults;
+        /// @notice Minimum number of validator submissions required to aggregate a price
         uint minQuorum;
+        /// @notice Maximum age of a price before it is considered stale (in seconds)
         uint maxPriceAge;
     }
 
@@ -84,9 +86,10 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         VaultPriceOracleStorage storage $ = _getStorage();
         require($.authorizedValidators[validator_], IVaultPriceOracle.NotAuthorizedValidator());
         $.authorizedValidators[validator_] = false;
-        for (uint i = 0; i < $.validators.length; i++) {
-            if ($.validators[i] == validator_) {
-                $.validators[i] = $.validators[$.validators.length - 1];
+        address[] memory _validators = $.validators;
+        for (uint i = 0; i < _validators.length; i++) {
+            if (_validators[i] == validator_) {
+                $.validators[i] = _validators[_validators.length - 1];
                 $.validators.pop();
                 break;
             }
@@ -110,9 +113,10 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         require(vault_ != address(0), IVaultPriceOracle.InvalidVaultAddress());
 
         bool found = false;
-        for (uint i = 0; i < $.vaults.length; i++) {
-            if ($.vaults[i] == vault_) {
-                $.vaults[i] = $.vaults[$.vaults.length - 1];
+        address[] memory _vaults = $.vaults;
+        for (uint i = 0; i < _vaults.length; i++) {
+            if (_vaults[i] == vault_) {
+                $.vaults[i] = _vaults[_vaults.length - 1];
                 $.vaults.pop();
                 found = true;
                 break;
@@ -126,7 +130,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @inheritdoc IVaultPriceOracle
     function setMinQuorum(uint minQuorum_) external onlyGovernanceOrMultisig {
         VaultPriceOracleStorage storage $ = _getStorage();
-        require(minQuorum_ > 0, IVaultPriceOracle.MinQuorumMustBeGreaterThanZero());
+        require(minQuorum_ != 0, IVaultPriceOracle.MinQuorumMustBeGreaterThanZero());
         $.minQuorum = minQuorum_;
     }
 
@@ -151,7 +155,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     }
 
     /// @inheritdoc IVaultPriceOracle
-    function vaultPrices(address vault_) external view returns (uint price, uint timestamp, uint roundId) {
+    function vaultPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId) {
         VaultPriceOracleStorage storage $ = _getStorage();
         AggregatedData memory data = $.vaultPrices[vault_];
         return (data.price, data.timestamp, data.roundId);
@@ -175,7 +179,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     }
 
     /// @inheritdoc IVaultPriceOracle
-    function vaults(uint index_) external view returns (address) {
+    function vaultByIndex(uint index_) external view returns (address) {
         VaultPriceOracleStorage storage $ = _getStorage();
         require(index_ < $.vaults.length, IVaultPriceOracle.IndexOutOfBounds());
         return $.vaults[index_];
@@ -194,7 +198,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     }
 
     /// @inheritdoc IVaultPriceOracle
-    function validators(uint index_) external view returns (address) {
+    function validatorByIndex(uint index_) external view returns (address) {
         VaultPriceOracleStorage storage $ = _getStorage();
         require(index_ < $.validators.length, IVaultPriceOracle.IndexOutOfBounds());
         return $.validators[index_];
@@ -242,9 +246,10 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @return count The number of valid submissions in the specified round.
     function _countSubmissions(address vault_, uint roundId_) internal view returns (uint) {
         VaultPriceOracleStorage storage $ = _getStorage();
-        uint count = 0;
-        for (uint i = 0; i < $.validators.length; i++) {
-            if ($.observations[vault_][roundId_][$.validators[i]].timestamp > 0) {
+        uint count;
+        address[] memory _validators = $.validators;
+        for (uint i; i < _validators.length; i++) {
+            if ($.observations[vault_][roundId_][_validators[i]].timestamp != 0) {
                 count++;
             }
         }
@@ -258,41 +263,46 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /// @param roundId_ The ID of the round to aggregate.
     function _aggregateAndUpdate(address vault_, uint roundId_) internal {
         VaultPriceOracleStorage storage $ = _getStorage();
-        uint[] memory prices = new uint[]($.validators.length);
-        uint validCount = 0;
-        uint newRoundId = roundId_ + 1;
+        address[] memory _validators = $.validators;
+        mapping(address => Observation) storage _observations = $.observations[vault_][roundId_];
 
-        for (uint i = 0; i < $.validators.length; i++) {
-            Observation memory obs = $.observations[vault_][roundId_][$.validators[i]];
-            if (obs.timestamp > 0) {
-                prices[validCount] = obs.price;
+        uint validCount;
+        for (uint i; i < _validators.length; i++) {
+            if (_observations[_validators[i]].timestamp > 0) {
                 validCount++;
             }
         }
 
-        uint medianPrice = _getMedian(prices, validCount);
+        uint[] memory prices = new uint[](validCount);
+        uint idx;
+        for (uint i; i < _validators.length; i++) {
+            Observation storage obs = _observations[_validators[i]];
+            if (obs.timestamp > 0) {
+                prices[idx] = obs.price;
+                idx++;
+            }
+        }
 
+        uint medianPrice = _getMedian(prices);
+
+        uint newRoundId = roundId_ + 1;
         $.vaultPrices[vault_] = AggregatedData(medianPrice, block.timestamp, newRoundId);
         emit PriceUpdated(vault_, medianPrice, roundId_, block.timestamp);
     }
 
     /// @notice Calculates the median value from a list of prices.
-    /// @dev Copies valid prices to a new array, sorts it using quicksort, and returns the median.
+    /// @dev Sorts the array using quicksort and returns the median.
     ///      For even counts, returns the average of the two middle values; for odd counts, returns the middle value.
-    /// @param prices_ The array containing all submitted prices (including unused slots).
-    /// @param count_ The number of valid prices in the array.
+    /// @param prices The array containing valid prices.
     /// @return The median price, or 0 if no valid prices are provided.
-    function _getMedian(uint[] memory prices_, uint count_) internal pure returns (uint) {
-        if (count_ == 0) return 0;
-        uint[] memory prices = new uint[](count_);
-        for (uint i = 0; i < count_; i++) {
-            prices[i] = prices_[i];
-        }
-        _quickSort(prices, 0, count_ - 1);
-        if (count_ % 2 == 0) {
-            return (prices[count_ / 2 - 1] + prices[count_ / 2]) / 2;
+    function _getMedian(uint[] memory prices) internal pure returns (uint) {
+        uint count = prices.length;
+        if (count == 0) return 0;
+        _quickSort(prices, 0, count - 1);
+        if (count % 2 == 0) {
+            return (prices[count / 2 - 1] + prices[count / 2]) / 2;
         } else {
-            return prices[count_ / 2];
+            return prices[count / 2];
         }
     }
 

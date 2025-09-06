@@ -42,7 +42,9 @@ interface IVaultPriceOracle {
     /// @notice Structure representing the data for a vault in the oracle.
     /// @dev Contains the price threshold and staleness period for the vault.
     struct VaultData {
+        /// @notice Percentage change when the price should be updated, in basis points (e.g., 100 = 0.1%)
         uint priceThreshold;
+        /// @notice Maximum age of price before considered stale, in seconds
         uint staleness;
     }
 
@@ -89,7 +91,7 @@ interface IVaultPriceOracle {
     /// @return price The aggregated median price.
     /// @return timestamp The timestamp of the aggregation.
     /// @return roundId The ID of the aggregated round.
-    function vaultPrices(address vault_) external view returns (uint price, uint timestamp, uint roundId);
+    function vaultPrice(address vault_) external view returns (uint price, uint timestamp, uint roundId);
 
     /// @notice Retrieves a specific observation for a vault, round, and oracle.
     /// @param vault_ The address of the vault.
@@ -111,7 +113,7 @@ interface IVaultPriceOracle {
     /// @notice Retrieves an validator address from the list by index.
     /// @param index_ The index in the oracle list.
     /// @return The address of the validator at that index.
-    function validators(uint index_) external view returns (address);
+    function validatorByIndex(uint index_) external view returns (address);
 
     /// @notice Retrieves the list of all authorized validators.
     /// @return An array of addresses representing the validators.
@@ -122,7 +124,7 @@ interface IVaultPriceOracle {
 
     /// @notice Retrieves a vault address from the list by index.
     /// @param index_ The index in the vault list.
-    function vaults(uint index_) external view returns (address);
+    function vaultByIndex(uint index_) external view returns (address);
 
     /// @notice Returns the list of all vaults being monitored by this oracle.
     /// @return An array of addresses representing the vaults.
@@ -161,7 +163,7 @@ interface IVaultPriceOracle {
     /// @dev Can only be called by authorized validators.
     /// @param vault_ The address of the vault.
     /// @param price_ The price to submit.
-    /// @param roundId_ The ID of the round (must match current).
+    /// @param roundId_ The ID of the round (must match current), starting from 1 and incrementing by 1 each round.
     function submitPrice(address vault_, uint price_, uint roundId_) external;
 
     /// @notice Adds a new validator to the authorized list.
