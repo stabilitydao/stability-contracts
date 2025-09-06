@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
+/// @author ruby (https://github.com/alexandersazonof)
 interface IPlatform {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -67,6 +68,7 @@ interface IPlatform {
     event Bridge(address bridge_);
     event RevenueRouter(address revenueRouter_);
     event MetaVaultFactory(address metaVaultFactory);
+    event VaultPriceOracle(address vaultPriceOracle_);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -107,6 +109,7 @@ interface IPlatform {
         address hardWorker;
         address zap;
         address revenueRouter;
+        address vaultPriceOracle;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -183,6 +186,10 @@ interface IPlatform {
     /// @notice Factory of MetaVaults
     /// @return Address of the MetaVault factory
     function metaVaultFactory() external view returns (address);
+
+    /// @notice vaultPriceOracle
+    /// @return Address of the vault price oracle
+    function vaultPriceOracle() external view returns (address);
 
     /// @notice Name of current EVM network
     function networkName() external view returns (string memory);
@@ -422,4 +429,8 @@ interface IPlatform {
     /// @param vault Vault address
     /// @param platformFee Custom platform fee
     function setCustomVaultFee(address vault, uint platformFee) external;
+
+    /// @notice Set vault price oracle
+    /// @param vaultPriceOracle_ Address of the vault price oracle
+    function setupVaultPriceOracle(address vaultPriceOracle_) external;
 }
