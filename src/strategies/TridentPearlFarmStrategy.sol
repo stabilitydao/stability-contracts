@@ -2,11 +2,21 @@
 pragma solidity ^0.8.23;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
-import "./base/LPStrategyBase.sol";
-import "./base/FarmingStrategyBase.sol";
-import "./libs/StrategyIdLib.sol";
-import "../adapters/libs/AmmAdapterIdLib.sol";
+import {LPStrategyBase} from "./base/LPStrategyBase.sol";
+import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
+import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
+import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
+import {FarmingStrategyBase} from "./base/FarmingStrategyBase.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IFarmingStrategy} from "../interfaces/IFarmingStrategy.sol";
+import {StrategyBase, StrategyLib} from "./base/StrategyBase.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
+import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ILiquidBox} from "../integrations/pearl/ILiquidBox.sol";
 import {IUniswapV3Pool} from "../integrations/uniswapv3/IUniswapV3Pool.sol";

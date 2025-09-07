@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "./base/Controllable.sol";
-import "./libs/VaultStatusLib.sol";
-import "../interfaces/IPlatform.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/IVaultManager.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IHardWorker.sol";
-import "../integrations/gelato/IAutomate.sol";
-import "../integrations/gelato/IOpsProxyFactory.sol";
-import "../integrations/gelato/ITaskTreasuryUpgradable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {VaultStatusLib} from "./libs/VaultStatusLib.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IVaultManager} from "../interfaces/IVaultManager.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IHardWorker} from "../interfaces/IHardWorker.sol";
+import {IAutomate, ModuleData, Module} from "../integrations/gelato/IAutomate.sol";
+import {IOpsProxyFactory} from "../integrations/gelato/IOpsProxyFactory.sol";
+import {ITaskTreasuryUpgradable} from "../integrations/gelato/ITaskTreasuryUpgradable.sol";
 
 /// @notice HardWork resolver and caller.
 /// Primary executor is server script, reserve executor is Gelato Automate.

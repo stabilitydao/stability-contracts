@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.28;
 
-import "./IPAllActionTypeV3.sol";
+import {TokenInput, TokenOutput, LimitOrderData, ApproxParams} from "./IPAllActionTypeV3.sol";
 
 /// Refer to IPAllActionTypeV3.sol for details on the parameters
 interface IPActionSwapPTV3 {

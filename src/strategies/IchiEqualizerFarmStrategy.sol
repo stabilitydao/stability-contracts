@@ -7,21 +7,15 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {LPStrategyBase, ILPStrategy} from "./base/LPStrategyBase.sol";
 import {
-    FarmingStrategyBase,
-    StrategyBase,
-    StrategyLib,
-    IControllable,
-    IPlatform,
-    IFarmingStrategy,
-    IStrategy,
-    IFactory
+    FarmingStrategyBase, StrategyBase, IPlatform, IFarmingStrategy, IFactory
 } from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
-import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 import {IEFLib} from "./libs/IEFLib.sol";
 import {IICHIVaultV4} from "../integrations/ichi/IICHIVaultV4.sol";

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/Factory.sol";
-import "../../src/core/vaults/CVault.sol";
-import "../../src/core/vaults/RVault.sol";
-import "../../src/core/vaults/RMVault.sol";
+import {Script} from "forge-std/Script.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {RVault} from "../../src/core/vaults/RVault.sol";
+import {RMVault} from "../../src/core/vaults/RMVault.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract PrepareUpgrade3Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
-import "../../src/core/Factory.sol";
-import "../../src/adapters/AlgebraAdapter.sol";
-import "../../src/adapters/UniswapV3Adapter.sol";
-import "../../src/adapters/KyberAdapter.sol";
-import "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import {Script} from "forge-std/Script.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {AlgebraAdapter} from "../../src/adapters/AlgebraAdapter.sol";
+import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
+import {KyberAdapter} from "../../src/adapters/KyberAdapter.sol";
+import {DefiEdgeQuickSwapMerklFarmStrategy} from "../../src/strategies/DefiEdgeQuickSwapMerklFarmStrategy.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract PrepareUpgrade4Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;

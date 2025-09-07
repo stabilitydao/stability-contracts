@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {STBL} from "../../src/tokenomics/STBL.sol";
 import {Allocator} from "../../src/tokenomics/Allocator.sol";
 

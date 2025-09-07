@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./base/Controllable.sol";
-import "../interfaces/IAprOracle.sol";
+import {Controllable} from "./base/Controllable.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
+import {IAprOracle} from "../interfaces/IAprOracle.sol";
 
 /// @dev This oracle is needed to obtain auto compound APR of underlying assets in an on-chain environment.
 ///      These APRs are usually accessible from the protocol APIs.

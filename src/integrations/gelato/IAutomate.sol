@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./ITaskTreasuryUpgradable.sol";
+import {ITaskTreasuryUpgradable} from "./ITaskTreasuryUpgradable.sol";
 
 enum Module {
     RESOLVER,

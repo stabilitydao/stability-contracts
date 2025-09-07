@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {Platform, IPlatform} from "../../src/core/Platform.sol";
 import {Factory} from "../../src/core/Factory.sol";
@@ -12,9 +11,6 @@ import {Swapper} from "../../src/core/Swapper.sol";
 import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {Zap} from "../../src/core/Zap.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
-import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";

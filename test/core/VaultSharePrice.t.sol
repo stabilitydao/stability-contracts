@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {FullMockSetup} from "../base/FullMockSetup.sol";

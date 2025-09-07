@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./IVault.sol";
+import {IVault} from "./IVault.sol";
 
 /// @notice Interface of Rewarding Vault
 /// @author Alien Deployer (https://github.com/a17)

@@ -16,7 +16,6 @@ import {IMerklDistributor} from "../../src/integrations/merkl/IMerklDistributor.
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {SonicFarmMakerLib} from "../../chains/sonic/SonicFarmMakerLib.sol";
 
 contract ISFUpgrade3Test is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "../base/chains/SonicSetup.sol";
+import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {Api3Adapter} from "../../src/adapters/Api3Adapter.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract Api3AdapterTest is SonicSetup {
     Api3Adapter public adapter;

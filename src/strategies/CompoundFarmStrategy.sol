@@ -7,12 +7,12 @@ import {
     FarmingStrategyBase,
     StrategyBase,
     IFarmingStrategy,
-    IStrategy,
-    IControllable,
     IFactory,
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";

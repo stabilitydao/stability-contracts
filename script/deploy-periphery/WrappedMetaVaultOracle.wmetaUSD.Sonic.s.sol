@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {Frontend} from "../../src/periphery/Frontend.sol";
 import {WrappedMetaVaultOracle} from "../../src/periphery/WrappedMetaVaultOracle.sol";
 
 contract DeployWrappedMetaVaultOraclewmetaUSDSonic is Script {

@@ -12,8 +12,6 @@ import {IFactory} from "../interfaces/IFactory.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
-import {ISwapper} from "../interfaces/ISwapper.sol";
-import {IVault} from "../interfaces/IVault.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyBase} from "./base/StrategyBase.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";

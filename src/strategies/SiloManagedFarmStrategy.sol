@@ -9,17 +9,15 @@ import {
     FarmingStrategyBase,
     StrategyBase,
     IFarmingStrategy,
-    IStrategy,
     IFactory,
-    IControllable,
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
-import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
