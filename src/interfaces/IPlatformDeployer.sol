@@ -5,8 +5,6 @@ interface IPlatformDeployer {
     struct DeployPlatformParams {
         address multisig;
         string version;
-        address buildingPermitToken;
-        address buildingPayPerVaultToken;
         address targetExchangeAsset;
         uint fee;
     }

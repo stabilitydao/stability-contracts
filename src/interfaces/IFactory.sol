@@ -14,7 +14,6 @@ interface IFactory {
     error VaultImplementationIsNotAvailable();
     error VaultNotAllowedToDeploy();
     error StrategyImplementationIsNotAvailable();
-    error StrategyLogicNotAllowedToDeploy();
     error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
     error SuchVaultAlreadyDeployed(bytes32 key);
     error NotActiveVault();
@@ -73,7 +72,7 @@ interface IFactory {
         mapping(address address_ => bool isStrategy_) isStrategy;
         EnumerableSet.Bytes32Set vaultTypeHashes;
         EnumerableSet.Bytes32Set strategyLogicIdHashes;
-        mapping(uint week => mapping(uint builderPermitTokenId => uint vaultsBuilt)) vaultsBuiltByPermitTokenId;
+        mapping(uint => mapping(uint => uint)) __deprecated1;
         address[] deployedVaults;
         Farm[] farms;
         /// @inheritdoc IFactory
@@ -239,15 +238,6 @@ interface IFactory {
     /// @param address_ Address of contract
     /// @return This address is our strategy proxy
     function isStrategy(address address_) external view returns (bool);
-
-    /// @notice How much vaults was built by builderPermitToken NFT tokenId in week
-    /// @param week Week index (timestamp / (86400 * 7))
-    /// @param builderPermitTokenId Token ID of buildingPermitToken NFT
-    /// @return vaultsBuilt Vaults built
-    function vaultsBuiltByPermitTokenId(
-        uint week,
-        uint builderPermitTokenId
-    ) external view returns (uint vaultsBuilt);
 
     /// @notice Data on all factory strategies.
     /// The output values are matched by index in the arrays.

@@ -851,11 +851,6 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _createVaultsAndStrategies(Factory factory) internal returns (address[] memory vaults) {
-        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_BUILDING_PAY_PER_VAULT_TOKEN_AMOUNT);
-        IERC20(IPlatform(PLATFORM).buildingPayPerVaultToken()).approve(
-            address(factory), VALUE_BUILDING_PAY_PER_VAULT_TOKEN_AMOUNT
-        );
-
         uint farmId = factory.farmsLength() - 1;
         Strategy[] memory strategies = new Strategy[](1);
         strategies[0] = Strategy({

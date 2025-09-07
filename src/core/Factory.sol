@@ -25,8 +25,9 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
+///   1.3.0: vault can be built only by admin
+///   1.2.0: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
 ///   1.1.0: getDeploymentKey fix for not farming strategies, strategyAvailableInitParams
-///   1.1.1: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -38,7 +39,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.3.0";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -62,9 +63,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         string specificName;
         string symbol;
         bytes32 deploymentKey;
-        address buildingPermitToken;
-        address buildingPayPerVaultToken;
-        bool permit;
         uint vaultManagerTokenId;
     }
 
@@ -167,7 +165,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         address[] memory strategyInitAddresses,
         uint[] memory strategyInitNums,
         int24[] memory strategyInitTicks
-    ) external nonReentrant returns (address vault, address strategy) {
+    ) external onlyOperator returns (address vault, address strategy) {
         FactoryStorage storage $ = _getStorage();
         //slither-disable-next-line uninitialized-local
         DeployVaultAndStrategyVars memory vars;
@@ -180,43 +178,10 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
         vars.strategyIdHash = keccak256(bytes(strategyId));
         vars.platform = platform();
-        vars.buildingPermitToken = IPlatform(vars.platform).buildingPermitToken();
-        vars.buildingPayPerVaultToken = IPlatform(vars.platform).buildingPayPerVaultToken();
 
         StrategyLogicConfig storage config = $.strategyLogicConfig[vars.strategyIdHash];
         if (config.implementation == address(0)) {
             revert StrategyImplementationIsNotAvailable();
-        }
-        if (!config.deployAllowed) {
-            revert StrategyLogicNotAllowedToDeploy();
-        }
-
-        if (vars.buildingPermitToken != address(0)) {
-            uint balance = IERC721Enumerable(vars.buildingPermitToken).balanceOf(msg.sender);
-            // nosemgrep
-            for (uint i; i < balance; ++i) {
-                //slither-disable-next-line calls-loop
-                uint tokenId = IERC721Enumerable(vars.buildingPermitToken).tokenOfOwnerByIndex(msg.sender, i);
-                uint epoch = block.timestamp / _WEEK;
-                uint builtThisWeek = $.vaultsBuiltByPermitTokenId[epoch][tokenId];
-                if (builtThisWeek < _PERMIT_PER_WEEK) {
-                    $.vaultsBuiltByPermitTokenId[epoch][tokenId] = builtThisWeek + 1;
-                    vars.permit = true;
-                    break;
-                }
-            }
-        }
-
-        if (!vars.permit) {
-            uint userBalance = IERC20(vars.buildingPayPerVaultToken).balanceOf(msg.sender);
-            if (userBalance < vars.vaultConfig.buildingPrice) {
-                revert YouDontHaveEnoughTokens(
-                    userBalance, vars.vaultConfig.buildingPrice, IPlatform(vars.platform).buildingPayPerVaultToken()
-                );
-            }
-            IERC20(vars.buildingPayPerVaultToken).safeTransferFrom(
-                msg.sender, IPlatform(vars.platform).multisig(), vars.vaultConfig.buildingPrice
-            );
         }
 
         {
@@ -554,14 +519,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     /// @inheritdoc IFactory
     function isStrategy(address address_) external view returns (bool) {
         return _getStorage().isStrategy[address_];
-    }
-
-    /// @inheritdoc IFactory
-    function vaultsBuiltByPermitTokenId(
-        uint week,
-        uint builderPermitTokenId
-    ) external view returns (uint vaultsBuilt) {
-        return _getStorage().vaultsBuiltByPermitTokenId[week][builderPermitTokenId];
     }
 
     /// @inheritdoc IFactory

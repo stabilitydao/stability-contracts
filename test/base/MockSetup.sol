@@ -22,8 +22,6 @@ abstract contract MockSetup {
     MockERC20 public tokenD;
     MockERC20 public tokenE;
     MockERC20 public lp;
-    MockERC721 public builderPermitToken;
-    MockERC20 public builderPayPerVaultToken;
     uint public builderPayPerVaultPrice;
     VaultManager public vaultManager;
     StrategyLogic public strategyLogic;
@@ -59,10 +57,6 @@ abstract contract MockSetup {
         tokenE.init("Mock token E", "MOCKE", 24);
         lp = new MockERC20();
         lp.init("Mock LP", "MOCK_LP", 18);
-        builderPermitToken = new MockERC721();
-        builderPermitToken.init("Mock PM", "MOCK_PM");
-
-        builderPayPerVaultToken = tokenC;
         builderPayPerVaultPrice = 10e6;
     }
 

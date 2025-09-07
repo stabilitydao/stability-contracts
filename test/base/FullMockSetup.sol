@@ -82,8 +82,6 @@ abstract contract FullMockSetup is MockSetup {
                 factory: address(factory),
                 priceReader: address(priceReader),
                 swapper: address(swapper),
-                buildingPermitToken: address(builderPermitToken),
-                buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
                 targetExchangeAsset: address(tokenA),

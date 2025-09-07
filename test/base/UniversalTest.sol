@@ -42,7 +42,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration1 = 6 hours;
     uint public duration2 = 3 hours;
     uint public duration3 = 3 hours;
-    uint public buildingPayPerVaultTokenAmount = 5e24;
     uint public depositedSharesCheckDelimiter = 1000;
     bool public makePoolVolume = true;
     uint public makePoolVolumePriceImpactTolerance = 6_000;
@@ -111,8 +110,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _testStrategies() internal {
         console.log(string.concat("Universal test of strategy logic", strategyId));
-        _deal(platform.buildingPayPerVaultToken(), address(this), buildingPayPerVaultTokenAmount);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), buildingPayPerVaultTokenAmount);
         TestStrategiesVars memory vars;
         vars.hardWorker = IHardWorker(platform.hardWorker());
         vm.startPrank(platform.governance());

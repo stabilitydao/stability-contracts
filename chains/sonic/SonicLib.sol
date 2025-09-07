@@ -59,8 +59,6 @@ library SonicLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = SonicConstantsLib.MULTISIG;
         p.version = "25.01.0-alpha";
-        p.buildingPermitToken = address(0);
-        p.buildingPayPerVaultToken = SonicConstantsLib.TOKEN_wS;
         p.targetExchangeAsset = SonicConstantsLib.TOKEN_wS;
         p.fee = 30_000;
     }

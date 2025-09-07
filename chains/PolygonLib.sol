@@ -208,8 +208,6 @@ library PolygonLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
         p.version = "24.06.0-alpha";
-        p.buildingPermitToken = TOKEN_PM;
-        p.buildingPayPerVaultToken = TOKEN_SDIV;
         p.targetExchangeAsset = TOKEN_USDCe;
         p.fee = 6_000;
     }

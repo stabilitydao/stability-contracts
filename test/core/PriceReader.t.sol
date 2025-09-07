@@ -70,8 +70,6 @@ contract PriceReaderTest is Test, MockSetup {
                 factory: address(1),
                 priceReader: address(priceReader),
                 swapper: address(swapper),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(7),
                 targetExchangeAsset: address(9),

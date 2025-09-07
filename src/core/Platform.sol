@@ -18,6 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken
 ///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName,
 ///          networkExtra, aprOracle
 ///   1.4.0: IPlatform.metaVaultFactory()
@@ -38,7 +39,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.6.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -63,10 +64,8 @@ contract Platform is Controllable, IPlatform {
         address governance;
         /// @inheritdoc IPlatform
         address multisig;
-        /// @inheritdoc IPlatform
-        address buildingPermitToken;
-        /// @inheritdoc IPlatform
-        address buildingPayPerVaultToken;
+        address __deprecated1;
+        address __deprecated2;
         /// @inheritdoc IPlatform
         address ecosystemRevenueReceiver;
         /// @inheritdoc IPlatform
@@ -80,7 +79,7 @@ contract Platform is Controllable, IPlatform {
         /// @inheritdoc IPlatform
         address priceReader;
         /// @inheritdoc IPlatform
-        address __deprecated1;
+        address __deprecated3;
         /// @inheritdoc IPlatform
         address swapper;
         /// @inheritdoc IPlatform
@@ -91,8 +90,8 @@ contract Platform is Controllable, IPlatform {
         address zap;
         /// @inheritdoc IPlatform
         address bridge;
-        string __deprecated2;
-        bytes32 __deprecated3;
+        string __deprecated4;
+        bytes32 __deprecated5;
         /// @inheritdoc IPlatform
         uint minInitialBoostPerDay;
         /// @inheritdoc IPlatform
@@ -115,9 +114,9 @@ contract Platform is Controllable, IPlatform {
         EnumerableSet.AddressSet defaultBoostRewardTokens;
         EnumerableSet.AddressSet dexAggregators;
         uint fee;
-        uint __deprecated4;
-        uint __deprecated5;
         uint __deprecated6;
+        uint __deprecated7;
+        uint __deprecated8;
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
@@ -152,8 +151,6 @@ contract Platform is Controllable, IPlatform {
         $.factory = addresses.factory;
         $.priceReader = addresses.priceReader;
         $.swapper = addresses.swapper;
-        $.buildingPermitToken = addresses.buildingPermitToken;
-        $.buildingPayPerVaultToken = addresses.buildingPayPerVaultToken;
         $.vaultManager = addresses.vaultManager;
         $.strategyLogic = addresses.strategyLogic;
         $.targetExchangeAsset = addresses.targetExchangeAsset;
@@ -166,7 +163,7 @@ contract Platform is Controllable, IPlatform {
             addresses.factory,
             addresses.priceReader,
             addresses.swapper,
-            addresses.buildingPermitToken,
+            address(0),
             addresses.vaultManager,
             addresses.strategyLogic,
             address(0),
@@ -615,8 +612,8 @@ contract Platform is Controllable, IPlatform {
         platformAddresses[0] = factory_;
         platformAddresses[1] = $.vaultManager;
         platformAddresses[2] = $.strategyLogic;
-        platformAddresses[3] = $.buildingPermitToken;
-        platformAddresses[4] = $.buildingPayPerVaultToken;
+        platformAddresses[3] = address(0);
+        platformAddresses[4] = address(0);
         platformAddresses[5] = $.governance;
         platformAddresses[6] = $.multisig;
         platformAddresses[7] = $.zap;
@@ -646,18 +643,6 @@ contract Platform is Controllable, IPlatform {
     function multisig() external view returns (address) {
         PlatformStorage storage $ = _getStorage();
         return $.multisig;
-    }
-
-    /// @inheritdoc IPlatform
-    function buildingPayPerVaultToken() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.buildingPayPerVaultToken;
-    }
-
-    /// @inheritdoc IPlatform
-    function buildingPermitToken() external view returns (address) {
-        PlatformStorage storage $ = _getStorage();
-        return $.buildingPermitToken;
     }
 
     /// @inheritdoc IPlatform

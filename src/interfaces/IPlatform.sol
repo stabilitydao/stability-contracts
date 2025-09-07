@@ -36,7 +36,7 @@ interface IPlatform {
         address factory_,
         address priceReader_,
         address swapper_,
-        address buildingPermitToken_,
+        address,
         address vaultManager_,
         address strategyLogic_,
         address,
@@ -93,8 +93,6 @@ interface IPlatform {
         address factory;
         address priceReader;
         address swapper;
-        address buildingPermitToken;
-        address buildingPayPerVaultToken;
         address vaultManager;
         address strategyLogic;
         address targetExchangeAsset;
@@ -119,12 +117,6 @@ interface IPlatform {
 
     /// @notice Core team multi signature wallet. Development and operations fund
     function multisig() external view returns (address);
-
-    /// @notice This NFT allow user to build limited number of vaults per week
-    function buildingPermitToken() external view returns (address);
-
-    /// @notice This ERC20 token is used as payment token for vault building
-    function buildingPayPerVaultToken() external view returns (address);
 
     /// @notice Receiver of ecosystem revenue
     function ecosystemRevenueReceiver() external view returns (address);
@@ -265,8 +257,8 @@ interface IPlatform {
     ///        platformAddresses[0] factory
     ///        platformAddresses[1] vaultManager
     ///        platformAddresses[2] strategyLogic
-    ///        platformAddresses[3] buildingPermitToken
-    ///        platformAddresses[4] buildingPayPerVaultToken
+    ///        platformAddresses[3] deprecated
+    ///        platformAddresses[4] deprecated
     ///        platformAddresses[5] governance
     ///        platformAddresses[6] multisig
     ///        platformAddresses[7] zap

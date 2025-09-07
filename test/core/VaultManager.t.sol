@@ -26,9 +26,6 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
     RMVault public rmVault;
 
     function setUp() public {
-        builderPermitToken.mint();
-        builderPayPerVaultToken.mint(1e24);
-        builderPayPerVaultToken.approve(address(factory), 2 ** 255);
         deal(address(tokenB), address(this), 1e24);
         deal(address(tokenC), address(this), 1e24);
         tokenB.approve(address(factory), 2 ** 255);

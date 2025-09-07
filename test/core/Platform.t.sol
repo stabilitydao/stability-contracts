@@ -64,8 +64,6 @@ contract PlatformTest is Test {
                 factory: address(1),
                 priceReader: address(2),
                 swapper: address(3),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
                 targetExchangeAsset: address(9),
@@ -96,8 +94,6 @@ contract PlatformTest is Test {
                 factory: address(1),
                 priceReader: address(2),
                 swapper: address(3),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
                 targetExchangeAsset: address(9),
@@ -444,8 +440,6 @@ contract PlatformTest is Test {
                 factory: address(factory),
                 priceReader: address(2),
                 swapper: address(_swapper),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
                 targetExchangeAsset: address(9),
@@ -476,8 +470,8 @@ contract PlatformTest is Test {
         assertEq(platformAddresses[0], platform.factory());
         assertEq(platformAddresses[1], platform.vaultManager());
         assertEq(platformAddresses[2], platform.strategyLogic());
-        assertEq(platformAddresses[3], platform.buildingPermitToken());
-        assertEq(platformAddresses[4], platform.buildingPayPerVaultToken());
+        assertEq(platformAddresses[3], address(0)); // deprecated
+        assertEq(platformAddresses[4], address(0)); // deprecated
         assertEq(vaultType.length, 0);
         assertEq(bcAssets.length, 0);
         assertEq(dexAggregators_.length, 0);

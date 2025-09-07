@@ -94,8 +94,6 @@ abstract contract DeployCore {
                 factory: address(vars.factory),
                 priceReader: address(vars.priceReader),
                 swapper: address(vars.swapper),
-                buildingPermitToken: p.buildingPermitToken,
-                buildingPayPerVaultToken: p.buildingPayPerVaultToken,
                 vaultManager: address(vars.vaultManager),
                 strategyLogic: address(vars.strategyLogic),
                 targetExchangeAsset: p.targetExchangeAsset,

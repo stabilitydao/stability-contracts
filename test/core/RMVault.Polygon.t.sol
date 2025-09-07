@@ -16,9 +16,6 @@ contract RMVaultTest is PolygonSetup {
     constructor() {
         _init();
 
-        deal(platform.buildingPayPerVaultToken(), address(this), 5e24);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 5e24);
-
         deal(platform.targetExchangeAsset(), address(this), 1e9);
         IERC20(platform.targetExchangeAsset()).approve(address(factory), 1e9);
     }

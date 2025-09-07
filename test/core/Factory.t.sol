@@ -40,8 +40,6 @@ contract FactoryTest is Test, MockSetup {
                 factory: address(factory),
                 priceReader: address(0),
                 swapper: address(1),
-                buildingPermitToken: address(builderPermitToken),
-                buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
                 targetExchangeAsset: address(tokenA),
@@ -157,20 +155,6 @@ contract FactoryTest is Test, MockSetup {
         assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));
 
-        uint userBalance = builderPayPerVaultToken.balanceOf(address(this));
-        address payToken = platform.buildingPayPerVaultToken();
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IFactory.YouDontHaveEnoughTokens.selector, userBalance, builderPayPerVaultPrice, payToken
-            )
-        );
-        factory.deployVaultAndStrategy(
-            VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
-        );
-
-        builderPayPerVaultToken.mint(builderPayPerVaultPrice);
-        builderPayPerVaultToken.approve(address(factory), builderPayPerVaultPrice);
-
         factory.setVaultConfig(
             IFactory.VaultConfig({
                 vaultType: "TestVaultType",
@@ -186,18 +170,6 @@ contract FactoryTest is Test, MockSetup {
             "TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
 
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: false,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
-
         factory.setVaultConfig(
             IFactory.VaultConfig({
                 vaultType: "TestVaultType",
@@ -206,11 +178,6 @@ contract FactoryTest is Test, MockSetup {
                 upgradeAllowed: true,
                 buildingPrice: 100
             })
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(IFactory.StrategyLogicNotAllowedToDeploy.selector));
-        factory.deployVaultAndStrategy(
-            "TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
 
         factory.setStrategyLogicConfig(
@@ -314,13 +281,9 @@ contract FactoryTest is Test, MockSetup {
             address(this)
         );
 
-        builderPermitToken.mint();
-        uint wasBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
         (address vault,) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
-        uint nowBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
-        assertEq(wasBuilt, nowBuilt - 1);
 
         bytes32 vaultTypeHash = IVaultProxy(vault).vaultTypeHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, vaultTypeHash));
@@ -397,7 +360,6 @@ contract FactoryTest is Test, MockSetup {
             address(this)
         );
 
-        builderPermitToken.mint();
         (, address strategy) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );

@@ -83,8 +83,6 @@ library BaseLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
         p.version = "24.06.0-alpha";
-        p.buildingPermitToken = address(0);
-        p.buildingPayPerVaultToken = TOKEN_USDC;
         p.targetExchangeAsset = TOKEN_USDC;
         p.fee = 6_000;
     }

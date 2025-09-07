@@ -56,9 +56,6 @@ contract ZapTestReal is SonicSetup {
     }
 
     function _deployVaults() public {
-        deal(platform.buildingPayPerVaultToken(), address(this), 100e6);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), 100e6);
-
         address[] memory vaultInitAddresses = new address[](0);
         uint[] memory vaultInitNums = new uint[](0);
         address[] memory initStrategyAddresses = new address[](0);
