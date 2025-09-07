@@ -102,7 +102,7 @@ abstract contract FullMockSetup is MockSetup {
 
         // setup factory
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
-        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(vaultImplementation));
+        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(rVaultImplementation));
         factory.setVaultImplementation(VaultTypeLib.REWARDING_MANAGED, address(rmVaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
         factory.setStrategyLogicConfig(
