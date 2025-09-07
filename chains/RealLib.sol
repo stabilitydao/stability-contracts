@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
@@ -111,7 +110,7 @@ library RealLib {
         //endregion -- Deployed Platform -----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -249,18 +248,6 @@ library RealLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

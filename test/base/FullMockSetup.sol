@@ -101,34 +101,9 @@ abstract contract FullMockSetup is MockSetup {
         platform.addAmmAdapter("MOCKSWAP", address(ammAdapter));
 
         // setup factory
-        uint buildingPayPerVaultPrice = 1e16;
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING,
-                implementation: address(rVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING_MANAGED,
-                implementation: address(rmVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
+        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(vaultImplementation));
+        factory.setVaultImplementation(VaultTypeLib.REWARDING_MANAGED, address(rmVaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({

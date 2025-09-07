@@ -13,7 +13,6 @@ import {BeetsStableFarm} from "../../src/strategies/BeetsStableFarm.sol";
 import {BeetsWeightedFarm} from "../../src/strategies/BeetsWeightedFarm.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
 import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
@@ -74,7 +73,7 @@ library SonicLib {
         //endregion
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion
 
         //region ----- Deploy and setup oracle adapters -----
@@ -439,18 +438,6 @@ library SonicLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

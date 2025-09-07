@@ -39,6 +39,7 @@ import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
 
 /// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Sonic.results.csv"
 contract CVaultBatchSonicSkipOnCiTest is Test {
@@ -92,7 +93,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        // _upgradePlatform(IPlatform(PLATFORM).priceReader());
+        _upgradePlatform();
     }
 
     function testDepositWithdrawBatch() public {
@@ -504,24 +505,24 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     //endregion ---------------------- Set up vaults behavior
 
     //region ---------------------- Helpers
-    function _upgradePlatform(address priceReader_) internal {
+    function _upgradePlatform() internal {
         // we need to skip 1 day to update the swapper
         // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
         // vm.warp(block.timestamp - 86400);
         rewind(86400);
 
-        IPlatform platform = IPlatform(IControllable(priceReader_).platform());
+        IPlatform platform = IPlatform(PLATFORM);
 
         address[] memory proxies = new address[](1);
         address[] memory implementations = new address[](1);
 
         //proxies[0] = address(priceReader_);
-        // proxies[0] = platform.swapper();
-        proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
+        proxies[0] = platform.factory();
+        //proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
 
         //implementations[0] = address(new PriceReader());
-        // implementations[0] = address(new Swapper());
-        implementations[0] = address(new AlgebraV4Adapter());
+        implementations[0] = address(new Factory());
+        //implementations[0] = address(new AlgebraV4Adapter());
 
         //vm.prank(multisig);
         // platform.cancelUpgrade();
@@ -538,15 +539,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault_));
     }
     //endregion ---------------------- Helpers

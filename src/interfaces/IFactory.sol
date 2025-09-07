@@ -12,7 +12,6 @@ interface IFactory {
     //region ----- Custom Errors -----
 
     error VaultImplementationIsNotAvailable();
-    error VaultNotAllowedToDeploy();
     error StrategyImplementationIsNotAvailable();
     error YouDontHaveEnoughTokens(uint userBalance, uint requireBalance, address payToken);
     error SuchVaultAlreadyDeployed(bytes32 key);
@@ -353,6 +352,12 @@ interface IFactory {
     /// Operator can add new vault type. Governance or multisig can change existing vault type config.
     /// @param vaultConfig_ Vault type settings
     function setVaultConfig(VaultConfig memory vaultConfig_) external;
+
+    /// @notice Initial addition or change of vault type implementation
+    /// Operator can add new vault type. Governance or multisig can change existing vault type config.
+    /// @param vaultType Vault type string ID (Compounding, etc)
+    /// @param implementation Address of implementation
+    function setVaultImplementation(string memory vaultType, address implementation) external;
 
     /// @notice Initial addition or change of strategy logic settings.
     /// Operator can add new strategy logic. Governance or multisig can change existing logic config.

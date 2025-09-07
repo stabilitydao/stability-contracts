@@ -17,7 +17,6 @@ import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {CVault} from "../src/core/vaults/CVault.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
 
@@ -98,7 +97,7 @@ library BaseLib {
         //endregion -- Deployed Platform ----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 100e6);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -271,18 +270,6 @@ library BaseLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

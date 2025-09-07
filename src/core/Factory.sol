@@ -25,7 +25,7 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
-///   1.3.0: vault can be built only by admin
+///   1.3.0: vault can be built only by admin; setVaultImplementation
 ///   1.2.0: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
 ///   1.1.0: getDeploymentKey fix for not farming strategies, strategyAvailableInitParams
 /// @author Alien Deployer (https://github.com/a17)
@@ -83,6 +83,14 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         if (FactoryLib.setVaultConfig($, vaultConfig_)) {
+            _requireGovernanceOrMultisig();
+        }
+    }
+
+    /// @inheritdoc IFactory
+    function setVaultImplementation(string memory vaultType, address implementation) external onlyOperator {
+        FactoryStorage storage $ = _getStorage();
+        if (FactoryLib.setVaultImplementation($, vaultType, implementation)) {
             _requireGovernanceOrMultisig();
         }
     }
@@ -172,9 +180,6 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         vars.vaultConfig = $.vaultConfig[keccak256(abi.encodePacked(vaultType))];
         if (vars.vaultConfig.implementation == address(0)) {
             revert VaultImplementationIsNotAvailable();
-        }
-        if (!vars.vaultConfig.deployAllowed) {
-            revert VaultNotAllowedToDeploy();
         }
         vars.strategyIdHash = keccak256(bytes(strategyId));
         vars.platform = platform();

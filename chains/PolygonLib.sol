@@ -25,7 +25,6 @@ import {CurveConvexFarmStrategy} from "../src/strategies/CurveConvexFarmStrategy
 import {YearnStrategy} from "../src/strategies/YearnStrategy.sol";
 import {SteerQuickSwapMerklFarmStrategy} from "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 import {CVault} from "../src/core/vaults/CVault.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {IDefiEdgeStrategy} from "../src/integrations/defiedge/IDefiEdgeStrategy.sol";
@@ -223,9 +222,9 @@ library PolygonLib {
         //endregion -- Deployed Platform ----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 50_000e18);
-        _addVaultType(factory, VaultTypeLib.REWARDING, address(new RVault()), 50_000e18);
-        _addVaultType(factory, VaultTypeLib.REWARDING_MANAGED, address(new RMVault()), 100_000e18);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new RVault()));
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new RMVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -733,18 +732,6 @@ library PolygonLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

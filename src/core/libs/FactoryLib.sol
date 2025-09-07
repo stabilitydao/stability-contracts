@@ -599,15 +599,30 @@ library FactoryLib {
         );
     }
 
+    function setVaultImplementation(IFactory.FactoryStorage storage $, string memory vaultType, address implementation) external returns (bool needGovOrMultisigAccess) {
+        bytes32 typeHash = keccak256(abi.encodePacked(vaultType));
+        $.vaultConfig[typeHash] = IFactory.VaultConfig({
+            vaultType: vaultType,
+            implementation: implementation,
+            deployAllowed: true,
+            upgradeAllowed: true,
+            buildingPrice: 0
+        });
+        bool newVaultType = $.vaultTypeHashes.add(typeHash);
+        if (!newVaultType) {
+            needGovOrMultisigAccess = true;
+        }
+        emit IFactory.VaultConfigChanged(
+            vaultType, implementation, true, true, newVaultType
+        );
+    }
+
     function upgradeVaultProxy(IFactory.FactoryStorage storage $, address vault) external {
         IVaultProxy proxy = IVaultProxy(vault);
         bytes32 vaultTypeHash = proxy.vaultTypeHash();
         address oldImplementation = proxy.implementation();
         IFactory.VaultConfig memory tempVaultConfig = $.vaultConfig[vaultTypeHash];
         address newImplementation = tempVaultConfig.implementation;
-        if (!tempVaultConfig.upgradeAllowed) {
-            revert IFactory.UpgradeDenied(vaultTypeHash);
-        }
         if (oldImplementation == newImplementation) {
             revert IFactory.AlreadyLastVersion(vaultTypeHash);
         }

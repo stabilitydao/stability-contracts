@@ -14,7 +14,6 @@ import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {CompoundFarmStrategy} from "../src/strategies/CompoundFarmStrategy.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 import {CVault} from "../src/core/vaults/CVault.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
 
@@ -81,7 +80,7 @@ library EthereumLib {
         //endregion
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 1e17);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion
 
         // region ----- Deploy and setup oracle adapters -----
@@ -199,18 +198,6 @@ library EthereumLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
