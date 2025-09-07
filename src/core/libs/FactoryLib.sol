@@ -599,7 +599,11 @@ library FactoryLib {
         );
     }
 
-    function setVaultImplementation(IFactory.FactoryStorage storage $, string memory vaultType, address implementation) external returns (bool needGovOrMultisigAccess) {
+    function setVaultImplementation(
+        IFactory.FactoryStorage storage $,
+        string memory vaultType,
+        address implementation
+    ) external returns (bool needGovOrMultisigAccess) {
         bytes32 typeHash = keccak256(abi.encodePacked(vaultType));
         $.vaultConfig[typeHash] = IFactory.VaultConfig({
             vaultType: vaultType,
@@ -612,9 +616,7 @@ library FactoryLib {
         if (!newVaultType) {
             needGovOrMultisigAccess = true;
         }
-        emit IFactory.VaultConfigChanged(
-            vaultType, implementation, true, true, newVaultType
-        );
+        emit IFactory.VaultConfigChanged(vaultType, implementation, true, true, newVaultType);
     }
 
     function upgradeVaultProxy(IFactory.FactoryStorage storage $, address vault) external {
