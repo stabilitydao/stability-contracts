@@ -27,6 +27,8 @@ contract SwapperRealTest is Test, SonicSetup {
         IERC20(RealLib.TOKEN_RWA).approve(address(swapper), type(uint).max);
     }
 
+    function testCoreContract() external {}
+
     function _testSwaps() internal {
         uint got;
         swapper.swap(RealLib.TOKEN_USDC, RealLib.TOKEN_DAI, 100e6, 1_000); // 1%

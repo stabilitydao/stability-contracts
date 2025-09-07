@@ -31,6 +31,8 @@ contract ZapTestReal is SonicSetup {
         zap = IZap(platform.zap());
     }
 
+    function testCoreContract() external {}
+
     function _testZapReal() internal {
         address vault = factory.deployedVault(0);
 
