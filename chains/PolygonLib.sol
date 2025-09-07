@@ -223,8 +223,8 @@ library PolygonLib {
 
         //region ----- Deploy and setup vault types -----
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
-        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new RVault()));
-        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new RMVault()));
+        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(new RVault()));
+        factory.setVaultImplementation(VaultTypeLib.REWARDING_MANAGED, address(new RMVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
