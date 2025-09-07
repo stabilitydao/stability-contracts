@@ -42,7 +42,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     address[] public wrappedVaults;
     IPriceReader public priceReader;
     address public multisig;
-    uint timestamp0;
+    uint public timestamp0;
 
     struct Strategy {
         string id;
@@ -1128,16 +1128,15 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _upgradePlatform() internal {
-        address[] memory proxies = new address[](2);
+        address[] memory proxies = new address[](3);
         proxies[0] = address(IPlatform(PLATFORM).swapper());
         proxies[1] = address(IPlatform(PLATFORM).priceReader());
-        //        bytes32 hash = keccak256(bytes(AmmAdapterIdLib.UNISWAPV3));
-        //        proxies[1] = address(IPlatform(PLATFORM).ammAdapter(hash).proxy);
+        proxies[2] = address(IPlatform(PLATFORM).factory());
 
-        address[] memory implementations = new address[](2);
+        address[] memory implementations = new address[](3);
         implementations[0] = address(new Swapper());
         implementations[1] = address(new PriceReader());
-        //        implementations[1] = address(new UniswapV3Adapter());
+        implementations[2] = address(new Factory());
 
         vm.prank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.03.1-alpha", proxies, implementations);
