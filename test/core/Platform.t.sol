@@ -69,7 +69,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(1)
+                revenueRouter: address(1),
+                metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
                 fee: 6_000,
@@ -99,7 +100,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(0)
+                revenueRouter: address(0),
+                metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
                 fee: 6_000,
@@ -445,7 +447,8 @@ contract PlatformTest is Test {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
-                revenueRouter: address(0)
+                revenueRouter: address(0),
+                metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
                 fee: 6_000,

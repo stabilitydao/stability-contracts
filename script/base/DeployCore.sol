@@ -13,6 +13,7 @@ import {Zap} from "../../src/core/Zap.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 
 abstract contract DeployCore {
     struct DeployPlatformVars {
@@ -27,6 +28,7 @@ abstract contract DeployCore {
         Zap zap;
         RevenueRouter revenueRouter;
         FeeTreasury feeTreasury;
+        MetaVaultFactory metaVaultFactory;
     }
 
     function _deployCore(IPlatformDeployer.DeployPlatformParams memory p) internal returns (address) {
@@ -88,6 +90,12 @@ abstract contract DeployCore {
         vars.revenueRouter = RevenueRouter(address(vars.proxy));
         vars.revenueRouter.initialize(address(vars.platform), address(0), address(vars.feeTreasury));
 
+        // MetaVaultFactory
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new MetaVaultFactory()));
+        vars.metaVaultFactory = MetaVaultFactory(address(vars.proxy));
+        vars.metaVaultFactory.initialize(address(vars.platform));
+
         // setup platform
         vars.platform.setup(
             IPlatform.SetupAddresses({
@@ -99,7 +107,8 @@ abstract contract DeployCore {
                 targetExchangeAsset: p.targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
                 zap: address(vars.zap),
-                revenueRouter: address(vars.revenueRouter)
+                revenueRouter: address(vars.revenueRouter),
+                metaVaultFactory: address(vars.metaVaultFactory)
             }),
             IPlatform.PlatformSettings({
                 fee: p.fee,

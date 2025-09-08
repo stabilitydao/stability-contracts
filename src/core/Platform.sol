@@ -18,7 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
-///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken
+///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken; init with MetaVaultFactory
 ///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName,
 ///          networkExtra, aprOracle
 ///   1.4.0: IPlatform.metaVaultFactory()
@@ -157,6 +157,7 @@ contract Platform is Controllable, IPlatform {
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
         $.revenueRouter = addresses.revenueRouter;
+        $.metaVaultFactory = addresses.metaVaultFactory;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -173,6 +174,7 @@ contract Platform is Controllable, IPlatform {
             address(0)
         );
         emit RevenueRouter(addresses.revenueRouter);
+        emit MetaVaultFactory(addresses.metaVaultFactory);
         _setFees(settings.fee);
         _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
         emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);

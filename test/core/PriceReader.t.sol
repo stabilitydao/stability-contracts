@@ -75,7 +75,8 @@ contract PriceReaderTest is Test, MockSetup {
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(11),
-                revenueRouter: address(0)
+                revenueRouter: address(0),
+                metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
                 fee: 6_000,
