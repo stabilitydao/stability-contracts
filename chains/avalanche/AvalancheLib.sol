@@ -140,22 +140,26 @@ library AvalancheLib {
         );
     }
 
-    function farms() public view returns (IFactory.Farm[] memory _farms) {}
+    function farms() public view returns (IFactory.Farm[] memory _farms) {
+        _farms = new IFactory.Farm[](4);
+        uint i;
+        _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
+        _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
+        _farms[i++] =
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 1
+        _farms[i++] =
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 1
+    }
 
-    function _makeEulerMerklFarm(address vault)
-        // address[] memory rewardAssets
-        internal
-        pure
-        returns (IFactory.Farm memory)
-    {
+    function _makeEulerMerklFarm(address vault, address rewardAsset) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.pool = address(0);
         farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[0] = rewardAsset;
         farm.addresses = new address[](2);
-        farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
+        farm.addresses[0] = AvalancheConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);

@@ -13,6 +13,7 @@ library AvalancheConstantsLib {
     address public constant TOKEN_WBTC = 0x50b7545627a5162F82A992c33b87aDc75187B218;
     address public constant TOKEN_BTCB = 0x152b9d0FdC40C096757F570A51E494bd4b943E50;
     address public constant TOKEN_WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+    address public constant TOKEN_REUL = 0x2e3b32730B4F6b6502BdAa9122df3B026eDE5391;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
@@ -28,4 +29,13 @@ library AvalancheConstantsLib {
     address public constant POOL_BLACKHOLE_CL_WBTC_BTCB = 0xfc231423E1a863d94Abb21D9f68e8C2589B3Edb9;
     address public constant POOL_BLACKHOLE_CL_BTCB_WAVAX = 0x8FEF4fE4970a5D6bFa7C65871a2EbFD0F42aa822;
     address public constant POOL_BLACKHOLE_CL_WETH_WAVAX = 0x5E128EbC09C918DDAE3Ca1668d4EE9527dc00D78;
+
+    // Merkl
+    address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
+    // Euler
+    address public constant EULER_VAULT_USDT_K3 = 0xa446938b0204Aa4055cdFEd68Ddf0E0d1BAB3E9E;
+    address public constant EULER_VAULT_USDC_RE7 = 0x39dE0f00189306062D79eDEC6DcA5bb6bFd108f9;
+    address public constant EULER_VAULT_BTCB_RESERVOIR = 0x04293b180bf9C57eD0923C99c784Cb571f0A9Ae9;
+    address public constant EULER_VAULT_WBTC_RESERVOIR = 0xA321a38b03a7218157668a724E186f3a81CF56c8;
 }
