@@ -99,6 +99,7 @@ interface IPlatform {
         address hardWorker;
         address zap;
         address revenueRouter;
+        address metaVaultFactory;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

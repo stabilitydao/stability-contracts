@@ -17,6 +17,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;
@@ -77,6 +78,10 @@ abstract contract FullMockSetup is MockSetup {
         feeTreasury.initialize(address(platform), platform.multisig());
         revenueRouter.initialize(address(platform), address(0), address(feeTreasury));
 
+        proxy = new Proxy();
+        proxy.initProxy(address(new MetaVaultFactory()));
+        MetaVaultFactory metaVaultFactory = MetaVaultFactory(address(proxy));
+
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(factory),
@@ -87,7 +92,8 @@ abstract contract FullMockSetup is MockSetup {
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
                 zap: address(0),
-                revenueRouter: address(revenueRouter)
+                revenueRouter: address(revenueRouter),
+                metaVaultFactory: address(metaVaultFactory)
             }),
             IPlatform.PlatformSettings({
                 fee: 6_000,

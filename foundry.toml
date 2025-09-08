@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
+no_match_coverage = "src/integrations/"
 solc_version = "0.8.28"
 gas_limit = "18446744073709551615"
 optimizer = true

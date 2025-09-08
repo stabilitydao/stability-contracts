@@ -74,4 +74,6 @@ contract DiaAdapterTest is SonicSetup /* RealSetup */ {
         adapter.removePriceFeeds(assets);
         assertEq(adapter.priceFeeds(assets[0]), address(0));
     }
+
+    function testDiaAdapter() external {}
 }
