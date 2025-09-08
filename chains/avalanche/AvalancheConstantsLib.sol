@@ -38,4 +38,8 @@ library AvalancheConstantsLib {
     address public constant EULER_VAULT_USDC_RE7 = 0x39dE0f00189306062D79eDEC6DcA5bb6bFd108f9;
     address public constant EULER_VAULT_BTCB_RESERVOIR = 0x04293b180bf9C57eD0923C99c784Cb571f0A9Ae9;
     address public constant EULER_VAULT_WBTC_RESERVOIR = 0xA321a38b03a7218157668a724E186f3a81CF56c8;
+
+    // AAVE v3
+    address public constant AAVE_V3_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
+    address public constant AAVE_aAvaUSDC = 0x625E7708f30cA75bfd92586e17077590C60eb4cD;
 }

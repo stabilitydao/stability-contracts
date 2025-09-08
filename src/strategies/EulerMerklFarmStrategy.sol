@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {ERC4626StrategyBase} from "./base/ERC4626StrategyBase.sol";
 import {
     FarmingStrategyBase,
@@ -50,7 +51,11 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (
+            // third param is optional, initially there were only 2 params
+            // so, some already deployed strategies may have only 2 params here
+            (farm.addresses.length != 2 && farm.addresses.length != 3)
+            || farm.nums.length != 0 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -224,7 +229,20 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         uint[] memory rewardAmounts_
     ) internal override(ERC4626StrategyBase, FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
         // currently rEUL are not supported here
-        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
+        IFactory.Farm memory farm = _getFarm();
+        address rEUL = farm.addresses.length == 3
+            ? farm.addresses[2]
+            : address(0);
+
+        // we need to remove rEUL from rewardAssets_ and rewardAmounts_ arrays
+        // because rEUL is not liquidated in ordinal way and just kept on balance
+        (address[] memory _rewardAssets, uint[] memory _rewardAmounts) = EMFLib.removeTokenFromList(
+            rEUL,
+            rewardAssets_,
+            rewardAmounts_
+        );
+
+        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, _rewardAssets, _rewardAmounts);
     }
 
     /// @inheritdoc StrategyBase

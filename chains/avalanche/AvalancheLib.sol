@@ -148,9 +148,9 @@ library AvalancheLib {
         _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
         _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
         _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 1
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 2
         _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 1
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 3
     }
 
     function _makeEulerMerklFarm(address vault, address rewardAsset) internal pure returns (IFactory.Farm memory) {
@@ -160,9 +160,10 @@ library AvalancheLib {
         farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = rewardAsset;
-        farm.addresses = new address[](2);
+        farm.addresses = new address[](3);
         farm.addresses[0] = AvalancheConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;
+        farm.addresses[2] = AvalancheConstantsLib.TOKEN_REUL;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
