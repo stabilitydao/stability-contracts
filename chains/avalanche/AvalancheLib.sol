@@ -5,9 +5,10 @@ import {AvalancheConstantsLib} from "./AvalancheConstantsLib.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
-import {Proxy} from "../src/core/proxy/Proxy.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
@@ -18,6 +19,7 @@ import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrateg
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 
 /// @dev Avalanche network [chainId: 43114] deploy library
 //    ,---,                               ,--,                                       ,---,
@@ -140,7 +142,7 @@ library AvalancheLib {
         );
     }
 
-    function farms() public view returns (IFactory.Farm[] memory _farms) {
+    function farms() public pure returns (IFactory.Farm[] memory _farms) {
         _farms = new IFactory.Farm[](4);
         uint i;
         _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
