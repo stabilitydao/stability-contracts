@@ -30,6 +30,7 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 ethereum = "${ETHEREUM_RPC_URL}"
 real = "${REAL_RPC_URL}"
 sonic = "${SONIC_RPC_URL}"
+avalanche = "${AVALANCHE_RPC_URL}"
 
 [etherscan]
 polygon = { key = "${POLYGONSCAN_API_KEY}", chain = 137  }
@@ -37,6 +38,7 @@ base = { key = "${BASESCAN_API_KEY}", chain = 8453  }
 arbitrum = { key = "${ARBITRUMSCAN_API_KEY}", chain = 42161  }
 ethereum = { key = "${ETHERSCAN_API_KEY}", chain = 1  }
 sonic = { key = "${ETHERSCAN_API_KEY}", chain = 146, url = "https://api.etherscan.io/v2/api?chainid=146" }
+avalanche = { key = "${ETHERSCAN_API_KEY}", chain = 43114, url = "https://api.etherscan.io/v2/api?chainid=43114" }
 
 [lint]
 exclude_lints = ["mixed-case-function", "mixed-case-variable"]

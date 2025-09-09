@@ -12,7 +12,6 @@ import {Platform} from "../../../src/core/Platform.sol";
 abstract contract AvalancheSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
-
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL")));
         // use block in C-chain only, see https://snowtrace.io/block/68407132?chainid=43114

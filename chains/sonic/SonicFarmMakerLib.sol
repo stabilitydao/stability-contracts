@@ -71,7 +71,7 @@ library SonicFarmMakerLib {
         farm.addresses = new address[](3);
         farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;
-        farm.addresses[2] = SonicConstantsLib.TOKEN_rEUL;
+        farm.addresses[2] = SonicConstantsLib.TOKEN_rEUL; // required only if rEUL is reward token (i.e. on Avalanche)
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;

@@ -76,36 +76,4 @@ library EMFLib {
             return 10 ** (amountCap & 63) * (amountCap >> 6) / 100;
         }
     }
-
-    /// @notice Remove {tokenToExclude_} from {rewardAssets_} and {rewardAmounts_} if present
-    function removeTokenFromList(
-        address tokenToExclude_,
-        address[] memory rewardAssets_,
-        uint[] memory rewardAmounts_
-    ) internal pure returns (address[] memory _rewardAssets, uint[] memory _rewardAmounts) {
-        _rewardAssets = rewardAssets_;
-        _rewardAmounts = rewardAmounts_;
-
-        if (tokenToExclude_ != address(0)) {
-            uint count;
-            for (uint i; i < rewardAssets_.length; ++i) {
-                if (rewardAssets_[i] == tokenToExclude_) count++;
-            }
-
-            if (count != 0) {
-                _rewardAssets = new address[](rewardAssets_.length - count);
-                _rewardAmounts = new uint[](rewardAssets_.length - count);
-
-                uint j;
-                for (uint i; i < rewardAssets_.length; ++i) {
-                    if (rewardAssets_[i] != tokenToExclude_) {
-                        _rewardAssets[j] = rewardAssets_[i];
-                        _rewardAmounts[j] = rewardAmounts_[i];
-                        j++;
-                    }
-                }
-            }
-        }
-
-    }
 }

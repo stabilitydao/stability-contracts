@@ -14,6 +14,7 @@ library AvalancheConstantsLib {
     address public constant TOKEN_BTCB = 0x152b9d0FdC40C096757F570A51E494bd4b943E50;
     address public constant TOKEN_WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     address public constant TOKEN_REUL = 0x2e3b32730B4F6b6502BdAa9122df3B026eDE5391;
+    address public constant TOKEN_EUL = 0x9ceeD3A7f753608372eeAb300486cc7c2F38AC68;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
@@ -45,4 +46,12 @@ library AvalancheConstantsLib {
 
     // Silo
     address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
+
+    // DeX aggregators
+    /// @notice Aggregator router V6
+    /// @dev https://portal.1inch.dev/documentation/contracts/aggregation-protocol/aggregation-introduction
+    address public constant ONE_INCH = 0x111111125421cA6dc452d289314280a0f8842A65;
+//    /// @notice Aggregator router V5
+//    address public constant ONE_INCH = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
 }

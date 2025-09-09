@@ -49,7 +49,7 @@ contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
 
         // amount produces amount - 1 of aToken on Avalanche
         // probably there is some rounding there .. let's increase source amount a bit
-        uint amountToDeposit =  amount + 1;
+        uint amountToDeposit = amount + 1;
         deal(asset, to, amountToDeposit);
 
         vm.prank(to);

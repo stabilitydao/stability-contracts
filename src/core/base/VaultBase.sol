@@ -23,6 +23,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Start price of vault share is $1.
 /// @dev Used by all vault implementations (CVault, RVault, etc) on Strategy-level of vaults.
 /// Changelog:
+///   2.8.1: _INITIAL_SHARES is increased 1e15 => 1e16 to be able to work with btc
 ///   2.8.0: not use AprOracle
 ///   2.7.1: Add maxWithdraw with mode - #360
 ///   2.7.0: Add maxDeposit - #330; refactoring to reduce size.
@@ -51,13 +52,13 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of VaultBase implementation
-    string public constant VERSION_VAULT_BASE = "2.8.0";
+    string public constant VERSION_VAULT_BASE = "2.8.1";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _WITHDRAW_REQUEST_BLOCKS = 5;
 
     /// @dev Initial shares of the vault minted at the first deposit and sent to the dead address.
-    uint internal constant _INITIAL_SHARES = 1e15;
+    uint internal constant _INITIAL_SHARES = 1e16;
 
     /// @dev Delay for calling strategy.doHardWork() on user deposits
     uint internal constant _MIN_HARDWORK_DELAY = 3600;

@@ -170,10 +170,16 @@ library AvalancheLib {
         uint i;
         _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
         _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
+
+        // set EUL as reward token instead of rEUL because rEUL has vesting period after which it's converted to EUL
+        // address of rEUL is added as farm.addresses[2] instead
         _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 2
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 2
+
+        // set EUL as reward token instead of rEUL because rEUL has vesting period after which it's converted to EUL
+        // address of rEUL is added as farm.addresses[2] instead
         _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_REUL); // 3
+            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 3
     }
 
     function _makeEulerMerklFarm(address vault, address rewardAsset) internal pure returns (IFactory.Farm memory) {

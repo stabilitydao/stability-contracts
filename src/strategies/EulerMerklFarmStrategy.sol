@@ -53,8 +53,9 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         if (
             // third param is optional, initially there were only 2 params
             // so, some already deployed strategies may have only 2 params here
-            (farm.addresses.length != 2 && farm.addresses.length != 3)
-            || farm.nums.length != 0 || farm.ticks.length != 0) {
+            (farm.addresses.length != 2 && farm.addresses.length != 3) || farm.nums.length != 0
+                || farm.ticks.length != 0
+        ) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -227,23 +228,9 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(ERC4626StrategyBase, FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
-
-        IFactory.Farm memory farm = _getFarm();
-        address rEUL = farm.addresses.length == 3
-            ? farm.addresses[2]
-            : address(0);
-
-        // We need to remove rEUL from rewardAssets_ and rewardAmounts_ arrays
-        // because rEUL is not liquidated in ordinal way and should be just kept on balance.
-        // It will be withdrawn after ending of vesting period.
-        (address[] memory _rewardAssets, uint[] memory _rewardAmounts) = EMFLib.removeTokenFromList(
-            rEUL,
-            rewardAssets_,
-            rewardAmounts_
-        );
-
-        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, _rewardAssets, _rewardAmounts);
-        console.log("_liquidateRewards.total.after.earnedExchangeAsset", total(), earnedExchangeAsset, _rewardAmounts.length);
+        // rEUL is not supported as reward token here
+        // use EUL instead (rEUL will be converted to EUL after ending of vesting period)
+        earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
     /// @inheritdoc StrategyBase
@@ -257,7 +244,9 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
             uint[] memory __rewardAmounts
         )
     {
-        console.log("_claimRevenue.total.before", total());
+        // rEUL is not supported as reward token here
+        // rEUL is not liquidated and just collected on balance for future exchange to EUL after ending of vesting period
+
         ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         address u = __$__._underlying;
@@ -265,16 +254,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         (__assets, __amounts) = _getRevenue(newSharePrice, u);
         $.lastSharePrice = newSharePrice;
         (__rewardAssets, __rewardAmounts) = _getRewards();
-        console.log("_claimRevenue.total.after", total());
-        console.log("_claimRevenue.__rewardAssets", __rewardAssets.length, __rewardAssets[0], __rewardAmounts[0]);
-
-        IFactory.Farm memory farm = _getFarm();
-        address rEUL = farm.addresses.length == 3
-            ? farm.addresses[2]
-            : address(0);
-
-        (__rewardAssets, __rewardAmounts) = EMFLib.removeTokenFromList(rEUL, __rewardAssets, __rewardAmounts);
-        console.log("_claimRevenue.__rewardAssets", __rewardAssets.length);
     }
 
     /// @inheritdoc StrategyBase
@@ -287,7 +266,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
     /// @inheritdoc StrategyBase
     function _compound() internal override(ERC4626StrategyBase, StrategyBase) {
-        console.log("_compound.total.before", total());
         address[] memory _assets = assets();
         uint len = _assets.length;
         uint[] memory amounts = new uint[](len);
@@ -297,13 +275,11 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
 
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(_assets[i]);
-            console.log("_compound.amounts[i]", i, amounts[i]);
             if (amounts[i] != 0) {
                 notZero = true;
             }
         }
         if (notZero) {
-            console.log("_compound.depositAssets");
             _depositAssets(amounts, false);
         }
 
@@ -313,7 +289,6 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         // but StrategyBase expects it to be set in doHardWork in order to calculate aprCompound
         // so, we set it twice: here (new value) and in _claimRevenue (old value)
         $base.total = total();
-        console.log("_compound.total.after", total());
     }
     //endregion ----------------------- Strategy base
 
