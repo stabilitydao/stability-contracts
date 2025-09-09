@@ -10,7 +10,7 @@ contract DeployAvalanche is Script, DeployCore {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         address platform = _deployCore(AvalancheLib.platformDeployParams());
-        AvalancheLib.deployAndSetupInfrastructure(platform, false);
+        AvalancheLib.deployAndSetupInfrastructure(platform);
         vm.stopBroadcast();
     }
 
