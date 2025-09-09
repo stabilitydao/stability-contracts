@@ -693,7 +693,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
                         _dealUnderlying(underlying, address(this), totalWas);
-                        assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
+                        // Following check was moved inside _dealUnderlying because of problems on avalanche
+                        // assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                         IERC20(underlying).approve(tempVault, totalWas);
 
                         underlyingAmounts[0] = totalWas;
@@ -883,9 +884,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         _rebalance();
     }
 
-    /// @notice Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
+    /// @notice Deal underlying asset to an address and check result balance
+    /// @dev Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
     /// @dev https://github.com/foundry-rs/forge-std/issues/140
     function _dealUnderlying(address underlying, address to, uint amount) internal virtual {
         deal(underlying, to, amount);
+        assertEq(IERC20(underlying).balanceOf(to), amount, "U1");
     }
 }

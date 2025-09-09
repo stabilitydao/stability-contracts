@@ -46,18 +46,26 @@ contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
         IPool pool = IPool(IAToken(underlying).POOL());
 
         address asset = IAToken(underlying).UNDERLYING_ASSET_ADDRESS();
+        address assetProvider = makeAddr("assetProvider");
 
-        // amount produces amount - 1 of aToken on Avalanche
+        // amount produces amount - delta (delta ~ 1 or 2 or may be other value) of aToken on Avalanche
         // probably there is some rounding there .. let's increase source amount a bit
-        uint amountToDeposit = amount + 1;
-        deal(asset, to, amountToDeposit);
+        uint amountToDeposit = amount * 2;
+        deal(asset, assetProvider, amountToDeposit);
 
-        vm.prank(to);
+        vm.prank(assetProvider);
         IERC20(asset).approve(address(pool), amountToDeposit);
 
-        vm.prank(to);
-        pool.deposit(asset, amountToDeposit, to, 0);
+        vm.prank(assetProvider);
+        pool.deposit(asset, amountToDeposit, assetProvider, 0);
 
-        assertGe(IERC20(underlying).balanceOf(to), amount, "Deal enough aTokens");
+        assertGe(IERC20(underlying).balanceOf(assetProvider), amount, "Deal enough aTokens 1");
+
+        vm.prank(assetProvider);
+        IERC20(underlying).transfer(to, amount);
+
+        // Attempt to transfer 999121603 tokens produces 999121604 on balance on Avalanche
+        // If we try to return back 1 token new balance becomes 999121602, weird behavior.
+        assertApproxEqAbs(IERC20(underlying).balanceOf(to), amount, 1, "Deal enough aTokens 2");
     }
 }
