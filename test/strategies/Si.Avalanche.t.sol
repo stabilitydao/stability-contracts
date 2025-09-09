@@ -1,23 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
 import {UniversalTest} from "../base/UniversalTest.sol";
-import {SonicConstantsLib} from "chains/sonic/SonicConstantsLib.sol";
+import {AvalancheConstantsLib} from "chains/avalanche/AvalancheConstantsLib.sol";
 import {StrategyIdLib} from "src/strategies/libs/StrategyIdLib.sol";
 
-contract SiloStrategySonicTest is SonicSetup, UniversalTest {
+contract SiloStrategyAvalancheTest is AvalancheSetup, UniversalTest {
+    uint public constant FORK_BLOCK_C_CHAIN = 68407132; // Sep-8-2025 09:54:05 UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        //vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC
-        vm.rollFork(26826000); // May-14-2025 09:16:16 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL"), FORK_BLOCK_C_CHAIN));
     }
 
-    function testSiloSonic() public universalTest {
-        _addStrategy(SonicConstantsLib.SILO_VAULT_8_USDC);
-        _addStrategy(SonicConstantsLib.SILO_VAULT_27_USDC);
-        _addStrategy(SonicConstantsLib.SILO_VAULT_51_wS);
-        _addStrategy(SonicConstantsLib.SILO_VAULT_31_WBTC);
+    function testSiloAvalanche() public universalTest {
+        _addStrategy(AvalancheConstantsLib.SILO_VAULT_USDC_125);
     }
 
     function _addStrategy(address strategyInitAddress) internal {

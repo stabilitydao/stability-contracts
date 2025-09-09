@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-// import {console, Test} from "forge-std/Test.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
     uint public constant FORK_BLOCK_C_CHAIN = 68407132; // Sep-8-2025 09:54:05 UTC
@@ -47,12 +47,17 @@ contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
 
         address asset = IAToken(underlying).UNDERLYING_ASSET_ADDRESS();
 
-        deal(asset, to, amount);
+        // amount produces amount - 1 of aToken on Avalanche
+        // probably there is some rounding there .. let's increase source amount a bit
+        uint amountToDeposit =  amount + 1;
+        deal(asset, to, amountToDeposit);
 
         vm.prank(to);
-        IERC20(asset).approve(address(pool), amount);
+        IERC20(asset).approve(address(pool), amountToDeposit);
 
         vm.prank(to);
-        pool.deposit(asset, amount, to, 0);
+        pool.deposit(asset, amountToDeposit, to, 0);
+
+        assertGe(IERC20(underlying).balanceOf(to), amount, "Deal enough aTokens");
     }
 }

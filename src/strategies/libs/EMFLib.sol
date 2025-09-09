@@ -77,6 +77,7 @@ library EMFLib {
         }
     }
 
+    /// @notice Remove {tokenToExclude_} from {rewardAssets_} and {rewardAmounts_} if present
     function removeTokenFromList(
         address tokenToExclude_,
         address[] memory rewardAssets_,

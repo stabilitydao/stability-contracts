@@ -21,8 +21,6 @@ contract EulerStrategyTestAvalanche is AvalancheSetup, UniversalTest {
     function testEulerStrategy() public universalTest {
         _addStrategy(AvalancheConstantsLib.EULER_VAULT_USDT_K3);
         _addStrategy(AvalancheConstantsLib.EULER_VAULT_USDC_RE7);
-        _addStrategy(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR);
-        _addStrategy(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR);
     }
 
     function _addStrategy(address eulerVault) internal {

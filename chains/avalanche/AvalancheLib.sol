@@ -94,6 +94,29 @@ library AvalancheLib {
         //endregion
 
         //region ----- Add strategy available init params -----
+        IFactory.StrategyAvailableInitParams memory p;
+        // -------------- SiloStrategy
+        p.initAddresses = new address[](1);
+        p.initAddresses[0] = AvalancheConstantsLib.SILO_VAULT_USDC_125;
+        p.initNums = new uint[](0); // not used
+        p.initTicks = new int24[](0); // not used
+        factory.setStrategyAvailableInitParams(StrategyIdLib.SILO, p);
+
+        // -------------- EulerStrategy
+        p.initAddresses = new address[](2);
+        p.initAddresses[0] = AvalancheConstantsLib.EULER_VAULT_USDT_K3;
+        p.initAddresses[1] = AvalancheConstantsLib.EULER_VAULT_USDC_RE7;
+        p.initNums = new uint[](0); // not used
+        p.initTicks = new int24[](0); // not used
+        factory.setStrategyAvailableInitParams(StrategyIdLib.EULER, p);
+
+        // -------------- AaveStrategy
+        p.initAddresses = new address[](1);
+        p.initAddresses[0] = AvalancheConstantsLib.AAVE_aAvaUSDC;
+        p.initNums = new uint[](0); // not used
+        p.initTicks = new int24[](0); // not used
+        factory.setStrategyAvailableInitParams(StrategyIdLib.AAVE, p);
+
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategies  -----

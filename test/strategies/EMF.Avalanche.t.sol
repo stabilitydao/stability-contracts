@@ -56,14 +56,14 @@ contract EulerMerklFarmStrategyTestAvalanche is AvalancheSetup, UniversalTest {
             eulerVaultForStrategy == AvalancheConstantsLib.EULER_VAULT_USDC_RE7
             || eulerVaultForStrategy == AvalancheConstantsLib.EULER_VAULT_USDT_K3
         ) {
-            deal(AvalancheConstantsLib.TOKEN_WAVAX, currentStrategy, 10e18);
+            deal(AvalancheConstantsLib.TOKEN_WAVAX, currentStrategy, 33e18);
         }
 
         if (
             eulerVaultForStrategy == AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR
             || eulerVaultForStrategy == AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR
         ) {
-            deal(AvalancheConstantsLib.TOKEN_REUL, currentStrategy, 10e18);
+            deal(AvalancheConstantsLib.TOKEN_REUL, currentStrategy, 33e18);
         }
 
     }

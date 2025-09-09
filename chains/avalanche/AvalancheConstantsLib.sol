@@ -42,4 +42,7 @@ library AvalancheConstantsLib {
     // AAVE v3
     address public constant AAVE_V3_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
     address public constant AAVE_aAvaUSDC = 0x625E7708f30cA75bfd92586e17077590C60eb4cD;
+
+    // Silo
+    address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
 }
