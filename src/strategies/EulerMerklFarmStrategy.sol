@@ -29,6 +29,9 @@ import {IEulerVault} from "../integrations/euler/IEulerVault.sol";
 /// @title Lend asset on Euler and earn Merkl rewards
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///   1.0.1: farm.addresses now can have 2 or 3 elements. Third address contains rEUL
+///          Currently it's not used, later it will be used to convert rEUL to EUL after ending of vesting period.
 contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC4626StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -37,7 +40,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
