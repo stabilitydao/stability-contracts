@@ -510,7 +510,7 @@ contract Frontend is IFrontend {
     }
 
     function _getVaultInitParamsVariants(
-        address/* platform_*/,
+        address, /* platform_*/
         address strategyImplementation
     )
         internal

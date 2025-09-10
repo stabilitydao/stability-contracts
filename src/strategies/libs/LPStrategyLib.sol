@@ -88,13 +88,13 @@ library LPStrategyLib {
 
     /// @dev For now this support only pools of 2 tokens
     function processRevenue(
-        address/* platform*/,
-        address/* vault*/,
-        IAmmAdapter/* ammAdapter*/,
-        uint/* exchangeAssetIndex*/,
-        address/* pool*/,
-        address[] memory/* assets_*/,
-        uint[] memory/* amountsRemaining*/
+        address, /* platform*/
+        address, /* vault*/
+        IAmmAdapter, /* ammAdapter*/
+        uint, /* exchangeAssetIndex*/
+        address, /* pool*/
+        address[] memory, /* assets_*/
+        uint[] memory /* amountsRemaining*/
     ) external pure returns (bool needCompound) {
         needCompound = true;
         //ProcessRevenueVars memory vars;

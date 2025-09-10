@@ -36,9 +36,8 @@ library FactoryNamingLib {
 
         for (uint i = 0; i < assetsLength; ++i) {
             // Use a ternary operator to determine the symbol to use
-            string memory symbol = assets.length == 1
-                ? CommonLib.getSymbols(assets)[0]
-                : IERC20Metadata(assets[i]).symbol();
+            string memory symbol =
+                assets.length == 1 ? CommonLib.getSymbols(assets)[0] : IERC20Metadata(assets[i]).symbol();
             assetsSymbols[i] = symbol;
         }
         bool showSpecificInSymbol;

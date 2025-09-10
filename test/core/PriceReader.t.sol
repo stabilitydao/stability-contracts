@@ -78,9 +78,7 @@ contract PriceReaderTest is Test, MockSetup {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         MockAmmAdapter dexAdapter = new MockAmmAdapter(address(tokenE), address(tokenD));

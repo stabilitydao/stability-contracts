@@ -72,9 +72,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(1),
                 metaVaultFactory: address(0)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         assertEq(platform.revenueRouter(), address(1));
@@ -97,9 +95,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
     }
 
@@ -332,9 +328,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         (

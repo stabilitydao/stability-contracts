@@ -105,7 +105,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     function _processRevenue(
         address[] memory assets_,
         uint[] memory amountsRemaining
-    ) internal override view returns (bool needCompound) {
+    ) internal view override returns (bool needCompound) {
         LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         return LPStrategyLib.processRevenue(
             platform(),

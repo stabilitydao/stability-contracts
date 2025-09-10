@@ -164,7 +164,7 @@ contract PlatformPolygonTest is PolygonSetup {
             );
         }
 
-        (,string[] memory descEmpty,,,,,,,,) = frontend.whatToBuild(0, 50);
+        (, string[] memory descEmpty,,,,,,,,) = frontend.whatToBuild(0, 50);
         assertEq(descEmpty.length, 0);
 
         address[] memory stategyRevenueAssets;

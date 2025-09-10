@@ -65,7 +65,7 @@ library FactoryLib {
     }
 
     function getName(
-        string memory /*vaultType*/,
+        string memory, /*vaultType*/
         string memory id,
         string memory symbols,
         string memory specificName,
@@ -173,7 +173,12 @@ library FactoryLib {
         emit IFactory.VaultConfigChanged(vaultType, implementation, true, true, newVaultType);
     }
 
-    function setStrategyImplementation(IFactory.FactoryStorage storage $, address platform, string memory strategyId, address implementation) external returns (bool needGovOrMultisigAccess) {
+    function setStrategyImplementation(
+        IFactory.FactoryStorage storage $,
+        address platform,
+        string memory strategyId,
+        address implementation
+    ) external returns (bool needGovOrMultisigAccess) {
         bytes32 strategyIdHash = keccak256(bytes(strategyId));
         IFactory.StrategyLogicConfig storage oldConfig = $.strategyLogicConfig[strategyIdHash];
         uint tokenId;
@@ -189,16 +194,14 @@ library FactoryLib {
         $.strategyLogicConfig[strategyIdHash] = IFactory.StrategyLogicConfig({
             id: strategyId,
             tokenId: tokenId,
-            implementation : implementation,
-            deployAllowed : true,
-            upgradeAllowed : true,
-            farming : IERC165(implementation).supportsInterface(type(IFarmingStrategy).interfaceId)
+            implementation: implementation,
+            deployAllowed: true,
+            upgradeAllowed: true,
+            farming: IERC165(implementation).supportsInterface(type(IFarmingStrategy).interfaceId)
         });
         bool newStrategy = $.strategyLogicIdHashes.add(strategyIdHash);
         needGovOrMultisigAccess = !newStrategy;
-        emit IFactory.StrategyLogicConfigChanged(
-            strategyId, implementation, true, true, newStrategy
-        );
+        emit IFactory.StrategyLogicConfigChanged(strategyId, implementation, true, true, newStrategy);
     }
 
     function upgradeVaultProxy(IFactory.FactoryStorage storage $, address vault) external {

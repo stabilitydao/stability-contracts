@@ -48,9 +48,7 @@ contract FactoryTest is Test, MockSetup {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         platform.addAmmAdapter("MOCKSWAP", address(ammAdapter));
@@ -423,5 +421,4 @@ contract FactoryTest is Test, MockSetup {
         vm.expectRevert(ISwapper.NoRouteFound.selector);
         factory.getExchangeAssetIndex(new address[](0));
     }
-
 }

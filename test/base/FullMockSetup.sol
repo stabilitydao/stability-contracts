@@ -95,9 +95,7 @@ abstract contract FullMockSetup is MockSetup {
                 revenueRouter: address(revenueRouter),
                 metaVaultFactory: address(metaVaultFactory)
             }),
-            IPlatform.PlatformSettings({
-                fee: 6_000
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         MockAmmAdapter ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));

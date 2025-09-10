@@ -110,9 +110,7 @@ abstract contract DeployCore {
                 revenueRouter: address(vars.revenueRouter),
                 metaVaultFactory: address(vars.metaVaultFactory)
             }),
-            IPlatform.PlatformSettings({
-                fee: p.fee
-            })
+            IPlatform.PlatformSettings({fee: p.fee})
         );
 
         return address(vars.platform);

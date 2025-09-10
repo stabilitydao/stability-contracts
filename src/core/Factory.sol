@@ -99,10 +99,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
     /// @inheritdoc IFactory
     //slither-disable-next-line reentrancy-no-eth
-    function setStrategyLogicConfig(
-        StrategyLogicConfig memory config,
-        address
-    ) external onlyOperator {
+    function setStrategyLogicConfig(StrategyLogicConfig memory config, address) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         if (FactoryLib.setStrategyImplementation($, platform(), config.id, config.implementation)) {
             _requireGovernanceOrMultisig();
@@ -218,7 +215,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
         }
 
         (, vars.assets, vars.assetsSymbols, vars.specificName, vars.symbol) =
-        getStrategyData(vaultType, strategy, vaultInitAddresses.length > 0 ? vaultInitAddresses[0] : address(0));
+            getStrategyData(vaultType, strategy, vaultInitAddresses.length > 0 ? vaultInitAddresses[0] : address(0));
         vars.name = FactoryLib.getName(
             vaultType, strategyId, CommonLib.implode(vars.assetsSymbols, "-"), vars.specificName, vaultInitAddresses
         );

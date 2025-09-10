@@ -75,7 +75,6 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
             keccak256(bytes("Vault Stability MOCKA-MOCKB Dev Alpha DeepSpaceSwap Farm Good Params"))
         );
         // console.log(description);
-
     }
 
     function testSetRevenueReceiver() public {
