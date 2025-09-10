@@ -14,6 +14,7 @@ import {IPendleCommonPoolDeployHelperV2} from "../../src/integrations/pendle/IPe
 import {console} from "forge-std/Test.sol";
 
 contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
+    address public constant DEPLOYER = 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e;
     address internal multisig;
 
     struct PoolConfigDecoded {
@@ -27,7 +28,8 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
     }
 
     constructor() {
-        vm.rollFork(46122872); // Sep-08-2025 07:04:11 AM +UTC
+        // vm.rollFork(46122872); // Sep-08-2025 07:04:11 AM +UTC
+        vm.rollFork(45880691);
     }
 
     //region ---------------------------------------- Tests using real SY
@@ -74,14 +76,32 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
     }
 
     function testDeploy() public {
-        IPendleCommonPoolDeployHelperV2 deployer = IPendleCommonPoolDeployHelperV2(
+        address pendleAdapter = SonicConstantsLib.PENDLE_STABILITY_WMETAUSD_ADAPTER; // 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
+
+        uint amount = 2000000000000000000000;
+
+        bytes memory initParams = abi.encodeWithSelector(
+            bytes4(keccak256("initialize(string,string,address)")),
+            "SY Wrapped Stability USD",
+            "SY-wmetaUSD",
+            pendleAdapter
+        );
+        assertEq(initParams, hex"077f224a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000174f8d9d8a9b25d14142bb0cb9d040060a1cf75c0000000000000000000000000000000000000000000000000000000000000018535920577261707065642053746162696c697479205553440000000000000000000000000000000000000000000000000000000000000000000000000000000b53592d776d657461555344000000000000000000000000000000000000000000", "initParams is correct");
+
+        IPendleCommonPoolDeployHelperV2 _deployerHelper = IPendleCommonPoolDeployHelperV2(
             SonicConstantsLib.PENDLE_COMMON_POOL_DEPLOY_HELPER_V2
         );
 
-        vm.prank(0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e);
-        deployer.deployERC20WithAdapterMarket(
-            hex"000000000000000000000000aaaaaaaac311d0572bffb4772fe985a750e88805",
-            hex"077f224a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000174f8d9d8a9b25d14142bb0cb9d040060a1cf75c0000000000000000000000000000000000000000000000000000000000000018535920577261707065642053746162696c697479205553440000000000000000000000000000000000000000000000000000000000000000000000000000000b53592d776d657461555344000000000000000000000000000000000000000000",
+        bytes memory constructorParams = abi.encode(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        assertEq(constructorParams, hex"000000000000000000000000aaaaaaaac311d0572bffb4772fe985a750e88805", "constructorParams is correct");
+
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, DEPLOYER, amount);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(_deployerHelper), type(uint).max);
+
+        vm.prank(DEPLOYER); // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e
+        _deployerHelper.deployERC20WithAdapterMarket(
+            constructorParams,
+            initParams,
             IPendleCommonPoolDeployHelperV2.PoolConfig({
                 expiry: 1766016000,
                 rateMin: 50000000000000000,
@@ -90,11 +110,9 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
                 fee: 9200000000000000
             }),
             SonicConstantsLib.METAVAULT_metaUSD,
-            2000000000000000000000,
-            0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e // pendle deployer
+            amount, // 2000000000000000000000
+            DEPLOYER // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e, pendle deployer
         );
-
-
     }
 
     //endregion ---------------------------------------- Tests using real SY

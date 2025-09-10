@@ -534,7 +534,7 @@ library SonicConstantsLib {
     address public constant ENCLABS_VTOKEN_wmetaUSD = 0x1D801dC616C79c499C5d38c998Ef2D0D6Cf868e8;
 
     // ---------------------------------- Pendle
-    address public constant PENDLE_COMMON_POOL_DEPLOY_HELPER_V2 = 0x9a8Ff151BDA518ece44Cb1125F368F4C893D63b7;
-    address public constant PENDLE_META_USD_WRAPPED_METAVAULT_ADAPTER = 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
+    address public constant PENDLE_COMMON_POOL_DEPLOY_HELPER_V2 = 0x2Ed473F528E5B320f850d17ADfe0e558f0298aA9;
+    address public constant PENDLE_STABILITY_WMETAUSD_ADAPTER = 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
 
 }
