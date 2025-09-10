@@ -262,11 +262,11 @@ interface IPlatform {
     ) external;
 
     /// @notice Upgrade platform
-    /// Only operator (multisig is operator too) can ececute pending platform upgrade
+    /// Only operator (multisig is operator too) can execute pending platform upgrade
     function upgrade() external;
 
     /// @notice Cancel pending platform upgrade
-    /// Only operator (multisig is operator too) can ececute pending platform upgrade
+    /// Only operator (multisig is operator too) can execute pending platform upgrade
     function cancelUpgrade() external;
 
     /// @notice Register AMM adapter in platform

@@ -182,14 +182,17 @@ library FactoryLib {
         bytes32 strategyIdHash = keccak256(bytes(strategyId));
         IFactory.StrategyLogicConfig storage oldConfig = $.strategyLogicConfig[strategyIdHash];
         uint tokenId;
+        bool farming;
         if (oldConfig.implementation == address(0)) {
             address developer = StrategyDeveloperLib.getDeveloper(strategyId);
             if (developer == address(0)) {
                 developer = IPlatform(platform).multisig();
             }
             tokenId = IStrategyLogic(IPlatform(platform).strategyLogic()).mint(developer, strategyId);
+            farming = IERC165(implementation).supportsInterface(type(IFarmingStrategy).interfaceId);
         } else {
             tokenId = oldConfig.tokenId;
+            farming = oldConfig.farming;
         }
         $.strategyLogicConfig[strategyIdHash] = IFactory.StrategyLogicConfig({
             id: strategyId,
@@ -197,7 +200,7 @@ library FactoryLib {
             implementation: implementation,
             deployAllowed: true,
             upgradeAllowed: true,
-            farming: IERC165(implementation).supportsInterface(type(IFarmingStrategy).interfaceId)
+            farming: farming
         });
         bool newStrategy = $.strategyLogicIdHashes.add(strategyIdHash);
         needGovOrMultisigAccess = !newStrategy;
