@@ -16,6 +16,7 @@ import {console} from "forge-std/Test.sol";
 contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
     address public constant DEPLOYER = 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e;
     address internal multisig;
+    address public constant HOLDER_METAUSD = 0x1597E4B7cF6D2877A1d690b6088668afDb045763;
 
     struct PoolConfigDecoded {
         address pt;
@@ -33,7 +34,7 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
     }
 
     //region ---------------------------------------- Tests using real SY
-    function testDecodeData() public {
+    function testDecodeData() internal {
         bytes memory raw = hex"2becf31e00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000006943440000000000000000000000000000000000000000000000000000b1a2bc2ec5000000000000000000000000000000000000000000000000000003311fc80a57000000000000000000000000000000000000000000000000000001aa535d3d0c00000000000000000000000000000000000000000000000000000020af59ebef00000000000000000000000000001111111199558661bf7ff27b4f1623dc6b91aa3e00000000000000000000000000000000000000000000006c6b935b8bbd4000000000000000000000000000002ad631f72fb16d91c4953a7f4260a97c2fe2f31e0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000aaaaaaaac311d0572bffb4772fe985a750e8880500000000000000000000000000000000000000000000000000000000000000e4077f224a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000174f8d9d8a9b25d14142bb0cb9d040060a1cf75c0000000000000000000000000000000000000000000000000000000000000018535920577261707065642053746162696c697479205553440000000000000000000000000000000000000000000000000000000000000000000000000000000b53592d776d65746155534400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         bytes memory args = new bytes(raw.length - 4);
         for (uint256 i = 0; i < args.length; i++) {
@@ -76,7 +77,9 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
     }
 
     function testDeploy() public {
-        address pendleAdapter = SonicConstantsLib.PENDLE_STABILITY_WMETAUSD_ADAPTER; // 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
+        PendleWrappedMetaVaultAdapter pendleAdapter = PendleWrappedMetaVaultAdapter(SonicConstantsLib.PENDLE_STABILITY_WMETAUSD_ADAPTER); // 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
+        address pendleAdapterOwner = pendleAdapter.owner();
+        console.log("owner", pendleAdapterOwner);
 
         uint amount = 2000000000000000000000;
 
@@ -84,7 +87,7 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
             bytes4(keccak256("initialize(string,string,address)")),
             "SY Wrapped Stability USD",
             "SY-wmetaUSD",
-            pendleAdapter
+            address(pendleAdapter)
         );
         assertEq(initParams, hex"077f224a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000174f8d9d8a9b25d14142bb0cb9d040060a1cf75c0000000000000000000000000000000000000000000000000000000000000018535920577261707065642053746162696c697479205553440000000000000000000000000000000000000000000000000000000000000000000000000000000b53592d776d657461555344000000000000000000000000000000000000000000", "initParams is correct");
 
@@ -95,21 +98,48 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         bytes memory constructorParams = abi.encode(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
         assertEq(constructorParams, hex"000000000000000000000000aaaaaaaac311d0572bffb4772fe985a750e88805", "constructorParams is correct");
 
-        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, DEPLOYER, amount);
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, DEPLOYER, amount); // todo
+
+        vm.prank(HOLDER_METAUSD); // todo
+        IERC20(SonicConstantsLib.METAVAULT_metaUSD).transferFrom(HOLDER_METAUSD, DEPLOYER, amount);
+
+        vm.prank(SonicConstantsLib.MULTISIG); // todo
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(address(_deployerHelper), true);
+
+        // Temporarily whitelist PoolDeployHelper
+        vm.prank(pendleAdapterOwner); // todo
+        pendleAdapter.changeWhitelist(address(_deployerHelper), true);
+
+        // Whitelist Pendle router
+        vm.prank(pendleAdapterOwner); // todo
+        pendleAdapter.changeWhitelist(SonicConstantsLib.PENDLE_ROUTER, true);
+
+        vm.prank(SonicConstantsLib.MULTISIG); // todo
+        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(SonicConstantsLib.PENDLE_ROUTER, true);
+
+        vm.rollFork(block.number + 6);
+
+        IPendleCommonPoolDeployHelperV2.PoolConfig memory config = IPendleCommonPoolDeployHelperV2.PoolConfig({
+            expiry: 1766016000,
+            rateMin: 50000000000000000,
+            rateMax: 230000000000000000,
+            desiredImpliedRate: 120000000000000000,
+            fee: 9200000000000000
+        });
+
+        vm.prank(DEPLOYER);
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(_deployerHelper), type(uint).max);
 
+        vm.prank(DEPLOYER);
+        IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(_deployerHelper), type(uint).max);
+
+
         vm.prank(DEPLOYER); // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e
-        _deployerHelper.deployERC20WithAdapterMarket(
+        _deployerHelper.deployERC4626WithAdapterMarket(
             constructorParams,
             initParams,
-            IPendleCommonPoolDeployHelperV2.PoolConfig({
-                expiry: 1766016000,
-                rateMin: 50000000000000000,
-                rateMax: 230000000000000000,
-                desiredImpliedRate: 120000000000000000,
-                fee: 9200000000000000
-            }),
-            SonicConstantsLib.METAVAULT_metaUSD,
+            config,
+            SonicConstantsLib.METAVAULT_metaUSD, // 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e
             amount, // 2000000000000000000000
             DEPLOYER // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e, pendle deployer
         );
