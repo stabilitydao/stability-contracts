@@ -15,7 +15,6 @@ interface IPlatform {
     error NoNewVersion();
     error UpgradeTimerIsNotOver(uint TimerTimestamp);
     error IncorrectFee(uint minFee, uint maxFee);
-    error NotEnoughAllowedBBToken();
     error TokenAlreadyExistsInSet(address token);
     error AggregatorNotExists(address dexAggRouter);
 
@@ -48,17 +47,8 @@ interface IPlatform {
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
     event FeesChanged(uint fee, uint, uint, uint);
-    event MinInitialBoostChanged(uint minInitialBoostPerDay, uint minInitialBoostDuration);
     event NewAmmAdapter(string id, address proxy);
     event EcosystemRevenueReceiver(address receiver);
-    event SetAllowedBBTokenVaults(address bbToken, uint vaultsToBuild, bool firstSet);
-    event RemoveAllowedBBToken(address bbToken);
-    event AddAllowedBoostRewardToken(address token);
-    event RemoveAllowedBoostRewardToken(address token);
-    event AddDefaultBoostRewardToken(address token);
-    event RemoveDefaultBoostRewardToken(address token);
-    event AddBoostTokens(address[] allowedBoostRewardToken, address[] defaultBoostRewardToken);
-    event AllowedBBTokenVaultUsed(address bbToken, uint vaultToUse);
     event AddDexAggregator(address router);
     event RemoveDexAggregator(address router);
     event MinTvlForFreeHardWorkChanged(uint oldValue, uint newValue);
@@ -80,8 +70,6 @@ interface IPlatform {
 
     struct PlatformSettings {
         uint fee;
-        uint minInitialBoostPerDay;
-        uint minInitialBoostDuration;
     }
 
     struct AmmAdapter {
@@ -167,12 +155,6 @@ interface IPlatform {
     /// @return Address of the MetaVault factory
     function metaVaultFactory() external view returns (address);
 
-    /// @notice Minimal initial boost rewards per day USD amount which needs to create rewarding vault
-    function minInitialBoostPerDay() external view returns (uint);
-
-    /// @notice Minimal boost rewards vesting duration for initial boost
-    function minInitialBoostDuration() external view returns (uint);
-
     /// @notice This function provides the timestamp of the platform upgrade timelock.
     /// @dev This function is an external view function, meaning it doesn't modify the state.
     /// @return uint representing the timestamp of the platform upgrade timelock.
@@ -200,45 +182,10 @@ interface IPlatform {
     /// @return ID string and proxy address of AMM adapter
     function ammAdapter(bytes32 ammAdapterIdHash) external view returns (AmmAdapter memory);
 
-    /// @notice Allowed buy-back tokens for rewarding vaults
-    function allowedBBTokens() external view returns (address[] memory);
-
-    /// @notice Vaults building limit for buy-back token.
-    /// This limit decrements when a vault for BB-token is built.
-    /// @param token Allowed buy-back token
-    /// @return vaultsLimit Number of vaults that can be built for BB-token
-    function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit);
-
-    /// @notice Vaults building limits for allowed buy-back tokens.
-    /// @return bbToken Allowed buy-back tokens
-    /// @return vaultsLimit Number of vaults that can be built for BB-tokens
-    function allowedBBTokenVaults() external view returns (address[] memory bbToken, uint[] memory vaultsLimit);
-
-    /// @notice Non-zero vaults building limits for allowed buy-back tokens.
-    /// @return bbToken Allowed buy-back tokens
-    /// @return vaultsLimit Number of vaults that can be built for BB-tokens
-    function allowedBBTokenVaultsFiltered()
-        external
-        view
-        returns (address[] memory bbToken, uint[] memory vaultsLimit);
-
     /// @notice Check address for existance in operators list
     /// @param operator Address
     /// @return True if this address is Stability Operator
     function isOperator(address operator) external view returns (bool);
-
-    /// @notice Tokens that can be used for boost rewards of rewarding vaults
-    /// @return Addresses of tokens
-    function allowedBoostRewardTokens() external view returns (address[] memory);
-
-    /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
-    /// @return Addresses of tokens
-    function defaultBoostRewardTokens() external view returns (address[] memory);
-
-    /// @notice Allowed boost reward tokens that used for unmanaged rewarding vaults creation
-    /// @param addressToRemove This address will be removed from default boost reward tokens
-    /// @return Addresses of tokens
-    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns (address[] memory);
 
     /// @notice Allowed DeX aggregators
     /// @return Addresses of DeX aggregator rounters
@@ -327,48 +274,6 @@ interface IPlatform {
     /// @param proxy Address of AMM adapter proxy
     function addAmmAdapter(string memory id, address proxy) external;
 
-    // todo Only governance and multisig can set allowed bb-token vaults building limit
-    /// @notice Set new vaults building limit for buy-back token
-    /// @param bbToken Address of allowed buy-back token
-    /// @param vaultsToBuild Number of vaults that can be built for BB-token
-    function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external;
-
-    // todo Only governance and multisig can add allowed boost reward token
-    /// @notice Add new allowed boost reward token
-    /// @param token Address of token
-    function addAllowedBoostRewardToken(address token) external;
-
-    // todo Only governance and multisig can remove allowed boost reward token
-    /// @notice Remove allowed boost reward token
-    /// @param token Address of allowed boost reward token
-    function removeAllowedBoostRewardToken(address token) external;
-
-    // todo Only governance and multisig can add default boost reward token
-    /// @notice Add default boost reward token
-    /// @param token Address of default boost reward token
-    function addDefaultBoostRewardToken(address token) external;
-
-    // todo Only governance and multisig can remove default boost reward token
-    /// @notice Remove default boost reward token
-    /// @param token Address of allowed boost reward token
-    function removeDefaultBoostRewardToken(address token) external;
-
-    // todo Only governance and multisig can add allowed boost reward token
-    // todo Only governance and multisig can add default boost reward token
-    /// @notice Add new allowed boost reward token
-    /// @notice Add default boost reward token
-    /// @param allowedBoostRewardToken Address of allowed boost reward token
-    /// @param defaultBoostRewardToken Address of default boost reward token
-    function addBoostTokens(
-        address[] memory allowedBoostRewardToken,
-        address[] memory defaultBoostRewardToken
-    ) external;
-
-    /// @notice Decrease allowed BB-token vault building limit when vault is built
-    /// Only Factory can do it.
-    /// @param bbToken Address of allowed buy-back token
-    function useAllowedBBTokenVault(address bbToken) external;
-
     /// @notice Allow DeX aggregator routers to be used in the platform
     /// @param dexAggRouter Addresses of DeX aggreagator routers
     function addDexAggregators(address[] memory dexAggRouter) external;
@@ -376,11 +281,6 @@ interface IPlatform {
     /// @notice Remove allowed DeX aggregator router from the platform
     /// @param dexAggRouter Address of DeX aggreagator router
     function removeDexAggregator(address dexAggRouter) external;
-
-    /// @notice Change initial boost rewards settings
-    /// @param minInitialBoostPerDay_ Minimal initial boost rewards per day USD amount which needs to create rewarding vault
-    /// @param minInitialBoostDuration_ Minimal boost rewards vesting duration for initial boost
-    function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external;
 
     /// @notice Update new minimum TVL for compensate.
     /// @param value New minimum TVL for compensate.

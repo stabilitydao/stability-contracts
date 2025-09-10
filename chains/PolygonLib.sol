@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {Proxy} from "../src/core/proxy/Proxy.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -9,7 +9,7 @@ import {IPlatform} from "../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {IConvexRewardPool} from "../src/integrations/convex/IConvexRewardPool.sol";
-import {LogDeployLib, console, RMVault, RVault, PriceReader, IPriceReader} from "../script/libs/LogDeployLib.sol";
+import {LogDeployLib, console, PriceReader, IPriceReader} from "../script/libs/LogDeployLib.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
@@ -223,8 +223,6 @@ library PolygonLib {
 
         //region ----- Deploy and setup vault types -----
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
-        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(new RVault()));
-        factory.setVaultImplementation(VaultTypeLib.REWARDING_MANAGED, address(new RMVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -320,18 +318,6 @@ library PolygonLib {
         factory.setStrategyAvailableInitParams(StrategyIdLib.YEARN, p);
         //endregion -- Add strategy available init params -----
 
-        //region ----- Reward tokens -----
-        IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);
-        address[] memory allowedBoostRewardToken = new address[](2);
-        address[] memory defaultBoostRewardToken = new address[](2);
-        allowedBoostRewardToken[0] = TOKEN_PROFIT;
-        allowedBoostRewardToken[1] = TOKEN_USDCe;
-        defaultBoostRewardToken[0] = TOKEN_PROFIT;
-        defaultBoostRewardToken[1] = TOKEN_USDCe;
-        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
-        LogDeployLib.logSetupRewardTokens(platform, showLog);
-        //endregion -- Reward tokens -----
-
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(
             factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true
@@ -364,15 +350,6 @@ library PolygonLib {
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion -- Add DeX aggregators -----
-
-        //region ----- Set AliasName of Token -----
-        factory.setAliasName(TOKEN_WETH, "E");
-        factory.setAliasName(TOKEN_WMATIC, "M");
-        factory.setAliasName(TOKEN_WBTC, "B");
-        factory.setAliasName(TOKEN_USDT, "UT");
-        factory.setAliasName(TOKEN_USDC, "UC");
-        factory.setAliasName(TOKEN_USDCe, "UCe");
-        //endregion ----- Set AliasName of Token -----
     }
 
     function routes()

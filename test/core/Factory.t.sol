@@ -49,9 +49,7 @@ contract FactoryTest is Test, MockSetup {
                 metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
 
@@ -343,7 +341,7 @@ contract FactoryTest is Test, MockSetup {
             assertFalse(extra__[0] == bytes32(0));
         }
 
-        factory.setStrategyLogicConfig(
+        /*factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.DEV,
                 implementation: address(newStrategyImplementation),
@@ -357,9 +355,10 @@ contract FactoryTest is Test, MockSetup {
 
         strategyProxyHash = IStrategyProxy(strategy).strategyImplementationLogicIdHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, strategyProxyHash));
-        factory.upgradeStrategyProxy(strategy);
+        factory.upgradeStrategyProxy(strategy);*/
 
-        factory.setStrategyLogicConfig(
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(newStrategyImplementation));
+        /*factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.DEV,
                 implementation: address(newStrategyImplementation),
@@ -369,7 +368,7 @@ contract FactoryTest is Test, MockSetup {
                 tokenId: type(uint).max
             }),
             address(this)
-        );
+        );*/
 
         vm.expectRevert(IControllable.NotFactory.selector);
         IStrategyProxy(strategy).upgrade();
@@ -425,16 +424,4 @@ contract FactoryTest is Test, MockSetup {
         factory.getExchangeAssetIndex(new address[](0));
     }
 
-    function testSetAliasName() public {
-        string memory aliasName_ = "USDC";
-        factory.setAliasName(address(1), aliasName_);
-    }
-
-    function testGetAliasName() public {
-        string memory aliasName_ = "USDC";
-        factory.setAliasName(address(1), aliasName_);
-        /*string memory aliasName = */
-        factory.getAliasName(address(1));
-        //console.log("alias: %s", aliasName);
-    }
 }

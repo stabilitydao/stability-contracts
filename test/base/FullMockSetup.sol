@@ -96,9 +96,7 @@ abstract contract FullMockSetup is MockSetup {
                 metaVaultFactory: address(metaVaultFactory)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
 
@@ -108,8 +106,6 @@ abstract contract FullMockSetup is MockSetup {
 
         // setup factory
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
-        factory.setVaultImplementation(VaultTypeLib.REWARDING, address(rVaultImplementation));
-        factory.setVaultImplementation(VaultTypeLib.REWARDING_MANAGED, address(rmVaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -15,9 +15,11 @@ import {CommonLib} from "../core/libs/CommonLib.sol";
 import {IFrontend} from "../interfaces/IFrontend.sol";
 
 /// @notice Front-end and back-end viewers for platform
+/// Changelog:
+///   1.1.0: remove RVault and RMVault usage
 /// @author Alien Deployer (https://github.com/a17)
 contract Frontend is IFrontend {
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     error IncorrectParams();
 
@@ -508,7 +510,7 @@ contract Frontend is IFrontend {
     }
 
     function _getVaultInitParamsVariants(
-        address platform_,
+        address/* platform_*/,
         address strategyImplementation
     )
         internal
@@ -524,19 +526,9 @@ contract Frontend is IFrontend {
         GetVaultInitParamsVariantsVars memory vars;
         vars.vaultTypes = IStrategy(strategyImplementation).supportedVaultTypes();
         vars.len = vars.vaultTypes.length;
-        //slither-disable-next-line unused-return
-        (address[] memory allowedBBTokens,) = IPlatform(platform_).allowedBBTokenVaultsFiltered();
-        uint allowedBBTokensLen = allowedBBTokens.length;
-        // nosemgrep
         for (uint i; i < vars.len; ++i) {
             if (CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.COMPOUNDING)) {
                 ++vars.total;
-            } else if (
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
-                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
-            ) {
-                vars.total += allowedBBTokensLen;
-                vars.totalVaultInitAddresses += allowedBBTokensLen;
             }
         }
         vaultType = new string[](vars.total);
@@ -547,23 +539,10 @@ contract Frontend is IFrontend {
 
         // vaultType index, allVaultInitAddresses index, allVaultInitNums index
         uint[3] memory indexes;
-        // nosemgrep
         for (uint i; i < vars.len; ++i) {
             if (CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.COMPOUNDING)) {
                 vaultType[indexes[0]] = vars.vaultTypes[i];
                 ++indexes[0];
-            } else if (
-                CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING)
-                    || CommonLib.eq(vars.vaultTypes[i], VaultTypeLib.REWARDING_MANAGED)
-            ) {
-                // nosemgrep
-                for (uint k; k < allowedBBTokensLen; ++k) {
-                    vaultType[indexes[0]] = vars.vaultTypes[i];
-                    allVaultInitAddresses[indexes[1]] = allowedBBTokens[k];
-                    usedAddresses[indexes[0]] = 1;
-                    ++indexes[0];
-                    ++indexes[1];
-                }
             }
         }
     }

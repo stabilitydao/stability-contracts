@@ -19,7 +19,8 @@ import {ISolidlyPool} from "../integrations/solidly/ISolidlyPool.sol";
 import {IGaugeEquivalent} from "../integrations/equalizer/IGaugeEquivalent.sol";
 
 /// @title Earn Equalizer gauge rewards by classic LPs
-/// Changelog:
+/// Changelog
+///   1.2.4: use LPStrategyBase 1.2.0
 ///   1.2.3: StrategyBase 2.5.1
 ///   1.2.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.2.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
@@ -34,7 +35,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.3";
+    string public constant VERSION = "1.2.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

@@ -20,6 +20,7 @@ import {GUMFLib} from "./libs/GUMFLib.sol";
 
 /// @title Earning Merkl rewards on Uniswap V3 by underlying Gamma Hypervisor
 /// Changelog
+///   1.6.4: use LPStrategyBase 1.2.0
 ///   1.6.3: StrategyBase 2.5.1
 ///   1.6.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.6.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
@@ -35,7 +36,7 @@ contract GammaUniswapV3MerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.6.3";
+    string public constant VERSION = "1.6.4";
 
     uint internal constant _PRECISION = 1e36;
 

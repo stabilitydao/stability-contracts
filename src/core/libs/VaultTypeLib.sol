@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 library VaultTypeLib {
     string internal constant COMPOUNDING = "Compounding";
-    string internal constant REWARDING = "Rewarding";
-    string internal constant REWARDING_MANAGED = "Rewarding Managed";
+    //string internal constant REWARDING = "Rewarding";
+    //string internal constant REWARDING_MANAGED = "Rewarding Managed";
     string internal constant MULTIVAULT = "MultiVault";
     string internal constant METAVAULT = "MetaVault";
 }

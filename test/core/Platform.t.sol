@@ -73,15 +73,9 @@ contract PlatformTest is Test {
                 metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
-        assertEq(platform.minInitialBoostPerDay(), 30e18);
-        platform.setInitialBoost(31e18, 31 * 86400);
-        assertEq(platform.minInitialBoostPerDay(), 31e18);
-        assertEq(platform.minInitialBoostDuration(), 31 * 86400);
 
         assertEq(platform.revenueRouter(), address(1));
         platform.setupRevenueRouter(address(1001));
@@ -104,9 +98,7 @@ contract PlatformTest is Test {
                 metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
     }
@@ -290,116 +282,6 @@ contract PlatformTest is Test {
         vm.stopPrank();
     }
 
-    function testAddRemoveUseAllowedBBToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.setAllowedBBTokenVaults(address(1), 5);
-        platform.setAllowedBBTokenVaults(address(2), 5);
-        platform.setAllowedBBTokenVaults(address(3), 1);
-
-        vm.startPrank(address(platform.factory()));
-        platform.useAllowedBBTokenVault(address(3));
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.NotEnoughAllowedBBToken.selector));
-        platform.useAllowedBBTokenVault(address(3));
-        vm.stopPrank();
-
-        (address[] memory bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(1));
-        assertEq(bbToken[1], address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeAllowedBBToken(address(5));
-
-        platform.removeAllowedBBToken(bbToken[0]);
-
-        (bbToken,) = platform.allowedBBTokenVaults();
-        //EnumerableSet.remove change positions inside array
-        assertEq(bbToken[0], address(3));
-        assertEq(bbToken[1], address(2));
-
-        platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 1);
-        platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 0);
-
-        vm.expectRevert(IControllable.NotFactory.selector);
-        platform.useAllowedBBTokenVault(address(100));
-    }
-
-    function testAddRemoveAllowedBoostRewardToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addAllowedBoostRewardToken(address(1));
-        platform.addAllowedBoostRewardToken(address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        platform.addAllowedBoostRewardToken(address(2));
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeAllowedBoostRewardToken(address(789));
-
-        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(1));
-        assertEq(allowedTokens[1], address(2));
-
-        platform.removeAllowedBoostRewardToken(address(1));
-        allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(2));
-
-        platform.removeAllowedBoostRewardToken(address(2));
-        allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens.length, 0);
-    }
-
-    function testAddRemoveDefaultBoostRewardToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addDefaultBoostRewardToken(address(1));
-        platform.addDefaultBoostRewardToken(address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        platform.addDefaultBoostRewardToken(address(2));
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeDefaultBoostRewardToken(address(789));
-
-        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(1));
-        assertEq(defaultTokens[1], address(2));
-
-        platform.removeDefaultBoostRewardToken(address(1));
-        defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(2));
-
-        platform.removeDefaultBoostRewardToken(address(2));
-        defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens.length, 0);
-    }
-
-    function testAddBoostTokens() public {
-        address[] memory allowedBoostRewardTokens = new address[](2);
-        allowedBoostRewardTokens[0] = address(101);
-        allowedBoostRewardTokens[1] = address(105);
-        address[] memory defaultBoostRewardTokens = new address[](1);
-        defaultBoostRewardTokens[0] = address(208);
-
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addBoostTokens(allowedBoostRewardTokens, defaultBoostRewardTokens);
-
-        address[] memory alreadyAddedAllowedBoostRewardToken = new address[](1);
-        alreadyAddedAllowedBoostRewardToken[0] = address(101);
-        address[] memory newDefaultBoostRewardTokens = new address[](1);
-        newDefaultBoostRewardTokens[0] = address(386);
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101)));
-        platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
-
-        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens.length, 1);
-        assertEq(defaultTokens[0], address(208));
-
-        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens.length, 2);
-        assertEq(allowedTokens[0], address(101));
-        assertEq(allowedTokens[1], address(105));
-    }
-
     function testGetAmmAdapters() public {
         platform.initialize(address(this), "23.11.0-dev");
         platform.addAmmAdapter("myId", address(1));
@@ -451,9 +333,7 @@ contract PlatformTest is Test {
                 metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
 

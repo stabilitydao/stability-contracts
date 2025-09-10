@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -25,6 +25,8 @@ import {ILiquidBoxManager} from "../integrations/pearl/ILiquidBoxManager.sol";
 import {IGaugeV2CL} from "../integrations/pearl/IGaugeV2CL.sol";
 
 /// @title Earn Pearl emission by staking Trident ALM tokens to gauge
+/// Changelog
+///   1.3.1: use LPStrategyBase 1.2.0
 /// @author Alien Deployer (https://github.com/a17)
 /// @custom:deprecated The strategy was used on Real only and now deprecated
 contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
@@ -38,7 +40,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     uint internal constant _PRECISION = 10 ** 36;
 

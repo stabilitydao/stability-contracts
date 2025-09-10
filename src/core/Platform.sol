@@ -18,7 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
-///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken; init with MetaVaultFactory
+///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken, BB and boost related; init with MetaVaultFactory;
 ///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName,
 ///          networkExtra, aprOracle
 ///   1.4.0: IPlatform.metaVaultFactory()
@@ -92,10 +92,8 @@ contract Platform is Controllable, IPlatform {
         address bridge;
         string __deprecated4;
         bytes32 __deprecated5;
-        /// @inheritdoc IPlatform
-        uint minInitialBoostPerDay;
-        /// @inheritdoc IPlatform
-        uint minInitialBoostDuration;
+        uint __deprecated6;
+        uint __deprecated7;
         /// @inheritdoc IPlatform
         PlatformUpgrade pendingPlatformUpgrade;
         /// @inheritdoc IPlatform
@@ -109,14 +107,14 @@ contract Platform is Controllable, IPlatform {
         /// @dev Hashes of AMM adapter ID string
         bytes32[] ammAdapterIdHash;
         EnumerableSet.AddressSet operators;
-        EnumerableMap.AddressToUintMap allowedBBTokensVaults;
-        EnumerableSet.AddressSet allowedBoostRewardTokens;
-        EnumerableSet.AddressSet defaultBoostRewardTokens;
+        EnumerableMap.AddressToUintMap __deprecated8;
+        EnumerableSet.AddressSet __deprecated9;
+        EnumerableSet.AddressSet __deprecated10;
         EnumerableSet.AddressSet dexAggregators;
         uint fee;
-        uint __deprecated6;
-        uint __deprecated7;
-        uint __deprecated8;
+        uint __deprecated11;
+        uint __deprecated12;
+        uint __deprecated13;
         mapping(address vault => uint platformFee) customVaultFee;
         /// @inheritdoc IPlatform
         address revenueRouter;
@@ -176,7 +174,6 @@ contract Platform is Controllable, IPlatform {
         emit RevenueRouter(addresses.revenueRouter);
         emit MetaVaultFactory(addresses.metaVaultFactory);
         _setFees(settings.fee);
-        _setInitialBoost(settings.minInitialBoostPerDay, settings.minInitialBoostDuration);
         emit MinTvlForFreeHardWorkChanged(0, $.minTvlForFreeHardWork);
     }
 
@@ -325,85 +322,6 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function setAllowedBBTokenVaults(address bbToken, uint vaultsToBuild) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        bool firstSet = $.allowedBBTokensVaults.set(bbToken, vaultsToBuild);
-        emit SetAllowedBBTokenVaults(bbToken, vaultsToBuild, firstSet);
-    }
-
-    /// @inheritdoc IPlatform
-    function useAllowedBBTokenVault(address bbToken) external onlyFactory {
-        PlatformStorage storage $ = _getStorage();
-        uint allowedVaults = $.allowedBBTokensVaults.get(bbToken);
-        if (allowedVaults <= 0) {
-            revert NotEnoughAllowedBBToken();
-        }
-        //slither-disable-next-line unused-return
-        $.allowedBBTokensVaults.set(bbToken, allowedVaults - 1);
-        emit AllowedBBTokenVaultUsed(bbToken, allowedVaults - 1);
-    }
-
-    function removeAllowedBBToken(address bbToken) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        if (!$.allowedBBTokensVaults.remove(bbToken)) {
-            revert NotExist();
-        }
-        emit RemoveAllowedBBToken(bbToken);
-    }
-
-    /// @inheritdoc IPlatform
-    function addAllowedBoostRewardToken(address token) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        if (!$.allowedBoostRewardTokens.add(token)) {
-            revert AlreadyExist();
-        }
-        emit AddAllowedBoostRewardToken(token);
-    }
-
-    /// @inheritdoc IPlatform
-    function removeAllowedBoostRewardToken(address token) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        if (!$.allowedBoostRewardTokens.remove(token)) {
-            revert NotExist();
-        }
-        emit RemoveAllowedBoostRewardToken(token);
-    }
-
-    /// @inheritdoc IPlatform
-    function addDefaultBoostRewardToken(address token) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        if (!$.defaultBoostRewardTokens.add(token)) {
-            revert AlreadyExist();
-        }
-        emit AddDefaultBoostRewardToken(token);
-    }
-
-    /// @inheritdoc IPlatform
-    function removeDefaultBoostRewardToken(address token) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        if (!$.defaultBoostRewardTokens.remove(token)) {
-            revert NotExist();
-        }
-        emit RemoveDefaultBoostRewardToken(token);
-    }
-
-    /// @inheritdoc IPlatform
-    function addBoostTokens(
-        address[] memory allowedBoostRewardToken,
-        address[] memory defaultBoostRewardToken
-    ) external onlyOperator {
-        PlatformStorage storage $ = _getStorage();
-        _addTokens($.allowedBoostRewardTokens, allowedBoostRewardToken);
-        _addTokens($.defaultBoostRewardTokens, defaultBoostRewardToken);
-        emit AddBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
-    }
-
-    /// @inheritdoc IPlatform
-    function setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) external onlyOperator {
-        _setInitialBoost(minInitialBoostPerDay_, minInitialBoostDuration_);
-    }
-
-    /// @inheritdoc IPlatform
     function setMinTvlForFreeHardWork(uint value) external onlyGovernanceOrMultisig {
         PlatformStorage storage $ = _getStorage();
         emit MinTvlForFreeHardWorkChanged($.minTvlForFreeHardWork, value);
@@ -464,12 +382,9 @@ contract Platform is Controllable, IPlatform {
 
     /// @inheritdoc IPlatform
     function getPlatformSettings() external view returns (PlatformSettings memory) {
-        PlatformStorage storage $ = _getStorage();
         //slither-disable-next-line uninitialized-local
         PlatformSettings memory platformSettings;
         (platformSettings.fee,,,) = getFees();
-        platformSettings.minInitialBoostPerDay = $.minInitialBoostPerDay;
-        platformSettings.minInitialBoostDuration = $.minInitialBoostDuration;
         return platformSettings;
     }
 
@@ -493,84 +408,6 @@ contract Platform is Controllable, IPlatform {
     function ammAdapter(bytes32 ammAdapterIdHash) external view returns (AmmAdapter memory) {
         PlatformStorage storage $ = _getStorage();
         return $.ammAdapter[ammAdapterIdHash];
-    }
-
-    /// @inheritdoc IPlatform
-    function allowedBBTokens() external view returns (address[] memory) {
-        PlatformStorage storage $ = _getStorage();
-        return $.allowedBBTokensVaults.keys();
-    }
-
-    /// @inheritdoc IPlatform
-    //slither-disable-next-line unused-return
-    function allowedBBTokenVaults(address token) external view returns (uint vaultsLimit) {
-        PlatformStorage storage $ = _getStorage();
-        //slither-disable-next-line unused-return
-        (, vaultsLimit) = $.allowedBBTokensVaults.tryGet(token);
-    }
-
-    /// @inheritdoc IPlatform
-    function allowedBBTokenVaults() external view returns (address[] memory bbToken, uint[] memory vaultsLimit) {
-        PlatformStorage storage $ = _getStorage();
-        bbToken = $.allowedBBTokensVaults.keys();
-        uint len = bbToken.length;
-        vaultsLimit = new uint[](len);
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            //slither-disable-next-line unused-return
-            (, vaultsLimit[i]) = $.allowedBBTokensVaults.tryGet(bbToken[i]);
-        }
-    }
-
-    /// @inheritdoc IPlatform
-    function allowedBBTokenVaultsFiltered()
-        external
-        view
-        returns (address[] memory bbToken, uint[] memory vaultsLimit)
-    {
-        PlatformStorage storage $ = _getStorage();
-        address[] memory allBbTokens = $.allowedBBTokensVaults.keys();
-        uint len = allBbTokens.length;
-        uint[] memory limit = new uint[](len);
-        //slither-disable-next-line uninitialized-local
-        uint k;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            limit[i] = $.allowedBBTokensVaults.get(allBbTokens[i]);
-            if (limit[i] > 0) ++k;
-        }
-        bbToken = new address[](k);
-        vaultsLimit = new uint[](k);
-        //slither-disable-next-line uninitialized-local
-        uint y;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            if (limit[i] == 0) {
-                continue;
-            }
-            bbToken[y] = allBbTokens[i];
-            vaultsLimit[y] = limit[i];
-            ++y;
-        }
-    }
-
-    /// @inheritdoc IPlatform
-    function allowedBoostRewardTokens() external view returns (address[] memory) {
-        PlatformStorage storage $ = _getStorage();
-        return $.allowedBoostRewardTokens.values();
-    }
-
-    /// @inheritdoc IPlatform
-    function defaultBoostRewardTokens() external view returns (address[] memory) {
-        PlatformStorage storage $ = _getStorage();
-        return $.defaultBoostRewardTokens.values();
-    }
-
-    /// @inheritdoc IPlatform
-    function defaultBoostRewardTokensFiltered(address addressToRemove) external view returns (address[] memory) {
-        PlatformStorage storage $ = _getStorage();
-        return CommonLib.filterAddresses($.defaultBoostRewardTokens.values(), addressToRemove);
     }
 
     /// @inheritdoc IPlatform
@@ -719,18 +556,6 @@ contract Platform is Controllable, IPlatform {
     }
 
     /// @inheritdoc IPlatform
-    function minInitialBoostDuration() external view returns (uint) {
-        PlatformStorage storage $ = _getStorage();
-        return $.minInitialBoostDuration;
-    }
-
-    /// @inheritdoc IPlatform
-    function minInitialBoostPerDay() external view returns (uint) {
-        PlatformStorage storage $ = _getStorage();
-        return $.minInitialBoostPerDay;
-    }
-
-    /// @inheritdoc IPlatform
     function platformUpgradeTimelock() external view returns (uint) {
         PlatformStorage storage $ = _getStorage();
         return $.platformUpgradeTimelock;
@@ -753,13 +578,6 @@ contract Platform is Controllable, IPlatform {
         }
         $.fee = fee;
         emit FeesChanged(fee, 0, 0, 0);
-    }
-
-    function _setInitialBoost(uint minInitialBoostPerDay_, uint minInitialBoostDuration_) internal {
-        PlatformStorage storage $ = _getStorage();
-        $.minInitialBoostPerDay = minInitialBoostPerDay_;
-        $.minInitialBoostDuration = minInitialBoostDuration_;
-        emit MinInitialBoostChanged(minInitialBoostPerDay_, minInitialBoostDuration_);
     }
 
     /**

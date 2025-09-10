@@ -79,9 +79,7 @@ contract PriceReaderTest is Test, MockSetup {
                 metaVaultFactory: address(0)
             }),
             IPlatform.PlatformSettings({
-                fee: 6_000,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: 6_000
             })
         );
 

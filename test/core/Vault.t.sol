@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import {console} from "forge-std/console.sol";
@@ -6,7 +6,6 @@ import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.so
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "forge-std/Test.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
 import {Proxy, IControllable} from "../../src/core/proxy/Proxy.sol";
 import {MockStrategy} from "../../src/test/MockStrategy.sol";
 import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
@@ -16,7 +15,6 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
-    RVault public rVault;
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
     MockAmmAdapter public mockAmmAdapter;
@@ -40,11 +38,6 @@ contract VaultTest is Test, FullMockSetup {
         strategy = MockStrategy(address(strategyProxy));
 
         mockAmmAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
-
-        // RVault
-        vaultProxy = new Proxy();
-        vaultProxy.initProxy(address(new RVault()));
-        rVault = RVault(payable(address(vaultProxy)));
     }
 
     function testSetup() public {
@@ -307,24 +300,6 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.balanceOf(address(this)), 0);
 
         vault.doHardWork();
-    }
-
-    function testRVault() public {
-        vm.expectRevert(IControllable.IncorrectInitParams.selector);
-        rVault.initialize(
-            IVault.VaultInitializationData({
-                platform: address(platform),
-                strategy: address(strategy),
-                name: "Test RVault",
-                symbol: "xRVAULT",
-                tokenId: 0,
-                vaultInitAddresses: new address[](1),
-                vaultInitNums: new uint[](0)
-            })
-        );
-
-        vm.expectRevert(IStabilityVault.NotSupported.selector);
-        rVault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 
     function testChageNameSymbol() public {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -19,9 +19,6 @@ interface IFactory {
     error UpgradeDenied(bytes32 _hash);
     error AlreadyLastVersion(bytes32 _hash);
     error NotStrategy();
-    error BoostDurationTooLow();
-    error BoostAmountTooLow();
-    error BoostAmountIsZero();
 
     //endregion ----- Custom Errors -----
 
@@ -152,7 +149,7 @@ interface IFactory {
     function getStrategyData(
         string memory vaultType,
         address strategyAddress,
-        address bbAsset
+        address
     )
         external
         view
@@ -189,44 +186,6 @@ interface IFactory {
         uint[] memory strategyInitNums,
         int24[] memory strategyInitTicks
     ) external view returns (bytes32);
-
-    /// @notice Available variants of new vault for creating.
-    /// DEPRECATED: use IFrontend.whatToBuild
-    /// The structure of the function's output values is complex,
-    /// but after parsing them, the front end has all the data to generate a list of vaults to create.
-    /// @return desc Descriptions of the strategy for making money
-    /// @return vaultType Vault type strings. Output values are matched by index with previous array.
-    /// @return strategyId Strategy logic ID strings. Output values are matched by index with previous array.
-    /// @return initIndexes Map of start and end indexes in next 5 arrays. Output values are matched by index with previous array.
-    ///                 [0] Start index in vaultInitAddresses
-    ///                 [1] End index in vaultInitAddresses
-    ///                 [2] Start index in vaultInitNums
-    ///                 [3] End index in vaultInitNums
-    ///                 [4] Start index in strategyInitAddresses
-    ///                 [5] End index in strategyInitAddresses
-    ///                 [6] Start index in strategyInitNums
-    ///                 [7] End index in strategyInitNums
-    ///                 [8] Start index in strategyInitTicks
-    ///                 [9] End index in strategyInitTicks
-    /// @return vaultInitAddresses Vault initialization addresses for deployVaultAndStrategy method for all building variants.
-    /// @return vaultInitNums Vault initialization uint numbers for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitAddresses Strategy initialization addresses for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitNums Strategy initialization uint numbers for deployVaultAndStrategy method for all building variants.
-    /// @return strategyInitTicks Strategy initialization int24 ticks for deployVaultAndStrategy method for all building variants.
-    function whatToBuild()
-        external
-        view
-        returns (
-            string[] memory desc,
-            string[] memory vaultType,
-            string[] memory strategyId,
-            uint[10][] memory initIndexes,
-            address[] memory vaultInitAddresses,
-            uint[] memory vaultInitNums,
-            address[] memory strategyInitAddresses,
-            uint[] memory strategyInitNums,
-            int24[] memory strategyInitTicks
-        );
 
     /// @notice Governance and multisig can set a vault status other than Active - the default status.
     /// HardWorker only works with active vaults.
@@ -301,11 +260,6 @@ interface IFactory {
     /// @notice Initialization strategy params store
     function strategyAvailableInitParams(bytes32 idHash) external view returns (StrategyAvailableInitParams memory);
 
-    /// @notice Retrieves the alias name associated with a given address
-    /// @param tokenAddress_ The address to query for its alias name
-    /// @return The alias name associated with the provided address
-    function getAliasName(address tokenAddress_) external view returns (string memory);
-
     //endregion -- View functions -----
 
     //region ----- Write functions -----
@@ -374,12 +328,6 @@ interface IFactory {
     /// @param id Strategy ID string
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
-
-    /// @notice Assigns a new alias name to a specific address
-    /// @dev This function may require certain permissions to be called successfully.
-    /// @param tokenAddress_ The address to assign an alias name to
-    /// @param aliasName_ The alias name to assign to the given address
-    function setAliasName(address tokenAddress_, string memory aliasName_) external;
 
     //endregion -- Write functions -----
 }

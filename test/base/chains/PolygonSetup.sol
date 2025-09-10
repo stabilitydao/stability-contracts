@@ -7,8 +7,11 @@ import {ChainSetup} from "../ChainSetup.sol";
 import {Platform} from "../../../src/core/Platform.sol";
 import {Factory} from "../../../src/core/Factory.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
+import {IFrontend} from "../../../src/interfaces/IFrontend.sol";
+import {Frontend} from "../../../src/periphery/Frontend.sol";
 
 abstract contract PolygonSetup is ChainSetup, DeployCore {
+    IFrontend public frontend;
     bool public showDeployLog;
 
     constructor() {
@@ -27,6 +30,7 @@ abstract contract PolygonSetup is ChainSetup, DeployCore {
         platform = Platform(_deployCore(PolygonLib.platformDeployParams()));
         PolygonLib.deployAndSetupInfrastructure(address(platform), showDeployLog);
         factory = Factory(address(platform.factory()));
+        frontend = new Frontend(address(platform));
         //endregion -- DeployCore.sol ----
     }
 

@@ -26,8 +26,9 @@ import {IStableSwapNGPool} from "../integrations/curve/IStableSwapNGPool.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 
 /// @title Staking Curve LP to Convex
-/// Changelog:
-///   1.4.1: FarmingStrategyBase 1.3.3
+/// Changelog
+///   1.3.2: use LPStrategyBase 1.2.0
+///   1.3.1: FarmingStrategyBase 1.3.3
 /// @author Alien Deployer (https://github.com/a17)
 contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -37,7 +38,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.1";
+    string public constant VERSION = "1.3.2";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.CurveConvexFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant CURVE_CONVEX_FARM_STRATEGY_STORAGE_LOCATION =

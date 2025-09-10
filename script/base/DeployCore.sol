@@ -111,9 +111,7 @@ abstract contract DeployCore {
                 metaVaultFactory: address(vars.metaVaultFactory)
             }),
             IPlatform.PlatformSettings({
-                fee: p.fee,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
+                fee: p.fee
             })
         );
 

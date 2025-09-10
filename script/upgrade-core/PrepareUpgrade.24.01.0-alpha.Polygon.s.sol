@@ -4,8 +4,6 @@ pragma solidity ^0.8.23;
 import {Script} from "forge-std/Script.sol";
 import {Factory} from "../../src/core/Factory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
-import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
@@ -32,8 +30,6 @@ contract PrepareUpgrade3Polygon is Script {
 
         // Vaults 1.1.0: setName, setSymbol, gas optimization
         new CVault();
-        new RVault();
-        new RMVault();
 
         // route for native USDC
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
