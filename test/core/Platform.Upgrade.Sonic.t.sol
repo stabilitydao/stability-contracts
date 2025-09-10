@@ -36,5 +36,4 @@ contract PlatformUpgradeSonicTest is Test {
         vm.prank(multisig);
         IPlatform(PLATFORM).upgrade();
     }
-
 }
