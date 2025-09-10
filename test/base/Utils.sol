@@ -16,12 +16,12 @@ abstract contract Utils is Test {
         pure
         returns (string memory name, string memory description, string memory svg)
     {
-        string memory uriBase64 = uri.replace({search: "data:application/json;base64,", replacement: ""});
+        string memory uriBase64 = uri.replace({needle: "data:application/json;base64,", replacement: ""});
         string memory decodedURI = string(SoladyBase64.decode(uriBase64));
         name = vm.parseJsonString(decodedURI, ".name");
         description = vm.parseJsonString(decodedURI, ".description");
         string memory image = vm.parseJsonString(decodedURI, ".image");
-        string memory sanitizedImage = image.replace({search: "data:image/svg+xml;base64,", replacement: ""});
+        string memory sanitizedImage = image.replace({needle: "data:image/svg+xml;base64,", replacement: ""});
         svg = string(SoladyBase64.decode(sanitizedImage));
     }
 
