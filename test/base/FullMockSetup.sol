@@ -18,6 +18,7 @@ import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
+import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;
@@ -93,7 +94,8 @@ abstract contract FullMockSetup is MockSetup {
                 hardWorker: address(hardworker),
                 zap: address(0),
                 revenueRouter: address(revenueRouter),
-                metaVaultFactory: address(metaVaultFactory)
+                metaVaultFactory: address(metaVaultFactory),
+                vaultPriceOracle: address(0)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );

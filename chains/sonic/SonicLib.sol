@@ -42,6 +42,7 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
+import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library

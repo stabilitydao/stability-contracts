@@ -70,7 +70,8 @@ contract PlatformTest is Test {
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(1),
-                metaVaultFactory: address(0)
+                metaVaultFactory: address(0),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -93,7 +94,8 @@ contract PlatformTest is Test {
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0),
-                metaVaultFactory: address(0)
+                metaVaultFactory: address(0),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -326,7 +328,8 @@ contract PlatformTest is Test {
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0),
-                metaVaultFactory: address(0)
+                metaVaultFactory: address(0),
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -428,5 +431,11 @@ contract PlatformTest is Test {
 
     function testOther() public pure {
         assertEq(StrategyDeveloperLib.getDeveloper("unknown"), address(0));
+    }
+
+    function testSetupVaultPriceOracle() public {
+        platform.initialize(address(this), "23.11.0-dev");
+        platform.setupVaultPriceOracle(address(123));
+        assertEq(platform.vaultPriceOracle(), address(123));
     }
 }

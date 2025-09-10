@@ -46,7 +46,8 @@ contract FactoryTest is Test, MockSetup {
                 hardWorker: address(0),
                 zap: address(0),
                 revenueRouter: address(0),
-                metaVaultFactory: address(0)
+                metaVaultFactory: address(0),
+                vaultPriceOracle: address(0)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
