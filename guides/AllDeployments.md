@@ -57,6 +57,21 @@
 * minimal wmetaS `0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7` [sonicscan](https://sonicscan.org/address/0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7#readContract)
 * minimal wmetaS (for PriceReader) `0x89563a0d6917a893b3b4de49f56d8bc35541038d` [sonicscan](https://sonicscan.org/address/0x89563a0d6917a893b3b4de49f56d8bc35541038d#readContract)
 
+## Avalanche [43114]
+
+### Core
+
+* **Platform** `0x94ae77b4e2dbF7799f7c41da3F50aBeE12Fde70e`
+* **Factory** `0x75954965331d7b9a6fdd2dc024512b8f36da4dbc` [snowtrace](https://snowtrace.io/address/0x75954965331D7b9a6fdd2DC024512b8F36DA4Dbc)
+* **MetaVaultFactory** `0xe5953738bed4bd2c7efcc87afb87213c7afa1ae2`
+* **PriceReader** `0x0a45e97aceba96650f47da979bde3a8642f26739` [snowtrace](https://snowtrace.io/address/0x0A45e97ACEBa96650F47DA979bde3A8642f26739)
+* **Swapper** `0x3222eb4824ceb0e9ccfe11018c83429105dfe00f` [snowtrace](https://snowtrace.io/address/0x3222eb4824cEb0E9CcfE11018C83429105dFE00F)
+* **HardWorker** `0x609e0d74fab81085283df92b563750624054f8be` [snowtrace](https://snowtrace.io/address/0x609e0d74fab81085283df92b563750624054f8be)
+* **VaultManager** `0xe845fc737fead52fc134d426e5ba0ee0a02b901a` [snowtrace](https://snowtrace.io/address/0xe845fc737fead52fc134d426e5ba0ee0a02b901a) 
+* **StrategyLogic** `0x818b506c7960d04b184c5c82ccc67e5643c1bf86` [snowtrace](https://snowtrace.io/address/0x818b506c7960d04b184c5c82ccc67e5643c1bf86)
+* **Zap** `0x8216c9affc982428af33d1d9f165baf9d75aebba` [snowtrace](https://snowtrace.io/address/0x8216C9afFC982428aF33D1D9F165bAf9D75AebBa)
+* **VaultPriceOracle** `0x0a3911631c6e94e6f3c1a25fc7e50d41768a4255` [snowtrace](https://snowtrace.io/address/0x0a3911631c6e94e6f3c1a25fc7e50d41768a4255)
+
 ## Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
