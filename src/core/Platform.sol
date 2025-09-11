@@ -18,6 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.5.0: IPlatform.vaultPriceOracle()
 ///   1.4.0: IPlatform.metaVaultFactory()
 ///   1.3.0: initialize fix for revenueRouter, cleanup bridge()
 ///   1.2.0: IPlatform.revenueRouter(), refactoring 0.8.28
@@ -27,6 +28,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
 /// @author 0xhokugava (https://github.com/0xhokugava)
+/// @author ruby (https://github.com/alexandersazonof)
 contract Platform is Controllable, IPlatform {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -36,7 +38,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.4.0";
+    string public constant VERSION = "1.5.0";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -129,6 +131,8 @@ contract Platform is Controllable, IPlatform {
         address revenueRouter;
         /// @inheritdoc IPlatform
         address metaVaultFactory;
+        /// @inheritdoc IPlatform
+        address vaultPriceOracle;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -167,6 +171,7 @@ contract Platform is Controllable, IPlatform {
         $.hardWorker = addresses.hardWorker;
         $.zap = addresses.zap;
         $.revenueRouter = addresses.revenueRouter;
+        $.vaultPriceOracle = addresses.vaultPriceOracle;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -444,6 +449,13 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         emit MetaVaultFactory(metaVaultFactory_);
         $.metaVaultFactory = metaVaultFactory_;
+    }
+
+    /// @inheritdoc IPlatform
+    function setupVaultPriceOracle(address vaultPriceOracle_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit VaultPriceOracle(vaultPriceOracle_);
+        $.vaultPriceOracle = vaultPriceOracle_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -762,6 +774,11 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function metaVaultFactory() external view returns (address) {
         return _getStorage().metaVaultFactory;
+    }
+
+    /// @inheritdoc IPlatform
+    function vaultPriceOracle() external view returns (address) {
+        return _getStorage().vaultPriceOracle;
     }
 
     /// @inheritdoc IPlatform
