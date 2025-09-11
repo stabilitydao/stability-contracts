@@ -4,8 +4,8 @@ pragma solidity ^0.8.28;
 library AvalancheConstantsLib {
     // initial addresses
     address public constant MULTISIG = 0xFad77AAD3C3b769500F8743C16A27FBf951e3A78;
-    address public constant PLATFORM = 0x94ae77b4e2dbf7799f7c41da3f50abee12fde70e;
-    address public constant METAVAULT_FACTORY = 0xe5953738bed4bd2c7efcc87afb87213c7afa1ae2;
+    address public constant PLATFORM = 0x94ae77b4e2dbF7799f7c41da3F50aBeE12Fde70e;
+    address public constant METAVAULT_FACTORY = 0xe5953738bEd4bd2c7eFcc87aFB87213C7afa1AE2;
 
     // ERC20
     address public constant TOKEN_USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
