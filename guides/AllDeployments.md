@@ -72,6 +72,10 @@
 * **Zap** `0x8216c9affc982428af33d1d9f165baf9d75aebba` [snowtrace](https://snowtrace.io/address/0x8216C9afFC982428aF33D1D9F165bAf9D75AebBa)
 * **VaultPriceOracle** `0x0a3911631c6e94e6f3c1a25fc7e50d41768a4255` [snowtrace](https://snowtrace.io/address/0x0a3911631c6e94e6f3c1a25fc7e50d41768a4255)
 
+### Periphery
+
+* **Frontend** `0x4377cfeB93448B23Df47d9A8e16cc2c7Cb1b2066` [snowtrace](https://snowtrace.io/address/0x4377cfeB93448B23Df47d9A8e16cc2c7Cb1b2066)
+
 ## Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
