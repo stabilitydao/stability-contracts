@@ -5,7 +5,7 @@ import {Script} from "forge-std/Script.sol";
 import {Frontend} from "../../src/periphery/Frontend.sol";
 
 contract DeployFrontendAvalanche is Script {
-    address public constant PLATFORM = 0x94ae77b4e2dbF7799f7c41da3F50aBeE12Fde70e;
+    address public constant PLATFORM = 0x72b931a12aaCDa6729b4f8f76454855CB5195941;
 
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
