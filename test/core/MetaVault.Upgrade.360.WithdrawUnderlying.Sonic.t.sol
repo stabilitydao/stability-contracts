@@ -119,7 +119,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(PLATFORM).multisig();
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
 
         _upgradeMetaVault(address(metaVault));
 
@@ -165,12 +165,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev MetaUSDC.withdrawUnderlying => cVault
     function testDepositWithdrawUnderlyingFromChildMetaVaultAMF() public {
         vm.prank(multisig);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
 
         (IMetaVault subMetaVault, IStabilityVault vault) =
-            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
-        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_META_USDC, SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
+        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0).strategy()));
+        _upgradeCVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         // ----------------------------------- detect underlying and amount to withdraw
         IStrategy strategy = IVault(address(vault)).strategy();
@@ -238,13 +238,13 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     function testWithdrawUnderlyingMetaUsdcAMF() public {
         // ----------------------------------- upgrade vaults and strategies
         vm.prank(multisig);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
 
-        IMetaVault subMetaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IMetaVault subMetaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
-        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0).strategy()));
+        _upgradeCVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         // ----------------------------------- set up recovery tokens
         address recoveryToken = _createRecoveryToken(address(subMetaVault), bytes32(uint(0x500)));
@@ -266,7 +266,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address holder = HOLDER_META_USDC;
 
         State memory stateBefore =
-            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, subMetaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
@@ -276,7 +276,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // console.log("amountToWithdraw", amountToWithdraw);
 
         State memory stateAfter =
-            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -324,13 +324,13 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     function testWithdrawUnderlyingEmergencyMetaUsdcAMF() public {
         // ----------------------------------- upgrade vaults and strategies
         vm.prank(multisig);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
 
-        IMetaVault subMetaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IMetaVault subMetaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
-        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0).strategy()));
+        _upgradeCVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         // ----------------------------------- set up recovery tokens
         address recoveryToken = _createRecoveryToken(address(subMetaVault), bytes32(uint(0x555)));
@@ -352,7 +352,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address holder = HOLDER_META_USDC;
 
         State memory stateBefore =
-            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, subMetaVault, stateBefore.maxWithdrawUnderlying);
 
         {
@@ -375,7 +375,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // console.log("amountToWithdraw", amountToWithdraw);
 
         State memory stateAfter =
-            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC);
+            _getMetaVaultState(subMetaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -423,16 +423,16 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     //region --------------------------------------- Tests for MetaUSD
     /// @dev MetaUSD.withdrawUnderlying => MetaUSDC => CVault
     function testWithdrawUnderlyingMetaUsdAMF() public {
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
 
         (, IStabilityVault vault) =
-            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
-        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_META_USDC, SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
+        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0).strategy()));
+        _upgradeCVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         // ----------------------------------- set up recovery tokens
         (address recoveryToken, address recoveryTokenMetaUSDC,) = _setUpRecoveryTokenMetaUsd(vault);
@@ -449,7 +449,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         // ----------------------------------- withdraw all underlying
         State memory stateBefore =
-            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
         uint expectedUnderlying = _getExpectedUnderlying(strategy, _metaVault, stateBefore.maxWithdrawUnderlying);
 
         vm.prank(holder);
@@ -458,7 +458,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         );
 
         State memory stateAfter =
-            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _getMetaVaultState(_metaVault, strategy, holder, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
         // ----------------------------------- check results
         assertApproxEqAbs(
@@ -509,16 +509,16 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev Bad paths for MetaUSD.withdrawUnderlying => MetaUSDC => CVault
     function testWithdrawUnderlyingMetaUsdBadPaths() public {
         // ---------------------------- prepare to deposit
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
 
         (, IStabilityVault vault) =
-            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
-        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0).strategy()));
-        _upgradeCVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+            _prepareSubVaultToDeposit(SonicConstantsLib.METAVAULT_META_USDC, SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
+        _upgradeAmfStrategy(address(IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0).strategy()));
+        _upgradeCVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         IStrategy strategy = IVault(address(vault)).strategy();
 
@@ -529,7 +529,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         _setUpRecoveryTokenMetaUsd(vault);
 
         // --------------------------- prepare to withdraw
-        address holder = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        address holder = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
         uint amountToWithdraw = _metaVault.maxWithdrawUnderlying(address(vault), holder);
 
         //---------------------------- try to withdraw without allowance
@@ -623,12 +623,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev MetaUSD.withdrawUnderlying => MetaScUSD => CVault
     function testWithdrawUnderlyingMetaScUsd() public {
         // ---------------------------- prepare to deposit
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_Credix_scUSD_AMFa0);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        IStabilityVault vault = IStabilityVault(SonicConstantsLib.VAULT_C_CREDIX_SCUSD_AMFA0);
 
         _upgradeAmfStrategy(address(IVault(address(vault)).strategy()));
         _upgradeCVault(address(vault));
@@ -645,7 +645,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         {
             uint snapshot = vm.snapshotState();
 
-            address holder = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+            address holder = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
             uint holderBalance = _metaVault.balanceOf(holder);
             uint maxWithdrawUnderlying = _metaVault.maxWithdrawUnderlying(address(vault), holder);
             uint maxWithdraw = _metaVault.maxWithdraw(holder);
@@ -688,12 +688,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev multisig => MetaUSD.withdrawUnderlyingEmergency => MetaUSDC => CVault
     function testMetaVaultWithdrawUnderlyingEmergencyByMultisig() public {
         // ---------------------------- set up contracts
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         _upgradeAmfStrategy(address(vault.strategy()));
         _upgradeCVault(address(vault));
@@ -719,7 +719,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
 
         MultiState memory stateAfter =
-            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
         // ----------------------------------- check results
         for (uint i = 0; i < count; ++i) {
@@ -803,12 +803,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev WMetaUSD => MetaUSD.withdrawUnderlyingEmergency => MetaUSDC => CVault
     function testMetaVaultWithdrawUnderlyingEmergencyByWrapped() public {
         // ---------------------------- set up contracts
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         _upgradeAmfStrategy(address(vault.strategy()));
         _upgradeCVault(address(vault));
@@ -826,7 +826,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         uint count = ar.owners.length;
 
         // --------------------------- withdraw underlying in emergency by metavault (success)
-        address caller = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        address caller = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
         vm.prank(multisig);
         _metaVault.changeWhitelist(caller, true);
 
@@ -838,7 +838,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         assertLt(gas - gasleft(), 10e6, "Gas used for withdrawUnderlyingEmergency should be less than 10M 5");
 
         MultiState memory stateAfter =
-            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _getMetaVaultMultiState(_metaVault, strategy, ar.owners, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
         // ----------------------------------- check results
         for (uint i = 0; i < count; ++i) {
@@ -914,12 +914,12 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev Bad paths for MetaUSD.withdrawUnderlyingEmergency => MetaUSDC => CVault
     function testMetaVaultWithdrawUnderlyingEmergencyBadPaths() public {
         // ---------------------------- set up contracts
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
 
-        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IMetaVault _metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
 
         _upgradeAmfStrategy(address(vault.strategy()));
         _upgradeCVault(address(vault));
@@ -1093,15 +1093,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev WrappedMetaVault.redeemUnderlyingEmergency => MetaUSD => MetaUSDC => CVault
     function testWrappedWithdrawUnderlyingEmergencyHappyPaths() public {
         // ---------------------------- set up contracts
-        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
         _upgradeWrappedMetaVault();
 
         // ---------------------------- set up c-vault 1
-        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
         _upgradeAmfStrategy(address(vault1.strategy()));
         _upgradeCVault(address(vault1));
         {
@@ -1112,7 +1112,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         }
 
         // ---------------------------- set up c-vault 2
-        IVault vault2 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa5);
+        IVault vault2 = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA5);
         _upgradeAmfStrategy(address(vault2.strategy()));
         _upgradeCVault(address(vault2));
         {
@@ -1259,15 +1259,15 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
     /// @dev WrappedMetaVault.redeemUnderlyingEmergency => MetaUSD => MetaUSDC => CVault (bad paths)
     function testWrappedWithdrawUnderlyingEmergencyBadPaths() public {
         // ---------------------------- set up contracts
-        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        WrappedMetaVault _wrappedMetaVault = WrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
         _upgradeWrappedMetaVault();
 
         // ---------------------------- set up c-vault 1
-        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IVault vault1 = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
         _upgradeAmfStrategy(address(vault1.strategy()));
         _upgradeCVault(address(vault1));
         {
@@ -1328,7 +1328,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
             uint snapshot = vm.snapshotState();
 
             vm.prank(multisig);
-            IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(address(vault1), address(0));
+            IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).setRecoveryToken(address(vault1), address(0));
 
             vm.expectRevert(abi.encodeWithSelector(IMetaVault.RecoveryTokenNotSet.selector, address(vault1)));
             vm.prank(multisig);
@@ -1459,7 +1459,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         }
 
         stateBefore =
-            _getMetaVaultMultiState(metaVault_, strategy_, ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            _getMetaVaultMultiState(metaVault_, strategy_, ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
 
         for (uint i = 0; i < count; ++i) {
             ret.expectedUnderlying[i] =
@@ -1502,7 +1502,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         {
             stateBefore = _getMetaVaultMultiState(
-                _metaVault, vault_.strategy(), ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
+                _metaVault, vault_.strategy(), ret.owners, SonicConstantsLib.WRAPPED_METAVAULT_META_USD
             );
 
             for (uint i = 0; i < count; ++i) {
@@ -1560,27 +1560,27 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         returns (address recoveryToken, address recoveryTokenMetaUSDC, address recoveryTokenMetaScUsd)
     {
         // ----------------------------------- set up recovery tokens
-        recoveryToken = _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD, bytes32(uint(0x1)));
+        recoveryToken = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_USD, bytes32(uint(0x1)));
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(address(vault_), address(recoveryToken));
+        IMetaVault(SonicConstantsLib.METAVAULT_META_USD).setRecoveryToken(address(vault_), address(recoveryToken));
 
-        recoveryTokenMetaUSDC = _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC, bytes32(uint(0x2)));
+        recoveryTokenMetaUSDC = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_USDC, bytes32(uint(0x2)));
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).setRecoveryToken(
             address(vault_), address(recoveryTokenMetaUSDC)
         );
 
-        recoveryTokenMetaScUsd = _createRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD, bytes32(uint(0x3)));
+        recoveryTokenMetaScUsd = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_SCUSD, bytes32(uint(0x3)));
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+        IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).setRecoveryToken(
             address(vault_), address(recoveryTokenMetaScUsd)
         );
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).changeWhitelist(SonicConstantsLib.METAVAULT_META_USD, true);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).changeWhitelist(SonicConstantsLib.METAVAULT_META_SCUSD, true);
     }
 
     function _setUpRecoveryTokenWrapped(address[2] memory vaults_)
@@ -1588,54 +1588,54 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         returns (address[4] memory recoveryTokens)
     {
         // ----------------------------------- set up recovery tokens
-        recoveryTokens[0] = _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, bytes32(uint(0x1)));
+        recoveryTokens[0] = _createRecoveryToken(SonicConstantsLib.WRAPPED_METAVAULT_META_USD, bytes32(uint(0x1)));
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).setRecoveryToken(
+                IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).setRecoveryToken(
                     vaults_[i], address(recoveryTokens[0])
                 );
             }
         }
 
-        recoveryTokens[1] = _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSD, bytes32(uint(0x2)));
+        recoveryTokens[1] = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_USD, bytes32(uint(0x2)));
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).setRecoveryToken(vaults_[i], address(recoveryTokens[1]));
+                IMetaVault(SonicConstantsLib.METAVAULT_META_USD).setRecoveryToken(vaults_[i], address(recoveryTokens[1]));
             }
         }
 
-        recoveryTokens[2] = _createRecoveryToken(SonicConstantsLib.METAVAULT_metaUSDC, bytes32(uint(0x3)));
+        recoveryTokens[2] = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_USDC, bytes32(uint(0x3)));
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).setRecoveryToken(
+                IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).setRecoveryToken(
                     vaults_[i], address(recoveryTokens[2])
                 );
             }
         }
 
-        recoveryTokens[3] = _createRecoveryToken(SonicConstantsLib.METAVAULT_metascUSD, bytes32(uint(0x4)));
+        recoveryTokens[3] = _createRecoveryToken(SonicConstantsLib.METAVAULT_META_SCUSD, bytes32(uint(0x4)));
         for (uint i = 0; i < vaults_.length; ++i) {
             if (vaults_[i] != address(0)) {
                 vm.prank(multisig);
-                IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).setRecoveryToken(
+                IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).setRecoveryToken(
                     vaults_[i], address(recoveryTokens[3])
                 );
             }
         }
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, true
+        IMetaVault(SonicConstantsLib.METAVAULT_META_USD).changeWhitelist(
+            SonicConstantsLib.WRAPPED_METAVAULT_META_USD, true
         );
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).changeWhitelist(SonicConstantsLib.METAVAULT_metaUSD, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).changeWhitelist(SonicConstantsLib.METAVAULT_META_USD, true);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).changeWhitelist(SonicConstantsLib.METAVAULT_metascUSD, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).changeWhitelist(SonicConstantsLib.METAVAULT_META_SCUSD, true);
 
         return recoveryTokens;
     }
@@ -1828,8 +1828,8 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         vm.startPrank(multisig);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_metaS;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_META_S;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
     }

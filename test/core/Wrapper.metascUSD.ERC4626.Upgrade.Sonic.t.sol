@@ -33,7 +33,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         overrideBlockNumber = 30141969;
 
         // Stability scUSD
-        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD);
         // Donor of USDC.e
         underlyingDonor = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
         amountToDonate = 1e6 * 1e6;
@@ -89,8 +89,8 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_metascUSD;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metascUSD;
+        proxies[0] = SonicConstantsLib.METAVAULT_META_SCUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
@@ -127,9 +127,9 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         );
 
         address[3] memory vaults = [
-            SonicConstantsLib.VAULT_C_scUSD_S_46,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital
+            SonicConstantsLib.VAULT_C_SCUSD_S_46,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_MEVCAPITAL
         ];
 
         for (uint i; i < vaults.length; i++) {
@@ -183,7 +183,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
     }
 
     function _setProportions(uint fromIndex, uint toIndex) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
         multisig = IPlatform(PLATFORM).multisig();
 
         uint[] memory props = metaVault.targetProportions();

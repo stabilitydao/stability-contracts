@@ -30,7 +30,7 @@ contract AUpgrade360Test is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -39,7 +39,7 @@ contract AUpgrade360Test is Test {
 
     /// @notice Try to deposit/withdraw underlying from the vault with Aave strategy
     function testUnderlyingOperations() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_USDC_Stability_StableJack);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
         uint amount = 1000 * 10 ** IERC20Metadata(assets[0]).decimals();

@@ -34,8 +34,8 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(SALT, SonicConstantsLib.METAVAULT_metaUSD));
-        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_metaUSD);
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(SALT, SonicConstantsLib.METAVAULT_META_USD));
+        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_META_USD);
         assertEq(address(recToken), PREDICTED_ADDRESS);
 
         // mint
@@ -89,7 +89,7 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken_upgrade() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_META_USD));
 
         address recoveryTokenImplementation = address(new RecoveryToken());
 
@@ -112,7 +112,7 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken_bulkTransferFrom() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_META_USD));
 
         vm.prank(recToken.target());
         recToken.mint(address(1), 100);

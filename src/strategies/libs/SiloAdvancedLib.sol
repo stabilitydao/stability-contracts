@@ -35,25 +35,25 @@ library SiloAdvancedLib {
     uint private constant PRICE_IMPACT_DENOMINATOR = 100_000;
 
     // mint wanS by wS
-    address internal constant TOKEN_wS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
+    address internal constant TOKEN_WS = 0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38;
     address internal constant ANGLES_VAULT = 0xe5203Be1643465b3c0De28fd2154843497Ef4269;
-    address internal constant TOKEN_wanS = 0xfA85Fe5A8F5560e9039C04f2b0a90dE1415aBD70;
+    address internal constant TOKEN_WANS = 0xfA85Fe5A8F5560e9039C04f2b0a90dE1415aBD70;
 
     // mint wstkscETH by wETH
-    address internal constant TOKEN_wETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
-    address internal constant TOKEN_scETH = 0x3bcE5CB273F0F148010BbEa2470e7b5df84C7812;
-    address internal constant TOKEN_stkscETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
+    address internal constant TOKEN_WETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
+    address internal constant TOKEN_SCETH = 0x3bcE5CB273F0F148010BbEa2470e7b5df84C7812;
+    address internal constant TOKEN_STKSCETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
     address internal constant TELLER_scETH = 0x31A5A9F60Dc3d62fa5168352CaF0Ee05aA18f5B8;
     address internal constant TELLER_stkscETH = 0x49AcEbF8f0f79e1Ecb0fd47D684DAdec81cc6562;
-    address internal constant TOKEN_wstkscETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
+    address internal constant TOKEN_WSTKSCETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
 
     // mint wstkscUSD by USDC
     address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
-    address internal constant TOKEN_scUSD = 0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE;
-    address internal constant TOKEN_stkscUSD = 0x4D85bA8c3918359c78Ed09581E5bc7578ba932ba;
+    address internal constant TOKEN_SCUSD = 0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE;
+    address internal constant TOKEN_STKSCUSD = 0x4D85bA8c3918359c78Ed09581E5bc7578ba932ba;
     address internal constant TELLER_scUSD = 0x358CFACf00d0B4634849821BB3d1965b472c776a;
     address internal constant TELLER_stkscUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
-    address internal constant TOKEN_wstkscUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
+    address internal constant TOKEN_WSTKSCUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -477,14 +477,14 @@ library SiloAdvancedLib {
         uint amount,
         uint priceImpactTolerance
     ) internal {
-        if (tokenIn == TOKEN_wS && tokenOut == TOKEN_wanS) {
+        if (tokenIn == TOKEN_WS && tokenOut == TOKEN_WANS) {
             //console.log('ws to wans swap');
             // check price of swap without impact
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
             //console.log('amount out by swap', outBySwap);
 
-            uint outByMint = IERC4626(TOKEN_wanS).convertToShares(amount);
+            uint outByMint = IERC4626(TOKEN_WANS).convertToShares(amount);
             //console.log('amount out by mint', outByMint);
 
             if (outByMint > outBySwap) {
@@ -498,7 +498,7 @@ library SiloAdvancedLib {
             }
         }
 
-        if (tokenIn == TOKEN_USDC && tokenOut == TOKEN_wstkscUSD) {
+        if (tokenIn == TOKEN_USDC && tokenOut == TOKEN_WSTKSCUSD) {
             //console.log('USDC to wstkscUSDC swap');
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
@@ -508,20 +508,20 @@ library SiloAdvancedLib {
 
             if (outByMint > outBySwap * 99_90 / 100_00) {
                 // mint scUSD
-                IERC20(TOKEN_USDC).forceApprove(TOKEN_scUSD, amount);
+                IERC20(TOKEN_USDC).forceApprove(TOKEN_SCUSD, amount);
                 ITeller(TELLER_scUSD).deposit(TOKEN_USDC, amount, 0);
                 // mint stkscUSD
-                IERC20(TOKEN_scUSD).forceApprove(TOKEN_stkscUSD, amount);
-                ITeller(TELLER_stkscUSD).deposit(TOKEN_scUSD, amount, 0);
+                IERC20(TOKEN_SCUSD).forceApprove(TOKEN_STKSCUSD, amount);
+                ITeller(TELLER_stkscUSD).deposit(TOKEN_SCUSD, amount, 0);
                 // mint wstkscUSD
-                IERC20(TOKEN_stkscUSD).forceApprove(TOKEN_wstkscUSD, amount);
-                IERC4626(TOKEN_wstkscUSD).deposit(amount, address(this));
+                IERC20(TOKEN_STKSCUSD).forceApprove(TOKEN_WSTKSCUSD, amount);
+                IERC4626(TOKEN_WSTKSCUSD).deposit(amount, address(this));
                 //console.log('minted');
                 return;
             }
         }
 
-        if (tokenIn == TOKEN_wETH && tokenOut == TOKEN_wstkscETH) {
+        if (tokenIn == TOKEN_WETH && tokenOut == TOKEN_WSTKSCETH) {
             //console.log('wETH to wstkscETH swap');
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
@@ -531,14 +531,14 @@ library SiloAdvancedLib {
 
             if (outByMint > outBySwap * 99_50 / 100_00) {
                 // mint scETH
-                IERC20(TOKEN_wETH).forceApprove(TOKEN_scETH, amount);
-                ITeller(TELLER_scETH).deposit(TOKEN_wETH, amount, 0);
+                IERC20(TOKEN_WETH).forceApprove(TOKEN_SCETH, amount);
+                ITeller(TELLER_scETH).deposit(TOKEN_WETH, amount, 0);
                 // mint stkscETH
-                IERC20(TOKEN_scETH).forceApprove(TOKEN_stkscETH, amount);
-                ITeller(TELLER_stkscETH).deposit(TOKEN_scETH, amount, 0);
+                IERC20(TOKEN_SCETH).forceApprove(TOKEN_STKSCETH, amount);
+                ITeller(TELLER_stkscETH).deposit(TOKEN_SCETH, amount, 0);
                 // mint wstkscETH
-                IERC20(TOKEN_stkscETH).forceApprove(TOKEN_wstkscETH, amount);
-                IERC4626(TOKEN_wstkscETH).deposit(amount, address(this));
+                IERC20(TOKEN_STKSCETH).forceApprove(TOKEN_WSTKSCETH, amount);
+                IERC4626(TOKEN_WSTKSCETH).deposit(amount, address(this));
                 //console.log('minted');
                 return;
             }

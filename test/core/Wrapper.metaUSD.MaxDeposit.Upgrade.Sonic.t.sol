@@ -30,7 +30,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant VAULT_WITH_AAVE_STRATEGY = SonicConstantsLib.VAULT_C_USDC_Stability_StableJack;
+    address public constant VAULT_WITH_AAVE_STRATEGY = SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK;
     uint public constant INDEX_VAULT_WITH_AAVE = 6;
     uint public constant INITIAL_AMOUNT = 5000e6; // 5000 USDC
     uint public constant LARGE_SC_AMOUNT = 7000e6;
@@ -48,9 +48,9 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        multiVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        multiVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/multi-vault/c-vault with AAVE strategy
@@ -59,14 +59,14 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         IStrategy strategy = cvault.strategy();
 
         // ------------------- upgrade strategy
-        _upgradeVaults(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, false);
-        _upgradeVaults(SonicConstantsLib.METAVAULT_metaUSDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC, true);
-        _upgradeVaults(SonicConstantsLib.METAVAULT_metascUSD, SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, true);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_META_USD, SonicConstantsLib.WRAPPED_METAVAULT_META_USD, false);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_META_USDC, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC, true);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_META_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, true);
 
         // ------------------- deposit large amount into scUSD-sub-metavault
         _setProportionsForDeposit(metaVault, 1);
         _setProportionsForDeposit(multiVault, 0);
-        assertEq(metaVault.vaultForDeposit(), SonicConstantsLib.METAVAULT_metascUSD, "d0");
+        assertEq(metaVault.vaultForDeposit(), SonicConstantsLib.METAVAULT_META_SCUSD, "d0");
         if (LARGE_SC_AMOUNT != 0) {
             address[] memory assetsM = metaVault.assetsForDeposit();
             IERC20(assetsM[0]).approve(address(metaVault), type(uint).max);
@@ -386,7 +386,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
     function _borrowAlmostAllCashAave(IPool pool, uint cash, uint leftAmount) internal {
         address borrowAsset = SonicConstantsLib.TOKEN_USDC;
-        address collateralAsset = SonicConstantsLib.TOKEN_scUSD;
+        address collateralAsset = SonicConstantsLib.TOKEN_SCUSD;
 
         uint borrowAmount = cash - leftAmount;
         uint collateralAmount = borrowAmount * 130 / 100;

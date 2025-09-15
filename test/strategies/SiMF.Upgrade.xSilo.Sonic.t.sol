@@ -29,8 +29,8 @@ import {console, Test} from "forge-std/Test.sol";
 contract SiMFUpgradeXSiloTest is Test {
     uint public constant FORK_BLOCK = 35662058; // Jun-24-2025 09:03:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant METAVAULT = SonicConstantsLib.METAVAULT_metaUSDC;
-    address public constant VAULT_C_USDC_SiMF = SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore;
+    address public constant METAVAULT = SonicConstantsLib.METAVAULT_META_USDC;
+    address public constant VAULT_C_USDC_SiMF = SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE;
     address public constant VAULT_C = VAULT_C_USDC_SiMF;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;
@@ -79,20 +79,20 @@ contract SiMFUpgradeXSiloTest is Test {
         // _addPoolForXSilo();
 
         // ------------------- get all available rewards
-        uint amountBefore = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO);
-        uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        uint amountBefore = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_XSILO);
+        uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_XSILO).balanceOf(address(strategy));
         (, uint[] memory assetsAmountsBefore) = strategy.assetsAmounts();
 
         vm.prank(address(vault));
         strategy.doHardWork();
 
-        uint amountAfter = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_xSILO);
-        uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_xSILO).balanceOf(address(strategy));
+        uint amountAfter = _getRewards(address(strategy), siloVault, SonicConstantsLib.TOKEN_XSILO);
+        uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_XSILO).balanceOf(address(strategy));
         (, uint[] memory assetsAmountsAfter) = strategy.assetsAmounts();
 
         // ------------------- check results
 
-        //         (uint price,) = priceReader.getPrice(SonicConstantsLib.TOKEN_xSILO);
+        //         (uint price,) = priceReader.getPrice(SonicConstantsLib.TOKEN_XSILO);
         //         uint expectedAmountUSD = (balanceBefore + amountBefore) * price / 1e18 / 1e18;
         //         console.log("xSilo price", price);
 
@@ -211,11 +211,11 @@ contract SiMFUpgradeXSiloTest is Test {
 
         f.rewardAssets = new address[](2);
         f.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
-        f.rewardAssets[1] = SonicConstantsLib.TOKEN_xSILO;
+        f.rewardAssets[1] = SonicConstantsLib.TOKEN_XSILO;
 
         address[] memory _addresses = new address[](2);
         _addresses[0] = f.addresses[0];
-        _addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        _addresses[1] = SonicConstantsLib.TOKEN_XSILO;
         f.addresses = _addresses;
 
         vm.prank(multisig);
@@ -234,15 +234,15 @@ contract SiMFUpgradeXSiloTest is Test {
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: SonicConstantsLib.POOL_SHADOW_CL_x33_xSILO,
+            pool: SonicConstantsLib.POOL_SHADOW_CL_X33_XSILO,
             ammAdapter: address(adapter),
-            tokenIn: SonicConstantsLib.TOKEN_xSILO,
-            tokenOut: SonicConstantsLib.TOKEN_x33
+            tokenIn: SonicConstantsLib.TOKEN_XSILO,
+            tokenOut: SonicConstantsLib.TOKEN_X33
         });
         //        pools[0] = ISwapper.PoolData({
-        //            pool: SonicConstantsLib.POOL_SHADOW_CL_xSILO_SILO,
+        //            pool: SonicConstantsLib.POOL_SHADOW_CL_XSILO_SILO,
         //            ammAdapter: address(adapter),
-        //            tokenIn: SonicConstantsLib.TOKEN_xSILO,
+        //            tokenIn: SonicConstantsLib.TOKEN_XSILO,
         //            tokenOut: SonicConstantsLib.TOKEN_SILO
         //        });
 

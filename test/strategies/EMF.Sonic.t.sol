@@ -36,7 +36,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
     /// @notice Add additional tests for maxWithdrawAssets, poolTvl, maxDepositAssets
     function _preDeposit() internal override {
-        if (address(_getEulerVaultForCurrentStrategy()) == SonicConstantsLib.EULER_MERKL_USDC_MEV_Capital) {
+        if (address(_getEulerVaultForCurrentStrategy()) == SonicConstantsLib.EULER_MERKL_USDC_MEV_CAPITAL) {
             uint shapshot = vm.snapshotState();
             _testPoolTvl();
             vm.revertToState(shapshot);
@@ -70,7 +70,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
     function _preHardWork() internal override {
         // emulate rewards receiving (workaround difficulties with merkl claiming)
         // currently rEUL are not supported here
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 10e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 10e18);
     }
     //endregion -------------------------------- Universal test overrides
 
@@ -200,7 +200,7 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
         // emulate rewards receiving
         // assume that strategy receives at least 2 times more than initial deposit
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 1000e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 1000e18);
 
         vm.prank(address(_vault));
         _strategy.doHardWork();
@@ -253,15 +253,15 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
             collateralAmountETH = (amountSupplyCap > totalSupply ? (amountSupplyCap - totalSupply) : 0) * 9 / 10;
         }
 
-        deal(SonicConstantsLib.TOKEN_wETH, address(this), collateralAmountETH);
-        IERC20(SonicConstantsLib.TOKEN_wETH).approve(address(collateralVault), collateralAmountETH);
+        deal(SonicConstantsLib.TOKEN_WETH, address(this), collateralAmountETH);
+        IERC20(SonicConstantsLib.TOKEN_WETH).approve(address(collateralVault), collateralAmountETH);
 
         IPriceReader priceReader = IPriceReader(platform.priceReader());
 
         uint borrowAmount;
         {
             (uint priceUsdc,) = priceReader.getPrice(SonicConstantsLib.TOKEN_USDC);
-            (uint priceEth,) = priceReader.getPrice(SonicConstantsLib.TOKEN_wETH);
+            (uint priceEth,) = priceReader.getPrice(SonicConstantsLib.TOKEN_WETH);
 
             borrowAmount = collateralAmountETH * priceEth / priceUsdc * percent18 / 1e18; // borrow % of collateral in USDC
 

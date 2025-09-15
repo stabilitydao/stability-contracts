@@ -46,7 +46,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -141,7 +141,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         state.targetProportions = metaVault.targetProportions();
         state.currentProportions = metaVault.currentProportions();
         (state.price,) = metaVault.price();
-        state.balanceMetaUsdVault = metaVault.balanceOf(SonicConstantsLib.METAVAULT_metaUSD);
+        state.balanceMetaUsdVault = metaVault.balanceOf(SonicConstantsLib.METAVAULT_META_USD);
         return state;
     }
 
@@ -249,11 +249,11 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
     function _makeWithdraw() internal {
         address[] memory assets = metaVault.assetsForWithdraw();
 
-        uint amountToWithdraw = metaVault.maxWithdraw(SonicConstantsLib.METAVAULT_metaUSD) / 7;
-        //        console.log("max", metaVault.maxWithdraw(SonicConstantsLib.METAVAULT_metaUSD));
+        uint amountToWithdraw = metaVault.maxWithdraw(SonicConstantsLib.METAVAULT_META_USD) / 7;
+        //        console.log("max", metaVault.maxWithdraw(SonicConstantsLib.METAVAULT_META_USD));
         //        console.log("amountToWithdraw", amountToWithdraw);
 
-        vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_META_USD);
         metaVault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
         vm.roll(block.number + 6);
     }
@@ -263,11 +263,11 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         uint[] memory maxAmounts = new uint[](1);
         maxAmounts[0] = IERC20(assets[0]).balanceOf(address(metaVault));
 
-        vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_META_USD);
         IERC20(assets[0]).approve(address(metaVault), maxAmounts[0]);
 
-        vm.prank(SonicConstantsLib.METAVAULT_metaUSD);
-        metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_metaUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_META_USD);
+        metaVault.depositAssets(assets, maxAmounts, 0, SonicConstantsLib.METAVAULT_META_USD);
         vm.roll(block.number + 6);
     }
 

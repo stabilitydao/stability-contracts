@@ -16,7 +16,7 @@ contract SiloStrategyTest is SonicSetup, UniversalTest {
     function testSiloSonic() public universalTest {
         _addStrategy(SonicConstantsLib.SILO_VAULT_8_USDC);
         _addStrategy(SonicConstantsLib.SILO_VAULT_27_USDC);
-        _addStrategy(SonicConstantsLib.SILO_VAULT_51_wS);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_51_WS);
         _addStrategy(SonicConstantsLib.SILO_VAULT_31_WBTC);
     }
 

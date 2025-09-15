@@ -96,9 +96,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         //        );
         uint farmId = _currentFarmId();
         if (farmId == FARM_META_USD_USDC_53 || farmId == FARM_META_USD_SCUSD_54) {
-            _currentMetaVault = SonicConstantsLib.METAVAULT_metaUSD;
+            _currentMetaVault = SonicConstantsLib.METAVAULT_META_USD;
         } else if (farmId == FARM_METAS_S_55) {
-            _currentMetaVault = SonicConstantsLib.METAVAULT_metaS;
+            _currentMetaVault = SonicConstantsLib.METAVAULT_META_S;
         } else {
             revert("Unknown farmId");
         }
@@ -143,18 +143,18 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
     function _preHardWork() internal override {
         // emulate merkl rewards
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 1e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 1e18);
         deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 1e18);
     }
 
     //region --------------------------------------- Strategy params tests
     //    function _showPrices(address priceReader1, address priceReader2) internal {
     //        console.log("!!!!!!!!!!!!!!!!!!Price reader 1, get price wS");
-    //        (uint price1, ) = IPriceReader(priceReader1).getPrice(SonicConstantsLib.TOKEN_wS);
+    //        (uint price1, ) = IPriceReader(priceReader1).getPrice(SonicConstantsLib.TOKEN_WS);
     //        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price metas");
-    //        (uint price2, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.METAVAULT_metaS);
+    //        (uint price2, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.METAVAULT_META_S);
     //        console.log("!!!!!!!!!!!!!!!!!!Price reader 2, get price wS");
-    //        (uint price3, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_wS);
+    //        (uint price3, ) = IPriceReader(priceReader2).getPrice(SonicConstantsLib.TOKEN_WS);
     //        console.log("reader1, reader2", priceReader1, priceReader2);
     //        console.log("price1, price2, price3", price1, price2, price3);
     //
@@ -207,7 +207,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         amountsToDeposit[0] = amountNoDecimals * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
         // emulate rewards BEFORE deposit
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 177e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 177e18);
 
         State memory state0 = _getState();
         (uint depositedAssets, uint depositedValue) = _tryToDeposit(strategy, amountsToDeposit, REVERT_NO);
@@ -218,7 +218,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.roll(block.number + 6);
         State memory state2 = _getState();
 
-        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(currentStrategy);
+        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
@@ -264,7 +264,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         IStrategy strategy = IStrategy(currentStrategy);
 
         // emulate rewards BEFORE deposit
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 177e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 177e18);
 
         // --------------------------------------------- Deposit max amount (but less maxDeposit to be able to rebalance)
         uint[] memory amountsToDeposit = strategy.maxDepositAssets();
@@ -295,7 +295,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.roll(block.number + 6);
         states[3] = _getState();
 
-        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(currentStrategy);
+        uint wsFinalBalance = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(currentStrategy);
         vm.revertToState(snapshot);
 
         // --------------------------------------------- Check results
@@ -562,7 +562,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint farmId = _currentFarmId();
         address borrowVault = farmId == FARM_META_USD_USDC_53
             ? SonicConstantsLib.SILO_VAULT_121_USDC
-            : farmId == FARM_META_USD_SCUSD_54 ? SonicConstantsLib.SILO_VAULT_125_scUSD : SonicConstantsLib.SILO_VAULT_128_S;
+            : farmId == FARM_META_USD_SCUSD_54 ? SonicConstantsLib.SILO_VAULT_125_SCUSD : SonicConstantsLib.SILO_VAULT_128_S;
         address asset = IERC4626(borrowVault).asset();
         uint expectedRevertKind = IERC20(asset).balanceOf(flashLoanVault) < IERC20(asset).balanceOf(borrowVault)
             ? REVERT_INSUFFICIENT_BALANCE
@@ -629,7 +629,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             );
             if (additionalAmount != 0) {
                 // Add additional amount to the flash loan vault to avoid insufficient balance
-                deal(SonicConstantsLib.TOKEN_scUSD, pool, additionalAmount);
+                deal(SonicConstantsLib.TOKEN_SCUSD, pool, additionalAmount);
             }
             return pool;
         } else if (farmId == FARM_METAS_S_55) {
@@ -644,7 +644,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
             );
             if (additionalAmount != 0) {
                 // Add additional amount to the flash loan vault to avoid insufficient balance
-                deal(SonicConstantsLib.TOKEN_wS, pool, additionalAmount);
+                deal(SonicConstantsLib.TOKEN_WS, pool, additionalAmount);
             }
             return pool;
         } else {
@@ -659,9 +659,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
     ) internal returns (uint deposited, uint values) {
         // ----------------------------- Transfer deposit amount to the strategy
         IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(
-            strategy.assets()[0] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-                ? SonicConstantsLib.WRAPPED_METAVAULT_metaUSD
-                : SonicConstantsLib.WRAPPED_METAVAULT_metaS
+            strategy.assets()[0] == SonicConstantsLib.WRAPPED_METAVAULT_META_USD
+                ? SonicConstantsLib.WRAPPED_METAVAULT_META_USD
+                : SonicConstantsLib.WRAPPED_METAVAULT_META_S
         );
 
         _dealAndApprove(address(this), currentStrategy, strategy.assets(), amounts_);
@@ -748,10 +748,10 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
     function _dealAndApprove(address user, address spender, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
-            if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_metaUSD) {
-                _getMetaTokensOnBalance(address(this), amounts[j], true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
-            } else if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_metaS) {
-                _getMetaTokensOnBalance(address(this), amounts[j], true, SonicConstantsLib.WRAPPED_METAVAULT_metaS);
+            if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_META_USD) {
+                _getMetaTokensOnBalance(address(this), amounts[j], true, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+            } else if (assets[j] == SonicConstantsLib.WRAPPED_METAVAULT_META_S) {
+                _getMetaTokensOnBalance(address(this), amounts[j], true, SonicConstantsLib.WRAPPED_METAVAULT_META_S);
             } else {
                 deal(assets[j], user, amounts[j]);
             }
@@ -768,15 +768,15 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         address wrappedMetaVault_
     ) internal {
         IMetaVault metaVault = IMetaVault(IWrappedMetaVault(wrappedMetaVault_).metaVault());
-        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_metaUSD
+        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_META_USD
             ? SonicConstantsLib.TOKEN_USDC
-            : SonicConstantsLib.TOKEN_wS;
+            : SonicConstantsLib.TOKEN_WS;
 
         // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of USDC
         address[] memory _assets = metaVault.assetsForDeposit();
         uint[] memory amountsMax = new uint[](1);
-        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_metaUSD
+        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_META_USD
             ? 2 * amountMetaVaultTokens / 1e12
             : 2 * amountMetaVaultTokens;
 
@@ -889,8 +889,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.startPrank(multisig);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_metaS;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_META_S;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
     }
@@ -958,9 +958,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         priceReader.changeWhitelistTransientCache(_currentMetaVault, true);
 
         vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaS, true);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_META_S, true);
 
         vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_META_USD, true);
     }
 }

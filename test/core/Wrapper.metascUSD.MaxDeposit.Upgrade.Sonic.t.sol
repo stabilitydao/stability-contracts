@@ -28,7 +28,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 34657318; // Jun-12-2025 05:49:24 AM +UTC
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant VAULT_WITH_EULER_STRATEGY = SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs;
+    address public constant VAULT_WITH_EULER_STRATEGY = SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS;
     IMetaVaultFactory public metaVaultFactory;
     IPriceReader public priceReader;
     address public multisig;
@@ -42,8 +42,8 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
-        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
+        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD);
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/c-vault with Euler strategy
@@ -243,8 +243,8 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_metascUSD;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metascUSD;
+        proxies[0] = SonicConstantsLib.METAVAULT_META_SCUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
@@ -268,9 +268,9 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         );
 
         address[3] memory vaults = [
-            SonicConstantsLib.VAULT_C_scUSD_S_46,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital
+            SonicConstantsLib.VAULT_C_SCUSD_S_46,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_MEVCAPITAL
         ];
 
         for (uint i; i < vaults.length; i++) {
@@ -326,13 +326,13 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     }
 
     function _borrowAlmostAllCash(IEulerVault eulerVault, uint cash, uint leftAmount) internal {
-        IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
+        IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_WS_RE7);
         IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
 
         uint collateralAmount = cash * 10 * 10 ** 12; // borrow scUSD, collateral is wS
 
-        deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
+        deal(SonicConstantsLib.TOKEN_WS, address(this), collateralAmount);
+        IERC20(SonicConstantsLib.TOKEN_WS).approve(address(collateralVault), collateralAmount);
 
         uint borrowAmount = cash - leftAmount;
 

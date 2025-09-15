@@ -18,7 +18,7 @@ contract MetaVaultSonicUpgrade2 is Test {
     constructor() {
         // May-19-2025 09:53:57 AM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27965000));
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
     }
@@ -29,7 +29,7 @@ contract MetaVaultSonicUpgrade2 is Test {
         newProportions[1] = 3e17;
         vm.prank(multisig);
         vm.expectRevert(IStabilityVault.NotSupported.selector);
-        metaVault.addVault(SonicConstantsLib.METAVAULT_metascUSD, newProportions);
+        metaVault.addVault(SonicConstantsLib.METAVAULT_META_SCUSD, newProportions);
 
         // deploy new impl and upgrade
         address vaultImplementation = address(new MetaVault());
@@ -41,7 +41,7 @@ contract MetaVaultSonicUpgrade2 is Test {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
 
         vm.prank(multisig);
-        metaVault.addVault(SonicConstantsLib.METAVAULT_metascUSD, newProportions);
+        metaVault.addVault(SonicConstantsLib.METAVAULT_META_SCUSD, newProportions);
 
         assertEq(metaVault.vaults().length, 2);
         assertEq(metaVault.currentProportions()[1], 0);

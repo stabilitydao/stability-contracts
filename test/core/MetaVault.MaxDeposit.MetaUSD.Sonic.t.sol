@@ -85,12 +85,12 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         vm.stopPrank();
 
         // ------------------------------ Set up whitelist
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
         for (uint i; i < _vaults.length; ++i) {
             address strategy = address(IVault(_vaults[i]).strategy());
 
             vm.prank(IPlatform(PLATFORM).multisig());
-            IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(strategy, true);
+            IMetaVault(SonicConstantsLib.METAVAULT_META_USD).changeWhitelist(strategy, true);
 
             vm.prank(multisig);
             priceReader.changeWhitelistTransientCache(strategy, true);
@@ -137,7 +137,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         // ---------------------------------- Set whitelist for transient cache #348
         vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_META_USD, true);
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(metaVaults[META_VAULT_INDEX], true);
@@ -170,7 +170,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         // ------------------------------ Get a lot of metaUSD on balance and deposit them to MetaVault
@@ -179,7 +179,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             _getMetaUsdOnBalance(address(this), amountMetaUsd, true);
 
             vm.prank(address(this));
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(metaVault), type(uint).max);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).approve(address(metaVault), type(uint).max);
 
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amountMetaUsd;
@@ -259,7 +259,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
@@ -297,7 +297,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         wrappedMulti.maxDeposit(address(this));
@@ -335,7 +335,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
@@ -370,7 +370,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         uint maxAmountToDepositMulti = IMetaVault(metaVaults[MULTI_VAULT_INDEX]).maxDeposit(address(this))[0];
@@ -449,7 +449,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         (uint maxDepositAmount0, uint maxDepositAmount1) = _getMaxAmountsToDeposit();
@@ -490,7 +490,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             ISilo(SonicConstantsLib.SILO_VAULT_121_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_121_USDC), 99_00
         );
         _borrowAlmostAllCash(
-            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD), 99_00
+            ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD), ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD), 99_00
         );
 
         // ------------------------------ Try to deposit more than maxDeposit (and get refund)
@@ -568,7 +568,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
         _borrowAlmostAllCash(
             ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD),
-            ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD),
+            ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD),
             borrowPercent
         );
         _borrowAlmostAllCash(
@@ -618,7 +618,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
         _borrowAlmostAllCash(
             ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD),
-            ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD),
+            ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD),
             borrowPercent
         );
         _borrowAlmostAllCash(
@@ -666,7 +666,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         // ---- Reduce available liquidity in Silo on 99% (to avoid price impact problems during swap of scUSD to USDC)
         _borrowAlmostAllCash(
             ISilo(SonicConstantsLib.SILO_VAULT_125_WMETAUSD),
-            ISilo(SonicConstantsLib.SILO_VAULT_125_scUSD),
+            ISilo(SonicConstantsLib.SILO_VAULT_125_SCUSD),
             borrowPercent
         );
         _borrowAlmostAllCash(
@@ -722,7 +722,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _tryToWithdraw(IMetaVault multiVault, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -736,7 +736,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _tryToWithdraw(IWrappedMetaVault targetWrapped, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -797,7 +797,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint[] memory maxAmounts,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
         _getMetaUsdOnBalance(address(this), maxAmounts[0], true);
 
         vm.prank(address(this));
@@ -835,7 +835,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint amountToDeposit,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
         _getMetaUsdOnBalance(address(this), amountToDeposit, true);
 
         vm.prank(address(this));
@@ -866,7 +866,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _getMetaUsdOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
 
         // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of USDC
@@ -886,7 +886,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         if (wrap) {
             vm.startPrank(user);
-            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
             metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
             wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
             vm.stopPrank();
@@ -901,13 +901,13 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint collateralApproxAmount = 10 * maxLiquidityToBorrow * 1e12;
 
         // use deal to avoid increasing liquidity in the silo pool
-        deal(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, user, collateralApproxAmount);
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_META_USD, user, collateralApproxAmount);
         // _getMetaUsdOnBalance(user, collateralApproxAmount, true);
 
-        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(user);
+        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).balanceOf(user);
 
         vm.prank(user);
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(collateralVault), balance);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).approve(address(collateralVault), balance);
 
         vm.prank(user);
         collateralVault.deposit(balance, user);
@@ -946,7 +946,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         if (additionalAmount != 0) {
             // Add additional amount to the flash loan vault to avoid insufficient balance
             deal(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
-            deal(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
+            deal(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.BEETS_VAULT_V3, additionalAmount);
         }
     }
 
@@ -1065,7 +1065,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         destFarms[1] = SonicFarmMakerLib._makeSiloALMFarm(
             SonicConstantsLib.SILO_VAULT_125_WMETAUSD,
-            SonicConstantsLib.SILO_VAULT_125_scUSD,
+            SonicConstantsLib.SILO_VAULT_125_SCUSD,
             SonicConstantsLib.BEETS_VAULT, // todo
             SonicConstantsLib.SILO_LENS // todo
         );
@@ -1111,16 +1111,16 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = _makePoolData(
-            SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_META_USD,
             AmmAdapterIdLib.META_VAULT,
-            SonicConstantsLib.METAVAULT_metaUSD,
-            SonicConstantsLib.METAVAULT_metaUSD
+            SonicConstantsLib.METAVAULT_META_USD,
+            SonicConstantsLib.METAVAULT_META_USD
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
+            SonicConstantsLib.WRAPPED_METAVAULT_META_USD,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
-            SonicConstantsLib.METAVAULT_metaUSD
+            SonicConstantsLib.WRAPPED_METAVAULT_META_USD,
+            SonicConstantsLib.METAVAULT_META_USD
         );
     }
 

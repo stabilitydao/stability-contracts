@@ -46,13 +46,13 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
     function testPreCalculatePriceTx() public {
         vm.expectRevert(IPriceReader.NotWhitelistedTransientCache.selector);
         vm.prank(address(this));
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_metaUSD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(this), true);
 
         vm.prank(address(this));
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_metaUSD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
     }
 
     /// @notice Ensure that preCalculateVaultPriceTx can be called only by whitelisted address only
@@ -72,7 +72,7 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
     function testPreCalculatePrices() public {
         // ------------------------------ Get prices from the price reader with enabled cache
         uint gas0 = gasleft();
-        (uint priceMetaUsd,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_metaUSD);
+        (uint priceMetaUsd,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_META_USD);
         uint gasMetaUsdPriceNoCache = gas0 - gasleft();
 
         gas0 = gasleft();
@@ -83,11 +83,11 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(this), true);
 
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_metaUSD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
         priceReader.preCalculateVaultPriceTx(SonicConstantsLib.VAULT_C_USDC_S_49);
 
         gas0 = gasleft();
-        (uint priceMetaUsd2,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_metaUSD);
+        (uint priceMetaUsd2,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_META_USD);
         uint gasMetaUsdPriceNoCache2 = gas0 - gasleft();
 
         gas0 = gasleft();
@@ -116,27 +116,27 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
 
         // ------------------------------ 21 vaults for test
         address[21] memory vaults = [
-            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_SIF,
             SonicConstantsLib.VAULT_C_USDC_S_8,
             SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,
             SonicConstantsLib.VAULT_C_USDC_S_36,
             SonicConstantsLib.VAULT_C_USDC_S_49,
-            SonicConstantsLib.VAULT_C_USDC_Stability_Stream,
-            SonicConstantsLib.VAULT_C_USDC_Stability_StableJack,
-            SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore,
-            SonicConstantsLib.VAULT_C_wS_SiMF_Valmore,
+            SonicConstantsLib.VAULT_C_USDC_STABILITY_STREAM,
+            SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK,
+            SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE,
+            SonicConstantsLib.VAULT_C_WS_SIMF_VALMORE,
             SonicConstantsLib.VAULT_C_USDC_S_112,
-            SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse,
+            SonicConstantsLib.VAULT_C_USDC_SIMF_GREENHOUSE,
             SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121,
-            SonicConstantsLib.VAULT_C_scUSD_S_46,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_MevCapital,
-            SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs,
-            SonicConstantsLib.VAULT_C_wS_SiMF_Valmore,
-            SonicConstantsLib.VAULT_C_wS_SiF_54,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
-            SonicConstantsLib.VAULT_LEV_SiL_stS_S
+            SonicConstantsLib.VAULT_C_SCUSD_S_46,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_MEVCAPITAL,
+            SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS,
+            SonicConstantsLib.VAULT_C_WS_SIMF_VALMORE,
+            SonicConstantsLib.VAULT_C_WS_SIF_54,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC,
+            SonicConstantsLib.VAULT_LEV_SIL_STS_S
         ];
 
         // ------------------------------ Get prices from the price reader with disabled cache

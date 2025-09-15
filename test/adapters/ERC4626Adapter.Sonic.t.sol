@@ -42,42 +42,42 @@ contract ERC4626AdapterTest is Test {
         // setup swapper
         ISwapper.AddPoolData[] memory bcPools = new ISwapper.AddPoolData[](2);
         bcPools[0] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_USDC_scUSD_100,
+            SonicConstantsLib.POOL_SHADOW_CL_USDC_SCUSD_100,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_scUSD,
+            SonicConstantsLib.TOKEN_SCUSD,
             SonicConstantsLib.TOKEN_USDC
         );
         bcPools[1] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_scETH_WETH_100,
+            SonicConstantsLib.POOL_SHADOW_CL_SCETH_WETH_100,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_scETH,
-            SonicConstantsLib.TOKEN_wETH
+            SonicConstantsLib.TOKEN_SCETH,
+            SonicConstantsLib.TOKEN_WETH
         );
 
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](4);
         pools[0] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stkscUSD
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_STKSCUSD
         );
         pools[1] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
+            SonicConstantsLib.POOL_SHADOW_CL_STKSCUSD_SCUSD_3000,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_scUSD
+            SonicConstantsLib.TOKEN_STKSCUSD,
+            SonicConstantsLib.TOKEN_SCUSD
         );
         pools[2] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscETH,
+            SonicConstantsLib.TOKEN_WSTKSCETH,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_stkscETH
+            SonicConstantsLib.TOKEN_WSTKSCETH,
+            SonicConstantsLib.TOKEN_STKSCETH
         );
         pools[3] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_scETH_stkscETH_250,
+            SonicConstantsLib.POOL_SHADOW_CL_SCETH_STKSCETH_250,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscETH,
-            SonicConstantsLib.TOKEN_scETH
+            SonicConstantsLib.TOKEN_STKSCETH,
+            SonicConstantsLib.TOKEN_SCETH
         );
 
         vm.startPrank(multisig);
@@ -87,23 +87,23 @@ contract ERC4626AdapterTest is Test {
 
         deal(SonicConstantsLib.TOKEN_USDC, address(this), 1000e6);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
-        IERC20(SonicConstantsLib.TOKEN_wstkscUSD).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD, 1000e6, 100);
+        IERC20(SonicConstantsLib.TOKEN_WSTKSCUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WSTKSCUSD, 1000e6, 100);
         swapper.swap(
-            SonicConstantsLib.TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
             SonicConstantsLib.TOKEN_USDC,
-            IERC20(SonicConstantsLib.TOKEN_wstkscUSD).balanceOf(address(this)),
+            IERC20(SonicConstantsLib.TOKEN_WSTKSCUSD).balanceOf(address(this)),
             100
         );
 
-        deal(SonicConstantsLib.TOKEN_wETH, address(this), 10e18);
-        IERC20(SonicConstantsLib.TOKEN_wETH).approve(address(swapper), type(uint).max);
-        IERC20(SonicConstantsLib.TOKEN_wstkscETH).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_wstkscETH, 10e18, 300);
+        deal(SonicConstantsLib.TOKEN_WETH, address(this), 10e18);
+        IERC20(SonicConstantsLib.TOKEN_WETH).approve(address(swapper), type(uint).max);
+        IERC20(SonicConstantsLib.TOKEN_WSTKSCETH).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_WETH, SonicConstantsLib.TOKEN_WSTKSCETH, 10e18, 300);
         swapper.swap(
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_wETH,
-            IERC20(SonicConstantsLib.TOKEN_wstkscETH).balanceOf(address(this)),
+            SonicConstantsLib.TOKEN_WSTKSCETH,
+            SonicConstantsLib.TOKEN_WETH,
+            IERC20(SonicConstantsLib.TOKEN_WSTKSCETH).balanceOf(address(this)),
             300
         );
     }
@@ -113,22 +113,22 @@ contract ERC4626AdapterTest is Test {
 
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
         assertEq(
-            adapter.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_wstkscUSD, address(0), 1e6), 1e6
+            adapter.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_WSTKSCUSD, address(0), 1e6), 1e6
         );
 
         // change price
-        deal(SonicConstantsLib.TOKEN_stkscUSD, address(this), 10000e6);
-        IERC20(SonicConstantsLib.TOKEN_stkscUSD).transfer(SonicConstantsLib.TOKEN_wstkscUSD, 10000e6);
+        deal(SonicConstantsLib.TOKEN_STKSCUSD, address(this), 10000e6);
+        IERC20(SonicConstantsLib.TOKEN_STKSCUSD).transfer(SonicConstantsLib.TOKEN_WSTKSCUSD, 10000e6);
         assertEq(
-            adapter.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_wstkscUSD, address(0), 1e6),
+            adapter.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_WSTKSCUSD, address(0), 1e6),
             1001624
         );
         assertEq(
-            adapter.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_stkscUSD, address(0), 1e6),
+            adapter.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_STKSCUSD, address(0), 1e6),
             998377
         );
 
-        //console.log(adapter.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_stkscUSD, address(0), 1e6));
+        //console.log(adapter.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_STKSCUSD, address(0), 1e6));
 
         vm.expectRevert("Not supported");
         adapter.getLiquidityForAmounts(address(0), new uint[](2));
@@ -136,7 +136,7 @@ contract ERC4626AdapterTest is Test {
         vm.expectRevert("Not supported");
         adapter.getProportions(address(0));
 
-        adapter.poolTokens(SonicConstantsLib.TOKEN_wstkscUSD);
+        adapter.poolTokens(SonicConstantsLib.TOKEN_WSTKSCUSD);
 
         assertEq(adapter.supportsInterface(type(IAmmAdapter).interfaceId), true);
         assertEq(adapter.supportsInterface(type(IERC165).interfaceId), true);

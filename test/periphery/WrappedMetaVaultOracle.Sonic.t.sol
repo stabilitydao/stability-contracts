@@ -16,13 +16,13 @@ contract WrappedMetaVaultOracleSonic is Test {
         // Jun-03-2025 08:13:07 AM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 31528140));
         oracle1 = IAggregatorInterfaceMinimal(
-            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD))
+            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_META_USD))
         );
         oracle2 = IAggregatorInterfaceMinimal(
-            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_metaUSDC))
+            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_META_USDC))
         );
         oracle3 = IAggregatorInterfaceMinimal(
-            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_metascUSD))
+            address(new WrappedMetaVaultOracle(SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD))
         );
     }
 

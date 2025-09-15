@@ -18,10 +18,10 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
+// import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {Platform} from "../../src/core/Platform.sol";
-import {PriceReader} from "../../src/core/PriceReader.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
+// import {PriceReader} from "../../src/core/PriceReader.sol";
+// import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -66,7 +66,7 @@ contract MetaVaultSonicTest is Test {
         // metaUSDC: single USDC lending vaults
         vaultType = VaultTypeLib.MULTIVAULT;
         vaults_ = new address[](5);
-        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SiF;
+        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SIF;
         vaults_[1] = SonicConstantsLib.VAULT_C_USDC_S_8;
         vaults_[2] = SonicConstantsLib.VAULT_C_USDC_S_27;
         vaults_[3] = SonicConstantsLib.VAULT_C_USDC_S_34;
@@ -86,9 +86,9 @@ contract MetaVaultSonicTest is Test {
         vaultType = VaultTypeLib.METAVAULT;
         vaults_ = new address[](4);
         vaults_[0] = metaVaults[0];
-        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_SiF;
-        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
-        vaults_[3] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC;
+        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_SIF;
+        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
+        vaults_[3] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC;
         proportions_ = new uint[](4);
         proportions_[0] = 50e16;
         proportions_[1] = 15e16;
@@ -443,7 +443,7 @@ contract MetaVaultSonicTest is Test {
         vm.stopPrank();
 
         // add vault
-        address vault = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
+        address vault = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
         newTargetProportions = new uint[](3);
 
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
@@ -489,7 +489,7 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.targetProportions()[0], 20e16);
         assertEq(metavault.currentProportions().length, 5);
         assertEq(metavault.currentProportions()[0], 20e16);
-        assertEq(metavault.vaultForDeposit(), SonicConstantsLib.VAULT_C_USDC_SiF);
+        assertEq(metavault.vaultForDeposit(), SonicConstantsLib.VAULT_C_USDC_SIF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
@@ -529,9 +529,9 @@ contract MetaVaultSonicTest is Test {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SIF);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
@@ -556,14 +556,14 @@ contract MetaVaultSonicTest is Test {
         );
 
         address[8] memory vaults = [
-            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_SIF,
             SonicConstantsLib.VAULT_C_USDC_S_8,
             SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,
             SonicConstantsLib.VAULT_C_USDC_S_36,
             SonicConstantsLib.VAULT_C_USDC_S_49,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC
         ];
 
         for (uint i; i < vaults.length; i++) {

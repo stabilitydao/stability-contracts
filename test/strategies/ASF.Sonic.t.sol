@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {SonicConstantsLib, StrategyIdLib} from "../../chains/sonic/SonicLib.sol";
 import {UniversalTest, IALM} from "../base/UniversalTest.sol";
@@ -16,10 +16,10 @@ contract ALMShadowFarmStrategyTest is SonicSetup, UniversalTest {
         duration3 = 0.5 hours;
 
         makePoolVolumePriceImpactTolerance = 34_000;
-        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 500; // 500k
-        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_WETH] = 650; // 650k
-        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 800;
-        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_wS_BRUSH_5000] = 400;
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_WS_WETH] = 500; // 500k
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_WS_WETH] = 650; // 650k
+        poolVolumeSwapAmount0MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_WS_BRUSH_5000] = 800;
+        poolVolumeSwapAmount1MultiplierForPool[SonicConstantsLib.POOL_SHADOW_CL_WS_BRUSH_5000] = 400;
 
         rebalanceHelper = new RebalanceHelper();
     }

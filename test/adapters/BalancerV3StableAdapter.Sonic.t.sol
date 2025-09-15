@@ -25,7 +25,7 @@ contract BalancerV3StableAdapterTest is SonicSetup {
         vm.expectRevert(IControllable.AlreadyExist.selector);
         balancerAdapter.setupHelpers(address(1));
 
-        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS;
+        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_WS_ANS;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e15;
         amounts[1] = 100e18;
@@ -41,27 +41,27 @@ contract BalancerV3StableAdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS;
-        deal(SonicConstantsLib.SILO_VAULT_25_wS, address(adapter), 1e15);
-        adapter.swap(pool, SonicConstantsLib.SILO_VAULT_25_wS, SonicConstantsLib.TOKEN_anS, address(this), 10_000);
-        uint out = IERC20(SonicConstantsLib.TOKEN_anS).balanceOf(address(this));
+        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_WS_ANS;
+        deal(SonicConstantsLib.SILO_VAULT_25_WS, address(adapter), 1e15);
+        adapter.swap(pool, SonicConstantsLib.SILO_VAULT_25_WS, SonicConstantsLib.TOKEN_ANS, address(this), 10_000);
+        uint out = IERC20(SonicConstantsLib.TOKEN_ANS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicConstantsLib.SILO_VAULT_25_wS, address(adapter), 200000000e18);
+        deal(SonicConstantsLib.SILO_VAULT_25_WS, address(adapter), 200000000e18);
         vm.expectRevert();
-        adapter.swap(pool, SonicConstantsLib.SILO_VAULT_25_wS, SonicConstantsLib.TOKEN_anS, address(this), 1);
-        // out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
+        adapter.swap(pool, SonicConstantsLib.SILO_VAULT_25_WS, SonicConstantsLib.TOKEN_ANS, address(this), 1);
+        // out = IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(this));
         // console.log(out);
     }
 
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS;
+        address pool = SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_WS_ANS;
         address[] memory tokens = adapter.poolTokens(pool);
         assertEq(tokens.length, 2);
-        assertEq(tokens[0], SonicConstantsLib.SILO_VAULT_25_wS);
-        assertEq(tokens[1], SonicConstantsLib.TOKEN_anS);
+        assertEq(tokens[0], SonicConstantsLib.SILO_VAULT_25_WS);
+        assertEq(tokens[1], SonicConstantsLib.TOKEN_ANS);
 
         uint[] memory props = adapter.getProportions(pool);
         assertLt(props[0], 4e17);
@@ -70,7 +70,7 @@ contract BalancerV3StableAdapterTest is SonicSetup {
         //console.log(props[1]);
 
         uint price;
-        price = adapter.getPrice(pool, SonicConstantsLib.SILO_VAULT_25_wS, SonicConstantsLib.TOKEN_anS, 1e18);
+        price = adapter.getPrice(pool, SonicConstantsLib.SILO_VAULT_25_WS, SonicConstantsLib.TOKEN_ANS, 1e18);
         assertGt(price, 9e14);
         assertLt(price, 11e14);
         //console.log(price);

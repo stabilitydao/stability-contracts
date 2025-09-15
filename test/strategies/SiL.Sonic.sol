@@ -16,8 +16,8 @@ contract SiloLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiLSonic() public universalTest {
-        _addStrategy(SonicConstantsLib.SILO_VAULT_3_stS, SonicConstantsLib.SILO_VAULT_3_wS);
-        //_addStrategy(SonicConstantsLib.SILO_VAULT_3_wS, SonicConstantsLib.SILO_VAULT_3_stS);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_3_STS, SonicConstantsLib.SILO_VAULT_3_WS);
+        //_addStrategy(SonicConstantsLib.SILO_VAULT_3_WS, SonicConstantsLib.SILO_VAULT_3_STS);
     }
 
     function _addStrategy(address strategyInitAddress0, address strategyInitAddress1) internal {

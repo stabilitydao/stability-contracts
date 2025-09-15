@@ -27,7 +27,7 @@ contract MetaVaultSonicUpgrade1 is Test {
     constructor() {
         // May-18-2025 03:55:11 PM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27775000));
-        metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_META_USDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
         _upgradeCVaults();
@@ -91,9 +91,9 @@ contract MetaVaultSonicUpgrade1 is Test {
         );
 
         address[8] memory vaults = [
-            SonicConstantsLib.VAULT_C_USDC_SiF,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC,
+            SonicConstantsLib.VAULT_C_USDC_SIF,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC,
             SonicConstantsLib.VAULT_C_USDC_S_8,
             SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,

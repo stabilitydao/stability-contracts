@@ -151,8 +151,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     //region ---------------------- Auxiliary tests
     /// @notice Auxiliary test to debug particular vaults
     function testDepositWithdrawSingle() internal {
-        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
-        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
+        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCUSD_USDC, false, 100e6);
+        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH, false, 0.1e18);
         TestResult memory r = _testDepositWithdrawSingleVault(0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D, false, 0);
         showResults(r);
         assertEq(r.result, RESULT_SUCCESS, "Selected vault should pass deposit/withdraw test");
@@ -293,7 +293,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         for (uint i; i < assets.length; ++i) {
             amounts[i] = amount_ == 0 ? _getDefaultAmountToDeposit(assets[i]) : amount_;
             //console.log("Dealing", assets[i], amounts[i]);
-            if (assets[i] == SonicConstantsLib.TOKEN_aUSDC) {
+            if (assets[i] == SonicConstantsLib.TOKEN_AUSDC) {
                 _dealAave(assets[i], address(this), amounts[i]);
             } else if (assets[i] == SonicConstantsLib.TOKEN_OS) {
                 _transferAmountFromHolder(assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
@@ -427,7 +427,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     /// @notice PT market is expired and doesn't allow deposit, so it should be skipped in the test
     function isExpiredPt(address vault_) internal pure returns (bool ret) {
-        ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
+        ret = vault_ == SonicConstantsLib.VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025
             || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
             || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
             || vault_ == 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SA
@@ -441,44 +441,44 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     /// @dev Make any set up actions before deposit/withdraw test
     function _setUpVault(address vault_) internal {
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
+        //        // ---------------- fix routes for VAULT_LEV_SIAL_WSTKSCUSD_USDC using beets-v3 adapter
+        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCUSD_USDC) {
         //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
         //
         //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
         //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD,
+        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_WSTKSCUSD_SCUSD,
         //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_scUSD)
+        //                tokenIn: address(SonicConstantsLib.TOKEN_WSTKSCUSD),
+        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_SCUSD)
         //            });
         //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_46_scUSD,
+        //                pool: SonicConstantsLib.SILO_VAULT_46_SCUSD,
         //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_scUSD),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
+        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_SCUSD),
+        //                tokenOut: address(SonicConstantsLib.TOKEN_SCUSD)
         //            });
         //
         //            vm.prank(multisig);
         //            ISwapper(swapper).addPools(pools, true);
         //        }
         //
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
+        //        // ---------------- fix routes for VAULT_LEV_SIAL_WSTKSCETH_WETH using beets-v3 adapter
+        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH) {
         //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
         //
         //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
         //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH,
+        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_SCETH_WSTKSCETH,
         //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_bscETH)
+        //                tokenIn: address(SonicConstantsLib.TOKEN_WSTKSCETH),
+        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_BSCETH)
         //            });
         //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_47_bscETH,
+        //                pool: SonicConstantsLib.SILO_VAULT_47_BSCETH,
         //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_bscETH),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
+        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_BSCETH),
+        //                tokenOut: address(SonicConstantsLib.TOKEN_SCETH)
         //            });
         //
         //            vm.prank(multisig);
@@ -490,9 +490,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
         if (
-            asset_ == SonicConstantsLib.TOKEN_wETH || asset_ == SonicConstantsLib.TOKEN_atETH
-                || asset_ == SonicConstantsLib.TOKEN_scETH || asset_ == SonicConstantsLib.TOKEN_stkscETH
-                || asset_ == SonicConstantsLib.TOKEN_wstkscETH
+            asset_ == SonicConstantsLib.TOKEN_WETH || asset_ == SonicConstantsLib.TOKEN_ATETH
+                || asset_ == SonicConstantsLib.TOKEN_SCETH || asset_ == SonicConstantsLib.TOKEN_STKSCETH
+                || asset_ == SonicConstantsLib.TOKEN_WSTKSCETH
         ) {
             return 1e18;
         }

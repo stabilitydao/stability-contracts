@@ -47,14 +47,14 @@ contract ISFUpgradeTest is Test {
 
         factory.upgradeStrategyProxy(STRATEGY);
 
-        uint wsBalanceWas = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(FEE_TREASURY);
+        uint wsBalanceWas = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(FEE_TREASURY);
         uint stblBalanceWas = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(IPlatform(PLATFORM).revenueRouter());
 
         address[] memory vaultsForHardWork = new address[](1);
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
         hw.call(vaultsForHardWork);
 
-        uint wsBalanceChange = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(FEE_TREASURY) - wsBalanceWas;
+        uint wsBalanceChange = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(FEE_TREASURY) - wsBalanceWas;
         uint stblBalanceChange =
             IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(IPlatform(PLATFORM).revenueRouter()) - stblBalanceWas;
         assertGt(wsBalanceChange, 0);

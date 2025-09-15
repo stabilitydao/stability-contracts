@@ -30,7 +30,7 @@ contract SiALUpgradeExpiredPtSingleTest is Test {
     function testVaultSiAL_aSonUSDC_scUSD_14AUG2025() public {
         _withdrawFromExpiredPtVault(
             43926167, // Aug-21-2025 07:32:46 AM +UTC
-            SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025,
+            SonicConstantsLib.VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025,
             HOLDER_VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
         );
     }

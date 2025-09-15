@@ -26,7 +26,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 36147180)); // Jun-27-2025 08:28:28 AM +UTC
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
@@ -35,7 +35,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
 
     /// @notice First transaction: set up the MetaVault, whitelist a strategy, deposit some assets
     function setUp() public {
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
 
         address strategy = address(3);
 
