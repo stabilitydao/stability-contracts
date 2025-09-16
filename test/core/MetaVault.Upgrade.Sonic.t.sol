@@ -27,7 +27,7 @@ contract MetaVaultSonicUpgrade1 is Test {
     constructor() {
         // May-18-2025 03:55:11 PM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27775000));
-        metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_META_USDC);
+        metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
         _upgradeCVaults();

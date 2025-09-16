@@ -33,7 +33,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         overrideBlockNumber = 30141969;
 
         // Stability scUSD
-        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD);
+        wrapper = IERC4626(SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD);
         // Donor of USDC.e
         underlyingDonor = 0xe6605932e4a686534D19005BB9dB0FBA1F101272;
         amountToDonate = 1e6 * 1e6;
@@ -89,8 +89,8 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_META_SCUSD;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD;
+        proxies[0] = SonicConstantsLib.METAVAULT_METASCUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
@@ -183,7 +183,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
     }
 
     function _setProportions(uint fromIndex, uint toIndex) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD);
         multisig = IPlatform(PLATFORM).multisig();
 
         uint[] memory props = metaVault.targetProportions();

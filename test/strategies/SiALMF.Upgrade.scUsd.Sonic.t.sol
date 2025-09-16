@@ -62,10 +62,10 @@ contract SiALMFUpgradeScUsdTest is Test {
         vault = IStabilityVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
         strategy = IVault(address(vault)).strategy();
         priceReader =
-            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).platform()).priceReader());
+            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).platform()).priceReader());
 
         _upgradePlatform(address(priceReader));
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         //        _upgradeWrappedMetaVault();
         _upgradeCVault(address(vault));
 
@@ -80,9 +80,9 @@ contract SiALMFUpgradeScUsdTest is Test {
     function testSingleDepositWithdraw() public {
         // ---------------------------------- Deposit
         uint amount = 7000e18;
-        _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).approve(address(vault), amount);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(vault), amount);
 
         address[] memory assets = vault.assets();
         uint[] memory amountsMax = new uint[](1);
@@ -214,8 +214,8 @@ contract SiALMFUpgradeScUsdTest is Test {
         vm.startPrank(multisig);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_META_S;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_USD;
+        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_METAS;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_METAUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
     }
@@ -256,7 +256,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         address wrappedMetaVault_
     ) internal {
         IMetaVault metaVault = IMetaVault(IWrappedMetaVault(wrappedMetaVault_).metaVault());
-        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_META_USD
+        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_METAUSD
             ? SonicConstantsLib.TOKEN_USDC
             : SonicConstantsLib.TOKEN_WS;
 
@@ -264,7 +264,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         // so we deposit a bit large amount of USDC
         address[] memory _assets = metaVault.assetsForDeposit();
         uint[] memory amountsMax = new uint[](1);
-        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_META_USD
+        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_METAUSD
             ? 2 * amountMetaVaultTokens / 1e12
             : 2 * amountMetaVaultTokens;
 
@@ -318,35 +318,35 @@ contract SiALMFUpgradeScUsdTest is Test {
     }
 
     function _removeUnusedVaults() internal {
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // todo UsdAmountLessThreshold(6074204700030295904090)
         //        vm.prank(multisig);
-        //        IMetaVault(SonicConstantsLib.METAVAULT_META_USD).removeVault(SonicConstantsLib.METAVAULT_META_SCUSD);
+        //        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).removeVault(SonicConstantsLib.METAVAULT_METASCUSD);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SIF);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SIF);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(
             SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK
         );
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_USDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
 
         // _removeUnusedVaultsMetaScUsd();
     }
@@ -357,32 +357,32 @@ contract SiALMFUpgradeScUsdTest is Test {
         // let's try to remove them completely
 
         // --------------------------------- Set target proportions to 0
-        _setProportions(SonicConstantsLib.METAVAULT_META_SCUSD, 0, 2, 2e16);
-        _setProportions(SonicConstantsLib.METAVAULT_META_SCUSD, 1, 2, 2e16);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 0, 2, 2e16);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 1, 2, 2e16);
 
         // --------------------------------- Withdraw liquidity from the sub vaults
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD), SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD), SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD), SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD), SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
 
-        _setProportions(SonicConstantsLib.METAVAULT_META_SCUSD, 0, 2, 0);
-        _setProportions(SonicConstantsLib.METAVAULT_META_SCUSD, 1, 2, 0);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 0, 2, 0);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 1, 2, 0);
 
         // --------------------------------- Remove sub vaults
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_S_46); // index 0
+        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_S_46); // index 0
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS); // index 1
+        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS); // index 1
     }
 
     function _tryToWithdraw(IMetaVault multiVault, address user, uint percents) internal {

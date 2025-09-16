@@ -46,13 +46,13 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
     function testPreCalculatePriceTx() public {
         vm.expectRevert(IPriceReader.NotWhitelistedTransientCache.selector);
         vm.prank(address(this));
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(this), true);
 
         vm.prank(address(this));
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_METAUSD);
     }
 
     /// @notice Ensure that preCalculateVaultPriceTx can be called only by whitelisted address only
@@ -72,7 +72,7 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
     function testPreCalculatePrices() public {
         // ------------------------------ Get prices from the price reader with enabled cache
         uint gas0 = gasleft();
-        (uint priceMetaUsd,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_META_USD);
+        (uint priceMetaUsd,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_METAUSD);
         uint gasMetaUsdPriceNoCache = gas0 - gasleft();
 
         gas0 = gasleft();
@@ -83,11 +83,11 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(this), true);
 
-        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_META_USD);
+        priceReader.preCalculatePriceTx(SonicConstantsLib.METAVAULT_METAUSD);
         priceReader.preCalculateVaultPriceTx(SonicConstantsLib.VAULT_C_USDC_S_49);
 
         gas0 = gasleft();
-        (uint priceMetaUsd2,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_META_USD);
+        (uint priceMetaUsd2,) = priceReader.getPrice(SonicConstantsLib.METAVAULT_METAUSD);
         uint gasMetaUsdPriceNoCache2 = gas0 - gasleft();
 
         gas0 = gasleft();

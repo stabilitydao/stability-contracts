@@ -29,7 +29,7 @@ contract AUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -49,7 +49,7 @@ contract AUpgradeTest is Test {
         IAToken aToken = IAToken(AaveStrategy(address(strategy)).aaveToken());
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_META_USDC);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METAUSDC);
 
         // ------------------- our balance and max available liquidity in AAVE token
         uint aTokenBalance = aToken.balanceOf(address(strategy));
@@ -61,11 +61,11 @@ contract AUpgradeTest is Test {
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
-        vm.prank(SonicConstantsLib.METAVAULT_META_USDC);
+        vm.prank(SonicConstantsLib.METAVAULT_METAUSDC);
         vault.withdrawAssets(assets, balanceToWithdraw * 101 / 100, new uint[](1));
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_META_USDC);
+        vm.prank(SonicConstantsLib.METAVAULT_METAUSDC);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl

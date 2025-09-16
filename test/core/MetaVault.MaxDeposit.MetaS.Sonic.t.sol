@@ -41,7 +41,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     uint public constant FORK_BLOCK = 37591249; // Jul-08-2025 10:21:19 AM +UTC
     uint public constant MULTI_VAULT_INDEX = 0;
     uint public constant META_VAULT_INDEX = 1;
-    uint public constant VALUE_buildingPayPerVaultTokenAmount = 5e24;
+    uint public constant VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT = 5e24;
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
@@ -91,12 +91,12 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         vm.stopPrank();
 
         // ------------------------------ Set up whitelist
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_S);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
         for (uint i; i < _vaults.length; ++i) {
             address strategy = address(IVault(_vaults[i]).strategy());
 
             vm.prank(IPlatform(PLATFORM).multisig());
-            IMetaVault(SonicConstantsLib.METAVAULT_META_S).changeWhitelist(strategy, true);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAS).changeWhitelist(strategy, true);
 
             vm.prank(multisig);
             priceReader.changeWhitelistTransientCache(strategy, true);
@@ -142,7 +142,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
 
         // ---------------------------------- Set whitelist for transient cache #348
         vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_META_S, true);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_METAS, true);
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(metaVaults[META_VAULT_INDEX], true);
@@ -181,7 +181,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
             _getMetaSOnBalance(address(this), amountMetaUsd, true);
 
             vm.prank(address(this));
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_S).approve(address(metaVault), type(uint).max);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).approve(address(metaVault), type(uint).max);
 
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amountMetaUsd;
@@ -544,7 +544,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _tryToWithdraw(IMetaVault multiVault, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -558,7 +558,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _tryToWithdraw(IWrappedMetaVault targetWrapped, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -618,7 +618,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         uint[] memory maxAmounts,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
         _getMetaSOnBalance(address(this), maxAmounts[0], true);
 
         vm.prank(address(this));
@@ -656,7 +656,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         uint amountToDeposit,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
         _getMetaSOnBalance(address(this), amountToDeposit, true);
 
         vm.prank(address(this));
@@ -692,7 +692,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         uint sharesToMint,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
         _getMetaSOnBalance(address(this), amountToDeposit, true);
 
         vm.prank(address(this));
@@ -723,7 +723,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _getMetaSOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_S);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAS);
 
         // we don't know exact amount of S required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of S
@@ -744,7 +744,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
 
         if (wrap) {
             vm.startPrank(user);
-            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_S);
+            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAS);
             metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
             wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
             vm.stopPrank();
@@ -759,13 +759,13 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         uint collateralApproxAmount = 10 * maxLiquidityToBorrow * 1e12;
 
         // use deal to avoid increasing liquidity in the silo pool
-        deal(SonicConstantsLib.WRAPPED_METAVAULT_META_S, user, collateralApproxAmount);
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_METAS, user, collateralApproxAmount);
         // _getMetaUsdOnBalance(user, collateralApproxAmount, true);
 
-        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_S).balanceOf(user);
+        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).balanceOf(user);
 
         vm.prank(user);
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_S).approve(address(collateralVault), balance);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).approve(address(collateralVault), balance);
 
         vm.prank(user);
         collateralVault.deposit(balance, user);
@@ -851,9 +851,9 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     }
 
     function _createVaultsAndStrategies(Factory factory) internal returns (address[] memory vaults) {
-        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_buildingPayPerVaultTokenAmount);
+        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT);
         IERC20(IPlatform(PLATFORM).buildingPayPerVaultToken()).approve(
-            address(factory), VALUE_buildingPayPerVaultTokenAmount
+            address(factory), VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT
         );
 
         uint farmId = factory.farmsLength() - 1;
@@ -946,16 +946,16 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = _makePoolData(
-            SonicConstantsLib.METAVAULT_META_S,
+            SonicConstantsLib.METAVAULT_METAS,
             AmmAdapterIdLib.META_VAULT,
-            SonicConstantsLib.METAVAULT_META_S,
-            SonicConstantsLib.METAVAULT_META_S
+            SonicConstantsLib.METAVAULT_METAS,
+            SonicConstantsLib.METAVAULT_METAS
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.WRAPPED_METAVAULT_META_S,
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.WRAPPED_METAVAULT_META_S,
-            SonicConstantsLib.METAVAULT_META_S
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS,
+            SonicConstantsLib.METAVAULT_METAS
         );
     }
 

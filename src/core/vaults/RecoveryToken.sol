@@ -9,13 +9,15 @@ import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";
 
 /// @title Incident impact recovery token
 /// @author Alien Deployer (https://github.com/a17)
+/// Changelog:
+///  1.1.0: Make decimals() virtual, add setDecimals()
 contract RecoveryToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IRecoveryToken {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.RecoveryToken")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _RECOVERY_TOKEN_STORAGE_LOCATION =
@@ -29,7 +31,11 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeab
     struct RecoveryTokenStorage {
         address target;
         mapping(address account => bool paused) pausedAccounts;
+        /// @notice 18 is used if decimals are not set explicitly
+        uint8 decimals;
     }
+
+    event SetDecimals(uint8 decimals);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
@@ -97,6 +103,14 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeab
         }
     }
 
+    /// @inheritdoc IRecoveryToken
+    function setDecimals(uint8 decimals_) external onlyGovernanceOrMultisig {
+        RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
+        $.decimals = decimals_;
+
+        emit SetDecimals(decimals_);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERC20 HOOKS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -119,6 +133,13 @@ contract RecoveryToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeab
     /// @inheritdoc IRecoveryToken
     function paused(address account) public view returns (bool) {
         return _getRecoveryTokenStorage().pausedAccounts[account];
+    }
+
+    /// @inheritdoc ERC20Upgradeable
+    function decimals() public view override returns (uint8) {
+        RecoveryTokenStorage storage $ = _getRecoveryTokenStorage();
+        uint8 _decimals = $.decimals;
+        return _decimals == 0 ? 18 : _decimals;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

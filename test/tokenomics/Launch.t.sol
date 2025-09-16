@@ -265,7 +265,7 @@ contract LaunchTest is Test, MockSetup {
         uint got = balanceWas - IERC20(stbl).balanceOf(address(v));
         assertGt(got, 0);
 
-        vm.warp(v.start() + v.duration());
+        vm.warp(v.start() + v.DURATION());
         v.release();
         got = balanceWas - IERC20(stbl).balanceOf(address(v));
         assertEq(got, allocator.ALLOCATION_INVESTORS());
@@ -276,7 +276,7 @@ contract LaunchTest is Test, MockSetup {
 
         assertEq(v.releasable(), 0);
         assertEq(v.vestedAmount(uint64(block.timestamp)), allocator.ALLOCATION_INVESTORS());
-        assertEq(v.end(), v.start() + v.duration());
+        assertEq(v.end(), v.start() + v.DURATION());
 
         vm.expectRevert("denied");
         v.delayStart(1);

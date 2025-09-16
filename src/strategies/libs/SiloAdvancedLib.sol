@@ -43,16 +43,16 @@ library SiloAdvancedLib {
     address internal constant TOKEN_WETH = 0x50c42dEAcD8Fc9773493ED674b675bE577f2634b;
     address internal constant TOKEN_SCETH = 0x3bcE5CB273F0F148010BbEa2470e7b5df84C7812;
     address internal constant TOKEN_STKSCETH = 0x455d5f11Fea33A8fa9D3e285930b478B6bF85265;
-    address internal constant TELLER_scETH = 0x31A5A9F60Dc3d62fa5168352CaF0Ee05aA18f5B8;
-    address internal constant TELLER_stkscETH = 0x49AcEbF8f0f79e1Ecb0fd47D684DAdec81cc6562;
+    address internal constant TELLER_SCETH = 0x31A5A9F60Dc3d62fa5168352CaF0Ee05aA18f5B8;
+    address internal constant TELLER_STKSCETH = 0x49AcEbF8f0f79e1Ecb0fd47D684DAdec81cc6562;
     address internal constant TOKEN_WSTKSCETH = 0xE8a41c62BB4d5863C6eadC96792cFE90A1f37C47;
 
     // mint wstkscUSD by USDC
     address internal constant TOKEN_USDC = 0x29219dd400f2Bf60E5a23d13Be72B486D4038894;
     address internal constant TOKEN_SCUSD = 0xd3DCe716f3eF535C5Ff8d041c1A41C3bd89b97aE;
     address internal constant TOKEN_STKSCUSD = 0x4D85bA8c3918359c78Ed09581E5bc7578ba932ba;
-    address internal constant TELLER_scUSD = 0x358CFACf00d0B4634849821BB3d1965b472c776a;
-    address internal constant TELLER_stkscUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
+    address internal constant TELLER_SCUSD = 0x358CFACf00d0B4634849821BB3d1965b472c776a;
+    address internal constant TELLER_STKSCUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
     address internal constant TOKEN_WSTKSCUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
 
     //region ------------------------------------- Data types
@@ -509,10 +509,10 @@ library SiloAdvancedLib {
             if (outByMint > outBySwap * 99_90 / 100_00) {
                 // mint scUSD
                 IERC20(TOKEN_USDC).forceApprove(TOKEN_SCUSD, amount);
-                ITeller(TELLER_scUSD).deposit(TOKEN_USDC, amount, 0);
+                ITeller(TELLER_SCUSD).deposit(TOKEN_USDC, amount, 0);
                 // mint stkscUSD
                 IERC20(TOKEN_SCUSD).forceApprove(TOKEN_STKSCUSD, amount);
-                ITeller(TELLER_stkscUSD).deposit(TOKEN_SCUSD, amount, 0);
+                ITeller(TELLER_STKSCUSD).deposit(TOKEN_SCUSD, amount, 0);
                 // mint wstkscUSD
                 IERC20(TOKEN_STKSCUSD).forceApprove(TOKEN_WSTKSCUSD, amount);
                 IERC4626(TOKEN_WSTKSCUSD).deposit(amount, address(this));
@@ -532,10 +532,10 @@ library SiloAdvancedLib {
             if (outByMint > outBySwap * 99_50 / 100_00) {
                 // mint scETH
                 IERC20(TOKEN_WETH).forceApprove(TOKEN_SCETH, amount);
-                ITeller(TELLER_scETH).deposit(TOKEN_WETH, amount, 0);
+                ITeller(TELLER_SCETH).deposit(TOKEN_WETH, amount, 0);
                 // mint stkscETH
                 IERC20(TOKEN_SCETH).forceApprove(TOKEN_STKSCETH, amount);
-                ITeller(TELLER_stkscETH).deposit(TOKEN_SCETH, amount, 0);
+                ITeller(TELLER_STKSCETH).deposit(TOKEN_SCETH, amount, 0);
                 // mint wstkscETH
                 IERC20(TOKEN_STKSCETH).forceApprove(TOKEN_WSTKSCETH, amount);
                 IERC4626(TOKEN_WSTKSCETH).deposit(amount, address(this));

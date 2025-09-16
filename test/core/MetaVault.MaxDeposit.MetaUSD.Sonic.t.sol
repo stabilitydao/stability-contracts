@@ -35,7 +35,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     uint public constant FORK_BLOCK = 36825191; // Jul-02-2025 09:02:59 AM +UTC
     uint public constant MULTI_VAULT_INDEX = 0;
     uint public constant META_VAULT_INDEX = 1;
-    uint public constant VALUE_buildingPayPerVaultTokenAmount = 5e24;
+    uint public constant VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT = 5e24;
 
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     IMetaVaultFactory public metaVaultFactory;
@@ -85,12 +85,12 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         vm.stopPrank();
 
         // ------------------------------ Set up whitelist
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         for (uint i; i < _vaults.length; ++i) {
             address strategy = address(IVault(_vaults[i]).strategy());
 
             vm.prank(IPlatform(PLATFORM).multisig());
-            IMetaVault(SonicConstantsLib.METAVAULT_META_USD).changeWhitelist(strategy, true);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(strategy, true);
 
             vm.prank(multisig);
             priceReader.changeWhitelistTransientCache(strategy, true);
@@ -137,7 +137,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         // ---------------------------------- Set whitelist for transient cache #348
         vm.prank(multisig);
-        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_META_USD, true);
+        priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_METAUSD, true);
 
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(metaVaults[META_VAULT_INDEX], true);
@@ -179,7 +179,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             _getMetaUsdOnBalance(address(this), amountMetaUsd, true);
 
             vm.prank(address(this));
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).approve(address(metaVault), type(uint).max);
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(metaVault), type(uint).max);
 
             uint[] memory amountsMax = new uint[](1);
             amountsMax[0] = amountMetaUsd;
@@ -722,7 +722,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _tryToWithdraw(IMetaVault multiVault, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -736,7 +736,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _tryToWithdraw(IWrappedMetaVault targetWrapped, uint amountToWithdraw) internal returns (uint withdrawn) {
-        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        IWrappedMetaVault wrapped = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         uint balanceBefore = wrapped.balanceOf(address(this));
 
         vm.prank(address(this));
@@ -797,7 +797,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint[] memory maxAmounts,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         _getMetaUsdOnBalance(address(this), maxAmounts[0], true);
 
         vm.prank(address(this));
@@ -835,7 +835,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint amountToDeposit,
         bool shouldRevert
     ) internal returns (uint deposited, uint amountConsumedEmitted) {
-        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        IMetaVault wrapped = IMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         _getMetaUsdOnBalance(address(this), amountToDeposit, true);
 
         vm.prank(address(this));
@@ -866,7 +866,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _getMetaUsdOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of USDC
@@ -886,7 +886,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         if (wrap) {
             vm.startPrank(user);
-            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
             metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
             wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
             vm.stopPrank();
@@ -901,13 +901,13 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         uint collateralApproxAmount = 10 * maxLiquidityToBorrow * 1e12;
 
         // use deal to avoid increasing liquidity in the silo pool
-        deal(SonicConstantsLib.WRAPPED_METAVAULT_META_USD, user, collateralApproxAmount);
+        deal(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, user, collateralApproxAmount);
         // _getMetaUsdOnBalance(user, collateralApproxAmount, true);
 
-        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).balanceOf(user);
+        uint balance = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(user);
 
         vm.prank(user);
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_META_USD).approve(address(collateralVault), balance);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(collateralVault), balance);
 
         vm.prank(user);
         collateralVault.deposit(balance, user);
@@ -1002,9 +1002,9 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     }
 
     function _createVaultsAndStrategies(Factory factory) internal returns (address[] memory vaults) {
-        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_buildingPayPerVaultTokenAmount);
+        deal(IPlatform(PLATFORM).buildingPayPerVaultToken(), address(this), VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT);
         IERC20(IPlatform(PLATFORM).buildingPayPerVaultToken()).approve(
-            address(factory), VALUE_buildingPayPerVaultTokenAmount
+            address(factory), VALUE_BUILDINGPAYPERVAULTTOKENAMOUNT
         );
 
         uint farmId = factory.farmsLength() - 2;
@@ -1111,16 +1111,16 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         pools = new ISwapper.AddPoolData[](2);
         uint i;
         pools[i++] = _makePoolData(
-            SonicConstantsLib.METAVAULT_META_USD,
+            SonicConstantsLib.METAVAULT_METAUSD,
             AmmAdapterIdLib.META_VAULT,
-            SonicConstantsLib.METAVAULT_META_USD,
-            SonicConstantsLib.METAVAULT_META_USD
+            SonicConstantsLib.METAVAULT_METAUSD,
+            SonicConstantsLib.METAVAULT_METAUSD
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.WRAPPED_METAVAULT_META_USD,
+            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.WRAPPED_METAVAULT_META_USD,
-            SonicConstantsLib.METAVAULT_META_USD
+            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
+            SonicConstantsLib.METAVAULT_METAUSD
         );
     }
 

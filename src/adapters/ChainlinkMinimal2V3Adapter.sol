@@ -6,10 +6,10 @@ import {IAggregatorV3Interface} from "../integrations/chainlink/IAggregatorV3Int
 
 /// @notice Convert IAggregatorInterfaceMinimal to IAggregatorV3Interface
 contract ChainlinkMinimal2V3Adapter is IAggregatorV3Interface {
-    address public immutable aggregatorMinimal;
+    address public immutable AGGREGATOR_MINIMAL;
 
     constructor(address aggregatorMinimal_) {
-        aggregatorMinimal = aggregatorMinimal_;
+        AGGREGATOR_MINIMAL = aggregatorMinimal_;
     }
 
     function latestRoundData()
@@ -19,7 +19,7 @@ contract ChainlinkMinimal2V3Adapter is IAggregatorV3Interface {
     {
         return (
             0, // roundId is not available in IAggregatorInterfaceMinimal
-            IAggregatorInterfaceMinimal(aggregatorMinimal).latestAnswer(),
+            IAggregatorInterfaceMinimal(AGGREGATOR_MINIMAL).latestAnswer(),
             0, // startedAt is not available in IAggregatorInterfaceMinimal
             block.timestamp, // updatedAt is set to current block timestamp
             0 // answeredInRound is not available in IAggregatorInterfaceMinimal

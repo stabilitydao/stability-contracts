@@ -48,9 +48,9 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
-        multiVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
-        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_USD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
+        multiVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
+        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/multi-vault/c-vault with AAVE strategy
@@ -59,14 +59,14 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         IStrategy strategy = cvault.strategy();
 
         // ------------------- upgrade strategy
-        _upgradeVaults(SonicConstantsLib.METAVAULT_META_USD, SonicConstantsLib.WRAPPED_METAVAULT_META_USD, false);
-        _upgradeVaults(SonicConstantsLib.METAVAULT_META_USDC, SonicConstantsLib.WRAPPED_METAVAULT_META_USDC, true);
-        _upgradeVaults(SonicConstantsLib.METAVAULT_META_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD, true);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_METAUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, false);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_METAUSDC, SonicConstantsLib.WRAPPED_METAVAULT_METAUSDC, true);
+        _upgradeVaults(SonicConstantsLib.METAVAULT_METASCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, true);
 
         // ------------------- deposit large amount into scUSD-sub-metavault
         _setProportionsForDeposit(metaVault, 1);
         _setProportionsForDeposit(multiVault, 0);
-        assertEq(metaVault.vaultForDeposit(), SonicConstantsLib.METAVAULT_META_SCUSD, "d0");
+        assertEq(metaVault.vaultForDeposit(), SonicConstantsLib.METAVAULT_METASCUSD, "d0");
         if (LARGE_SC_AMOUNT != 0) {
             address[] memory assetsM = metaVault.assetsForDeposit();
             IERC20(assetsM[0]).approve(address(metaVault), type(uint).max);

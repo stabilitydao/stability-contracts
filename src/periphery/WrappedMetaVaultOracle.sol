@@ -14,18 +14,18 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 /// @title Minimal Chainlink-compatible Wrapped MetaVault price feed
 /// @author Alien Deployer (https://github.com/a17)
 contract WrappedMetaVaultOracle is IAggregatorInterfaceMinimal {
-    address public immutable wrappedMetaVault;
+    address public immutable WRAPPEDMETAVAULT;
 
     error NotTrustedPrice(address asset);
 
     //slither-disable-next-line missing-zero-check
     constructor(address wrappedMetaVault_) {
-        wrappedMetaVault = wrappedMetaVault_;
+        WRAPPEDMETAVAULT = wrappedMetaVault_;
     }
 
     /// @inheritdoc IAggregatorInterfaceMinimal
     function latestAnswer() external view returns (int) {
-        address _wrappedMetaVault = wrappedMetaVault;
+        address _wrappedMetaVault = WRAPPEDMETAVAULT;
         address metaVault = IWrappedMetaVault(_wrappedMetaVault).metaVault();
         uint oneWrapperShare = 10 ** IERC20Metadata(_wrappedMetaVault).decimals();
         uint wrapperSharePriceNotNormalized = IERC4626(_wrappedMetaVault).convertToAssets(oneWrapperShare);

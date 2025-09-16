@@ -12,14 +12,14 @@ import {VaultStatusLib} from "../core/libs/VaultStatusLib.sol";
 contract UpgradeHelper {
     string public constant VERSION = "1.0.0";
 
-    address public immutable platform;
+    address public immutable PLATFORM;
 
     constructor(address platform_) {
-        platform = platform_;
+        PLATFORM = platform_;
     }
 
     function upgradeVaults() external returns (uint upgraded) {
-        IFactory factory = IFactory(IPlatform(platform).factory());
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
         (, address implementation,,,) = factory.vaultConfig(keccak256(abi.encodePacked(VaultTypeLib.COMPOUNDING)));
         string memory lastVersion = IControllable(implementation).VERSION();
         address[] memory vaults = factory.deployedVaults();
@@ -38,7 +38,7 @@ contract UpgradeHelper {
     }
 
     function upgradeStrategies() external returns (uint upgraded) {
-        IFactory factory = IFactory(IPlatform(platform).factory());
+        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
         address[] memory vaults = factory.deployedVaults();
         uint len = vaults.length;
         for (uint i; i < len; ++i) {

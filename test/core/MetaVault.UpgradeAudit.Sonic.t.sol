@@ -25,7 +25,7 @@ contract MetaVaultSonicUpgradeAudit is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 

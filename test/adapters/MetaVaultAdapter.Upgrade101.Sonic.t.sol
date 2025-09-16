@@ -44,7 +44,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
     function _testSwapsMetaUsdc(uint amount) internal {
         uint snapshot = vm.snapshotState();
-        IMetaVault metaVaultUsdc = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        IMetaVault metaVaultUsdc = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
 
         uint got;
         address[] memory vaults = metaVaultUsdc.vaults();
@@ -57,8 +57,8 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         // swap 100 MetaUSDC to USDC
         got = _swap(
-            SonicConstantsLib.METAVAULT_META_USDC,
-            SonicConstantsLib.METAVAULT_META_USDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             SonicConstantsLib.TOKEN_USDC,
             metaVaultBalance,
             1_000 // 1% price impact
@@ -68,9 +68,9 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         // swap 100 wS to MetaS
         got = _swap(
-            SonicConstantsLib.METAVAULT_META_USDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.METAVAULT_META_USDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             got,
             1_000 // 1% price impact
         );

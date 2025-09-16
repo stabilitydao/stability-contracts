@@ -29,9 +29,9 @@ import {console, Test} from "forge-std/Test.sol";
 contract SiMFUpgradeXSiloTest is Test {
     uint public constant FORK_BLOCK = 35662058; // Jun-24-2025 09:03:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant METAVAULT = SonicConstantsLib.METAVAULT_META_USDC;
-    address public constant VAULT_C_USDC_SiMF = SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE;
-    address public constant VAULT_C = VAULT_C_USDC_SiMF;
+    address public constant METAVAULT = SonicConstantsLib.METAVAULT_METAUSDC;
+    address public constant VAULT_C_USDC_SIMF = SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE;
+    address public constant VAULT_C = VAULT_C_USDC_SIMF;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;
     address public multisig;

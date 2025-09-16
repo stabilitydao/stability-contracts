@@ -30,7 +30,7 @@ contract EUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -48,7 +48,7 @@ contract EUpgradeTest is Test {
         _upgradeEulerStrategy(address(strategy));
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_META_SCUSD);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // ------------------- our balance and max available liquidity in Euler token
         EulerStrategy eulerStrategy = EulerStrategy(address(strategy));
@@ -67,11 +67,11 @@ contract EUpgradeTest is Test {
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
-        vm.prank(SonicConstantsLib.METAVAULT_META_SCUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_META_SCUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl

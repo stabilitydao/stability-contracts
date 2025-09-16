@@ -29,7 +29,7 @@ contract SiUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_USDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -47,7 +47,7 @@ contract SiUpgradeTest is Test {
         _upgradeSiloStrategy(address(strategy));
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_META_SCUSD);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // ------------------- our balance and max available liquidity in AAVE token
         SiloStrategy siloStrategy = SiloStrategy(address(strategy));
@@ -69,12 +69,12 @@ contract SiUpgradeTest is Test {
             //            console.log("availableLiquidity", availableLiquidity);
             //            console.log("balanceAssets", balanceAssets);
             vm.expectRevert();
-            vm.prank(SonicConstantsLib.METAVAULT_META_SCUSD);
+            vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
             vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
         }
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_META_SCUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl

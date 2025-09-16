@@ -21,7 +21,7 @@ import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrat
 contract SiMFUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant METAVAULT = SonicConstantsLib.METAVAULT_META_USDC;
+    address public constant METAVAULT = SonicConstantsLib.METAVAULT_METAUSDC;
     address public constant VAULT_C = SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;

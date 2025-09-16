@@ -42,8 +42,8 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
         metaVaultFactory = IMetaVaultFactory(SonicConstantsLib.METAVAULT_FACTORY);
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_META_SCUSD);
-        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD);
+        wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD);
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/c-vault with Euler strategy
@@ -243,8 +243,8 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         metaVaultFactory.setMetaVaultImplementation(newMetaVaultImplementation);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.METAVAULT_META_SCUSD;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_META_SCUSD;
+        proxies[0] = SonicConstantsLib.METAVAULT_METASCUSD;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
