@@ -41,5 +41,5 @@ sonic = { key = "${ETHERSCAN_API_KEY}", chain = 146, url = "https://api.ethersca
 avalanche = { key = "${ETHERSCAN_API_KEY}", chain = 43114, url = "https://api.etherscan.io/v2/api?chainid=43114" }
 
 [lint]
-exclude_lints = ["mixed-case-function", "mixed-case-variable"]
+exclude_lints = ["mixed-case-function", "mixed-case-variable", "screaming-snake-case-const", "screaming-snake-case-immutable", "pascal-case-struct", "asm-keccak256"]
 ignore = ["src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol"]
