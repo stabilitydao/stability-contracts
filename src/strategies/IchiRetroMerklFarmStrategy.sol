@@ -18,6 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on Retro
 /// Changelog
+///   2.5.1: use LPStrategyBase 1.2.0
 ///   2.5.0: decrease code size
 ///   2.0.0: oRETRO transmutation through CASH flash loan
 /// @author Alien Deployer (https://github.com/a17)
@@ -29,7 +30,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.5.0";
+    string public constant VERSION = "2.5.1";
 
     uint internal constant _PRECISION = 10 ** 18;
 

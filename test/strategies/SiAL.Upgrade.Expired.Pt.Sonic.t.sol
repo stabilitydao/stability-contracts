@@ -16,7 +16,6 @@ import {console, Test} from "forge-std/Test.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {IPPrincipalToken} from "../../src/integrations/pendle/IPPrincipalToken.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
 
 contract SiALUpgradeExpiredPtTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

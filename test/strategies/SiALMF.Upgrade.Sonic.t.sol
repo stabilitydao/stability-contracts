@@ -82,7 +82,7 @@ contract SiALMFUpgradeTest is Test {
         priceReader.changeWhitelistTransientCache(SonicConstantsLib.METAVAULT_metaUSD, true);
 
         // ---------------------------------- Deposit
-        uint amount = 7e18;
+        uint amount = 17e18;
         _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(vault), amount);
@@ -126,7 +126,7 @@ contract SiALMFUpgradeTest is Test {
             vm.prank(multisig);
             strategy.emergencyStopInvesting();
 
-            console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
+            // console.log("!!!!!!!!!!!!!!!!!!!! gas used for emergency exit", gas0 - gasleft());
             assertLt(gas0 - gasleft(), 16e6, "Emergency exit should not use more than 16 mln gas");
         }
     }

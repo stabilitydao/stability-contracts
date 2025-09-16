@@ -13,7 +13,7 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 
 contract PrepareUpgrade4Polygon is Script {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
-    address public constant TOKEN_dQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
+    address public constant TOKEN_DQUICK = 0x958d208Cdf087843e9AD98d23823d32E17d723A1;
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1 = 0xd778C83E7cA19c2217d98daDACf7fD03B79B18cB;
     address public constant DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2 = 0x07d82761C3527Caf190b946e13d5C11291194aE6;
     address public constant POOL_QUICKSWAPV3_WMATIC_WETH = 0x479e1B71A702a595e19b6d5932CD5c863ab57ee0;
@@ -35,7 +35,7 @@ contract PrepareUpgrade4Polygon is Script {
         int24[] memory ticks;
         // [19]
         rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[0] = TOKEN_DQUICK;
         addresses = new address[](1);
         addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_1;
         nums = new uint[](1);
@@ -53,7 +53,7 @@ contract PrepareUpgrade4Polygon is Script {
 
         // [20]
         rewardAssets = new address[](1);
-        rewardAssets[0] = TOKEN_dQUICK;
+        rewardAssets[0] = TOKEN_DQUICK;
         addresses = new address[](1);
         addresses[0] = DEFIEDGE_STRATEGY_WMATIC_WETH_NARROW_2;
         nums = new uint[](1);

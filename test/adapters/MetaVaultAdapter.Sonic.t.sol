@@ -168,6 +168,7 @@ contract MetaVaultAdapterTest is SonicSetup {
 
     function testSwapBadPathIncorectToken() public {
         deal(SonicConstantsLib.TOKEN_USDC, address(this), 100e6);
+        /// forge-lint: disable-next-line
         IERC20(SonicConstantsLib.TOKEN_USDC).transfer(address(adapter), 100e6);
         vm.roll(block.number + 6);
 
@@ -446,6 +447,7 @@ contract MetaVaultAdapterTest is SonicSetup {
         uint amount,
         uint priceImpact
     ) internal returns (uint) {
+        /// forge-lint: disable-next-line
         IERC20(tokenIn).transfer(address(adapter), amount);
         vm.roll(block.number + 6);
 

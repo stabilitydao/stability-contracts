@@ -16,8 +16,6 @@ library StrategyLogicLib {
         uint step;
         string strategyColor;
         string strategyBgColor;
-        string networkColor;
-        string networkBgColor;
     }
 
     /// @dev Return SVG logo, name and description of VaultManager tokenId
@@ -33,8 +31,6 @@ library StrategyLogicLib {
         vars.step = 40;
         vars.strategyColor = CommonLib.bToHex(abi.encodePacked(bytes3(strategyData.strategyExtra)));
         vars.strategyBgColor = CommonLib.bToHex(abi.encodePacked(bytes3(strategyData.strategyExtra << 8 * 3)));
-        vars.networkColor = CommonLib.bToHex(abi.encodePacked(bytes3(platformData.networkExtra)));
-        vars.networkBgColor = CommonLib.bToHex(abi.encodePacked(bytes3(platformData.networkExtra << 8 * 3)));
         output = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900">';
         //endregion -- Setup vars -----
 
@@ -114,9 +110,7 @@ library StrategyLogicLib {
             output,
             '<rect y="',
             _str(vars.strategyBlockHeight),
-            '" fill="#',
-            vars.networkBgColor,
-            '" width="600" height="',
+            '" fill="#000000" width="600" height="',
             _str(900 - vars.strategyBlockHeight),
             '"/>'
         );
@@ -126,9 +120,7 @@ library StrategyLogicLib {
             output,
             '<text transform="matrix(1 0 0 1 50 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform base">Stability Platform ',
+            ')" fill="#ffffff" class="platform base">Stability Platform ',
             platformVersion,
             "</text>"
         );
@@ -137,44 +129,10 @@ library StrategyLogicLib {
             output,
             '<text transform="matrix(1 0 0 1 50 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Network</text><text transform="matrix(1 0 0 1 300 ',
+            ')" fill="#ffffff" class="platform-param base">Revenue fee</text><text transform="matrix(1 0 0 1 300 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
-            platformData.networkName,
-            "</text>"
-        );
-        vars.h += vars.step;
-        output = string.concat(
-            output,
-            '<text transform="matrix(1 0 0 1 50 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Revenue fee</text><text transform="matrix(1 0 0 1 300 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
+            ')" fill="#ffffff" class="platform-value base">',
             CommonLib.formatApr(platformData.fee),
-            "</text>"
-        );
-        vars.h += vars.step;
-        output = string.concat(
-            output,
-            '<text transform="matrix(1 0 0 1 50 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Strategy share</text><text transform="matrix(1 0 0 1 300 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
-            CommonLib.formatApr(platformData.feeShareStrategyLogic),
             "</text>"
         );
         //endregion -- Platform -----

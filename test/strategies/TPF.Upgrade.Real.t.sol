@@ -19,6 +19,8 @@ contract TPFUpgradeTest is Test {
         //        vm.rollFork(1126880); // Nov 15 2024 09:17:19 AM
     }
 
+    function testStrategy() external {}
+
     function _testTPFUpgrade() internal {
         IVaultManager vaultManager = IVaultManager(IPlatform(PLATFORM).vaultManager());
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());

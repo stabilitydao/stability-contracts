@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -27,7 +27,8 @@ import {IFeedRegistryInterface} from "../integrations/chainlink/IFeedRegistryInt
 import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 
 /// @title Earning MERKL rewards by DeFiEdge strategy on QuickSwapV3
-/// Changelog:
+/// Changelog
+///   1.5.2: use LPStrategyBase 1.2.0
 ///   1.5.1: Refactoring to reduce contract size - #326
 /// @author Alien Deployer (https://github.com/a17)
 contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
@@ -38,7 +39,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.1";
+    string public constant VERSION = "1.5.2";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

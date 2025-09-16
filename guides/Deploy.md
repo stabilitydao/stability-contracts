@@ -10,6 +10,12 @@ It is important to verify during deployment. Otherwise, you will have to manuall
 forge script --rpc-url sonic --slow --broadcast --verify --etherscan-api-key sonic script/deploy-core/Deploy.Sonic.s.sol
 ```
 
+### Avalanche
+
+```shell
+forge script --rpc-url avalanche --slow --broadcast --verify --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan' --etherscan-api-key avalanche script/deploy-core/Deploy.Avalanche.s.sol
+```
+
 ### Polygon
 
 ```shell

@@ -21,6 +21,8 @@ import {IEFLib} from "./libs/IEFLib.sol";
 import {IICHIVaultV4} from "../integrations/ichi/IICHIVaultV4.sol";
 
 /// @title Earn Equalizer farm rewards by Ichi ALM
+/// Changelog
+///   1.0.1: use LPStrategyBase 1.2.0
 /// @author Jude (https://github.com/iammrjude)
 contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -30,7 +32,7 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */

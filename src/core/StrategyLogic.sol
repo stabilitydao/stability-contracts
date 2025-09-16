@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {ERC721EnumerableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -16,6 +16,8 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 
 /// @notice The developed strategy logic is tokenized into StrategyLogic NFT.
 ///         The holders of these tokens receive a share of the revenue received in all vaults using this strategy logic.
+/// Changelog:
+///   1.1.0: remove platformData.feeShareStrategyLogic, platformData.networkExtra
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -23,7 +25,7 @@ contract StrategyLogic is Controllable, ERC721EnumerableUpgradeable, IStrategyLo
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyLogic")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYLOGIC_STORAGE_LOCATION =

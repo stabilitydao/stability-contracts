@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,7 +12,6 @@ import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {IRVault} from "../../interfaces/IRVault.sol";
 import {IVault} from "../../interfaces/IVault.sol";
 
 library LPStrategyLib {
@@ -89,18 +88,18 @@ library LPStrategyLib {
 
     /// @dev For now this support only pools of 2 tokens
     function processRevenue(
-        address platform,
-        address vault,
-        IAmmAdapter ammAdapter,
-        uint exchangeAssetIndex,
-        address pool,
-        address[] memory assets_,
-        uint[] memory amountsRemaining
-    ) external returns (bool needCompound) {
+        address, /* platform*/
+        address, /* vault*/
+        IAmmAdapter, /* ammAdapter*/
+        uint, /* exchangeAssetIndex*/
+        address, /* pool*/
+        address[] memory, /* assets_*/
+        uint[] memory /* amountsRemaining*/
+    ) external pure returns (bool needCompound) {
         needCompound = true;
-        ProcessRevenueVars memory vars;
-        vars.vaultYpe = IVault(vault).vaultType();
-        if (
+        //ProcessRevenueVars memory vars;
+        //vars.vaultYpe = IVault(vault).vaultType();
+        /*if (
             CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
                 || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
         ) {
@@ -172,7 +171,7 @@ library LPStrategyLib {
             if (vars.compoundRatio == 0) {
                 needCompound = false;
             }
-        }
+        }*/
     }
 
     /// @dev For now this support only pools of 2 tokens

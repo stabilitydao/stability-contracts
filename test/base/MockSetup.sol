@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
@@ -8,22 +8,16 @@ import {MockERC721} from "../../src/test/MockERC721.sol";
 import {VaultManager} from "../../src/core/VaultManager.sol";
 import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
-import {RMVault} from "../../src/core/vaults/RMVault.sol";
 
 abstract contract MockSetup {
     Platform public platform;
     CVault public vaultImplementation;
-    RVault public rVaultImplementation;
-    RMVault public rmVaultImplementation;
     MockERC20 public tokenA;
     MockERC20 public tokenB;
     MockERC20 public tokenC;
     MockERC20 public tokenD;
     MockERC20 public tokenE;
     MockERC20 public lp;
-    MockERC721 public builderPermitToken;
-    MockERC20 public builderPayPerVaultToken;
     uint public builderPayPerVaultPrice;
     VaultManager public vaultManager;
     StrategyLogic public strategyLogic;
@@ -34,8 +28,6 @@ abstract contract MockSetup {
         platform = Platform(address(proxy));
         platform.initialize(address(this), "23.11.0-dev");
         vaultImplementation = new CVault();
-        rVaultImplementation = new RVault();
-        rmVaultImplementation = new RMVault();
 
         proxy = new Proxy();
         proxy.initProxy(address(new VaultManager()));
@@ -59,11 +51,6 @@ abstract contract MockSetup {
         tokenE.init("Mock token E", "MOCKE", 24);
         lp = new MockERC20();
         lp.init("Mock LP", "MOCK_LP", 18);
-        builderPermitToken = new MockERC721();
-        builderPermitToken.init("Mock PM", "MOCK_PM");
-
-        builderPayPerVaultToken = tokenC;
-        builderPayPerVaultPrice = 10e6;
     }
 
     function testMockSetup() public {}

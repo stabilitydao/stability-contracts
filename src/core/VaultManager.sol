@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ERC721EnumerableUpgradeable} from
@@ -14,7 +14,6 @@ import {VaultTypeLib} from "./libs/VaultTypeLib.sol";
 import {IVaultManager} from "../interfaces/IVaultManager.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
-import {IRVault} from "../interfaces/IRVault.sol";
 import {IManagedVault} from "../interfaces/IManagedVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
@@ -24,6 +23,8 @@ import {IStrategy} from "../interfaces/IStrategy.sol";
 ///         Deployment rights of a vault are tokenized in VaultManager NFT.
 ///         The holders of these tokens receive a share of the vault revenue and can manage vault if possible.
 /// @dev Rewards transfers to token owner or revenue receiver address managed by token owner.
+/// Changelog:
+///   1.1.0: remove platformData.feeShareVaultManager, platformData.networkExtra, RVault support
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -31,7 +32,7 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultManager")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant VAULTMANAGER_STORAGE_LOCATION =
@@ -106,16 +107,9 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         vaultData.vaultExtra = vault.extra();
         vaultData.strategyExtra = strategy.extra();
 
-        address bbAsset = address(0);
-        if (keccak256(bytes(vaultData.vaultType)) == keccak256(bytes(VaultTypeLib.REWARDING))) {
-            address[] memory rts = IRVault(vaultData.vault).rewardTokens();
-            vaultData.rewardAssetsSymbols = CommonLib.getSymbols(rts);
-            bbAsset = rts[0];
-        }
-
         // slither-disable-next-line unused-return
         (vaultData.strategyId,, vaultData.assetsSymbols, vaultData.strategySpecific, vaultData.symbol) =
-            factory.getStrategyData(vaultData.vaultType, address(strategy), bbAsset);
+            factory.getStrategyData(vaultData.vaultType, address(strategy), address(0));
 
         vaultData.strategyTokenId = factory.strategyLogicConfig(keccak256(bytes(vaultData.strategyId))).tokenId;
 
@@ -152,7 +146,6 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         strategyApr = new uint[](len);
         strategySpecific = new string[](len);
         tvl = new uint[](len);
-        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
             IVault vault = IVault(vaultAddress[i]);
@@ -177,7 +170,6 @@ contract VaultManager is Controllable, ERC721EnumerableUpgradeable, IVaultManage
         VaultManagerStorage storage $ = _getStorage();
         uint len = totalSupply();
         vaultAddress = new address[](len);
-        // nosemgrep
         for (uint i; i < len; ++i) {
             vaultAddress[i] = $.tokenVault[i];
         }

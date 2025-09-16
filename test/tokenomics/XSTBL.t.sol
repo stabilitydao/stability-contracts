@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
@@ -44,6 +44,7 @@ contract XSTBLTest is Test, MockSetup {
         xStbl.enter(100e18);
 
         vm.expectRevert(abi.encodeWithSelector(IXSTBL.NOT_WHITELISTED.selector, address(this), address(1)));
+        /// forge-lint: disable-next-line
         IERC20(address(xStbl)).transfer(address(1), 1e18);
 
         address[] memory exemptee = new address[](1);
@@ -63,20 +64,24 @@ contract XSTBLTest is Test, MockSetup {
         exempt[0] = true;
         xStbl.setExemptionFrom(exemptee, exempt);
 
+        /// forge-lint: disable-next-line
         IERC20(address(xStbl)).transfer(address(1), 1e18);
 
         exempt[0] = false;
         xStbl.setExemptionFrom(exemptee, exempt);
         vm.expectRevert(abi.encodeWithSelector(IXSTBL.NOT_WHITELISTED.selector, address(this), address(1)));
+        /// forge-lint: disable-next-line
         IERC20(address(xStbl)).transfer(address(1), 1e18);
 
         exemptee[0] = address(1);
         exempt[0] = true;
         xStbl.setExemptionTo(exemptee, exempt);
+        /// forge-lint: disable-next-line
         IERC20(address(xStbl)).transfer(address(1), 1e18);
 
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IXSTBL.NOT_WHITELISTED.selector, address(1), address(2)));
+        /// forge-lint: disable-next-line
         IERC20(address(xStbl)).transfer(address(2), 1e18);
     }
 

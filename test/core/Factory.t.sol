@@ -40,27 +40,16 @@ contract FactoryTest is Test, MockSetup {
                 factory: address(factory),
                 priceReader: address(0),
                 swapper: address(1),
-                buildingPermitToken: address(builderPermitToken),
-                buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(10),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(0),
                 zap: address(0),
                 revenueRouter: address(0),
+                metaVaultFactory: address(0),
                 vaultPriceOracle: address(0)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         platform.addAmmAdapter("MOCKSWAP", address(ammAdapter));
@@ -80,44 +69,20 @@ contract FactoryTest is Test, MockSetup {
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(0),
-                deployAllowed: false,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IFactory.VaultImplementationIsNotAvailable.selector));
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
 
         platform.addOperator(address(101));
         assertEq(platform.isOperator(address(101)), true);
         vm.startPrank(address(101));
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
         vm.stopPrank();
 
         (, address impl, bool deployAllowed, bool upgradeAllowed,) =
@@ -164,47 +129,6 @@ contract FactoryTest is Test, MockSetup {
         assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));
 
-        uint userBalance = builderPayPerVaultToken.balanceOf(address(this));
-        address payToken = platform.buildingPayPerVaultToken();
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IFactory.YouDontHaveEnoughTokens.selector, userBalance, builderPayPerVaultPrice, payToken
-            )
-        );
-        factory.deployVaultAndStrategy(
-            VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
-        );
-
-        builderPayPerVaultToken.mint(builderPayPerVaultPrice);
-        builderPayPerVaultToken.approve(address(factory), builderPayPerVaultPrice);
-
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: "TestVaultType",
-                implementation: address(vaultImplementation),
-                deployAllowed: false,
-                upgradeAllowed: true,
-                buildingPrice: 100
-            })
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(IFactory.VaultNotAllowedToDeploy.selector));
-        factory.deployVaultAndStrategy(
-            "TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
-        );
-
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: false,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
-
         factory.setVaultConfig(
             IFactory.VaultConfig({
                 vaultType: "TestVaultType",
@@ -213,11 +137,6 @@ contract FactoryTest is Test, MockSetup {
                 upgradeAllowed: true,
                 buildingPrice: 100
             })
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(IFactory.StrategyLogicNotAllowedToDeploy.selector));
-        factory.deployVaultAndStrategy(
-            "TestVaultType", StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
 
         factory.setStrategyLogicConfig(
@@ -299,15 +218,7 @@ contract FactoryTest is Test, MockSetup {
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
 
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
@@ -321,13 +232,9 @@ contract FactoryTest is Test, MockSetup {
             address(this)
         );
 
-        builderPermitToken.mint();
-        uint wasBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
         (address vault,) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
-        uint nowBuilt = factory.vaultsBuiltByPermitTokenId(block.timestamp / (86400 * 7), 0);
-        assertEq(wasBuilt, nowBuilt - 1);
 
         bytes32 vaultTypeHash = IVaultProxy(vault).vaultTypeHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.AlreadyLastVersion.selector, vaultTypeHash));
@@ -343,29 +250,7 @@ contract FactoryTest is Test, MockSetup {
         statuses[0] = 1;
         factory.setVaultStatus(vaults, statuses);
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(newVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: false,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
-
-        vaultTypeHash = IVaultProxy(vault).vaultTypeHash();
-        vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, vaultTypeHash));
-        factory.upgradeVaultProxy(vault);
-
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(newVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(newVaultImplementation));
 
         vm.expectRevert(IVaultProxy.ProxyForbidden.selector);
         IVaultProxy(vault).upgrade();
@@ -404,7 +289,6 @@ contract FactoryTest is Test, MockSetup {
             address(this)
         );
 
-        builderPermitToken.mint();
         (, address strategy) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
@@ -456,7 +340,7 @@ contract FactoryTest is Test, MockSetup {
             assertFalse(extra__[0] == bytes32(0));
         }
 
-        factory.setStrategyLogicConfig(
+        /*factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.DEV,
                 implementation: address(newStrategyImplementation),
@@ -470,9 +354,10 @@ contract FactoryTest is Test, MockSetup {
 
         strategyProxyHash = IStrategyProxy(strategy).strategyImplementationLogicIdHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, strategyProxyHash));
-        factory.upgradeStrategyProxy(strategy);
+        factory.upgradeStrategyProxy(strategy);*/
 
-        factory.setStrategyLogicConfig(
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(newStrategyImplementation));
+        /*factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.DEV,
                 implementation: address(newStrategyImplementation),
@@ -482,7 +367,7 @@ contract FactoryTest is Test, MockSetup {
                 tokenId: type(uint).max
             }),
             address(this)
-        );
+        );*/
 
         vm.expectRevert(IControllable.NotFactory.selector);
         IStrategyProxy(strategy).upgrade();
@@ -536,18 +421,5 @@ contract FactoryTest is Test, MockSetup {
     function testGetExchangeAssetIndexRequire() public {
         vm.expectRevert(ISwapper.NoRouteFound.selector);
         factory.getExchangeAssetIndex(new address[](0));
-    }
-
-    function testSetAliasName() public {
-        string memory aliasName_ = "USDC";
-        factory.setAliasName(address(1), aliasName_);
-    }
-
-    function testGetAliasName() public {
-        string memory aliasName_ = "USDC";
-        factory.setAliasName(address(1), aliasName_);
-        /*string memory aliasName = */
-        factory.getAliasName(address(1));
-        //console.log("alias: %s", aliasName);
     }
 }
