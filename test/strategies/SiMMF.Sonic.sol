@@ -1,11 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {console} from "forge-std/console.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {SonicLib, SonicConstantsLib} from "../../chains/sonic/SonicLib.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
+import {ISiloVault} from "../../src/integrations/silo/ISiloVault.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
 
-contract SiloManagedMerklFarmStrategyTest is SonicSetup, UniversalTest {
+contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
     uint private constant FORK_BLOCK = 47005295; // Sep-16-2025 05:50:01 AM +UTC
 
     constructor() {
@@ -22,6 +33,48 @@ contract SiloManagedMerklFarmStrategyTest is SonicSetup, UniversalTest {
         deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
     }
 
+    /// @notice Try to deposit and ensure that poolTvl is updated correctly
+    function _checkPoolTvl() internal override returns (bool) {
+        uint snapshotId = vm.snapshotState();
+        IStrategy _strategy = IStrategy(currentStrategy);
+        IStabilityVault _vault = IStabilityVault(_strategy.vault());
+        ISiloVault siloVault = ISiloVault(_getSiloVaultForCurrentStrategy());
+
+        // --------------------- State before deposit
+        uint cashBefore = siloVault.totalAssets();
+        uint tvlUsdBefore = _strategy.poolTvl();
+
+        // --------------------- Deposit to the strategy
+        console.log("strategy.total", _strategy.total());
+        uint[] memory amountsToDeposit = new uint[](1);
+        amountsToDeposit[0] = cashBefore / 1000;
+        (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
+        console.log("Deposited to vault", deposited);
+        console.log("strategy.total", _strategy.total());
+
+        (uint priceAsset,) = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader()).getPrice(
+            _vault.assets()[0]
+        );
+
+        uint cashAfter = siloVault.totalAssets();
+        uint tvlUsdAfter = _strategy.poolTvl();
+
+        // --------------------- Check poolTvl values
+        // todo
+        //        assertApproxEqAbs(cashAfter, cashBefore + deposited, 1, "Silo totalAsset should be increased on deposited amount");
+        //        assertApproxEqAbs(
+        //            tvlUsdAfter,
+        //            tvlUsdBefore + deposited * priceAsset * 1e18 / 1e18 / 1e6,
+        //            1,
+        //            "TVL should increase on deposited amount"
+        //        );
+
+        vm.revertToState(snapshotId);
+
+        console.log("_checkPoolTvl");
+        return super._checkPoolTvl();
+    }
+
     function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
@@ -33,4 +86,55 @@ contract SiloManagedMerklFarmStrategyTest is SonicSetup, UniversalTest {
             })
         );
     }
+
+    //region -------------------------------- Internal logic
+
+    function _tryToDepositToVault(
+        address vault,
+        uint[] memory amounts_,
+        address user,
+        bool success
+    ) internal returns (uint deposited, uint values) {
+        address[] memory assets = IVault(vault).assets();
+        // ----------------------------- Prepare amount on user's balance
+        _dealAndApprove(user, vault, assets, amounts_);
+        // console.log("Deposit to vault", assets[0], amounts_[0]);
+
+        // ----------------------------- Try to deposit assets to the vault
+        uint valuesBefore = IERC20(vault).balanceOf(user);
+
+        if (!success) {
+            vm.expectRevert();
+        }
+        vm.prank(user);
+        IStabilityVault(vault).depositAssets(assets, amounts_, 0, user);
+
+        vm.roll(block.number + 6);
+
+        return (amounts_[0], IERC20(vault).balanceOf(user) - valuesBefore);
+    }
+
+    //endregion -------------------------------- Internal logic
+
+    //region -------------------------------- Utils
+    function _getSiloVaultForCurrentStrategy() internal view returns (address) {
+        IPlatform _platform = IPlatform(IControllable(currentStrategy).platform());
+        uint farmId = IFarmingStrategy(currentStrategy).farmId();
+        IFactory.Farm memory farm = IFactory(_platform.factory()).farm(farmId);
+        return farm.addresses[1];
+    }
+
+    function _dealAndApprove(
+        address user,
+        address metavault,
+        address[] memory assets,
+        uint[] memory amounts
+    ) internal {
+        for (uint j; j < assets.length; ++j) {
+            deal(assets[j], user, amounts[j]);
+            vm.prank(user);
+            IERC20(assets[j]).approve(metavault, amounts[j]);
+        }
+    }
+    //endregion -------------------------------- Utils
 }

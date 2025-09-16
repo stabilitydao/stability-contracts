@@ -110,6 +110,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
+        /// slither-disable-next-line ignore-unused-return
         return SharedLib.initVariantsForFarm(platform_, STRATEGY_LOGIC_ID, _genDesc);
     }
 
@@ -145,6 +146,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
+        /// slither-disable-next-line ignore-unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
@@ -362,7 +364,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " and supply APR by lending ",
             IERC20Metadata(ISiloVault(farm.addresses[0]).asset()).symbol(),
-            " to Silo managed vault",
+            " to Silo managed vault + receive Merkl rewards",
             shortAddr
         );
     }
