@@ -12,10 +12,13 @@ contract Vesting {
     event Beneficiary(address beneficiary_);
     event DelayStart(uint64 oldStart, uint64 newSstart);
 
+    // slither-disable-next-line naming-convention
     address public immutable PLATFORM;
+    // slither-disable-next-line naming-convention
     address public immutable TOKEN;
     address public beneficiary;
     string public name;
+    // slither-disable-next-line naming-convention
     uint64 public immutable DURATION;
     uint64 public start;
     uint public released;

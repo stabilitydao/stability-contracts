@@ -23,6 +23,7 @@ contract Frontend is IFrontend {
 
     error IncorrectParams();
 
+    // slither-disable-next-line naming-convention
     address public immutable PLATFORM;
 
     struct VaultsVars {

@@ -7,6 +7,7 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @title Minimal Chainlink-compatible vault trusted price feed
 /// @author Alien Deployer (https://github.com/a17)
 contract VaultOracle is IAggregatorInterfaceMinimal {
+    // slither-disable-next-line naming-convention
     address public immutable VAULT;
 
     constructor(address vault_) {

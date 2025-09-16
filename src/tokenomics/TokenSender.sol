@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 
 contract TokenSender {
+    // slither-disable-next-line naming-convention
     address public immutable PLATFORM;
 
     constructor(address platform_) {

@@ -12,6 +12,7 @@ import {VaultStatusLib} from "../core/libs/VaultStatusLib.sol";
 contract UpgradeHelper {
     string public constant VERSION = "1.0.0";
 
+    // slither-disable-next-line naming-convention
     address public immutable PLATFORM;
 
     constructor(address platform_) {

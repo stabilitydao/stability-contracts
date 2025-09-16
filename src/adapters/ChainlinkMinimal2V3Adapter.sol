@@ -6,6 +6,7 @@ import {IAggregatorV3Interface} from "../integrations/chainlink/IAggregatorV3Int
 
 /// @notice Convert IAggregatorInterfaceMinimal to IAggregatorV3Interface
 contract ChainlinkMinimal2V3Adapter is IAggregatorV3Interface {
+    // slither-disable-next-line naming-convention
     address public immutable AGGREGATOR_MINIMAL;
 
     constructor(address aggregatorMinimal_) {
