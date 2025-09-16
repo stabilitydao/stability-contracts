@@ -18,7 +18,7 @@ contract SiloManagedMerklFarmStrategyAvalancheTest is AvalancheSetup, UniversalT
 
     function _preHardWork() internal override {
         // emulate Merkl-rewards
-        deal(AvalancheConstantsLib.TOKEN_WAVAX, currentStrategy, 1e6);
+        deal(AvalancheConstantsLib.TOKEN_WAVAX, currentStrategy, 1e18);
     }
 
     function _addStrategy(uint farmId) internal {

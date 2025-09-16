@@ -275,18 +275,25 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         // Merkl rewards: assume they are added on the balance automatically
 
         // ------------------- xSilo => silo, collect all registered rewards to __rewardAmounts
+
+        // We assume here that SILO is set as a reward token in farm settings
+        // and xSilo is specified only in farmAddresses[1].
+        // Such config is valid for the case when rewards are provided in xSilo.
+        // It allows us to be able to keep xSilo on balance for any time without problems.
+        // And we can exchange it on silo at any moment and get real (silo) rewards.
+        // Currently we doesn't keep xSilo on balance - we always exchange it on silo instantly.
+
         address xSilo = farmAddresses[1];
         address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
 
         for (uint i; i < lenRewards; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
-            if (__rewardAssets[i] == xSilo) {
-                // assume xSilo and silo are not 0 here
-                if (__rewardAmounts[i] != 0) {
+            if (__rewardAssets[i] == silo && xSilo != address(0)) {
+                uint amountXSilo = StrategyLib.balance(xSilo);
+                if (amountXSilo != 0) {
                     // instant exit with penalty 50%
-                    __rewardAmounts[i] = IXSilo(xSilo).redeemSilo(__rewardAmounts[i], 0);
+                    __rewardAmounts[i] += IXSilo(xSilo).redeemSilo(amountXSilo, 0);
                 }
-                __rewardAssets[i] = silo;
             }
         }
     }

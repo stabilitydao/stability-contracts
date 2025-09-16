@@ -304,6 +304,9 @@ library SonicFarmMakerLib {
 
         // we can use getSiloManagedFarmRewards to auto-detect reward assets
         // but some vaults return empty array (probably it's not empty on other blocks)
+
+        // DONT put xSilo as a reward. Set SILO instead and provide address of xSilo as farm.addresses[1]
+        // Please note that xSilo works on Sonic only (it's bridget on other chains)
         farm.rewardAssets = new address[](5);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
         farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;

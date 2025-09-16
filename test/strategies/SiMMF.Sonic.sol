@@ -45,6 +45,8 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
     function _preHardWork() internal override {
         // emulate Merkl-rewards
         deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
+        deal(SonicConstantsLib.TOKEN_xSILO, currentStrategy, 100e18);
+        deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 100e18);
     }
 
     /// @notice Try to deposit and ensure that poolTvl is changed correctly
@@ -83,7 +85,6 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
 
         vm.revertToState(snapshotId);
 
-        console.log("_checkPoolTvl");
         return super._checkPoolTvl();
     }
     //endregion -------------------------------- Universal test overrides
