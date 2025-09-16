@@ -2,13 +2,13 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
+import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
 
-contract DeploySiMF is Script {
+contract DeploySiMMF is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new SiloManagedFarmStrategy();
+        new SiloManagedMerklFarmStrategy();
         vm.stopBroadcast();
     }
 
