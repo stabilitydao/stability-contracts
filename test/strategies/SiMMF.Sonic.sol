@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {console} from "forge-std/console.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {SonicLib, SonicConstantsLib} from "../../chains/sonic/SonicLib.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
@@ -28,53 +29,6 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
         _addStrategy(64);
     }
 
-    function _preHardWork() internal override {
-        // emulate Merkl-rewards
-        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
-    }
-
-    /// @notice Try to deposit and ensure that poolTvl is updated correctly
-    function _checkPoolTvl() internal override returns (bool) {
-        uint snapshotId = vm.snapshotState();
-        IStrategy _strategy = IStrategy(currentStrategy);
-        IStabilityVault _vault = IStabilityVault(_strategy.vault());
-        ISiloVault siloVault = ISiloVault(_getSiloVaultForCurrentStrategy());
-
-        // --------------------- State before deposit
-        uint cashBefore = siloVault.totalAssets();
-        uint tvlUsdBefore = _strategy.poolTvl();
-
-        // --------------------- Deposit to the strategy
-        console.log("strategy.total", _strategy.total());
-        uint[] memory amountsToDeposit = new uint[](1);
-        amountsToDeposit[0] = cashBefore / 1000;
-        (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
-        console.log("Deposited to vault", deposited);
-        console.log("strategy.total", _strategy.total());
-
-        (uint priceAsset,) = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader()).getPrice(
-            _vault.assets()[0]
-        );
-
-        uint cashAfter = siloVault.totalAssets();
-        uint tvlUsdAfter = _strategy.poolTvl();
-
-        // --------------------- Check poolTvl values
-        // todo
-        //        assertApproxEqAbs(cashAfter, cashBefore + deposited, 1, "Silo totalAsset should be increased on deposited amount");
-        //        assertApproxEqAbs(
-        //            tvlUsdAfter,
-        //            tvlUsdBefore + deposited * priceAsset * 1e18 / 1e18 / 1e6,
-        //            1,
-        //            "TVL should increase on deposited amount"
-        //        );
-
-        vm.revertToState(snapshotId);
-
-        console.log("_checkPoolTvl");
-        return super._checkPoolTvl();
-    }
-
     function _addStrategy(uint farmId) internal {
         strategies.push(
             Strategy({
@@ -87,8 +41,54 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
         );
     }
 
-    //region -------------------------------- Internal logic
+    //region -------------------------------- Universal test overrides
+    function _preHardWork() internal override {
+        // emulate Merkl-rewards
+        deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
+    }
 
+    /// @notice Try to deposit and ensure that poolTvl is changed correctly
+    function _checkPoolTvl() internal override returns (bool) {
+        uint snapshotId = vm.snapshotState();
+        IStrategy _strategy = IStrategy(currentStrategy);
+        IStabilityVault _vault = IStabilityVault(_strategy.vault());
+        ISiloVault siloVault = ISiloVault(_getSiloVaultForCurrentStrategy());
+
+        // --------------------- State before deposit
+        uint cashBefore = siloVault.totalAssets();
+        uint tvlUsdBefore = _strategy.poolTvl();
+
+        // --------------------- Deposit to the strategy
+        uint[] memory amountsToDeposit = new uint[](1);
+        amountsToDeposit[0] = cashBefore / 1000;
+        (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
+
+        (uint priceAsset,) = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader()).getPrice(
+            _vault.assets()[0]
+        );
+
+        uint cashAfter = siloVault.totalAssets();
+        uint tvlUsdAfter = _strategy.poolTvl();
+
+        // --------------------- Check poolTvl values
+        assertApproxEqAbs(
+            cashAfter, cashBefore + deposited, 1, "Silo totalAsset should be increased on deposited amount"
+        );
+        assertApproxEqAbs(
+            tvlUsdAfter,
+            tvlUsdBefore + deposited * priceAsset / (10 ** IERC20Metadata(siloVault.asset()).decimals()),
+            1,
+            "TVL should increase on deposited amount"
+        );
+
+        vm.revertToState(snapshotId);
+
+        console.log("_checkPoolTvl");
+        return super._checkPoolTvl();
+    }
+    //endregion -------------------------------- Universal test overrides
+
+    //region -------------------------------- Internal logic
     function _tryToDepositToVault(
         address vault,
         uint[] memory amounts_,
@@ -121,7 +121,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
         IPlatform _platform = IPlatform(IControllable(currentStrategy).platform());
         uint farmId = IFarmingStrategy(currentStrategy).farmId();
         IFactory.Farm memory farm = IFactory(_platform.factory()).farm(farmId);
-        return farm.addresses[1];
+        return farm.addresses[0];
     }
 
     function _dealAndApprove(
