@@ -8,12 +8,9 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {LibString} from "@solady/utils/LibString.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
-import {RMVault} from "../../src/core/vaults/RMVault.sol";
 import {MockStrategy} from "../../src/test/MockStrategy.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {IAprOracle} from "../../src/interfaces/IAprOracle.sol";
 import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {Utils} from "../base/Utils.sol";
@@ -23,13 +20,8 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
     using LibString for string;
 
     CVault public vault;
-    RVault public rVault;
-    RMVault public rmVault;
 
     function setUp() public {
-        builderPermitToken.mint();
-        builderPayPerVaultToken.mint(1e24);
-        builderPayPerVaultToken.approve(address(factory), 2 ** 255);
         deal(address(tokenB), address(this), 1e24);
         deal(address(tokenC), address(this), 1e24);
         tokenB.approve(address(factory), 2 ** 255);
@@ -42,31 +34,8 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
-        platform.setAllowedBBTokenVaults(address(tokenC), 100);
-        address[] memory initVaultAddreses = new address[](1);
-        initVaultAddreses[0] = address(tokenC);
-        uint[] memory initVaultNums = new uint[](1);
-        initVaultNums[0] = 3000e18;
-        IERC20(platform.allowedBBTokens()[0]).approve(address(factory), initVaultNums[0] * 2);
-        factory.deployVaultAndStrategy(
-            VaultTypeLib.REWARDING, StrategyIdLib.DEV, initVaultAddreses, initVaultNums, addresses, nums, ticks
-        );
-        platform.addDefaultBoostRewardToken(address(tokenB));
-        initVaultAddreses = new address[](2);
-        initVaultAddreses[0] = address(tokenC);
-        initVaultAddreses[1] = address(tokenB);
-        initVaultNums = new uint[](4);
-        initVaultNums[0] = 86_400;
-        initVaultNums[1] = 86_400 * 30;
-        initVaultNums[2] = 3000e18;
-        initVaultNums[3] = 20_000;
-        factory.deployVaultAndStrategy(
-            VaultTypeLib.REWARDING_MANAGED, StrategyIdLib.DEV, initVaultAddreses, initVaultNums, addresses, nums, ticks
-        );
 
         vault = CVault(payable(factory.deployedVault(0)));
-        rVault = RVault(payable(factory.deployedVault(1)));
-        rmVault = RMVault(payable(factory.deployedVault(2)));
     }
 
     function testSVG() public {
@@ -80,11 +49,8 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
         tokenB.mint(amounts[1] * 2);
         tokenA.approve(address(vault), amounts[0]);
         tokenB.approve(address(vault), amounts[1]);
-        tokenA.approve(address(rVault), amounts[0]);
-        tokenB.approve(address(rVault), amounts[1]);
 
         vault.depositAssets(assets, amounts, 0, address(0));
-        rVault.depositAssets(assets, amounts, 0, address(0));
 
         (uint sharePrice, bool sharePriceTrusted) = vault.price();
         assertEq(sharePrice, 1e18); // $1
@@ -92,31 +58,11 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
 
         // increase share price
         tokenA.mint(777e18 * 2);
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(vault.strategy()), 777555555e12);
-        tokenA.transfer(address(rVault.strategy()), 777555555e12);
 
         // set last hardwork apr
         MockStrategy(address(vault.strategy())).setLastApr(12_387);
-        MockStrategy(address(rVault.strategy())).setLastApr(12_387);
-
-        // set underlying and tokenB APRs
-        address _aprOracle = platform.aprOracle();
-        address[] memory assetToSetApr = new address[](2);
-        uint[] memory aprsToSet = new uint[](2);
-        assetToSetApr[0] = address(lp);
-        assetToSetApr[1] = address(tokenB);
-        aprsToSet[0] = 4_013;
-        aprsToSet[1] = 2_000;
-        IAprOracle(_aprOracle).setAprs(assetToSetApr, aprsToSet);
-
-        //test require
-        assetToSetApr = new address[](2);
-        uint[] memory _aprsToSet = new uint[](1);
-        assetToSetApr[0] = address(lp);
-        assetToSetApr[1] = address(tokenB);
-        _aprsToSet[0] = 4_013;
-        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectArrayLength.selector));
-        IAprOracle(_aprOracle).setAprs(assetToSetApr, _aprsToSet);
 
         // svg
         string memory name;
@@ -129,20 +75,17 @@ contract VaultManagerTest is Test, FullMockSetup, Utils {
             keccak256(bytes("Vault Stability MOCKA-MOCKB Dev Alpha DeepSpaceSwap Farm Good Params"))
         );
         // console.log(description);
-
-        writeNftSvgToFile(platform.vaultManager(), 1, "out/VaultManager_RVault.svg");
-        writeNftSvgToFile(platform.vaultManager(), 2, "out/VaultManager_RMVault.svg");
     }
 
     function testSetRevenueReceiver() public {
         IVaultManager vaultManager = IVaultManager(platform.vaultManager());
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotTheOwner.selector));
-        vaultManager.setRevenueReceiver(1, address(1));
+        vaultManager.setRevenueReceiver(0, address(1));
         //owner of tokenId 1
         vm.prank(address(this));
-        vaultManager.setRevenueReceiver(1, address(1));
-        assertEq(vaultManager.getRevenueReceiver(1), address(1));
+        vaultManager.setRevenueReceiver(0, address(1));
+        assertEq(vaultManager.getRevenueReceiver(0), address(1));
     }
 
     function testErc165() public view {

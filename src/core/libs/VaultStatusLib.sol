@@ -8,4 +8,5 @@ library VaultStatusLib {
     uint internal constant EMERGENCY_EXIT = 3;
     uint internal constant DISABLED = 4;
     uint internal constant DEPOSITS_UNAVAILABLE = 5;
+    uint internal constant RECOVERY = 6;
 }

@@ -24,6 +24,8 @@ import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {IICHIVault} from "../integrations/ichi/IICHIVault.sol";
 
 /// @title Earning MERKL rewards by Ichi strategy on QuickSwapV3
+/// Changelog
+///   1.5.1: use LPStrategyBase 1.2.0
 /// @author 0xhokugava (https://github.com/0xhokugava)
 contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -33,7 +35,7 @@ contract IchiQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Fa
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.5.1";
 
     uint internal constant PRECISION = 10 ** 18;
 

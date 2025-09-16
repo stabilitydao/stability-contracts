@@ -12,6 +12,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
 
 /// @dev CVault 1.7.3 upgrade test
 contract CVaultUpgradeAuditSonicTest is Test {
@@ -89,6 +90,8 @@ contract CVaultUpgradeAuditSonicTest is Test {
         deal(assets[0], user1, 1e6);
         deal(assets[0], hacker, 1e6);
 
+        _upgradePlatform();
+
         // ------------------------------ Upgrade both strategy and vault
         _upgradeCVault();
         _upgradeStrategy(address(strategy));
@@ -133,15 +136,7 @@ contract CVaultUpgradeAuditSonicTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault));
     }
 
@@ -162,6 +157,29 @@ contract CVaultUpgradeAuditSonicTest is Test {
         );
 
         factory.upgradeStrategyProxy(strategy);
+    }
+
+    function _upgradePlatform() internal {
+        // we need to skip 1 day to update the swapper
+        // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
+        // vm.warp(block.timestamp - 86400);
+        rewind(86400);
+
+        IPlatform platform = IPlatform(PLATFORM);
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        proxies[0] = platform.factory();
+
+        implementations[0] = address(new Factory());
+
+        vm.startPrank(multisig);
+        platform.announcePlatformUpgrade("2025.07.22-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
     }
 
     //endregion ---------------------- Auxiliary functions

@@ -29,6 +29,9 @@ import {IEulerVault} from "../integrations/euler/IEulerVault.sol";
 /// @title Lend asset on Euler and earn Merkl rewards
 /// @author Jude (https://github.com/iammrjude)
 /// @author dvpublic (https://github.com/dvpublic)
+/// Changelog:
+///   1.0.1: farm.addresses now can have 2 or 3 elements. Third address contains rEUL
+///          Currently it's not used, later it will be used to convert rEUL to EUL after ending of vesting period.
 contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC4626StrategyBase {
     using SafeERC20 for IERC20;
 
@@ -37,7 +40,7 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -50,7 +53,12 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (
+            // third param is optional, initially there were only 2 params
+            // so, some already deployed strategies may have only 2 params here
+            (farm.addresses.length != 2 && farm.addresses.length != 3) || farm.nums.length != 0
+                || farm.ticks.length != 0
+        ) {
             revert IFarmingStrategy.BadFarm();
         }
 
@@ -223,7 +231,8 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
         address[] memory rewardAssets_,
         uint[] memory rewardAmounts_
     ) internal override(ERC4626StrategyBase, FarmingStrategyBase, StrategyBase) returns (uint earnedExchangeAsset) {
-        // currently rEUL are not supported here
+        // rEUL is not supported as reward token here
+        // use EUL instead (rEUL will be converted to EUL after ending of vesting period)
         earnedExchangeAsset = FarmingStrategyBase._liquidateRewards(exchangeAsset, rewardAssets_, rewardAmounts_);
     }
 
@@ -238,6 +247,9 @@ contract EulerMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase, ERC46
             uint[] memory __rewardAmounts
         )
     {
+        // rEUL is not supported as reward token here
+        // rEUL is not liquidated and just collected on balance for future exchange to EUL after ending of vesting period
+
         ERC4626StrategyBaseStorage storage $ = _getERC4626StrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         address u = __$__._underlying;

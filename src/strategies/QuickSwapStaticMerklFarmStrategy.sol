@@ -17,6 +17,7 @@ import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
 
 /// @title Earning Merkl rewards and swap fees by QuickSwap V3 static liquidity position
 /// Changelog
+///   1.5.1: use LPStrategyBase 1.2.0
 ///   1.5.0: decrease code size
 /// @author Alien Deployer (https://github.com/a17)
 contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, FarmingStrategyBase {
@@ -27,7 +28,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.5.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.QuickSwapV3StaticMerkFarmStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant QUICKSWAPV3STATICMERKLFARMSTRATEGY_STORAGE_LOCATION =

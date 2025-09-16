@@ -31,7 +31,7 @@ contract SiALUpgrade2Test is Test {
     address public constant BEETS_VAULT_V3 = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     address public constant SHADOW_POOL_FRXUSD_SCUSD = 0xf28c748091FdaB86d5120aB359fCb471dAA6467d;
 
-    address public constant VAULT_aSonUSDC = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959; // C-PT-aSonUSDC-14AUG2025-SAL;
+    address public constant VAULT_ASONUSDC = 0x6BD40759E38ed47EF360A8618ac8Fe6d3b2EA959; // C-PT-aSonUSDC-14AUG2025-SAL;
 
     address public constant ALGEBRA_POOL_FRXUSD_SFRXUSD = 0x7d709a567BA2fdBbB92E94E5fE74b9cbbc590835;
 
@@ -121,7 +121,7 @@ contract SiALUpgrade2Test is Test {
     function testSiALUpgradeBeetsV3() public {
         address user1 = address(1);
         address user2 = address(2);
-        address vault = VAULT_aSonUSDC;
+        address vault = VAULT_ASONUSDC;
 
         // ----------------- deploy new impl and upgrade
         _upgradeStrategy(address(IVault(vault).strategy()));

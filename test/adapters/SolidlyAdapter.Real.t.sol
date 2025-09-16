@@ -110,6 +110,8 @@ contract SolidlyAdapterTest is Test {
 
     }*/
 
+    function testSolidlyAdapter() external {}
+
     function _makePoolData(
         address pool,
         string memory ammAdapterId,

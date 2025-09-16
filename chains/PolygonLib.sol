@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {Proxy} from "../src/core/proxy/Proxy.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -9,7 +9,7 @@ import {IPlatform} from "../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {IConvexRewardPool} from "../src/integrations/convex/IConvexRewardPool.sol";
-import {LogDeployLib, console, RMVault, RVault, PriceReader, IPriceReader} from "../script/libs/LogDeployLib.sol";
+import {LogDeployLib, console, PriceReader, IPriceReader} from "../script/libs/LogDeployLib.sol";
 import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
 import {ALMPositionNameLib} from "../src/strategies/libs/ALMPositionNameLib.sol";
@@ -25,7 +25,6 @@ import {CurveConvexFarmStrategy} from "../src/strategies/CurveConvexFarmStrategy
 import {YearnStrategy} from "../src/strategies/YearnStrategy.sol";
 import {SteerQuickSwapMerklFarmStrategy} from "../src/strategies/SteerQuickSwapMerklFarmStrategy.sol";
 import {CVault} from "../src/core/vaults/CVault.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {IHypervisor} from "../src/integrations/gamma/IHypervisor.sol";
 import {IDefiEdgeStrategy} from "../src/integrations/defiedge/IDefiEdgeStrategy.sol";
@@ -116,9 +115,6 @@ library PolygonLib {
     address public constant POOL_CURVE_crvUSD_USDT = 0xA70Af99bFF6b168327f9D1480e29173e757c7904;
     address public constant POOL_CURVE_crvUSD_DAI = 0x62c949ee985b125Ff2d7ddcf4Fe7AEcB0a040E2a;
     address public constant POOL_CURVE_crvUSD_USDC = 0x5225010A0AE133B357861782B0B865a48471b2C5;
-
-    // Gelato
-    address public constant GELATO_AUTOMATE = 0x527a819db1eb0e34426297b03bae11F2f8B3A19E;
 
     // QuickSwap V3
     address public constant QUICKSWAP_POSITION_MANAGER = 0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6;
@@ -211,17 +207,8 @@ library PolygonLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
         p.version = "24.06.0-alpha";
-        p.buildingPermitToken = TOKEN_PM;
-        p.buildingPayPerVaultToken = TOKEN_SDIV;
-        p.networkName = "Polygon";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)));
         p.targetExchangeAsset = TOKEN_USDCe;
-        p.gelatoAutomate = GELATO_AUTOMATE;
-        p.gelatoMinBalance = 1e18;
-        p.gelatoDepositAmount = 2e18;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {
@@ -235,9 +222,7 @@ library PolygonLib {
         //endregion -- Deployed Platform ----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 50_000e18);
-        _addVaultType(factory, VaultTypeLib.REWARDING, address(new RVault()), 50_000e18);
-        _addVaultType(factory, VaultTypeLib.REWARDING_MANAGED, address(new RMVault()), 100_000e18);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -333,18 +318,6 @@ library PolygonLib {
         factory.setStrategyAvailableInitParams(StrategyIdLib.YEARN, p);
         //endregion -- Add strategy available init params -----
 
-        //region ----- Reward tokens -----
-        IPlatform(platform).setAllowedBBTokenVaults(TOKEN_PROFIT, 2);
-        address[] memory allowedBoostRewardToken = new address[](2);
-        address[] memory defaultBoostRewardToken = new address[](2);
-        allowedBoostRewardToken[0] = TOKEN_PROFIT;
-        allowedBoostRewardToken[1] = TOKEN_USDCe;
-        defaultBoostRewardToken[0] = TOKEN_PROFIT;
-        defaultBoostRewardToken[1] = TOKEN_USDCe;
-        IPlatform(platform).addBoostTokens(allowedBoostRewardToken, defaultBoostRewardToken);
-        LogDeployLib.logSetupRewardTokens(platform, showLog);
-        //endregion -- Reward tokens -----
-
         //region ----- Deploy strategy logics -----
         _addStrategyLogic(
             factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true
@@ -377,15 +350,6 @@ library PolygonLib {
         dexAggRouter[0] = ONE_INCH;
         IPlatform(platform).addDexAggregators(dexAggRouter);
         //endregion -- Add DeX aggregators -----
-
-        //region ----- Set AliasName of Token -----
-        factory.setAliasName(TOKEN_WETH, "E");
-        factory.setAliasName(TOKEN_WMATIC, "M");
-        factory.setAliasName(TOKEN_WBTC, "B");
-        factory.setAliasName(TOKEN_USDT, "UT");
-        factory.setAliasName(TOKEN_USDC, "UC");
-        factory.setAliasName(TOKEN_USDCe, "UCe");
-        //endregion ----- Set AliasName of Token -----
     }
 
     function routes()
@@ -745,18 +709,6 @@ library PolygonLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

@@ -20,9 +20,11 @@ contract FeeTreasuryTest is Test, MockSetup {
 
     function test_feeTreasury110() public {
         tokenA.mint(100e18);
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(feeTreasury), 50e18);
 
         tokenB.mint(10e6);
+        /// forge-lint: disable-next-line
         tokenB.transfer(address(feeTreasury), 5e6);
 
         address[] memory assets = new address[](2);
@@ -79,6 +81,7 @@ contract FeeTreasuryTest is Test, MockSetup {
 
     function test_feeTreasury() public {
         tokenA.mint(100e18);
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(feeTreasury), 50e18);
 
         address[] memory assets = new address[](2);
@@ -118,6 +121,7 @@ contract FeeTreasuryTest is Test, MockSetup {
         feeTreasury.claim(assets);
         assertEq(tokenA.balanceOf(address(1)), 50e18 * 30 / 100);
 
+        /// forge-lint: disable-next-line
         tokenA.transfer(address(feeTreasury), 50e18);
         feeTreasury.distribute(assets);
         vm.prank(address(1));

@@ -14,7 +14,6 @@ import {DeployAdapterLib} from "../script/libs/DeployAdapterLib.sol";
 import {CompoundFarmStrategy} from "../src/strategies/CompoundFarmStrategy.sol";
 import {StrategyDeveloperLib} from "../src/strategies/libs/StrategyDeveloperLib.sol";
 import {CVault} from "../src/core/vaults/CVault.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {VaultTypeLib} from "../src/core/libs/VaultTypeLib.sol";
 import {PriceReader, IPriceReader} from "../src/core/PriceReader.sol";
 
@@ -66,17 +65,8 @@ library EthereumLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
         p.version = "24.06.0-alpha";
-        p.buildingPermitToken = address(0);
-        p.buildingPayPerVaultToken = TOKEN_WETH;
-        p.networkName = "Ethereum";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7c85c6), bytes3(0xffffff)));
         p.targetExchangeAsset = TOKEN_USDC;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e18;
-        p.gelatoDepositAmount = 2e18;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {
@@ -90,7 +80,7 @@ library EthereumLib {
         //endregion
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 1e17);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion
 
         // region ----- Deploy and setup oracle adapters -----
@@ -208,18 +198,6 @@ library EthereumLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {

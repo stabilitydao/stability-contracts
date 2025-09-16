@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -26,7 +26,8 @@ import {IBalancerGauge} from "../integrations/balancer/IBalancerGauge.sol";
 import {IBWeightedPoolMinimal} from "../integrations/balancer/IBWeightedPoolMinimal.sol";
 
 /// @title Earn Beets weighted pool LP fees and gauge rewards
-/// Changelog:
+/// Changelog
+///   1.2.4: use LPStrategyBase 1.2.0
 ///   1.2.3: StrategyBase 2.5.1
 ///   1.2.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.2.1: Use StrategyBase 2.4.0 - add default poolTvl, maxWithdrawAssets
@@ -40,7 +41,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.3";
+    string public constant VERSION = "1.2.4";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */

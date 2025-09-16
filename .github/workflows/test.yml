@@ -43,6 +43,7 @@ jobs:
           ETHEREUM_RPC_URL: ${{secrets.ETHEREUM_RPC_URL}}
           REAL_RPC_URL: ${{secrets.REAL_RPC_URL}}
           SONIC_RPC_URL: ${{secrets.SONIC_RPC_URL}}
+          AVALANCHE_RPC_URL: ${{secrets.AVALANCHE_RPC_URL}}
         id: test
 
       - name: Run Forge coverage
@@ -55,6 +56,7 @@ jobs:
           ETHEREUM_RPC_URL: ${{secrets.ETHEREUM_RPC_URL}}
           REAL_RPC_URL: ${{secrets.REAL_RPC_URL}}
           SONIC_RPC_URL: ${{secrets.SONIC_RPC_URL}}
+          AVALANCHE_RPC_URL: ${{secrets.AVALANCHE_RPC_URL}}
         id: coverage
 
       - name: Upload coverage lcov report to Codecov

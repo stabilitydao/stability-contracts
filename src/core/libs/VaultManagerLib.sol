@@ -18,8 +18,6 @@ library VaultManagerLib {
         string vaultBgColor;
         string strategyColor;
         string strategyBgColor;
-        string networkColor;
-        string networkBgColor;
     }
 
     /// @dev Return SVG logo, name and description of VaultManager tokenId
@@ -38,8 +36,6 @@ library VaultManagerLib {
         vars.vaultBgColor = CommonLib.bToHex(abi.encodePacked(bytes3(vaultData.vaultExtra << 8 * 3)));
         vars.strategyColor = CommonLib.bToHex(abi.encodePacked(bytes3(vaultData.strategyExtra)));
         vars.strategyBgColor = CommonLib.bToHex(abi.encodePacked(bytes3(vaultData.strategyExtra << 8 * 3)));
-        vars.networkColor = CommonLib.bToHex(abi.encodePacked(bytes3(platformData.networkExtra)));
-        vars.networkBgColor = CommonLib.bToHex(abi.encodePacked(bytes3(platformData.networkExtra << 8 * 3)));
         output = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900">';
         //endregion -- Setup vars -----
 
@@ -283,9 +279,7 @@ library VaultManagerLib {
             output,
             '<rect y="',
             _str(vars.vaultBlockHeight + strategyBlockHeight),
-            '" fill="#',
-            vars.networkBgColor,
-            '" width="600" height="',
+            '" fill="#000000" width="600" height="',
             _str(vars.platformBlockHeight),
             '"/>'
         );
@@ -306,9 +300,7 @@ library VaultManagerLib {
             output,
             '<text transform="matrix(1 0 0 1 80 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform base">Stability Platform ',
+            ')" fill="#ffffff" class="platform base">Stability Platform ',
             platformVersion,
             "</text>"
         );
@@ -317,44 +309,10 @@ library VaultManagerLib {
             output,
             '<text transform="matrix(1 0 0 1 50 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Network</text><text transform="matrix(1 0 0 1 300 ',
+            ')" fill="#ffffff" class="platform-param base">Revenue fee</text><text transform="matrix(1 0 0 1 300 ',
             _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
-            platformData.networkName,
-            "</text>"
-        );
-        vars.h += vars.step;
-        output = string.concat(
-            output,
-            '<text transform="matrix(1 0 0 1 50 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Revenue fee</text><text transform="matrix(1 0 0 1 300 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
+            ')" fill="#ffffff" class="platform-value base">',
             CommonLib.formatApr(platformData.fee),
-            "</text>"
-        );
-        vars.h += vars.step;
-        output = string.concat(
-            output,
-            '<text transform="matrix(1 0 0 1 50 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-param base">Manager share</text><text transform="matrix(1 0 0 1 300 ',
-            _str(vars.h),
-            ')" fill="#',
-            vars.networkColor,
-            '" class="platform-value base">',
-            CommonLib.formatApr(platformData.feeShareVaultManager),
             "</text>"
         );
         //endregion -- Platform -----

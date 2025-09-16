@@ -33,6 +33,7 @@ contract IQMFUpgradeTest is Test {
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
 
         vm.expectRevert();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         // deploy new impl and upgrade
@@ -78,6 +79,7 @@ contract IQMFUpgradeTest is Test {
         IFarmingStrategy(STRATEGY).refreshFarmingAssets();
         vm.stopPrank();
 
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         assertEq(IERC20(PolygonLib.TOKEN_QUICK).balanceOf(STRATEGY), 0);

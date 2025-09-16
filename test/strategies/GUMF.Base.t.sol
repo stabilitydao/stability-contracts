@@ -7,8 +7,6 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 
 contract GammaUniswapV3MerklFarmStrategyTest is BaseSetup, UniversalTest {
     function testGUMF() public universalTest {
-        buildingPayPerVaultTokenAmount = 1000e6;
-
         _addStrategy(3);
         _addStrategy(4);
         _addStrategy(5);

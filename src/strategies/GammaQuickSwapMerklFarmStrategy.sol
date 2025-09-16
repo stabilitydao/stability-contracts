@@ -20,6 +20,7 @@ import {GQMFLib} from "./libs/GQMFLib.sol";
 
 /// @title Earning Merkl rewards on QuickSwap V3 by underlying Gamma Hypervisor
 /// Changelog
+///   1.7.1: use LPStrategyBase 1.2.0
 ///   1.7.0: decrease code size
 /// @author Alien Deployer (https://github.com/a17)
 /// @author JodsMigel (https://github.com/JodsMigel)
@@ -32,7 +33,7 @@ contract GammaQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, F
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.7.0";
+    string public constant VERSION = "1.7.1";
 
     uint internal constant _PRECISION = 1e36;
 

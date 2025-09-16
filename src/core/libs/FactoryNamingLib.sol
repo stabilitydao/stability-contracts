@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {CommonLib} from "./CommonLib.sol";
@@ -13,7 +13,7 @@ library FactoryNamingLib {
         string memory vaultType,
         address strategyAddress,
         address bbAsset,
-        address platform
+        address
     )
         public
         view
@@ -25,7 +25,6 @@ library FactoryNamingLib {
             string memory vaultSymbol
         )
     {
-        IFactory factory = IFactory(IPlatform(platform).factory());
         strategyId = IStrategy(strategyAddress).strategyLogicId();
         assets = IStrategy(strategyAddress).assets();
 
@@ -37,13 +36,8 @@ library FactoryNamingLib {
 
         for (uint i = 0; i < assetsLength; ++i) {
             // Use a ternary operator to determine the symbol to use
-            string memory symbol = assets.length == 1
-                ? CommonLib.getSymbols(assets)[0]
-                : (
-                    bytes(factory.getAliasName(assets[i])).length != 0
-                        ? factory.getAliasName(assets[i])
-                        : IERC20Metadata(assets[i]).symbol()
-                );
+            string memory symbol =
+                assets.length == 1 ? CommonLib.getSymbols(assets)[0] : IERC20Metadata(assets[i]).symbol();
             assetsSymbols[i] = symbol;
         }
         bool showSpecificInSymbol;
@@ -71,12 +65,6 @@ library FactoryNamingLib {
         string memory prefix = "v";
         if (vaultTypeBytes[0] == "C") {
             prefix = "C";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING)) {
-            prefix = "R";
-        }
-        if (CommonLib.eq(vaultType, VaultTypeLib.REWARDING_MANAGED)) {
-            prefix = "M";
         }
         string memory bbAssetStr = bytes(bbAssetSymbol).length > 0 ? string.concat("-", bbAssetSymbol) : "";
         return string.concat(

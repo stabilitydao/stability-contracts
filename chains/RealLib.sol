@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {LogDeployLib, console} from "../script/libs/LogDeployLib.sol";
 import {StrategyIdLib} from "../src/strategies/libs/StrategyIdLib.sol";
-import {CommonLib} from "../src/core/libs/CommonLib.sol";
 import {IPlatformDeployer} from "../src/interfaces/IPlatformDeployer.sol";
 import {AmmAdapterIdLib} from "../src/adapters/libs/AmmAdapterIdLib.sol";
 import {ISwapper} from "../src/interfaces/ISwapper.sol";
@@ -96,17 +95,8 @@ library RealLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = MULTISIG;
         p.version = "24.06.0-alpha";
-        p.buildingPermitToken = address(0);
-        p.buildingPayPerVaultToken = TOKEN_USDC;
-        p.networkName = "Real";
-        p.networkExtra = CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0xeeeeee), bytes3(0x000000)));
         p.targetExchangeAsset = TOKEN_USDC;
-        p.gelatoAutomate = address(0);
-        p.gelatoMinBalance = 1e16;
-        p.gelatoDepositAmount = 2e16;
         p.fee = 6_000;
-        p.feeShareVaultManager = 30_000;
-        p.feeShareStrategyLogic = 30_000;
     }
 
     function deployAndSetupInfrastructure(address platform, bool showLog) internal {
@@ -120,7 +110,7 @@ library RealLib {
         //endregion -- Deployed Platform -----
 
         //region ----- Deploy and setup vault types -----
-        _addVaultType(factory, VaultTypeLib.COMPOUNDING, address(new CVault()), 10e6);
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(new CVault()));
         //endregion -- Deploy and setup vault types -----
 
         //region ----- Deploy and setup oracle adapters -----
@@ -258,18 +248,6 @@ library RealLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addVaultType(IFactory factory, string memory id, address implementation, uint buildingPrice) internal {
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: id,
-                implementation: implementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPrice
-            })
-        );
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
