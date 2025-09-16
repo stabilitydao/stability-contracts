@@ -76,6 +76,11 @@
 
 * **Frontend** `0x7D41c82384019cc7014d338E18d9D6a33dDEA5BA` [snowtrace](https://snowtrace.io/address/0x7D41c82384019cc7014d338E18d9D6a33dDEA5BA)
 
+### AMM adapters
+
+* AlgebraV4 (Backhole): 0x80de8bcd77d880a9c819d80e86a069f63b5c3af2
+* UniswapV3: 0x348a11e8562f356aabc54edb72017a00120f8ff4
+
 ## Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)
