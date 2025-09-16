@@ -118,6 +118,7 @@ contract ERC4626AdapterTest is Test {
 
         // change price
         deal(SonicConstantsLib.TOKEN_STKSCUSD, address(this), 10000e6);
+        /// forge-lint: disable-next-line
         IERC20(SonicConstantsLib.TOKEN_STKSCUSD).transfer(SonicConstantsLib.TOKEN_WSTKSCUSD, 10000e6);
         assertEq(
             adapter.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_WSTKSCUSD, address(0), 1e6),

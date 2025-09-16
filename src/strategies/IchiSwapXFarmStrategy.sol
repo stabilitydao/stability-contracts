@@ -22,7 +22,8 @@ import {IVoterV3} from "../integrations/swapx/IVoterV3.sol";
 import {IAlgebraPool} from "../integrations/algebrav4/IAlgebraPool.sol";
 
 /// @title Earn SwapX farm rewards by Ichi ALM
-/// Changelog:
+/// Changelog
+///   1.3.4: use LPStrategyBase 1.2.0
 ///   1.3.3: StrategyBase 2.5.1
 ///   1.3.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
 ///   1.3.1: Refactoring to reduce contract size - #326
@@ -38,7 +39,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.3";
+    string public constant VERSION = "1.3.4";
 
     uint internal constant PRECISION = 10 ** 18;
 

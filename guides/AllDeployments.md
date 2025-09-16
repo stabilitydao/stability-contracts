@@ -57,6 +57,30 @@
 * minimal wmetaS `0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7` [sonicscan](https://sonicscan.org/address/0xB1888CdAae5e3d3e84D2F543c6Ce52e9E36fBAd7#readContract)
 * minimal wmetaS (for PriceReader) `0x89563a0d6917a893b3b4de49f56d8bc35541038d` [sonicscan](https://sonicscan.org/address/0x89563a0d6917a893b3b4de49f56d8bc35541038d#readContract)
 
+## Avalanche [43114]
+
+### Core
+
+* **Platform** `0x72b931a12aacda6729b4f8f76454855cb5195941`
+* **Factory** `0xe9d2fcad6b691a1642587a2b61886a173632ed00` [snowtrace](https://snowtrace.io/address/0xe9d2fcad6b691a1642587a2b61886a173632ed00)
+* **MetaVaultFactory** `0x2fa6cc5e1dc2f6dd8806a3969f2e7fcbf5f75e89`
+* **PriceReader** `0x0a4e9791802180dca35772448264c5bdf957fd13` [snowtrace](https://snowtrace.io/address/0x0a4e9791802180dca35772448264c5bdf957fd13)
+* **Swapper** `0x16549a43c566cdc648a9aaea6bed1d860b7b586a` [snowtrace](https://snowtrace.io/address/0x16549a43c566cdc648a9aaea6bed1d860b7b586a)
+* **HardWorker** `0x78e6ff0546106a6ed20085ff6d75df800b8a1cf1` [snowtrace](https://snowtrace.io/address/0x78e6ff0546106a6ed20085ff6d75df800b8a1cf1)
+* **VaultManager** `0x9d718c2a305caf6ffbd96aaadc3808fc488417c1` [snowtrace](https://snowtrace.io/address/0x9d718c2a305caf6ffbd96aaadc3808fc488417c1) 
+* **StrategyLogic** `0xc1a02058f23f23eccf68c304afb2cf7cba70f79a` [snowtrace](https://snowtrace.io/address/0xc1a02058f23f23eccf68c304afb2cf7cba70f79a)
+* **Zap** `0x42f1eabb3d1a99e2db3372815de9c3c5be9f853f` [snowtrace](https://snowtrace.io/address/0x42f1eabb3d1a99e2db3372815de9c3c5be9f853f)
+* **VaultPriceOracle** `0xa73edff514c66f1a6b443014204dbe92c3ef5671` [snowtrace](https://snowtrace.io/address/0xa73edff514c66f1a6b443014204dbe92c3ef5671)
+
+### Periphery
+
+* **Frontend** `0x7D41c82384019cc7014d338E18d9D6a33dDEA5BA` [snowtrace](https://snowtrace.io/address/0x7D41c82384019cc7014d338E18d9D6a33dDEA5BA)
+
+### AMM adapters
+
+* AlgebraV4 (Backhole): 0x80de8bcd77d880a9c819d80e86a069f63b5c3af2
+* UniswapV3: 0x348a11e8562f356aabc54edb72017a00120f8ff4
+
 ## Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)

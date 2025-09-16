@@ -6,7 +6,7 @@ import {UniversalTest} from "../base/UniversalTest.sol";
 import {SonicConstantsLib} from "chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "src/strategies/libs/StrategyIdLib.sol";
 
-contract SiloStrategyTest is SonicSetup, UniversalTest {
+contract SiloStrategySonicTest is SonicSetup, UniversalTest {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         //vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC

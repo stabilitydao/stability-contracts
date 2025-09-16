@@ -137,6 +137,7 @@ contract PendleAdapterUpgradeExpiredTest is SonicSetup {
         uint balanceWas = IERC20(tokenOut).balanceOf(holder);
 
         vm.prank(holder);
+        /// forge-lint: disable-next-line
         IERC20(tokenIn).transfer(address(adapter), amount);
 
         vm.prank(holder);

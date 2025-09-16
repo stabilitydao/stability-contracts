@@ -12,12 +12,12 @@ import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {MockSetup} from "./MockSetup.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract FullMockSetup is MockSetup {
@@ -66,14 +66,9 @@ abstract contract FullMockSetup is MockSetup {
         priceReader.addAdapter(address(chainlinkAdapter));
 
         proxy = new Proxy();
-        proxy.initProxy(address(new AprOracle()));
-        AprOracle aprOracle = AprOracle(address(proxy));
-        aprOracle.initialize(address(platform));
-
-        proxy = new Proxy();
         proxy.initProxy(address(new HardWorker()));
         HardWorker hardworker = HardWorker(payable(address(proxy)));
-        hardworker.initialize(address(platform), address(0), 0, 0);
+        hardworker.initialize(address(platform));
 
         proxy = new Proxy();
         proxy.initProxy(address(new RevenueRouter()));
@@ -84,32 +79,25 @@ abstract contract FullMockSetup is MockSetup {
         feeTreasury.initialize(address(platform), platform.multisig());
         revenueRouter.initialize(address(platform), address(0), address(feeTreasury));
 
+        proxy = new Proxy();
+        proxy.initProxy(address(new MetaVaultFactory()));
+        MetaVaultFactory metaVaultFactory = MetaVaultFactory(address(proxy));
+
         platform.setup(
             IPlatform.SetupAddresses({
                 factory: address(factory),
                 priceReader: address(priceReader),
                 swapper: address(swapper),
-                buildingPermitToken: address(builderPermitToken),
-                buildingPayPerVaultToken: address(builderPayPerVaultToken),
                 vaultManager: address(vaultManager),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(aprOracle),
                 targetExchangeAsset: address(tokenA),
                 hardWorker: address(hardworker),
                 zap: address(0),
                 revenueRouter: address(revenueRouter),
+                metaVaultFactory: address(metaVaultFactory),
                 vaultPriceOracle: address(0)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         MockAmmAdapter ammAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
@@ -117,34 +105,7 @@ abstract contract FullMockSetup is MockSetup {
         platform.addAmmAdapter("MOCKSWAP", address(ammAdapter));
 
         // setup factory
-        uint buildingPayPerVaultPrice = 1e16;
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING,
-                implementation: address(rVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.REWARDING_MANAGED,
-                implementation: address(rmVaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: buildingPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({

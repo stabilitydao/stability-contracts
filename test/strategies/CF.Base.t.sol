@@ -6,7 +6,6 @@ import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract CompoundFarmStrategyTest is BaseSetup, UniversalTest {
     function testCFBase() public universalTest {
-        buildingPayPerVaultTokenAmount = 1e6 * 100000;
         _addStrategy(0);
         _addStrategy(1);
         _addStrategy(2);

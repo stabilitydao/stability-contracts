@@ -17,7 +17,6 @@ contract VaultSharePrice is Test, FullMockSetup {
         addresses[2] = address(tokenA);
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
-        builderPermitToken.mint();
         factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );

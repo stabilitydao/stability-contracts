@@ -89,6 +89,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
         uint amount,
         uint priceImpact
     ) internal returns (uint) {
+        /// forge-lint: disable-next-line
         IERC20(tokenIn).transfer(address(adapter), amount);
         vm.roll(block.number + 6);
 

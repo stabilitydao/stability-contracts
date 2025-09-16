@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "forge-std/Test.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {RVault} from "../../src/core/vaults/RVault.sol";
 import {Proxy, IControllable} from "../../src/core/proxy/Proxy.sol";
 import {MockStrategy} from "../../src/test/MockStrategy.sol";
 import {MockAmmAdapter} from "../../src/test/MockAmmAdapter.sol";
@@ -14,7 +15,6 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 
 contract VaultTest is Test, FullMockSetup {
     CVault public vault;
-    RVault public rVault;
     MockStrategy public strategyImplementation;
     MockStrategy public strategy;
     MockAmmAdapter public mockAmmAdapter;
@@ -38,11 +38,6 @@ contract VaultTest is Test, FullMockSetup {
         strategy = MockStrategy(address(strategyProxy));
 
         mockAmmAdapter = new MockAmmAdapter(address(tokenA), address(tokenB));
-
-        // RVault
-        vaultProxy = new Proxy();
-        vaultProxy.initProxy(address(new RVault()));
-        rVault = RVault(payable(address(vaultProxy)));
     }
 
     function testSetup() public {
@@ -128,7 +123,7 @@ contract VaultTest is Test, FullMockSetup {
 
         amounts[0] = 1e12;
         amounts[1] = 1e4;
-        vm.expectRevert(abi.encodeWithSelector(IVault.NotEnoughAmountToInitSupply.selector, 5e12, 1e18));
+        vm.expectRevert(abi.encodeWithSelector(IVault.NotEnoughAmountToInitSupply.selector, 5e12, 1e19));
         vault.depositAssets(assets, amounts, 0, address(0));
         amounts[0] = 10e18;
         amounts[1] = 10e6;
@@ -187,6 +182,12 @@ contract VaultTest is Test, FullMockSetup {
 
         shares = vault.balanceOf(address(this));
 
+        console.log("totalSupply", vault.totalSupply());
+        console.log("balance", IERC20(vault.strategy().underlying()).balanceOf(address(strategy)));
+        console.log("strategy.totalSupply", IERC20(vault.strategy().underlying()).totalSupply());
+        console.log("strategy.total", vault.strategy().total());
+        console.log("shares", shares);
+        console.log("vault.totalSupply", vault.totalSupply());
         vm.prank(address(100));
         vm.expectRevert(
             abi.encodeWithSelector(IERC20Errors.ERC20InsufficientAllowance.selector, address(100), 0, shares / 2)
@@ -206,7 +207,7 @@ contract VaultTest is Test, FullMockSetup {
         minOuts[0] = 1e30;
         minOuts[1] = 0;
         vm.expectRevert(
-            abi.encodeWithSelector(IVault.ExceedSlippageExactAsset.selector, assets[0], 2498900000500000000, 1e30)
+            abi.encodeWithSelector(IVault.ExceedSlippageExactAsset.selector, assets[0], 2498000000500000000, 1e30)
         );
         vault.withdrawAssets(assets, shares / 2, minOuts);
 
@@ -299,24 +300,6 @@ contract VaultTest is Test, FullMockSetup {
         assertEq(vault.balanceOf(address(this)), 0);
 
         vault.doHardWork();
-    }
-
-    function testRVault() public {
-        vm.expectRevert(IControllable.IncorrectInitParams.selector);
-        rVault.initialize(
-            IVault.VaultInitializationData({
-                platform: address(platform),
-                strategy: address(strategy),
-                name: "Test RVault",
-                symbol: "xRVAULT",
-                tokenId: 0,
-                vaultInitAddresses: new address[](1),
-                vaultInitNums: new uint[](0)
-            })
-        );
-
-        vm.expectRevert(IStabilityVault.NotSupported.selector);
-        rVault.hardWorkMintFeeCallback(new address[](0), new uint[](0));
     }
 
     function testChageNameSymbol() public {

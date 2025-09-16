@@ -101,6 +101,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
             vm.expectRevert(IStabilityVault.WaitAFewBlocks.selector);
         }
         vm.prank(user_);
+        /// forge-lint: disable-next-line
         IStabilityVault(metaVault).transfer(address(this), balance);
 
         vm.revertToState(snapshot);

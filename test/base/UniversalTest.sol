@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
@@ -24,7 +24,6 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {ILPStrategy} from "../../src/interfaces/ILPStrategy.sol";
 import {IStrategyLogic} from "../../src/interfaces/IStrategyLogic.sol";
 import {IVault, IStabilityVault} from "../../src/interfaces/IVault.sol";
-import {IRVault} from "../../src/interfaces/IRVault.sol";
 import {IVaultManager} from "../../src/interfaces/IVaultManager.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
@@ -42,7 +41,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     uint public duration1 = 6 hours;
     uint public duration2 = 3 hours;
     uint public duration3 = 3 hours;
-    uint public buildingPayPerVaultTokenAmount = 5e24;
     uint public depositedSharesCheckDelimiter = 1000;
     bool public makePoolVolume = true;
     uint public makePoolVolumePriceImpactTolerance = 6_000;
@@ -62,7 +60,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     struct TestStrategiesVars {
         bool isLPStrategy;
-        address[] allowedBBTokens;
         address strategyLogic;
         address strategyImplementation;
         bool farming;
@@ -71,8 +68,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         IHardWorker hardWorker;
         address vault;
         address[] vaultsForHardWork;
-        bool isRVault;
-        bool isRMVault;
         uint apr;
         uint aprCompound;
         uint earned;
@@ -111,8 +106,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
     function _testStrategies() internal {
         console.log(string.concat("Universal test of strategy logic", strategyId));
-        _deal(platform.buildingPayPerVaultToken(), address(this), buildingPayPerVaultTokenAmount);
-        IERC20(platform.buildingPayPerVaultToken()).approve(address(factory), buildingPayPerVaultTokenAmount);
         TestStrategiesVars memory vars;
         vars.hardWorker = IHardWorker(platform.hardWorker());
         vm.startPrank(platform.governance());
@@ -121,10 +114,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         vars.hardWorker.setDedicatedServerMsgSender(address(this), true);
         vm.stopPrank();
         vars.vaultsForHardWork = new address[](1);
-        vars.allowedBBTokens = platform.allowedBBTokens();
-        if (vars.allowedBBTokens.length > 0) {
-            platform.setAllowedBBTokenVaults(vars.allowedBBTokens[0], 1e6);
-        }
         vars.strategyLogic = platform.strategyLogic();
         for (uint i; i < strategies.length; ++i) {
             assertNotEq(
@@ -151,39 +140,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*                       CREATE VAULT                         */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-                vars.isRVault = CommonLib.eq(vars.types[k], VaultTypeLib.REWARDING);
-                vars.isRMVault = CommonLib.eq(vars.types[k], VaultTypeLib.REWARDING_MANAGED);
                 {
                     address[] memory vaultInitAddresses = new address[](0);
                     uint[] memory vaultInitNums = new uint[](0);
-                    if (vars.isRVault) {
-                        vaultInitAddresses = new address[](1);
-                        vaultInitAddresses[0] = vars.allowedBBTokens[0];
-                        vaultInitNums =
-                            new uint[](1 + platform.defaultBoostRewardTokensFiltered(vars.allowedBBTokens[0]).length);
-                        vaultInitNums[0] = 3000e18; // 3k PROFIT
-                        deal(vaultInitAddresses[0], address(this), 3000e18);
-                        IERC20(vaultInitAddresses[0]).approve(address(factory), 3000e18);
-                    }
-                    if (vars.isRMVault) {
-                        vaultInitAddresses = new address[](2);
-                        uint vaultInitAddressesLength = vaultInitAddresses.length;
-                        // bbToken
-                        vaultInitAddresses[0] = vars.allowedBBTokens[0];
-                        // boost reward tokens
-                        vaultInitAddresses[1] = platform.targetExchangeAsset();
-                        vaultInitNums = new uint[](vaultInitAddressesLength * 2);
-                        // bbToken vesting duration
-                        vaultInitNums[0] = 3600;
-                        for (uint e = 1; e < vaultInitAddressesLength; ++e) {
-                            vaultInitNums[e] = 86400 * 30;
-                            vaultInitNums[e + vaultInitAddressesLength - 1] = 1000e6; // 1000 usdc
-                            deal(vaultInitAddresses[e], address(this), 1000e6);
-                            IERC20(vaultInitAddresses[e]).approve(address(factory), 1000e6);
-                        }
-                        // compoundRatuo
-                        vaultInitNums[vaultInitAddressesLength * 2 - 1] = 50_000;
-                    }
 
                     address[] memory initStrategyAddresses;
                     uint[] memory nums;
@@ -297,11 +256,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 console.log(
                     string.concat(
                         IERC20Metadata(vars.vault).symbol(),
-                        " [Compound ratio: ",
-                        vars.isRVault || vars.isRMVault
-                            ? CommonLib.u2s(IRVault(vars.vault).compoundRatio() / 1000)
-                            : "100",
-                        "%]. Name: ",
+                        " [Compound ratio: 100%]. Name: ",
                         IERC20Metadata(vars.vault).name(),
                         ". Strategy: ",
                         strategy.description()
@@ -539,7 +494,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                             assertGt(tempTvl, 0, "HardWork TVL");
                             assertGt(tempDuration, 0, "HardWork duration");
-                            if (!allowZeroApr && !vars.isRVault && !vars.isRMVault) {
+                            if (!allowZeroApr) {
                                 assertGt(tempAprCompound, 0, "Hardwork APR compound is zero. Check _compound() method.");
                             }
                         }
@@ -640,27 +595,6 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 _addRewards(strategies[i].farmId);
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-                /*           CLAIM REWARDS FROM REWARDING VAULTS              */
-                /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                if (vars.isRVault || vars.isRMVault) {
-                    address rewardToken = vars.isRVault ? vars.allowedBBTokens[0] : platform.targetExchangeAsset();
-                    uint balanceBefore = IERC20(rewardToken).balanceOf(address(this));
-                    IRVault(vars.vault).getAllRewards();
-                    assertGt(IERC20(rewardToken).balanceOf(address(this)), balanceBefore, "Rewards was not claimed");
-                    _skip(3600, strategies[i].farmId);
-                    balanceBefore = IERC20(rewardToken).balanceOf(address(this));
-                    IRVault(vars.vault).getAllRewards();
-                    assertGt(
-                        IERC20(rewardToken).balanceOf(address(this)),
-                        balanceBefore,
-                        "Rewards was not claimed after skip time"
-                    );
-                    balanceBefore = IERC20(rewardToken).balanceOf(address(this));
-                    IRVault(vars.vault).getReward(0);
-                    assertEq(IERC20(rewardToken).balanceOf(address(this)), balanceBefore);
-                }
-
-                /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*                        WITHDRAW ALL                        */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 uint totalWas = strategy.total();
@@ -696,7 +630,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
                         _dealUnderlying(underlying, address(this), totalWas);
-                        assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
+                        // Following check was moved inside _dealUnderlying because of problems on avalanche
+                        // assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
                         IERC20(underlying).approve(tempVault, totalWas);
 
                         underlyingAmounts[0] = totalWas;
@@ -886,9 +821,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
         _rebalance();
     }
 
-    /// @notice Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
+    /// @notice Deal underlying asset to an address and check result balance
+    /// @dev Deal doesn't work with aave tokens, so let's make a way to provide underlying in custom way
     /// @dev https://github.com/foundry-rs/forge-std/issues/140
     function _dealUnderlying(address underlying, address to, uint amount) internal virtual {
         deal(underlying, to, amount);
+        assertEq(IERC20(underlying).balanceOf(to), amount, "U1");
     }
 }

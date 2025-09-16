@@ -23,6 +23,7 @@ import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 
 /// @title Earning Merkl rewards on Retro by underlying Gamma Hypervisor
 /// Changelog
+///   2.5.1: use LPStrategyBase 1.2.0
 ///   2.5.0: decrease code size
 ///   2.4.0: decrease code size
 ///   2.3.0: getCustomVaultFee support
@@ -39,7 +40,7 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.5.0";
+    string public constant VERSION = "2.5.1";
 
     uint internal constant _PRECISION = 1e36;
 

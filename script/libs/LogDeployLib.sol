@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {console} from "forge-std/Test.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {Factory, IFactory} from "../../src/core/Factory.sol";
+import {VaultManager} from "../../src/core/VaultManager.sol";
+import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
+import {PriceReader, IPriceReader} from "../../src/core/PriceReader.sol";
+import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
+import {HardWorker} from "../../src/core/HardWorker.sol";
+import {Zap} from "../../src/core/Zap.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -63,30 +68,6 @@ library LogDeployLib {
         if (showLog) {
             IFactory.Farm[] memory _farms = IFactory(factory).farms();
             console.log("Added farms:", _farms.length);
-        }
-    }
-
-    function logSetupRewardTokens(address platform, bool showLog) internal view {
-        if (showLog) {
-            IPlatform _platform = IPlatform(platform);
-            address[] memory bbTokens = _platform.allowedBBTokens();
-            address[] memory allowedRewardTokens = _platform.allowedBoostRewardTokens();
-            string[] memory assetsStr = new string[](bbTokens.length);
-            for (uint i; i < bbTokens.length; ++i) {
-                assetsStr[i] = string.concat(
-                    IERC20Metadata(bbTokens[i]).symbol(),
-                    " - ",
-                    CommonLib.u2s(_platform.allowedBBTokenVaults(bbTokens[i]))
-                );
-            }
-            console.log(
-                string.concat("Added allowed bbTokens vault building limit: ", CommonLib.implode(assetsStr, ", "))
-            );
-            assetsStr = new string[](allowedRewardTokens.length);
-            for (uint i; i < allowedRewardTokens.length; ++i) {
-                assetsStr[i] = IERC20Metadata(allowedRewardTokens[i]).symbol();
-            }
-            console.log(string.concat("Added allowed reward tokens: ", CommonLib.implode(assetsStr, ", ")));
         }
     }
 

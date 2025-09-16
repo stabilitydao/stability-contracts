@@ -34,6 +34,7 @@ contract SFUpgradeTest is Test {
         ///////
 
         vm.expectRevert();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         // deploy new impl and upgrade
@@ -54,6 +55,7 @@ contract SFUpgradeTest is Test {
         factory.upgradeStrategyProxy(STRATEGY);
 
         vm.expectRevert();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         vm.expectRevert();
@@ -62,6 +64,7 @@ contract SFUpgradeTest is Test {
         vm.prank(multisig);
         IStrategy(STRATEGY).setCustomPriceImpactTolerance(16_000);
 
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
     }
 }

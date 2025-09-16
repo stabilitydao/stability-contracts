@@ -30,4 +30,8 @@ contract SwapperSonicTest is Test, SonicSetup {
 
         // console.log(got);
     }
+
+    function testViews() public view {
+        assertGt(swapper.allAssets().length, 0);
+    }
 }

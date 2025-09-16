@@ -70,27 +70,16 @@ contract PriceReaderTest is Test, MockSetup {
                 factory: address(1),
                 priceReader: address(priceReader),
                 swapper: address(swapper),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(7),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(11),
                 revenueRouter: address(0),
+                metaVaultFactory: address(0),
                 vaultPriceOracle: address(12)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         MockAmmAdapter dexAdapter = new MockAmmAdapter(address(tokenE), address(tokenD));

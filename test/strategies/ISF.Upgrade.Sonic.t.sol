@@ -52,6 +52,7 @@ contract ISFUpgradeTest is Test {
 
         address[] memory vaultsForHardWork = new address[](1);
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
+        /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
 
         uint wsBalanceChange = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(FEE_TREASURY) - wsBalanceWas;

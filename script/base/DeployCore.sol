@@ -8,12 +8,12 @@ import {VaultManager} from "../../src/core/VaultManager.sol";
 import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
-import {AprOracle} from "../../src/core/AprOracle.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {Zap} from "../../src/core/Zap.sol";
 import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract DeployCore {
@@ -25,11 +25,11 @@ abstract contract DeployCore {
         StrategyLogic strategyLogic;
         PriceReader priceReader;
         Swapper swapper;
-        AprOracle aprOracle;
         HardWorker hardWorker;
         Zap zap;
         RevenueRouter revenueRouter;
         FeeTreasury feeTreasury;
+        MetaVaultFactory metaVaultFactory;
         VaultPriceOracle vaultPriceOracle;
     }
 
@@ -70,17 +70,11 @@ abstract contract DeployCore {
         vars.swapper = Swapper(address(vars.proxy));
         vars.swapper.initialize(address(vars.platform));
 
-        // AprOracle
-        vars.proxy = new Proxy();
-        vars.proxy.initProxy(address(new AprOracle()));
-        vars.aprOracle = AprOracle(address(vars.proxy));
-        vars.aprOracle.initialize(address(vars.platform));
-
         // HardWorker
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new HardWorker()));
         vars.hardWorker = HardWorker(payable(address(vars.proxy)));
-        vars.hardWorker.initialize(address(vars.platform), p.gelatoAutomate, p.gelatoMinBalance, p.gelatoDepositAmount);
+        vars.hardWorker.initialize(address(vars.platform));
 
         // Zap
         vars.proxy = new Proxy();
@@ -98,6 +92,12 @@ abstract contract DeployCore {
         vars.revenueRouter = RevenueRouter(address(vars.proxy));
         vars.revenueRouter.initialize(address(vars.platform), address(0), address(vars.feeTreasury));
 
+        // MetaVaultFactory
+        vars.proxy = new Proxy();
+        vars.proxy.initProxy(address(new MetaVaultFactory()));
+        vars.metaVaultFactory = MetaVaultFactory(address(vars.proxy));
+        vars.metaVaultFactory.initialize(address(vars.platform));
+
         // VaultPriceOracle
         vars.proxy = new Proxy();
         vars.proxy.initProxy(address(new VaultPriceOracle()));
@@ -110,27 +110,16 @@ abstract contract DeployCore {
                 factory: address(vars.factory),
                 priceReader: address(vars.priceReader),
                 swapper: address(vars.swapper),
-                buildingPermitToken: p.buildingPermitToken,
-                buildingPayPerVaultToken: p.buildingPayPerVaultToken,
                 vaultManager: address(vars.vaultManager),
                 strategyLogic: address(vars.strategyLogic),
-                aprOracle: address(vars.aprOracle),
                 targetExchangeAsset: p.targetExchangeAsset,
                 hardWorker: address(vars.hardWorker),
                 zap: address(vars.zap),
                 revenueRouter: address(vars.revenueRouter),
+                metaVaultFactory: address(vars.metaVaultFactory),
                 vaultPriceOracle: address(vars.vaultPriceOracle)
             }),
-            IPlatform.PlatformSettings({
-                networkName: p.networkName,
-                networkExtra: p.networkExtra,
-                fee: p.fee,
-                feeShareVaultManager: p.feeShareVaultManager,
-                feeShareStrategyLogic: p.feeShareStrategyLogic,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: p.fee})
         );
 
         return address(vars.platform);

@@ -4,15 +4,17 @@ pragma solidity ^0.8.28;
 import {IVaultPriceOracle} from "../interfaces/IVaultPriceOracle.sol";
 import {Controllable, IControllable} from "./base/Controllable.sol";
 
-/// @author ruby (https://github.com/alexandersazonof)
 /// @dev A contract for aggregating vault prices from multiple validators using a quorum-based median mechanism.
+/// Changelog:
+///   1.0.1: review fixes
+/// @author ruby (https://github.com/alexandersazonof)
 contract VaultPriceOracle is Controllable, IVaultPriceOracle {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.VaultPriceOracle")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant VAULT_PRICE_ORACLE_STORAGE_LOCATION =

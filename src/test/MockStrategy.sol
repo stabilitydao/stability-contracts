@@ -172,7 +172,9 @@ contract MockStrategy is LPStrategyBase {
         amountsOut[0] = _depositedToken0 * value / $.total;
         amountsOut[1] = _depositedToken1 * value / $.total;
         $.total -= value;
+        /// forge-lint: disable-next-line
         IERC20($._assets[0]).transfer(receiver, amountsOut[0]);
+        /// forge-lint: disable-next-line
         IERC20($._assets[1]).transfer(receiver, amountsOut[1]);
         _depositedToken0 -= amountsOut[0];
         _depositedToken1 -= amountsOut[1];
@@ -193,6 +195,7 @@ contract MockStrategy is LPStrategyBase {
             _depositedToken1 -= _depositedToken1 * amount / balance;
         }
 
+        /// forge-lint: disable-next-line
         IERC20($._underlying).transfer(receiver, amount);
     }
 

@@ -25,6 +25,8 @@ import {IAlgebraPool} from "../integrations/algebra/IAlgebraPool.sol";
 import {IMultiPositionManager} from "../integrations/steer/IMultiPositionManager.sol";
 
 /// @title Earning MERKL rewards by Steer ALM on QuickSwapV3
+/// Changelog
+///   1.2.1: use LPStrategyBase 1.2.0
 /// @author Only Forward (https://github.com/OnlyForward0613)
 /// @author Alien Deployer (https://github.com/a17)
 contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase {
@@ -35,7 +37,7 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.2.0";
+    string public constant VERSION = "1.2.1";
 
     uint internal constant _PRECISION = 1e36;
 

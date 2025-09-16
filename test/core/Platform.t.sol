@@ -64,41 +64,21 @@ contract PlatformTest is Test {
                 factory: address(1),
                 priceReader: address(2),
                 swapper: address(3),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(1),
+                metaVaultFactory: address(0),
                 vaultPriceOracle: address(11)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
-        assertEq(platform.minInitialBoostPerDay(), 30e18);
-        platform.setInitialBoost(31e18, 31 * 86400);
-        assertEq(platform.minInitialBoostPerDay(), 31e18);
-        assertEq(platform.minInitialBoostDuration(), 31 * 86400);
 
         assertEq(platform.revenueRouter(), address(1));
         platform.setupRevenueRouter(address(1001));
         assertEq(platform.revenueRouter(), address(1001));
-
-        assertEq(platform.networkName(), "Localhost Ethereum");
-        assertEq(
-            platform.networkExtra(), CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206)))
-        );
 
         assertEq(platform.ecosystemRevenueReceiver(), address(0));
 
@@ -108,27 +88,16 @@ contract PlatformTest is Test {
                 factory: address(1),
                 priceReader: address(2),
                 swapper: address(3),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0),
+                metaVaultFactory: address(0),
                 vaultPriceOracle: address(11)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: bytes32(0),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
     }
 
@@ -287,153 +256,28 @@ contract PlatformTest is Test {
 
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
-        platform.setFees(1, 1, 1, 1);
+        platform.setFees(1);
 
         vm.startPrank(govAddr);
-        platform.setFees(6_000, 30_000, 30_000, 0);
-        (uint fee, uint feeShareVaultManager, uint feeShareStrategyLogic, uint feeShareEcosystem) = platform.getFees();
+        platform.setFees(6_000);
+        (uint fee,,,) = platform.getFees();
         assertEq(fee, 6_000);
-        assertEq(feeShareVaultManager, 30_000);
-        assertEq(feeShareStrategyLogic, 30_000);
-        assertEq(feeShareEcosystem, 0);
 
-        vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
-        platform.setFees(6_000, 30_000, 30_000, 5);
+        // vm.expectRevert(abi.encodeWithSelector(IControllable.IncorrectZeroArgument.selector));
+        // platform.setFees(6_000);
 
         uint _minFee = platform.MIN_FEE();
         uint _maxFee = platform.MAX_FEE();
 
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(3_000, 30_000, 30_000, 0);
+        platform.setFees(3_000);
         vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, _maxFee));
-        platform.setFees(51_000, 19_000, 30_000, 0);
-
-        _minFee = platform.MIN_FEE_SHARE_VAULT_MANAGER();
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 3_000, 30_000, 0);
-
-        _minFee = platform.MIN_FEE_SHARE_STRATEGY_LOGIC();
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, _minFee, 0));
-        platform.setFees(6_000, 30_000, 3_000, 0);
-
-        _maxFee = ConstantsLib.DENOMINATOR;
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.IncorrectFee.selector, 0, _maxFee));
-        platform.setFees(10_000, 60_000, 50_000, 0);
+        platform.setFees(51_000);
 
         platform.setCustomVaultFee(address(1), 22_222);
         assertEq(platform.getCustomVaultFee(address(1)), 22_222);
 
         vm.stopPrank();
-    }
-
-    function testAddRemoveUseAllowedBBToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.setAllowedBBTokenVaults(address(1), 5);
-        platform.setAllowedBBTokenVaults(address(2), 5);
-        platform.setAllowedBBTokenVaults(address(3), 1);
-
-        vm.startPrank(address(platform.factory()));
-        platform.useAllowedBBTokenVault(address(3));
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.NotEnoughAllowedBBToken.selector));
-        platform.useAllowedBBTokenVault(address(3));
-        vm.stopPrank();
-
-        (address[] memory bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken[0], address(1));
-        assertEq(bbToken[1], address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeAllowedBBToken(address(5));
-
-        platform.removeAllowedBBToken(bbToken[0]);
-
-        (bbToken,) = platform.allowedBBTokenVaults();
-        //EnumerableSet.remove change positions inside array
-        assertEq(bbToken[0], address(3));
-        assertEq(bbToken[1], address(2));
-
-        platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 1);
-        platform.removeAllowedBBToken(bbToken[0]);
-        (bbToken,) = platform.allowedBBTokenVaults();
-        assertEq(bbToken.length, 0);
-
-        vm.expectRevert(IControllable.NotFactory.selector);
-        platform.useAllowedBBTokenVault(address(100));
-    }
-
-    function testAddRemoveAllowedBoostRewardToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addAllowedBoostRewardToken(address(1));
-        platform.addAllowedBoostRewardToken(address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        platform.addAllowedBoostRewardToken(address(2));
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeAllowedBoostRewardToken(address(789));
-
-        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(1));
-        assertEq(allowedTokens[1], address(2));
-
-        platform.removeAllowedBoostRewardToken(address(1));
-        allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens[0], address(2));
-
-        platform.removeAllowedBoostRewardToken(address(2));
-        allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens.length, 0);
-    }
-
-    function testAddRemoveDefaultBoostRewardToken() public {
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addDefaultBoostRewardToken(address(1));
-        platform.addDefaultBoostRewardToken(address(2));
-
-        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
-        platform.addDefaultBoostRewardToken(address(2));
-        vm.expectRevert(abi.encodeWithSelector(IControllable.NotExist.selector));
-        platform.removeDefaultBoostRewardToken(address(789));
-
-        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(1));
-        assertEq(defaultTokens[1], address(2));
-
-        platform.removeDefaultBoostRewardToken(address(1));
-        defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens[0], address(2));
-
-        platform.removeDefaultBoostRewardToken(address(2));
-        defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens.length, 0);
-    }
-
-    function testAddBoostTokens() public {
-        address[] memory allowedBoostRewardTokens = new address[](2);
-        allowedBoostRewardTokens[0] = address(101);
-        allowedBoostRewardTokens[1] = address(105);
-        address[] memory defaultBoostRewardTokens = new address[](1);
-        defaultBoostRewardTokens[0] = address(208);
-
-        platform.initialize(address(this), "23.11.0-dev");
-        platform.addBoostTokens(allowedBoostRewardTokens, defaultBoostRewardTokens);
-
-        address[] memory alreadyAddedAllowedBoostRewardToken = new address[](1);
-        alreadyAddedAllowedBoostRewardToken[0] = address(101);
-        address[] memory newDefaultBoostRewardTokens = new address[](1);
-        newDefaultBoostRewardTokens[0] = address(386);
-        vm.expectRevert(abi.encodeWithSelector(IPlatform.TokenAlreadyExistsInSet.selector, address(101)));
-        platform.addBoostTokens(alreadyAddedAllowedBoostRewardToken, newDefaultBoostRewardTokens);
-
-        address[] memory defaultTokens = platform.defaultBoostRewardTokens();
-        assertEq(defaultTokens.length, 1);
-        assertEq(defaultTokens[0], address(208));
-
-        address[] memory allowedTokens = platform.allowedBoostRewardTokens();
-        assertEq(allowedTokens.length, 2);
-        assertEq(allowedTokens[0], address(101));
-        assertEq(allowedTokens[1], address(105));
     }
 
     function testGetAmmAdapters() public {
@@ -478,27 +322,16 @@ contract PlatformTest is Test {
                 factory: address(factory),
                 priceReader: address(2),
                 swapper: address(_swapper),
-                buildingPermitToken: address(4),
-                buildingPayPerVaultToken: address(5),
                 vaultManager: address(6),
                 strategyLogic: address(strategyLogic),
-                aprOracle: address(8),
                 targetExchangeAsset: address(9),
                 hardWorker: address(10),
                 zap: address(0),
                 revenueRouter: address(0),
+                metaVaultFactory: address(0),
                 vaultPriceOracle: address(11)
             }),
-            IPlatform.PlatformSettings({
-                networkName: "Localhost Ethereum",
-                networkExtra: CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x7746d7), bytes3(0x040206))),
-                fee: 6_000,
-                feeShareVaultManager: 30_000,
-                feeShareStrategyLogic: 30_000,
-                feeShareEcosystem: 0,
-                minInitialBoostPerDay: 30e18, // $30
-                minInitialBoostDuration: 30 * 86400 // 30 days
-            })
+            IPlatform.PlatformSettings({fee: 6_000})
         );
 
         (
@@ -517,8 +350,8 @@ contract PlatformTest is Test {
         assertEq(platformAddresses[0], platform.factory());
         assertEq(platformAddresses[1], platform.vaultManager());
         assertEq(platformAddresses[2], platform.strategyLogic());
-        assertEq(platformAddresses[3], platform.buildingPermitToken());
-        assertEq(platformAddresses[4], platform.buildingPayPerVaultToken());
+        assertEq(platformAddresses[3], address(0)); // deprecated
+        assertEq(platformAddresses[4], address(0)); // deprecated
         assertEq(vaultType.length, 0);
         assertEq(bcAssets.length, 0);
         assertEq(dexAggregators_.length, 0);

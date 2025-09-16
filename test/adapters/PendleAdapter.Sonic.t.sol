@@ -105,6 +105,7 @@ contract PendleAdapterTest is SonicSetup {
         //console.log(got);
 
         // swap yield token to PT
+        /// forge-lint: disable-next-line
         IERC20(SonicConstantsLib.TOKEN_AUSDC).transfer(
             address(adapter), IERC20(SonicConstantsLib.TOKEN_AUSDC).balanceOf(address(this))
         );
