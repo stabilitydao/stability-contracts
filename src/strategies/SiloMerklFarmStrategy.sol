@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "./libs/SharedLib.sol";
+import {SharedLib} from "./libs/SharedLib.sol";
 import {
     FarmingStrategyBase,
     StrategyBase,
@@ -13,22 +13,23 @@ import {
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
 import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
 import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
 import {ISilo} from "../integrations/silo/ISilo.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IXSilo} from "../integrations/silo/IXSilo.sol";
 import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
-import {IXSilo} from "../integrations/silo/IXSilo.sol";
 
 /// @title Supply asset to Silo V2 and earn farm rewards from Silo and Merkl
 /// Changelog:
 /// @author dvpublic (https://github.com/dvpublic)
-contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
+contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -40,6 +41,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /// @dev Strategy logic ID used in this farm
     string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MERKL_FARM;
 
+    //region ----------------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -56,16 +58,22 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         }
 
         address[] memory siloAssets = new address[](1);
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
         siloAssets[0] = siloVault.asset();
 
         __StrategyBase_init(addresses[0], STRATEGY_LOGIC_ID, addresses[1], siloAssets, address(0), 0);
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        IERC20(siloAssets[0]).forceApprove(farm.addresses[1], type(uint).max);
-        IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
-    }
+        IERC20(siloAssets[0]).forceApprove(address(siloVault), type(uint).max);
 
+        address gauge = _getGauge(farm);
+        if (gauge != address(0)) {
+            IERC20(address(siloVault)).forceApprove(gauge, type(uint).max);
+        }
+    }
+    //endregion ----------------------------------- Initialization
+
+    //region ----------------------------------- View
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -129,7 +137,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
         IFactory.Farm memory farm = _getFarm();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
 
         amounts = new uint[](1);
         amounts[0] = siloVault.maxWithdraw(address(this));
@@ -138,7 +146,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function poolTvl() public view virtual override returns (uint tvlUsd) {
         IFactory.Farm memory farm = _getFarm();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
 
         address asset = siloVault.asset();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
@@ -152,15 +160,17 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    override(MerklStrategyBase, FarmingStrategyBase)
-    returns (bool)
+        public
+        view
+        override(MerklStrategyBase, FarmingStrategyBase)
+        returns (bool)
     {
         return FarmingStrategyBase.supportsInterface(interfaceId) || MerklStrategyBase.supportsInterface(interfaceId)
             || super.supportsInterface(interfaceId);
     }
+    //endregion ----------------------------------- View
 
+    //region ----------------------------------- Farming Strategy Base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                   FARMING STRATEGY BASE                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -174,7 +184,9 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function canFarm() external pure override returns (bool) {
         return true;
     }
+    //endregion ----------------------------------- Farming Strategy Base
 
+    //region ----------------------------------- Strategy Base
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       STRATEGY BASE                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -184,7 +196,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
         IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
         value = amounts[0];
         if (value != 0) {
             siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
@@ -206,7 +218,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
         IFactory.Farm memory farm = _getFarm();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
         uint toWithdraw = value;
         if (address(this) == receiver) {
             toWithdraw--;
@@ -253,16 +265,20 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         // So, we don't take into accounts "balance before" - assume all balance is rewards
 
         IFactory.Farm memory farm = _getFarm();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
         __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
-        ISiloIncentivesController(farm.addresses[0]).claimRewards(address(this));
+        address gauge = _getGauge(farm);
+        if (gauge != address(0)) {
+            ISiloIncentivesController(gauge).claimRewards(address(this));
+        }
 
-        address xSilo = farm.addresses[1];
+        address xSilo = _getXSilo(farm);
         address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
 
         for (uint i; i < lenRewards; ++i) {
             __rewardAmounts[i] = StrategyLib.balance(__rewardAssets[i]);
             if (__rewardAssets[i] == silo && xSilo != address(0)) {
+                // xSilo => silo
                 uint amountXSilo = StrategyLib.balance(xSilo);
                 if (amountXSilo != 0) {
                     // instant exit with penalty 50%
@@ -270,7 +286,6 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
                 }
             }
         }
-
     }
 
     /// @inheritdoc StrategyBase
@@ -288,7 +303,7 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
             }
         }
         IFactory.Farm memory farm = _getFarm();
-        ISilo siloVault = ISilo(farm.addresses[1]);
+        ISilo siloVault = _getSilo(farm);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total = siloVault.convertToAssets(siloVault.balanceOf(address(this)));
         if (notZero) {
@@ -331,7 +346,9 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     ) internal pure override returns (bool needCompound) {
         needCompound = true;
     }
+    //endregion ----------------------------------- Strategy Base
 
+    //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -341,14 +358,27 @@ contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
             "Earn ",
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " and supply APR by lending ",
-            IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
-            " to Silo V2 ",
+            IERC20Metadata(_getSilo(farm).asset()).symbol(),
+            " to Silo V2 + get Merkl rewards",
             CommonLib.u2s(_getMarketId())
         );
     }
 
     function _getMarketId() internal view returns (uint marketId) {
         IFactory.Farm memory farm = _getFarm();
-        marketId = ISiloConfig(ISilo(farm.addresses[1]).config()).SILO_ID();
+        marketId = ISiloConfig(_getSilo(farm).config()).SILO_ID();
     }
+
+    function _getSilo(IFactory.Farm memory farm) internal pure returns (ISilo) {
+        return ISilo(farm.addresses[0]);
+    }
+
+    function _getXSilo(IFactory.Farm memory farm) internal pure returns (address) {
+        return farm.addresses[1];
+    }
+
+    function _getGauge(IFactory.Farm memory farm) internal pure returns (address) {
+        return farm.addresses[2];
+    }
+    //endregion ----------------------------------- Internal logic
 }

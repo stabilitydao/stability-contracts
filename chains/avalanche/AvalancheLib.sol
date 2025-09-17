@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {AvalancheFarmMakerLib} from "./AvalancheFarmMakerLib.sol";
+import {SiloMerklFarmStrategy} from "../../src/strategies/SiloMerklFarmStrategy.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {AvalancheConstantsLib} from "./AvalancheConstantsLib.sol";
+import {AvalancheFarmMakerLib} from "./AvalancheFarmMakerLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
@@ -127,6 +128,7 @@ library AvalancheLib {
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()), true);
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -175,7 +177,7 @@ library AvalancheLib {
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](8);
+        _farms = new IFactory.Farm[](12);
         uint i;
         _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
         _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
@@ -192,6 +194,11 @@ library AvalancheLib {
         _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_BTCb_MEV); // 5
         _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_AUSD_VARLAMOURE); // 6
         _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_USDt_VARLAMOURE); // 7
+
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_BTCb_130, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 8
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_USDC_142, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 9
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_BTCb_121, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 10
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloMerklFarm(AvalancheConstantsLib.SILO_VAULT_USDC_129, AvalancheConstantsLib.TOKEN_WAVAX, address(0), true); // 11
     }
 
     function _makePoolData(

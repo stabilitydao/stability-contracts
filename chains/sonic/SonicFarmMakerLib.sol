@@ -325,20 +325,33 @@ library SonicFarmMakerLib {
     /// @param borrowableCollateral False for non-borrowable ("protected" in ISilo.sol) collateral,
     /// true for borrowable collateral ("collateral" in ISilo.sol)
     function _makeSiloMerklFarm(
-        address gauge,
         address siloVault,
         address rewardToken,
+        address gauge,
         bool borrowableCollateral
     ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
         farm.strategyLogicId = StrategyIdLib.SILO_MERKL_FARM;
-        farm.rewardAssets = new address[](1);
+        farm.rewardAssets = new address[](2);
         farm.rewardAssets[0] = rewardToken;
+        // let's add SILO also to be able to test xSilo logic
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_SILO;
         farm.addresses = new address[](3);
-        farm.addresses[0] = gauge;
-        farm.addresses[1] = siloVault;
-        farm.addresses[2] = SonicConstantsLib.TOKEN_xSILO;
+
+        farm.addresses[0] = siloVault;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        // we allow to specify gauge but it can be zero
+        // Gauge can be detected as following:
+        //        function _getGauge(address siloVault_, bool useBorrowableCollateral) internal view returns (address) {
+        //            ISilo siloVault = ISilo(siloVault_);
+        //            ISiloConfig.ConfigData memory config = ISiloConfig(siloVault.config()).getConfig(farm.addresses[0]);
+        //            address shareToken = useBorrowableCollateral ? config.collateralShareToken : config.protectedShareToken;
+        //            return ISiloGaugeHookReceiver(config.hookReceiver).configuredGauges(shareToken);
+        //        }
+        // we assume that the gauge is static
+        farm.addresses[2] = gauge;
+
         farm.nums = new uint[](1);
         farm.nums[0] = borrowableCollateral ? 1 : 0;
         farm.ticks = new int24[](0);

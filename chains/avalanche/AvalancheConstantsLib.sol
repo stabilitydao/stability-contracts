@@ -6,6 +6,7 @@ library AvalancheConstantsLib {
     address public constant MULTISIG = 0x06111E02BEb85B57caebEf15F5f90Bc82D54da3A;
     address public constant PLATFORM = 0x72b931a12aaCDa6729b4f8f76454855CB5195941;
     address public constant METAVAULT_FACTORY = 0x2FA6cc5E1dc2F6Dd8806a3969f2E7fcBf5f75e89;
+    address public constant FACTORY = 0xE9D2FCaD6b691a1642587a2B61886a173632ed00;
 
     // ERC20
     address public constant TOKEN_USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -57,6 +58,7 @@ library AvalancheConstantsLib {
     address public constant SILO_VAULT_BTCb_130 = 0x7437ac81457Fa98fFB2d0C8f9943ecfE4813e2f1;
     address public constant SILO_VAULT_BTCb_121 = 0xD8a26DFEba3E9B558Bd79d10722636Dfb4dc2bF4;
     address public constant SILO_VAULT_USDC_142 = 0x606fe9a70338e798a292CA22C1F28C829F24048E;
+    address public constant SILO_VAULT_USDC_129 = 0x672b77f0538b53Dc117C9dDfEb7377A678d321a6;
 
     address public constant SILO_MANAGED_VAULT_USDC_MEV = 0x4dc1ce9b9f9EF00c144BfAD305f16c62293dC0E8;
     address public constant SILO_MANAGED_VAULT_BTCb_MEV = 0x1f8E769B5B6010B2C2BBCd68629EA1a0a0Eda7E3;
