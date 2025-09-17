@@ -322,16 +322,25 @@ library SonicFarmMakerLib {
         return farm;
     }
 
-    function _makeSiloMerklFarm(address gauge, address siloVault, address rewardToken) internal pure returns (IFactory.Farm memory) {
+    /// @param borrowableCollateral False for non-borrowable ("protected" in ISilo.sol) collateral,
+    /// true for borrowable collateral ("collateral" in ISilo.sol)
+    function _makeSiloMerklFarm(
+        address gauge,
+        address siloVault,
+        address rewardToken,
+        bool borrowableCollateral
+    ) internal pure returns (IFactory.Farm memory) {
         IFactory.Farm memory farm;
         farm.status = 0;
-        farm.strategyLogicId = StrategyIdLib.SILO_FARM;
+        farm.strategyLogicId = StrategyIdLib.SILO_MERKL_FARM;
         farm.rewardAssets = new address[](1);
         farm.rewardAssets[0] = rewardToken;
-        farm.addresses = new address[](2);
+        farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = siloVault;
-        farm.nums = new uint[](0);
+        farm.addresses[2] = SonicConstantsLib.TOKEN_xSILO;
+        farm.nums = new uint[](1);
+        farm.nums[0] = borrowableCollateral ? 1 : 0;
         farm.ticks = new int24[](0);
         return farm;
     }

@@ -17,6 +17,11 @@ library AvalancheConstantsLib {
     address public constant TOKEN_WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     address public constant TOKEN_REUL = 0x2e3b32730B4F6b6502BdAa9122df3B026eDE5391;
     address public constant TOKEN_EUL = 0x9ceeD3A7f753608372eeAb300486cc7c2F38AC68;
+    address public constant TOKEN_AUSD = 0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a;
+
+    address public constant TOKEN_xBTC = 0x6eAf19b2FC24552925dB245F9Ff613157a7dbb4C;
+    address public constant TOKEN_savBTS = 0x649342c6bff544d82DF1B2bA3C93e0C22cDeBa84;
+    address public constant TOKEN_savUSDC = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
@@ -32,6 +37,7 @@ library AvalancheConstantsLib {
     address public constant POOL_BLACKHOLE_CL_WBTC_BTCB = 0xfc231423E1a863d94Abb21D9f68e8C2589B3Edb9;
     address public constant POOL_BLACKHOLE_CL_BTCB_WAVAX = 0x8FEF4fE4970a5D6bFa7C65871a2EbFD0F42aa822;
     address public constant POOL_BLACKHOLE_CL_WETH_WAVAX = 0x5E128EbC09C918DDAE3Ca1668d4EE9527dc00D78;
+    address public constant POOL_BLACKHOLE_CL_AUSD_USDC = 0x10Ed86c3D147dCd4bdecACfF5aDA625328B9678D;
 
     // Merkl
     address public constant MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
@@ -48,8 +54,15 @@ library AvalancheConstantsLib {
 
     // Silo
     address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
+    address public constant SILO_VAULT_BTCb_130 = 0x7437ac81457Fa98fFB2d0C8f9943ecfE4813e2f1;
+    address public constant SILO_VAULT_BTCb_121 = 0xD8a26DFEba3E9B558Bd79d10722636Dfb4dc2bF4;
+    address public constant SILO_VAULT_USDC_142 = 0x606fe9a70338e798a292CA22C1F28C829F24048E;
 
     address public constant SILO_MANAGED_VAULT_USDC_MEV = 0x4dc1ce9b9f9EF00c144BfAD305f16c62293dC0E8;
+    address public constant SILO_MANAGED_VAULT_BTCb_MEV = 0x1f8E769B5B6010B2C2BBCd68629EA1a0a0Eda7E3;
+    address public constant SILO_MANAGED_VAULT_AUSD_VARLAMOURE = 0x3d7B0c3997E48fA3FC96cd057d1fb4E5F891835B;
+    address public constant SILO_MANAGED_VAULT_USDt_VARLAMOURE = 0x6c09bfdc1df45D6c4Ff78Dc9F1C13aF29eB335d4;
+
 
     // DeX aggregators
     /// @notice Aggregator router V6

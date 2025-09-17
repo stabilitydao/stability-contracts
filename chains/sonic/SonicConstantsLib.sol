@@ -403,6 +403,8 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
     address public constant SILO_VAULT_112_USDC = 0xA1627a0E1d0ebcA9326D2219B84Df0c600bed4b1;
+    address public constant SILO_VAULT_138_smsUSD = 0x61FFBEAd1d4DC9fFba35eb16FD6caDEe9B37b2Aa;
+    address public constant SILO_VAULT_141_PT_smsUSD_30OCT_USDC = 0x7184BEa7743CCFBE390F9Cd830095a13Ef867941;
 
     // Silo managed vaults
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic

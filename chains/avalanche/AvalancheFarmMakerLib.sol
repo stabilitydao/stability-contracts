@@ -45,4 +45,27 @@ library AvalancheFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    /// @param borrowableCollateral False for non-borrowable ("protected" in ISilo.sol) collateral,
+    /// true for borrowable collateral ("collateral" in ISilo.sol)
+    function _makeSiloMerklFarm(
+        address gauge,
+        address siloVault,
+        address rewardToken,
+        bool borrowableCollateral
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardToken;
+        farm.addresses = new address[](3);
+        farm.addresses[0] = gauge;
+        farm.addresses[1] = siloVault;
+        farm.addresses[2] = address(0); // xSilo address, not used on Avalanche (because it's bridged token and doesn't provide interface to swap xSilo to Silo)
+        farm.nums = new uint[](1);
+        farm.nums[0] = borrowableCollateral ? 1 : 0;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 }

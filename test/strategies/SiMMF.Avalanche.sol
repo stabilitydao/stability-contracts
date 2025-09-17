@@ -14,6 +14,9 @@ contract SiloManagedMerklFarmStrategyAvalancheTest is AvalancheSetup, UniversalT
 
     function testSiMMFAvalanche() public universalTest {
         _addStrategy(4);
+        _addStrategy(5);
+        _addStrategy(6);
+        _addStrategy(7);
     }
 
     function _preHardWork() internal override {

@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
-import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
-import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
-import {IDistributionManager} from "../integrations/silo/IDistributionManager.sol";
+import "./libs/SharedLib.sol";
 import {
     FarmingStrategyBase,
     StrategyBase,
@@ -13,25 +10,25 @@ import {
     StrategyLib,
     IPlatform
 } from "./base/FarmingStrategyBase.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
-import {IControllable} from "../interfaces/IControllable.sol";
 import {CommonLib} from "../core/libs/CommonLib.sol";
 import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
+import {IControllable} from "../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {ISiloVault} from "../integrations/silo/ISiloVault.sol";
 import {IPriceReader} from "../interfaces/IPriceReader.sol";
+import {ISiloConfig} from "../integrations/silo/ISiloConfig.sol";
+import {ISiloIncentivesController} from "../integrations/silo/ISiloIncentivesController.sol";
+import {ISilo} from "../integrations/silo/ISilo.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
+import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {SharedLib} from "./libs/SharedLib.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {IXSilo} from "../integrations/silo/IXSilo.sol";
-import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 
-/// @title Supply asset to Silo V2 managed vault and earn farm rewards + rewards from Merkl
+/// @title Supply asset to Silo V2 and earn farm rewards from Silo and Merkl
 /// Changelog:
 /// @author dvpublic (https://github.com/dvpublic)
-contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
+contract SiloFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
@@ -41,7 +38,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     string public constant VERSION = "1.0.0";
 
     /// @dev Strategy logic ID used in this farm
-    string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MANAGED_MERKL_FARM;
+    string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MERKL_FARM;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -54,18 +51,19 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         }
 
         IFactory.Farm memory farm = _getFarm(addresses[0], nums[0]);
-        if (farm.addresses.length != 2 || farm.nums.length != 0 || farm.ticks.length != 0) {
+        if (farm.addresses.length != 3 || farm.nums.length != 1 || farm.ticks.length != 0) {
             revert IFarmingStrategy.BadFarm();
         }
 
-        ISiloVault siloVault = ISiloVault(farm.addresses[0]);
         address[] memory siloAssets = new address[](1);
+        ISilo siloVault = ISilo(farm.addresses[1]);
         siloAssets[0] = siloVault.asset();
 
         __StrategyBase_init(addresses[0], STRATEGY_LOGIC_ID, addresses[1], siloAssets, address(0), 0);
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
-        IERC20(siloAssets[0]).forceApprove(farm.addresses[0], type(uint).max);
+        IERC20(siloAssets[0]).forceApprove(farm.addresses[1], type(uint).max);
+        IERC20(farm.addresses[1]).forceApprove(farm.addresses[0], type(uint).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -83,9 +81,9 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IStrategy
-    function supportedVaultTypes() external pure override returns (string[] memory types) {
-        types = new string[](1);
-        types[0] = VaultTypeLib.COMPOUNDING;
+    function description() external view returns (string memory) {
+        IFactory.Farm memory farm = _getFarm();
+        return _genDesc(farm);
     }
 
     /// @inheritdoc IStrategy
@@ -99,9 +97,13 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
-        ISiloVault siloVault = _getSiloVault();
-        string memory shortAddr = SharedLib.shortAddress(address(siloVault));
-        return (string.concat(IERC20Metadata(siloVault.asset()).symbol(), " ", shortAddr), true);
+        return (CommonLib.u2s(_getMarketId()), true);
+    }
+
+    /// @inheritdoc IStrategy
+    function supportedVaultTypes() external pure override returns (string[] memory types) {
+        types = new string[](1);
+        types[0] = VaultTypeLib.COMPOUNDING;
     }
 
     /// @inheritdoc IStrategy
@@ -112,12 +114,6 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     {
         /// slither-disable-next-line ignore-unused-return
         return SharedLib.initVariantsForFarm(platform_, STRATEGY_LOGIC_ID, _genDesc);
-    }
-
-    /// @inheritdoc IStrategy
-    function description() external view returns (string memory) {
-        IFactory.Farm memory farm = _getFarm();
-        return _genDesc(farm);
     }
 
     /// @inheritdoc IStrategy
@@ -132,21 +128,23 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
-        ISiloVault siloVault = _getSiloVault();
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+
         amounts = new uint[](1);
         amounts[0] = siloVault.maxWithdraw(address(this));
     }
 
     /// @inheritdoc IStrategy
     function poolTvl() public view virtual override returns (uint tvlUsd) {
-        ISiloVault siloVault = _getSiloVault();
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
 
         address asset = siloVault.asset();
         IPriceReader priceReader = IPriceReader(IPlatform(platform()).priceReader());
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        /// slither-disable-next-line ignore-unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
@@ -154,10 +152,10 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(MerklStrategyBase, FarmingStrategyBase)
-        returns (bool)
+    public
+    view
+    override(MerklStrategyBase, FarmingStrategyBase)
+    returns (bool)
     {
         return FarmingStrategyBase.supportsInterface(interfaceId) || MerklStrategyBase.supportsInterface(interfaceId)
             || super.supportsInterface(interfaceId);
@@ -173,9 +171,8 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IFarmingStrategy
-    function canFarm() external view override returns (bool) {
-        IFactory.Farm memory farm = _getFarm();
-        return farm.status == 0;
+    function canFarm() external pure override returns (bool) {
+        return true;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -185,10 +182,12 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
     function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+        IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
+        ISilo siloVault = ISilo(farm.addresses[1]);
         value = amounts[0];
         if (value != 0) {
-            _getSiloVault().deposit(value, address(this));
+            siloVault.deposit(value, address(this), ISilo.CollateralType.Collateral);
             $base.total += value;
         }
     }
@@ -202,20 +201,19 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
     function _withdrawAssets(
-        address[] memory, /* _assets */
+        address[] memory, // _assets
         uint value,
         address receiver
     ) internal override returns (uint[] memory amountsOut) {
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
         uint toWithdraw = value;
         if (address(this) == receiver) {
-            // same logic as in SiloFarmStrategy
             toWithdraw--;
         }
-        _getSiloVault().withdraw(toWithdraw, receiver, address(this));
-
+        siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
         amountsOut = new uint[](1);
         amountsOut[0] = value;
-
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
     }
@@ -251,39 +249,15 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         uint lenRewards = __rewardAssets.length;
         __rewardAmounts = new uint[](lenRewards);
 
-        // ------------------- calculate earned amounts
-        address[] memory farmAddresses = _getFarm().addresses;
-        ISiloVault siloVault = ISiloVault(farmAddresses[0]);
-        __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
-
-        // ------------------- claim all available rewards
-        siloVault.claimRewards();
-
-        {
-            IVaultIncentivesModule vim = IVaultIncentivesModule(siloVault.INCENTIVES_MODULE());
-            address[] memory claimingLogics = vim.getAllIncentivesClaimingLogics();
-
-            for (uint i; i < claimingLogics.length; ++i) {
-                IIncentivesClaimingLogic logic = IIncentivesClaimingLogic(claimingLogics[i]);
-                ISiloIncentivesControllerForVault c =
-                    ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
-
-                // IDistributionManager.AccruedRewards[] memory accruedRewards =
-                c.claimRewards(address(this));
-            }
-        }
         // Merkl rewards: assume they are added on the balance automatically
+        // So, we don't take into accounts "balance before" - assume all balance is rewards
 
-        // ------------------- xSilo => silo, collect all registered rewards to __rewardAmounts
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
+        __amounts[0] = siloVault.convertToAssets(siloVault.balanceOf(address(this))) - $base.total;
+        ISiloIncentivesController(farm.addresses[0]).claimRewards(address(this));
 
-        // We assume here that SILO is set as a reward token in farm settings
-        // and xSilo is specified only in farmAddresses[1].
-        // Such config is valid for the case when rewards are provided in xSilo.
-        // It allows us to be able to keep xSilo on balance for any time without problems.
-        // And we can exchange it on silo at any moment and get real (silo) rewards.
-        // Currently we doesn't keep xSilo on balance - we always exchange it on silo instantly.
-
-        address xSilo = farmAddresses[1];
+        address xSilo = farm.addresses[1];
         address silo = xSilo != address(0) ? IXSilo(xSilo).asset() : address(0);
 
         for (uint i; i < lenRewards; ++i) {
@@ -296,14 +270,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
                 }
             }
         }
-    }
 
-    /// @inheritdoc StrategyBase
-    function _processRevenue(
-        address[] memory, /*assets_*/
-        uint[] memory /*amountsRemaining*/
-    ) internal pure override returns (bool needCompound) {
-        needCompound = true;
     }
 
     /// @inheritdoc StrategyBase
@@ -311,33 +278,22 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         address[] memory _assets = assets();
         uint len = _assets.length;
         uint[] memory amounts = new uint[](len);
-
         //slither-disable-next-line uninitialized-local
-        bool notZero; // true if there is any not zero value in {amounts}
+        bool notZero;
 
         for (uint i; i < len; ++i) {
             amounts[i] = StrategyLib.balance(_assets[i]);
             if (amounts[i] != 0) {
                 notZero = true;
-                break;
             }
         }
-
-        ISiloVault siloVault = _getSiloVault();
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = ISilo(farm.addresses[1]);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total = siloVault.convertToAssets(siloVault.balanceOf(address(this)));
-
         if (notZero) {
             _depositAssets(amounts, false);
         }
-    }
-
-    /// @inheritdoc StrategyBase
-    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
-        StrategyBaseStorage storage $base = _getStrategyBaseStorage();
-        assets_ = $base._assets;
-        amounts_ = new uint[](1);
-        amounts_[0] = $base.total;
     }
 
     /// @inheritdoc StrategyBase
@@ -360,23 +316,39 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
         return _previewDepositAssets(amountsMax);
     }
 
+    /// @inheritdoc StrategyBase
+    function _assetsAmounts() internal view override returns (address[] memory assets_, uint[] memory amounts_) {
+        StrategyBaseStorage storage _$_ = _getStrategyBaseStorage();
+        assets_ = _$_._assets;
+        amounts_ = new uint[](1);
+        amounts_[0] = _$_.total;
+    }
+
+    /// @inheritdoc StrategyBase
+    function _processRevenue(
+        address[] memory, /*assets_*/
+        uint[] memory /*amountsRemaining*/
+    ) internal pure override returns (bool needCompound) {
+        needCompound = true;
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function _genDesc(IFactory.Farm memory farm) internal view returns (string memory) {
-        string memory shortAddr = SharedLib.shortAddress(farm.addresses[0]);
         return string.concat(
             "Earn ",
             CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
             " and supply APR by lending ",
-            IERC20Metadata(ISiloVault(farm.addresses[0]).asset()).symbol(),
-            " to Silo managed vault + receive Merkl rewards",
-            shortAddr
+            IERC20Metadata(ISilo(farm.addresses[1]).asset()).symbol(),
+            " to Silo V2 ",
+            CommonLib.u2s(_getMarketId())
         );
     }
 
-    function _getSiloVault() internal view returns (ISiloVault) {
-        return ISiloVault(_getFarm().addresses[0]);
+    function _getMarketId() internal view returns (uint marketId) {
+        IFactory.Farm memory farm = _getFarm();
+        marketId = ISiloConfig(ISilo(farm.addresses[1]).config()).SILO_ID();
     }
 }

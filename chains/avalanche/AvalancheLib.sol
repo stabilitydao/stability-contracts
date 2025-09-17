@@ -134,7 +134,7 @@ library AvalancheLib {
     }
 
     function routes() public pure returns (ISwapper.AddPoolData[] memory pools) {
-        pools = new ISwapper.AddPoolData[](5);
+        pools = new ISwapper.AddPoolData[](6);
         uint i;
         pools[i++] = _makePoolData(
             AvalancheConstantsLib.POOL_BLACKHOLE_CL_USDT_USDC,
@@ -166,10 +166,16 @@ library AvalancheLib {
             AvalancheConstantsLib.TOKEN_WETH,
             AvalancheConstantsLib.TOKEN_WAVAX
         );
+        pools[i++] = _makePoolData(
+            AvalancheConstantsLib.POOL_BLACKHOLE_CL_AUSD_USDC,
+            AmmAdapterIdLib.ALGEBRA_V4,
+            AvalancheConstantsLib.TOKEN_AUSD,
+            AvalancheConstantsLib.TOKEN_USDC
+        );
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](5);
+        _farms = new IFactory.Farm[](8);
         uint i;
         _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
         _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
@@ -183,6 +189,9 @@ library AvalancheLib {
         _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 3
 
         _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_USDC_MEV); // 4
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_BTCb_MEV); // 5
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_AUSD_VARLAMOURE); // 6
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_USDt_VARLAMOURE); // 7
     }
 
     function _makePoolData(
