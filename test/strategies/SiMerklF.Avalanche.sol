@@ -14,15 +14,15 @@ contract SiloMerklFarmStrategyAvalancheTest is AvalancheSetup, UniversalTest {
 
     function testSiFAvalanche() public universalTest {
         _addStrategy(8);
-        _addStrategy(9); // todo compound apr??
+        _addStrategy(9);
         _addStrategy(10);
-        _addStrategy(11); // todo compound apr??
+        _addStrategy(11);
     }
 
     //region -------------------------------- Universal test overrides
     function _preHardWork() internal override {
         // emulate Merkl-rewards
-        deal(AvalancheConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
+        deal(AvalancheConstantsLib.TOKEN_WAVAX, currentStrategy, 1e18);
     }
     //endregion -------------------------------- Universal test overrides
 
