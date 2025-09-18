@@ -46,7 +46,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
-    uint public constant FORK_BLOCK = 44990313; // Aug-29-2025 09:15:29 AM +UTC
+    uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
 
     IFactory public factory;
     address public multisig;
@@ -174,6 +174,17 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             }
         }
     }
+
+    /// @dev Auxiliary test to withdraw from vault by holder
+    function testWithdrawSingle() internal {
+        uint withdrawn = _testWithdrawSingle(
+            IStabilityVault(0x4BC62FcF68732eA77ef9Dd72f4EBc1042702bC9D),
+            0xe19763bAa197e17A5663F8941177bFBBD31a7ab0,
+            23352862707783185
+        );
+        console.log("Withdrawn", withdrawn);
+        assertNotEq(withdrawn, 0, "Withdraw some amount from vault");
+    }
     //endregion ---------------------- Auxiliary tests
 
     //region ---------------------- Auxiliary functions
@@ -282,6 +293,24 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
         return result;
     }
+
+    function _testWithdrawSingle(
+        IStabilityVault vault,
+        address holder_,
+        uint amount_
+    ) internal returns (uint withdrawn) {
+        // _upgradeVaultStrategy(address(vault));
+
+        uint amountToWithdraw = amount_ == 0 ? vault.balanceOf(holder_) : amount_;
+        console.log("Max withdraw", vault.maxWithdraw(holder_));
+        console.log("To withdraw", amountToWithdraw);
+
+        address[] memory _assets = vault.assets();
+
+        vm.prank(holder_);
+        return vault.withdrawAssets(_assets, amountToWithdraw, new uint[](1))[0];
+    }
+
 
     function _dealAndApprove(
         IStabilityVault vault,
