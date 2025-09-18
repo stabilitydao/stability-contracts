@@ -49,6 +49,8 @@ library AvalancheConstantsLib {
     // Silo
     address public constant SILO_VAULT_USDC_125 = 0xE0345f66318F482aCCcd67244A921C7FDC410957;
 
+    address public constant SILO_MANAGED_VAULT_USDC_MEV = 0x4dc1ce9b9f9EF00c144BfAD305f16c62293dC0E8;
+
     // DeX aggregators
     /// @notice Aggregator router V6
     /// @dev https://portal.1inch.dev/documentation/contracts/aggregation-protocol/aggregation-introduction
