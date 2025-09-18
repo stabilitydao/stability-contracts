@@ -44,6 +44,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
+import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -245,6 +246,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()), false);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -340,7 +342,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](64);
+        _farms = new IFactory.Farm[](65);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_WS_STS); //0
@@ -429,6 +431,9 @@ library SonicLib {
 
         _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_MEV_CAPITAL); //62
         _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_RE7_LABS); //63
+
+        // todo register farms for all required vault
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedMerklFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_MAINSTREED_LIQUIDITY_VAULT); //64
 
     }
 

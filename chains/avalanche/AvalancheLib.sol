@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {AvalancheConstantsLib} from "./AvalancheConstantsLib.sol";
-import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {PriceReader} from "../../src/core/PriceReader.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
-import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
-import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {AvalancheFarmMakerLib} from "./AvalancheFarmMakerLib.sol";
 import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {AvalancheConstantsLib} from "./AvalancheConstantsLib.sol";
+import {CVault} from "../../src/core/vaults/CVault.sol";
+import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
+import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
+import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
+import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {PriceReader} from "../../src/core/PriceReader.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
+import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
+import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 
 /// @dev Avalanche network [chainId: 43114] deploy library
 //    ,---,                               ,--,                                       ,---,
@@ -124,6 +126,7 @@ library AvalancheLib {
         _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -166,36 +169,20 @@ library AvalancheLib {
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](4);
+        _farms = new IFactory.Farm[](5);
         uint i;
-        _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
-        _farms[i++] = _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
+        _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
+        _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDT_K3, AvalancheConstantsLib.TOKEN_WAVAX); // 1
 
         // set EUL as reward token instead of rEUL because rEUL has vesting period after which it's converted to EUL
         // address of rEUL is added as farm.addresses[2] instead
-        _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 2
+        _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_BTCB_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 2
 
         // set EUL as reward token instead of rEUL because rEUL has vesting period after which it's converted to EUL
         // address of rEUL is added as farm.addresses[2] instead
-        _farms[i++] =
-            _makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 3
-    }
+        _farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_WBTC_RESERVOIR, AvalancheConstantsLib.TOKEN_EUL); // 3
 
-    function _makeEulerMerklFarm(address vault, address rewardAsset) internal pure returns (IFactory.Farm memory) {
-        IFactory.Farm memory farm;
-        farm.status = 0;
-        farm.pool = address(0);
-        farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
-        farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = rewardAsset;
-        farm.addresses = new address[](3);
-        farm.addresses[0] = AvalancheConstantsLib.MERKL_DISTRIBUTOR;
-        farm.addresses[1] = vault;
-        farm.addresses[2] = AvalancheConstantsLib.TOKEN_REUL;
-        farm.nums = new uint[](0);
-        farm.ticks = new int24[](0);
-        return farm;
+        _farms[i++] = AvalancheFarmMakerLib._makeSiloManagedMerklFarm(AvalancheConstantsLib.SILO_MANAGED_VAULT_USDC_MEV); // 4
     }
 
     function _makePoolData(

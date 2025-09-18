@@ -296,4 +296,30 @@ library SonicFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    function _makeSiloManagedMerklFarm(address managedVault) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_MANAGED_MERKL_FARM;
+
+        // we can use getSiloManagedFarmRewards to auto-detect reward assets
+        // but some vaults return empty array (probably it's not empty on other blocks)
+
+        // DONT put xSilo as a reward. Set SILO instead and provide address of xSilo as farm.addresses[1]
+        // Please note that xSilo works on Sonic only (it's bridget on other chains)
+        farm.rewardAssets = new address[](5);
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
+        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
+        farm.rewardAssets[4] = SonicConstantsLib.TOKEN_USDC;
+
+        farm.addresses = new address[](2);
+        farm.addresses[0] = managedVault;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+
+        farm.nums = new uint[](0);
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 }

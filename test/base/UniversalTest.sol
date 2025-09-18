@@ -375,23 +375,9 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*             MAX DEPOSIT, MAX WITHDRAW, POOL TVL            */
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-                {
-                    uint[] memory maxWithdraw = strategy.maxWithdrawAssets(0);
-                    (, uint[] memory assetAmounts) = strategy.assetsAmounts();
-                    assertEq(
-                        maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0,
-                        true,
-                        "maxWithdraw has same length as assetAmounts OR it's empty (there are no limits for withdraw)"
-                    );
-
-                    uint[] memory maxDeposit = strategy.maxDepositAssets();
-                    assertEq(
-                        maxDeposit.length == assetAmounts.length || maxDeposit.length == 0,
-                        true,
-                        "maxDeposit has same length as assetAmounts OR it's empty (there are no limits for deposit)"
-                    );
-                }
-                assertNotEq(strategy.poolTvl(), 0, "Assume that internal pool has some TVL");
+                assertEq(_checkMaxWithdraw(), true, "maxWithdraw test is passed");
+                assertEq(_checkMaxDeposit(), true, "maxDeposit test is passed");
+                assertEq(_checkPoolTvl(), true, "poolTvl test is passed");
 
                 if (vars.isLPStrategy && makePoolVolume) {
                     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -827,5 +813,36 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
     function _dealUnderlying(address underlying, address to, uint amount) internal virtual {
         deal(underlying, to, amount);
         assertEq(IERC20(underlying).balanceOf(to), amount, "U1");
+    }
+
+    /// @dev Provide a virtual function to prepare extended tests of maxWithdraw
+    /// Default implementation checks only lengths
+    function _checkMaxWithdraw() internal virtual returns (bool) {
+        IStrategy strategy = IStrategy(currentStrategy);
+        uint[] memory maxWithdraw = strategy.maxWithdrawAssets(0);
+        (, uint[] memory assetAmounts) = strategy.assetsAmounts();
+
+        // maxWithdraw has same length as assetAmounts OR it's empty (there are no limits for withdraw)
+        return maxWithdraw.length == assetAmounts.length || maxWithdraw.length == 0;
+    }
+
+    /// @dev Provide a virtual function to prepare extended tests of maxDeposit
+    /// Default implementation checks only lengths
+    function _checkMaxDeposit() internal virtual returns (bool) {
+        IStrategy strategy = IStrategy(currentStrategy);
+        uint[] memory maxDeposit = strategy.maxDepositAssets();
+        (, uint[] memory assetAmounts) = strategy.assetsAmounts();
+
+        // maxDeposit has same length as assetAmounts OR it's empty (there are no limits for deposit)
+        return maxDeposit.length == assetAmounts.length || maxDeposit.length == 0;
+    }
+
+    /// @dev Provide a virtual function to prepare extended tests of poolTvl
+    /// Default implementation checks tvl != 0 only
+    function _checkPoolTvl() internal virtual returns (bool) {
+        IStrategy strategy = IStrategy(currentStrategy);
+
+        // Assume that internal pool has some TVL
+        return strategy.poolTvl() != 0;
     }
 }
