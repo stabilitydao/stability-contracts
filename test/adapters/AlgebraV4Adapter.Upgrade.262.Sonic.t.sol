@@ -37,10 +37,10 @@ contract AlgebraV4AdapterUpgrade262SonicTest is Test {
             bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.ERC_4626));
             ISwapper.PoolData[] memory routes = new ISwapper.PoolData[](1);
             routes[0] = ISwapper.PoolData({
-                pool: SonicConstantsLib.TOKEN_bUSDCe20,
+                pool: SonicConstantsLib.TOKEN_BUSDCE20,
                 ammAdapter: IPlatform(PLATFORM).ammAdapter(_hash).proxy,
-                tokenIn: SonicConstantsLib.TOKEN_bUSDCe20,
-                tokenOut: SonicConstantsLib.TOKEN_wstkscUSD
+                tokenIn: SonicConstantsLib.TOKEN_BUSDCE20,
+                tokenOut: SonicConstantsLib.TOKEN_WSTKSCUSD
             });
             price0 = swapper.getPriceForRoute(routes, 1e6);
         }
@@ -49,10 +49,10 @@ contract AlgebraV4AdapterUpgrade262SonicTest is Test {
             bytes32 _hash = keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4));
             ISwapper.PoolData[] memory routes = new ISwapper.PoolData[](1);
             routes[0] = ISwapper.PoolData({
-                pool: SonicConstantsLib.POOL_SWAPX_CL_bUSDCe20_wstkscUSD,
+                pool: SonicConstantsLib.POOL_SWAPX_CL_BUSDCE20_WSTKSCUSD,
                 ammAdapter: IPlatform(PLATFORM).ammAdapter(_hash).proxy,
-                tokenIn: SonicConstantsLib.TOKEN_bUSDCe20,
-                tokenOut: SonicConstantsLib.TOKEN_wstkscUSD
+                tokenIn: SonicConstantsLib.TOKEN_BUSDCE20,
+                tokenOut: SonicConstantsLib.TOKEN_WSTKSCUSD
             });
             price1 = swapper.getPriceForRoute(routes, 1e6);
         }

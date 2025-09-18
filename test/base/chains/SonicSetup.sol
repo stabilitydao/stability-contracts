@@ -41,7 +41,7 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
     }
 
     function _deal(address token, address to, uint amount) internal override {
-        if (token == SonicConstantsLib.TOKEN_auUSDC) {
+        if (token == SonicConstantsLib.TOKEN_AUUSDC) {
             address aurumPool = 0x69f196a108002FD75d4B0a1118Ee04C065a63dE9;
             deal(SonicConstantsLib.TOKEN_USDC, address(this), amount);
             IERC20(SonicConstantsLib.TOKEN_USDC).approve(aurumPool, amount);

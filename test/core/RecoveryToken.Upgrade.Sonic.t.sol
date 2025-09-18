@@ -30,7 +30,7 @@ contract RecoveryTokenUpgradeSonicTest is Test {
     address public multisig;
 
     address public constant HOLDER_REC_WMETA_USDC = 0xCE785cccAa0c163E6f83b381eBD608F98f694C44;
-    address public constant HOLDER_REC_WMETA_scUSD = 0xCE785cccAa0c163E6f83b381eBD608F98f694C44;
+    address public constant HOLDER_REC_WMETA_SCUSD = 0xCE785cccAa0c163E6f83b381eBD608F98f694C44;
     address public constant HOLDER_REC_META_USD = 0x8901D9cf0272A2876525ee25Fcbb9E423c4B95f6;
 
     struct TestCase {
@@ -51,19 +51,19 @@ contract RecoveryTokenUpgradeSonicTest is Test {
         TestCase[] memory testCases = new TestCase[](3);
         testCases[0] = TestCase({
             holder: HOLDER_REC_WMETA_USDC,
-            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_wmetaUSDC,
+            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAUSDC,
             oldDecimals: 18,
             newDecimals: 6
         });
         testCases[1] = TestCase({
-            holder: HOLDER_REC_WMETA_scUSD,
-            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_wmetascUSD,
+            holder: HOLDER_REC_WMETA_SCUSD,
+            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETASCUSD,
             oldDecimals: 18,
             newDecimals: 6
         });
         testCases[2] = TestCase({
             holder: HOLDER_REC_META_USD,
-            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_metaUSD,
+            recoveryToken: SonicConstantsLib.RECOVERY_TOKEN_CREDIX_METAUSD,
             oldDecimals: 18,
             newDecimals: 18
         });

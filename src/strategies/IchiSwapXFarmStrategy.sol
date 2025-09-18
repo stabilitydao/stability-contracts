@@ -76,7 +76,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.ICHI_SWAPX_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -194,7 +194,7 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return ISFLib.generateDescription(farm, $lp.ammAdapter);
     }

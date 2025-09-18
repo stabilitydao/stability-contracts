@@ -23,7 +23,8 @@ contract Frontend is IFrontend {
 
     error IncorrectParams();
 
-    address public immutable platform;
+    // slither-disable-next-line naming-convention
+    address public immutable PLATFORM;
 
     struct VaultsVars {
         IPlatform platform;
@@ -91,7 +92,7 @@ contract Frontend is IFrontend {
     }
 
     constructor(address platform_) {
-        platform = platform_;
+        PLATFORM = platform_;
     }
 
     /// @inheritdoc IFrontend
@@ -115,7 +116,7 @@ contract Frontend is IFrontend {
         )
     {
         VaultsVars memory v;
-        v.platform = IPlatform(platform);
+        v.platform = IPlatform(PLATFORM);
         v.vaultManager = IVaultManager(v.platform.vaultManager());
         v.allVaultAddresses = v.vaultManager.vaultAddresses();
         total = v.allVaultAddresses.length;
@@ -164,7 +165,7 @@ contract Frontend is IFrontend {
         view
         returns (uint total, address[] memory asset, uint[] memory assetPrice, uint[] memory assetUserBalance)
     {
-        IPlatform _platform = IPlatform(platform);
+        IPlatform _platform = IPlatform(PLATFORM);
         IPriceReader priceReader = IPriceReader(_platform.priceReader());
         address[] memory allAssets = ISwapper(_platform.swapper()).allAssets();
 
@@ -202,7 +203,7 @@ contract Frontend is IFrontend {
         view
         returns (uint total, address[] memory vault, uint[] memory vaultSharePrice, uint[] memory vaultUserBalance)
     {
-        IPlatform _platform = IPlatform(platform);
+        IPlatform _platform = IPlatform(PLATFORM);
         address[] memory allVaultAddresses = IVaultManager(_platform.vaultManager()).vaultAddresses();
         total = allVaultAddresses.length;
 
@@ -249,7 +250,7 @@ contract Frontend is IFrontend {
     {
         WhatToBuildVars memory vars;
 
-        vars.platform = IPlatform(platform);
+        vars.platform = IPlatform(PLATFORM);
         IFactory factory = IFactory(vars.platform.factory());
         vars.strategyIdHashes = factory.strategyLogicIdHashes();
         vars.strategyIdHashesLen = vars.strategyIdHashes.length;

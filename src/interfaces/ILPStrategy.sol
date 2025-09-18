@@ -26,7 +26,7 @@ interface ILPStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.LPStrategyBase
-    struct LPStrategyBaseStorage {
+    struct LpStrategyBaseStorage {
         /// @inheritdoc ILPStrategy
         address pool;
         /// @inheritdoc ILPStrategy
@@ -34,7 +34,7 @@ interface ILPStrategy {
         uint[] _feesOnBalance;
     }
 
-    struct LPStrategyBaseInitParams {
+    struct LpStrategyBaseInitParams {
         string id;
         address platform;
         address vault;

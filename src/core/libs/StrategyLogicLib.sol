@@ -10,7 +10,7 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 /// @dev Library for StrategyLogic's tokenURI generation with SVG image and other metadata
 /// @author Alien Deployer (https://github.com/a17)
 library StrategyLogicLib {
-    struct TokenURIVars {
+    struct TokenUriVars {
         uint h;
         uint strategyBlockHeight;
         uint step;
@@ -25,7 +25,7 @@ library StrategyLogicLib {
         IPlatform.PlatformSettings memory platformData
     ) external pure returns (string memory output) {
         //region ----- Setup vars -----
-        TokenURIVars memory vars;
+        TokenUriVars memory vars;
         vars.h = 40;
         vars.strategyBlockHeight = 730;
         vars.step = 40;

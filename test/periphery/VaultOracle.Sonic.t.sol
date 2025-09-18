@@ -33,9 +33,9 @@ contract VaultOracleTestSonic is Test {
         IOracleAdapter adapter = IOracleAdapter(address(proxy));
 
         address[] memory assets = new address[](1);
-        assets[0] = SonicConstantsLib.TOKEN_scUSD;
+        assets[0] = SonicConstantsLib.TOKEN_SCUSD;
         address[] memory feeds = new address[](1);
-        feeds[0] = SonicConstantsLib.ORACLE_PYTH_scUSD_USD;
+        feeds[0] = SonicConstantsLib.ORACLE_PYTH_SCUSD_USD;
         vm.prank(multisig);
         adapter.addPriceFeeds(assets, feeds);
     }

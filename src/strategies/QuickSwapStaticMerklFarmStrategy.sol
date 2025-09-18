@@ -54,7 +54,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         $._nft = INonfungiblePositionManager(farm.addresses[0]);
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -137,7 +137,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return QSMFLib.generateDescription(farm, $lp.ammAdapter);
     }
@@ -254,7 +254,7 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         FarmingStrategyBaseStorage storage _$_ = _getFarmingStrategyBaseStorage();
-        LPStrategyBaseStorage storage __$ = _getLPStrategyBaseStorage();
+        LpStrategyBaseStorage storage __$ = _getLPStrategyBaseStorage();
         __assets = __$__._assets;
         __rewardAssets = _$_._rewardAssets;
         __amounts = new uint[](2);

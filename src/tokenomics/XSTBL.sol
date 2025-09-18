@@ -43,7 +43,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.XSTBL
-    struct XSTBLStorage {
+    struct XstblStorage {
         /// @inheritdoc IXSTBL
         address STBL;
         /// @inheritdoc IXSTBL
@@ -74,7 +74,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     ) external initializer {
         __Controllable_init(platform_);
         __ERC20_init("xStability", "xSTBL");
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         $.STBL = stbl_;
         $.xStaking = xStaking_;
         $.revenueRouter = revenueRouter_;
@@ -89,7 +89,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function rebase() external {
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
 
         address _revenueRouter = $.revenueRouter;
 
@@ -130,7 +130,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         /// @dev ensure arrays of same length
         require(exemptee.length == exempt.length, IncorrectArrayLength());
 
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         EnumerableSet.AddressSet storage exemptFrom = $.exempt;
 
         /// @dev loop through all and attempt add/remove based on status
@@ -147,7 +147,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         /// @dev ensure arrays of same length
         require(exemptee.length == exempt.length, IncorrectArrayLength());
 
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         EnumerableSet.AddressSet storage exemptTo = $.exemptTo;
 
         /// @dev loop through all and attempt add/remove based on status
@@ -188,7 +188,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         /// @dev burn the xSTBL from the caller's address
         _burn(msg.sender, amount_);
 
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
 
         /// @dev store the rebase earned from the penalty
         $.pendingRebase += penalty;
@@ -211,7 +211,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         /// @dev preemptive burn
         _burn(msg.sender, amount_);
 
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
 
         /// @dev fetch total length of vests
         uint vestLength = $.vestInfo[msg.sender].length;
@@ -224,7 +224,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function exitVest(uint vestID_) external {
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
 
         VestPosition storage _vest = $.vestInfo[msg.sender][vestID_];
         require(_vest.amount != 0, NO_VEST());
@@ -294,7 +294,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function vestInfo(address user, uint vestID) external view returns (uint amount, uint start, uint maxEnd) {
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         VestPosition memory vestPosition = $.vestInfo[user][vestID];
         amount = vestPosition.amount;
         start = vestPosition.start;
@@ -303,7 +303,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @inheritdoc IXSTBL
     function usersTotalVests(address who) external view returns (uint numOfVests) {
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         return $.vestInfo[who].length;
     }
 
@@ -334,11 +334,11 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     /// @dev internal check for the transfer whitelist
     function _isExempted(address from_, address to_) internal view returns (bool) {
-        XSTBLStorage storage $ = _getXSTBLStorage();
+        XstblStorage storage $ = _getXSTBLStorage();
         return (from_ == address(0) || to_ == address(0) || $.exempt.contains(from_) || $.exemptTo.contains(to_));
     }
 
-    function _getXSTBLStorage() internal pure returns (XSTBLStorage storage $) {
+    function _getXSTBLStorage() internal pure returns (XstblStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := XSTBL_STORAGE_LOCATION

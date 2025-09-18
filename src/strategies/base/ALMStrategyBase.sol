@@ -37,11 +37,11 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     //slither-disable-next-line naming-convention
     function __ALMStrategyBase_init(
-        LPStrategyBaseInitParams memory lpParams,
-        ALMStrategyBaseInitParams memory almParams
+        LpStrategyBaseInitParams memory lpParams,
+        AlmStrategyBaseInitParams memory almParams
     ) internal onlyInitializing {
         __LPStrategyBase_init(lpParams);
-        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        AlmStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
         $.nft = almParams.nft;
 
         $.algoId = almParams.algoId;
@@ -83,7 +83,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     /// @inheritdoc IALM
     function positions() external view returns (Position[] memory) {
-        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        AlmStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
         return $.positions;
     }
 
@@ -119,7 +119,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     /// @inheritdoc IALM
     function setupPriceChangeProtection(bool enabled, uint32 twapInterval, uint priceThreshold) external onlyOperator {
-        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        AlmStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
         $.priceChangeProtection = enabled;
         $.twapInterval = twapInterval;
         $.priceThreshold = priceThreshold;
@@ -128,7 +128,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
 
     /// @inheritdoc IALM
     function setupALMParams(uint algoId, int24[] memory params) external onlyOperator {
-        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        AlmStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
         $.algoId = algoId;
         $.params = params;
         emit ALMParams(algoId, params);
@@ -169,7 +169,7 @@ abstract contract ALMStrategyBase is LPStrategyBase, IALM {
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _getALMStrategyBaseStorage() internal pure returns (ALMStrategyBaseStorage storage $) {
+    function _getALMStrategyBaseStorage() internal pure returns (AlmStrategyBaseStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := ALM_STRATEGY_BASE_STORAGE_LOCATION

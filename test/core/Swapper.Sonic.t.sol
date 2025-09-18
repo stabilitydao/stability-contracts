@@ -12,18 +12,18 @@ contract SwapperSonicTest is Test, SonicSetup {
     function setUp() public {
         _init();
         swapper = ISwapper(platform.swapper());
-        _deal(SonicConstantsLib.TOKEN_wS, address(this), 1e18);
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(swapper), type(uint).max);
-        IERC20(SonicConstantsLib.TOKEN_stS).approve(address(swapper), type(uint).max);
+        _deal(SonicConstantsLib.TOKEN_WS, address(this), 1e18);
+        IERC20(SonicConstantsLib.TOKEN_WS).approve(address(swapper), type(uint).max);
+        IERC20(SonicConstantsLib.TOKEN_STS).approve(address(swapper), type(uint).max);
         IERC20(SonicConstantsLib.TOKEN_BEETS).approve(address(swapper), type(uint).max);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
     }
 
     function testSwaps() public {
         uint got;
-        swapper.swap(SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS, 1e17, 1_000); // 1%
-        got = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
-        swapper.swap(SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_BEETS, got, 1_000); // 1%
+        swapper.swap(SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STS, 1e17, 1_000); // 1%
+        got = IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(this));
+        swapper.swap(SonicConstantsLib.TOKEN_STS, SonicConstantsLib.TOKEN_BEETS, got, 1_000); // 1%
         got = IERC20(SonicConstantsLib.TOKEN_BEETS).balanceOf(address(this));
         swapper.swap(SonicConstantsLib.TOKEN_BEETS, SonicConstantsLib.TOKEN_USDC, got, 1_000); // 1%
         got = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));

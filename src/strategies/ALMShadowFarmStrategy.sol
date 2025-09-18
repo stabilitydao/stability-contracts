@@ -61,14 +61,14 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
         }
 
         __ALMStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.ALM_SHADOW_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
                 pool: farm.pool,
                 underlying: address(0)
             }),
-            ALMStrategyBaseInitParams({algoId: farm.nums[0], params: farm.ticks, nft: farm.addresses[1]})
+            AlmStrategyBaseInitParams({algoId: farm.nums[0], params: farm.ticks, nft: farm.addresses[1]})
         );
 
         __FarmingStrategyBase_init(addresses[0], nums[0]);
@@ -216,7 +216,7 @@ contract ALMShadowFarmStrategy is ALMStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        ALMStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
+        AlmStrategyBaseStorage storage $ = _getALMStrategyBaseStorage();
         FarmingStrategyBaseStorage storage _$f_ = _getFarmingStrategyBaseStorage();
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         __assets = __$__._assets;

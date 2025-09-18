@@ -45,7 +45,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
     function _preHardWork() internal override {
         // emulate Merkl-rewards
         deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
-        deal(SonicConstantsLib.TOKEN_xSILO, currentStrategy, 100e18);
+        deal(SonicConstantsLib.TOKEN_XSILO, currentStrategy, 100e18);
         deal(SonicConstantsLib.TOKEN_SILO, currentStrategy, 100e18);
     }
 

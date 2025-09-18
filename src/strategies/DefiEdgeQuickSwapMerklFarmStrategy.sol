@@ -57,7 +57,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -176,7 +176,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return DQMFLib.generateDescription(farm, $lp.ammAdapter);
     }

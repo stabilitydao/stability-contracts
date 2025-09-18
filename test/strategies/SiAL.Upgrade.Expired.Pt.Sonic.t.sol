@@ -20,30 +20,30 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 contract SiALUpgradeExpiredPtTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
 
-    // TOKEN_PT_Silo_20_USDC_17JUL2025
+    // TOKEN_PT_SILO_20_USDC_17JUL2025
     address public constant STRATEGY_PT = 0x2D34203886Da9ad7d1fe48FF7EF65a70f3788573;
     address public constant USER_PT = 0xFCd9df3BcdC746B23AB3FcF063F92C2Ca2D185B3;
-    address public constant PENDLE_PT = SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025;
+    address public constant PENDLE_PT = SonicConstantsLib.TOKEN_PT_SILO_20_USDC_17JUL2025;
 
-    // TOKEN_PT_wstkscUSD_29MAY2025
+    // TOKEN_PT_WSTKSCUSD_29MAY2025
     address public constant STRATEGY_PT2 = 0x2D34203886Da9ad7d1fe48FF7EF65a70f3788573;
     address public constant USER_PT2 = 0xFCd9df3BcdC746B23AB3FcF063F92C2Ca2D185B3;
-    address public constant PENDLE_PT2 = SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025;
+    address public constant PENDLE_PT2 = SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025;
 
-    // TOKEN_PT_wstkscETH_29MAY2025
+    // TOKEN_PT_WSTKSCETH_29MAY2025
     address public constant STRATEGY_PT3 = 0xe76A6B14f48e141239bb59F137529F12780Fe45B;
     address public constant USER_PT3 = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
-    address public constant PENDLE_PT3 = SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025;
+    address public constant PENDLE_PT3 = SonicConstantsLib.TOKEN_PT_WSTKSCETH_29MAY2025;
 
-    // TOKEN_PT_wOS_29MAY2025;
+    // TOKEN_PT_WOS_29MAY2025;
     address public constant STRATEGY_PT4 = 0x970683D06A47594A2480451061E5411d97a54e5A;
     address public constant USER_PT4 = 0x959767f961E91dFbBf865490D1c99Cf4e421B9E9;
-    address public constant PENDLE_PT4 = SonicConstantsLib.TOKEN_PT_wOS_29MAY2025;
+    address public constant PENDLE_PT4 = SonicConstantsLib.TOKEN_PT_WOS_29MAY2025;
 
-    // TOKEN_PT_wOS_29MAY2025;
+    // TOKEN_PT_WOS_29MAY2025;
     address public constant STRATEGY_PT5 = 0x1C2330aED343E65A866b55958B6e0030d98757b0;
     address public constant USER_PT5 = 0x4138F7b064Dc467A7C801c8ce19B94C98120A473;
-    address public constant PENDLE_PT5 = SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025;
+    address public constant PENDLE_PT5 = SonicConstantsLib.TOKEN_PT_SILO_46_SCUSD_14AUG2025;
 
     address public constant STRATEGY_W = 0x78080B52E639D9410F8c8f75E168072cd2617e6C;
     address public constant USER_W = 0x4ECe177350d5d474146242c3A0811c67762146F9;
@@ -103,7 +103,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         ];
     }
 
-    //region ---------------------------------------- Test for TOKEN_PT_Silo_20_USDC_17JUL2025
+    //region ---------------------------------------- Test for TOKEN_PT_SILO_20_USDC_17JUL2025
     function testExpiredPtLargestUser() public {
         // ------------------------- Prepare to withdraw
         IVault vault = IVault(IStrategy(STRATEGY_PT).vault());
@@ -220,9 +220,9 @@ contract SiALUpgradeExpiredPtTest is Test {
             console.log("withdrawn balance", withdrawn[0], expectedWithdraw);
         }
     }
-    //endregion ---------------------------------------- Test for TOKEN_PT_Silo_20_USDC_17JUL2025
+    //endregion ---------------------------------------- Test for TOKEN_PT_SILO_20_USDC_17JUL2025
 
-    //region ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
+    //region ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
     function testExpiredPt2SingleUser() public {
         // ------------------------- Prepare to withdraw
         IVault vault = IVault(IStrategy(STRATEGY_PT2).vault());
@@ -265,9 +265,9 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT2: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
-    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
+    //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
-    //region ---------------------------------------- Test for TOKEN_PT_wstkscETH_29MAY2025
+    //region ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
     function testExpiredPt3SingleUser() public {
         // ------------------------- Prepare to withdraw
         IVault vault = IVault(IStrategy(STRATEGY_PT3).vault());
@@ -348,7 +348,7 @@ contract SiALUpgradeExpiredPtTest is Test {
 
         assertEq(IERC20(assets[0]).balanceOf(address(STRATEGY_PT3)), 0, "PT3: collateral final balance should be 0");
         assertLt(
-            IERC20(SonicConstantsLib.TOKEN_wETH).balanceOf(address(STRATEGY_PT3)),
+            IERC20(SonicConstantsLib.TOKEN_WETH).balanceOf(address(STRATEGY_PT3)),
             1e12,
             "PT3: borrow final balance should be less than threshold"
         );
@@ -357,9 +357,9 @@ contract SiALUpgradeExpiredPtTest is Test {
         // also there are some losses because of the flash loan fees
         assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT3: total should match the total withdrawn amount");
     }
-    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscETH_29MAY2025
+    //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
 
-    //region ---------------------------------------- Test for TOKEN_PT_wOS_29MAY2025
+    //region ---------------------------------------- Test for TOKEN_PT_WOS_29MAY2025
     function testExpiredPt4SingleUser() public {
         // ------------------------- Prepare to withdraw
         IVault vault = IVault(IStrategy(STRATEGY_PT4).vault());
@@ -400,9 +400,9 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT4: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
-    //endregion ---------------------------------------- Test for TOKEN_PT_wstkscUSD_29MAY2025
+    //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
-    //region ---------------------------------------- Test for TOKEN_PT_Silo_46_scUSD_14AUG2025 (not expired)
+    //region ---------------------------------------- Test for TOKEN_PT_SILO_46_SCUSD_14AUG2025 (not expired)
     function testExpiredPt5AllHolders() public {
         // ------------------------- Upgrade strategy and pendle adapter, set up the strategy
         _upgradeStrategy(STRATEGY_PT5);
@@ -450,7 +450,7 @@ contract SiALUpgradeExpiredPtTest is Test {
 
         assertEq(IERC20(assets[0]).balanceOf(address(STRATEGY_PT5)), 0, "PT5: collateral final balance should be 0");
         assertLt(
-            IERC20(SonicConstantsLib.TOKEN_wETH).balanceOf(address(STRATEGY_PT5)),
+            IERC20(SonicConstantsLib.TOKEN_WETH).balanceOf(address(STRATEGY_PT5)),
             1e12,
             "PT5: borrow final balance should be less than threshold"
         );
@@ -459,7 +459,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         // also there are some losses because of the flash loan fees
         assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT5: total should match the total withdrawn amount");
     }
-    //endregion ---------------------------------------- Test for TOKEN_PT_Silo_46_scUSD_14AUG2025 (not expired)
+    //endregion ---------------------------------------- Test for TOKEN_PT_SILO_46_SCUSD_14AUG2025 (not expired)
 
     function testWstkscusd() internal {
         // 0x6Fb30F3FCB864D49cdff15061ed5c6ADFEE40B40

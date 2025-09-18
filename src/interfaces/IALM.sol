@@ -25,7 +25,7 @@ interface IALM {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.ALMStrategyBase
-    struct ALMStrategyBaseStorage {
+    struct AlmStrategyBaseStorage {
         uint algoId;
         int24[] params;
         Position[] positions;
@@ -35,7 +35,7 @@ interface IALM {
         uint priceThreshold;
     }
 
-    struct ALMStrategyBaseInitParams {
+    struct AlmStrategyBaseInitParams {
         uint algoId;
         int24[] params;
         address nft;

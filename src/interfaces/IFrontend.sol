@@ -3,7 +3,8 @@ pragma solidity ^0.8.23;
 
 interface IFrontend {
     /// @notice Platform address
-    function platform() external view returns (address);
+    // slither-disable-next-line naming-convention
+    function PLATFORM() external view returns (address);
 
     /// @notice Version of Frontend contract
     function VERSION() external view returns (string memory);

@@ -35,12 +35,12 @@ contract ChainlinkAdapterTestSonic is Test {
     function testChainlinkAdapterSonic() public {
         _addAdapter();
         address[] memory assets = new address[](1);
-        assets[0] = SonicConstantsLib.TOKEN_scUSD;
+        assets[0] = SonicConstantsLib.TOKEN_SCUSD;
         address[] memory feeds = new address[](1);
-        feeds[0] = SonicConstantsLib.ORACLE_PYTH_scUSD_USD;
+        feeds[0] = SonicConstantsLib.ORACLE_PYTH_SCUSD_USD;
         vm.prank(multisig);
         adapter.addPriceFeeds(assets, feeds);
-        (uint price, bool trusted) = priceReader.getPrice(SonicConstantsLib.TOKEN_scUSD);
+        (uint price, bool trusted) = priceReader.getPrice(SonicConstantsLib.TOKEN_SCUSD);
         assertGt(price, 999e15);
         assertLt(price, 101e16);
         assertEq(trusted, true);

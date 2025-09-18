@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./FixedPoint.sol";
+import {FixedPoint} from "./FixedPoint.sol";
 
 /// @dev Library for up scaling / downscaling amounts for tokens with different decimals
 /// @dev Used for Balancer swappers

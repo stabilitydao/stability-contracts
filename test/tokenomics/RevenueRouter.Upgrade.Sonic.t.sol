@@ -33,9 +33,9 @@ contract RevenueRouterUpgradeTestSonic is Test {
         revenueRouter.processUnitRevenue(0);
 
         address[] memory aavePools = new address[](3);
-        aavePools[0] = SonicConstantsLib.STABILITY_MARKET_Stream;
-        aavePools[1] = SonicConstantsLib.STABILITY_MARKET_StableJack;
-        aavePools[2] = SonicConstantsLib.STABILITY_MARKET_Brunch;
+        aavePools[0] = SonicConstantsLib.STABILITY_MARKET_STREAM;
+        aavePools[1] = SonicConstantsLib.STABILITY_MARKET_STABLEJACK;
+        aavePools[2] = SonicConstantsLib.STABILITY_MARKET_BRUNCH;
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
         revenueRouter.setAavePools(aavePools);
         vm.prank(multisig);
@@ -46,11 +46,11 @@ contract RevenueRouterUpgradeTestSonic is Test {
 
     function testHardWorks() public {
         vm.startPrank(IPlatform(PLATFORM).hardWorker());
-        IVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore).doHardWork();
-        IVault(SonicConstantsLib.VAULT_C_USDC_Stability_Stream).doHardWork();
-        IVault(SonicConstantsLib.VAULT_LEV_SiL_stS_S).doHardWork();
-        IVault(SonicConstantsLib.VAULT_LEV_SiL_S_stS).doHardWork();
-        IVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC).doHardWork();
+        IVault(SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE).doHardWork();
+        IVault(SonicConstantsLib.VAULT_C_USDC_STABILITY_STREAM).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SIL_STS_S).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SIL_S_STS).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCUSD_USDC).doHardWork();
         vm.stopPrank();
         vm.roll(block.number + 6);
         revenueRouter.processUnitsRevenue();

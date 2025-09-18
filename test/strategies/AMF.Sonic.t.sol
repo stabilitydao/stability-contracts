@@ -60,7 +60,7 @@ contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
 
     function _preHardWork() internal override {
         // emulate Merkl-rewards
-        deal(SonicConstantsLib.TOKEN_wS, currentStrategy, 1e18);
+        deal(SonicConstantsLib.TOKEN_WS, currentStrategy, 1e18);
         deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
     }
 

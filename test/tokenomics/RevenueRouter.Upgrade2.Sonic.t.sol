@@ -23,7 +23,7 @@ contract RevenueRouterUpgrade2TestSonic is Test {
     function testUpgrade140() public {
         revenueRouter.processUnitsRevenue();
         vm.prank(IPlatform(PLATFORM).hardWorker());
-        IVault(SonicConstantsLib.VAULT_LEV_SiL_stS_S).doHardWork();
+        IVault(SonicConstantsLib.VAULT_LEV_SIL_STS_S).doHardWork();
         address[] memory vaultsAccumulated = revenueRouter.vaultsAccumulated();
         assertEq(vaultsAccumulated.length, 2);
     }

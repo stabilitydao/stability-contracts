@@ -37,9 +37,9 @@ library LPStrategyLib {
     }
 
     function LPStrategyBase_init(
-        ILPStrategy.LPStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage $,
         address platform,
-        ILPStrategy.LPStrategyBaseInitParams memory params,
+        ILPStrategy.LpStrategyBaseInitParams memory params,
         string memory ammAdapterId
     ) external returns (address[] memory _assets, uint exchangeAssetIndex) {
         IPlatform.AmmAdapter memory ammAdapterData = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId)));

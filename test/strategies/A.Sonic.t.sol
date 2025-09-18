@@ -23,13 +23,13 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
 
     /// @notice Compare APR with https://stability.market/
     function testAaveStrategy() public universalTest {
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WS);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDC);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_scUSD);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_SCUSD);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_WETH);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDT);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wOS);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_stS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WOS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_STS);
     }
 
     function _addStrategy(address aToken) internal {

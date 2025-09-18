@@ -50,7 +50,7 @@ contract ISFUpgrade2Test is Test {
         uint[] memory amounts = new uint[](1);
         bytes32[][] memory proofs = new bytes32[][](1);
         users[0] = STRATEGY;
-        tokens[0] = SonicConstantsLib.TOKEN_GEMSx;
+        tokens[0] = SonicConstantsLib.TOKEN_GEMSX;
         amounts[0] = 1061308777230000000000;
         proofs[0] = new bytes32[](15);
         proofs[0][0] = 0xbac233cc596bedebda874a515b2764633f9a79e297ef6bb8e457a1637f068c03;
@@ -74,6 +74,6 @@ contract ISFUpgrade2Test is Test {
 
         vm.prank(multisig);
         IMerklStrategy(STRATEGY).claimToMultisig(SonicConstantsLib.MERKL_DISTRIBUTOR, tokens, amounts, proofs);
-        assertGe(IERC20(SonicConstantsLib.TOKEN_GEMSx).balanceOf(multisig), 1061308777230000000000);
+        assertGe(IERC20(SonicConstantsLib.TOKEN_GEMSX).balanceOf(multisig), 1061308777230000000000);
     }
 }

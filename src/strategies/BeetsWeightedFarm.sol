@@ -72,7 +72,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.BEETS_WEIGHTED_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -204,7 +204,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         proportions = $lp.ammAdapter.getProportions($lp.pool);
     }
 
@@ -222,7 +222,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return _generateDescription(farm, $lp.ammAdapter);
     }
@@ -233,7 +233,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     function _depositAssets(uint[] memory amounts, bool) internal override returns (uint value) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         IBWeightedPoolMinimal _pool = IBWeightedPoolMinimal($lp.pool);
         BalancerMethodVars memory v;
@@ -385,7 +385,7 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
     {
         IBalancerAdapter _ammAdapter =
             IBalancerAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         (value, amountsConsumed) = _ammAdapter.getLiquidityForAmountsWrite($lp.pool, amountsMax);
     }
 

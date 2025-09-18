@@ -42,9 +42,9 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_STBL, 1e16);
         assertEq(revenueRouter.pendingRevenue(), 5e15);
 
-        deal(SonicConstantsLib.TOKEN_wETH, address(this), 1e16);
-        IERC20(SonicConstantsLib.TOKEN_wETH).approve(address(revenueRouter), 1e16);
-        revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_wETH, 1e16);
+        deal(SonicConstantsLib.TOKEN_WETH, address(this), 1e16);
+        IERC20(SonicConstantsLib.TOKEN_WETH).approve(address(revenueRouter), 1e16);
+        revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_WETH, 1e16);
         uint pendingRevenue = revenueRouter.pendingRevenue();
         assertGt(pendingRevenue, 1e18);
 
@@ -73,10 +73,10 @@ contract RevenueRouterTestSonic is Test {
         assertLt(xStaking.earned(address(this)) - 1e6, assumedEarned);
         assertGt(xStaking.earned(address(this)) + 1e6, assumedEarned);
 
-        /*deal(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, address(this), 1e18);
-        IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).approve(address(revenueRouter), 1e18);
-        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, 1e18);
-        assertEq(IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).balanceOf(feeTreasury), 1e18);*/
+        /*deal(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, address(this), 1e18);
+        IERC20(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD).approve(address(revenueRouter), 1e18);
+        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, 1e18);
+        assertEq(IERC20(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD).balanceOf(feeTreasury), 1e18);*/
     }
 
     function test_RevenueRouter_minimal() public {
@@ -92,9 +92,9 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_STBL, 1e16);
         assertEq(revenueRouter.pendingRevenue(), 0);
 
-        deal(SonicConstantsLib.TOKEN_wETH, address(this), 1e16);
-        IERC20(SonicConstantsLib.TOKEN_wETH).approve(address(revenueRouter), 1e16);
-        revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_wETH, 1e16);
+        deal(SonicConstantsLib.TOKEN_WETH, address(this), 1e16);
+        IERC20(SonicConstantsLib.TOKEN_WETH).approve(address(revenueRouter), 1e16);
+        revenueRouter.processFeeAsset(SonicConstantsLib.TOKEN_WETH, 1e16);
 
         vm.expectRevert();
         revenueRouter.updatePeriod();
@@ -103,9 +103,9 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.updatePeriod();
         assertEq(revenueRouter.activePeriod(), revenueRouter.getPeriod());
 
-        /*deal(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, address(this), 1e18);
-        IERC20(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD).approve(address(revenueRouter), 1e18);
-        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD, 1e18);*/
+        /*deal(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, address(this), 1e18);
+        IERC20(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD).approve(address(revenueRouter), 1e18);
+        revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, 1e18);*/
     }
 
     function _deployWithXSTBLandFeeTreasury() internal {

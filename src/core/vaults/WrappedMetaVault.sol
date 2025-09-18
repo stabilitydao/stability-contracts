@@ -14,7 +14,6 @@ import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {CommonLib} from "../libs/CommonLib.sol";
 import {IStabilityVault} from "../../interfaces/IStabilityVault.sol";
 import {IVault} from "../../interfaces/IVault.sol";
-import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {VaultTypeLib} from "../libs/VaultTypeLib.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IRecoveryToken} from "../../interfaces/IRecoveryToken.sol";

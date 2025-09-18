@@ -61,7 +61,7 @@ contract SialUpgradeMaxLtvSonic is Test {
     }
 
     function testWithdrawOnly() public {
-        address vault_ = SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC;
+        address vault_ = SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCUSD_USDC;
 
         _testWithdrawOnly(vault_, HOLDER_1, 436983127);
         _testWithdrawOnly(vault_, HOLDER_2, 783121065);
@@ -96,16 +96,16 @@ contract SialUpgradeMaxLtvSonic is Test {
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
         pools[0] = ISwapper.PoolData({
-            pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD,
+            pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_WSTKSCUSD_SCUSD,
             ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-            tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-            tokenOut: address(SonicConstantsLib.SILO_VAULT_46_scUSD)
+            tokenIn: address(SonicConstantsLib.TOKEN_WSTKSCUSD),
+            tokenOut: address(SonicConstantsLib.SILO_VAULT_46_SCUSD)
         });
         pools[1] = ISwapper.PoolData({
-            pool: SonicConstantsLib.SILO_VAULT_46_scUSD,
+            pool: SonicConstantsLib.SILO_VAULT_46_SCUSD,
             ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-            tokenIn: address(SonicConstantsLib.SILO_VAULT_46_scUSD),
-            tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
+            tokenIn: address(SonicConstantsLib.SILO_VAULT_46_SCUSD),
+            tokenOut: address(SonicConstantsLib.TOKEN_SCUSD)
         });
 
         vm.prank(multisig);

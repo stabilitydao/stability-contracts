@@ -21,10 +21,10 @@ contract EulerStrategyTestSonic is SonicSetup, UniversalTest {
     }
 
     function testEulerStrategy() public universalTest {
-        _addStrategy(SonicConstantsLib.EULER_VAULT_wS_Re7);
-        _addStrategy(SonicConstantsLib.EULER_VAULT_scUSD_Re7);
-        _addStrategy(SonicConstantsLib.EULER_VAULT_scUSD_MEV);
-        _addStrategy(SonicConstantsLib.EULER_VAULT_scETH_MEV);
+        _addStrategy(SonicConstantsLib.EULER_VAULT_WS_RE7);
+        _addStrategy(SonicConstantsLib.EULER_VAULT_SCUSD_RE7);
+        _addStrategy(SonicConstantsLib.EULER_VAULT_SCUSD_MEV);
+        _addStrategy(SonicConstantsLib.EULER_VAULT_SCETH_MEV);
         _addStrategy(SonicConstantsLib.EULER_VAULT_WETH_MEV);
     }
 

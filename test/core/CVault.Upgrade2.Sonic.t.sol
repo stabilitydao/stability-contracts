@@ -23,7 +23,7 @@ contract CVaultUpgrade2SonicTest is Test {
     constructor() {
         // May-18-2025 03:55:11 PM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27775000));
-        vault = IStabilityVault(SonicConstantsLib.VAULT_C_USDC_SiF);
+        vault = IStabilityVault(SonicConstantsLib.VAULT_C_USDC_SIF);
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
     }

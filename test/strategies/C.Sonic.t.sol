@@ -42,11 +42,11 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     /// @notice Compare APR with https://stability.market/
     function testStrategies() public universalTest {
         _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_USDC);
-        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_wS);
-        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_scUSD);
-        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_stS);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_WS);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_SCUSD);
+        _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_CORE_STS);
 
-        // _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_wmetaUSD);
+        // _addStrategy(SonicConstantsLib.ENCLABS_VTOKEN_WMETAUSD);
     }
 
     //region --------------------------------- Internal functions

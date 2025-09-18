@@ -9,8 +9,8 @@ contract DeployPendleWrappedMetaVaultAdapterSonic is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        // new PendleWrappedMetaVaultAdapter(SonicConstantsLib.METAVAULT_metaS);
-        new PendleWrappedMetaVaultAdapter(SonicConstantsLib.METAVAULT_metaUSD);
+        // new PendleWrappedMetaVaultAdapter(SonicConstantsLib.METAVAULT_METAS);
+        new PendleWrappedMetaVaultAdapter(SonicConstantsLib.METAVAULT_METAUSD);
         vm.stopBroadcast();
     }
 

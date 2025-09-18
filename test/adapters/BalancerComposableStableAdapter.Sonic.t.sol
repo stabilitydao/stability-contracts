@@ -25,7 +25,7 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
         vm.expectRevert(IControllable.AlreadyExist.selector);
         balancerAdapter.setupHelpers(address(1));
 
-        address pool = SonicConstantsLib.POOL_BEETS_wS_stS;
+        address pool = SonicConstantsLib.POOL_BEETS_WS_STS;
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e18;
         amounts[1] = 100e18;
@@ -39,33 +39,33 @@ contract BalancerComposableStableAdapterTest is SonicSetup {
     }
 
     function testSwaps() public {
-        address pool = SonicConstantsLib.POOL_BEETS_wS_stS;
-        deal(SonicConstantsLib.TOKEN_wS, address(adapter), 1e16);
-        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS, address(this), 10_000);
-        uint out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
+        address pool = SonicConstantsLib.POOL_BEETS_WS_STS;
+        deal(SonicConstantsLib.TOKEN_WS, address(adapter), 1e16);
+        adapter.swap(pool, SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STS, address(this), 10_000);
+        uint out = IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(this));
         assertGt(out, 0);
         // console.log(out);
-        deal(SonicConstantsLib.TOKEN_wS, address(adapter), 6e23);
+        deal(SonicConstantsLib.TOKEN_WS, address(adapter), 6e23);
         vm.expectRevert();
-        adapter.swap(pool, SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stS, address(this), 1);
-        // out = IERC20(SonicConstantsLib.TOKEN_stS).balanceOf(address(this));
+        adapter.swap(pool, SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STS, address(this), 1);
+        // out = IERC20(SonicConstantsLib.TOKEN_STS).balanceOf(address(this));
         // console.log(out);
     }
 
     function testViewMethods() public view {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
 
-        address pool = SonicConstantsLib.POOL_BEETS_wS_stS;
+        address pool = SonicConstantsLib.POOL_BEETS_WS_STS;
         uint price;
-        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_stS, SonicConstantsLib.TOKEN_wS, 1e10);
+        price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_STS, SonicConstantsLib.TOKEN_WS, 1e10);
         assertGt(price, 9e9);
         assertLt(price, 11e9);
         // console.log(price);
 
         address[] memory tokens = adapter.poolTokens(pool);
         assertEq(tokens.length, 2);
-        assertEq(tokens[0], SonicConstantsLib.TOKEN_wS);
-        assertEq(tokens[1], SonicConstantsLib.TOKEN_stS);
+        assertEq(tokens[0], SonicConstantsLib.TOKEN_WS);
+        assertEq(tokens[1], SonicConstantsLib.TOKEN_STS);
 
         uint[] memory props = adapter.getProportions(pool);
         assertGt(props[0], 1e16);

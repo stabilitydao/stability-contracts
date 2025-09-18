@@ -36,7 +36,7 @@ contract MockStrategy is LPStrategyBase {
         require(addresses[3] != address(0), "Strategy: underlying token cant be zero for this strategy");
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.DEV,
                 platform: addresses[0],
                 vault: addresses[1],
