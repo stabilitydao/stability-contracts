@@ -309,14 +309,14 @@ library SonicFarmMakerLib {
         // Please note that xSilo works on Sonic only (it's bridget on other chains)
         farm.rewardAssets = new address[](5);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
-        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
-        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
-        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_WS;
+        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_WOS;
+        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_BES;
         farm.rewardAssets[4] = SonicConstantsLib.TOKEN_USDC;
 
         farm.addresses = new address[](2);
         farm.addresses[0] = managedVault;
-        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_XSILO;
 
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
