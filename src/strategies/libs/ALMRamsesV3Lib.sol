@@ -25,8 +25,8 @@ library ALMRamsesV3Lib {
 
     function depositAssets(
         uint[] memory amounts,
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external returns (uint value) {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
@@ -88,7 +88,7 @@ library ALMRamsesV3Lib {
     function withdrawAssets(
         uint value,
         address receiver,
-        IALM.ALMStrategyBaseStorage storage $,
+        IALM.AlmStrategyBaseStorage storage $,
         IStrategy.StrategyBaseStorage storage __$__
     ) external returns (uint[] memory amountsOut) {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
@@ -163,8 +163,8 @@ library ALMRamsesV3Lib {
     function rebalance(
         bool[] memory burnOldPositions,
         IALM.NewPosition[] memory mintNewPositions,
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external {
@@ -251,7 +251,7 @@ library ALMRamsesV3Lib {
         }
     }
 
-    /*function collectFees(IALM.ALMStrategyBaseStorage storage $, ILPStrategy.LPStrategyBaseStorage storage _$_) public {
+    /*function collectFees(IALM.AlmStrategyBaseStorage storage $, ILPStrategy.LpStrategyBaseStorage storage _$_) public {
         if ($.algoId == ALMLib.ALGO_FILL_UP) {
             address nft = $.nft;
             // collect fees
@@ -292,7 +292,7 @@ library ALMRamsesV3Lib {
     }*/
 
     function collectFarmRewards(
-        IALM.ALMStrategyBaseStorage storage $,
+        IALM.AlmStrategyBaseStorage storage $,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_
     ) public {
         IFactory.Farm memory farm =

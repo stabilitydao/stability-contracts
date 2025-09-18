@@ -16,8 +16,8 @@ library ALMLib {
     uint public constant PRECISION = 1e36;
 
     /*function checkCompatibility(
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_
     ) external view {
         ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
         if (keccak256(bytes(adapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))) {
@@ -29,8 +29,8 @@ library ALMLib {
     }*/
 
     function getAssetsProportions(
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external view returns (uint[] memory proportions) {
         uint[] memory amounts;
@@ -60,8 +60,8 @@ library ALMLib {
     }
 
     function needRebalance(
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_
     ) external view returns (bool need) {
         if ($.algoId == ALGO_FILL_UP) {
             uint len = $.positions.length;
@@ -150,7 +150,7 @@ library ALMLib {
         return "Unknown";
     }
 
-    function preset(IALM.ALMStrategyBaseStorage storage $)
+    function preset(IALM.AlmStrategyBaseStorage storage $)
         external
         view
         returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params)
@@ -162,8 +162,8 @@ library ALMLib {
     }
 
     function assetsAmounts(
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) public view returns (address[] memory assets_, uint[] memory amounts_) {
         ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
@@ -184,8 +184,8 @@ library ALMLib {
 
     function previewDepositAssets(
         uint[] memory amountsMax,
-        IALM.ALMStrategyBaseStorage storage $,
-        ILPStrategy.LPStrategyBaseStorage storage _$_,
+        IALM.AlmStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage _$_,
         IStrategy.StrategyBaseStorage storage __$__
     ) external view returns (uint[] memory amountsConsumed, uint value) {
         if ($.algoId == ALGO_FILL_UP) {

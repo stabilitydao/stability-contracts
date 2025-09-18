@@ -7,7 +7,7 @@ interface IKyberSwapElasticLM {
         uint rewardUnclaimed;
     }
 
-    struct LMPoolInfo {
+    struct LmPoolInfo {
         address poolAddress;
         uint32 startTime;
         uint32 endTime;

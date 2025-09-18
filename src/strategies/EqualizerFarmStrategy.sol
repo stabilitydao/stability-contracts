@@ -53,7 +53,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.EQUALIZER_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -182,7 +182,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         proportions = $lp.ammAdapter.getProportions($lp.pool);
     }
 
@@ -200,7 +200,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return _generateDescription(farm, $lp.ammAdapter);
     }
@@ -297,7 +297,7 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         returns (uint[] memory amountsConsumed, uint value)
     {
         IAmmAdapter _adapter = IAmmAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         (value, amountsConsumed) = _adapter.getLiquidityForAmounts($lp.pool, amountsMax);
     }
 
