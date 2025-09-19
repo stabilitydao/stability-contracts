@@ -27,6 +27,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
 
     function testSiMMFSonic() public universalTest {
         _addStrategy(64);
+        _addStrategy(65);
     }
 
     function _addStrategy(uint farmId) internal {

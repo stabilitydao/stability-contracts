@@ -403,6 +403,8 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_34_USDC = 0x6030aD53d90ec2fB67F3805794dBB3Fa5FD6Eb64;
     address public constant SILO_VAULT_36_USDC = 0x11Ba70c0EBAB7946Ac84F0E6d79162b0cBb2693f;
     address public constant SILO_VAULT_112_USDC = 0xA1627a0E1d0ebcA9326D2219B84Df0c600bed4b1;
+    address public constant SILO_VAULT_138_smsUSD = 0x61FFBEAd1d4DC9fFba35eb16FD6caDEe9B37b2Aa;
+    address public constant SILO_VAULT_141_PT_smsUSD_30OCT_USDC = 0x7184BEa7743CCFBE390F9Cd830095a13Ef867941;
 
     // Silo managed vaults
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
@@ -418,7 +420,8 @@ library SonicConstantsLib {
     address public constant SILO_MANAGED_VAULT_S_Re7 = 0x011777671E371E38C3d198Ea315A4885F33ecA8f;
     address public constant SILO_MANAGED_VAULT_scUSD_Varlamore = 0xb6A23cB29e512Df41876B28D7A848BD831f9c5Ba;
     address public constant SILO_MANAGED_VAULT_USDC_Stability = 0x1320382143D98a80a0B247148A42dd2aa33d9C2D;
-    address public constant SILO_MANAGED_VAULT_USDC_MainstreedLiquidityVault = 0x5B63Bd1574D40D98C6967047f0323CC5d4895775;
+    address public constant SILO_MANAGED_VAULT_USDC_MainstreetLiquidityVault = 0x5B63Bd1574D40D98C6967047f0323CC5d4895775;
+    address public constant SILO_MANAGED_VAULT_USDC_MainstreetGreenhouseVault = 0x17271Da949Bbd4713c7C599759E2BF30604fc8da;
 
     address public constant POOL_SHADOW_CL_USDC_SILO = 0xBfaEDfb41b52F5965f4E1192Dd54319a878E115D;
     address public constant POOL_SHADOW_wETH_SILO = 0xD7202D441778714fFE7c59879aAd163ABd91AD82;

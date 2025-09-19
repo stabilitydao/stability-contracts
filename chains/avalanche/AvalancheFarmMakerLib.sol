@@ -45,4 +45,38 @@ library AvalancheFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    /// @param borrowableCollateral False for non-borrowable ("protected" in ISilo.sol) collateral,
+    /// true for borrowable collateral ("collateral" in ISilo.sol)
+    function _makeSiloMerklFarm(
+        address siloVault,
+        address rewardToken,
+        address gauge,
+        bool borrowableCollateral
+    ) internal pure returns (IFactory.Farm memory) {
+        IFactory.Farm memory farm;
+        farm.status = 0;
+        farm.strategyLogicId = StrategyIdLib.SILO_MERKL_FARM;
+        farm.rewardAssets = new address[](1);
+        farm.rewardAssets[0] = rewardToken;
+
+        farm.addresses = new address[](3);
+        farm.addresses[0] = siloVault;
+        farm.addresses[1] = address(0); // xSilo address, not used on Avalanche (because it's bridged token and doesn't provide interface to swap xSilo to Silo)
+        // we allow to specify gauge but it can be zero
+        // Gauge can be detected as following:
+        //        function _getGauge(address siloVault_, bool useBorrowableCollateral) internal view returns (address) {
+        //            ISilo siloVault = ISilo(siloVault_);
+        //            ISiloConfig.ConfigData memory config = ISiloConfig(siloVault.config()).getConfig(farm.addresses[0]);
+        //            address shareToken = useBorrowableCollateral ? config.collateralShareToken : config.protectedShareToken;
+        //            return ISiloGaugeHookReceiver(config.hookReceiver).configuredGauges(shareToken);
+        //        }
+        // we assume that the gauge is static
+        farm.addresses[2] = gauge;
+
+        farm.nums = new uint[](1);
+        farm.nums[0] = borrowableCollateral ? 1 : 0;
+        farm.ticks = new int24[](0);
+        return farm;
+    }
 }
