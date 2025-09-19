@@ -59,6 +59,7 @@ interface IPlatform {
     event RevenueRouter(address revenueRouter_);
     event MetaVaultFactory(address metaVaultFactory);
     event VaultPriceOracle(address vaultPriceOracle_);
+    event RecoveryContract(address recoveryContract_);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -91,6 +92,7 @@ interface IPlatform {
         address revenueRouter;
         address metaVaultFactory;
         address vaultPriceOracle;
+        address recoveryContract;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -161,6 +163,10 @@ interface IPlatform {
     /// @notice vaultPriceOracle
     /// @return Address of the vault price oracle
     function vaultPriceOracle() external view returns (address);
+
+    /// @notice Contract for redeeming recovery tokens
+    /// @return Address of the recovery contract
+    function recoveryContract() external view returns (address);
 
     /// @notice This function provides the timestamp of the platform upgrade timelock.
     /// @dev This function is an external view function, meaning it doesn't modify the state.
@@ -301,4 +307,8 @@ interface IPlatform {
     /// @notice Set vault price oracle
     /// @param vaultPriceOracle_ Address of the vault price oracle
     function setupVaultPriceOracle(address vaultPriceOracle_) external;
+
+    /// @notice Set recovery contract
+    /// @param recoveryContract_ Address of the recovery contract
+    function setupRecoveryContract(address recoveryContract_) external;
 }

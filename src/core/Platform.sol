@@ -18,6 +18,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 ///         ┗┓ ┃ ┣┫┣┫┃┃ ┃ ┃ ┗┫  ┃┃┃ ┣┫ ┃ ┣ ┃┃┣┫┃┃┃
 ///         ┗┛ ┻ ┛┗┻┛┻┗┛┻ ┻ ┗┛  ┣┛┗┛┛┗ ┻ ┻ ┗┛┛┗┛ ┗
 /// Changelog:
+///   1.6.1: IPlatform.recoveryContract()
 ///   1.6.0: remove buildingPermitToken, buildingPayPerVaultToken, BB and boost related; init with MetaVaultFactory;
 ///   1.5.1: IPlatform.vaultPriceOracle()
 ///   1.5.0: remove feeShareVaultManager, feeShareStrategyLogic, feeShareEcosystem, networkName,
@@ -41,7 +42,7 @@ contract Platform is Controllable, IPlatform {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of Platform contract implementation
-    string public constant VERSION = "1.6.0";
+    string public constant VERSION = "1.6.1";
 
     /// @inheritdoc IPlatform
     uint public constant TIME_LOCK = 16 hours;
@@ -124,6 +125,8 @@ contract Platform is Controllable, IPlatform {
         address metaVaultFactory;
         /// @inheritdoc IPlatform
         address vaultPriceOracle;
+        /// @inheritdoc IPlatform
+        address recoveryContract;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -161,6 +164,7 @@ contract Platform is Controllable, IPlatform {
         $.revenueRouter = addresses.revenueRouter;
         $.metaVaultFactory = addresses.metaVaultFactory;
         $.vaultPriceOracle = addresses.vaultPriceOracle;
+        $.recoveryContract = addresses.recoveryContract;
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,
@@ -357,6 +361,13 @@ contract Platform is Controllable, IPlatform {
         PlatformStorage storage $ = _getStorage();
         emit VaultPriceOracle(vaultPriceOracle_);
         $.vaultPriceOracle = vaultPriceOracle_;
+    }
+
+    /// @inheritdoc IPlatform
+    function setupRecoveryContract(address recoveryContract_) external onlyGovernanceOrMultisig {
+        PlatformStorage storage $ = _getStorage();
+        emit RecoveryContract(recoveryContract_);
+        $.recoveryContract = recoveryContract_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -570,6 +581,11 @@ contract Platform is Controllable, IPlatform {
     /// @inheritdoc IPlatform
     function vaultPriceOracle() external view returns (address) {
         return _getStorage().vaultPriceOracle;
+    }
+
+    /// @inheritdoc IPlatform
+    function recoveryContract() external view returns (address) {
+        return _getStorage().recoveryContract;
     }
 
     /// @inheritdoc IPlatform

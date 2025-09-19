@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./libs/RevenueRouterLib.sol";
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
-import {IXSTBL} from "../interfaces/IXSTBL.sol";
-import {IRevenueRouter, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
-import {ISwapper} from "../interfaces/ISwapper.sol";
-import {IPlatform} from "../interfaces/IPlatform.sol";
-import {IXStaking} from "../interfaces/IXStaking.sol";
-import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
-import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
-import {IFactory} from "../interfaces/IFactory.sol";
-import {IPool} from "../integrations/aave/IPool.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IFactory} from "../interfaces/IFactory.sol";
+import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
+import {IPool} from "../integrations/aave/IPool.sol";
+import {IRevenueRouter, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
+import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
+import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IXSTBL} from "../interfaces/IXSTBL.sol";
+import {IXStaking} from "../interfaces/IXStaking.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
@@ -287,21 +288,14 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     ) internal {
         address stbl = $.stbl;
         ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+        address recoveryContract = IPlatform(platform()).recoveryContract();
         address[] memory assets = IStabilityVault(vault).assets();
         uint len = assets.length;
         try IStabilityVault(vault).withdrawAssets(assets, amount, new uint[](len), address(this), owner) {
             uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
-            for (uint i; i < len; ++i) {
-                address asset = assets[i];
-                if (asset != stbl) {
-                    uint threshold = swapper.threshold(asset);
-                    uint amountToSwap = IERC20(asset).balanceOf(address(this));
-                    if (amountToSwap > threshold) {
-                        IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                        try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
-                    }
-                }
-            }
+
+            RevenueRouterLib._processAssets(assets, stbl, swapper, recoveryContract);
+
             uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
             IERC20(stbl).safeTransfer($.feeTreasury, stblGot);
         } catch {}
