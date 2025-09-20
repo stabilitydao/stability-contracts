@@ -9,8 +9,13 @@ import {IVault} from "../interfaces/IVault.sol";
 import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {VaultStatusLib} from "../core/libs/VaultStatusLib.sol";
 
+/// @title UpgradeHelper
+/// Changelog:
+///   2.0.0: Breaking change. Renamed the public variable `platform` to `PLATFORM`.
+/// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract UpgradeHelper {
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "2.0.0";
 
     // slither-disable-next-line naming-convention
     address public immutable PLATFORM;

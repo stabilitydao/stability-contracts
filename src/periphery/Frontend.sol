@@ -16,10 +16,12 @@ import {IFrontend} from "../interfaces/IFrontend.sol";
 
 /// @notice Front-end and back-end viewers for platform
 /// Changelog:
+///   2.0.0: Breaking change. Renamed `platform` → `PLATFORM` in IFrontend interface.
 ///   1.1.0: remove RVault and RMVault usage
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Frontend is IFrontend {
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "2.0.0";
 
     error IncorrectParams();
 
