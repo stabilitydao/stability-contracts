@@ -13,21 +13,21 @@ contract Vesting {
     event DelayStart(uint64 oldStart, uint64 newSstart);
 
     // slither-disable-next-line naming-convention
-    address public immutable PLATFORM;
+    address public immutable platform;
     // slither-disable-next-line naming-convention
-    address public immutable TOKEN;
+    address public immutable token;
     address public beneficiary;
     string public name;
     // slither-disable-next-line naming-convention
-    uint64 public immutable DURATION;
+    uint64 public immutable duration;
     uint64 public start;
     uint public released;
 
     constructor(address platform_, address token_, string memory name_, uint64 duration_, uint64 start_) {
-        PLATFORM = platform_;
-        TOKEN = token_;
+        platform = platform_;
+        token = token_;
         name = name_;
-        DURATION = duration_;
+        duration = duration_;
         start = start_;
     }
 
@@ -54,17 +54,17 @@ contract Vesting {
         require(amount != 0, "Zero amount");
         released += amount;
         emit Released(amount);
-        IERC20(TOKEN).safeTransfer(beneficiary, amount);
+        IERC20(token).safeTransfer(beneficiary, amount);
     }
 
     /// @dev Getter for the end timestamp.
     function end() public view virtual returns (uint) {
-        return start + DURATION;
+        return start + duration;
     }
 
     /// @dev Calculates the amount that has already vested
     function vestedAmount(uint64 timestamp) public view virtual returns (uint) {
-        return _vestingSchedule(IERC20(TOKEN).balanceOf(address(this)) + released, timestamp);
+        return _vestingSchedule(IERC20(token).balanceOf(address(this)) + released, timestamp);
     }
 
     /// @dev Getter for the amount of releasable amount
@@ -82,11 +82,11 @@ contract Vesting {
         } else if (timestamp >= end()) {
             return totalAllocation;
         } else {
-            return (totalAllocation * (timestamp - start)) / DURATION;
+            return (totalAllocation * (timestamp - start)) / duration;
         }
     }
 
     function _requireMultisig() internal view {
-        require(msg.sender == IPlatform(PLATFORM).multisig(), "denied");
+        require(msg.sender == IPlatform(platform).multisig(), "denied");
     }
 }

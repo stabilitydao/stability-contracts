@@ -6,14 +6,14 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 
 contract TokenSender {
     // slither-disable-next-line naming-convention
-    address public immutable PLATFORM;
+    address public immutable platform;
 
     constructor(address platform_) {
-        PLATFORM = platform_;
+        platform = platform_;
     }
 
     function send(address token, address[] calldata receivers, uint[] calldata amounts) external {
-        require(IPlatform(PLATFORM).isOperator(msg.sender), "denied");
+        require(IPlatform(platform).isOperator(msg.sender), "denied");
         uint len = receivers.length;
         for (uint i; i < len; ++i) {
             // slither-disable-next-line unchecked-transfer
