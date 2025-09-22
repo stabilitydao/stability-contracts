@@ -148,15 +148,7 @@ contract SialUpgradeMaxLtvSonic is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault_));
     }
 
@@ -173,17 +165,7 @@ contract SialUpgradeMaxLtvSonic is Test {
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
 
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }

@@ -97,17 +97,7 @@ contract AUpgrade360Test is Test {
 
         address strategyImplementation = address(new AaveStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.AAVE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }

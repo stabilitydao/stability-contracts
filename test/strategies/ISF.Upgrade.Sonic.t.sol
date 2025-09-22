@@ -33,17 +33,7 @@ contract ISFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new IchiSwapXFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ICHI_SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_SWAPX_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 

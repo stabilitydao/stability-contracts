@@ -523,17 +523,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }

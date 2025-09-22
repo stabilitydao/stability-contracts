@@ -631,17 +631,7 @@ contract SiALUpgrade2Test is Test {
     function _upgradeStrategy(address strategyAddress) internal {
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -649,15 +639,7 @@ contract SiALUpgrade2Test is Test {
     function _upgradeVault(address vaultAddress) internal {
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         factory.upgradeVaultProxy(vaultAddress);
     }

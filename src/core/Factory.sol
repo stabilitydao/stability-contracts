@@ -24,6 +24,13 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
+///   2.0.0: BREAKING CHANGES
+///          * Removed `setVaultConfig` from IFactory
+///          * Removed `setStrategyLogicConfig` from IFactory
+///          - These functions are no longer available in the ABI
+///          - Governance/Operator config is now managed via `setVaultImplementation`
+///            and `setStrategyImplementation`
+///          * Integrations and deployment scripts must be updated accordingly
 ///   1.3.0: vault can be built only by admin; setVaultImplementation, setStrategyImplementation;
 ///          remove setAliasName, getAliasName, whatToBuild; remove RVault and RMVault support
 ///   1.2.0: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
@@ -39,7 +46,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "2.0.0";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 
@@ -80,26 +87,9 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Restricted actions -----
 
     /// @inheritdoc IFactory
-    function setVaultConfig(VaultConfig memory vaultConfig_) external onlyOperator {
-        FactoryStorage storage $ = _getStorage();
-        if (FactoryLib.setVaultImplementation($, vaultConfig_.vaultType, vaultConfig_.implementation)) {
-            _requireGovernanceOrMultisig();
-        }
-    }
-
-    /// @inheritdoc IFactory
     function setVaultImplementation(string memory vaultType, address implementation) external onlyOperator {
         FactoryStorage storage $ = _getStorage();
         if (FactoryLib.setVaultImplementation($, vaultType, implementation)) {
-            _requireGovernanceOrMultisig();
-        }
-    }
-
-    /// @inheritdoc IFactory
-    //slither-disable-next-line reentrancy-no-eth
-    function setStrategyLogicConfig(StrategyLogicConfig memory config, address) external onlyOperator {
-        FactoryStorage storage $ = _getStorage();
-        if (FactoryLib.setStrategyImplementation($, platform(), config.id, config.implementation)) {
             _requireGovernanceOrMultisig();
         }
     }

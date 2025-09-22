@@ -105,17 +105,7 @@ abstract contract FullMockSetup is MockSetup {
         // setup factory
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
     }
 
     function testFullMockSetup() public {}

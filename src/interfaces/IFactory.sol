@@ -302,22 +302,17 @@ interface IFactory {
     /// @param farm_ Settings and data required to work with the farm.
     function updateFarm(uint id, Farm memory farm_) external;
 
-    /// @notice Initial addition or change of vault type settings.
-    /// Operator can add new vault type. Governance or multisig can change existing vault type config.
-    /// @param vaultConfig_ Vault type settings
-    function setVaultConfig(VaultConfig memory vaultConfig_) external;
-
     /// @notice Initial addition or change of vault type implementation
     /// Operator can add new vault type. Governance or multisig can change existing vault type config.
     /// @param vaultType Vault type string ID (Compounding, etc)
-    /// @param implementation Address of implementation
+    /// @param implementation Address of vault implementation
     function setVaultImplementation(string memory vaultType, address implementation) external;
 
-    /// @notice Initial addition or change of strategy logic settings.
+    /// @notice Initial addition or change of strategy logic implementation.
     /// Operator can add new strategy logic. Governance or multisig can change existing logic config.
-    /// @param config Strategy logic settings
-    /// @param developer Strategy developer is receiver of minted StrategyLogic NFT on initial addition
-    function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
+    /// @param strategyId Strategy logic ID string
+    /// @param implementation Address of strategy implementation
+    function setStrategyImplementation(string memory strategyId, address implementation) external;
 
     /// @notice Governance and multisig can set a vault status other than Active - the default status.
     /// @param vaults Addresses of vault proxy
