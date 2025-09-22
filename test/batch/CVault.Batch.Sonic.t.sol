@@ -23,6 +23,7 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {SiloAdvancedLib} from "../../src/strategies/libs/SiloAdvancedLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
@@ -46,7 +47,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
-    uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
+    //uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
+    uint public constant FORK_BLOCK = 47714014; // Sep-22-2025 02:38:15 AM +UTC
 
     IFactory public factory;
     address public multisig;
@@ -125,6 +127,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
                 console.log("SKIPPED:", IERC20Metadata(_deployedVaults[i]).symbol(), address(_deployedVaults[i]));
             }
             results[i].status = status;
+            _saveResults(results, _deployedVaults);
         }
         console.log("<<<< Finish Batch Sonic CVault upgrade test <<<<");
 
@@ -457,17 +460,27 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     //region ---------------------- Set up vaults behavior
 
     /// @notice PT market is expired and doesn't allow deposit, so it should be skipped in the test
-    function isExpiredPt(address vault_) internal pure returns (bool ret) {
-        ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
-            || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
-            || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
-            || vault_ == 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SA
-            || vault_ == 0x425f26609e2309b9AB72cbF95092834e33B29A8a //  C-PT-wOS-29MAY2025-SA
-            || vault_ == 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5 //  C-PT-wstkscETH-29MAY2025-SAL
-            || vault_ == 0x6F5791B0D0CF656fF13b476aF62afb93138AeAd9 //  C-PT-Silo-20-USDC.e-17JUL2025-SAL
-            || vault_ == 0x24288C119CeA7ddF6d2267B61b19C0e971EBAd40 //  C-PT-aSonUSDC-14AUG2025-SAL
-            || vault_ == 0xb2D7f55037A303B9f6AF0729C1183B43FBb3CBb6 //  C-PT-Silo-46-scUSD-14AUG2025-SAL
-            || vault_ == 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf; //  C-PT-stS-29MAY2025-SAL
+    function isExpiredPt(address vault_) internal view returns (bool ret) {
+        string memory strategyLogicId = IVault(vault_).strategy().strategyLogicId();
+        if (CommonLib.eq(strategyLogicId, StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
+            ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
+            (uint[] memory params, ) = _strategy.getUniversalParams();
+            if (params[1] == SiloAdvancedLib.COLLATERAL_IS_PT_EXPIRED_MARKET) {
+                return true;
+            }
+        }
+
+        return false;
+//        ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
+//            || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
+//            || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
+//            || vault_ == 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SA
+//            || vault_ == 0x425f26609e2309b9AB72cbF95092834e33B29A8a //  C-PT-wOS-29MAY2025-SA
+//            || vault_ == 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5 //  C-PT-wstkscETH-29MAY2025-SAL
+//            || vault_ == 0x6F5791B0D0CF656fF13b476aF62afb93138AeAd9 //  C-PT-Silo-20-USDC.e-17JUL2025-SAL
+//            || vault_ == 0x24288C119CeA7ddF6d2267B61b19C0e971EBAd40 //  C-PT-aSonUSDC-14AUG2025-SAL
+//            || vault_ == 0xb2D7f55037A303B9f6AF0729C1183B43FBb3CBb6 //  C-PT-Silo-46-scUSD-14AUG2025-SAL
+//            || vault_ == 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf; //  C-PT-stS-29MAY2025-SAL
     }
 
     /// @dev Make any set up actions before deposit/withdraw test
