@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
 import {CVaultBatchLib} from "./libs/CVaultBatchLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
@@ -17,34 +18,32 @@ import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {console, Test} from "forge-std/Test.sol";
 
-/// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Sonic.results.csv"
-contract CVaultBatchSonicSkipOnCiTest is Test {
-    address public constant PLATFORM = SonicConstantsLib.PLATFORM;
+/// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Avalanche.results.csv"
+contract CVaultBatchAvalancheSkipOnCiTest is Test {
+    address public constant PLATFORM = AvalancheConstantsLib.PLATFORM;
 
-    /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
-    //uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
-    uint public constant FORK_BLOCK = 47714014; // Sep-22-2025 02:38:15 AM +UTC
+    /// @dev This block is used if there is no VAULT_BATCH_TEST_AVALANCHE_BLOCK env var set
+    uint public constant FORK_BLOCK = 69097456; // Sep-22-2025 04:05:44 UTC
 
     IFactory public factory;
     address public multisig;
     uint public selectedBlock;
 
-    /// @notice OS is not supported by deal
-    address public constant HOLDER_TOKEN_OS = 0xA7bC226C9586DcD93FF1b0B038C04e89b37C8fa7;
+    /// @notice AUSD is not supported by deal
+    address public constant HOLDER_TOKEN_AUSD = 0x2137568666f12fc5A026f5430Ae7194F1C1362aB;
 
     constructor() {
         // ---------------- select block for test
-        uint _block = vm.envOr("VAULT_BATCH_TEST_SONIC_BLOCK", uint(FORK_BLOCK));
+        uint _block = vm.envOr("VAULT_BATCH_TEST_AVALANCHE_BLOCK", uint(FORK_BLOCK));
         if (_block == 0) {
-            // use latest block if VAULT_BATCH_TEST_SONIC_BLOCK is set to 0
-            vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+            // use latest block if VAULT_BATCH_TEST_AVALANCHE_BLOCK is set to 0
+            vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL")));
         } else {
-            // use block from VAULT_BATCH_TEST_SONIC_BLOCK or pre-defined block if VAULT_BATCH_TEST_SONIC_BLOCK is not set
-            vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), _block));
+            // use block from VAULT_BATCH_TEST_AVALANCHE_BLOCK or pre-defined block if VAULT_BATCH_TEST_AVALANCHE_BLOCK is not set
+            vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL"), _block));
         }
         selectedBlock = block.number;
 
@@ -54,12 +53,12 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         // _upgradePlatform();
     }
 
-    function testDepositWithdrawBatch() internal {
+    function testDepositWithdrawBatch() public {
         address[] memory _deployedVaults = factory.deployedVaults();
 
         CVaultBatchLib.TestResult[] memory results = new CVaultBatchLib.TestResult[](_deployedVaults.length);
 
-        console.log(">>>>> Start Batch Sonic CVault upgrade test >>>>>");
+        console.log(">>>>> Start Batch Avalanche CVault upgrade test >>>>>");
         for (uint i = 0; i < _deployedVaults.length; i++) {
             (results[i].vaultTvlUsd,) = IStabilityVault(_deployedVaults[i]).tvl();
 
@@ -86,9 +85,11 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
                 console.log("SKIPPED:", IERC20Metadata(_deployedVaults[i]).symbol(), address(_deployedVaults[i]));
             }
             results[i].status = status;
-            CVaultBatchLib._saveResults(vm, results, _deployedVaults, selectedBlock, "CVault.Batch.Sonic.results.csv");
+            CVaultBatchLib._saveResults(
+                vm, results, _deployedVaults, selectedBlock, "CVault.Batch.Avalanche.results.csv"
+            );
         }
-        console.log("<<<< Finish Batch Sonic CVault upgrade test <<<<");
+        console.log("<<<< Finish Batch Avalanche CVault upgrade test <<<<");
 
         {
             uint countFailed;
@@ -108,14 +109,12 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             );
         }
 
-        CVaultBatchLib._saveResults(vm, results, _deployedVaults, selectedBlock, "CVault.Batch.Sonic.results.csv");
+        CVaultBatchLib._saveResults(vm, results, _deployedVaults, selectedBlock, "CVault.Batch.Avalanche.results.csv");
     }
 
     //region ---------------------- Auxiliary tests
     /// @notice Auxiliary test to debug particular vaults
     function testDepositWithdrawSingle() internal {
-        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
-        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
         address vault = 0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D;
         (address[] memory assets, uint[] memory depositAmounts) =
             _dealAndApprove(IStabilityVault(vault), address(this), 0);
@@ -126,7 +125,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     }
 
     /// @dev Auxiliary test to set up _deal function
-    function testDial() public {
+    function testDial() internal {
         address[] memory _deployedVaults = factory.deployedVaults();
         for (uint i = 0; i < _deployedVaults.length; i++) {
             uint status = factory.vaultStatus(_deployedVaults[i]);
@@ -166,10 +165,10 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         for (uint i; i < assets.length; ++i) {
             amounts[i] = amount_ == 0 ? _getDefaultAmountToDeposit(assets[i]) : amount_;
             //console.log("Dealing", assets[i], amounts[i]);
-            if (assets[i] == SonicConstantsLib.TOKEN_aUSDC) {
-                _dealAave(assets[i], address(this), amounts[i]);
-            } else if (assets[i] == SonicConstantsLib.TOKEN_OS) {
-                CVaultBatchLib._transferAmountFromHolder(vm, assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
+            if (assets[i] == AvalancheConstantsLib.TOKEN_AUSD) {
+                CVaultBatchLib._transferAmountFromHolder(
+                    vm, AvalancheConstantsLib.TOKEN_AUSD, address(this), amounts[i], HOLDER_TOKEN_AUSD
+                );
             } else {
                 deal(assets[i], address(this), amounts[i]);
             }
@@ -201,12 +200,12 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     //region ---------------------- Sonic-related functions
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
-        if (
-            asset_ == SonicConstantsLib.TOKEN_wETH || asset_ == SonicConstantsLib.TOKEN_atETH
-                || asset_ == SonicConstantsLib.TOKEN_scETH || asset_ == SonicConstantsLib.TOKEN_stkscETH
-                || asset_ == SonicConstantsLib.TOKEN_wstkscETH
-        ) {
+        if (asset_ == AvalancheConstantsLib.TOKEN_WETH) {
             return 1e18;
+        }
+
+        if (asset_ == AvalancheConstantsLib.TOKEN_WBTC || asset_ == AvalancheConstantsLib.TOKEN_BTCB) {
+            return 0.1e8;
         }
 
         return 10 * 10 ** IERC20Metadata(asset_).decimals();

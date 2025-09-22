@@ -21,7 +21,6 @@ import {IStabilityVault} from "../../../src/interfaces/IStabilityVault.sol";
 import {IVault} from "../../../src/interfaces/IVault.sol";
 import {IPool} from "../../../src/integrations/aave/IPool.sol";
 import {IControllable} from "../../../src/interfaces/IControllable.sol";
-import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../../src/core/libs/VaultTypeLib.sol";
 import {SiloAdvancedLib} from "../../../src/strategies/libs/SiloAdvancedLib.sol";
@@ -43,6 +42,7 @@ import {EulerStrategy} from "../../../src/strategies/EulerStrategy.sol";
 import {SiloALMFStrategy} from "../../../src/strategies/SiloALMFStrategy.sol";
 import {Factory} from "../../../src/core/Factory.sol";
 import "forge-std/Test.sol";
+import {EulerMerklFarmStrategy} from "../../../src/strategies/EulerMerklFarmStrategy.sol";
 
 /// @notice Shared functions for CVaultBatch-tests
 library CVaultBatchLib {
@@ -128,7 +128,7 @@ library CVaultBatchLib {
                 result.result = RESULT_FAIL;
                 result.errorType = ERROR_TYPE_DEPOSIT;
                 result.errorReason =
-                                string(abi.encodePacked("Deposit custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+                    string(abi.encodePacked("Deposit custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
             }
         } else {
             vault.depositAssets(assets_, depositAmounts_, 0, address(this));
@@ -198,7 +198,13 @@ library CVaultBatchLib {
         return vault.withdrawAssets(_assets, amountToWithdraw, new uint[](1))[0];
     }
 
-    function _saveResults(Vm vm, TestResult[] memory results, address[] memory vaults_, uint selectedBlock_) internal {
+    function _saveResults(
+        Vm vm,
+        TestResult[] memory results,
+        address[] memory vaults_,
+        uint selectedBlock_,
+        string memory fnOut
+    ) internal {
         // --------------- first line - block number
         string memory content = string(abi.encodePacked("BlockNumber", ";", Strings.toString(selectedBlock_), "\n"));
         // --------------- second line - header
@@ -256,7 +262,7 @@ library CVaultBatchLib {
         if (!vm.exists("./tmp")) {
             vm.createDir("./tmp", true);
         }
-        vm.writeFile("./tmp/CVault.Batch.Sonic.results.csv", content);
+        vm.writeFile(string.concat("./tmp/", fnOut), content);
     }
 
     function showResults(TestResult memory r) internal pure {
@@ -308,23 +314,13 @@ library CVaultBatchLib {
         string memory strategyLogicId = IVault(vault_).strategy().strategyLogicId();
         if (CommonLib.eq(strategyLogicId, StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
             ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
-            (uint[] memory params, ) = _strategy.getUniversalParams();
+            (uint[] memory params,) = _strategy.getUniversalParams();
             if (params[1] == SiloAdvancedLib.COLLATERAL_IS_PT_EXPIRED_MARKET) {
                 return true;
             }
         }
 
         return false;
-//        ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
-//            || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
-//            || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
-//            || vault_ == 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SA
-//            || vault_ == 0x425f26609e2309b9AB72cbF95092834e33B29A8a //  C-PT-wOS-29MAY2025-SA
-//            || vault_ == 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5 //  C-PT-wstkscETH-29MAY2025-SAL
-//            || vault_ == 0x6F5791B0D0CF656fF13b476aF62afb93138AeAd9 //  C-PT-Silo-20-USDC.e-17JUL2025-SAL
-//            || vault_ == 0x24288C119CeA7ddF6d2267B61b19C0e971EBAd40 //  C-PT-aSonUSDC-14AUG2025-SAL
-//            || vault_ == 0xb2D7f55037A303B9f6AF0729C1183B43FBb3CBb6 //  C-PT-Silo-46-scUSD-14AUG2025-SAL
-//            || vault_ == 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf; //  C-PT-stS-29MAY2025-SAL
     }
 
     /// @dev Make any set up actions before deposit/withdraw test
@@ -429,6 +425,8 @@ library CVaultBatchLib {
             _upgradeCompoundV2(vm, multisig, factory, address(strategy));
         } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.EULER)) {
             _upgradeEuler(vm, multisig, factory, address(strategy));
+        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.EULER_MERKL_FARM)) {
+            _upgradeEulerMerklFarm(vm, multisig, factory, address(strategy));
         } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_ALMF_FARM)) {
             _upgradeSiALMF(vm, multisig, factory, address(strategy));
         } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_MANAGED_MERKL_FARM)) {
@@ -475,7 +473,12 @@ library CVaultBatchLib {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _upgradeSiloManagedFarmStrategy(Vm vm, address multisig, IFactory factory, address strategyAddress) internal {
+    function _upgradeSiloManagedFarmStrategy(
+        Vm vm,
+        address multisig,
+        IFactory factory,
+        address strategyAddress
+    ) internal {
         address strategyImplementation = address(new SiloManagedFarmStrategy());
 
         vm.prank(multisig);
@@ -494,7 +497,12 @@ library CVaultBatchLib {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _upgradeIchiSwapxFarmStrategy(Vm vm, address multisig, IFactory factory, address strategyAddress) internal {
+    function _upgradeIchiSwapxFarmStrategy(
+        Vm vm,
+        address multisig,
+        IFactory factory,
+        address strategyAddress
+    ) internal {
         address strategyImplementation = address(new IchiSwapXFarmStrategy());
 
         vm.prank(multisig);
@@ -608,7 +616,12 @@ library CVaultBatchLib {
         factory.upgradeStrategyProxy(strategyAddress);
     }
 
-    function _upgradeGammaUniswapV3MerklFarm(Vm vm, address multisig, IFactory factory, address strategyAddress) internal {
+    function _upgradeGammaUniswapV3MerklFarm(
+        Vm vm,
+        address multisig,
+        IFactory factory,
+        address strategyAddress
+    ) internal {
         address strategyImplementation = address(new GammaUniswapV3MerklFarmStrategy());
 
         vm.prank(multisig);
@@ -729,6 +742,25 @@ library CVaultBatchLib {
         factory.setStrategyLogicConfig(
             IFactory.StrategyLogicConfig({
                 id: StrategyIdLib.EULER,
+                implementation: strategyImplementation,
+                deployAllowed: true,
+                upgradeAllowed: true,
+                farming: false,
+                tokenId: 0
+            }),
+            address(this)
+        );
+
+        factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeEulerMerklFarm(Vm vm, address multisig, IFactory factory, address strategyAddress) internal {
+        address strategyImplementation = address(new EulerMerklFarmStrategy());
+
+        vm.prank(multisig);
+        factory.setStrategyLogicConfig(
+            IFactory.StrategyLogicConfig({
+                id: StrategyIdLib.EULER_MERKL_FARM,
                 implementation: strategyImplementation,
                 deployAllowed: true,
                 upgradeAllowed: true,
