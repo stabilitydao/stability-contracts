@@ -1,46 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
-import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
-import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
-import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {CVaultBatchLib} from "./libs/CVaultBatchLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
-import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
-import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {SiloAdvancedLib} from "../../src/strategies/libs/SiloAdvancedLib.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
-import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {BeetsStableFarm} from "../../src/strategies/BeetsStableFarm.sol";
-import {BeetsWeightedFarm} from "../../src/strategies/BeetsWeightedFarm.sol";
-import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
-import {SwapXFarmStrategy} from "../../src/strategies/SwapXFarmStrategy.sol";
-import {GammaUniswapV3MerklFarmStrategy} from "../../src/strategies/GammaUniswapV3MerklFarmStrategy.sol";
-import {ALMShadowFarmStrategy} from "../../src/strategies/ALMShadowFarmStrategy.sol";
-import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
-import {AaveStrategy} from "../../src/strategies/AaveStrategy.sol";
-import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
-import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
-import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
-import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
+import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
+import {IAToken} from "../../src/integrations/aave/IAToken.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
+import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {IVault} from "../../src/interfaces/IVault.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 /// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Sonic.results.csv"
 contract CVaultBatchSonicSkipOnCiTest is Test {
@@ -63,23 +42,6 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     /// @notice OS is not supported by deal
     address public constant HOLDER_TOKEN_OS = 0xA7bC226C9586DcD93FF1b0B038C04e89b37C8fa7;
 
-    struct TestResult {
-        uint result;
-        string errorReason;
-        /// @dev 0 - no error, 1 - deposit, 2 - withdraw
-        uint errorType;
-        /// @dev Summary of gas consumed during deposit, withdraw and (probably) any other vault actions in the test
-        uint totalGasConsumed;
-        /// @dev Total losses of the user in percents after all vault operations, 100% = 1e18; 0 for negative losses
-        uint lossPercent;
-        /// @dev Total earnings of the user in percents after all vault operations, 100% = 1e18; 0 for negative earnings
-        uint earningsPercent;
-        uint amountDeposited;
-        uint amountWithdrawn;
-        uint status;
-        uint vaultTvlUsd;
-    }
-
     constructor() {
         // ---------------- select block for test
         uint _block = vm.envOr("VAULT_BATCH_TEST_SONIC_BLOCK", uint(FORK_BLOCK));
@@ -101,7 +63,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     function testDepositWithdrawBatch() public {
         address[] memory _deployedVaults = factory.deployedVaults();
 
-        TestResult[] memory results = new TestResult[](_deployedVaults.length);
+        CVaultBatchLib.TestResult[] memory results = new CVaultBatchLib.TestResult[](_deployedVaults.length);
 
         console.log(">>>>> Start Batch Sonic CVault upgrade test >>>>>");
         for (uint i = 0; i < _deployedVaults.length; i++) {
@@ -112,7 +74,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             if (status != 1) {
                 results[i].result = RESULT_SKIPPED;
                 results[i].errorReason = "Status is not 1";
-            } else if (isExpiredPt(_deployedVaults[i])) {
+            } else if (CVaultBatchLib.isExpiredPt(_deployedVaults[i])) {
                 results[i].result = RESULT_SKIPPED;
                 results[i].errorReason = "PT market is expired";
             } else if (results[i].vaultTvlUsd == 0) {
@@ -120,14 +82,15 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
                 results[i].errorReason = "Zero tvl";
             } else {
                 uint snapshot = vm.snapshotState();
-                results[i] = _testDepositWithdrawSingleVault(_deployedVaults[i], true, 0);
+                (address[] memory assets, uint[] memory depositAmounts) = _dealAndApprove(IStabilityVault(_deployedVaults[i]), address(this), 0);
+                results[i] = CVaultBatchLib._testDepositWithdrawSingleVault(vm, _deployedVaults[i], true, assets, depositAmounts);
                 vm.revertToState(snapshot);
             }
             if (skipped) {
                 console.log("SKIPPED:", IERC20Metadata(_deployedVaults[i]).symbol(), address(_deployedVaults[i]));
             }
             results[i].status = status;
-            _saveResults(results, _deployedVaults);
+            CVaultBatchLib._saveResults(vm, results, _deployedVaults, selectedBlock);
         }
         console.log("<<<< Finish Batch Sonic CVault upgrade test <<<<");
 
@@ -149,7 +112,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             );
         }
 
-        _saveResults(results, _deployedVaults);
+        CVaultBatchLib._saveResults(vm, results, _deployedVaults, selectedBlock);
     }
 
     //region ---------------------- Auxiliary tests
@@ -157,8 +120,10 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     function testDepositWithdrawSingle() internal {
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
-        TestResult memory r = _testDepositWithdrawSingleVault(0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D, false, 0);
-        showResults(r);
+        address vault = 0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D;
+        (address[] memory assets, uint[] memory depositAmounts) = _dealAndApprove(IStabilityVault(vault), address(this), 0);
+        CVaultBatchLib.TestResult memory r = CVaultBatchLib._testDepositWithdrawSingleVault(vm, vault, false, assets, depositAmounts);
+        CVaultBatchLib.showResults(r);
         assertEq(r.result, RESULT_SUCCESS, "Selected vault should pass deposit/withdraw test");
     }
 
@@ -180,7 +145,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     /// @dev Auxiliary test to withdraw from vault by holder
     function testWithdrawSingle() internal {
-        uint withdrawn = _testWithdrawSingle(
+        uint withdrawn = CVaultBatchLib._testWithdrawSingle(
+            vm,
             IStabilityVault(0x4BC62FcF68732eA77ef9Dd72f4EBc1042702bC9D),
             0xe19763bAa197e17A5663F8941177bFBBD31a7ab0,
             23352862707783185
@@ -191,130 +157,6 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     //endregion ---------------------- Auxiliary tests
 
     //region ---------------------- Auxiliary functions
-    function _testDepositWithdrawSingleVault(
-        address vault_,
-        bool catchError,
-        uint amount_
-    ) internal returns (TestResult memory result) {
-        IStabilityVault vault = IStabilityVault(vault_);
-
-        _upgradeCVault(vault_);
-        _upgradeVaultStrategy(vault_);
-        _setUpVault(vault_);
-
-        result = _testDepositWithdraw(vault, catchError, amount_);
-
-        if (result.result == RESULT_SUCCESS) {
-            console.log(
-                "Success: vault, gas, earning/loss %",
-                vault.symbol(),
-                result.totalGasConsumed,
-                result.earningsPercent > 0
-                    ? result.earningsPercent * 100_000 / 1e18
-                    : result.lossPercent * 100_000 / 1e18
-            );
-        } else {
-            console.log("Failed:", vault.symbol(), address(vault));
-        }
-
-        return result;
-    }
-
-    function _testDepositWithdraw(
-        IStabilityVault vault,
-        bool catchError,
-        uint amount_
-    ) internal returns (TestResult memory result) {
-        uint balance0 = IERC20(vault.assets()[0]).balanceOf(address(this));
-        (result.vaultTvlUsd,) = vault.tvl();
-
-        // --------------- prepare amount to deposit
-        (address[] memory assets, uint[] memory depositAmounts) = _dealAndApprove(vault, address(this), amount_);
-        uint balanceBefore = IERC20(assets[0]).balanceOf(address(this));
-
-        // --------------- deposit
-        uint gas0 = gasleft();
-        if (catchError) {
-            try vault.depositAssets(assets, depositAmounts, 0, address(this)) {
-                result.result = RESULT_SUCCESS;
-            } catch Error(string memory reason) {
-                result.result = RESULT_FAIL;
-                result.errorType = ERROR_TYPE_DEPOSIT;
-                result.errorReason = reason;
-            } catch (bytes memory reason) {
-                result.result = RESULT_FAIL;
-                result.errorType = ERROR_TYPE_DEPOSIT;
-                result.errorReason =
-                    string(abi.encodePacked("Deposit custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
-            }
-        } else {
-            vault.depositAssets(assets, depositAmounts, 0, address(this));
-            result.result = RESULT_SUCCESS;
-        }
-        result.totalGasConsumed = gas0 - gasleft();
-
-        vm.roll(block.number + 6);
-
-        // --------------- withdraw
-        if (result.result == RESULT_SUCCESS) {
-            uint amountToWithdraw = vault.balanceOf(address(this));
-
-            gas0 = gasleft();
-            if (catchError) {
-                try vault.withdrawAssets(assets, amountToWithdraw, new uint[](assets.length)) {
-                    result.result = RESULT_SUCCESS;
-                } catch Error(string memory reason) {
-                    result.result = RESULT_FAIL;
-                    result.errorReason = reason;
-                    result.errorType = ERROR_TYPE_WITHDRAW;
-                } catch (bytes memory reason) {
-                    result.result = RESULT_FAIL;
-                    result.errorType = ERROR_TYPE_DEPOSIT;
-                    result.errorReason = string(
-                        abi.encodePacked("Withdraw custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
-                    );
-                }
-            } else {
-                vault.withdrawAssets(assets, amountToWithdraw, new uint[](1));
-                result.result = RESULT_FAIL;
-            }
-            result.totalGasConsumed = gas0 - gasleft();
-        }
-
-        // --------------- check results
-        uint balanceAfter = IERC20(assets[0]).balanceOf(address(this));
-        if (balanceAfter > balanceBefore) {
-            result.earningsPercent = (balanceAfter - balanceBefore) * 1e18 / balanceBefore;
-            result.lossPercent = 0;
-        } else {
-            result.lossPercent = (balanceBefore - balanceAfter) * 1e18 / balanceBefore;
-            result.earningsPercent = 0;
-        }
-
-        result.amountDeposited = depositAmounts[0];
-        result.amountWithdrawn = balanceAfter > balance0 ? balanceAfter - balance0 : 0;
-
-        return result;
-    }
-
-    function _testWithdrawSingle(
-        IStabilityVault vault,
-        address holder_,
-        uint amount_
-    ) internal returns (uint withdrawn) {
-        // _upgradeVaultStrategy(address(vault));
-
-        uint amountToWithdraw = amount_ == 0 ? vault.balanceOf(holder_) : amount_;
-        console.log("Max withdraw", vault.maxWithdraw(holder_));
-        console.log("To withdraw", amountToWithdraw);
-
-        address[] memory _assets = vault.assets();
-
-        vm.prank(holder_);
-        return vault.withdrawAssets(_assets, amountToWithdraw, new uint[](1))[0];
-    }
-
-
     function _dealAndApprove(
         IStabilityVault vault,
         address user,
@@ -329,7 +171,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
             if (assets[i] == SonicConstantsLib.TOKEN_aUSDC) {
                 _dealAave(assets[i], address(this), amounts[i]);
             } else if (assets[i] == SonicConstantsLib.TOKEN_OS) {
-                _transferAmountFromHolder(assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
+                CVaultBatchLib._transferAmountFromHolder(vm, assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
             } else {
                 deal(assets[i], address(this), amounts[i]);
             }
@@ -341,93 +183,6 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         return (assets, amounts);
     }
 
-    function _saveResults(TestResult[] memory results, address[] memory vaults_) internal {
-        // --------------- first line - block number
-        string memory content = string(abi.encodePacked("BlockNumber", ";", Strings.toString(selectedBlock), "\n"));
-        // --------------- second line - header
-        content = string(
-            abi.encodePacked(
-                content,
-                "Status;VaultAddress;VaultName;Result;TotalGasConsumed;AmountDeposited;AmountWithdrawn;LossPercent(1000=1%);EarningsPercent(1000=1%);ErrorText;ErrorType;TVL\n"
-            )
-        );
-
-        //
-        for (uint i = 0; i < results.length; i++) {
-            content = string(
-                abi.encodePacked(
-                    content,
-                    Strings.toString(results[i].status),
-                    ";",
-                    Strings.toHexString(vaults_[i]),
-                    ";",
-                    IStabilityVault(vaults_[i]).symbol(),
-                    ";",
-                    results[i].result == RESULT_SUCCESS
-                        ? "success"
-                        : results[i].result == RESULT_FAIL ? "fail" : "skipped",
-                    ";"
-                )
-            );
-
-            content = string(
-                abi.encodePacked(
-                    content,
-                    Strings.toString(results[i].totalGasConsumed),
-                    ";",
-                    Strings.toString(results[i].amountDeposited),
-                    ";",
-                    Strings.toString(results[i].amountWithdrawn),
-                    ";",
-                    Strings.toString(results[i].lossPercent * 100_000 / 1e18),
-                    ";",
-                    Strings.toString(results[i].earningsPercent * 100_000 / 1e18),
-                    ";",
-                    results[i].errorReason,
-                    ";",
-                    results[i].errorType == 0
-                        ? ""
-                        : results[i].errorType == ERROR_TYPE_DEPOSIT
-                            ? "deposit"
-                            : results[i].errorType == ERROR_TYPE_WITHDRAW ? "withdraw" : "unknown",
-                    ";",
-                    Strings.toString(results[i].vaultTvlUsd),
-                    "\n"
-                )
-            );
-        }
-        if (!vm.exists("./tmp")) {
-            vm.createDir("./tmp", true);
-        }
-        vm.writeFile("./tmp/CVault.Batch.Sonic.results.csv", content);
-    }
-
-    function showResults(TestResult memory r) internal pure {
-        console.log("Success:", r.result);
-        console.log("TotalGasConsumed:", r.totalGasConsumed);
-        console.log("LossPercent(1000=1%):", r.lossPercent * 100_000 / 1e18);
-        console.log("EarningsPercent(1000=1%):", r.earningsPercent * 100_000 / 1e18);
-        console.log("AmountDeposited:", r.amountDeposited);
-        console.log("AmountWithdrawn:", r.amountWithdrawn);
-    }
-
-    function _adjustParamsSetDepositParam0(ILeverageLendingStrategy strategy, uint depositParam0_) internal {
-        (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
-        for (uint i; i < params.length; i++) {
-            console.log("param", i, params[i]);
-        }
-        for (uint i; i < addresses.length; i++) {
-            console.log("address", i, addresses[i]);
-        }
-
-        params[0] = depositParam0_;
-
-        vm.prank(multisig);
-        strategy.setUniversalParams(params, addresses);
-    }
-    //endregion ---------------------- Auxiliary functions
-
-    //region ---------------------- Deal assets
     /// @notice Deal doesn't work with aave tokens. So, deal the asset and mint aTokens instead.
     /// @dev https://github.com/foundry-rs/forge-std/issues/140
     function _dealAave(address aToken_, address to, uint amount) internal {
@@ -444,107 +199,22 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         pool.deposit(asset, amount, to, 0);
     }
 
-    /// @dev Attempt of dealing OS token gives the error: [FAIL: stdStorage find(StdStorage): Failed to write value.]
-    /// Let's try to deal wS instead and swap it to OS
-    function _transferAmountFromHolder(address token_, address to, uint amount, address holder_) internal {
-        uint balance = IERC20(token_).balanceOf(holder_);
+    //endregion ---------------------- Auxiliary functions
 
-        uint amountToTransfer = Math.min(amount, balance);
-
-        vm.prank(holder_);
-        /// forge-lint: disable-next-line
-        IERC20(token_).transfer(to, amountToTransfer);
-    }
-    //endregion ---------------------- Deal assets
-
-    //region ---------------------- Set up vaults behavior
-
-    /// @notice PT market is expired and doesn't allow deposit, so it should be skipped in the test
-    function isExpiredPt(address vault_) internal view returns (bool ret) {
-        string memory strategyLogicId = IVault(vault_).strategy().strategyLogicId();
-        if (CommonLib.eq(strategyLogicId, StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
-            ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
-            (uint[] memory params, ) = _strategy.getUniversalParams();
-            if (params[1] == SiloAdvancedLib.COLLATERAL_IS_PT_EXPIRED_MARKET) {
-                return true;
-            }
-        }
-
-        return false;
-//        ret = vault_ == SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025
-//            || vault_ == 0x03645841df5f71dc2c86bbdB15A97c66B34765b6 // C-PT-wstkscUSD-29MAY2025-SA
-//            || vault_ == 0x376ddBa57C649CEe95F93f827C61Af95ca519164 // C-PT-wstkscUSD-29MAY2025-SA
-//            || vault_ == 0xadE710c52Cf4AB8bE1ffD292Ca266A6a4E49B2D2 // C-PT-wstkscETH-29MAY2025-SA
-//            || vault_ == 0x425f26609e2309b9AB72cbF95092834e33B29A8a //  C-PT-wOS-29MAY2025-SA
-//            || vault_ == 0x59Ab350EE281a24a6D75d789E0264F2d4C3913b5 //  C-PT-wstkscETH-29MAY2025-SAL
-//            || vault_ == 0x6F5791B0D0CF656fF13b476aF62afb93138AeAd9 //  C-PT-Silo-20-USDC.e-17JUL2025-SAL
-//            || vault_ == 0x24288C119CeA7ddF6d2267B61b19C0e971EBAd40 //  C-PT-aSonUSDC-14AUG2025-SAL
-//            || vault_ == 0xb2D7f55037A303B9f6AF0729C1183B43FBb3CBb6 //  C-PT-Silo-46-scUSD-14AUG2025-SAL
-//            || vault_ == 0x716ab48eC4054cf2330167C80a65B27cd57E09Cf; //  C-PT-stS-29MAY2025-SAL
-    }
-
-    /// @dev Make any set up actions before deposit/withdraw test
-    function _setUpVault(address vault_) internal {
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_scUSD)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_46_scUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_scUSD),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-        //
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_bscETH)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_47_bscETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_bscETH),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-
-        // ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
-    }
-
+    //region ---------------------- Sonic-related functions
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
         if (
             asset_ == SonicConstantsLib.TOKEN_wETH || asset_ == SonicConstantsLib.TOKEN_atETH
-                || asset_ == SonicConstantsLib.TOKEN_scETH || asset_ == SonicConstantsLib.TOKEN_stkscETH
-                || asset_ == SonicConstantsLib.TOKEN_wstkscETH
+            || asset_ == SonicConstantsLib.TOKEN_scETH || asset_ == SonicConstantsLib.TOKEN_stkscETH
+            || asset_ == SonicConstantsLib.TOKEN_wstkscETH
         ) {
             return 1e18;
         }
 
         return 10 * 10 ** IERC20Metadata(asset_).decimals();
     }
+    //endregion ---------------------- Sonic-related functions
 
-    //endregion ---------------------- Set up vaults behavior
 
     //region ---------------------- Helpers
     function _upgradePlatform() internal {
@@ -576,378 +246,6 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
-
-    function _upgradeCVault(address vault_) internal {
-        // deploy new impl and upgrade
-        address vaultImplementation = address(new CVault());
-        vm.prank(multisig);
-        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
-        factory.upgradeVaultProxy(address(vault_));
-    }
     //endregion ---------------------- Helpers
 
-    //region ---------------------- Upgrade strategies
-    function _upgradeVaultStrategy(address vault_) internal {
-        IStrategy strategy = IVault(payable(vault_)).strategy();
-        if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO)) {
-            _upgradeSiloStrategy(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_FARM)) {
-            _upgradeSiloFarmStrategy(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)) {
-            _upgradeSiloManagedFarmStrategy(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)) {
-            _upgradeIchiSwapxFarmStrategy(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_ADVANCED_LEVERAGE)) {
-            _upgradeSiALStrategy(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.BEETS_STABLE_FARM)) {
-            _upgradeBeetsStable(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.BEETS_WEIGHTED_FARM)) {
-            _upgradeBeetsWeightedFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.EQUALIZER_FARM)) {
-            _upgradeEqualizerFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SWAPX_FARM)) {
-            _upgradeSwapXFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM)) {
-            _upgradeGammaUniswapV3MerklFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.ALM_SHADOW_FARM)) {
-            _upgradeAlmShadowFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_LEVERAGE)) {
-            _upgradeSiloLeverage(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.AAVE)) {
-            _upgradeAave(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.AAVE_MERKL_FARM)) {
-            _upgradeAaveMerklFarm(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.COMPOUND_V2)) {
-            _upgradeCompoundV2(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.EULER)) {
-            _upgradeEuler(address(strategy));
-        } else if (CommonLib.eq(strategy.strategyLogicId(), StrategyIdLib.SILO_ALMF_FARM)) {
-            _upgradeSiALMF(address(strategy));
-        } else {
-            console.log("Error: strategy is not upgraded", strategy.strategyLogicId());
-        }
-    }
-
-    function _upgradeSiloStrategy(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSiloFarmStrategy(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloFarmStrategy());
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSiloManagedFarmStrategy(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloManagedFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeIchiSwapxFarmStrategy(address strategyAddress) internal {
-        address strategyImplementation = address(new IchiSwapXFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ICHI_SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSiALStrategy(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeBeetsStable(address strategyAddress) internal {
-        address strategyImplementation = address(new BeetsStableFarm());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.BEETS_STABLE_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeBeetsWeightedFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new BeetsWeightedFarm());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.BEETS_WEIGHTED_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeEqualizerFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new EqualizerFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EQUALIZER_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSwapXFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new SwapXFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeGammaUniswapV3MerklFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new GammaUniswapV3MerklFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeAlmShadowFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new ALMShadowFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ALM_SHADOW_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSiloLeverage(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloLeverageStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeAave(address strategyAddress) internal {
-        address strategyImplementation = address(new AaveStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeAaveMerklFarm(address strategyAddress) internal {
-        address strategyImplementation = address(new AaveMerklFarmStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeCompoundV2(address strategyAddress) internal {
-        address strategyImplementation = address(new CompoundV2Strategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.COMPOUND_V2,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeEuler(address strategyAddress) internal {
-        address strategyImplementation = address(new EulerStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EULER,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-
-    function _upgradeSiALMF(address strategyAddress) internal {
-        address strategyImplementation = address(new SiloALMFStrategy());
-
-        vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ALMF_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
-
-        factory.upgradeStrategyProxy(strategyAddress);
-    }
-    //endregion ---------------------- Upgrade strategies
 }
