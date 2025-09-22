@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
-// import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";

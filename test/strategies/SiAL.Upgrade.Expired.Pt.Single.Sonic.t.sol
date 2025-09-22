@@ -14,7 +14,6 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-// import {Swapper} from "../../src/core/Swapper.sol";
 
 /// @dev Try to withdraw from expired Pendle strategies
 /// @notice Set block for each test individually,

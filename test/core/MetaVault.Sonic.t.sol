@@ -18,10 +18,7 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-// import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {Platform} from "../../src/core/Platform.sol";
-// import {PriceReader} from "../../src/core/PriceReader.sol";
-// import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -503,18 +500,6 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
     }
 
-    /*function _upgradePriceReader() internal {
-        address[] memory proxies = new address[](1);
-        proxies[0] = address(priceReader);
-        address[] memory implementations = new address[](1);
-        implementations[0] = address(new PriceReader());
-        vm.startPrank(multisig);
-        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
-        skip(1 days);
-        IPlatform(PLATFORM).upgrade();
-        vm.stopPrank();
-    }*/
-
     //region ------------------------------------ Upgrade CVaults and strategies
     function _upgradeCVaults() internal {
         IFactory factory = IFactory(IPlatform(PLATFORM).factory());
@@ -670,25 +655,6 @@ contract MetaVaultSonicTest is Test {
     }
     //endregion ------------------------------------ Upgrade CVaults and strategies
 
-    /*function _upgradePlatform() internal {
-        address[] memory proxies = new address[](1);
-        proxies[0] = PLATFORM;
-        address[] memory implementations = new address[](1);
-        implementations[0] = address(new Platform());
-        vm.startPrank(multisig);
-        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.1-alpha", proxies, implementations);
-        skip(1 days);
-        IPlatform(PLATFORM).upgrade();
-        vm.stopPrank();
-    }*/
-
-    /*function _deployMetaVaultFactory() internal {
-        Proxy proxy = new Proxy();
-        proxy.initProxy(address(new MetaVaultFactory()));
-        metaVaultFactory = IMetaVaultFactory(address(proxy));
-        metaVaultFactory.initialize(PLATFORM);
-    }*/
-
     function _setupMetaVaultFactory() internal {
         vm.prank(multisig);
         Platform(PLATFORM).setupMetaVaultFactory(address(metaVaultFactory));
@@ -721,21 +687,6 @@ contract MetaVaultSonicTest is Test {
         vm.prank(multisig);
         return metaVaultFactory.deployWrapper(bytes32(uint(uint160(metaVault))), metaVault);
     }
-
-    /*function _deployMetaVaultStandalone(
-        string memory type_,
-        address pegAsset,
-        string memory name_,
-        string memory symbol_,
-        address[] memory vaults_,
-        uint[] memory proportions_
-    ) internal returns (address metaVaultProxy) {
-        MetaVault implementation = new MetaVault();
-        Proxy proxy = new Proxy();
-        proxy.initProxy(address(implementation));
-        MetaVault(address(proxy)).initialize(PLATFORM, type_, pegAsset, name_, symbol_, vaults_, proportions_);
-        return address(proxy);
-    }*/
 
     function _getAmountsForDeposit(
         uint usdValue,

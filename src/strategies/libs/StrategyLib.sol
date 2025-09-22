@@ -4,9 +4,7 @@ pragma solidity ^0.8.28;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
-// import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-// import {IVaultManager} from "../../interfaces/IVaultManager.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
@@ -235,25 +233,4 @@ library StrategyLib {
         swapper.swap(tokenIn, tokenOut, amount, priceImpactTolerance);
         amountOut = balance(tokenOut) - outBalanceBefore;
     }
-
-    // function getFarmsForStrategyId(address platform, string memory _id) external view returns (IFactory.Farm[] memory farms) {
-    //     uint total;
-    //     IFactory.Farm[] memory allFarms = IFactory(IPlatform(platform).factory()).farms();
-    //     uint len = allFarms.length;
-    //     for (uint i; i < len; ++i) {
-    //         IFactory.Farm memory farm = allFarms[i];
-    //         if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
-    //             total++;
-    //         }
-    //     }
-    //     farms = new IFactory.Farm[](total);
-    //     uint k;
-    //     for (uint i; i < len; ++i) {
-    //         IFactory.Farm memory farm = allFarms[i];
-    //         if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, _id)) {
-    //             farms[k] = farm;
-    //             k++;
-    //         }
-    //     }
-    // }
 }

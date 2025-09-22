@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import {console} from "forge-std/Test.sol";
 import {ICAmmAdapter, IAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -73,14 +72,13 @@ contract PendleAdapterTest is SonicSetup {
             SonicConstantsLib.TOKEN_WSTKSCUSD,
             1e6
         );
-        //console.log(price);
+        
         price = adapter.getPrice(
             SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
             SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
             SonicConstantsLib.TOKEN_STKSCUSD,
             1e6
         );
-        //console.log(price);
 
         vm.expectRevert();
         adapter.getPrice(
@@ -102,7 +100,6 @@ contract PendleAdapterTest is SonicSetup {
             SonicConstantsLib.TOKEN_AUSDC
         );
         assertGt(got, 0);
-        //console.log(got);
 
         // swap yield token to PT
         /// forge-lint: disable-next-line
@@ -133,7 +130,6 @@ contract PendleAdapterTest is SonicSetup {
             SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025
         );
         assertGt(got, 0);
-        //console.log(got);
     }
 
     function _swap(address pool, address tokenIn, address tokenOut /*, uint amount*/ ) internal returns (uint) {

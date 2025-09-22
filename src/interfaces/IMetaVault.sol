@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-// import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IStabilityVault} from "./IStabilityVault.sol";
 
 interface IMetaVault is IStabilityVault {

@@ -6,7 +6,6 @@ import {IALM} from "../../interfaces/IALM.sol";
 import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
 import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ICAmmAdapter} from "../../interfaces/ICAmmAdapter.sol";
-// import {AmmAdapterIdLib} from "../../adapters/libs/AmmAdapterIdLib.sol";
 import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 
@@ -14,19 +13,6 @@ library ALMLib {
     uint public constant ALGO_FILL_UP = 0;
 
     uint public constant PRECISION = 1e36;
-
-    /*function checkCompatibility(
-        IALM.AlmStrategyBaseStorage storage $,
-        ILPStrategy.LpStrategyBaseStorage storage _$_
-    ) external view {
-        ICAmmAdapter adapter = ICAmmAdapter(address(_$_.ammAdapter));
-        if (keccak256(bytes(adapter.ammAdapterId())) != keccak256(bytes(AmmAdapterIdLib.UNISWAPV3))) {
-            revert("Not supported CL AMM adapter");
-        }
-        if ($.algoId != ALGO_FILL_UP) {
-            revert("Not supported ALM algo");
-        }
-    }*/
 
     function getAssetsProportions(
         IALM.AlmStrategyBaseStorage storage $,

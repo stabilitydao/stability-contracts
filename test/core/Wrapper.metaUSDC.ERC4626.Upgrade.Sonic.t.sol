@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import {Test, console} from "forge-std/Test.sol";
 import {ERC4626UniversalTest, IERC4626} from "../base/ERC4626Test.sol";
 import {SlippageTestUtils} from "../base/SlippageTestUtils.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -199,12 +198,6 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest, SlippageTestUtils {
 
         vm.prank(multisig);
         metaVault.setTargetProportions(props);
-
-        //        props = metaVault.targetProportions();
-        //        uint[] memory current = metaVault.currentProportions();
-        //        for (uint i; i < current.length; ++i) {
-        //            console.log("i, current, target", i, current[i], props[i]);
-        //        }
     }
     //endregion ---------------------- Auxiliary functions
 }

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
-// import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";

@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-// import {console, Test} from "forge-std/Test.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
 contract EulerStrategyTestSonic is SonicSetup, UniversalTest {

@@ -23,8 +23,6 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
-// import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-// import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {BeetsStableFarm} from "../../src/strategies/BeetsStableFarm.sol";
 import {BeetsWeightedFarm} from "../../src/strategies/BeetsWeightedFarm.sol";
@@ -442,51 +440,6 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     /// @dev Make any set up actions before deposit/withdraw test
     function _setUpVault(address vault_) internal {
-        //        // ---------------- fix routes for VAULT_LEV_SIAL_WSTKSCUSD_USDC using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCUSD_USDC) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_WSTKSCUSD_SCUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_WSTKSCUSD),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_SCUSD)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_46_SCUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_SCUSD),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_SCUSD)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-        //
-        //        // ---------------- fix routes for VAULT_LEV_SIAL_WSTKSCETH_WETH using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_SCETH_WSTKSCETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_WSTKSCETH),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_BSCETH)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_47_BSCETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_BSCETH),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_SCETH)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-
-        // ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
     }
 
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
@@ -515,16 +468,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         address[] memory proxies = new address[](1);
         address[] memory implementations = new address[](1);
 
-        //proxies[0] = address(priceReader_);
         proxies[0] = platform.factory();
-        //proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
 
-        //implementations[0] = address(new PriceReader());
         implementations[0] = address(new Factory());
-        //implementations[0] = address(new AlgebraV4Adapter());
-
-        //vm.prank(multisig);
-        // platform.cancelUpgrade();
 
         vm.startPrank(multisig);
         platform.announcePlatformUpgrade("2025.07.22-alpha", proxies, implementations);
