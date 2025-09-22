@@ -110,10 +110,8 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         );
 
         vm.prank(HOLDER_WMETA_USD);
+        /// forge-lint: disable-next-line
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).transfer(DEPLOYER, amount);
-
-        //        vm.prank(HOLDER_METAUSD);
-        //        IERC20(SonicConstantsLib.METAVAULT_METAUSD).transferFrom(HOLDER_METAUSD, DEPLOYER, amount);
 
         vm.roll(block.number + 6);
 
@@ -127,9 +125,6 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
 
         vm.prank(DEPLOYER);
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(_deployerHelper), type(uint).max);
-
-        //        vm.prank(DEPLOYER);
-        //        IERC20(SonicConstantsLib.METAVAULT_METAUSD).approve(address(_deployerHelper), type(uint).max);
 
         vm.prank(DEPLOYER); // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e
         _deployerHelper.deployERC4626WithAdapterMarket(
