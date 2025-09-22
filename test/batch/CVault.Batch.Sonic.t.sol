@@ -15,11 +15,14 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Swapper} from "../../src/core/Swapper.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 
 /// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Sonic.results.csv"
 contract CVaultBatchSonicSkipOnCiTest is Test {
@@ -28,6 +31,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
     //uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
     uint public constant FORK_BLOCK = 47714014; // Sep-22-2025 02:38:15 AM +UTC
+
+    /// @notice Upgrade platform, vault and strategies before test for debug purposes
+    bool internal constant UPGRADE_BEFORE_TEST_FOR_DEBUG = false;
 
     IFactory public factory;
     address public multisig;
@@ -51,10 +57,12 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        // _upgradePlatform();
+        if (UPGRADE_BEFORE_TEST_FOR_DEBUG) {
+            _upgradePlatform();
+        }
     }
 
-    function testDepositWithdrawBatch() internal {
+    function testDepositWithdrawBatch() public {
         address[] memory _deployedVaults = factory.deployedVaults();
 
         CVaultBatchLib.TestResult[] memory results = new CVaultBatchLib.TestResult[](_deployedVaults.length);
@@ -116,9 +124,16 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     function testDepositWithdrawSingle() internal {
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
-        address vault = 0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D;
+
+        address vault = SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH;
+        if (UPGRADE_BEFORE_TEST_FOR_DEBUG) {
+            CVaultBatchLib._upgradeCVault(vm, vault);
+            CVaultBatchLib._upgradeVaultStrategy(vm, vault);
+            _setUpVault(vault);
+        }
+
         (address[] memory assets, uint[] memory depositAmounts) =
-            _dealAndApprove(IStabilityVault(vault), address(this), 0);
+            _dealAndApprove(IStabilityVault(vault), address(this), 0.1e18);
         CVaultBatchLib.TestResult memory r =
             CVaultBatchLib._testDepositWithdrawSingleVault(vm, vault, false, assets, depositAmounts);
         CVaultBatchLib.showResults(r);
@@ -126,7 +141,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     }
 
     /// @dev Auxiliary test to set up _deal function
-    function testDial() public {
+    function testDial() internal {
         address[] memory _deployedVaults = factory.deployedVaults();
         for (uint i = 0; i < _deployedVaults.length; i++) {
             uint status = factory.vaultStatus(_deployedVaults[i]);
@@ -211,6 +226,29 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
         return 10 * 10 ** IERC20Metadata(asset_).decimals();
     }
+
+    /// @dev Make any set up actions before deposit/withdraw test
+    function _setUpVault(address vault_) internal {
+        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
+        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
+            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
+
+            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
+            pools[0] = ISwapper.PoolData({
+                pool: 0xE54DD58a6d4e04687f2034dd4dDAb49da55F8afF, // SonicConstantsLib.POOL_SHADOW_CL_scETH_WETH_100,
+                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))))
+                    .proxy,
+                tokenIn: address(SonicConstantsLib.TOKEN_scETH),
+                tokenOut: address(SonicConstantsLib.TOKEN_wETH)
+            });
+
+            vm.prank(multisig);
+            ISwapper(swapper).addPools(pools, true);
+        }
+
+        // ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
+    }
+
     //endregion ---------------------- Sonic-related functions
 
     //region ---------------------- Helpers
@@ -222,15 +260,17 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
         IPlatform platform = IPlatform(PLATFORM);
 
-        address[] memory proxies = new address[](1);
-        address[] memory implementations = new address[](1);
+        address[] memory proxies = new address[](2);
+        address[] memory implementations = new address[](2);
 
         //proxies[0] = address(priceReader_);
         proxies[0] = platform.factory();
+        proxies[1] = platform.swapper();
         //proxies[0] = platform.ammAdapter(keccak256(bytes(AmmAdapterIdLib.ALGEBRA_V4))).proxy;
 
         //implementations[0] = address(new PriceReader());
         implementations[0] = address(new Factory());
+        implementations[1] = address(new Swapper());
         //implementations[0] = address(new AlgebraV4Adapter());
 
         //vm.prank(multisig);

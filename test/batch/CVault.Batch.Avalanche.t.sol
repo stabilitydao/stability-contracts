@@ -28,6 +28,9 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
     /// @dev This block is used if there is no VAULT_BATCH_TEST_AVALANCHE_BLOCK env var set
     uint public constant FORK_BLOCK = 69097456; // Sep-22-2025 04:05:44 UTC
 
+    /// @notice Upgrade platform, vault and strategies before test for debug purposes
+    bool internal constant UPGRADE_BEFORE_TEST_FOR_DEBUG = false;
+
     IFactory public factory;
     address public multisig;
     uint public selectedBlock;
@@ -50,7 +53,9 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        // _upgradePlatform();
+        if (UPGRADE_BEFORE_TEST_FOR_DEBUG) {
+            _upgradePlatform();
+        }
     }
 
     function testDepositWithdrawBatch() public {
@@ -116,6 +121,11 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
     /// @notice Auxiliary test to debug particular vaults
     function testDepositWithdrawSingle() internal {
         address vault = 0xb9fDf7ce72AAcE505a5c37Ad4d4F0BaB1fcc2a0D;
+        if (UPGRADE_BEFORE_TEST_FOR_DEBUG) {
+            CVaultBatchLib._upgradeCVault(vm, vault);
+            CVaultBatchLib._upgradeVaultStrategy(vm, vault);
+            _setUpVault(vault);
+        }
         (address[] memory assets, uint[] memory depositAmounts) =
             _dealAndApprove(IStabilityVault(vault), address(this), 0);
         CVaultBatchLib.TestResult memory r =
@@ -198,7 +208,7 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
 
     //endregion ---------------------- Auxiliary functions
 
-    //region ---------------------- Sonic-related functions
+    //region ---------------------- Avalanche-related functions
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
         if (asset_ == AvalancheConstantsLib.TOKEN_WETH) {
             return 1e18;
@@ -210,7 +220,13 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
 
         return 10 * 10 ** IERC20Metadata(asset_).decimals();
     }
-    //endregion ---------------------- Sonic-related functions
+
+    /// @dev Make any set up actions before deposit/withdraw test
+    function _setUpVault(address vault_) internal {
+        // nothing to do at this moment
+    }
+
+    //endregion ---------------------- Avalanche-related functions
 
     //region ---------------------- Helpers
     function _upgradePlatform() internal {

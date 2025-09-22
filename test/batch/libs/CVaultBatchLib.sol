@@ -79,10 +79,6 @@ library CVaultBatchLib {
     ) internal returns (TestResult memory result) {
         IStabilityVault vault = IStabilityVault(vault_);
 
-        _upgradeCVault(vm, vault_);
-        _upgradeVaultStrategy(vm, vault_);
-        _setUpVault(vault_);
-
         result = _testDepositWithdraw(vm, vault, catchError, assets_, depositAmounts_);
 
         if (result.result == RESULT_SUCCESS) {
@@ -321,55 +317,6 @@ library CVaultBatchLib {
         }
 
         return false;
-    }
-
-    /// @dev Make any set up actions before deposit/withdraw test
-    function _setUpVault(address vault_) internal {
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscUSD_USDC using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_USDC_wstkscUSD_scUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscUSD),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_46_scUSD)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_46_scUSD,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_46_scUSD),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scUSD)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-        //
-        //        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
-        //        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
-        //            ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        //
-        //            ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](2);
-        //            pools[0] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.POOL_BEETS_V3_BOOSTED_WETH_scETH_wstkscETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_V3_STABLE)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.TOKEN_wstkscETH),
-        //                tokenOut: address(SonicConstantsLib.SILO_VAULT_47_bscETH)
-        //            });
-        //            pools[1] = ISwapper.PoolData({
-        //                pool: SonicConstantsLib.SILO_VAULT_47_bscETH,
-        //                ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.ERC_4626)))).proxy,
-        //                tokenIn: address(SonicConstantsLib.SILO_VAULT_47_bscETH),
-        //                tokenOut: address(SonicConstantsLib.TOKEN_scETH)
-        //            });
-        //
-        //            vm.prank(multisig);
-        //            ISwapper(swapper).addPools(pools, true);
-        //        }
-
-        // ILeverageLendingStrategy _strategy = ILeverageLendingStrategy(address(IVault(vault_).strategy()));
     }
 
     //endregion ---------------------- Set up vaults behavior
