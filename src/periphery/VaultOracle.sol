@@ -7,12 +7,12 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @title Minimal Chainlink-compatible vault trusted price feed
 /// @author Alien Deployer (https://github.com/a17)
 contract VaultOracle is IAggregatorInterfaceMinimal {
-    // slither-disable-next-line naming-convention
-    address public immutable VAULT;
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
+    address public immutable vault;
 
     constructor(address vault_) {
         // slither-disable-next-line missing-zero-check
-        VAULT = vault_;
+        vault = vault_;
         // slither-disable-next-line unused-return
         (, bool trusted) = IVault(vault_).price();
         require(trusted, "Not trusted");
@@ -21,7 +21,7 @@ contract VaultOracle is IAggregatorInterfaceMinimal {
     /// @inheritdoc IAggregatorInterfaceMinimal
     function latestAnswer() external view returns (int) {
         // slither-disable-next-line unused-return
-        (uint price,) = IVault(VAULT).price();
+        (uint price,) = IVault(vault).price();
         return int(price / 10 ** 10);
     }
 

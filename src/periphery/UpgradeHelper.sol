@@ -10,22 +10,20 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 import {VaultStatusLib} from "../core/libs/VaultStatusLib.sol";
 
 /// @title UpgradeHelper
-/// Changelog:
-///   2.0.0: Breaking change. Renamed the public variable `platform` to `PLATFORM`.
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
 contract UpgradeHelper {
-    string public constant VERSION = "2.0.0";
+    string public constant VERSION = "1.0.0";
 
-    // slither-disable-next-line naming-convention
-    address public immutable PLATFORM;
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
+    address public immutable platform;
 
     constructor(address platform_) {
-        PLATFORM = platform_;
+        platform = platform_;
     }
 
     function upgradeVaults() external returns (uint upgraded) {
-        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+        IFactory factory = IFactory(IPlatform(platform).factory());
         (, address implementation,,,) = factory.vaultConfig(keccak256(abi.encodePacked(VaultTypeLib.COMPOUNDING)));
         string memory lastVersion = IControllable(implementation).VERSION();
         address[] memory vaults = factory.deployedVaults();
@@ -44,7 +42,7 @@ contract UpgradeHelper {
     }
 
     function upgradeStrategies() external returns (uint upgraded) {
-        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+        IFactory factory = IFactory(IPlatform(platform).factory());
         address[] memory vaults = factory.deployedVaults();
         uint len = vaults.length;
         for (uint i; i < len; ++i) {
