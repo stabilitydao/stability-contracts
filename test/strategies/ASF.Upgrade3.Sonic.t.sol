@@ -76,17 +76,7 @@ contract ASFUpgrade3Test is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new ALMShadowFarmStrategy());
         vm.startPrank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ALM_SHADOW_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ALM_SHADOW_FARM, strategyImplementation);
         factory.upgradeStrategyProxy(STRATEGY);
         IFarmingStrategy(STRATEGY).refreshFarmingAssets();
         vm.stopPrank();

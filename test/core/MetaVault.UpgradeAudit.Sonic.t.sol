@@ -278,15 +278,7 @@ contract MetaVaultSonicUpgradeAudit is Test {
                 for (uint j = 0; j < vaults.length; j++) {
                     address vaultImplementation = address(new CVault());
                     vm.prank(multisig);
-                    factory.setVaultConfig(
-                        IFactory.VaultConfig({
-                            vaultType: VaultTypeLib.COMPOUNDING,
-                            implementation: vaultImplementation,
-                            deployAllowed: true,
-                            upgradeAllowed: true,
-                            buildingPrice: 1e10
-                        })
-                    );
+                    factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
                     vm.prank(multisig);
                     factory.upgradeVaultProxy(vaults[j]);
 

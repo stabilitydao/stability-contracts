@@ -40,17 +40,7 @@ contract EFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new EqualizerFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EQUALIZER_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.EQUALIZER_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 
