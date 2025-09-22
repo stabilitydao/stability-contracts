@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {Script} from "forge-std/Script.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
+// import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 
 contract DeployUniswapV3AdapterSonic is Script {

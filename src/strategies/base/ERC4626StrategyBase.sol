@@ -43,6 +43,7 @@ abstract contract ERC4626StrategyBase is StrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @custom:storage-location erc7201:stability.ERC4626StrategyBase
+    /// forge-lint: disable-next-line(pascal-case-struct)
     struct ERC4626StrategyBaseStorage {
         uint lastSharePrice;
     }

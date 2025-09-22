@@ -11,7 +11,7 @@ import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 
 contract MetaVaultAdapterTest is SonicSetup {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

@@ -14,7 +14,7 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {MetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 
 /// @dev MetaVault 1.1.0

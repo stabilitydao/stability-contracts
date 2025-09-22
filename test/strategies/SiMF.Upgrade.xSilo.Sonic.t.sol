@@ -23,7 +23,7 @@ import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrat
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 /// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {

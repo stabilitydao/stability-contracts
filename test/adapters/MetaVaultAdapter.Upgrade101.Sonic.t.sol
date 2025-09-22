@@ -6,7 +6,6 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 // import {console} from "forge-std/Test.sol";
 
 contract MetaVaultAdapterUpgrade101Test is SonicSetup {

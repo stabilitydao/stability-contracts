@@ -12,7 +12,6 @@ import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {PendleERC4626WithAdapterSY} from "../../src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol";
 import {PendleWrappedMetaVaultAdapter} from "../../src/periphery/PendleWrappedMetaVaultAdapter.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {console} from "forge-std/Test.sol";
 
 contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     /// @notice a block with metaS workable

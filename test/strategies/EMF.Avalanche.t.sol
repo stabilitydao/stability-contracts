@@ -2,23 +2,17 @@
 pragma solidity ^0.8.28;
 
 import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
-import {console, Test} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
-import {IEVC, IEthereumVaultConnector} from "../../src/integrations/euler/IEthereumVaultConnector.sol";
 import {IEulerVault} from "../../src/integrations/euler/IEulerVault.sol";
-import {EMFLib} from "../../src/strategies/libs/EMFLib.sol";
 
 contract EulerMerklFarmStrategyTestAvalanche is AvalancheSetup, UniversalTest {
     uint public constant FORK_BLOCK_C_CHAIN = 68407132; // Sep-8-2025 09:54:05 UTC

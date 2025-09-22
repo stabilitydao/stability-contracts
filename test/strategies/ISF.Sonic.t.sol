@@ -4,9 +4,9 @@ pragma solidity ^0.8.23;
 // import {console} from "forge-std/Test.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {IGaugeV2_CL} from "../../src/integrations/swapx/IGaugeV2_CL.sol";
-import {IVoterV3} from "../../src/integrations/swapx/IVoterV3.sol";
-import {IICHIVaultV4} from "../../src/integrations/ichi/IICHIVaultV4.sol";
+// import {IGaugeV2_CL} from "../../src/integrations/swapx/IGaugeV2_CL.sol";
+// import {IVoterV3} from "../../src/integrations/swapx/IVoterV3.sol";
+// import {IICHIVaultV4} from "../../src/integrations/ichi/IICHIVaultV4.sol";
 
 contract IchiSwapXFarmStrategyTest is SonicSetup, UniversalTest {
     constructor() {

@@ -3,14 +3,7 @@ pragma solidity ^0.8.28;
 
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
-import {
-    MetaVault,
-    IMetaVault,
-    IStabilityVault,
-    IPlatform,
-    IPriceReader,
-    IControllable
-} from "../../src/core/vaults/MetaVault.sol";
+import {MetaVault, IMetaVault, IStabilityVault, IPlatform, IPriceReader} from "../../src/core/vaults/MetaVault.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

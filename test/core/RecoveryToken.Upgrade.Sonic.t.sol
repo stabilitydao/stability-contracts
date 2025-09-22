@@ -2,24 +2,14 @@
 pragma solidity ^0.8.23;
 
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {BalancerV3StableAdapter} from "../../src/adapters/BalancerV3StableAdapter.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IStabilityVault} from "../../src/interfaces/IMetaVault.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IRecoveryToken} from "../../src/interfaces/IRecoveryToken.sol";
-import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
-import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryToken} from "../../src/core/vaults/RecoveryToken.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract RecoveryTokenUpgradeSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

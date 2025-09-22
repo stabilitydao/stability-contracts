@@ -21,7 +21,7 @@ import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract SiALMFUpgradeTest is Test {
     // uint public constant FORK_BLOCK = 39484599; // Jul-21-2025 08:14:43 AM +UTC

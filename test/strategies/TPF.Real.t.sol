@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/Test.sol";
-import {RealSetup, RealLib} from "../base/chains/RealSetup.sol";
+import {RealLib} from "../base/chains/RealSetup.sol";
 import {UniversalTest, StrategyIdLib, IFactory} from "../base/UniversalTest.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {IVoter} from "../../src/integrations/pearl/IVoter.sol";

@@ -22,7 +22,7 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 34657318; // Jun-12-2025 05:49:24 AM +UTC

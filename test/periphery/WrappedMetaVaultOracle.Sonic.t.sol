@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {WrappedMetaVaultOracle} from "../../src/periphery/WrappedMetaVaultOracle.sol";
 import {IAggregatorInterfaceMinimal} from "../../src/integrations/chainlink/IAggregatorInterfaceMinimal.sol";

@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {ICAmmAdapter, IAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AlgebraV4Adapter, AmmAdapterIdLib} from "../../src/adapters/AlgebraV4Adapter.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract AlgebraV4AdapterUpgrade262SonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;

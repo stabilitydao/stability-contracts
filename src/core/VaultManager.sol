@@ -10,12 +10,10 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Controllable} from "./base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {VaultManagerLib} from "./libs/VaultManagerLib.sol";
-import {VaultTypeLib} from "./libs/VaultTypeLib.sol";
 import {IVaultManager} from "../interfaces/IVaultManager.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IFactory} from "../interfaces/IFactory.sol";
 import {IManagedVault} from "../interfaces/IManagedVault.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 

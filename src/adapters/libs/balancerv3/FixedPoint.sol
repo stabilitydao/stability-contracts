@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {LogExpMath} from "./LogExpMath.sol";
+// import {LogExpMath} from "./LogExpMath.sol";
 
 /// @notice Support 18-decimal fixed point arithmetic. All Vault calculations use this for high and uniform precision.
 library FixedPoint {

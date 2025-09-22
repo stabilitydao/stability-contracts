@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {UniswapV3MathLib} from "../../../src/strategies/libs/UniswapV3MathLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
