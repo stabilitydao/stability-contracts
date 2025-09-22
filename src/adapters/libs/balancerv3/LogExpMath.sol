@@ -88,5 +88,4 @@ library LogExpMath {
     int constant x11 = 6250000000000000000; // 2ˆ-4
     int constant a11 = 106449445891785942956; // eˆ(x11)
     /// forge-lint: disable-end(screaming-snake-case-const)
-
 }
