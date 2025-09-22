@@ -14,11 +14,9 @@ import {Swapper} from "../../src/core/Swapper.sol";
 import {MockSetup} from "./MockSetup.sol";
 import {HardWorker} from "../../src/core/HardWorker.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
-import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
 
 abstract contract FullMockSetup is MockSetup {
     Factory public factory;

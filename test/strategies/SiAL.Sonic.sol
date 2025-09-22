@@ -26,23 +26,23 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     function testSiALSonic() public universalTest {
-        //                _addStrategy(SonicConstantsLib.SILO_VAULT_22_wOS, SonicConstantsLib.SILO_VAULT_22_wS, 86_90);
-        //                _addStrategy(SonicConstantsLib.SILO_VAULT_23_wstkscUSD, SonicConstantsLib.SILO_VAULT_23_USDC, 88_00);
-        //                         _addStrategy(SonicConstantsLib.SILO_VAULT_26_wstkscETH, SonicConstantsLib.SILO_VAULT_26_wETH, 90_00);
-        //                         _addStrategy(SonicConstantsLib.SILO_VAULT_25_wanS, SonicConstantsLib.SILO_VAULT_25_wS, 90_00);
-        //        _addStrategy(SonicConstantsLib.SILO_VAULT_46_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_46_scUSD, 60_00);
-        //        _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY, SonicConstantsLib.SILO_VAULT_40_wS, 65_00);
-        //                _addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_wstkscUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_frxUSD, 65_00);
+        //                _addStrategy(SonicConstantsLib.SILO_VAULT_22_WOS, SonicConstantsLib.SILO_VAULT_22_WS, 86_90);
+        //                _addStrategy(SonicConstantsLib.SILO_VAULT_23_WSTKSCUSD, SonicConstantsLib.SILO_VAULT_23_USDC, 88_00);
+        //                         _addStrategy(SonicConstantsLib.SILO_VAULT_26_WSTKSCETH, SonicConstantsLib.SILO_VAULT_26_WETH, 90_00);
+        //                         _addStrategy(SonicConstantsLib.SILO_VAULT_25_WANS, SonicConstantsLib.SILO_VAULT_25_WS, 90_00);
+        //        _addStrategy(SonicConstantsLib.SILO_VAULT_46_PT_AUSDC_14AUG, SonicConstantsLib.SILO_VAULT_46_SCUSD, 60_00);
+        //        _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_STS_29MAY, SonicConstantsLib.SILO_VAULT_40_WS, 65_00);
+        //                _addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_WSTKSCUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_FRXUSD, 65_00);
 
         // -------------------------- #295: new vaults 102, 103, 104, 95
         // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
-        _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_bscUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_BSCUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
         // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
-        _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_AUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
         // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
-        _addStrategy(SonicConstantsLib.SILO_VAULT_104_PT_bUSDC_17JUL, SonicConstantsLib.SILO_VAULT_104_USDC, 87_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_104_PT_BUSDC_17JUL, SonicConstantsLib.SILO_VAULT_104_USDC, 87_00);
         // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
-        _addStrategy(SonicConstantsLib.SILO_VAULT_54_wOS, SonicConstantsLib.SILO_VAULT_54_S, 85_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_54_WOS, SonicConstantsLib.SILO_VAULT_54_S, 85_00);
     }
 
     function _addStrategy(

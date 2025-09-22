@@ -11,8 +11,8 @@ contract DeployChainlinkMinimal2V3AdapterSonic is Script {
     function run() external {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        // new ChainlinkMinimal2V3Adapter(SonicConstantsLib.ORACLE_CHAINLINK_metaUSD);
-        new ChainlinkMinimal2V3Adapter(SonicConstantsLib.ORACLE_CHAINLINK_metaS);
+        // new ChainlinkMinimal2V3Adapter(SonicConstantsLib.ORACLE_CHAINLINK_METAUSD);
+        new ChainlinkMinimal2V3Adapter(SonicConstantsLib.ORACLE_CHAINLINK_METAS);
         vm.stopBroadcast();
     }
 

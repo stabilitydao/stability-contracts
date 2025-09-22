@@ -3,16 +3,11 @@ pragma solidity ^0.8.28;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {CommonLib} from "./CommonLib.sol";
-import {VaultTypeLib} from "./VaultTypeLib.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
-import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
-import {IPriceReader} from "../../interfaces/IPriceReader.sol";
 import {IVaultProxy} from "../../interfaces/IVaultProxy.sol";
 import {IStrategyProxy} from "../../interfaces/IStrategyProxy.sol";
 import {StrategyDeveloperLib} from "../../strategies/libs/StrategyDeveloperLib.sol";

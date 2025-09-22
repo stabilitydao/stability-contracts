@@ -6,6 +6,7 @@ import {IAggregatorV3Interface} from "../integrations/chainlink/IAggregatorV3Int
 
 /// @notice Convert IAggregatorInterfaceMinimal to IAggregatorV3Interface
 contract ChainlinkMinimal2V3Adapter is IAggregatorV3Interface {
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable aggregatorMinimal;
 
     constructor(address aggregatorMinimal_) {

@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Platform} from "../../src/core/Platform.sol";
 

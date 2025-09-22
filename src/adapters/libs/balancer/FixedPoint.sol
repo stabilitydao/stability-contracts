@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import "./BalancerErrors.sol";
-import "./LogExpMath.sol";
+import {_require, Errors} from "./BalancerErrors.sol";
+import {LogExpMath} from "./LogExpMath.sol";
 
 library FixedPoint {
     uint internal constant ONE = 1e18; // 18 decimal places

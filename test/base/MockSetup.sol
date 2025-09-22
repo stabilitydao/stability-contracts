@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import {Platform} from "../../src/core/Platform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {MockERC20} from "../../src/test/MockERC20.sol";
-import {MockERC721} from "../../src/test/MockERC721.sol";
 import {VaultManager} from "../../src/core/VaultManager.sol";
 import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";

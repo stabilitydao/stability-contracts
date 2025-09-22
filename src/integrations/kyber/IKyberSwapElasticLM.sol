@@ -7,6 +7,7 @@ interface IKyberSwapElasticLM {
         uint rewardUnclaimed;
     }
 
+    /// forge-lint: disable-next-line(pascal-case-struct)
     struct LMPoolInfo {
         address poolAddress;
         uint32 startTime;

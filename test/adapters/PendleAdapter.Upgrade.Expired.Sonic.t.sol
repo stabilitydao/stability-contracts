@@ -33,17 +33,17 @@ contract PendleAdapterUpgradeExpiredTest is SonicSetup {
         address holder = 0x2fC82F6E988A8e2F21247cCE5dF117f40d5F8e82;
 
         uint price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_STKSCUSD,
             11e6
         );
 
         // swap PT to yield token
         uint got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_STKSCUSD,
             11e6,
             holder
         );
@@ -57,18 +57,18 @@ contract PendleAdapterUpgradeExpiredTest is SonicSetup {
         address holder = 0xFFFC9d22304CF49784e9B31dDBEB066344b2B856;
 
         uint price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscETH_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025,
-            SonicConstantsLib.TOKEN_stkscETH,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCETH_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCETH_29MAY2025,
+            SonicConstantsLib.TOKEN_STKSCETH,
             11e18
         );
         console.log("price", price);
 
         // swap PT to yield token
         uint got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscETH_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025,
-            SonicConstantsLib.TOKEN_stkscETH,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCETH_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCETH_29MAY2025,
+            SonicConstantsLib.TOKEN_STKSCETH,
             11e18,
             holder
         );
@@ -82,16 +82,16 @@ contract PendleAdapterUpgradeExpiredTest is SonicSetup {
         address holder = 0x73E9f22012883e19521AA8060B0603D708BF4390;
 
         uint price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_wOS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
+            SonicConstantsLib.POOL_PENDLE_PT_WOS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WOS_29MAY2025,
             SonicConstantsLib.TOKEN_OS,
             11e18
         );
 
         // swap PT to yield token
         uint got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_wOS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
+            SonicConstantsLib.POOL_PENDLE_PT_WOS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WOS_29MAY2025,
             SonicConstantsLib.TOKEN_OS,
             11e18,
             holder
@@ -107,16 +107,16 @@ contract PendleAdapterUpgradeExpiredTest is SonicSetup {
         address holder = 0x7336CE5F77631F4B6eb9ef16b85D35bf8F1CefE4;
 
         uint price = adapter.getPrice(
-            SonicConstantsLib.POOL_PT_Silo_20_USDC_17JUL2025,
-            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025,
+            SonicConstantsLib.POOL_PT_SILO_20_USDC_17JUL2025,
+            SonicConstantsLib.TOKEN_PT_SILO_20_USDC_17JUL2025,
             SonicConstantsLib.TOKEN_USDC,
             11e6
         );
 
         // swap PT to yield token
         uint got = _swap(
-            SonicConstantsLib.POOL_PT_Silo_20_USDC_17JUL2025,
-            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025,
+            SonicConstantsLib.POOL_PT_SILO_20_USDC_17JUL2025,
+            SonicConstantsLib.TOKEN_PT_SILO_20_USDC_17JUL2025,
             SonicConstantsLib.TOKEN_USDC,
             11e6,
             holder

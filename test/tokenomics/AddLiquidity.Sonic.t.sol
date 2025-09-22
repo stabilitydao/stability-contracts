@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
@@ -24,7 +24,7 @@ contract AddLiquidityTestSonic is Test {
     }
 
     function test_addLiq() public {
-        (uint sPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_wS);
+        (uint sPrice,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.TOKEN_WS);
         //console.log('S price', sPrice);
         uint needAddSTBL = 150_000 * 1e18 * sPrice / 1e18 * 1e18 / 0.18e18;
         needAddSTBL = needAddSTBL * 99_45 / 100_00;
@@ -130,14 +130,14 @@ contract AddLiquidityTestSonic is Test {
             SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_STBL, false
         );
         address poolShadow = ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER).pairFor(
-            SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_STBL, false
+            SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STBL, false
         );
         uint price = IAmmAdapter(SOLIDLY_ADAPTER).getPrice(
             poolSwapX, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18
         );
         assertEq(price, 180002); // $0.18
         price = IAmmAdapter(SOLIDLY_ADAPTER).getPrice(
-            poolShadow, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_wS, 1e18
+            poolShadow, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_WS, 1e18
         );
         price = price * sPrice / 1e18;
         //console.log('price of stbl per $', price);

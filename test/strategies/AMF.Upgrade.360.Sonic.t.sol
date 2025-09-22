@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test, Vm} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC4626, IERC20} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
@@ -12,9 +12,7 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 
@@ -30,7 +28,7 @@ contract AMFUpgrade360Test is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -39,7 +37,7 @@ contract AMFUpgrade360Test is Test {
 
     /// @notice Try to deposit/withdraw underlying from the vault with AMF strategy
     function testUnderlyingOperations() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_Credix_USDC_AMFa0);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_CREDIX_USDC_AMFA0);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
         uint amount = 1000 * 10 ** IERC20Metadata(assets[0]).decimals();

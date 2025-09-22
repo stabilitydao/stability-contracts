@@ -35,7 +35,7 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         vm.rollFork(45880691); // Sep-05-2025 06:47:56 PM +UTC
 
         multisig = IPlatform(PLATFORM).multisig();
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
     }
 
     //region ---------------------------------------- Tests using real SY
@@ -102,7 +102,7 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         IPendleCommonPoolDeployHelperV2 _deployerHelper =
             IPendleCommonPoolDeployHelperV2(SonicConstantsLib.PENDLE_COMMON_POOL_DEPLOY_HELPER_V2);
 
-        bytes memory constructorParams = abi.encode(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        bytes memory constructorParams = abi.encode(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         assertEq(
             constructorParams,
             hex"000000000000000000000000aaaaaaaac311d0572bffb4772fe985a750e88805",
@@ -110,10 +110,10 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         );
 
         vm.prank(HOLDER_WMETA_USD);
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).transfer(DEPLOYER, amount);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).transfer(DEPLOYER, amount);
 
         //        vm.prank(HOLDER_METAUSD);
-        //        IERC20(SonicConstantsLib.METAVAULT_metaUSD).transferFrom(HOLDER_METAUSD, DEPLOYER, amount);
+        //        IERC20(SonicConstantsLib.METAVAULT_METAUSD).transferFrom(HOLDER_METAUSD, DEPLOYER, amount);
 
         vm.roll(block.number + 6);
 
@@ -126,17 +126,17 @@ contract PendleWrappedMetaVaultAdapterUpgradeTest is SonicSetup {
         });
 
         vm.prank(DEPLOYER);
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(_deployerHelper), type(uint).max);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(_deployerHelper), type(uint).max);
 
         //        vm.prank(DEPLOYER);
-        //        IERC20(SonicConstantsLib.METAVAULT_metaUSD).approve(address(_deployerHelper), type(uint).max);
+        //        IERC20(SonicConstantsLib.METAVAULT_METAUSD).approve(address(_deployerHelper), type(uint).max);
 
         vm.prank(DEPLOYER); // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e
         _deployerHelper.deployERC4626WithAdapterMarket(
             constructorParams,
             initParams,
             config,
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, // 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e
+            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, // 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e
             amount, // 2000000000000000000000
             DEPLOYER // 0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e, pendle deployer
         );

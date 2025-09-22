@@ -12,22 +12,16 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CommonLib} from "../../../src/core/libs/CommonLib.sol";
 import {CVault} from "../../../src/core/vaults/CVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";
 import {IStrategy} from "../../../src/interfaces/IStrategy.sol";
 import {ILeverageLendingStrategy} from "../../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IStabilityVault} from "../../../src/interfaces/IStabilityVault.sol";
 import {IVault} from "../../../src/interfaces/IVault.sol";
-import {IPool} from "../../../src/integrations/aave/IPool.sol";
 import {IControllable} from "../../../src/interfaces/IControllable.sol";
 import {StrategyIdLib} from "../../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../../src/core/libs/VaultTypeLib.sol";
 import {SiloAdvancedLib} from "../../../src/strategies/libs/SiloAdvancedLib.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {AmmAdapterIdLib} from "../../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {AlgebraV4Adapter} from "../../../src/adapters/AlgebraV4Adapter.sol";
-import {IAToken} from "../../../src/integrations/aave/IAToken.sol";
 import {BeetsStableFarm} from "../../../src/strategies/BeetsStableFarm.sol";
 import {BeetsWeightedFarm} from "../../../src/strategies/BeetsWeightedFarm.sol";
 import {EqualizerFarmStrategy} from "../../../src/strategies/EqualizerFarmStrategy.sol";
@@ -40,8 +34,7 @@ import {AaveMerklFarmStrategy} from "../../../src/strategies/AaveMerklFarmStrate
 import {CompoundV2Strategy} from "../../../src/strategies/CompoundV2Strategy.sol";
 import {EulerStrategy} from "../../../src/strategies/EulerStrategy.sol";
 import {SiloALMFStrategy} from "../../../src/strategies/SiloALMFStrategy.sol";
-import {Factory} from "../../../src/core/Factory.sol";
-import "forge-std/Test.sol";
+import {console, Vm} from "forge-std/Test.sol";
 import {EulerMerklFarmStrategy} from "../../../src/strategies/EulerMerklFarmStrategy.sol";
 
 /// @notice Shared functions for CVaultBatch-tests

@@ -3,22 +3,14 @@ pragma solidity ^0.8.28;
 
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
 import {CVaultBatchLib} from "./libs/CVaultBatchLib.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {console, Test} from "forge-std/Test.sol";
 
 /// @notice Test all deployed vaults on given/current block and save summary report to "./tmp/CVault.Upgrade.Batch.Avalanche.results.csv"

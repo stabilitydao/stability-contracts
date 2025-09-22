@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Controllable, IControllable} from "../../src/core/base/Controllable.sol";
+import {IControllable} from "../../src/core/base/Controllable.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {MockSetup} from "../base/MockSetup.sol";

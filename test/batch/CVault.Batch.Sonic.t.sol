@@ -2,24 +2,16 @@
 pragma solidity ^0.8.28;
 
 import {CVaultBatchLib} from "./libs/CVaultBatchLib.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IStabilityVault} from "../../src/interfaces/IStabilityVault.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {Swapper} from "../../src/core/Swapper.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -123,9 +115,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     /// @notice Auxiliary test to debug particular vaults
     function testDepositWithdrawSingle() internal {
         // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscUSD_USDC, false, 100e6);
-        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH, false, 0.1e18);
+        // TestResult memory r = _testDepositWithdrawSingleVault(SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH, false, 0.1e18);
 
-        address vault = SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH;
+        address vault = SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH;
         if (UPGRADE_BEFORE_TEST_FOR_DEBUG) {
             CVaultBatchLib._upgradeCVault(vm, vault);
             CVaultBatchLib._upgradeVaultStrategy(vm, vault);
@@ -181,7 +173,7 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
         for (uint i; i < assets.length; ++i) {
             amounts[i] = amount_ == 0 ? _getDefaultAmountToDeposit(assets[i]) : amount_;
             //console.log("Dealing", assets[i], amounts[i]);
-            if (assets[i] == SonicConstantsLib.TOKEN_aUSDC) {
+            if (assets[i] == SonicConstantsLib.TOKEN_AUSDC) {
                 _dealAave(assets[i], address(this), amounts[i]);
             } else if (assets[i] == SonicConstantsLib.TOKEN_OS) {
                 CVaultBatchLib._transferAmountFromHolder(vm, assets[i], address(this), amounts[i], HOLDER_TOKEN_OS);
@@ -217,9 +209,9 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
     //region ---------------------- Sonic-related functions
     function _getDefaultAmountToDeposit(address asset_) internal view returns (uint) {
         if (
-            asset_ == SonicConstantsLib.TOKEN_wETH || asset_ == SonicConstantsLib.TOKEN_atETH
-                || asset_ == SonicConstantsLib.TOKEN_scETH || asset_ == SonicConstantsLib.TOKEN_stkscETH
-                || asset_ == SonicConstantsLib.TOKEN_wstkscETH
+            asset_ == SonicConstantsLib.TOKEN_WETH || asset_ == SonicConstantsLib.TOKEN_ATETH
+                || asset_ == SonicConstantsLib.TOKEN_SCETH || asset_ == SonicConstantsLib.TOKEN_STKSCETH
+                || asset_ == SonicConstantsLib.TOKEN_WSTKSCETH
         ) {
             return 1e18;
         }
@@ -229,8 +221,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
 
     /// @dev Make any set up actions before deposit/withdraw test
     function _setUpVault(address vault_) internal {
-        // ---------------- fix routes for VAULT_LEV_SiAL_wstkscETH_WETH using beets-v3 adapter
-        if (vault_ == SonicConstantsLib.VAULT_LEV_SiAL_wstkscETH_WETH) {
+        // ---------------- fix routes for VAULT_LEV_SIAL_WSTKSCETH_WETH using beets-v3 adapter
+        if (vault_ == SonicConstantsLib.VAULT_LEV_SIAL_WSTKSCETH_WETH) {
             ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
             ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
@@ -238,8 +230,8 @@ contract CVaultBatchSonicSkipOnCiTest is Test {
                 pool: 0xE54DD58a6d4e04687f2034dd4dDAb49da55F8afF, // SonicConstantsLib.POOL_SHADOW_CL_scETH_WETH_100,
                 ammAdapter: (IPlatform(PLATFORM).ammAdapter(keccak256(bytes(AmmAdapterIdLib.BALANCER_COMPOSABLE_STABLE))))
                     .proxy,
-                tokenIn: address(SonicConstantsLib.TOKEN_scETH),
-                tokenOut: address(SonicConstantsLib.TOKEN_wETH)
+                tokenIn: address(SonicConstantsLib.TOKEN_SCETH),
+                tokenOut: address(SonicConstantsLib.TOKEN_WETH)
             });
 
             vm.prank(multisig);

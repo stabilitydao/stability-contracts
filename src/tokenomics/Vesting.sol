@@ -12,10 +12,13 @@ contract Vesting {
     event Beneficiary(address beneficiary_);
     event DelayStart(uint64 oldStart, uint64 newSstart);
 
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable platform;
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable token;
     address public beneficiary;
     string public name;
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     uint64 public immutable duration;
     uint64 public start;
     uint public released;

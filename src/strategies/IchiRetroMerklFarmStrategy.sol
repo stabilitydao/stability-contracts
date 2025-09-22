@@ -61,7 +61,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.ICHI_RETRO_MERKL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -164,7 +164,7 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return IRMFLib.generateDescription(farm, $lp.ammAdapter);
     }

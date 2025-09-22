@@ -29,28 +29,28 @@ contract SwapperUpgradeSonicTest is Test {
         swapper.addPools(_routes(), false);
         vm.stopPrank();
 
-        uint price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wanS, 0);
+        uint price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WANS, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_wanS, SonicConstantsLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_WANS, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscUSD, SonicConstantsLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_WSTKSCUSD, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WSTKSCUSD, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WSTKSCETH, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscETH, SonicConstantsLib.TOKEN_USDC, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_WSTKSCETH, SonicConstantsLib.TOKEN_USDC, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_wstkscETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_WETH, SonicConstantsLib.TOKEN_WSTKSCETH, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_wstkscETH, SonicConstantsLib.TOKEN_wETH, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_WSTKSCETH, SonicConstantsLib.TOKEN_WETH, 0);
         assertGt(price, 0);
 
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_sfrxUSD, SonicConstantsLib.TOKEN_SWPx, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_SFRXUSD, SonicConstantsLib.TOKEN_SWPX, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPx, SonicConstantsLib.TOKEN_sfrxUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPX, SonicConstantsLib.TOKEN_SFRXUSD, 0);
         assertGt(price, 0);
-        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPx, SonicConstantsLib.TOKEN_frxUSD, 0);
+        price = swapper.getPrice(SonicConstantsLib.TOKEN_SWPX, SonicConstantsLib.TOKEN_FRXUSD, 0);
         assertGt(price, 0);
     }
 
@@ -78,50 +78,50 @@ contract SwapperUpgradeSonicTest is Test {
         uint i;
         // wanS -> USDC
         pools[i++] = _makePoolData(
-            SonicConstantsLib.SILO_VAULT_25_wS,
+            SonicConstantsLib.SILO_VAULT_25_WS,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.SILO_VAULT_25_wS,
-            SonicConstantsLib.TOKEN_wS
+            SonicConstantsLib.SILO_VAULT_25_WS,
+            SonicConstantsLib.TOKEN_WS
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_wS_anS,
+            SonicConstantsLib.POOL_BEETS_V3_SILO_VAULT_25_WS_ANS,
             AmmAdapterIdLib.BALANCER_V3_STABLE,
-            SonicConstantsLib.TOKEN_anS,
-            SonicConstantsLib.SILO_VAULT_25_wS
+            SonicConstantsLib.TOKEN_ANS,
+            SonicConstantsLib.SILO_VAULT_25_WS
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wanS,
+            SonicConstantsLib.TOKEN_WANS,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wanS,
-            SonicConstantsLib.TOKEN_anS
+            SonicConstantsLib.TOKEN_WANS,
+            SonicConstantsLib.TOKEN_ANS
         );
 
         // wstkscUSD -> USDC
         pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD
+            SonicConstantsLib.TOKEN_STKSCUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD
         );
         /*pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_stkscUSD_scUSD_3000,
+            SonicConstantsLib.POOL_SHADOW_CL_STKSCUSD_SCUSD_3000,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_scUSD
+            SonicConstantsLib.TOKEN_STKSCUSD,
+            SonicConstantsLib.TOKEN_SCUSD
         );*/
 
         // wstksceth -> ETH
         pools[i++] = _makePoolData(
-            SonicConstantsLib.TOKEN_wstkscETH,
+            SonicConstantsLib.TOKEN_WSTKSCETH,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_stkscETH
+            SonicConstantsLib.TOKEN_WSTKSCETH,
+            SonicConstantsLib.TOKEN_STKSCETH
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.POOL_SHADOW_CL_scETH_stkscETH_250,
+            SonicConstantsLib.POOL_SHADOW_CL_SCETH_STKSCETH_250,
             AmmAdapterIdLib.UNISWAPV3,
-            SonicConstantsLib.TOKEN_stkscETH,
-            SonicConstantsLib.TOKEN_scETH
+            SonicConstantsLib.TOKEN_STKSCETH,
+            SonicConstantsLib.TOKEN_SCETH
         );
     }
 
