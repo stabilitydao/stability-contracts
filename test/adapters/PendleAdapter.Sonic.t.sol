@@ -72,7 +72,7 @@ contract PendleAdapterTest is SonicSetup {
             SonicConstantsLib.TOKEN_WSTKSCUSD,
             1e6
         );
-        
+
         price = adapter.getPrice(
             SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
             SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
