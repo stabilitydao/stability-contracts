@@ -332,6 +332,10 @@ library CVaultBatchLib {
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault_));
     }
+
+    /// @notice add this to be excluded from coverage report
+    function test() public {}
+
     //endregion ---------------------- Helpers
 
     //region ---------------------- Upgrade strategies
