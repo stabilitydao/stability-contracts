@@ -269,7 +269,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](46);
+        pools = new ISwapper.AddPoolData[](47);
 
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
@@ -338,6 +338,10 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_metaS, AmmAdapterIdLib.META_VAULT, SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.METAVAULT_metaS); // 44
 
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_EUL, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_EUL, SonicConstantsLib.TOKEN_USDC); // 45
+
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_smsUSD_30OCT2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_smsUSD_30OCT2025, SonicConstantsLib.TOKEN_msUSD);
+        // todo https://beets.fi/pools/sonic/v3/0x0ae7fbbe97ef6387150f3ec31dac0bcca34a15ef
+        // todo https://beets.fi/pools/sonic/v3/0x412cefccba5033f14b3a3dbc759075a657cbf31c
         //endregion ----- Pools ----
     }
 

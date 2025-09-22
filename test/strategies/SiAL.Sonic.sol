@@ -18,7 +18,8 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
         // vm.rollFork(25224612); // May-08-2025 10:18:00 AM +UTC
         // vm.rollFork(26428190); // May-13-2025 06:22:27 AM +UTC
         // vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
-        vm.rollFork(28965600); // May-23-2025 08:48:26 AM +UTC
+        // vm.rollFork(28965600); // May-23-2025 08:48:26 AM +UTC
+        vm.rollFork(47749273); // Sep-22-2025 08:07:18 AM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;
@@ -34,15 +35,18 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
         //        _addStrategy(SonicConstantsLib.SILO_VAULT_40_PT_stS_29MAY, SonicConstantsLib.SILO_VAULT_40_wS, 65_00);
         //                _addStrategy(SonicConstantsLib.SILO_VAULT_37_PT_wstkscUSD_29MAY, SonicConstantsLib.SILO_VAULT_37_frxUSD, 65_00);
 
-        // -------------------------- #295: new vaults 102, 103, 104, 95
-        // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
-        _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_bscUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
-        // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
-        _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
-        // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
-        _addStrategy(SonicConstantsLib.SILO_VAULT_104_PT_bUSDC_17JUL, SonicConstantsLib.SILO_VAULT_104_USDC, 87_00);
-        // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
-        _addStrategy(SonicConstantsLib.SILO_VAULT_54_wOS, SonicConstantsLib.SILO_VAULT_54_S, 85_00);
+//        // -------------------------- #295: new vaults 102, 103, 104, 95
+//        // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
+//        _addStrategy(SonicConstantsLib.SILO_VAULT_102_PT_bscUSD_14AUG, SonicConstantsLib.SILO_VAULT_102_USDC, 85_00);
+//        // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
+//        _addStrategy(SonicConstantsLib.SILO_VAULT_103_PT_aUSDC_14AUG, SonicConstantsLib.SILO_VAULT_103_USDC, 87_00);
+//        // max ltv = 92%, liquidation threshold = 95% => max leverage = 12.5
+//        _addStrategy(SonicConstantsLib.SILO_VAULT_104_PT_bUSDC_17JUL, SonicConstantsLib.SILO_VAULT_104_USDC, 87_00);
+//        // max ltv = 90%, liquidation threshold = 95% => max leverage = 10
+//        _addStrategy(SonicConstantsLib.SILO_VAULT_54_wOS, SonicConstantsLib.SILO_VAULT_54_S, 85_00);
+
+        // _addStrategy(SonicConstantsLib.SILO_VAULT_141_PT_smsUSD_30OCT2025, SonicConstantsLib.SILO_VAULT_141_USDC, 85_00);
+        _addStrategy(SonicConstantsLib.SILO_VAULT_138_smsUSD, SonicConstantsLib.SILO_VAULT_138_USDC, 85_00);
     }
 
     function _addStrategy(
