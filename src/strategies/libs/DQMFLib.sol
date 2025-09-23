@@ -16,10 +16,14 @@ library DQMFLib {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal constant USD = address(840);
 
-    function initVariants(address platform_, string memory ammAdapterId, string memory strategyLogicId)
-    external
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(
+        address platform_,
+        string memory ammAdapterId,
+        string memory strategyLogicId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
         addresses = new address[](0);

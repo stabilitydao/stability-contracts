@@ -17,7 +17,6 @@ import {IVolatilityOracle} from "../../integrations/algebrav4/IVolatilityOracle.
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 
 library ISFLib {
-
     uint internal constant PRECISION = 10 ** 18;
 
     struct PreviewDepositVars {
@@ -33,11 +32,10 @@ library ISFLib {
         address token1;
     }
 
-    function previewDepositAssets(uint[] memory amountsMax, IStrategy.StrategyBaseStorage storage __$__)
-    external
-    view
-    returns (uint[] memory amountsConsumed, uint value)
-    {
+    function previewDepositAssets(
+        uint[] memory amountsMax,
+        IStrategy.StrategyBaseStorage storage __$__
+    ) external view returns (uint[] memory amountsConsumed, uint value) {
         IICHIVaultV4 _underlying = IICHIVaultV4(__$__._underlying);
         amountsConsumed = new uint[](2);
         if (_underlying.allowToken0()) {
@@ -301,7 +299,7 @@ library ISFLib {
     }
 
     /**
-    * @notice Helper function to get the most conservative price
+     * @notice Helper function to get the most conservative price
      *  @param spot Current spot price
      *  @param twap TWAP price
      *  @param auxTwap Auxiliary TWAP price

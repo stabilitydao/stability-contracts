@@ -47,8 +47,6 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-
-
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -297,5 +295,4 @@ contract IchiSwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase, MerklStra
             }
         }
     }
-
 }

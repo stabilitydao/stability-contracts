@@ -8,10 +8,14 @@ import {IFactory} from "../../interfaces/IFactory.sol";
 import {ALMPositionNameLib} from "./ALMPositionNameLib.sol";
 
 library GEFLib {
-    function initVariants(address platform_, string memory ammAdapterId, string memory strategyLogicId)
-    public
-    view
-    returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    function initVariants(
+        address platform_,
+        string memory ammAdapterId,
+        string memory strategyLogicId
+    )
+        public
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
         IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
         addresses = new address[](0);

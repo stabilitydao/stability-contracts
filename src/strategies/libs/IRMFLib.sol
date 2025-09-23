@@ -30,11 +30,10 @@ library IRMFLib {
         bool flashOn;
     }
 
-    function previewDepositAssets(uint[] memory amountsMax, IStrategy.StrategyBaseStorage storage __$__)
-    external
-    view
-    returns (uint[] memory amountsConsumed, uint value)
-    {
+    function previewDepositAssets(
+        uint[] memory amountsMax,
+        IStrategy.StrategyBaseStorage storage __$__
+    ) external view returns (uint[] memory amountsConsumed, uint value) {
         IICHIVault _underlying = IICHIVault(__$__._underlying);
         amountsConsumed = new uint[](2);
         if (_underlying.allowToken0()) {
@@ -259,7 +258,7 @@ library IRMFLib {
     }
 
     /**
- * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
      * @param _tokenIn token the input amount is in
      * @param _tokenOut token for the output amount
      * @param _tick tick for the spot price
