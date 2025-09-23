@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Platform} from "../../src/core/Platform.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
 import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLeverageStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
-import {IPPrincipalToken} from "../../src/integrations/pendle/IPPrincipalToken.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
 
 /// @dev Try to withdraw from expired Pendle strategies
 /// @notice Set block for each test individually,
@@ -30,7 +26,7 @@ contract SiALUpgradeExpiredPtSingleTest is Test {
     function testVaultSiAL_aSonUSDC_scUSD_14AUG2025() public {
         _withdrawFromExpiredPtVault(
             43926167, // Aug-21-2025 07:32:46 AM +UTC
-            SonicConstantsLib.VAULT_LEV_SiAL_aSonUSDC_scUSD_14AUG2025,
+            SonicConstantsLib.VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025,
             HOLDER_VAULT_LEV_SIAL_ASONUSDC_SCUSD_14AUG2025
         );
     }

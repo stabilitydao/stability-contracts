@@ -137,6 +137,7 @@ interface IBalancerGauge {
     function inflation_rate(uint arg0) external view returns (uint);
 }
 
+/// forge-lint: disable-next-line(pascal-case-struct)
 struct S_0 {
     address distributor;
     uint period_finish;

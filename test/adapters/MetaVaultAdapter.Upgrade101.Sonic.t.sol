@@ -6,8 +6,6 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
-// import {console} from "forge-std/Test.sol";
 
 contract MetaVaultAdapterUpgrade101Test is SonicSetup {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -44,7 +42,7 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
     function _testSwapsMetaUsdc(uint amount) internal {
         uint snapshot = vm.snapshotState();
-        IMetaVault metaVaultUsdc = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        IMetaVault metaVaultUsdc = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
 
         uint got;
         address[] memory vaults = metaVaultUsdc.vaults();
@@ -57,8 +55,8 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         // swap 100 MetaUSDC to USDC
         got = _swap(
-            SonicConstantsLib.METAVAULT_metaUSDC,
-            SonicConstantsLib.METAVAULT_metaUSDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             SonicConstantsLib.TOKEN_USDC,
             metaVaultBalance,
             1_000 // 1% price impact
@@ -68,9 +66,9 @@ contract MetaVaultAdapterUpgrade101Test is SonicSetup {
 
         // swap 100 wS to MetaS
         got = _swap(
-            SonicConstantsLib.METAVAULT_metaUSDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.METAVAULT_metaUSDC,
+            SonicConstantsLib.METAVAULT_METAUSDC,
             got,
             1_000 // 1% price impact
         );

@@ -29,7 +29,7 @@ contract AUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -38,18 +38,18 @@ contract AUpgradeTest is Test {
 
     /// @notice #326: Metavault is not able to withdraw from Aave strategy all amount because of the lack of liquidity in aToken
     function testMetaVaultUpdate326() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_USDC_Stability_StableJack);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
 
         // ------------------- upgrade strategy
-        // _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_Stability_StableJack);
+        // _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK);
         _upgradeAaveStrategy(address(strategy));
 
         IAToken aToken = IAToken(AaveStrategy(address(strategy)).aaveToken());
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_metaUSDC);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METAUSDC);
 
         // ------------------- our balance and max available liquidity in AAVE token
         uint aTokenBalance = aToken.balanceOf(address(strategy));
@@ -61,11 +61,11 @@ contract AUpgradeTest is Test {
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
-        vm.prank(SonicConstantsLib.METAVAULT_metaUSDC);
+        vm.prank(SonicConstantsLib.METAVAULT_METAUSDC);
         vault.withdrawAssets(assets, balanceToWithdraw * 101 / 100, new uint[](1));
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_metaUSDC);
+        vm.prank(SonicConstantsLib.METAVAULT_METAUSDC);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl

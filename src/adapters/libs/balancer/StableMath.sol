@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import "./FixedPoint.sol";
+import {FixedPoint} from "./FixedPoint.sol";
+import {_revert, Errors} from "./BalancerErrors.sol";
 import {LegacyOZMath} from "./LegacyOZMath.sol";
 
 library StableMath {

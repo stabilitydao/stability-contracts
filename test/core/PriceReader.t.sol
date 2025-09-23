@@ -12,7 +12,6 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {UniswapV3Adapter} from "../../src/adapters/UniswapV3Adapter.sol";
 import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
 import {Platform, IPlatform} from "../../src/core/Platform.sol";
-import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 
 contract PriceReaderTest is Test, MockSetup {

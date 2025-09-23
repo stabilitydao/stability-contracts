@@ -7,6 +7,7 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @title Minimal Chainlink-compatible vault trusted price feed
 /// @author Alien Deployer (https://github.com/a17)
 contract VaultOracle is IAggregatorInterfaceMinimal {
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable vault;
 
     constructor(address vault_) {

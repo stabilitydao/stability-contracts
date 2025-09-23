@@ -51,9 +51,9 @@ contract MetaVaultFactoryTest is Test {
         console.log(string.concat("Factory address: ", Strings.toHexString(address(metaVaultFactory))));
         console.log(string.concat("Target address:  ", Strings.toHexString(predictedProxyAddress)));
         address[] memory vaults_ = new address[](3);
-        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SiF;
-        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
-        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC;
+        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SIF;
+        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
+        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC;
         uint[] memory proportions_ = new uint[](3);
         proportions_[0] = 50e16;
         proportions_[1] = 30e16;
@@ -152,9 +152,9 @@ contract MetaVaultFactoryTest is Test {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SIF);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
