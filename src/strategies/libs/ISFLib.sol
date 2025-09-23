@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IICHIVaultV4} from "../../integrations/ichi/IICHIVaultV4.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
 import {IAlgebraPoolErrors} from "../../integrations/algebrav4/pool/IAlgebraPoolErrors.sol";
@@ -15,6 +17,76 @@ import {IVolatilityOracle} from "../../integrations/algebrav4/IVolatilityOracle.
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
 
 library ISFLib {
+
+    uint internal constant PRECISION = 10 ** 18;
+
+    struct PreviewDepositVars {
+        uint32 twapPeriod;
+        uint32 auxTwapPeriod;
+        uint price;
+        uint twap;
+        uint auxTwap;
+        uint pool0;
+        uint pool1;
+        address pool;
+        address token0;
+        address token1;
+    }
+
+    function previewDepositAssets(uint[] memory amountsMax, IStrategy.StrategyBaseStorage storage __$__)
+    external
+    view
+    returns (uint[] memory amountsConsumed, uint value)
+    {
+        IICHIVaultV4 _underlying = IICHIVaultV4(__$__._underlying);
+        amountsConsumed = new uint[](2);
+        if (_underlying.allowToken0()) {
+            amountsConsumed[0] = amountsMax[0];
+        } else {
+            amountsConsumed[1] = amountsMax[1];
+        }
+
+        PreviewDepositVars memory v;
+        v.pool = _underlying.pool();
+        v.token0 = _underlying.token0();
+        v.token1 = _underlying.token1();
+
+        v.twapPeriod = _underlying.twapPeriod();
+
+        // Get spot price
+        v.price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), PRECISION);
+
+        // Get TWAP price
+        v.twap = _fetchTwap(v.pool, v.token0, v.token1, v.twapPeriod, PRECISION);
+
+        v.auxTwapPeriod = _underlying.auxTwapPeriod();
+
+        v.auxTwap = v.auxTwapPeriod > 0 ? _fetchTwap(v.pool, v.token0, v.token1, v.auxTwapPeriod, PRECISION) : v.twap;
+
+        (uint pool0, uint pool1) = _underlying.getTotalAmounts();
+
+        // Calculate share value in token1
+        uint priceForDeposit = _getConservativePrice(v.price, v.twap, v.auxTwap, false, v.auxTwapPeriod);
+        uint deposit0PricedInToken1 = amountsConsumed[0] * priceForDeposit / PRECISION;
+
+        value = amountsConsumed[1] + deposit0PricedInToken1;
+        uint totalSupply = _underlying.totalSupply();
+        if (totalSupply != 0) {
+            uint priceForPool = _getConservativePrice(v.price, v.twap, v.auxTwap, true, v.auxTwapPeriod);
+            uint pool0PricedInToken1 = pool0 * priceForPool / PRECISION;
+            value = value * totalSupply / (pool0PricedInToken1 + pool1);
+        }
+    }
+
+    function getAssetsProportions(IICHIVaultV4 _underlying) external view returns (uint[] memory proportions) {
+        proportions = new uint[](2);
+        if (_underlying.allowToken0()) {
+            proportions[0] = 1e18;
+        } else {
+            proportions[1] = 1e18;
+        }
+    }
+
     function initVariants(
         address platform_,
         string memory strategyLogicId,
@@ -126,7 +198,7 @@ library ISFLib {
     /// @param oracleAddress The address of oracle
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp-period) to block.timestamp
-    function consult(address oracleAddress, uint32 period) external view returns (int24 timeWeightedAverageTick) {
+    function consult(address oracleAddress, uint32 period) internal view returns (int24 timeWeightedAverageTick) {
         require(period != 0, "Period is zero");
 
         uint32[] memory secondAgos = new uint32[](2);
@@ -176,4 +248,85 @@ library ISFLib {
     uint internal constant AFTER_FLASH_FLAG = 1 << 5;
     uint internal constant AFTER_INIT_FLAG = 1 << 6;
     uint internal constant DYNAMIC_FEE = 1 << 7;
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _tick tick for the spot price
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchSpot(
+        address _tokenIn,
+        address _tokenOut,
+        int24 _tick,
+        uint _amountIn
+    ) internal pure returns (uint amountOut) {
+        return getQuoteAtTick(_tick, SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
+     *  @param _pool Uniswap V3 pool address to be used for price checking
+     *  @param _tokenIn token the input amount is in
+     *  @param _tokenOut token for the output amount
+     *  @param _twapPeriod the averaging time period
+     *  @param _amountIn amount in _tokenIn
+     *  @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchTwap(
+        address _pool,
+        address _tokenIn,
+        address _tokenOut,
+        uint32 _twapPeriod,
+        uint _amountIn
+    ) internal view returns (uint amountOut) {
+        // Leave twapTick as a int256 to avoid solidity casting
+        address basePlugin = _getBasePluginFromPool(_pool);
+
+        int twapTick = consult(basePlugin, _twapPeriod);
+        return getQuoteAtTick(
+            int24(twapTick), // can assume safe being result from consult()
+            SafeCast.toUint128(_amountIn),
+            _tokenIn,
+            _tokenOut
+        );
+    }
+
+    function _getBasePluginFromPool(address pool_) private view returns (address basePlugin) {
+        basePlugin = IAlgebraPool(pool_).plugin();
+        // make sure the base plugin is connected to the pool
+        require(isOracleConnectedToPool(basePlugin, pool_), "IV: diconnected plugin");
+    }
+
+    /**
+    * @notice Helper function to get the most conservative price
+     *  @param spot Current spot price
+     *  @param twap TWAP price
+     *  @param auxTwap Auxiliary TWAP price
+     *  @param isPool Flag indicating if the valuation is for the pool or deposit
+     *  @return price Most conservative price
+     */
+    function _getConservativePrice(
+        uint spot,
+        uint twap,
+        uint auxTwap,
+        bool isPool,
+        uint32 auxTwapPeriod
+    ) internal pure returns (uint) {
+        if (isPool) {
+            // For pool valuation, use highest price to be conservative
+            if (auxTwapPeriod > 0) {
+                return Math.max(Math.max(spot, twap), auxTwap);
+            }
+            return Math.max(spot, twap);
+        } else {
+            // For deposit valuation, use lowest price to be conservative
+            if (auxTwapPeriod > 0) {
+                return Math.min(Math.min(spot, twap), auxTwap);
+            }
+            return Math.min(spot, twap);
+        }
+    }
 }
