@@ -70,7 +70,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(1),
                 metaVaultFactory: address(0),
                 vaultPriceOracle: address(11),
-                recoveryContract: address(12)
+                recovery: address(12)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -95,7 +95,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0),
                 vaultPriceOracle: address(11),
-                recoveryContract: address(12)
+                recovery: address(12)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -330,7 +330,7 @@ contract PlatformTest is Test {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0),
                 vaultPriceOracle: address(11),
-                recoveryContract: address(12)
+                recovery: address(12)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );

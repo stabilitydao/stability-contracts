@@ -77,7 +77,7 @@ contract PriceReaderTest is Test, MockSetup {
                 revenueRouter: address(0),
                 metaVaultFactory: address(0),
                 vaultPriceOracle: address(12),
-                recoveryContract: address(13)
+                recovery: address(13)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );

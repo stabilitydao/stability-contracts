@@ -94,7 +94,7 @@ abstract contract FullMockSetup is MockSetup {
                 revenueRouter: address(revenueRouter),
                 metaVaultFactory: address(metaVaultFactory),
                 vaultPriceOracle: address(0),
-                recoveryContract: address(0)
+                recovery: address(0)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );

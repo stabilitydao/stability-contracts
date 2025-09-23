@@ -288,13 +288,13 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     ) internal {
         address stbl = $.stbl;
         ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-        address recoveryContract = IPlatform(platform()).recoveryContract();
+        address _recovery = IPlatform(platform()).recovery();
         address[] memory assets = IStabilityVault(vault).assets();
         uint len = assets.length;
         try IStabilityVault(vault).withdrawAssets(assets, amount, new uint[](len), address(this), owner) {
             uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
 
-            RevenueRouterLib._processAssets(assets, stbl, swapper, recoveryContract);
+            RevenueRouterLib.processAssets(assets, stbl, swapper, _recovery);
 
             uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
             IERC20(stbl).safeTransfer($.feeTreasury, stblGot);
