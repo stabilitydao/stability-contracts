@@ -7,8 +7,8 @@ contract MockRecovery is IRecovery {
     address[] public registeredTokens;
     uint[] public registeredAmounts;
 
-    function initialize(address platform_) external {
-        // nothing to do
+    function initialize(address platform_) external pure {
+        platform_;
     }
 
 
