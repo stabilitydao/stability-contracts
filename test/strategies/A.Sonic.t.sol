@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-// import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
     constructor() {
@@ -23,13 +22,13 @@ contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
 
     /// @notice Compare APR with https://stability.market/
     function testAaveStrategy() public universalTest {
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WS);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDC);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_scUSD);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_SCUSD);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_WETH);
         _addStrategy(SonicConstantsLib.STABILITY_SONIC_USDT);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_wOS);
-        _addStrategy(SonicConstantsLib.STABILITY_SONIC_stS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_WOS);
+        _addStrategy(SonicConstantsLib.STABILITY_SONIC_STS);
     }
 
     function _addStrategy(address aToken) internal {

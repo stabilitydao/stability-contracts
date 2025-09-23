@@ -12,7 +12,6 @@ import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {PendleERC4626WithAdapterSY} from "../../src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol";
 import {PendleWrappedMetaVaultAdapter} from "../../src/periphery/PendleWrappedMetaVaultAdapter.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {console} from "forge-std/Test.sol";
 
 contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     /// @notice a block with metaS workable
@@ -26,12 +25,12 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     //region ---------------------------------------- Tests use real deploy
     function testForMetaUsd100Real() public {
         vm.rollFork(FORK_BLOCK);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         _getMetaUsdOnBalance(address(this), 2000e18, true);
 
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _realDeploy(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 2000e18);
+            _realDeploy(SonicConstantsLib.METAVAULT_METAUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 2000e18);
 
         _testForMetaUsd(100e6, syMetaUsd, adapter, 2000e18);
     }
@@ -40,34 +39,34 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     //region ---------------------------------------- Tests use flatten SY
     function testForMetaUsd100() public {
         vm.rollFork(FORK_BLOCK);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
 
         _testForMetaUsd(100e6, syMetaUsd, adapter, 0);
     }
 
     function testForMetaUsd1e6() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
 
         _testForMetaUsd(1_000_000e6, syMetaUsd, adapter, 0);
     }
 
     function testForMetaS100() public {
         vm.rollFork(FORK_BLOCK_META_S);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaS);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
 
         _testForMetaS(100e18);
     }
 
     function testForMetaS1e6() public {
         vm.rollFork(FORK_BLOCK_META_S);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaS);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
 
         _testForMetaS(1_000_000e18);
     }
@@ -75,17 +74,17 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     function _testForMetaS(uint amount) internal {
         // -------------------- setup SY, SY-adapter and MetaVault
         (PendleERC4626WithAdapterSY syMetaS, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaS, SonicConstantsLib.METAVAULT_metaS);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAS, SonicConstantsLib.METAVAULT_METAS);
 
         // -------------------- deposit to SY
-        _dealAndApproveSingle(address(this), address(syMetaS), SonicConstantsLib.TOKEN_wS, amount);
+        _dealAndApproveSingle(address(this), address(syMetaS), SonicConstantsLib.TOKEN_WS, amount);
         {
-            uint shares = syMetaS.previewDeposit(SonicConstantsLib.TOKEN_wS, amount);
+            uint shares = syMetaS.previewDeposit(SonicConstantsLib.TOKEN_WS, amount);
             uint amountSharesOut =
-                syMetaS.deposit(address(this), SonicConstantsLib.TOKEN_wS, amount, shares * 999 / 1000);
+                syMetaS.deposit(address(this), SonicConstantsLib.TOKEN_WS, amount, shares * 999 / 1000);
 
             assertEq(
-                IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this)),
+                IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this)),
                 0,
                 "wS balance should be zero after deposit"
             );
@@ -94,9 +93,9 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         }
 
         // -------------------- user is not able to deposit / withdraw without waiting
-        _tryToDepositToSY(address(this), syMetaS, SonicConstantsLib.TOKEN_wS, amount, true); // the user cannot deposit
-        _tryToDepositToSY(address(2), syMetaS, SonicConstantsLib.TOKEN_wS, amount, true); // the other user cannot deposit too
-        _tryToRedeemFromSY(syMetaS, SonicConstantsLib.TOKEN_wS, amount, true);
+        _tryToDepositToSY(address(this), syMetaS, SonicConstantsLib.TOKEN_WS, amount, true); // the user cannot deposit
+        _tryToDepositToSY(address(2), syMetaS, SonicConstantsLib.TOKEN_WS, amount, true); // the other user cannot deposit too
+        _tryToRedeemFromSY(syMetaS, SonicConstantsLib.TOKEN_WS, amount, true);
 
         // -------------------- wait a few blocks
         vm.roll(block.number + 6);
@@ -105,10 +104,10 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         uint balance = syMetaS.balanceOf(address(this));
         assertNotEq(balance, 0, "Balance should not be zero 1");
 
-        syMetaS.redeem(address(this), balance / 2, SonicConstantsLib.TOKEN_wS, amount * 99 / 100 / 2, false);
+        syMetaS.redeem(address(this), balance / 2, SonicConstantsLib.TOKEN_WS, amount * 99 / 100 / 2, false);
 
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this)),
+            IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this)),
             amount / 2,
             amount / 2 / 1000,
             "wS balance mismatch 1"
@@ -116,25 +115,25 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
         // -------------------- user IS ABLE to deposit without waiting
         // if we need to disable deposit after withdraw we need our own SY implementation or invent smth on wmetaUSD side
-        _tryToDepositToSY(address(this), syMetaS, SonicConstantsLib.TOKEN_wS, amount, false);
-        _tryToDepositToSY(address(2), syMetaS, SonicConstantsLib.TOKEN_wS, amount, false);
+        _tryToDepositToSY(address(this), syMetaS, SonicConstantsLib.TOKEN_WS, amount, false);
+        _tryToDepositToSY(address(2), syMetaS, SonicConstantsLib.TOKEN_WS, amount, false);
 
         // -------------------- user is not able to withdraw without waiting
-        _tryToRedeemFromSY(syMetaS, SonicConstantsLib.TOKEN_wS, amount, true);
+        _tryToRedeemFromSY(syMetaS, SonicConstantsLib.TOKEN_WS, amount, true);
 
         // -------------------- wait a few blocks
         vm.roll(block.number + 6);
 
         // -------------------- withdraw all from SY
         balance = syMetaS.balanceOf(address(this));
-        uint previewAmount = syMetaS.previewRedeem(SonicConstantsLib.TOKEN_wS, balance);
+        uint previewAmount = syMetaS.previewRedeem(SonicConstantsLib.TOKEN_WS, balance);
         assertNotEq(balance, 0, "Balance should not be zero 2");
 
-        uint balanceAssetBeforeRedeem = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this));
-        uint redeemed = syMetaS.redeem(address(this), balance, SonicConstantsLib.TOKEN_wS, amount * 99 / 100 / 2, false);
+        uint balanceAssetBeforeRedeem = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this));
+        uint redeemed = syMetaS.redeem(address(this), balance, SonicConstantsLib.TOKEN_WS, amount * 99 / 100 / 2, false);
 
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this)), amount, amount / 1000, "wS balance mismatch 2"
+            IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this)), amount, amount / 1000, "wS balance mismatch 2"
         );
 
         assertEq(syMetaS.balanceOf(address(this)), 0, "Balance should be zero");
@@ -142,34 +141,34 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
             previewAmount, redeemed, previewAmount / 1e8, "Preview amount should be equal to redeemed amount 1"
         );
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this)) - balanceAssetBeforeRedeem,
+            IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this)) - balanceAssetBeforeRedeem,
             previewAmount,
             previewAmount / 1e8,
             "User should withdraw expected previewed amount 1"
         );
 
         // -------------------- check zero balances
-        assertEq(IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(adapter)), 0, "Adapter wS balance should be zero");
+        assertEq(IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(adapter)), 0, "Adapter wS balance should be zero");
         assertEq(
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaS).balanceOf(address(adapter)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).balanceOf(address(adapter)),
             0,
             "Adapter wmetaS balance should be zero"
         );
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.METAVAULT_metaS).balanceOf(address(adapter)),
+            IERC20(SonicConstantsLib.METAVAULT_METAS).balanceOf(address(adapter)),
             0,
             1, // rounding issue on metaS side
             "Adapter metaS balance should be zero"
         );
 
-        assertEq(IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(syMetaS)), 0, "SY wS balance should be zero");
+        assertEq(IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(syMetaS)), 0, "SY wS balance should be zero");
         assertEq(
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaS).balanceOf(address(syMetaS)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAS).balanceOf(address(syMetaS)),
             0,
             "SY wmetaS balance should be zero"
         );
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.METAVAULT_metaS).balanceOf(address(syMetaS)),
+            IERC20(SonicConstantsLib.METAVAULT_METAS).balanceOf(address(syMetaS)),
             0,
             1, // rounding issue on metaS side
             "SY metaS balance should be zero"
@@ -178,11 +177,11 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
     function testSalvage() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         address receiver = makeAddr("receiver");
         (, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
         _dealAndApproveSingle(address(adapter), address(this), SonicConstantsLib.TOKEN_USDC, 100e6);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
@@ -203,14 +202,14 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
     function testBadPathNotWhitelistedSy() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         address asset = SonicConstantsLib.TOKEN_USDC;
         uint amount = 100e6;
 
         // -------------------- setup SY, SY-adapter and MetaVault
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
         _dealAndApproveSingle(address(this), address(syMetaUsd), asset, amount);
 
         // -------------------- deposit to SY
@@ -243,24 +242,24 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
     function testBadPathIncorrectTokens() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         address asset = SonicConstantsLib.TOKEN_USDC;
         uint amount = 100e6;
 
         // -------------------- setup SY, SY-adapter and MetaVault
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
         _dealAndApproveSingle(address(this), address(syMetaUsd), asset, amount);
-        _dealAndApproveSingle(address(this), address(syMetaUsd), SonicConstantsLib.TOKEN_wS, amount);
+        _dealAndApproveSingle(address(this), address(syMetaUsd), SonicConstantsLib.TOKEN_WS, amount);
 
         // -------------------- deposit to SY
         vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
         vm.prank(address(syMetaUsd));
-        adapter.convertToDeposit(SonicConstantsLib.TOKEN_wS, amount);
+        adapter.convertToDeposit(SonicConstantsLib.TOKEN_WS, amount);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
-        adapter.previewConvertToRedeem(SonicConstantsLib.TOKEN_wS, amount);
+        adapter.previewConvertToRedeem(SonicConstantsLib.TOKEN_WS, amount);
 
         syMetaUsd.deposit(address(this), asset, amount, 0);
         vm.roll(block.number + 6);
@@ -270,20 +269,20 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
         vm.prank(address(syMetaUsd));
-        adapter.convertToRedeem(SonicConstantsLib.TOKEN_wS, amount);
+        adapter.convertToRedeem(SonicConstantsLib.TOKEN_WS, amount);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.IncorrectToken.selector);
-        adapter.previewConvertToDeposit(SonicConstantsLib.TOKEN_wS, amount);
+        adapter.previewConvertToDeposit(SonicConstantsLib.TOKEN_WS, amount);
 
         syMetaUsd.redeem(address(this), balance, asset, 0, false);
     }
 
     function testBadPathsChangeWhitelist() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         (PendleERC4626WithAdapterSY syMetaUsd, PendleWrappedMetaVaultAdapter adapter) =
-            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.METAVAULT_metaUSD);
+            _setUp(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.NotOwner.selector);
         vm.prank(address(314));
@@ -320,7 +319,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
     function testBadPathsConstructor() public {
         vm.rollFork(FORK_BLOCK); // Jul-15-2025 12:18:16 PM +UTC
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
         new PendleWrappedMetaVaultAdapter(address(0));
@@ -487,12 +486,12 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
             IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(adapter)), 0, "Adapter USDC balance should be zero"
         );
         assertEq(
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(adapter)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(adapter)),
             0,
             "Adapter wmetaUSD balance should be zero"
         );
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(adapter)),
+            IERC20(SonicConstantsLib.METAVAULT_METAUSD).balanceOf(address(adapter)),
             0,
             1, // rounding issue on metaUsd side
             "Adapter metaUSD balance should be zero"
@@ -502,12 +501,12 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
             IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(syMetaUsd)), 0, "SY USDC balance should be zero"
         );
         assertEq(
-            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(syMetaUsd)),
+            IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(syMetaUsd)),
             initialAmount,
             "SY wmetaUSD balance should be zero"
         );
         assertApproxEqAbs(
-            IERC20(SonicConstantsLib.METAVAULT_metaUSD).balanceOf(address(syMetaUsd)),
+            IERC20(SonicConstantsLib.METAVAULT_METAUSD).balanceOf(address(syMetaUsd)),
             0,
             1, // rounding issue on metaUsd side
             "SY metaUSD balance should be zero"
@@ -616,7 +615,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
     }
 
     function _getMetaUsdOnBalance(address user, uint amountMetaVaultTokens, bool wrap) internal {
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of USDC
@@ -636,7 +635,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
         if (wrap) {
             vm.startPrank(user);
-            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+            IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
             metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
             wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
             vm.stopPrank();

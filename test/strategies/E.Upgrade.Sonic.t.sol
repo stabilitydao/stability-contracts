@@ -17,7 +17,7 @@ import {IMetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract EUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
@@ -30,7 +30,7 @@ contract EUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -39,16 +39,16 @@ contract EUpgradeTest is Test {
 
     /// @notice #326: Add maxWithdrawAssets and poolTvl to IStrategy
     function testMetaVaultUpdate326() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
 
         // ------------------- upgrade strategy
-        // _upgradeCVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
+        // _upgradeCVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS);
         _upgradeEulerStrategy(address(strategy));
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_metascUSD);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // ------------------- our balance and max available liquidity in Euler token
         EulerStrategy eulerStrategy = EulerStrategy(address(strategy));
@@ -67,11 +67,11 @@ contract EUpgradeTest is Test {
 
         // ------------------- ensure that we cannot withdraw amount on 1% more than the calculated balance
         vm.expectRevert();
-        vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl
@@ -82,13 +82,13 @@ contract EUpgradeTest is Test {
 
     //region ------------------------------ Auxiliary Functions
     function _borrowAlmostAllCash(IEulerVault eulerVault, uint cash) internal {
-        IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_wS_Re7);
+        IEulerVault collateralVault = IEulerVault(SonicConstantsLib.EULER_VAULT_WS_RE7);
         IEthereumVaultConnector evc = IEthereumVaultConnector(payable(collateralVault.EVC()));
 
         uint collateralAmount = cash * 10 * 10 ** 12; // borrow scUSD, collateral is wS
 
-        deal(SonicConstantsLib.TOKEN_wS, address(this), collateralAmount);
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(collateralVault), collateralAmount);
+        deal(SonicConstantsLib.TOKEN_WS, address(this), collateralAmount);
+        IERC20(SonicConstantsLib.TOKEN_WS).approve(address(collateralVault), collateralAmount);
 
         uint borrowAmount = cash - 1e6; // * 9999 / 10000;
 

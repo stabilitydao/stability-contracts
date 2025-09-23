@@ -4,15 +4,11 @@ pragma solidity ^0.8.28;
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CommonLib} from "../../core/libs/CommonLib.sol";
-import {VaultTypeLib} from "../../core/libs/VaultTypeLib.sol";
-import {ConstantsLib} from "../../core/libs/ConstantsLib.sol";
 import {ILPStrategy} from "../../interfaces/ILPStrategy.sol";
 import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IFactory} from "../../interfaces/IFactory.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {IVault} from "../../interfaces/IVault.sol";
 
 library LPStrategyLib {
     using SafeERC20 for IERC20;
@@ -37,9 +33,9 @@ library LPStrategyLib {
     }
 
     function LPStrategyBase_init(
-        ILPStrategy.LPStrategyBaseStorage storage $,
+        ILPStrategy.LpStrategyBaseStorage storage $,
         address platform,
-        ILPStrategy.LPStrategyBaseInitParams memory params,
+        ILPStrategy.LpStrategyBaseInitParams memory params,
         string memory ammAdapterId
     ) external returns (address[] memory _assets, uint exchangeAssetIndex) {
         IPlatform.AmmAdapter memory ammAdapterData = IPlatform(platform).ammAdapter(keccak256(bytes(ammAdapterId)));
@@ -97,81 +93,6 @@ library LPStrategyLib {
         uint[] memory /* amountsRemaining*/
     ) external pure returns (bool needCompound) {
         needCompound = true;
-        //ProcessRevenueVars memory vars;
-        //vars.vaultYpe = IVault(vault).vaultType();
-        /*if (
-            CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING)
-                || CommonLib.eq(vars.vaultYpe, VaultTypeLib.REWARDING_MANAGED)
-        ) {
-            IRVault rVault = IRVault(vault);
-            vars.compoundRatio = rVault.compoundRatio();
-            vars.bbToken = rVault.bbToken();
-            vars.bbAmountBefore = _balance(vars.bbToken);
-
-            {
-                uint otherAssetIndex = exchangeAssetIndex == 0 ? 1 : 0;
-
-                uint exchangeAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio)
-                    * amountsRemaining[exchangeAssetIndex] / ConstantsLib.DENOMINATOR;
-                uint otherAssetBBAmount = (ConstantsLib.DENOMINATOR - vars.compoundRatio)
-                    * amountsRemaining[otherAssetIndex] / ConstantsLib.DENOMINATOR;
-
-                // try to make less swaps
-                if (otherAssetBBAmount > 0) {
-                    if (exchangeAssetBBAmount > 0) {
-                        uint otherAssetBBAmountPrice =
-                            ammAdapter.getPrice(pool, assets_[otherAssetIndex], address(0), otherAssetBBAmount);
-                        uint exchangeAssetAmountRemaining = amountsRemaining[exchangeAssetIndex] - exchangeAssetBBAmount;
-                        if (otherAssetBBAmountPrice <= exchangeAssetAmountRemaining) {
-                            otherAssetBBAmount = 0;
-                            exchangeAssetBBAmount += otherAssetBBAmountPrice;
-                        }
-                    }
-                }
-
-                ISwapper swapper = ISwapper(IPlatform(platform).swapper());
-
-                if (exchangeAssetBBAmount > 0) {
-                    if (assets_[exchangeAssetIndex] != vars.bbToken) {
-                        if (exchangeAssetBBAmount > swapper.threshold(assets_[exchangeAssetIndex])) {
-                            swapper.swap(
-                                assets_[exchangeAssetIndex],
-                                vars.bbToken,
-                                exchangeAssetBBAmount,
-                                SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-                            );
-                        }
-                    } else {
-                        vars.bbAmountBefore -= exchangeAssetBBAmount;
-                    }
-                }
-                if (otherAssetBBAmount > 0) {
-                    if (assets_[otherAssetIndex] != vars.bbToken) {
-                        if (otherAssetBBAmount > swapper.threshold(assets_[otherAssetIndex])) {
-                            swapper.swap(
-                                assets_[otherAssetIndex],
-                                vars.bbToken,
-                                otherAssetBBAmount,
-                                SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-                            );
-                        }
-                    } else {
-                        vars.bbAmountBefore -= otherAssetBBAmount;
-                    }
-                }
-            }
-
-            uint bbAmount = _balance(vars.bbToken) - vars.bbAmountBefore;
-
-            if (bbAmount > 0) {
-                _approveIfNeeded(vars.bbToken, bbAmount, vault);
-                rVault.notifyTargetRewardAmount(0, bbAmount);
-            }
-
-            if (vars.compoundRatio == 0) {
-                needCompound = false;
-            }
-        }*/
     }
 
     /// @dev For now this support only pools of 2 tokens

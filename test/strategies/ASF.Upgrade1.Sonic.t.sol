@@ -31,9 +31,9 @@ contract ASFUpgrade1Test is Test {
 
     function testASFBugfix1() public {
         // check that depositAssets reverts and proportions are incorrect
-        deal(SonicConstantsLib.TOKEN_wS, address(this), 10e18);
+        deal(SonicConstantsLib.TOKEN_WS, address(this), 10e18);
         deal(SonicConstantsLib.TOKEN_USDC, address(this), 10e6);
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(vault, type(uint).max);
+        IERC20(SonicConstantsLib.TOKEN_WS).approve(vault, type(uint).max);
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(vault, type(uint).max);
         address[] memory assets = IStrategy(STRATEGY).assets();
         uint[] memory amounts = new uint[](2);

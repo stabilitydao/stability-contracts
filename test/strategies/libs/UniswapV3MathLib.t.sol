@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {UniswapV3MathLib} from "../../../src/strategies/libs/UniswapV3MathLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
@@ -36,8 +36,8 @@ contract UniswapV3MathLibTests is Test {
 
         //----------------------- Token 0 is token IN
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_bUSDCe20,
-            SonicConstantsLib.TOKEN_bUSDCe20, // TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_BUSDCE20,
+            SonicConstantsLib.TOKEN_BUSDCE20, // TOKEN_WSTKSCUSD,
             2542995591783599406928485407,
             6,
             6,
@@ -46,8 +46,8 @@ contract UniswapV3MathLibTests is Test {
         assertEq(price, 1030, "Expected price of bUSDCe20 in wstkscUSD");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_bUSDCe20,
-            SonicConstantsLib.TOKEN_bUSDCe20, // TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_BUSDCE20,
+            SonicConstantsLib.TOKEN_BUSDCE20, // TOKEN_WSTKSCUSD,
             2542995591783599406928485407,
             6,
             6,
@@ -57,8 +57,8 @@ contract UniswapV3MathLibTests is Test {
 
         //----------------------- Token 0 is token OUT
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_bUSDCe20, // TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_BUSDCE20, // TOKEN_WSTKSCUSD,
             2542995591783599406928485407,
             6,
             6,
@@ -67,8 +67,8 @@ contract UniswapV3MathLibTests is Test {
         assertApproxEqAbs(price, 970661832, 20, "Expected price of wstkscUSD in bUSDCe20");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_bUSDCe20, // TOKEN_wstkscUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_BUSDCE20, // TOKEN_WSTKSCUSD,
             2542995591783599406928485407,
             6,
             6,
@@ -83,23 +83,23 @@ contract UniswapV3MathLibTests is Test {
 
         //----------------------- Token 0 is token IN
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 18, 6, 0
+            SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_WS, 45035495122636274992972, 18, 6, 0
         );
         assertEq(price, 323110, "Expected price of wS in USDC");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 18, 6, 1e18
+            SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_WS, 45035495122636274992972, 18, 6, 1e18
         );
         assertEq(price, 323110, "Expected amount of wS for 1 USDC");
 
         //----------------------- Token 0 is token OUT
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 6, 18, 0
+            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WS, 45035495122636274992972, 6, 18, 0
         );
         assertApproxEqAbs(price, 3094918977041563606, 20, "Expected price of USDC in wS");
 
         price = UniswapV3MathLib.calcPriceOut(
-            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wS, 45035495122636274992972, 6, 18, 1e6
+            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WS, 45035495122636274992972, 6, 18, 1e6
         );
         assertApproxEqAbs(price, 3094918977041563606, 100, "Expected amount of USDC for 1 wS");
     }
@@ -152,7 +152,7 @@ contract UniswapV3MathLibTests is Test {
                     uint sqrtPriceX96 = Math.sqrt(price * (2 ** 192 / 10 ** d0));
 
                     uint priceOut = UniswapV3MathLib.calcPriceOut(
-                        SonicConstantsLib.TOKEN_wETH, // token In is token 1
+                        SonicConstantsLib.TOKEN_WETH, // token In is token 1
                         SonicConstantsLib.TOKEN_USDC, // token 0 != token In
                         uint160(sqrtPriceX96),
                         d1,
@@ -173,25 +173,25 @@ contract UniswapV3MathLibTests is Test {
     function testKnownPrices() external view {
         address[COUNT_KNOWN_PRICES] memory tokens0 = [
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wS,
+            SonicConstantsLib.TOKEN_WS,
+            SonicConstantsLib.TOKEN_WS,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_bUSDCe20,
-            SonicConstantsLib.TOKEN_aUSDC,
+            SonicConstantsLib.TOKEN_BUSDCE20,
+            SonicConstantsLib.TOKEN_AUSDC,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wBTC,
-            SonicConstantsLib.TOKEN_wBTC
+            SonicConstantsLib.TOKEN_WBTC,
+            SonicConstantsLib.TOKEN_WBTC
         ];
 
         address[COUNT_KNOWN_PRICES] memory tokens1 = [
             SonicConstantsLib.TOKEN_USDT,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stS,
-            SonicConstantsLib.TOKEN_wETH,
+            SonicConstantsLib.TOKEN_WETH,
+            SonicConstantsLib.TOKEN_WETH,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_STS,
+            SonicConstantsLib.TOKEN_WETH,
             SonicConstantsLib.TOKEN_USDC
         ];
 
@@ -254,7 +254,7 @@ contract UniswapV3MathLibTests is Test {
             );
 
             //            console.log("price, priceOld", price, priceOld);
-            if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
+            if (tokens0[i] != SonicConstantsLib.TOKEN_BUSDCE20) {
                 assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
@@ -284,7 +284,7 @@ contract UniswapV3MathLibTests is Test {
             );
 
             //            console.log("price, priceOld", price, priceOld);
-            if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
+            if (tokens0[i] != SonicConstantsLib.TOKEN_BUSDCE20) {
                 assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
@@ -321,25 +321,25 @@ contract UniswapV3MathLibTests is Test {
     function testKnownAmounts() external view {
         address[COUNT_KNOWN_PRICES] memory tokens0 = [
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wS,
+            SonicConstantsLib.TOKEN_WS,
+            SonicConstantsLib.TOKEN_WS,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_bUSDCe20,
-            SonicConstantsLib.TOKEN_aUSDC,
+            SonicConstantsLib.TOKEN_BUSDCE20,
+            SonicConstantsLib.TOKEN_AUSDC,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wBTC,
-            SonicConstantsLib.TOKEN_wBTC
+            SonicConstantsLib.TOKEN_WBTC,
+            SonicConstantsLib.TOKEN_WBTC
         ];
 
         address[COUNT_KNOWN_PRICES] memory tokens1 = [
             SonicConstantsLib.TOKEN_USDT,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stS,
-            SonicConstantsLib.TOKEN_wETH,
+            SonicConstantsLib.TOKEN_WETH,
+            SonicConstantsLib.TOKEN_WETH,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_STS,
+            SonicConstantsLib.TOKEN_WETH,
             SonicConstantsLib.TOKEN_USDC
         ];
 
@@ -402,7 +402,7 @@ contract UniswapV3MathLibTests is Test {
             );
 
             // console.log("price, priceOld", price, priceOld);
-            if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
+            if (tokens0[i] != SonicConstantsLib.TOKEN_BUSDCE20) {
                 assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }
@@ -432,7 +432,7 @@ contract UniswapV3MathLibTests is Test {
             );
 
             // console.log("price, priceOld", price, priceOld);
-            if (tokens0[i] != SonicConstantsLib.TOKEN_bUSDCe20) {
+            if (tokens0[i] != SonicConstantsLib.TOKEN_BUSDCE20) {
                 assertApproxEqAbs(price, priceOld, price / 10_000, "Price should be close to previous one");
             }
         }

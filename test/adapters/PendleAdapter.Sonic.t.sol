@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/Test.sol";
 import {ICAmmAdapter, IAmmAdapter} from "../../src/interfaces/ICAmmAdapter.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
@@ -20,11 +19,11 @@ contract PendleAdapterTest is SonicSetup {
 
     function testViewMethods() public {
         assertEq(keccak256(bytes(adapter.ammAdapterId())), _hash);
-        address pool = SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025;
+        address pool = SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025;
         address[] memory poolTokens = adapter.poolTokens(pool);
         assertEq(poolTokens.length, 5);
-        assertEq(poolTokens[1], SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025);
-        assertEq(poolTokens[3], SonicConstantsLib.TOKEN_aUSDC);
+        assertEq(poolTokens[1], SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025);
+        assertEq(poolTokens[3], SonicConstantsLib.TOKEN_AUSDC);
         assertEq(poolTokens[4], SonicConstantsLib.TOKEN_USDC);
 
         vm.expectRevert("Not supported");
@@ -38,55 +37,54 @@ contract PendleAdapterTest is SonicSetup {
 
         uint price;
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_aUSDC,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_AUSDC,
             1e6
         );
         assertGt(price, 966618); // this is incorrect because aUSDC is rebase
         //assertEq(price, 967066);
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_aUSDC,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_AUSDC,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
             1e6
         );
         assertLt(price, 1034534);
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
             SonicConstantsLib.TOKEN_USDC,
             1e6
         );
         assertGt(price, 967067);
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
             1e6
         );
         assertLt(price, 1034054);
 
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_wstkscUSD,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
             1e6
         );
-        //console.log(price);
+
         price = adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_stkscUSD,
+            SonicConstantsLib.POOL_PENDLE_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_STKSCUSD,
             1e6
         );
-        //console.log(price);
 
         vm.expectRevert();
         adapter.getPrice(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_aUSDC,
-            SonicConstantsLib.TOKEN_aUSDC,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_AUSDC,
+            SonicConstantsLib.TOKEN_AUSDC,
             1e6
         );
     }
@@ -95,32 +93,31 @@ contract PendleAdapterTest is SonicSetup {
         uint got;
 
         // swap PT to yield token
-        deal(SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025, address(adapter), 11e6);
+        deal(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025, address(adapter), 11e6);
         got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_aUSDC
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_AUSDC
         );
         assertGt(got, 0);
-        //console.log(got);
 
         // swap yield token to PT
         /// forge-lint: disable-next-line
-        IERC20(SonicConstantsLib.TOKEN_aUSDC).transfer(
-            address(adapter), IERC20(SonicConstantsLib.TOKEN_aUSDC).balanceOf(address(this))
+        IERC20(SonicConstantsLib.TOKEN_AUSDC).transfer(
+            address(adapter), IERC20(SonicConstantsLib.TOKEN_AUSDC).balanceOf(address(this))
         );
         got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_aUSDC,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_AUSDC,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025
         );
         assertGt(got, 0);
 
         // swap PT to asset
-        deal(SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025, address(adapter), 11e6);
+        deal(SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025, address(adapter), 11e6);
         got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
             SonicConstantsLib.TOKEN_USDC
         );
         assertGt(got, 0);
@@ -128,12 +125,11 @@ contract PendleAdapterTest is SonicSetup {
         // swap asset to PT
         deal(SonicConstantsLib.TOKEN_USDC, address(adapter), 11e6);
         got = _swap(
-            SonicConstantsLib.POOL_PENDLE_PT_aUSDC_14AUG2025,
+            SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
             SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025
         );
         assertGt(got, 0);
-        //console.log(got);
     }
 
     function _swap(address pool, address tokenIn, address tokenOut /*, uint amount*/ ) internal returns (uint) {

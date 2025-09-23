@@ -2,13 +2,12 @@
 pragma solidity ^0.8.23;
 
 import {console} from "forge-std/console.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AvalancheLib} from "../../../chains/avalanche/AvalancheLib.sol";
 import {AvalancheConstantsLib} from "../../../chains/avalanche/AvalancheConstantsLib.sol";
 import {ChainSetup} from "../ChainSetup.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 import {Factory} from "../../../src/core/Factory.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPoolMinimal} from "../../../src/integrations/aave/IPoolMinimal.sol";
 import {Platform} from "../../../src/core/Platform.sol";
 import {ISwapper} from "../../../src/interfaces/ISwapper.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";

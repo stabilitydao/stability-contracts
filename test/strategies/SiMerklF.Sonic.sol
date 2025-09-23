@@ -24,7 +24,7 @@ contract SiloMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
     function _preHardWork() internal override {
         // emulate Merkl-rewards
         deal(SonicConstantsLib.TOKEN_USDC, currentStrategy, 1e6);
-        deal(SonicConstantsLib.TOKEN_xSILO, currentStrategy, 100e18);
+        deal(SonicConstantsLib.TOKEN_XSILO, currentStrategy, 100e18);
     }
 
     /// @notice Real farms don't use gauges at this moment
@@ -37,7 +37,7 @@ contract SiloMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
             // that the gauge-related code is tested
             IFactory factory = IFactory(IPlatform(platform).factory());
             IFactory.Farm memory f = factory.farm(FARM_UID_66);
-            f.addresses[2] = SonicConstantsLib.SILO_GAUGE_wS_054; // actual gauge doesn't matter
+            f.addresses[2] = SonicConstantsLib.SILO_GAUGE_WS_054; // actual gauge doesn't matter
 
             vm.prank(multisig);
             factory.updateFarm(FARM_UID_66, f);

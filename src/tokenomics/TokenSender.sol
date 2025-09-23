@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 
 contract TokenSender {
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable platform;
 
     constructor(address platform_) {

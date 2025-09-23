@@ -19,7 +19,6 @@ library AvalancheConstantsLib {
     address public constant TOKEN_REUL = 0x2e3b32730B4F6b6502BdAa9122df3B026eDE5391;
     address public constant TOKEN_EUL = 0x9ceeD3A7f753608372eeAb300486cc7c2F38AC68;
     address public constant TOKEN_AUSD = 0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a;
-
     address public constant TOKEN_xBTC = 0x6eAf19b2FC24552925dB245F9Ff613157a7dbb4C;
     address public constant TOKEN_savBTS = 0x649342c6bff544d82DF1B2bA3C93e0C22cDeBa84;
     address public constant TOKEN_savUSDC = 0x06d47F3fb376649c3A9Dafe069B3D6E35572219E;

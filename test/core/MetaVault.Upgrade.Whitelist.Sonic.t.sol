@@ -21,12 +21,12 @@ contract MetaVaultSonicUpgradeWhitelist is Test {
     constructor() {
         // vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27965000)); // May-19-2025 09:53:57 AM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 36147180)); // Jun-27-2025 08:28:28 AM +UTC
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
 
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
     }
 
     function testChangeWhitelist() public {

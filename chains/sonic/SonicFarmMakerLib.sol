@@ -29,7 +29,7 @@ library SonicFarmMakerLib {
         farm.addresses = new address[](3);
         farm.addresses[0] = gauge;
         farm.addresses[1] = IGaugeV3(gauge).nfpManager();
-        farm.addresses[2] = SonicConstantsLib.TOKEN_xSHADOW;
+        farm.addresses[2] = SonicConstantsLib.TOKEN_XSHADOW;
         farm.nums = new uint[](1);
         farm.nums[0] = algoId;
         farm.ticks = new int24[](2);
@@ -67,11 +67,11 @@ library SonicFarmMakerLib {
         farm.pool = address(0);
         farm.strategyLogicId = StrategyIdLib.EULER_MERKL_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_WS;
         farm.addresses = new address[](3);
         farm.addresses[0] = SonicConstantsLib.MERKL_DISTRIBUTOR;
         farm.addresses[1] = vault;
-        farm.addresses[2] = SonicConstantsLib.TOKEN_rEUL; // required only if rEUL is reward token (i.e. on Avalanche)
+        farm.addresses[2] = SonicConstantsLib.TOKEN_REUL; // required only if rEUL is reward token (i.e. on Avalanche)
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
@@ -210,7 +210,7 @@ library SonicFarmMakerLib {
         farm.status = 0;
         farm.strategyLogicId = StrategyIdLib.SILO_FARM;
         farm.rewardAssets = new address[](1);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_WS;
         farm.addresses = new address[](2);
         farm.addresses[0] = gauge;
         farm.addresses[1] = ISiloIncentivesController(gauge).SHARE_TOKEN();
@@ -242,13 +242,13 @@ library SonicFarmMakerLib {
         // but some vaults return empty array (probably it's not empty on other blocks)
         farm.rewardAssets = new address[](4);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
-        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
-        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
-        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_WS;
+        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_WOS;
+        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_BES;
 
         farm.addresses = new address[](2);
         farm.addresses[0] = managedVault;
-        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_XSILO;
 
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
@@ -267,7 +267,7 @@ library SonicFarmMakerLib {
 
         farm.rewardAssets = new address[](2);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
-        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_WS;
 
         farm.addresses = new address[](4);
         farm.addresses[0] = collateralSiloVault;
@@ -286,7 +286,7 @@ library SonicFarmMakerLib {
         farm.strategyLogicId = StrategyIdLib.AAVE_MERKL_FARM;
 
         farm.rewardAssets = new address[](2);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_wS;
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_WS;
         farm.rewardAssets[1] = SonicConstantsLib.TOKEN_USDC;
 
         farm.addresses = new address[](1);
@@ -309,14 +309,15 @@ library SonicFarmMakerLib {
         // Please note that xSilo works on Sonic only (it's bridget on other chains)
         farm.rewardAssets = new address[](5);
         farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SILO;
-        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_wS;
-        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_wOS;
-        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_beS;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_WS;
+        farm.rewardAssets[2] = SonicConstantsLib.TOKEN_WOS;
+        farm.rewardAssets[3] = SonicConstantsLib.TOKEN_BES;
         farm.rewardAssets[4] = SonicConstantsLib.TOKEN_USDC;
 
         farm.addresses = new address[](2);
         farm.addresses[0] = managedVault;
-        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_XSILO;
+
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
@@ -340,7 +341,7 @@ library SonicFarmMakerLib {
         farm.addresses = new address[](3);
 
         farm.addresses[0] = siloVault;
-        farm.addresses[1] = SonicConstantsLib.TOKEN_xSILO;
+        farm.addresses[1] = SonicConstantsLib.TOKEN_XSILO;
         // we allow to specify gauge but it can be zero
         // Gauge can be detected as following:
         //        function _getGauge(address siloVault_, bool useBorrowableCollateral) internal view returns (address) {

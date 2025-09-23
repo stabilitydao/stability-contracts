@@ -18,10 +18,7 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {Platform} from "../../src/core/Platform.sol";
-import {PriceReader} from "../../src/core/PriceReader.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
@@ -66,7 +63,7 @@ contract MetaVaultSonicTest is Test {
         // metaUSDC: single USDC lending vaults
         vaultType = VaultTypeLib.MULTIVAULT;
         vaults_ = new address[](5);
-        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SiF;
+        vaults_[0] = SonicConstantsLib.VAULT_C_USDC_SIF;
         vaults_[1] = SonicConstantsLib.VAULT_C_USDC_S_8;
         vaults_[2] = SonicConstantsLib.VAULT_C_USDC_S_27;
         vaults_[3] = SonicConstantsLib.VAULT_C_USDC_S_34;
@@ -86,9 +83,9 @@ contract MetaVaultSonicTest is Test {
         vaultType = VaultTypeLib.METAVAULT;
         vaults_ = new address[](4);
         vaults_[0] = metaVaults[0];
-        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_SiF;
-        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
-        vaults_[3] = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC;
+        vaults_[1] = SonicConstantsLib.VAULT_C_USDC_SIF;
+        vaults_[2] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
+        vaults_[3] = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC;
         proportions_ = new uint[](4);
         proportions_[0] = 50e16;
         proportions_[1] = 15e16;
@@ -446,7 +443,7 @@ contract MetaVaultSonicTest is Test {
         vm.stopPrank();
 
         // add vault
-        address vault = SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD;
+        address vault = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
         newTargetProportions = new uint[](3);
 
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
@@ -492,7 +489,7 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.targetProportions()[0], 20e16);
         assertEq(metavault.currentProportions().length, 5);
         assertEq(metavault.currentProportions()[0], 20e16);
-        assertEq(metavault.vaultForDeposit(), SonicConstantsLib.VAULT_C_USDC_SiF);
+        assertEq(metavault.vaultForDeposit(), SonicConstantsLib.VAULT_C_USDC_SIF);
         (uint tvl,) = metavault.tvl();
         assertEq(tvl, 0);
         assertEq(IERC20Metadata(address(metavault)).name(), "Stability USDC");
@@ -502,18 +499,6 @@ contract MetaVaultSonicTest is Test {
         assertEq(metavault.vaultForWithdraw(), metavault.vaults()[0]);
         assertEq(metavault.vaultType(), VaultTypeLib.MULTIVAULT);
     }
-
-    /*function _upgradePriceReader() internal {
-        address[] memory proxies = new address[](1);
-        proxies[0] = address(priceReader);
-        address[] memory implementations = new address[](1);
-        implementations[0] = address(new PriceReader());
-        vm.startPrank(multisig);
-        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.0-alpha", proxies, implementations);
-        skip(1 days);
-        IPlatform(PLATFORM).upgrade();
-        vm.stopPrank();
-    }*/
 
     //region ------------------------------------ Upgrade CVaults and strategies
     function _upgradeCVaults() internal {
@@ -532,9 +517,9 @@ contract MetaVaultSonicTest is Test {
             })
         );
 
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SiF);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD);
-        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SIF);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD);
+        factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_8);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_27);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_S_34);
@@ -559,14 +544,14 @@ contract MetaVaultSonicTest is Test {
         );
 
         address[8] memory vaults = [
-            SonicConstantsLib.VAULT_C_USDC_SiF,
+            SonicConstantsLib.VAULT_C_USDC_SIF,
             SonicConstantsLib.VAULT_C_USDC_S_8,
             SonicConstantsLib.VAULT_C_USDC_S_27,
             SonicConstantsLib.VAULT_C_USDC_S_34,
             SonicConstantsLib.VAULT_C_USDC_S_36,
             SonicConstantsLib.VAULT_C_USDC_S_49,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_scUSD,
-            SonicConstantsLib.VAULT_C_USDC_scUSD_ISF_USDC
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD,
+            SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_USDC
         ];
 
         for (uint i; i < vaults.length; i++) {
@@ -670,25 +655,6 @@ contract MetaVaultSonicTest is Test {
     }
     //endregion ------------------------------------ Upgrade CVaults and strategies
 
-    /*function _upgradePlatform() internal {
-        address[] memory proxies = new address[](1);
-        proxies[0] = PLATFORM;
-        address[] memory implementations = new address[](1);
-        implementations[0] = address(new Platform());
-        vm.startPrank(multisig);
-        IPlatform(PLATFORM).announcePlatformUpgrade("2025.05.1-alpha", proxies, implementations);
-        skip(1 days);
-        IPlatform(PLATFORM).upgrade();
-        vm.stopPrank();
-    }*/
-
-    /*function _deployMetaVaultFactory() internal {
-        Proxy proxy = new Proxy();
-        proxy.initProxy(address(new MetaVaultFactory()));
-        metaVaultFactory = IMetaVaultFactory(address(proxy));
-        metaVaultFactory.initialize(PLATFORM);
-    }*/
-
     function _setupMetaVaultFactory() internal {
         vm.prank(multisig);
         Platform(PLATFORM).setupMetaVaultFactory(address(metaVaultFactory));
@@ -721,21 +687,6 @@ contract MetaVaultSonicTest is Test {
         vm.prank(multisig);
         return metaVaultFactory.deployWrapper(bytes32(uint(uint160(metaVault))), metaVault);
     }
-
-    /*function _deployMetaVaultStandalone(
-        string memory type_,
-        address pegAsset,
-        string memory name_,
-        string memory symbol_,
-        address[] memory vaults_,
-        uint[] memory proportions_
-    ) internal returns (address metaVaultProxy) {
-        MetaVault implementation = new MetaVault();
-        Proxy proxy = new Proxy();
-        proxy.initProxy(address(implementation));
-        MetaVault(address(proxy)).initialize(PLATFORM, type_, pegAsset, name_, symbol_, vaults_, proportions_);
-        return address(proxy);
-    }*/
 
     function _getAmountsForDeposit(
         uint usdValue,

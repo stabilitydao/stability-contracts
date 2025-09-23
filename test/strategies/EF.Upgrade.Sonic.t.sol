@@ -8,7 +8,6 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
-// import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 
 contract EFUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;

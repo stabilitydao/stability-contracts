@@ -18,11 +18,13 @@ import {IFrontend} from "../interfaces/IFrontend.sol";
 /// Changelog:
 ///   1.1.0: remove RVault and RMVault usage
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
 contract Frontend is IFrontend {
     string public constant VERSION = "1.1.0";
 
     error IncorrectParams();
 
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable platform;
 
     struct VaultsVars {

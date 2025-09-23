@@ -9,7 +9,7 @@ import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 /// @dev Library for VaultManager's tokenURI generation with SVG image and other metadata
 library VaultManagerLib {
-    struct TokenURIVars {
+    struct TokenUriVars {
         uint h;
         uint vaultBlockHeight;
         uint platformBlockHeight;
@@ -27,7 +27,7 @@ library VaultManagerLib {
         IPlatform.PlatformSettings memory platformData
     ) external pure returns (string memory output) {
         //region ----- Setup vars -----
-        TokenURIVars memory vars;
+        TokenUriVars memory vars;
         vars.h = 40;
         vars.vaultBlockHeight = 470;
         vars.platformBlockHeight = 170;

@@ -15,14 +15,14 @@ import {IMetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
 contract SiMFUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    address public constant METAVAULT = SonicConstantsLib.METAVAULT_metaUSDC;
-    address public constant VAULT_C = SonicConstantsLib.VAULT_C_USDC_SiMF_Valmore;
+    address public constant METAVAULT = SonicConstantsLib.METAVAULT_METAUSDC;
+    address public constant VAULT_C = SonicConstantsLib.VAULT_C_USDC_SIMF_VALMORE;
     IMetaVault public metaVault;
     IMetaVaultFactory public metaVaultFactory;
     address public multisig;

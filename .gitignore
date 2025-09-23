@@ -23,7 +23,6 @@ rules/
 
 # Test coverage report
 report/
-logs/
 
 # OS files
 .DS_Store
