@@ -277,5 +277,4 @@ interface IStrategy is IERC165 {
 
     /// @notice Set custom specific name
     function setSpecificName(string memory specific) external;
-
 }
