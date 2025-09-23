@@ -12,6 +12,8 @@ interface IStrategy is IERC165 {
     event HardWork(
         uint apr, uint compoundApr, uint earned, uint tvl, uint duration, uint sharePrice, uint[] assetPrices
     );
+    event StrategyProtocols(string[]);
+    event SpecificName(string);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM ERRORS                        */
@@ -44,6 +46,9 @@ interface IStrategy is IERC165 {
         uint customPriceImpactTolerance;
         /// @inheritdoc IStrategy
         uint fuseOn;
+        /// @inheritdoc IStrategy
+        string[] protocols;
+        string specific;
     }
 
     enum FuseMode {
@@ -167,6 +172,33 @@ interface IStrategy is IERC165 {
     /// @notice Custom price impact tolerance instead default need for specific cases where liquidity in pools is low
     function customPriceImpactTolerance() external view returns (uint);
 
+    /// @notice Total amount of assets available in the lending protocol for withdraw
+    /// It's normal situation when user is not able to withdraw all
+    /// because there are not enough reserves available in the protocol right now
+    /// @dev This function is replaced by more flexible maxWithdrawAssets(uint mode) function.
+    function maxWithdrawAssets() external view returns (uint[] memory amounts);
+
+    /// @notice Total amount of assets available in the lending protocol for withdraw
+    /// It's normal situation when user is not able to withdraw all
+    /// because there are not enough reserves available in the protocol right now
+    /// @param mode 0 - Return amount that can be withdrawn in assets
+    ///             1 - Return amount that can be withdrawn in underlying
+    /// @return amounts Empty array (zero length) is returned if all available amount can be withdrawn
+    function maxWithdrawAssets(uint mode) external view returns (uint[] memory amounts);
+
+    /// @notice Underlying pool TVL in the terms of USD
+    function poolTvl() external view returns (uint tvlUsd);
+
+    /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
+    function fuseMode() external view returns (uint);
+
+    /// @notice Maximum amounts of assets that can be deposited into the strategy
+    /// @return amounts Empty array (zero length) is returned if there are no limits on deposits
+    function maxDepositAssets() external view returns (uint[] memory amounts);
+
+    /// @notice Show strategy protocols
+    function protocols() external view returns (string[] memory);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -239,27 +271,11 @@ interface IStrategy is IERC165 {
     /// @param priceImpactTolerance Tolerance percent with 100_000 DENOMINATOR. 4_000 == 4%
     function setCustomPriceImpactTolerance(uint priceImpactTolerance) external;
 
-    /// @notice Total amount of assets available in the lending protocol for withdraw
-    /// It's normal situation when user is not able to withdraw all
-    /// because there are not enough reserves available in the protocol right now
-    /// @dev This function is replaced by more flexible maxWithdrawAssets(uint mode) function.
-    function maxWithdrawAssets() external view returns (uint[] memory amounts);
+    /// @notice Set custom strategy protocols
+    /// @param protocols_ Row format is: defi_organization_id:protocol_id from Stability Library.
+    function setProtocols(string[] calldata protocols_) external;
 
-    /// @notice Total amount of assets available in the lending protocol for withdraw
-    /// It's normal situation when user is not able to withdraw all
-    /// because there are not enough reserves available in the protocol right now
-    /// @param mode 0 - Return amount that can be withdrawn in assets
-    ///             1 - Return amount that can be withdrawn in underlying
-    /// @return amounts Empty array (zero length) is returned if all available amount can be withdrawn
-    function maxWithdrawAssets(uint mode) external view returns (uint[] memory amounts);
+    /// @notice Set custom specific name
+    function setSpecificName(string memory specific) external;
 
-    /// @notice Underlying pool TVL in the terms of USD
-    function poolTvl() external view returns (uint tvlUsd);
-
-    /// @notice return FUSE_ON_1 if emergency was called and all actives were transferred to the vault
-    function fuseMode() external view returns (uint);
-
-    /// @notice Maximum amounts of assets that can be deposited into the strategy
-    /// @return amounts Empty array (zero length) is returned if there are no limits on deposits
-    function maxDepositAssets() external view returns (uint[] memory amounts);
 }
