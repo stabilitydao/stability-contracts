@@ -551,17 +551,7 @@ library CVaultBatchLib {
         address strategyImplementation = address(new SiloALMFStrategy());
 
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ALMF_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ALMF_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -570,17 +560,7 @@ library CVaultBatchLib {
         address strategyImplementation = address(new SiloManagedMerklFarmStrategy());
 
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
