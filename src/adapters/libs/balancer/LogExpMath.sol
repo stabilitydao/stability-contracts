@@ -110,6 +110,7 @@ library LogExpMath {
             // bring y_int256 to 36 decimal places, as it might overflow. Instead, we perform two 18 decimal
             // multiplications and add the results: one with the first 18 decimals of ln_36_x, and one with the
             // (downscaled) last 18 decimals.
+            /// forge-lint: disable-next-line
             logx_times_y = ((ln_36_x / ONE_18) * y_int256 + ((ln_36_x % ONE_18) * y_int256) / ONE_18);
         } else {
             // logx_times_y = _ln(x_int256) * y_int256;
@@ -262,7 +263,7 @@ library LogExpMath {
         // approximation of the exponentiation of the remainder (both with 20 decimals). All that remains is to multiply
         // all three (one 20 decimal fixed point multiplication, dividing by ONE_20, and one integer multiplication),
         // and then drop two digits to return an 18 decimal value.
-
+        /// forge-lint: disable-next-line
         return (((product * seriesSum) / ONE_20) * firstAN) / 100;
     }
 

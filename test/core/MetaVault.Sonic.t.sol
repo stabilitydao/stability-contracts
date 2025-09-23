@@ -160,6 +160,7 @@ contract MetaVaultSonicTest is Test {
 
                 vm.prank(address(1));
                 vm.expectRevert();
+                /// forge-lint: disable-next-line
                 IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
 
                 vm.roll(block.number + 6);
@@ -168,6 +169,7 @@ contract MetaVaultSonicTest is Test {
                 IERC20(metavault).approve(address(1), user1BalanceBefore);
                 assertEq(IERC20(metavault).allowance(address(2), address(1)), user1BalanceBefore);
                 vm.prank(address(1));
+                /// forge-lint: disable-next-line
                 IERC20(metavault).transferFrom(address(2), address(1), user1BalanceBefore);
                 assertEq(IERC20(metavault).balanceOf(address(2)), 0, "mv-u-2");
 

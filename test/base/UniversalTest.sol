@@ -436,6 +436,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                     vars.earned = 0;
                     vars.duration = 0;
                     vm.recordLogs();
+                    /// forge-lint: disable-next-line
                     vars.hardWorker.call(vars.vaultsForHardWork);
                     vars.entries = vm.getRecordedLogs();
                     vars.hwEventFound = false;

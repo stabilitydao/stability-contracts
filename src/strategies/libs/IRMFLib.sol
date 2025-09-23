@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {UniswapV3MathLib} from "../libs/UniswapV3MathLib.sol";
 import {CommonLib} from "../../core/libs/CommonLib.sol";
@@ -13,9 +14,12 @@ import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {IQuoter} from "../../integrations/uniswapv3/IQuoter.sol";
 import {IOToken} from "../../integrations/retro/IOToken.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
+import {IICHIVault} from "../../integrations/ichi/IICHIVault.sol";
 
 /// @title Library for IRMF strategy code splitting
 library IRMFLib {
+    uint internal constant _PRECISION = 10 ** 18;
+
     /// @custom:storage-location erc7201:stability.IchiRetroMerklFarmStrategy
     struct IchiRetroMerklFarmStrategyStorage {
         address paymentToken;
@@ -24,6 +28,32 @@ library IRMFLib {
         address uToPaymentTokenPool;
         address quoter;
         bool flashOn;
+    }
+
+    function previewDepositAssets(
+        uint[] memory amountsMax,
+        IStrategy.StrategyBaseStorage storage __$__
+    ) external view returns (uint[] memory amountsConsumed, uint value) {
+        IICHIVault _underlying = IICHIVault(__$__._underlying);
+        amountsConsumed = new uint[](2);
+        if (_underlying.allowToken0()) {
+            amountsConsumed[0] = amountsMax[0];
+        } else {
+            amountsConsumed[1] = amountsMax[1];
+        }
+        uint32 twapPeriod = 600;
+        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), _PRECISION);
+        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, _PRECISION);
+        (uint pool0, uint pool1) = _underlying.getTotalAmounts();
+        // aggregated deposit
+        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / _PRECISION;
+
+        value = amountsConsumed[1] + deposit0PricedInToken1;
+        uint totalSupply = _underlying.totalSupply();
+        if (totalSupply != 0) {
+            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / _PRECISION;
+            value = value * totalSupply / (pool0PricedInToken1 + pool1);
+        }
     }
 
     function initVariants(
@@ -74,7 +104,7 @@ library IRMFLib {
     /// @param pool Address of UniswapV3 pool that we want to getTimepoints
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
-    function consult(address pool, uint32 period) external view returns (int24 timeWeightedAverageTick) {
+    function consult(address pool, uint32 period) internal view returns (int24 timeWeightedAverageTick) {
         require(period != 0, "BP");
 
         uint32[] memory secondAgos = new uint32[](2);
@@ -101,7 +131,7 @@ library IRMFLib {
         uint128 baseAmount,
         address baseToken,
         address quoteToken
-    ) external pure returns (uint quoteAmount) {
+    ) internal pure returns (uint quoteAmount) {
         uint160 sqrtRatioX96 = UniswapV3MathLib.getSqrtRatioAtTick(tick);
         // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
         if (sqrtRatioX96 <= type(uint128).max) {
@@ -225,5 +255,48 @@ library IRMFLib {
 
     function balance(address token) public view returns (uint) {
         return IERC20(token).balanceOf(address(this));
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
+     * @param _tokenIn token the input amount is in
+     * @param _tokenOut token for the output amount
+     * @param _tick tick for the spot price
+     * @param _amountIn amount in _tokenIn
+     * @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchSpot(
+        address _tokenIn,
+        address _tokenOut,
+        int _tick,
+        uint _amountIn
+    ) internal pure returns (uint amountOut) {
+        return getQuoteAtTick(int24(_tick), SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
+    }
+
+    /**
+     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
+     * @param _pool Pool address to be used for price checking
+     * @param _tokenIn token the input amount is in
+     * @param _tokenOut token for the output amount
+     * @param _twapPeriod the averaging time period
+     * @param _amountIn amount in _tokenIn
+     * @return amountOut equivalent anount in _tokenOut
+     */
+    function _fetchTwap(
+        address _pool,
+        address _tokenIn,
+        address _tokenOut,
+        uint32 _twapPeriod,
+        uint _amountIn
+    ) internal view returns (uint amountOut) {
+        // Leave twapTick as a int256 to avoid solidity casting
+        int twapTick = consult(_pool, _twapPeriod);
+        return getQuoteAtTick(
+            int24(twapTick), // can assume safe being result from consult()
+            SafeCast.toUint128(_amountIn),
+            _tokenIn,
+            _tokenOut
+        );
     }
 }

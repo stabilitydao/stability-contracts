@@ -315,74 +315,12 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         returns (uint[] memory amountsConsumed, uint value)
     {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        IICHIVault _underlying = IICHIVault(__$__._underlying);
-        amountsConsumed = new uint[](2);
-        if (_underlying.allowToken0()) {
-            amountsConsumed[0] = amountsMax[0];
-        } else {
-            amountsConsumed[1] = amountsMax[1];
-        }
-        uint32 twapPeriod = 600;
-        uint price = _fetchSpot(_underlying.token0(), _underlying.token1(), _underlying.currentTick(), _PRECISION);
-        uint twap = _fetchTwap(_underlying.pool(), _underlying.token0(), _underlying.token1(), twapPeriod, _PRECISION);
-        (uint pool0, uint pool1) = _underlying.getTotalAmounts();
-        // aggregated deposit
-        uint deposit0PricedInToken1 = (amountsConsumed[0] * ((price < twap) ? price : twap)) / _PRECISION;
-
-        value = amountsConsumed[1] + deposit0PricedInToken1;
-        uint totalSupply = _underlying.totalSupply();
-        if (totalSupply != 0) {
-            uint pool0PricedInToken1 = (pool0 * ((price > twap) ? price : twap)) / _PRECISION;
-            value = value * totalSupply / (pool0PricedInToken1 + pool1);
-        }
+        return IRMFLib.previewDepositAssets(amountsMax, __$__);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /**
-     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using spot price
-     * @param _tokenIn token the input amount is in
-     * @param _tokenOut token for the output amount
-     * @param _tick tick for the spot price
-     * @param _amountIn amount in _tokenIn
-     * @return amountOut equivalent anount in _tokenOut
-     */
-    function _fetchSpot(
-        address _tokenIn,
-        address _tokenOut,
-        int _tick,
-        uint _amountIn
-    ) internal pure returns (uint amountOut) {
-        return IRMFLib.getQuoteAtTick(int24(_tick), SafeCast.toUint128(_amountIn), _tokenIn, _tokenOut);
-    }
-
-    /**
-     * @notice returns equivalent _tokenOut for _amountIn, _tokenIn using TWAP price
-     * @param _pool Pool address to be used for price checking
-     * @param _tokenIn token the input amount is in
-     * @param _tokenOut token for the output amount
-     * @param _twapPeriod the averaging time period
-     * @param _amountIn amount in _tokenIn
-     * @return amountOut equivalent anount in _tokenOut
-     */
-    function _fetchTwap(
-        address _pool,
-        address _tokenIn,
-        address _tokenOut,
-        uint32 _twapPeriod,
-        uint _amountIn
-    ) internal view returns (uint amountOut) {
-        // Leave twapTick as a int256 to avoid solidity casting
-        int twapTick = IRMFLib.consult(_pool, _twapPeriod);
-        return IRMFLib.getQuoteAtTick(
-            int24(twapTick), // can assume safe being result from consult()
-            SafeCast.toUint128(_amountIn),
-            _tokenIn,
-            _tokenOut
-        );
-    }
 
     function _getStorage() private pure returns (IRMFLib.IchiRetroMerklFarmStrategyStorage storage $) {
         //slither-disable-next-line assembly

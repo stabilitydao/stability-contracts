@@ -10,6 +10,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.6.0: protocols, setSpecific
 ///   2.5.1: add maxWithdrawAssets(uint) - #360
 ///   2.5.0: add maxDepositAssets - #330
 ///   2.4.0: add poolTvl, maxWithdrawAssets - #326
@@ -31,7 +32,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.5.1";
+    string public constant VERSION_STRATEGY_BASE = "2.6.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -156,7 +157,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 } else {
                     (, uint[] memory __assetsAmounts) = assetsAmounts();
                     uint[] memory virtualRevenueAmounts = new uint[](__assets.length);
-                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 365 days / 15;
+                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 365 days / 7;
                     IVault(_vault).hardWorkMintFeeCallback(__assets, virtualRevenueAmounts);
                 }
                 // call empty method only for coverage or them can be overriden
@@ -184,6 +185,21 @@ abstract contract StrategyBase is Controllable, IStrategy {
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         $.customPriceImpactTolerance = priceImpactTolerance;
     }
+
+    /// @inheritdoc IStrategy
+    function setProtocols(string[] memory protocols_) external onlyOperator {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        $.protocols = protocols_;
+        emit StrategyProtocols(protocols_);
+    }
+
+    /// @inheritdoc IStrategy
+    function setSpecificName(string memory specific) external onlyOperator {
+        StrategyBaseStorage storage $ = _getStrategyBaseStorage();
+        $.specific = specific;
+        emit SpecificName(specific);
+    }
+
     //endregion -------------------- Restricted actions
 
     //region -------------------- View functions
@@ -307,6 +323,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
         return amounts;
     }
 
+    /// @notice IStrategy
+    function protocols() external view returns (string[] memory) {
+        return _getStrategyBaseStorage().protocols;
+    }
+
     //endregion -------------------- View functions
 
     //region -------------------- Default implementations
@@ -361,6 +382,11 @@ abstract contract StrategyBase is Controllable, IStrategy {
         if (!IStrategy(this).isReadyForHardWork()) {
             revert NotReadyForHardWork();
         }
+    }
+
+    /// @inheritdoc IStrategy
+    function getSpecificName() external view virtual returns (string memory, bool) {
+        return (_getStrategyBaseStorage().specific, true);
     }
     //endregion -------------------- Default implementations
 

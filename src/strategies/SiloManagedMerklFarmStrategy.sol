@@ -29,6 +29,7 @@ import {MerklStrategyBase} from "./base/MerklStrategyBase.sol";
 
 /// @title Supply asset to Silo V2 managed vault and earn farm rewards + rewards from Merkl
 /// Changelog:
+///   1.0.1: StrategyBase 2.6.0, fix getSpecificName
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -37,7 +38,7 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @dev Strategy logic ID used in this farm
     string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MANAGED_MERKL_FARM;
@@ -98,6 +99,10 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc IStrategy
     function getSpecificName() external view override returns (string memory, bool) {
+        string memory specific = _getStrategyBaseStorage().specific;
+        if (bytes(specific).length != 0) {
+            return (specific, true);
+        }
         ISiloVault siloVault = _getSiloVault();
         string memory shortAddr = SharedLib.shortAddress(address(siloVault));
         return (string.concat(IERC20Metadata(siloVault.asset()).symbol(), " ", shortAddr), true);

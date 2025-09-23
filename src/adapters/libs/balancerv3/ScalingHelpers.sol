@@ -95,6 +95,7 @@ library ScalingHelpers {
         // If rate is divisible by FixedPoint.ONE, roundedRate and rate will be equal. It means that rate has 18 zeros,
         // so there's no rounding issue and the rate should not be rounded up.
         unchecked {
+            /// forge-lint: disable-next-line
             roundedRate = (rate / FixedPoint.ONE) * FixedPoint.ONE;
         }
         return roundedRate == rate ? rate : rate + 1;

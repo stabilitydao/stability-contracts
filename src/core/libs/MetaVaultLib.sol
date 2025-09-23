@@ -238,6 +238,7 @@ library MetaVaultLib {
                 IStabilityVault.ExceedSlippage(v.amountsOut[0], minUnderlyingOut[i])
             );
 
+            /// forge-lint: disable-next-line
             IERC20(IVault(platformCVault_[1]).strategy().underlying()).transfer(owners[i], amountsOut[i]);
             emit IStabilityVault.WithdrawAssets(msg.sender, owners[i], v.assets, amounts[i], v.amountsOut);
 

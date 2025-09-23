@@ -114,39 +114,7 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = DQMFLib.generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
+        return DQMFLib.initVariants(platform_, ammAdapterId(), strategyLogicId());
     }
 
     /// @inheritdoc IStrategy

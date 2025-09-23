@@ -22,6 +22,7 @@ import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
+import {GEFLib} from "./libs/GEFLib.sol";
 
 /// @title Earn Equalizer farm rewards by Gamma ALM
 /// Changelog
@@ -123,39 +124,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
-        addresses = new address[](0);
-        ticks = new int24[](0);
-
-        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
-        uint len = farms.length;
-        //slither-disable-next-line uninitialized-local
-        uint localTtotal;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                ++localTtotal;
-            }
-        }
-
-        variants = new string[](localTtotal);
-        nums = new uint[](localTtotal);
-        localTtotal = 0;
-        // nosemgrep
-        for (uint i; i < len; ++i) {
-            // nosemgrep
-            IFactory.Farm memory farm = farms[i];
-            // nosemgrep
-            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId())) {
-                nums[localTtotal] = i;
-                //slither-disable-next-line calls-loop
-                variants[localTtotal] = _generateDescription(farm, _ammAdapter);
-                ++localTtotal;
-            }
-        }
+        return GEFLib.initVariants(platform_, ammAdapterId(), strategyLogicId());
     }
 
     /// @inheritdoc IStrategy
@@ -448,19 +417,7 @@ contract GammaEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm memory farm,
         IAmmAdapter _ammAdapter
     ) internal view returns (string memory) {
-        //slither-disable-next-line calls-loop
-        return string.concat(
-            "Earn ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(farm.rewardAssets), ", "),
-            " on Equalizer by ",
-            //slither-disable-next-line calls-loop
-            CommonLib.implode(CommonLib.getSymbols(_ammAdapter.poolTokens(farm.pool)), "-"),
-            " Gamma ",
-            //slither-disable-next-line calls-loop
-            ALMPositionNameLib.getName(farm.nums[0]),
-            " LP"
-        );
+        return GEFLib.generateDescription(farm, _ammAdapter);
     }
 
     function _getStorage() private pure returns (GammaEqualizerFarmStrategyStorage storage $) {
