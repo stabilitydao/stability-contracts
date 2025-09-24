@@ -20,7 +20,6 @@ import {FarmMechanicsLib} from "./libs/FarmMechanicsLib.sol";
 import {ALMPositionNameLib} from "./libs/ALMPositionNameLib.sol";
 import {AmmAdapterIdLib} from "../adapters/libs/AmmAdapterIdLib.sol";
 import {ICAmmAdapter} from "../interfaces/ICAmmAdapter.sol";
-import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IDefiEdgeStrategy} from "../integrations/defiedge/IDefiEdgeStrategy.sol";
 import {IDefiEdgeStrategyFactory} from "../integrations/defiedge/IDefiEdgeStrategyFactory.sol";
 import {IFeedRegistryInterface} from "../integrations/chainlink/IFeedRegistryInterface.sol";
