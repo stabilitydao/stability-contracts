@@ -37,6 +37,15 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
         __Controllable_init(platform_);
     }
 
+    modifier onlyWhitelisted() {
+        require(
+            IPlatform(platform()).multisig() == msg.sender
+            || RecoveryLib.getRecoveryTokenStorage().whitelistOperators[msg.sender],
+            RecoveryLib.NotWhitelisted()
+        );
+        _;
+    }
+
     //region ----------------------------------- View
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -73,10 +82,14 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*                      Actions                               */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Transfer tokens on balance and send this function to process transferred amounts
-    /// @custom:restrictions Anybody can call this function
-    function registerTransferredAmounts(address[] memory tokens, uint[] memory amounts) external {
-        RecoveryLib.registerTransferredAmounts(tokens, amounts, ISwapper(IPlatform(platform()).swapper()));
+    /// @inheritdoc IRecovery
+    function registerAssets(address[] memory tokens) external onlyWhitelisted {
+        RecoveryLib.registerAssets(tokens);
+    }
+
+    /// @inheritdoc IRecovery
+    function swapAssetsToRecoveryTokens(uint indexFirstRecoveryPool1) external {
+        RecoveryLib.swapAssetsToRecoveryTokens(indexFirstRecoveryPool1, ISwapper(IPlatform(platform()).swapper()));
     }
 
     /// @notice Callback for Uniswap V3 swaps

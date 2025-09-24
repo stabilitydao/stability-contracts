@@ -60,7 +60,7 @@ library RevenueRouterLib {
             for (uint i; i < _recoveryAssets.length; ++i) {
                 IERC20(_recoveryAssets[i]).safeTransfer(recovery_, _recoveryAmounts[i]);
             }
-            IRecovery(recovery_).registerTransferredAmounts(_recoveryAssets, _recoveryAmounts);
+            IRecovery(recovery_).registerAssets(_recoveryAssets);
         }
     }
 

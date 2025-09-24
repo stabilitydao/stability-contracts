@@ -82,16 +82,8 @@ contract RevenueRouterLibSonicTest is Test {
             }
 
             assertEq(recovery.registeredTokensLength(), 2, "expected amount of registered tokens");
-            assertEq(recovery.registeredAmountsLength(), 2, "expected amount of registered amounts");
-            for (uint i; i < recovery.registeredTokensLength(); ++i) {
-                if (recovery.registeredTokens(i) == SonicConstantsLib.TOKEN_USDC) {
-                    assertEq(recovery.registeredAmounts(i), amounts[0] * RevenueRouterLib.RECOVER_PERCENTAGE / RevenueRouterLib.DENOMINATOR, "expected amount of registered usdc");
-                } else if (recovery.registeredTokens(i) == SonicConstantsLib.TOKEN_WS) {
-                    assertEq(recovery.registeredAmounts(i), amounts[4] * RevenueRouterLib.RECOVER_PERCENTAGE / RevenueRouterLib.DENOMINATOR, "expected amount of registered ws");
-                } else {
-                    revert("unexpected registered token");
-                }
-            }
+            assertEq(recovery.registeredTokens(0), SonicConstantsLib.TOKEN_USDC, "expected USDC");
+            assertEq(recovery.registeredTokens(1), SonicConstantsLib.TOKEN_WS, "expected WS");
         }
 
         // -------------------- check sender balances
@@ -152,7 +144,6 @@ contract RevenueRouterLibSonicTest is Test {
         }
 
         assertEq(_recovery.registeredTokensLength(), 0, "expected amount of registered tokens");
-        assertEq(_recovery.registeredAmountsLength(), 0, "expected amount of registered amounts");
 
         // -------------------- check sender balances
         for (uint i; i < assets.length; ++i) {

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../../../lib/solady/src/utils/LibPRNG.sol";
+import {console} from "forge-std/console.sol";
+import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IBurnableERC20} from "../../interfaces/IBurnableERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -21,15 +22,17 @@ library RecoveryLib {
     //region -------------------------------------- Data types
 
     error UnauthorizedCallback();
+    error NotWhitelisted();
     error NotSwapping();
     error InvalidSwapAmount();
     error InsufficientBalance();
     error SwapFailed();
+    error WrongRecoveryPoolIndex();
 
     event AddRecoveryPools(address[] newRecoveryPools);
     event RemoveRecoveryPool(address removedRecoveryPool);
     event RecoveryTokensPurchased(uint256 amountIn, uint256 amountOut, uint160 finalSqrtPriceX96);
-    event ReceiveAmounts(address[] tokens, uint256[] amounts);
+    event RegisterTokens(address[] tokens);
     event SetThresholds(address[] tokens, uint256[] thresholds);
 
     /// @custom:storage-location erc7201:stability.Recovery
@@ -40,6 +43,12 @@ library RecoveryLib {
 
         /// @notice Minimum thresholds for tokens to trigger a swap
         mapping (address token => uint threshold) tokenThresholds;
+
+        /// @notice Whitelisted operators that can call main actions
+        mapping (address operator => bool allowed) whitelistOperators;
+
+        /// @notice All tokens with not zero amounts - possible swap sources
+        EnumerableSet.AddressSet registeredTokens;
 
         /// @notice True if the contract is currently performing a token swap
         bool swapping;
@@ -54,37 +63,35 @@ library RecoveryLib {
         (sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
     }
 
-    function selectPool(RecoveryLib.RecoveryStorage storage $, uint seed) internal view returns (address) {
-        uint countPools = $.recoveryPools.length();
+    function selectPool(uint seed, address[] memory recoveryPools) internal view returns (uint index0) {
+        uint countPools = recoveryPools.length;
         LibPRNG.PRNG memory prng;
         LibPRNG.seed(prng, seed);
         uint index = LibPRNG.next(prng) % countPools;
         if (index % 2 == 0) {
-            return $.recoveryPools.at(index / 2);
+            return index / 2;
         } else {
-            return getPoolWithMinPrice($);
+            return getPoolWithMinPrice(recoveryPools);
         }
     }
 
-    function getPoolWithMinPrice(RecoveryStorage storage $) internal view returns (address targetPool) {
-        uint len = $.recoveryPools.length();
+    function getPoolWithMinPrice(address[] memory recoveryPools) internal view returns (uint index0) {
+        uint len = recoveryPools.length;
         if (len != 0) {
-            targetPool = $.recoveryPools.at(0);
-            uint160 minPrice = getCurrentSqrtPriceX96(targetPool);
+            uint160 minPrice = getCurrentSqrtPriceX96(recoveryPools[0]);
             for (uint i = 1; i < len; ++i) {
-                address pool = $.recoveryPools.at(i);
-                uint160 price = getCurrentSqrtPriceX96(pool);
+                uint160 price = getCurrentSqrtPriceX96(recoveryPools[i]);
                 if (price < minPrice) {
                     minPrice = price;
-                    targetPool = pool;
+                    index0 = i;
                 }
             }
         }
-        return targetPool;
+        return index0;
     }
     //endregion -------------------------------------- View
 
-    //region -------------------------------------- Restricted actions
+    //region -------------------------------------- Governance actions
     function addRecoveryPool(address[] memory recoveryPools_) internal {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         uint len = recoveryPools_.length;
@@ -109,61 +116,95 @@ library RecoveryLib {
         emit SetThresholds(tokens, thresholds);
     }
 
-    //endregion -------------------------------------- Restricted actions
+    //endregion -------------------------------------- Governance actions
 
     //region -------------------------------------- Actions
 
     /// @notice Register income. Select a pool with minimum price and detect its token 1.
     /// Swap all {tokens} to the token1. Buy recovery tokens using token 1.
-    function registerTransferredAmounts(
-        address[] memory tokens_,
-        uint[] memory amounts_,
-        ISwapper swapper
-    ) internal {
+    function registerAssets(address[] memory tokens_) internal {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
 
-        emit ReceiveAmounts(tokens_, amounts_);
-
-        // ----------------------------------- Select pool
-        address targetPool = selectPool($, block.timestamp);
-
-        // assume here that recovery tokens are always token 0
-        address asset = IUniswapV3Pool(targetPool).token1();
-        address recoveryToken = IUniswapV3Pool(targetPool).token0();
-
-        // ----------------------------------- Get amounts to swap (full balance if above threshold)
-        uint[] memory amountsToSwap = new uint[](tokens_.length);
+        emit RegisterTokens(tokens_);
         uint len = tokens_.length;
         for (uint i; i < len; ++i) {
-            uint balance = IERC20(tokens_[i]).balanceOf(address(this));
-            if (balance > $.tokenThresholds[tokens_[i]]) {
+            $.registeredTokens.add(tokens_[i]);
+        }
+    }
+
+    /// @notice Use available tokens to buy and burn recovery tokens from the registered pools.
+    /// @param indexFirstRecoveryPool1 1-based index of the recovery pool from which swapping should be started.
+    /// If zero then the initial pool will be selected automatically.
+    /// Max swap amount for each pool is limited by price - result prices cannot exceed 1.
+    /// If price reaches 1 the remain amount should be used for swapping in other pools.
+    function swapAssetsToRecoveryTokens(uint indexFirstRecoveryPool1, ISwapper swapper_) internal {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+
+        address[] memory _recoveryPools = $.recoveryPools.values();
+        require(indexFirstRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
+
+        // ----------------------------------- Select target pool
+        uint indexTargetPool = indexFirstRecoveryPool1 == 0
+            ? selectPool(block.timestamp, _recoveryPools)
+            : indexFirstRecoveryPool1 - 1;
+        EnumerableSet.AddressSet storage _tokens = $.registeredTokens;
+
+        // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
+        address asset = IUniswapV3Pool(_recoveryPools[indexTargetPool]).token1();
+
+        // ----------------------------------- Get amounts to swap (full balance if above threshold)
+        uint len = _tokens.length();
+        uint[] memory amountsToSwap = new uint[](len);
+        for (uint i; i < len; ++i) {
+            address token = _tokens.at(i);
+            uint balance = IERC20(token).balanceOf(address(this));
+            if (balance > $.tokenThresholds[token]) {
                 amountsToSwap[i] = balance;
             }
         }
 
         // ----------------------------------- Swap all amounts to the asset
         for (uint i; i < len; ++i) {
-            if (amountsToSwap[i] != 0 && tokens_[i] != asset) {
-                try swapper.swap(asset, tokens_[i], amountsToSwap[i], 20_000) {} catch {}
+            address token = _tokens.at(i);
+            if (amountsToSwap[i] != 0 && token != asset) {
+                try swapper_.swap(asset, token, amountsToSwap[i], 20_000) {} catch {}
             }
         }
 
-        // ----------------------------------- Swap the asset to recovery token
-        uint amount = IERC20(asset).balanceOf(address(this));
+        // ----------------------------------- Swap the asset to recovery tokens
+        uint amount = swapAndBurn(_recoveryPools[indexTargetPool], asset);
         if (amount != 0) {
-            swapToRecoveryToken(targetPool, asset, amount);
-            uint balance = IERC20(recoveryToken).balanceOf(address(this));
-            if (balance != 0) {
-                IBurnableERC20(recoveryToken).burn(amount);
+            for (uint i = indexTargetPool + 1; i < len; ++i) {
+                if (amount == 0) break;
+                if (asset != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
+                amount = swapAndBurn(_recoveryPools[i], asset);
+            }
+
+            for (uint i = 0; i < indexTargetPool; ++i) {
+                if (amount == 0) break;
+                if (asset != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
+                amount = swapAndBurn(_recoveryPools[i], asset);
             }
         }
-
-        // todo check remaining balance and use it for the next swap
     }
 
     //endregion -------------------------------------- Actions
 
     //region -------------------------------------- Uniswap V3 logic
+    function swapAndBurn(address targetPool, address asset) internal returns (uint amount) {
+        // assume here that recovery tokens are always set as token 0
+        address recoveryToken = IUniswapV3Pool(targetPool).token0();
+
+        // we cannot use swapper here because we need to limit result price by SQRT_PRICE_LIMIT_X96
+//            IERC20(asset).approve(address(swapper_), amount);
+//            swapper_.swap(asset, recoveryToken, amount, 20_000);
+        swapToRecoveryToken(targetPool, asset, IERC20(asset).balanceOf(address(this)));
+        uint balance = IERC20(recoveryToken).balanceOf(address(this));
+        if (balance != 0) {
+            IBurnableERC20(recoveryToken).burn(balance);
+        }
+        return IERC20(asset).balanceOf(address(this));
+    }
 
     /// @notice Buy recovery token for one of meta-vault tokens
     /// @param pool_ Uniswap V3 pool address
@@ -219,10 +260,10 @@ library RecoveryLib {
         require($.recoveryPools.contains(pool), UnauthorizedCallback());
         require($.swapping, NotSwapping());
 
-        if (amount0Delta != 0) {
+        if (amount0Delta > 0) {
             IERC20(IUniswapV3Pool(pool).token0()).transfer(address(pool), uint256(amount0Delta));
         }
-        if (amount1Delta != 0) {
+        if (amount1Delta > 0) {
             IERC20(IUniswapV3Pool(pool).token1()).transfer(address(pool), uint256(amount1Delta));
         }
     }
