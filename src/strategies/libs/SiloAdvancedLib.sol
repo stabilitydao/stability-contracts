@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -14,13 +13,15 @@ import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
 import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
 import {ISilo} from "../../integrations/silo/ISilo.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
 import {IWETH} from "../../integrations/weth/IWETH.sol";
+import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
-import {LeverageLendingLib} from "./LeverageLendingLib.sol";
+import {console} from "forge-std/console.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -54,6 +55,11 @@ library SiloAdvancedLib {
     address internal constant TELLER_SCUSD = 0x358CFACf00d0B4634849821BB3d1965b472c776a;
     address internal constant TELLER_STKSCUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
     address internal constant TOKEN_WSTKSCUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
+
+    // mint msUSD by USDC, stake to smsUSD
+    address internal constant TOKEN_SMSUSD = 0xc7990369DA608C2F4903715E3bD22f2970536C29;
+    address internal constant TOKEN_MSUSD = 0xE5Fb2Ed6832deF99ddE57C0b9d9A56537C89121D;
+
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -544,7 +550,32 @@ library SiloAdvancedLib {
             }
         }
 
+        if (tokenIn == TOKEN_USDC && tokenOut == TOKEN_SMSUSD) {
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
+            //console.log('amount out by swap', outBySwap);
+            uint outByMint = IERC4626(tokenOut).convertToShares(amount);
+            console.log("amount", amount);
+            console.log("outBySwap", outBySwap);
+            console.log("outByMint", outByMint);
+
+            if (outByMint < outBySwap * 99_50 / 100_00) {
+                console.log("1", amount);
+                // mint msUSD todo
+//                IERC20(TOKEN_USDC).forceApprove(TOKEN_MSUSD, amount);
+//                IMainStreetUsd(TOKEN_MSUSD).mint(address(this), amount);
+//                console.log("2", IERC20(TOKEN_MSUSD).balanceOf(address(this)));
+                // stake to smsUSD
+                IERC20(TOKEN_MSUSD).forceApprove(TOKEN_SMSUSD, amount);
+                IERC4626(TOKEN_SMSUSD).deposit(amount, address(this));
+                console.log("3", IERC20(TOKEN_SMSUSD).balanceOf(address(this)));
+                return;
+            }
+        }
+
+        console.log("swap", tokenIn, tokenOut, amount);
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
+        console.log("444", IERC20(TOKEN_SMSUSD).balanceOf(address(this)));
     }
 
     //region ------------------------------------- Deposit
