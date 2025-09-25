@@ -439,4 +439,10 @@ contract PlatformTest is Test {
         platform.setupVaultPriceOracle(address(123));
         assertEq(platform.vaultPriceOracle(), address(123));
     }
+
+    function testSetupRecovery() public {
+        platform.initialize(address(this), "23.11.0-dev");
+        platform.setupRecovery(address(123));
+        assertEq(platform.recovery(), address(123));
+    }
 }

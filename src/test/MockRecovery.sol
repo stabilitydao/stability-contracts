@@ -6,6 +6,9 @@ import {IRecovery} from "../interfaces/IRecovery.sol";
 contract MockRecovery is IRecovery {
     address[] public registeredTokens;
 
+    // add this to be excluded from coverage report
+    function test() public {}
+
     function registeredTokensLength() external view returns (uint) {
         return registeredTokens.length;
     }

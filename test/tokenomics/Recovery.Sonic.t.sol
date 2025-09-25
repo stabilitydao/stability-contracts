@@ -240,6 +240,18 @@ contract RecoverySonicTest is Test {
 
         vm.prank(address(this));
         recovery.swapAssetsToRecoveryTokens(0);
+
+        {
+            address[] memory pools = new address[](1);
+            pools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+
+            vm.prank(multisig);
+            recovery.addRecoveryPools(pools);
+        }
+
+        vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
+        vm.prank(address(this));
+        recovery.swapAssetsToRecoveryTokens(20000);
     }
     //endregion --------------------------------- Unit tests
 
