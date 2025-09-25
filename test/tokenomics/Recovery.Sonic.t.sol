@@ -410,6 +410,7 @@ contract RecoverySonicTest is Test {
 
         address targetMetaVaultToken = IUniswapV3Pool(multiple.targetPool).token1();
         for (uint i; i < multiple.pools.length; ++i) {
+            // console.log(i, states[i][0].sqrtPriceX96, states[i][1].sqrtPriceX96, states[i][2].sqrtPriceX96);
             if (IUniswapV3Pool(multiple.pools[i]).token1() == targetMetaVaultToken) {
                 assertLt(states[i][1].sqrtPriceX96, states[i][0].sqrtPriceX96, "price should go down");
                 assertEq(
@@ -770,7 +771,7 @@ contract RecoverySonicTest is Test {
             }
 
             vm.prank(multisig);
-            recovery.swapAssetsToRecoveryTokens(index0);
+            recovery.swapAssetsToRecoveryTokens(index0 + 1);
         }
 
         // get state after calling swapAssetsToRecoveryTokens
@@ -869,7 +870,7 @@ contract RecoverySonicTest is Test {
         dest.balancePoolMetaVault = IERC20(token1).balanceOf(address(pool));
         dest.balanceRecoveryUsdc = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(recovery));
         dest.balanceRecoveryWs = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(recovery));
-
+        //
         //        console.log("Pool", address(pool));
         //        console.log("  tick", dest.tick);
         //        console.log("  sqrtPriceX96", dest.sqrtPriceX96);
