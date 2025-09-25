@@ -16,7 +16,6 @@ contract RevenueRouterLibSonicTest is Test {
     struct RemoveEmptyTestCase {
         uint[5] amounts;
         uint countNotZero;
-
         address[] expectedAssets;
         uint[] expectedAmounts;
     }
@@ -40,10 +39,10 @@ contract RevenueRouterLibSonicTest is Test {
 
         uint[] memory amounts = new uint[](5);
         amounts[0] = 1_000e6; // usdc
-        amounts[1] = 1e18;    // weth:  amount is equal to the threshold
-        amounts[2] = 10e18;   // stbl
-        amounts[3] = 100;     // usdt:  amount is below the threshold
-        amounts[4] = 0.1e18;  // ws
+        amounts[1] = 1e18; // weth:  amount is equal to the threshold
+        amounts[2] = 10e18; // stbl
+        amounts[3] = 100; // usdt:  amount is below the threshold
+        amounts[4] = 0.1e18; // ws
 
         for (uint i; i < assets.length; ++i) {
             deal(assets[i], address(this), amounts[i]);
@@ -75,9 +74,13 @@ contract RevenueRouterLibSonicTest is Test {
 
             for (uint i; i < assets.length; ++i) {
                 if (i == 1 || i == 3 || i == 2) {
-                     assertEq(balances[i], 0, "weth, usdt - below threshold, stbl - not processed as income");
+                    assertEq(balances[i], 0, "weth, usdt - below threshold, stbl - not processed as income");
                 } else {
-                    assertEq(balances[i], amounts[i] * RevenueRouterLib.RECOVER_PERCENTAGE / RevenueRouterLib.DENOMINATOR, "get 20% of income");
+                    assertEq(
+                        balances[i],
+                        amounts[i] * RevenueRouterLib.RECOVER_PERCENTAGE / RevenueRouterLib.DENOMINATOR,
+                        "get 20% of income"
+                    );
                 }
             }
 
@@ -95,13 +98,17 @@ contract RevenueRouterLibSonicTest is Test {
 
             for (uint i; i < assets.length; ++i) {
                 if (i == 1 || i == 3) {
-                     assertEq(balances[i], amounts[i], "weth, usdt - below threshold");
+                    assertEq(balances[i], amounts[i], "weth, usdt - below threshold");
                 } else if (i == 0 || i == 4) {
                     // usdc, ws - swapped to stbl
                     assertEq(balances[i], 0, "usdc, ws - swapped to stbl");
                 } else if (i == 2) {
                     // stbl - not processed as income
-                    assertGt(balances[i], amounts[i], "usdc and ws were swapped to stbl, balance should be greater than initial");
+                    assertGt(
+                        balances[i],
+                        amounts[i],
+                        "usdc and ws were swapped to stbl, balance should be greater than initial"
+                    );
                 } else {
                     revert("unexpected asset");
                 }
@@ -204,7 +211,8 @@ contract RevenueRouterLibSonicTest is Test {
             amounts[i] = cases.amounts[i];
         }
 
-        (address[] memory _assets, uint[] memory _amounts) = RevenueRouterLib.removeEmpty(assets, amounts, cases.countNotZero);
+        (address[] memory _assets, uint[] memory _amounts) =
+            RevenueRouterLib.removeEmpty(assets, amounts, cases.countNotZero);
 
         assertEq(_assets.length, cases.expectedAssets.length);
         assertEq(_amounts.length, cases.expectedAmounts.length);

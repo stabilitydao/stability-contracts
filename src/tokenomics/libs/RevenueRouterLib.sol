@@ -10,6 +10,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 library RevenueRouterLib {
     using SafeERC20 for IERC20;
     /// @notice Send given process of earned tokens to Recovery.sol. Always < DENOMINATOR.
+
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
     uint internal constant DENOMINATOR = 100_000; // 100%
 
@@ -19,12 +20,7 @@ library RevenueRouterLib {
     /// @param stbl Stbl token
     /// @param swapper Swapper to swap assets to stbl
     /// @param recovery_ Address of the recovery contract
-    function processAssets(
-        address[] memory assets,
-        address stbl,
-        ISwapper swapper,
-        address recovery_
-    ) internal {
+    function processAssets(address[] memory assets, address stbl, ISwapper swapper, address recovery_) internal {
         uint[] memory tempAmounts = new uint[](assets.length);
         uint countNotZeroRecoveryAmounts;
         uint len = assets.length;
@@ -55,7 +51,8 @@ library RevenueRouterLib {
 
         // --------------------- Process not-zero recovery amounts
         if (countNotZeroRecoveryAmounts != 0) {
-            (address[] memory _recoveryAssets, uint[] memory _recoveryAmounts) = removeEmpty(assets, tempAmounts, countNotZeroRecoveryAmounts);
+            (address[] memory _recoveryAssets, uint[] memory _recoveryAmounts) =
+                removeEmpty(assets, tempAmounts, countNotZeroRecoveryAmounts);
 
             for (uint i; i < _recoveryAssets.length; ++i) {
                 IERC20(_recoveryAssets[i]).safeTransfer(recovery_, _recoveryAmounts[i]);
@@ -64,11 +61,11 @@ library RevenueRouterLib {
         }
     }
 
-    function removeEmpty(address[] memory assets, uint[] memory amounts, uint countNotZero)
-        internal
-        pure
-        returns (address[] memory recoveryAssets, uint[] memory recoveryAmounts)
-    {
+    function removeEmpty(
+        address[] memory assets,
+        uint[] memory amounts,
+        uint countNotZero
+    ) internal pure returns (address[] memory recoveryAssets, uint[] memory recoveryAmounts) {
         // assume here that lengths of both arrays are equal
 
         uint len = assets.length;
