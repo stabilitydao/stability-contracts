@@ -11,7 +11,6 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ChainSetup} from "./ChainSetup.sol";
 import {Utils} from "./Utils.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";

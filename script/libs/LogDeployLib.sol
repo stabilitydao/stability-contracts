@@ -2,14 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {console} from "forge-std/Test.sol";
-import {Platform} from "../../src/core/Platform.sol";
-import {Factory, IFactory} from "../../src/core/Factory.sol";
-import {VaultManager} from "../../src/core/VaultManager.sol";
-import {StrategyLogic} from "../../src/core/StrategyLogic.sol";
-import {PriceReader, IPriceReader} from "../../src/core/PriceReader.sol";
-import {Swapper, ISwapper} from "../../src/core/Swapper.sol";
-import {HardWorker} from "../../src/core/HardWorker.sol";
-import {Zap} from "../../src/core/Zap.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IPriceReader} from "../../src/core/PriceReader.sol";
+import {ISwapper} from "../../src/core/Swapper.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";

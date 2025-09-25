@@ -7,7 +7,6 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {TridentPearlFarmStrategy} from "../../src/strategies/TridentPearlFarmStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-// import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
 
 // todo: replace Real-logic by Sonic-logic
 contract TPFUpgradeTest is Test {

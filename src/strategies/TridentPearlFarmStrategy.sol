@@ -60,7 +60,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         }
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.TRIDENT_PEARL_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -160,7 +160,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
-        LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         proportions = new uint[](2);
         (uint total0, uint total1,,,) = ILiquidBox(__$__._underlying).getTotalAmounts();
         uint price = _getPoolPrice($lp.pool);
@@ -181,7 +181,7 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return _generateDescription(farm, $lp.ammAdapter);
     }

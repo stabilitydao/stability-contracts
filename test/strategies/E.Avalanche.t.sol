@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console, Test} from "forge-std/Test.sol";
 import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheConstantsLib.sol";
 import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";

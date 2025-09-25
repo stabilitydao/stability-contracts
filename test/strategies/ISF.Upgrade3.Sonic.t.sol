@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
@@ -52,14 +52,14 @@ contract ISFUpgrade3Test is Test {
         uint farmId = IFarmingStrategy(STRATEGY).farmId();
         IFactory.Farm memory farm;
         farm.status = 0;
-        farm.pool = SonicConstantsLib.POOL_SWAPX_CL_wS_stS;
+        farm.pool = SonicConstantsLib.POOL_SWAPX_CL_WS_STS;
         farm.strategyLogicId = StrategyIdLib.SWAPX_FARM;
         farm.rewardAssets = new address[](2);
-        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SWPx;
-        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_GEMSx;
+        farm.rewardAssets[0] = SonicConstantsLib.TOKEN_SWPX;
+        farm.rewardAssets[1] = SonicConstantsLib.TOKEN_GEMSX;
         farm.addresses = new address[](2);
-        farm.addresses[0] = SonicConstantsLib.ALM_ICHI_SWAPX_stS_wS;
-        farm.addresses[1] = SonicConstantsLib.SWAPX_GAUGE_ICHI_stS_wS;
+        farm.addresses[0] = SonicConstantsLib.ALM_ICHI_SWAPX_STS_WS;
+        farm.addresses[1] = SonicConstantsLib.SWAPX_GAUGE_ICHI_STS_WS;
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         vm.prank(multisig);
@@ -79,7 +79,7 @@ contract ISFUpgrade3Test is Test {
         uint[] memory amounts = new uint[](1);
         bytes32[][] memory proofs = new bytes32[][](1);
         users[0] = STRATEGY;
-        tokens[0] = SonicConstantsLib.TOKEN_GEMSx;
+        tokens[0] = SonicConstantsLib.TOKEN_GEMSX;
         amounts[0] = 1061308777230000000000;
         proofs[0] = new bytes32[](15);
         proofs[0][0] = 0xbac233cc596bedebda874a515b2764633f9a79e297ef6bb8e457a1637f068c03;
@@ -97,16 +97,16 @@ contract ISFUpgrade3Test is Test {
         proofs[0][12] = 0x43b2ce0e099485b605a3e7282fd543c4a5d05c9e6c20829e6e51be5f9ff1854e;
         proofs[0][13] = 0x312bd2c8deb3d026fa4d40487ca0644602a5db35e8dba5e1befbee14f1b82a7f;
         proofs[0][14] = 0xfbe8c5036dd344946e82e9e90fae6f96567faa62f715bd47155dab2f7dbf4856;
-        assertEq(IERC20(SonicConstantsLib.TOKEN_GEMSx).balanceOf(STRATEGY), 0);
+        assertEq(IERC20(SonicConstantsLib.TOKEN_GEMSX).balanceOf(STRATEGY), 0);
         IMerklDistributor(SonicConstantsLib.MERKL_DISTRIBUTOR).claim(users, tokens, amounts, proofs);
-        assertGt(IERC20(SonicConstantsLib.TOKEN_GEMSx).balanceOf(STRATEGY), 0);
+        assertGt(IERC20(SonicConstantsLib.TOKEN_GEMSX).balanceOf(STRATEGY), 0);
 
         // route
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
         pools[0] = _makePoolData(
-            SonicConstantsLib.POOL_SWAPX_CL_GEMSx_OS,
+            SonicConstantsLib.POOL_SWAPX_CL_GEMSX_OS,
             AmmAdapterIdLib.ALGEBRA_V4,
-            SonicConstantsLib.TOKEN_GEMSx,
+            SonicConstantsLib.TOKEN_GEMSX,
             SonicConstantsLib.TOKEN_OS
         );
         ISwapper swapper = ISwapper(IPlatform(IControllable(STRATEGY).platform()).swapper());
@@ -120,7 +120,7 @@ contract ISFUpgrade3Test is Test {
         vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
         /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
-        assertEq(IERC20(SonicConstantsLib.TOKEN_GEMSx).balanceOf(STRATEGY), 0);
+        assertEq(IERC20(SonicConstantsLib.TOKEN_GEMSX).balanceOf(STRATEGY), 0);
 
         //console.log(IStrategy(STRATEGY).lastApr()); // 159% APR
     }

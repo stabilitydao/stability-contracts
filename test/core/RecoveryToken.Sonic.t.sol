@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaProxy} from "../../src/interfaces/IMetaProxy.sol";
@@ -34,8 +33,8 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(SALT, SonicConstantsLib.METAVAULT_metaUSD));
-        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_metaUSD);
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(SALT, SonicConstantsLib.METAVAULT_METAUSD));
+        assertEq(recToken.target(), SonicConstantsLib.METAVAULT_METAUSD);
         assertEq(address(recToken), PREDICTED_ADDRESS);
 
         // mint
@@ -92,7 +91,7 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken_upgrade() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_METAUSD));
 
         address recoveryTokenImplementation = address(new RecoveryToken());
 
@@ -115,7 +114,7 @@ contract RecoveryTokenSonicTest is Test {
     function test_RecoveryToken_bulkTransferFrom() public {
         vm.prank(multisig);
         IRecoveryToken recToken =
-            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_metaUSD));
+            IRecoveryToken(metaVaultFactory.deployRecoveryToken(0x00, SonicConstantsLib.METAVAULT_METAUSD));
 
         vm.prank(recToken.target());
         recToken.mint(address(1), 100);

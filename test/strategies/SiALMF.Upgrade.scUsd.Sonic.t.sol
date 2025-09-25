@@ -21,7 +21,7 @@ import {SiloALMFStrategy} from "../../src/strategies/SiloALMFStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
 
@@ -62,27 +62,27 @@ contract SiALMFUpgradeScUsdTest is Test {
         vault = IStabilityVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
         strategy = IVault(address(vault)).strategy();
         priceReader =
-            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).platform()).priceReader());
+            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).platform()).priceReader());
 
         _upgradePlatform(address(priceReader));
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         //        _upgradeWrappedMetaVault();
         _upgradeCVault(address(vault));
 
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
-        _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse);
+        _upgradeCVault(SonicConstantsLib.VAULT_C_USDC_SIMF_GREENHOUSE);
 
         _upgradeALMFStrategy(address(strategy));
-        _upgradeSMFStrategy(address(IVault(SonicConstantsLib.VAULT_C_USDC_SiMF_Greenhouse).strategy()));
+        _upgradeSMFStrategy(address(IVault(SonicConstantsLib.VAULT_C_USDC_SIMF_GREENHOUSE).strategy()));
     }
 
     /// @notice Ensure that we are able to deposit large amount of metaUSD without revert
     function testSingleDepositWithdraw() public {
         // ---------------------------------- Deposit
         uint amount = 7000e18;
-        _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD);
+        _getMetaTokensOnBalance(address(this), amount, true, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(vault), amount);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(vault), amount);
 
         address[] memory assets = vault.assets();
         uint[] memory amountsMax = new uint[](1);
@@ -214,8 +214,8 @@ contract SiALMFUpgradeScUsdTest is Test {
         vm.startPrank(multisig);
         metaVaultFactory.setWrappedMetaVaultImplementation(newWrapperImplementation);
         address[] memory proxies = new address[](2);
-        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_metaS;
-        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_metaUSD;
+        proxies[0] = SonicConstantsLib.WRAPPED_METAVAULT_METAS;
+        proxies[1] = SonicConstantsLib.WRAPPED_METAVAULT_METAUSD;
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
     }
@@ -256,15 +256,15 @@ contract SiALMFUpgradeScUsdTest is Test {
         address wrappedMetaVault_
     ) internal {
         IMetaVault metaVault = IMetaVault(IWrappedMetaVault(wrappedMetaVault_).metaVault());
-        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_metaUSD
+        address asset = address(metaVault) == SonicConstantsLib.METAVAULT_METAUSD
             ? SonicConstantsLib.TOKEN_USDC
-            : SonicConstantsLib.TOKEN_wS;
+            : SonicConstantsLib.TOKEN_WS;
 
         // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
         // so we deposit a bit large amount of USDC
         address[] memory _assets = metaVault.assetsForDeposit();
         uint[] memory amountsMax = new uint[](1);
-        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_metaUSD
+        amountsMax[0] = address(metaVault) == SonicConstantsLib.METAVAULT_METAUSD
             ? 2 * amountMetaVaultTokens / 1e12
             : 2 * amountMetaVaultTokens;
 
@@ -318,35 +318,35 @@ contract SiALMFUpgradeScUsdTest is Test {
     }
 
     function _removeUnusedVaults() internal {
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metascUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // todo UsdAmountLessThreshold(6074204700030295904090)
         //        vm.prank(multisig);
-        //        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).removeVault(SonicConstantsLib.METAVAULT_metascUSD);
+        //        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).removeVault(SonicConstantsLib.METAVAULT_METASCUSD);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SiF);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_SIF);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_8);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_27);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_34);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(
-            SonicConstantsLib.VAULT_C_USDC_Stability_StableJack
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(
+            SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK
         );
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);
 
         // _removeUnusedVaultsMetaScUsd();
     }
@@ -357,32 +357,32 @@ contract SiALMFUpgradeScUsdTest is Test {
         // let's try to remove them completely
 
         // --------------------------------- Set target proportions to 0
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 2e16);
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 2e16);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 0, 2, 2e16);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 1, 2, 2e16);
 
         // --------------------------------- Withdraw liquidity from the sub vaults
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
         _tryToWithdraw(
-            IMetaVault(SonicConstantsLib.METAVAULT_metascUSD), SonicConstantsLib.WRAPPED_METAVAULT_metascUSD, 10_00
+            IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD), SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD, 10_00
         );
 
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 0, 2, 0);
-        _setProportions(SonicConstantsLib.METAVAULT_metascUSD, 1, 2, 0);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 0, 2, 0);
+        _setProportions(SonicConstantsLib.METAVAULT_METASCUSD, 1, 2, 0);
 
         // --------------------------------- Remove sub vaults
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_S_46); // index 0
+        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_S_46); // index 0
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metascUSD).removeVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs); // index 1
+        IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD).removeVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS); // index 1
     }
 
     function _tryToWithdraw(IMetaVault multiVault, address user, uint percents) internal {

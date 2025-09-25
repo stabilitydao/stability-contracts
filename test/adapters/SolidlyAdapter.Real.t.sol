@@ -6,9 +6,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SolidlyAdapter} from "../../src/adapters/SolidlyAdapter.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
-import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {RealLib} from "../../chains/RealLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -84,31 +82,6 @@ contract SolidlyAdapterTest is Test {
         vm.expectRevert(bytes("!PRICE 49453"));
         adapter.swap(RealLib.POOL_PEARL_MORE_USDC, RealLib.TOKEN_USDC, RealLib.TOKEN_MORE, address(this), 10_000);
     }
-
-    /*function testHardWorksWithAdapter() public {
-        ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
-        IHardWorker hw = IHardWorker(IPlatform(PLATFORM).hardWorker());
-        address multisig = IPlatform(PLATFORM).multisig();
-
-        // setup swapper
-        ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
-        uint i;
-        pools[i++] = _makePoolData(RealLib.POOL_PEARL_MORE_USDC, AmmAdapterIdLib.SOLIDLY, RealLib.TOKEN_MORE, RealLib.TOKEN_USDC);
-    //  pools[i++] = _makePoolData(RealLib.POOL_PEARL_MORE_USTB_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_MORE, RealLib.TOKEN_USTB);
-    //  pools[i++] = _makePoolData(RealLib.POOL_PEARL_DAI_USTB_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_USTB, RealLib.TOKEN_DAI);
-    //  pools[i++] = _makePoolData(RealLib.POOL_PEARL_USTB_arcUSD_100, AmmAdapterIdLib.UNISWAPV3, RealLib.TOKEN_arcUSD, RealLib.TOKEN_USTB);
-        vm.prank(multisig);
-        swapper.addPools(pools, true);
-
-        // also hardwork
-        vm.prank(multisig);
-        hw.setDedicatedServerMsgSender(address(this), true);
-        address[] memory vaultsForHardWork = new address[](1);
-        vaultsForHardWork[0] = IStrategy(STRATEGY).vault();
-        hw.call(vaultsForHardWork);
-
-
-    }*/
 
     function testSolidlyAdapter() external {}
 

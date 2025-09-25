@@ -7,7 +7,6 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {console, Test} from "forge-std/Test.sol";
 
 contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
     uint public constant FORK_BLOCK_C_CHAIN = 68407132; // Sep-8-2025 09:54:05 UTC

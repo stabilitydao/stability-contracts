@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-// import {RealSetup} from "../base/chains/RealSetup.sol";
 import {DiaAdapter} from "../../src/adapters/DiaAdapter.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {RealLib} from "../../chains/RealLib.sol";
@@ -9,7 +8,7 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 
 // todo replace Real-logic by Sonic-logic
-contract DiaAdapterTest is SonicSetup /* RealSetup */ {
+contract DiaAdapterTest is SonicSetup {
     DiaAdapter public adapter;
 
     constructor() {

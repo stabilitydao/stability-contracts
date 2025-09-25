@@ -32,8 +32,8 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     //slither-disable-next-line naming-convention
-    function __LPStrategyBase_init(LPStrategyBaseInitParams memory params) internal onlyInitializing {
-        LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
+    function __LPStrategyBase_init(LpStrategyBaseInitParams memory params) internal onlyInitializing {
+        LpStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         address[] memory _assets;
         uint exchangeAssetIndex;
         (_assets, exchangeAssetIndex) = LPStrategyLib.LPStrategyBase_init($, params.platform, params, ammAdapterId());
@@ -81,7 +81,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         override
         returns (uint[] memory amountsConsumed, uint value)
     {
-        LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
+        LpStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         (value, amountsConsumed) = $.ammAdapter.getLiquidityForAmounts($.pool, amountsMax);
     }
 
@@ -106,7 +106,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         address[] memory assets_,
         uint[] memory amountsRemaining
     ) internal view override returns (bool needCompound) {
-        LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
+        LpStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         return LPStrategyLib.processRevenue(
             platform(),
             vault(),
@@ -119,7 +119,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
     }
 
     function _swapForDepositProportion(uint prop0Pool) internal returns (uint[] memory amountsToDeposit) {
-        LPStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
+        LpStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         try LPStrategyLib.swapForDepositProportion(
             platform(), $.ammAdapter, $.pool, assets(), prop0Pool, customPriceImpactTolerance()
         ) returns (uint[] memory _amountsToDeposit) {
@@ -129,7 +129,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         }
     }
 
-    function _getLPStrategyBaseStorage() internal pure returns (LPStrategyBaseStorage storage $) {
+    function _getLPStrategyBaseStorage() internal pure returns (LpStrategyBaseStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := LPSTRATEGYBASE_STORAGE_LOCATION

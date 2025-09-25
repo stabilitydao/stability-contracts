@@ -5,8 +5,6 @@ import {AvalancheLib} from "../../../chains/avalanche/AvalancheLib.sol";
 import {ChainSetup} from "../ChainSetup.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 import {Factory} from "../../../src/core/Factory.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPoolMinimal} from "../../../src/integrations/aave/IPoolMinimal.sol";
 import {Platform} from "../../../src/core/Platform.sol";
 
 abstract contract AvalancheSetup is ChainSetup, DeployCore {

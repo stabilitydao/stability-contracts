@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MetaVault, IMetaVault, IStabilityVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
@@ -18,7 +17,7 @@ contract MetaVaultSonicUpgrade2 is Test {
     constructor() {
         // May-19-2025 09:53:57 AM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 27965000));
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
     }
@@ -29,7 +28,7 @@ contract MetaVaultSonicUpgrade2 is Test {
         newProportions[1] = 3e17;
         vm.prank(multisig);
         vm.expectRevert(IStabilityVault.NotSupported.selector);
-        metaVault.addVault(SonicConstantsLib.METAVAULT_metascUSD, newProportions);
+        metaVault.addVault(SonicConstantsLib.METAVAULT_METASCUSD, newProportions);
 
         // deploy new impl and upgrade
         address vaultImplementation = address(new MetaVault());
@@ -41,7 +40,7 @@ contract MetaVaultSonicUpgrade2 is Test {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
 
         vm.prank(multisig);
-        metaVault.addVault(SonicConstantsLib.METAVAULT_metascUSD, newProportions);
+        metaVault.addVault(SonicConstantsLib.METAVAULT_METASCUSD, newProportions);
 
         assertEq(metaVault.vaults().length, 2);
         assertEq(metaVault.currentProportions()[1], 0);

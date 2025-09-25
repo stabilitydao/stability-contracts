@@ -16,7 +16,7 @@ import {IMetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract SiUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
@@ -29,7 +29,7 @@ contract SiUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
-        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSDC);
+        metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
 
@@ -38,16 +38,16 @@ contract SiUpgradeTest is Test {
 
     /// @notice #326: Add maxWithdrawAssets and poolTvl to IStrategy
     function testMetaVaultUpdate326() public {
-        IVault vault = IVault(SonicConstantsLib.VAULT_C_scUSD_S_46);
+        IVault vault = IVault(SonicConstantsLib.VAULT_C_SCUSD_S_46);
         IStrategy strategy = vault.strategy();
         address[] memory assets = vault.assets();
 
         // ------------------- upgrade strategy
-        // _upgradeCVault(SonicConstantsLib.VAULT_C_scUSD_Euler_Re7Labs);
+        // _upgradeCVault(SonicConstantsLib.VAULT_C_SCUSD_EULER_RE7LABS);
         _upgradeSiloStrategy(address(strategy));
 
         // ------------------- get max amount ot vault tokens that can be withdrawn
-        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_metascUSD);
+        uint maxWithdraw = vault.balanceOf(SonicConstantsLib.METAVAULT_METASCUSD);
 
         // ------------------- our balance and max available liquidity in AAVE token
         SiloStrategy siloStrategy = SiloStrategy(address(strategy));
@@ -69,12 +69,12 @@ contract SiUpgradeTest is Test {
             //            console.log("availableLiquidity", availableLiquidity);
             //            console.log("balanceAssets", balanceAssets);
             vm.expectRevert();
-            vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+            vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
             vault.withdrawAssets(assets, maxWithdraw, new uint[](1));
         }
 
         // ------------------- ensure that we can withdraw calculated amount of vault tokens
-        vm.prank(SonicConstantsLib.METAVAULT_metascUSD);
+        vm.prank(SonicConstantsLib.METAVAULT_METASCUSD);
         vault.withdrawAssets(assets, balanceToWithdraw, new uint[](1));
 
         // ------------------- check poolTvl

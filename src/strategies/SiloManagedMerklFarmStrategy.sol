@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import {IIncentivesClaimingLogic} from "../integrations/silo/IIncentivesClaimingLogic.sol";
 import {ISiloIncentivesControllerForVault} from "../integrations/silo/ISiloIncentivesControllerForVault.sol";
 import {IVaultIncentivesModule} from "../integrations/silo/IVaultIncentivesModule.sol";
-import {IDistributionManager} from "../integrations/silo/IDistributionManager.sol";
 import {
     FarmingStrategyBase,
     StrategyBase,
@@ -268,7 +267,6 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
                 ISiloIncentivesControllerForVault c =
                     ISiloIncentivesControllerForVault(logic.VAULT_INCENTIVES_CONTROLLER());
 
-                // IDistributionManager.AccruedRewards[] memory accruedRewards =
                 c.claimRewards(address(this));
             }
         }

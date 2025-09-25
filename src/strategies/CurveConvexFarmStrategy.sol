@@ -75,7 +75,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         $.pid = IConvexRewardPool(farm.addresses[0]).convexPoolId();
 
         __LPStrategyBase_init(
-            LPStrategyBaseInitParams({
+            LpStrategyBaseInitParams({
                 id: StrategyIdLib.CURVE_CONVEX_FARM,
                 platform: addresses[0],
                 vault: addresses[1],
@@ -180,7 +180,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function getAssetsProportions() public view returns (uint[] memory proportions) {
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         proportions = $lp.ammAdapter.getProportions($lp.pool);
     }
 
@@ -198,7 +198,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /// @inheritdoc IStrategy
     function description() external view returns (string memory) {
         IFarmingStrategy.FarmingStrategyBaseStorage storage $f = _getFarmingStrategyBaseStorage();
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         IFactory.Farm memory farm = IFactory(IPlatform(platform()).factory()).farm($f.farmId);
         return _generateDescription(farm, $lp.ammAdapter);
     }
@@ -338,7 +338,7 @@ contract CurveConvexFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         returns (uint[] memory amountsConsumed, uint value)
     {
         amountsConsumed = amountsMax;
-        ILPStrategy.LPStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
+        ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         value = IStableSwapViews($lp.pool).calc_token_amount(amountsMax, true);
     }
 

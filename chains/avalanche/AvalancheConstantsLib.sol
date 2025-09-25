@@ -17,6 +17,7 @@ library AvalancheConstantsLib {
     address public constant TOKEN_WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     address public constant TOKEN_REUL = 0x2e3b32730B4F6b6502BdAa9122df3B026eDE5391;
     address public constant TOKEN_EUL = 0x9ceeD3A7f753608372eeAb300486cc7c2F38AC68;
+    address public constant TOKEN_AUSD = 0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a;
 
     // Oracles
     address public constant ORACLE_CHAINLINK_USDC_USD = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;

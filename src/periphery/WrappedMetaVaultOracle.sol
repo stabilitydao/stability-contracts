@@ -14,6 +14,7 @@ import {IPlatform} from "../interfaces/IPlatform.sol";
 /// @title Minimal Chainlink-compatible Wrapped MetaVault price feed
 /// @author Alien Deployer (https://github.com/a17)
 contract WrappedMetaVaultOracle is IAggregatorInterfaceMinimal {
+    /// forge-lint: disable-next-line(screaming-snake-case-immutable)
     address public immutable wrappedMetaVault;
 
     error NotTrustedPrice(address asset);

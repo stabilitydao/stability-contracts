@@ -31,81 +31,81 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         KNOWN_CYCLING_PAIRS = [
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_wstkscUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wETH],
-            [SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.TOKEN_sfrxUSD],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_auUSDC],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_scUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wOS],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_anS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_stkscETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_wanS],
-            [SonicConstantsLib.TOKEN_wETH, SonicConstantsLib.TOKEN_atETH],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_scETH],
-            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_SILO],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_frxUSD],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_bUSDCe20],
-            [SonicConstantsLib.TOKEN_wS, SonicConstantsLib.TOKEN_aUSDC],
-            [SonicConstantsLib.TOKEN_scETH, SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025]
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_WSTKSCUSD],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_WETH],
+            [SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.TOKEN_SFRXUSD],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_AUUSDC],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_SCUSD],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_WOS],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_PT_SILO_46_SCUSD_14AUG2025],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STKSCETH],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_ANS],
+            [SonicConstantsLib.TOKEN_WETH, SonicConstantsLib.TOKEN_STKSCETH],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_WANS],
+            [SonicConstantsLib.TOKEN_WETH, SonicConstantsLib.TOKEN_ATETH],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_PT_SILO_20_USDC_17JUL2025],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_SCETH],
+            [SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_FRXUSD],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_SILO],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_FRXUSD],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_BUSDCE20],
+            [SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_AUSDC],
+            [SonicConstantsLib.TOKEN_SCETH, SonicConstantsLib.TOKEN_PT_WSTKSCETH_29MAY2025]
         ];
 
         tokens = [
-            SonicConstantsLib.TOKEN_wS,
-            SonicConstantsLib.TOKEN_wETH,
-            SonicConstantsLib.TOKEN_wBTC,
+            SonicConstantsLib.TOKEN_WS,
+            SonicConstantsLib.TOKEN_WETH,
+            SonicConstantsLib.TOKEN_WBTC,
             SonicConstantsLib.TOKEN_USDC, // 3
-            SonicConstantsLib.TOKEN_stS,
+            SonicConstantsLib.TOKEN_STS,
             SonicConstantsLib.TOKEN_BEETS,
             SonicConstantsLib.TOKEN_EURC,
             SonicConstantsLib.TOKEN_EQUAL,
-            SonicConstantsLib.TOKEN_scUSD, // 8
+            SonicConstantsLib.TOKEN_SCUSD, // 8
             SonicConstantsLib.TOKEN_GOGLZ,
             SonicConstantsLib.TOKEN_SACRA,
             SonicConstantsLib.TOKEN_SACRA_GEM_1,
-            SonicConstantsLib.TOKEN_SWPx,
-            SonicConstantsLib.TOKEN_scETH, // 13
-            SonicConstantsLib.TOKEN_atETH, // 14
+            SonicConstantsLib.TOKEN_SWPX,
+            SonicConstantsLib.TOKEN_SCETH, // 13
+            SonicConstantsLib.TOKEN_ATETH, // 14
             SonicConstantsLib.TOKEN_AUR,
-            SonicConstantsLib.TOKEN_auUSDC, // 16
+            SonicConstantsLib.TOKEN_AUUSDC, // 16
             SonicConstantsLib.TOKEN_BRUSH,
             SonicConstantsLib.TOKEN_FS,
-            SonicConstantsLib.TOKEN_sDOG,
+            SonicConstantsLib.TOKEN_SDOG,
             SonicConstantsLib.TOKEN_MOON,
             SonicConstantsLib.TOKEN_OS,
             SonicConstantsLib.TOKEN_SHADOW,
-            SonicConstantsLib.TOKEN_xSHADOW,
-            SonicConstantsLib.TOKEN_sGEM1,
-            SonicConstantsLib.TOKEN_stkscUSD,
-            SonicConstantsLib.TOKEN_wstkscUSD,
-            SonicConstantsLib.TOKEN_stkscETH, // 27
-            SonicConstantsLib.TOKEN_wstkscETH,
-            SonicConstantsLib.TOKEN_wOS, // 29
+            SonicConstantsLib.TOKEN_XSHADOW,
+            SonicConstantsLib.TOKEN_SGEM1,
+            SonicConstantsLib.TOKEN_STKSCUSD,
+            SonicConstantsLib.TOKEN_WSTKSCUSD,
+            SonicConstantsLib.TOKEN_STKSCETH, // 27
+            SonicConstantsLib.TOKEN_WSTKSCETH,
+            SonicConstantsLib.TOKEN_WOS, // 29
             SonicConstantsLib.TOKEN_STBL,
-            SonicConstantsLib.TOKEN_anS, // 31
-            SonicConstantsLib.TOKEN_wanS, // 32
-            SonicConstantsLib.TOKEN_frxUSD, // 33
-            SonicConstantsLib.TOKEN_sfrxUSD, // 34
-            SonicConstantsLib.TOKEN_x33,
+            SonicConstantsLib.TOKEN_ANS, // 31
+            SonicConstantsLib.TOKEN_WANS, // 32
+            SonicConstantsLib.TOKEN_FRXUSD, // 33
+            SonicConstantsLib.TOKEN_SFRXUSD, // 34
+            SonicConstantsLib.TOKEN_X33,
             SonicConstantsLib.TOKEN_DIAMONDS,
-            SonicConstantsLib.TOKEN_aUSDC, // 37
-            SonicConstantsLib.TOKEN_PT_aUSDC_14AUG2025,
-            SonicConstantsLib.TOKEN_PT_stS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscUSD_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_wstkscETH_29MAY2025, // 41
-            SonicConstantsLib.TOKEN_PT_wOS_29MAY2025,
-            SonicConstantsLib.TOKEN_PT_Silo_46_scUSD_14AUG2025, // 43
-            SonicConstantsLib.TOKEN_PT_Silo_20_USDC_17JUL2025, // 44
-            SonicConstantsLib.TOKEN_GEMSx,
-            SonicConstantsLib.TOKEN_bUSDCe20, // 46
-            SonicConstantsLib.TOKEN_BeetsFragmentsS1,
+            SonicConstantsLib.TOKEN_AUSDC, // 37
+            SonicConstantsLib.TOKEN_PT_AUSDC_14AUG2025,
+            SonicConstantsLib.TOKEN_PT_STS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCUSD_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_WSTKSCETH_29MAY2025, // 41
+            SonicConstantsLib.TOKEN_PT_WOS_29MAY2025,
+            SonicConstantsLib.TOKEN_PT_SILO_46_SCUSD_14AUG2025, // 43
+            SonicConstantsLib.TOKEN_PT_SILO_20_USDC_17JUL2025, // 44
+            SonicConstantsLib.TOKEN_GEMSX,
+            SonicConstantsLib.TOKEN_BUSDCE20, // 46
+            SonicConstantsLib.TOKEN_BEETSFRAGMENTSS1,
             SonicConstantsLib.TOKEN_USDT,
             SonicConstantsLib.TOKEN_SILO, // 49
-            SonicConstantsLib.TOKEN_beS,
-            SonicConstantsLib.SILO_VAULT_25_wS
+            SonicConstantsLib.TOKEN_BES,
+            SonicConstantsLib.SILO_VAULT_25_WS
         ];
     }
 
@@ -123,7 +123,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper.addPools(_routes(), false);
         vm.stopPrank();
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         //--------------------------------- Set up initial balances
         uint amount = 2e6; // 1 USDC
@@ -132,7 +132,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         //--------------------------------- Swap USDC => metaUSD
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_metaUSD, amount, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_METAUSD, amount, 1_000);
         vm.roll(block.number + 6);
 
         uint balanceMetaUsd0 = metaVault.balanceOf(address(this));
@@ -146,7 +146,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         metaVault.approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
+        swapper.swap(SonicConstantsLib.METAVAULT_METAUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
@@ -174,7 +174,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         _addAdapter();
         _addToWhitelist(address(this));
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
@@ -183,31 +183,31 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Set up initial balances
         uint amount = 2e6; // 1 USDC
         assertEq(metaVault.balanceOf(address(this)), 0);
-        deal(SonicConstantsLib.TOKEN_scUSD, address(this), amount);
+        deal(SonicConstantsLib.TOKEN_SCUSD, address(this), amount);
 
         //--------------------------------- Swap scUSD => metaUSD
-        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.METAVAULT_metaUSD, amount, 1_000);
+        IERC20(SonicConstantsLib.TOKEN_SCUSD).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.METAVAULT_METAUSD, amount, 1_000);
         vm.roll(block.number + 6);
 
         uint balanceMetaUsd0 = metaVault.balanceOf(address(this));
-        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_SCUSD).balanceOf(address(this));
 
         assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => scUSD
-        bool withdrawDirectly = metaVault.assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        bool withdrawDirectly = metaVault.assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
         metaVault.approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
+        swapper.swap(SonicConstantsLib.METAVAULT_METAUSD, SonicConstantsLib.TOKEN_SCUSD, balanceMetaUsd0, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
         uint balanceMetaUsd1 = metaVault.balanceOf(address(this));
-        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_SCUSD).balanceOf(address(this));
 
         assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
         if (withdrawDirectly) {
@@ -233,20 +233,20 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         swapper.addPools(_routes(), false);
         vm.stopPrank();
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaS);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAS);
 
         //--------------------------------- Set up initial balances
         uint amount = 2e18; // 2 ws
         assertEq(metaVault.balanceOf(address(this)), 0);
-        deal(SonicConstantsLib.TOKEN_wS, address(this), amount);
+        deal(SonicConstantsLib.TOKEN_WS, address(this), amount);
 
         //--------------------------------- Swap USDC => metaUSD
-        IERC20(SonicConstantsLib.TOKEN_wS).approve(address(swapper), type(uint).max);
-        swapper.swap(SonicConstantsLib.TOKEN_wS, SonicConstantsLib.METAVAULT_metaS, amount, 1_000);
+        IERC20(SonicConstantsLib.TOKEN_WS).approve(address(swapper), type(uint).max);
+        swapper.swap(SonicConstantsLib.TOKEN_WS, SonicConstantsLib.METAVAULT_METAS, amount, 1_000);
         vm.roll(block.number + 6);
 
         uint balanceMetaS0 = metaVault.balanceOf(address(this));
-        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this));
 
         assertNotEq(balanceMetaS0, 0, "balanceMetaS0 should not be 0");
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
@@ -255,13 +255,13 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         metaVault.approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.METAVAULT_metaS, SonicConstantsLib.TOKEN_wS, balanceMetaS0, 1_000);
+        swapper.swap(SonicConstantsLib.METAVAULT_METAS, SonicConstantsLib.TOKEN_WS, balanceMetaS0, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
         uint balanceMetaS1 = metaVault.balanceOf(address(this));
-        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_wS).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(address(this));
 
         assertApproxEqAbs(balanceMetaS1, 0, 1, "balanceMetaS1 should be 0");
         assertApproxEqAbs(balanceToken1, amount, 10, "balanceToken1 should be equal to initial amount");
@@ -279,7 +279,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         _addAdapter();
         _addToWhitelist(address(this));
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
@@ -294,30 +294,30 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         IERC20(SonicConstantsLib.TOKEN_USDC).approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, amount, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
-        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(this));
         uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
 
         assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => USDC
-        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).metaVault())
+        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
             .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
 
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.TOKEN_USDC, balanceMetaUsd0, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
-        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(this));
         uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(address(this));
 
         assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
@@ -340,7 +340,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         _addAdapter();
         _addToWhitelist(address(this));
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
@@ -348,38 +348,38 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
 
         //--------------------------------- Set up initial balances
         uint amount = 2e6; // 1 USDC
-        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this)), 0);
-        deal(SonicConstantsLib.TOKEN_scUSD, address(this), amount);
+        assertEq(IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(this)), 0);
+        deal(SonicConstantsLib.TOKEN_SCUSD, address(this), amount);
 
         //--------------------------------- Swap scUSD => metaUSD
-        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        IERC20(SonicConstantsLib.TOKEN_SCUSD).approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, amount, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, amount, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
-        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
-        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+        uint balanceMetaUsd0 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(this));
+        uint balanceToken0 = IERC20(SonicConstantsLib.TOKEN_SCUSD).balanceOf(address(this));
 
         assertNotEq(balanceMetaUsd0, 0, "balanceMetaUsd0 should not be 0");
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => scUSD
-        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).metaVault())
-            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_scUSD;
+        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
+            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
 
-        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).approve(address(swapper), type(uint).max);
+        IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
-        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, SonicConstantsLib.TOKEN_scUSD, balanceMetaUsd0, 1_000);
+        swapper.swap(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, SonicConstantsLib.TOKEN_SCUSD, balanceMetaUsd0, 1_000);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6);
 
-        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_metaUSD).balanceOf(address(this));
-        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_scUSD).balanceOf(address(this));
+        uint balanceMetaUsd1 = IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).balanceOf(address(this));
+        uint balanceToken1 = IERC20(SonicConstantsLib.TOKEN_SCUSD).balanceOf(address(this));
 
         assertApproxEqAbs(balanceMetaUsd1, 0, 1, "balanceMetaUsd1 should be 0"); // weird we still have 1 decimal on balance
         if (withdrawDirectly) {
@@ -402,51 +402,51 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         _addAdapter();
         _addToWhitelist(whitelisted);
 
-        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
+        IMetaVault metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
 
         vm.startPrank(multisig);
         swapper.addPools(_routes(), false);
         vm.stopPrank();
 
         //--------------------------------- Ensure that swap is not possible without setLastBlockDefenseDisabledTx
-        deal(SonicConstantsLib.TOKEN_scUSD, address(this), 1e6);
-        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        deal(SonicConstantsLib.TOKEN_SCUSD, address(this), 1e6);
+        IERC20(SonicConstantsLib.TOKEN_SCUSD).approve(address(swapper), type(uint).max);
 
         vm.expectRevert(IStabilityVault.WaitAFewBlocks.selector);
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1e6, 1_000);
 
         //--------------------------------- Disable protection => swap works fine
         vm.prank(whitelisted);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1e6, 1_000);
         // suppose, we forget to enable protection back
         // metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         vm.roll(block.number + 6); // protection is automatically enabled after changing block
 
         //----------------------- Ensure that swap is not possible without setLastBlockDefenseDisabledTx
-        deal(SonicConstantsLib.TOKEN_scUSD, address(this), 1e6);
-        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        deal(SonicConstantsLib.TOKEN_SCUSD, address(this), 1e6);
+        IERC20(SonicConstantsLib.TOKEN_SCUSD).approve(address(swapper), type(uint).max);
 
         vm.expectRevert(IStabilityVault.WaitAFewBlocks.selector);
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1e6, 1_000);
 
         //----------------------- Disable protection => swap works fine
         vm.prank(whitelisted);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1e6, 1_000);
 
         vm.prank(whitelisted);
         metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
         // --------------------- block is NOT changed, protection is enabled back - now it's not possible to swap again
-        deal(SonicConstantsLib.TOKEN_scUSD, address(this), 1e6);
-        IERC20(SonicConstantsLib.TOKEN_scUSD).approve(address(swapper), type(uint).max);
+        deal(SonicConstantsLib.TOKEN_SCUSD, address(this), 1e6);
+        IERC20(SonicConstantsLib.TOKEN_SCUSD).approve(address(swapper), type(uint).max);
 
         vm.expectRevert(IStabilityVault.WaitAFewBlocks.selector);
-        swapper.swap(SonicConstantsLib.TOKEN_scUSD, SonicConstantsLib.WRAPPED_METAVAULT_metaUSD, 1e6, 1_000);
+        swapper.swap(SonicConstantsLib.TOKEN_SCUSD, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1e6, 1_000);
     }
 
     //endregion --------------------------------------- Dynamic routes  - wrapped
@@ -578,14 +578,14 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     function _addToWhitelist(address whitelistedUser) internal {
         address multisig = IPlatform(PLATFORM).multisig();
 
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaUSD);
-        _upgradeMetaVault(SonicConstantsLib.METAVAULT_metaS);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
+        _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAS);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaUSD).changeWhitelist(whitelistedUser, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(whitelistedUser, true);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_metaS).changeWhitelist(whitelistedUser, true);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAS).changeWhitelist(whitelistedUser, true);
     }
 
     function _addAdapter() internal returns (address adapter) {
@@ -622,28 +622,28 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         pools = new ISwapper.AddPoolData[](4);
         uint i;
         pools[i++] = _makePoolData(
-            SonicConstantsLib.METAVAULT_metaUSD,
+            SonicConstantsLib.METAVAULT_METAUSD,
             AmmAdapterIdLib.META_VAULT,
-            SonicConstantsLib.METAVAULT_metaUSD,
-            SonicConstantsLib.METAVAULT_metaUSD
+            SonicConstantsLib.METAVAULT_METAUSD,
+            SonicConstantsLib.METAVAULT_METAUSD
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
+            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.WRAPPED_METAVAULT_metaUSD,
-            SonicConstantsLib.METAVAULT_metaUSD
+            SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
+            SonicConstantsLib.METAVAULT_METAUSD
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.METAVAULT_metaS,
+            SonicConstantsLib.METAVAULT_METAS,
             AmmAdapterIdLib.META_VAULT,
-            SonicConstantsLib.METAVAULT_metaS,
-            SonicConstantsLib.METAVAULT_metaS
+            SonicConstantsLib.METAVAULT_METAS,
+            SonicConstantsLib.METAVAULT_METAS
         );
         pools[i++] = _makePoolData(
-            SonicConstantsLib.WRAPPED_METAVAULT_metaS,
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS,
             AmmAdapterIdLib.ERC_4626,
-            SonicConstantsLib.WRAPPED_METAVAULT_metaS,
-            SonicConstantsLib.METAVAULT_metaS
+            SonicConstantsLib.WRAPPED_METAVAULT_METAS,
+            SonicConstantsLib.METAVAULT_METAS
         );
     }
 
