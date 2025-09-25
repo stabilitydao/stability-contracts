@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IBurnableERC20} from "../../interfaces/IBurnableERC20.sol";
@@ -82,7 +83,7 @@ library RecoveryLib {
         uint countPools = recoveryPools.length;
         LibPRNG.PRNG memory prng;
         LibPRNG.seed(prng, seed);
-        uint index = LibPRNG.next(prng) % countPools;
+        uint index = LibPRNG.next(prng) % (2 * countPools);
         if (index % 2 == 0) {
             return index / 2;
         } else {
@@ -94,9 +95,9 @@ library RecoveryLib {
     function getPoolWithMinPrice(address[] memory recoveryPools) internal view returns (uint index0) {
         uint len = recoveryPools.length;
         if (len != 0) {
-            uint160 minPrice = getCurrentSqrtPriceX96(recoveryPools[0]);
+            uint minPrice = getNormalizedSqrtPrice(recoveryPools[0]);
             for (uint i = 1; i < len; ++i) {
-                uint160 price = getCurrentSqrtPriceX96(recoveryPools[i]);
+                uint price = getNormalizedSqrtPrice(recoveryPools[i]);
                 if (price < minPrice) {
                     minPrice = price;
                     index0 = i;
@@ -105,6 +106,24 @@ library RecoveryLib {
         }
         return index0;
     }
+
+    /// @notice Get normalized sqrt price (scaled to 1e18) in the given Uniswap V3 pool
+    /// Result price is suitable to compare prices in pools with different token decimals
+    function getNormalizedSqrtPrice(address pool) internal view returns (uint) {
+        (uint160 sqrtPriceX96,,,,,,) = IUniswapV3Pool(pool).slot0();
+        address token0 = IUniswapV3Pool(pool).token0();
+        address token1 = IUniswapV3Pool(pool).token1();
+
+        uint8 decimals0 = IERC20Metadata(token0).decimals();
+        uint8 decimals1 = IERC20Metadata(token1).decimals();
+
+        uint sqrtPrice = uint(sqrtPriceX96) * 1e18 / (1 << 96);
+
+        return decimals1 > decimals0
+            ? sqrtPrice / (10 ** ((decimals1 - decimals0) / 2))
+            : sqrtPrice * (10 ** ((decimals0 - decimals1) / 2));
+    }
+
     //endregion -------------------------------------- View
 
     //region -------------------------------------- Governance actions
@@ -271,7 +290,7 @@ library RecoveryLib {
         // swapper_.swap(asset, recoveryToken, amount, 20_000);
         uint amountToSwap = IERC20(asset).balanceOf(address(this));
         if (amountToSwap > assetThreshold) {
-            _swapToRecoveryToken(targetPool, asset, IERC20(asset).balanceOf(address(this)));
+            _swapToRecoveryToken(targetPool, asset, amountToSwap);
             uint balance = IERC20(recoveryToken).balanceOf(address(this));
             if (balance != 0) {
                 IBurnableERC20(recoveryToken).burn(balance);
@@ -291,11 +310,6 @@ library RecoveryLib {
     function _swapToRecoveryToken(address pool_, address tokenIn, uint amountInMax) internal {
         RecoveryStorage storage $ = getRecoveryTokenStorage();
         require(amountInMax != 0, InvalidSwapAmount());
-
-        uint balanceIn = IERC20(tokenIn).balanceOf(address(this));
-        if (balanceIn < amountInMax) {
-            revert InsufficientBalance();
-        }
 
         uint160 currentSqrtPriceX96 = getCurrentSqrtPriceX96(pool_);
 

@@ -66,6 +66,10 @@ contract RecoverySonicTest is Test {
         uint[] balanceMetaVaultTokenInRecovery;
         uint[] balanceRecoveryTokenInRecovery;
     }
+
+    struct SelectedPoolTestCase {
+        uint index;
+    }
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Unit tests
@@ -345,7 +349,7 @@ contract RecoverySonicTest is Test {
 
     //region --------------------------------- Use Recovery with multiple recovery tokens
     function fixtureMultiple() public pure returns (MultipleTestCase[] memory) {
-        MultipleTestCase[] memory cases = new MultipleTestCase[](2);
+        MultipleTestCase[] memory cases = new MultipleTestCase[](3);
 
         address[] memory recoveryPools = new address[](6);
         recoveryPools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAUSD;
@@ -389,7 +393,14 @@ contract RecoverySonicTest is Test {
             inputAssets: inputAssets0,
             inputAmounts: inputAmounts0
         });
-
+        // ------------------------- Target pool is the last pool in the list
+        cases[2] = MultipleTestCase({
+            targetPool: SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAUSDC,
+            pools: recoveryPools,
+            amounts: amounts,
+            inputAssets: inputAssets0,
+            inputAmounts: inputAmounts0
+        });
         return cases;
     }
 
@@ -542,8 +553,79 @@ contract RecoverySonicTest is Test {
             "balance of meta-vault-token in Recovery should be increased"
         );
     }
-
     //endregion --------------------------------- Use Recovery with multiple recovery tokens
+
+    //region --------------------------------- Selected pool tests
+    function fixtureSelectedPoolCase() public pure returns (SelectedPoolTestCase[] memory) {
+        SelectedPoolTestCase[] memory cases = new SelectedPoolTestCase[](6);
+        for (uint i; i < cases.length; ++i) {
+            cases[i] = SelectedPoolTestCase({index: i});
+        }
+        return cases;
+    }
+
+    function tableSelectedPool(SelectedPoolTestCase memory selectedPoolCase) public {
+        Recovery recovery = createRecoveryInstance();
+        MultipleTestCase memory multiple = fixtureMultiple()[0];
+        multiple.targetPool = multiple.pools[selectedPoolCase.index];
+
+        address user1 = makeAddr("user1");
+
+        ISwapper swapper = ISwapper(IPlatform(SonicConstantsLib.PLATFORM).swapper());
+        _addRoutesForRecoveryTokens();
+
+        for (uint i; i < multiple.pools.length; ++i) {
+            // assume here that recovery tokens are always set as token 0
+            address recoveryToken = IUniswapV3Pool(multiple.pools[i]).token0();
+
+            // ------------------------- Prepare user balances
+            deal(recoveryToken, user1, multiple.amounts[i] * 2);
+
+            vm.prank(user1);
+            IERC20(recoveryToken).approve(address(swapper), type(uint).max);
+        }
+
+        // ------------------------- Setup Recovery
+        _whiteListRecovery(recovery);
+
+        vm.prank(multisig);
+        recovery.addRecoveryPools(multiple.pools);
+
+        // ------------------------- User makes first swap
+        for (uint i; i < multiple.pools.length; ++i) {
+            address recoveryToken = IUniswapV3Pool(multiple.pools[i]).token0();
+            address metaVaultToken = IUniswapV3Pool(multiple.pools[i]).token1();
+
+            // price in the selected pool will be reduced more than in other pools
+            uint amountToSwap = i == selectedPoolCase.index ? multiple.amounts[i] : multiple.amounts[i] / 100;
+
+            vm.prank(user1);
+            swapper.swap(recoveryToken, metaVaultToken, amountToSwap, 100_000);
+        }
+
+        // -------------------------- Grab statistics
+        uint[] memory count = new uint[](multiple.pools.length);
+        for (uint i; i < 255; ++i) {
+            uint index = RecoveryLib.selectPool(i, multiple.pools);
+            count[index]++;
+        }
+
+        uint indexMax;
+        SingleState[] memory states = new SingleState[](multiple.pools.length);
+        for (uint i; i < multiple.pools.length; ++i) {
+            states[i] = getState(IUniswapV3Pool(multiple.pools[i]), user1, recovery);
+            if (count[i] > count[indexMax]) {
+                indexMax = i;
+            }
+        }
+
+        //        for (uint i; i < multiple.pools.length; ++i) {
+        //            console.log(i, count[i], states[i].sqrtPriceX96, RecoveryLib.getNormalizedSqrtPrice(multiple.pools[i]));
+        //        }
+
+        assertEq(indexMax, selectedPoolCase.index, "most selected pool is the target pool");
+    }
+    //endregion --------------------------------- Selected pool tests
 
     //region --------------------------------- Tests implementations
 
