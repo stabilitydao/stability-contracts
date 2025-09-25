@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "./libs/RevenueRouterLib.sol";
+import {RevenueRouterLib} from "./libs/RevenueRouterLib.sol";
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,6 +18,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.6.0: send 20% of earned assets to Recovery
 ///   1.5.0: processAccumulatedVaults
 ///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
 ///   1.3.0: vaultsAccumulated; updateUnit; units
@@ -32,7 +33,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.6.0";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
