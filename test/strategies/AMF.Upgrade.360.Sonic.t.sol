@@ -99,17 +99,7 @@ contract AMFUpgrade360Test is Test {
 
         address strategyImplementation = address(new AaveMerklFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }

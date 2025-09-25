@@ -27,17 +27,7 @@ contract SiMMFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloManagedMerklFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, strategyImplementation);
         factory.upgradeStrategyProxy(STRATEGY);
 
         (string memory specific,) = IStrategy(STRATEGY).getSpecificName();

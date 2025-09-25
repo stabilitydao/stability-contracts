@@ -57,17 +57,7 @@ contract ASFUpgrade4Test is Test {
         // Upgrade strategy
         address newImpl = address(new ALMShadowFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ALM_SHADOW_FARM,
-                implementation: newImpl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ALM_SHADOW_FARM, newImpl);
         factory.upgradeStrategyProxy(STRATEGY);
         // Deposit assets after upgrade
         IVault(vault).depositAssets(assets, amounts, 0, address(this));
@@ -92,17 +82,7 @@ contract ASFUpgrade4Test is Test {
         vm.prank(multisig);
         hw.setDedicatedServerMsgSender(address(this), true);
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ALM_SHADOW_FARM,
-                implementation: newImpl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ALM_SHADOW_FARM, newImpl);
         factory.upgradeStrategyProxy(STRATEGY);
         address pool = ILPStrategy(STRATEGY).pool();
         address ammAdapter = address(ILPStrategy(STRATEGY).ammAdapter());
@@ -141,17 +121,7 @@ contract ASFUpgrade4Test is Test {
         vm.prank(multisig);
         hw.setDedicatedServerMsgSender(address(this), true);
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ALM_SHADOW_FARM,
-                implementation: newImpl,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ALM_SHADOW_FARM, newImpl);
         factory.upgradeStrategyProxy(STRATEGY);
         address pool = ILPStrategy(STRATEGY).pool();
         address ammAdapter = address(ILPStrategy(STRATEGY).ammAdapter());

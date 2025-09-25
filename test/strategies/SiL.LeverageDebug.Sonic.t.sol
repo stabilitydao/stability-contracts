@@ -122,17 +122,7 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
 
     function _upgrade() internal {
         address strategyImplementation = address(new SiloLeverageStrategy());
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_LEVERAGE, strategyImplementation);
         factory.upgradeStrategyProxy(STRATEGY);
     }
 }

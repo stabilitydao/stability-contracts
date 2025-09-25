@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {IPlatform} from "../../src/core/Platform.sol";
 import {PriceReader} from "../../src/core/PriceReader.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {Factory, IFactory} from "../../src/core/Factory.sol";
+import {Factory} from "../../src/core/Factory.sol";
 import {MockAggregatorV3Interface} from "../../src/test/MockAggregatorV3Interface.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {MockStrategy} from "../../src/test/MockStrategy.sol";
@@ -105,17 +105,7 @@ abstract contract FullMockSetup is MockSetup {
         // setup factory
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
         MockStrategy strategyImplementation = new MockStrategy();
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
     }
 
     function testFullMockSetup() public {}

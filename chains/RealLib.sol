@@ -251,17 +251,7 @@ library RealLib {
     }
 
     function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
+        factory.setStrategyImplementation(id, address(implementation));
     }
 
     function testChainLib() external {}

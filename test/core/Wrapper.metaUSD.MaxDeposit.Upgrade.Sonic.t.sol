@@ -246,15 +246,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         if (upgradeStrategies_) {
             address[] memory vaults = metaVault_.vaults();
@@ -289,17 +281,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new AaveStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.AAVE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -309,17 +291,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new EulerStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EULER,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.EULER, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -329,17 +301,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -349,17 +311,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new SiloFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -369,17 +321,7 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new SiloManagedFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }

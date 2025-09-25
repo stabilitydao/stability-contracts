@@ -67,7 +67,7 @@ library StrategyLib {
         // nosemgrep
         for (uint i; i < len; ++i) {
             amountsOut[i] = balance(assets[i]) * amount / total_;
-            IERC20(assets[i]).transfer(receiver, amountsOut[i]);
+            IERC20(assets[i]).safeTransfer(receiver, amountsOut[i]);
         }
     }
 

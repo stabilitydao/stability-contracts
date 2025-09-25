@@ -95,32 +95,12 @@ contract FactoryTest is Test, MockSetup {
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
         );
 
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
 
         assertEq(platform.isOperator(address(101)), true);
         vm.startPrank(address(101));
         vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
         vm.stopPrank();
 
         uint strategyLogicTokenId = factory.strategyLogicConfig(keccak256(bytes(StrategyIdLib.DEV))).tokenId;
@@ -128,27 +108,9 @@ contract FactoryTest is Test, MockSetup {
         assertEq(hashes.length, 1);
         assertEq(strategyLogic.ownerOf(strategyLogicTokenId), address(this));
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: "TestVaultType",
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 100
-            })
-        );
+        factory.setVaultImplementation("TestVaultType", address(vaultImplementation));
 
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
 
         vm.expectRevert(bytes("Strategy: underlying token cant be zero for this strategy"));
         factory.deployVaultAndStrategy(
@@ -219,17 +181,7 @@ contract FactoryTest is Test, MockSetup {
 
         factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
 
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
 
         (address vault,) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
@@ -266,27 +218,9 @@ contract FactoryTest is Test, MockSetup {
         uint[] memory nums = new uint[](0);
         int24[] memory ticks = new int24[](0);
 
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: address(vaultImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: builderPayPerVaultPrice
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, address(vaultImplementation));
 
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(strategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
 
         (, address strategy) = factory.deployVaultAndStrategy(
             VaultTypeLib.COMPOUNDING, StrategyIdLib.DEV, new address[](0), new uint[](0), addresses, nums, ticks
@@ -339,34 +273,14 @@ contract FactoryTest is Test, MockSetup {
             assertFalse(extra__[0] == bytes32(0));
         }
 
-        /*factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(newStrategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: false,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        /*factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));
 
         strategyProxyHash = IStrategyProxy(strategy).strategyImplementationLogicIdHash();
         vm.expectRevert(abi.encodeWithSelector(IFactory.UpgradeDenied.selector, strategyProxyHash));
         factory.upgradeStrategyProxy(strategy);*/
 
         factory.setStrategyImplementation(StrategyIdLib.DEV, address(newStrategyImplementation));
-        /*factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEV,
-                implementation: address(newStrategyImplementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );*/
+        /*factory.setStrategyImplementation(StrategyIdLib.DEV, address(strategyImplementation));*/
 
         vm.expectRevert(IControllable.NotFactory.selector);
         IStrategyProxy(strategy).upgrade();

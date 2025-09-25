@@ -40,17 +40,7 @@ contract SFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SwapXFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SWAPX_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 

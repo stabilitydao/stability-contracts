@@ -35,17 +35,7 @@ contract TPFUpgradeTest is Test {
         vm.prank(multisig);
         IPlatform(PLATFORM).addOperator(multisig);
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.TRIDENT_PEARL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.TRIDENT_PEARL_FARM, strategyImplementation);
         factory.upgradeStrategyProxy(STRATEGY);
 
         vaultManager.vaults();
