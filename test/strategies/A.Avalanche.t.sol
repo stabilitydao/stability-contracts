@@ -61,6 +61,7 @@ contract AaveStrategyTestAvalanche is AvalancheSetup, UniversalTest {
         assertGe(IERC20(underlying).balanceOf(assetProvider), amount, "Deal enough aTokens 1");
 
         vm.prank(assetProvider);
+        /// forge-lint: disable-next-line
         IERC20(underlying).transfer(to, amount);
 
         // Attempt to transfer 999121603 tokens produces 999121604 on balance on Avalanche
