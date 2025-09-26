@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import {SonicConstantsLib} from "../../../chains/sonic/SonicConstantsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";

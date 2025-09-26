@@ -15,7 +15,6 @@ import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 
 contract RecoverySonicTest is Test {
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC

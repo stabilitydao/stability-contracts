@@ -8,7 +8,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {IControllable} from "../../interfaces/IControllable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
