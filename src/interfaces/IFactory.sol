@@ -329,5 +329,8 @@ interface IFactory {
     /// @param initParams Init params variations that will be parsed by strategy
     function setStrategyAvailableInitParams(string memory id, StrategyAvailableInitParams memory initParams) external;
 
+    /// @notice Set new implementation of the strategy
+    function setStrategyImplementation(string memory strategyId, address implementation) external;
+
     //endregion -- Write functions -----
 }

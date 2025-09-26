@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {RevenueRouter, IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
+import {Platform} from "../../src/core/Platform.sol";
 
 contract RevenueRouterUpgrade3TestSonic is Test {
     uint public constant FORK_BLOCK = 38301556; // Jul-13-2025 09:27:35 AM +UTC
@@ -24,10 +25,12 @@ contract RevenueRouterUpgrade3TestSonic is Test {
     }
 
     function _upgradeRevenueRouter() internal {
-        address[] memory proxies = new address[](1);
+        address[] memory proxies = new address[](2);
         proxies[0] = address(revenueRouter);
-        address[] memory implementations = new address[](1);
+        proxies[1] = address(PLATFORM);
+        address[] memory implementations = new address[](2);
         implementations[0] = address(new RevenueRouter());
+        implementations[1] = address(new Platform());
         vm.startPrank(multisig);
         IPlatform(PLATFORM).announcePlatformUpgrade("2025.07.3-alpha", proxies, implementations);
         skip(18 hours);

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
 import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {AvalancheLib, AvalancheConstantsLib} from "../../chains/avalanche/AvalancheLib.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheLib.sol";
 
 contract SiloManagedMerklFarmStrategyAvalancheTest is AvalancheSetup, UniversalTest {
     // uint public constant FORK_BLOCK_C_CHAIN = 68407132; // Sep-8-2025 09:54:05 UTC

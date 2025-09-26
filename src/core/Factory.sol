@@ -24,6 +24,7 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 /// @notice Platform factory assembling vaults. Stores vault settings, strategy logic, farms.
 ///         Provides the opportunity to upgrade vaults and strategies.
 /// Changelog:
+///   1.3.1: setStrategyImplementation added to interface
 ///   1.3.0: vault can be built only by admin; setVaultImplementation, setStrategyImplementation;
 ///          remove setAliasName, getAliasName, whatToBuild; remove RVault and RMVault support
 ///   1.2.0: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
@@ -39,7 +40,7 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
     //region ----- Constants -----
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.3.0";
+    string public constant VERSION = "1.3.1";
 
     uint internal constant _WEEK = 60 * 60 * 24 * 7;
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {AvalancheSetup} from "../base/chains/AvalancheSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {AvalancheLib, AvalancheConstantsLib} from "../../chains/avalanche/AvalancheLib.sol";
+import {AvalancheConstantsLib} from "../../chains/avalanche/AvalancheLib.sol";
 
 contract SiloMerklFarmStrategyAvalancheTest is AvalancheSetup, UniversalTest {
     uint public constant FORK_BLOCK_C_CHAIN = 68876829; // Sep-17-2025 12:09:57 UTC
