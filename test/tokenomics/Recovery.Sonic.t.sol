@@ -416,29 +416,17 @@ contract RecoverySonicTest is Test {
         return cases;
     }
 
-    function tableMultipleTest(MultipleTestCase memory multiple) public {
-        Recovery recovery = createRecoveryInstance();
-        SingleState[4][] memory states = _testMultiplePoolsTwoSwaps(recovery, multiple, true, false);
+    /// @notice We use test instead of table because coverage doesn't take into account all table-calls, only single one
+    function testMultiple0() public {
+        _testMultiple(fixtureMultiple()[0]);
+    }
 
-        address targetMetaVaultToken = IUniswapV3Pool(multiple.targetPool).token1();
-        for (uint i; i < multiple.pools.length; ++i) {
-            // console.log(i, states[i][0].sqrtPriceX96, states[i][1].sqrtPriceX96, states[i][2].sqrtPriceX96);
-            if (IUniswapV3Pool(multiple.pools[i]).token1() == targetMetaVaultToken) {
-                assertLt(states[i][1].sqrtPriceX96, states[i][0].sqrtPriceX96, "price should go down");
-                assertEq(
-                    states[i][2].sqrtPriceX96,
-                    states[i][0].sqrtPriceX96,
-                    "price should be restored to initial value (pool was used to swap assets to recovery tokens)"
-                );
-            } else {
-                assertLt(states[i][1].sqrtPriceX96, states[i][0].sqrtPriceX96, "price should go down");
-                assertEq(
-                    states[i][2].sqrtPriceX96,
-                    states[i][1].sqrtPriceX96,
-                    "price is not change (pool was not used to swap assets to recovery tokens)"
-                );
-            }
-        }
+    function testMultiple1() public {
+        _testMultiple(fixtureMultiple()[1]);
+    }
+
+    function testMultiple2() public {
+        _testMultiple(fixtureMultiple()[2]);
     }
 
     function tableMultipleUnitPrice(MultipleTestCase memory multiple) public {
@@ -641,6 +629,31 @@ contract RecoverySonicTest is Test {
     //endregion --------------------------------- Selected pool tests
 
     //region --------------------------------- Tests implementations
+
+    function _testMultiple(MultipleTestCase memory multiple) internal {
+        Recovery recovery = createRecoveryInstance();
+        SingleState[4][] memory states = _testMultiplePoolsTwoSwaps(recovery, multiple, true, false);
+
+        address targetMetaVaultToken = IUniswapV3Pool(multiple.targetPool).token1();
+        for (uint i; i < multiple.pools.length; ++i) {
+            // console.log(i, states[i][0].sqrtPriceX96, states[i][1].sqrtPriceX96, states[i][2].sqrtPriceX96);
+            if (IUniswapV3Pool(multiple.pools[i]).token1() == targetMetaVaultToken) {
+                assertLt(states[i][1].sqrtPriceX96, states[i][0].sqrtPriceX96, "price should go down");
+                assertEq(
+                    states[i][2].sqrtPriceX96,
+                    states[i][0].sqrtPriceX96,
+                    "price should be restored to initial value (pool was used to swap assets to recovery tokens)"
+                );
+            } else {
+                assertLt(states[i][1].sqrtPriceX96, states[i][0].sqrtPriceX96, "price should go down");
+                assertEq(
+                    states[i][2].sqrtPriceX96,
+                    states[i][1].sqrtPriceX96,
+                    "price is not change (pool was not used to swap assets to recovery tokens)"
+                );
+            }
+        }
+    }
 
     /// @notice Make following actions:
     /// 1. User swaps half of his recovery tokens
