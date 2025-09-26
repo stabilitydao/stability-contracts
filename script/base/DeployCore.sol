@@ -15,7 +15,6 @@ import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {VaultPriceOracle} from "../../src/core/VaultPriceOracle.sol";
-import {Recovery} from "../../src/tokenomics/Recovery.sol";
 
 abstract contract DeployCore {
     struct DeployPlatformVars {
@@ -32,7 +31,6 @@ abstract contract DeployCore {
         FeeTreasury feeTreasury;
         MetaVaultFactory metaVaultFactory;
         VaultPriceOracle vaultPriceOracle;
-        Recovery recovery;
     }
 
     function _deployCore(IPlatformDeployer.DeployPlatformParams memory p) internal returns (address) {
@@ -105,12 +103,6 @@ abstract contract DeployCore {
         vars.proxy.initProxy(address(new VaultPriceOracle()));
         vars.vaultPriceOracle = VaultPriceOracle(address(vars.proxy));
         vars.vaultPriceOracle.initialize(address(vars.platform));
-
-        // Recovery.sol
-        vars.proxy = new Proxy();
-        vars.proxy.initProxy(address(new Recovery()));
-        vars.recovery = Recovery(address(vars.proxy));
-        vars.recovery.initialize(address(vars.platform));
 
         // setup platform
         vars.platform.setup(
