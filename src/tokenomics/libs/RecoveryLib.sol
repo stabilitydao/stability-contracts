@@ -261,15 +261,18 @@ library RecoveryLib {
     }
 
     function uniswapV3SwapCallback(int amount0Delta, int amount1Delta, bytes calldata /* data */ ) internal {
+        amount0Delta; // hide warning
+
         RecoveryStorage storage $ = getRecoveryTokenStorage();
         address pool = msg.sender;
 
         require($.recoveryPools.contains(pool), UnauthorizedCallback());
         require($.swapping, NotSwapping());
 
-        if (amount0Delta > 0) {
-            IERC20(IUniswapV3Pool(pool).token0()).safeTransfer(address(pool), uint(amount0Delta));
-        }
+        // we never send recovery tokens back to the pool
+        //        if (amount0Delta > 0) {
+        //            IERC20(IUniswapV3Pool(pool).token0()).safeTransfer(address(pool), uint(amount0Delta));
+        //        }
         if (amount1Delta > 0) {
             IERC20(IUniswapV3Pool(pool).token1()).safeTransfer(address(pool), uint(amount1Delta));
         }
@@ -341,27 +344,6 @@ library RecoveryLib {
         }
     }
 
-    function sqrtPriceX96ToPrice(
-        uint160 sqrtPriceX96,
-        uint8 token0Decimals,
-        uint8 token1Decimals
-    ) internal pure returns (uint price18) {
-        // Q96 = 2^96
-        uint Q96 = 2 ** 96;
-
-        // (sqrtPriceX96 / Q96)^2 с масштабированием на 1e18
-        uint numerator = uint(sqrtPriceX96) * uint(sqrtPriceX96) * 1e18;
-        uint denominator = Q96 * Q96;
-
-        uint rawPrice = numerator / denominator;
-
-        // decimalAdjustment = 10^(token0Decimals - token1Decimals)
-        if (token0Decimals >= token1Decimals) {
-            price18 = rawPrice * (10 ** (token0Decimals - token1Decimals));
-        } else {
-            price18 = rawPrice / (10 ** (token1Decimals - token0Decimals));
-        }
-    }
     //endregion -------------------------------------- Internal logic
 
     //region -------------------------------------- Utils
