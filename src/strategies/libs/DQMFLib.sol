@@ -10,15 +10,60 @@ import {IAmmAdapter} from "../../interfaces/IAmmAdapter.sol";
 import {IDefiEdgeStrategyFactory} from "../../integrations/defiedge/IDefiEdgeStrategyFactory.sol";
 import {IFeedRegistryInterface} from "../../integrations/chainlink/IFeedRegistryInterface.sol";
 import {UniswapV3MathLib} from "./UniswapV3MathLib.sol";
+import {IPlatform} from "../../interfaces/IPlatform.sol";
 
 library DQMFLib {
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal constant USD = address(840);
 
+    function initVariants(
+        address platform_,
+        string memory ammAdapterId,
+        string memory strategyLogicId
+    )
+        external
+        view
+        returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
+    {
+        IAmmAdapter _ammAdapter = IAmmAdapter(IPlatform(platform_).ammAdapter(keccak256(bytes(ammAdapterId))).proxy);
+        addresses = new address[](0);
+        ticks = new int24[](0);
+
+        IFactory.Farm[] memory farms = IFactory(IPlatform(platform_).factory()).farms();
+        uint len = farms.length;
+        //slither-disable-next-line uninitialized-local
+        uint localTtotal;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                ++localTtotal;
+            }
+        }
+
+        variants = new string[](localTtotal);
+        nums = new uint[](localTtotal);
+        localTtotal = 0;
+        // nosemgrep
+        for (uint i; i < len; ++i) {
+            // nosemgrep
+            IFactory.Farm memory farm = farms[i];
+            // nosemgrep
+            if (farm.status == 0 && CommonLib.eq(farm.strategyLogicId, strategyLogicId)) {
+                nums[localTtotal] = i;
+                //slither-disable-next-line calls-loop
+                variants[localTtotal] = generateDescription(farm, _ammAdapter);
+                ++localTtotal;
+            }
+        }
+    }
+
     function generateDescription(
         IFactory.Farm memory farm,
         IAmmAdapter ammAdapter
-    ) external view returns (string memory) {
+    ) public view returns (string memory) {
         //slither-disable-next-line calls-loop
         return string.concat(
             "Earn ",

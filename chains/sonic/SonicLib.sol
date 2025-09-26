@@ -45,6 +45,7 @@ import {CompoundV2Strategy} from "../../src/strategies/CompoundV2Strategy.sol";
 import {IVaultPriceOracle} from "../../src/interfaces/IVaultPriceOracle.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
 import {SiloManagedMerklFarmStrategy} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
+import {SiloMerklFarmStrategy} from "../../src/strategies/SiloMerklFarmStrategy.sol";
 
 /// @dev Sonic network [chainId: 146] data library
 //   _____             _
@@ -247,6 +248,7 @@ library SonicLib {
         _addStrategyLogic(factory, StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()), true);
         _addStrategyLogic(factory, StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()), false);
         _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
+        _addStrategyLogic(factory, StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()), true);
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -348,7 +350,7 @@ library SonicLib {
     }
 
     function farms() public view returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](65);
+        _farms = new IFactory.Farm[](68);
         uint i;
 
         _farms[i++] = SonicFarmMakerLib._makeBeetsStableFarm(SonicConstantsLib.BEETS_GAUGE_WS_STS); //0
@@ -438,9 +440,21 @@ library SonicLib {
         _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_MEV_CAPITAL); //62
         _farms[i++] = SonicFarmMakerLib._makeEulerMerklFarm(SonicConstantsLib.EULER_MERKL_USDC_RE7_LABS); //63
 
-        // todo register farms for all required vault
-        _farms[i++] = SonicFarmMakerLib._makeSiloManagedMerklFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_MAINSTREED_LIQUIDITY_VAULT); //64
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedMerklFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_MAINSTREET_LIQUIDITY_VAULT); //64
+        _farms[i++] = SonicFarmMakerLib._makeSiloManagedMerklFarm(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_MAINSTREET_GREENHOUSE_VAULT); //65
 
+        _farms[i++] = SonicFarmMakerLib._makeSiloMerklFarm(
+            SonicConstantsLib.SILO_VAULT_138_smsUSD,
+            SonicConstantsLib.TOKEN_USDC,
+            address(0), // no gauge: config.hookReceiver.configuredGauges(collateral/protectedSharedToken) returns 0
+            true // borrowable
+        ); //66
+        _farms[i++] = SonicFarmMakerLib._makeSiloMerklFarm(
+            SonicConstantsLib.SILO_VAULT_141_PT_smsUSD_30OCT_USDC,
+            SonicConstantsLib.TOKEN_USDC,
+            address(0), // no gauge: config.hookReceiver.configuredGauges(collateral/protectedSharedToken) returns 0
+            true // borrowable
+        ); //67
     }
 
     function _makePoolData(
