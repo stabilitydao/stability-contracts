@@ -553,4 +553,7 @@ library SonicConstantsLib {
     address public constant PENDLE_ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
     address public constant PENDLE_STABILITY_WMETAUSD_ADAPTER = 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
 
+    // ---------------------------------- Mainstreet
+    address internal constant MSUSD_MINTER = 0xb1E423c251E989bd4e49228eF55aC4747D63F54D;
+
 }

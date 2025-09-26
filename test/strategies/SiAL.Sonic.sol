@@ -7,6 +7,7 @@ import {UniversalTest} from "../base/UniversalTest.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IVault} from "../../src/interfaces/IVault.sol";
+import {IMainstreetMinter} from "../../src/integrations/mainstreet/IMainstreetMinter.sol";
 
 contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     constructor() {
@@ -46,7 +47,7 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
         //        _addStrategy(SonicConstantsLib.SILO_VAULT_54_wOS, SonicConstantsLib.SILO_VAULT_54_S, 85_00);
 
         // max ltv = 87%, liquidation threshold = 90% => max leverage = 1/(1-0.9) = 10
-        // _addStrategy(SonicConstantsLib.SILO_VAULT_141_PT_SMSUSD_30OCT2025, SonicConstantsLib.SILO_VAULT_141_USDC, 85_00);
+         _addStrategy(SonicConstantsLib.SILO_VAULT_141_PT_SMSUSD_30OCT2025, SonicConstantsLib.SILO_VAULT_141_USDC, 85_00);
 
         // max ltv = 87%, liquidation threshold = 90% => max leverage = 1/(1-0.9) = 10
         _addStrategy(SonicConstantsLib.SILO_VAULT_138_SMSUSD, SonicConstantsLib.SILO_VAULT_138_USDC, 85_00);
@@ -76,12 +77,18 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     }
 
     /// @notice #330: check maxDepositAssets for SiloAdvancedLeverageStrategy
-    function _preDeposit() internal view override {
-        IStrategy currentStrategy = IStrategy(currentStrategy);
-        IVault vault = IVault(currentStrategy.vault());
+    function _preDeposit() internal override {
+        IStrategy _currentStrategy = IStrategy(currentStrategy);
+        IVault vault = IVault(_currentStrategy.vault());
         uint[] memory amounts = vault.maxDeposit(address(this));
 
         assertEq(amounts.length, 1, "SiloAdvancedLeverageStrategyTest: maxDepositAssets length mismatch");
         assertEq(amounts[0], type(uint).max, "SiloAdvancedLeverageStrategyTest: maxDepositAssets should be unlimited");
+
+        // --------------------------- Setup up possibility to mint msUSD directly
+        address whitelister = IMainstreetMinter(SonicConstantsLib.MSUSD_MINTER).whitelister();
+
+        vm.prank(whitelister);
+        IMainstreetMinter(SonicConstantsLib.MSUSD_MINTER).modifyWhitelist(currentStrategy, true);
     }
 }

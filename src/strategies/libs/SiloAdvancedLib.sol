@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {IMainstreetMinter} from "../../integrations/mainstreet/IMainstreetMinter.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -59,7 +60,7 @@ library SiloAdvancedLib {
     // mint msUSD by USDC, stake to smsUSD
     address internal constant TOKEN_SMSUSD = 0xc7990369DA608C2F4903715E3bD22f2970536C29;
     address internal constant TOKEN_MSUSD = 0xE5Fb2Ed6832deF99ddE57C0b9d9A56537C89121D;
-
+    address internal constant MSUSD_MINTER = 0xb1E423c251E989bd4e49228eF55aC4747D63F54D;
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -553,29 +554,23 @@ library SiloAdvancedLib {
         if (tokenIn == TOKEN_USDC && tokenOut == TOKEN_SMSUSD) {
             ISwapper swapper = ISwapper(IPlatform(platform).swapper());
             uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
-            //console.log('amount out by swap', outBySwap);
-            uint outByMint = IERC4626(tokenOut).convertToShares(amount);
-            console.log("amount", amount);
-            console.log("outBySwap", outBySwap);
-            console.log("outByMint", outByMint);
+            uint outByMint = IMainstreetMinter(MSUSD_MINTER).quoteMint(TOKEN_USDC, amount);
 
-            if (outByMint < outBySwap * 99_50 / 100_00) {
-                console.log("1", amount);
-                // mint msUSD todo
-//                IERC20(TOKEN_USDC).forceApprove(TOKEN_MSUSD, amount);
-//                IMainStreetUsd(TOKEN_MSUSD).mint(address(this), amount);
-//                console.log("2", IERC20(TOKEN_MSUSD).balanceOf(address(this)));
+            if (outByMint > outBySwap * 99_50 / 100_00) {
+                // mint msUSD
+                IERC20(TOKEN_USDC).forceApprove(MSUSD_MINTER, amount);
+                IMainstreetMinter(MSUSD_MINTER).mint(TOKEN_USDC, amount, 0);
+                uint balanceMsUsd = IERC20(TOKEN_MSUSD).balanceOf(address(this));
+
                 // stake to smsUSD
-                IERC20(TOKEN_MSUSD).forceApprove(TOKEN_SMSUSD, amount);
-                IERC4626(TOKEN_SMSUSD).deposit(amount, address(this));
-                console.log("3", IERC20(TOKEN_SMSUSD).balanceOf(address(this)));
+                IERC20(TOKEN_MSUSD).forceApprove(TOKEN_SMSUSD, balanceMsUsd);
+                IERC4626(TOKEN_SMSUSD).deposit(balanceMsUsd, address(this));
+
                 return;
             }
         }
 
-        console.log("swap", tokenIn, tokenOut, amount);
         StrategyLib.swap(platform, tokenIn, tokenOut, amount, priceImpactTolerance);
-        console.log("444", IERC20(TOKEN_SMSUSD).balanceOf(address(this)));
     }
 
     //region ------------------------------------- Deposit
