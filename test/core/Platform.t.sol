@@ -69,8 +69,7 @@ contract PlatformTest is Test {
                 zap: address(0),
                 revenueRouter: address(1),
                 metaVaultFactory: address(0),
-                vaultPriceOracle: address(11),
-                recovery: address(12)
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -94,8 +93,7 @@ contract PlatformTest is Test {
                 zap: address(0),
                 revenueRouter: address(0),
                 metaVaultFactory: address(0),
-                vaultPriceOracle: address(11),
-                recovery: address(12)
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );
@@ -329,8 +327,7 @@ contract PlatformTest is Test {
                 zap: address(0),
                 revenueRouter: address(0),
                 metaVaultFactory: address(0),
-                vaultPriceOracle: address(11),
-                recovery: address(12)
+                vaultPriceOracle: address(11)
             }),
             IPlatform.PlatformSettings({fee: 6_000})
         );

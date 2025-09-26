@@ -125,8 +125,7 @@ abstract contract DeployCore {
                 zap: address(vars.zap),
                 revenueRouter: address(vars.revenueRouter),
                 metaVaultFactory: address(vars.metaVaultFactory),
-                vaultPriceOracle: address(vars.vaultPriceOracle),
-                recovery: address(vars.recovery)
+                vaultPriceOracle: address(vars.vaultPriceOracle)
             }),
             IPlatform.PlatformSettings({fee: p.fee})
         );

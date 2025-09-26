@@ -163,7 +163,7 @@ contract Platform is Controllable, IPlatform {
         $.revenueRouter = addresses.revenueRouter;
         $.metaVaultFactory = addresses.metaVaultFactory;
         $.vaultPriceOracle = addresses.vaultPriceOracle;
-        $.recovery = addresses.recovery;
+        // $.recovery is not set by default, use setupRecovery if needed
         $.minTvlForFreeHardWork = 100e18;
         emit Addresses(
             $.multisig,

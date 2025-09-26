@@ -22,7 +22,8 @@ library RecoveryLib {
     bytes32 internal constant _RECOVERY_STORAGE_LOCATION =
         0xa66d1b580930935bfabcf1fd52b7ed6cbbde4be7c22c150ca93844cf61663900;
 
-    uint internal constant SWAP_PRICE_IMPACT_TOLERANCE = 20_000; // 20%
+    /// @notice Price impact tolerance for swapping assets to meta-vault tokens, 20_000 = 20%
+    uint internal constant SWAP_PRICE_IMPACT_TOLERANCE_ASSETS = 20_000;
 
     //region -------------------------------------- Data types
 
@@ -226,7 +227,7 @@ library RecoveryLib {
                     _approveIfNeeds(token, amountsToSwap[i], address(swapper_));
 
                     // hide swap errors in same way as in RevenueRouter
-                    try swapper_.swap(token, metaVaultToken, amountsToSwap[i], SWAP_PRICE_IMPACT_TOLERANCE) {}
+                    try swapper_.swap(token, metaVaultToken, amountsToSwap[i], SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {}
                     catch {
                         emit OnSwapFailed(token, metaVaultToken, amountsToSwap[i]);
                     }
@@ -312,7 +313,6 @@ library RecoveryLib {
         require(amountInMax != 0, InvalidSwapAmount());
 
         uint160 currentSqrtPriceX96 = getCurrentSqrtPriceX96(pool_);
-
         address token0 = IUniswapV3Pool(pool_).token0();
         uint160 sqrtPriceLimitX96 = _sqrtPriceLimitX96(token0, IUniswapV3Pool(pool_).token1());
 
@@ -331,7 +331,7 @@ library RecoveryLib {
                 $.swapping = false;
 
                 uint amountOut = zeroForOne ? uint(-amount1) : uint(-amount0);
-                uint amountIn = zeroForOne ? uint(-amount0) : uint(-amount1);
+                uint amountIn = zeroForOne ? uint(amount0) : uint(amount1);
                 uint160 finalSqrtPrice = getCurrentSqrtPriceX96(pool_);
 
                 emit RecoveryTokensPurchased(pool_, amountInMax, amountIn, amountOut, finalSqrtPrice);
@@ -342,6 +342,27 @@ library RecoveryLib {
         }
     }
 
+    function sqrtPriceX96ToPrice(
+        uint160 sqrtPriceX96,
+        uint8 token0Decimals,
+        uint8 token1Decimals
+    ) internal pure returns (uint price18) {
+        // Q96 = 2^96
+        uint Q96 = 2 ** 96;
+
+        // (sqrtPriceX96 / Q96)^2 с масштабированием на 1e18
+        uint numerator = uint(sqrtPriceX96) * uint(sqrtPriceX96) * 1e18;
+        uint denominator = Q96 * Q96;
+
+        uint rawPrice = numerator / denominator;
+
+        // decimalAdjustment = 10^(token0Decimals - token1Decimals)
+        if (token0Decimals >= token1Decimals) {
+            price18 = rawPrice * (10 ** (token0Decimals - token1Decimals));
+        } else {
+            price18 = rawPrice / (10 ** (token1Decimals - token0Decimals));
+        }
+    }
     //endregion -------------------------------------- Internal logic
 
     //region -------------------------------------- Utils

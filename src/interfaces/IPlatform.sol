@@ -92,8 +92,8 @@ interface IPlatform {
         address revenueRouter;
         address metaVaultFactory;
         address vaultPriceOracle;
-        address recovery;
     }
+    // recovery is not configured by default, use setupRecovery function
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
