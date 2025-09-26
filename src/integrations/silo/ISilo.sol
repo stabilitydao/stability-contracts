@@ -49,6 +49,8 @@ interface ISilo is IERC4626 {
     /// `convertToAssets(uint256 _shares, AssetType _assetType)` with `AssetType.Protected` or `AssetType.Debt`
     function convertToAssets(uint _shares) external view returns (uint assets);
 
+    function convertToAssets(uint256 _shares, CollateralType _assetType) external view returns (uint256 assets);
+
     function asset() external view returns (address assetTokenAddres);
 
     /// @notice Fetches the silo configuration contract
@@ -68,4 +70,6 @@ interface ISilo is IERC4626 {
     function maxRepay(address _borrower) external view returns (uint assets);
 
     function getLiquidity() external view returns (uint256 liquidity);
+
+    function maxWithdraw(address _owner, CollateralType _collateralType) external view returns (uint256 maxAssets);
 }
