@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
-import {SonicLib, SonicConstantsLib} from "../../chains/sonic/SonicLib.sol";
+import {SonicConstantsLib} from "../../chains/sonic/SonicLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IFarmingStrategy} from "../../src/interfaces/IFarmingStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
