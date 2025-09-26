@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IBurnableERC20} from "../../interfaces/IBurnableERC20.sol";
