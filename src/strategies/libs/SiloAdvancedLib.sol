@@ -556,7 +556,8 @@ library SiloAdvancedLib {
             uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
             uint outByMint = IMainstreetMinter(MSUSD_MINTER).quoteMint(TOKEN_USDC, amount);
 
-            if (outByMint > outBySwap * 99_50 / 100_00) {
+            if (outByMint > outBySwap * 99_50 / 100_00 && IMainstreetMinter(MSUSD_MINTER).isWhitelisted(address(this)))
+            {
                 // mint msUSD
                 IERC20(TOKEN_USDC).forceApprove(MSUSD_MINTER, amount);
                 IMainstreetMinter(MSUSD_MINTER).mint(TOKEN_USDC, amount, 0);

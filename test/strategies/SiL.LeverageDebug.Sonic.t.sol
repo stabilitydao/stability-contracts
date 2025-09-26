@@ -29,7 +29,7 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         //console.logBytes4(type(ILeverageLendingStrategy).interfaceId);
     }
 
-    function testSiloDepositWithdrawUsersImpact() public {
+    function testSiloDepositWithdrawUsersImpact() internal {
         address user1 = address(1);
         address user2 = address(2);
         uint user1Deposit = 100e18;
@@ -58,7 +58,7 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
         return IStrategy(STRATEGY).total() * 1e18 / IERC20(vault).totalSupply();
     }
 
-    function testSiLHardWork() public {
+    function testSiLHardWork() internal {
         vm.recordLogs();
         vm.prank(vault);
         IStrategy(STRATEGY).doHardWork();
