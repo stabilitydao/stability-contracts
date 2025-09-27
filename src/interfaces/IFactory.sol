@@ -308,15 +308,6 @@ interface IFactory {
     /// @param implementation Address of vault implementation
     function setVaultImplementation(string memory vaultType, address implementation) external;
 
-<<<<<<< HEAD
-=======
-    /// @notice Initial addition or change of strategy logic implementation.
-    /// Operator can add new strategy logic. Governance or multisig can change existing logic config.
-    /// @param strategyId Strategy logic ID string
-    /// @param implementation Address of strategy implementation
-    function setStrategyImplementation(string memory strategyId, address implementation) external;
-
->>>>>>> 54414f17e9d307c33701982d16689e8b6612623b
     /// @notice Governance and multisig can set a vault status other than Active - the default status.
     /// @param vaults Addresses of vault proxy
     /// @param statuses New vault statuses. Constant from VaultStatusLib

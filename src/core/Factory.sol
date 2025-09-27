@@ -31,10 +31,7 @@ import {IStrategyLogic} from "../interfaces/IStrategyLogic.sol";
 ///          - Governance/Operator config is now managed via `setVaultImplementation`
 ///            and `setStrategyImplementation`
 ///          * Integrations and deployment scripts must be updated accordingly
-<<<<<<< HEAD
 ///   1.3.1: setStrategyImplementation added to interface
-=======
->>>>>>> 54414f17e9d307c33701982d16689e8b6612623b
 ///   1.3.0: vault can be built only by admin; setVaultImplementation, setStrategyImplementation;
 ///          remove setAliasName, getAliasName, whatToBuild; remove RVault and RMVault support
 ///   1.2.0: reduced factory size. moved upgradeStrategyProxy, upgradeVaultProxy logic to FactoryLib
