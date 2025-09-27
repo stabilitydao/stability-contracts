@@ -28,6 +28,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Supply asset to Silo V2 and earn farm rewards from Silo and Merkl
 /// Changelog:
+///   1.0.1: StrategyBase 2.6.0, fix getSpecificName, Protected collateral is not supported - #395, #394
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -36,7 +37,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @dev Strategy logic ID used in this farm
     string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MERKL_FARM;
@@ -65,6 +66,8 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         __FarmingStrategyBase_init(addresses[0], nums[0]);
 
         IERC20(siloAssets[0]).forceApprove(address(siloVault), type(uint).max);
+
+        require(farm.nums[0] == 1, "Only Collateral supported, see #394");
 
         address gauge = _getGauge(farm);
         if (gauge != address(0)) {
@@ -104,8 +107,20 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
 
     /// @inheritdoc IStrategy
+    /// @dev returns specific value OR other name like "other asset symbol, market id"
     function getSpecificName() external view override returns (string memory, bool) {
-        return (CommonLib.u2s(_getMarketId()), true);
+        string memory specific = _getStrategyBaseStorage().specific;
+        if (bytes(specific).length != 0) {
+            return (specific, true);
+        }
+
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = _getSilo(farm);
+        ISiloConfig config = ISiloConfig(siloVault.config());
+        (address silo0, address silo1) = config.getSilos();
+        ISilo otherSilo = ISilo(address(siloVault) == silo0 ? silo1 : silo0);
+
+        return (string.concat(IERC20Metadata(otherSilo.asset()).symbol(), ", ", CommonLib.u2s(_getMarketId())), true);
     }
 
     /// @inheritdoc IStrategy

@@ -271,7 +271,7 @@ library SonicLib {
         //endregion ----- BC pools ----
 
         //region ----- Pools ----
-        pools = new ISwapper.AddPoolData[](46);
+        pools = new ISwapper.AddPoolData[](50);
 
         uint i;
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_USDT, SonicConstantsLib.TOKEN_USDC);
@@ -340,6 +340,12 @@ library SonicLib {
         pools[i++] = _makePoolData(SonicConstantsLib.METAVAULT_METAS, AmmAdapterIdLib.META_VAULT, SonicConstantsLib.METAVAULT_METAS, SonicConstantsLib.METAVAULT_METAS); // 44
 
         pools[i++] = _makePoolData(SonicConstantsLib.POOL_SHADOW_CL_USDC_EUL, AmmAdapterIdLib.UNISWAPV3, SonicConstantsLib.TOKEN_EUL, SonicConstantsLib.TOKEN_USDC); // 45
+
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_PENDLE_PT_SMSUSD_30OCT2025, AmmAdapterIdLib.PENDLE, SonicConstantsLib.TOKEN_PT_SMSUSD_30OCT2025, SonicConstantsLib.TOKEN_SMSUSD); // 46
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_GENTRIFIEDGAINS_MSUSD_USDC, AmmAdapterIdLib.BALANCER_V3_STABLE, SonicConstantsLib.TOKEN_MSUSD, SonicConstantsLib.SILO_MANAGED_VAULT_USDC_GREENHOUSE); // 47
+
+        pools[i++] = _makePoolData(SonicConstantsLib.SILO_MANAGED_VAULT_USDC_GREENHOUSE, AmmAdapterIdLib.ERC_4626, SonicConstantsLib.SILO_MANAGED_VAULT_USDC_GREENHOUSE, SonicConstantsLib.TOKEN_USDC); // 48
+        pools[i++] = _makePoolData(SonicConstantsLib.POOL_BEETS_MAINSTREETVAULTWORKS_SMSUSD_USDC, AmmAdapterIdLib.BALANCER_V3_STABLE, SonicConstantsLib.TOKEN_SMSUSD, SonicConstantsLib.SILO_MANAGED_VAULT_USDC_GREENHOUSE); // 49
         //endregion ----- Pools ----
     }
 
