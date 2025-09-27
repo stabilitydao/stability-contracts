@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.28;
 
 library AmmAdapterIdLib {
     string public constant UNISWAPV3 = "UniswapV3";
@@ -14,4 +14,5 @@ library AmmAdapterIdLib {
     string public constant BALANCER_V3_STABLE = "BalancerV3Stable";
     string public constant PENDLE = "Pendle";
     string public constant META_VAULT = "MetaUSD";
+    string public constant BALANCER_V3_RECLAMM = "BalancerV3ReCLAMM";
 }
