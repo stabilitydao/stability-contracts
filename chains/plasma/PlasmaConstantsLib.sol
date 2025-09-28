@@ -13,6 +13,8 @@ library PlasmaConstantsLib {
     address public constant TOKEN_WXPL = 0x6100E367285b01F48D07953803A2d8dCA5D19873;
 
     // Oracles
+    address public constant ORACLE_CHAINLINK_USDT0_USD = 0xdBbB0b5DD13E7AC9C56624834ef193df87b022c3;
+    address public constant ORACLE_CHAINLINK_ETH_USD = 0x43A7dd2125266c5c4c26EB86cd61241132426Fe7;
 
     // AMMs
     address public constant POOL_BALANCER_V3_RECLAMM_WXPL_USDT0 = 0xe14Ba497A7C51f34896D327ec075F3F18210a270;

@@ -26,7 +26,7 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.BalancerV3ReClammAdapter")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant STORAGE_LOCATION = 0xdaeb8260b874aed93418395b99eeb6877f5241937db3fb4ff3b6122f2614df00;
+    bytes32 private constant STORAGE_LOCATION = 0x1e1f631b42f2fb77972646b67315696ad5ca38a298a2645a48cc79e667edc000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -73,31 +73,8 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
         AdapterStorage storage $ = _getStorage();
         address router = $.router;
 
-        /*// scope for checking price impact
-        uint amountOutMax;
-        {
-            uint minimalAmount = amountIn / 1000;
-            require(minimalAmount != 0, "Too low amountIn");
-            uint price = getPrice(pool, tokenIn, tokenOut, minimalAmount);
-            amountOutMax = price * amountIn / minimalAmount;
-        }
-
-        IERC20(tokenIn).approve(PERMIT2, amountIn);
-        IPermit2(PERMIT2).approve(tokenIn, router, uint160(amountIn), uint48(block.timestamp));
-
-        uint amountOut = IRouter(router).swapSingleTokenExactIn(
-            pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, ""
-        );
-
-        uint priceImpact =
-            amountOutMax < amountOut ? 0 : (amountOutMax - amountOut) * ConstantsLib.DENOMINATOR / amountOutMax;
-        if (priceImpact > priceImpactTolerance) {
-            revert(string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
-        }
-
-        IERC20(tokenOut).safeTransfer(recipient, amountOut);
-
-        emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amountIn, amountOut);*/
+        // todo
+        // see BalancerV3StableAdapter
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -124,57 +101,19 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
         address pool,
         uint[] memory amounts
     ) external returns (uint liquidity, uint[] memory amountsConsumed) {
-        amountsConsumed = amounts;
-        AdapterStorage storage $ = _getStorage();
-        liquidity = IRouter($.router).queryAddLiquidityUnbalanced(pool, amounts, address(this), "");
+        revert("Unavailable");
     }
 
     /// @inheritdoc IAmmAdapter
     function getProportions(address pool) external view returns (uint[] memory props) {
-        (address[] memory tokens,, uint[] memory balances,) = IPoolInfo(pool).getTokenInfo();
-        uint totalInAsset0;
-        uint len = tokens.length;
-        uint[] memory pricedBalances = new uint[](len);
-        for (uint i; i < len; ++i) {
-            uint tokenDecimals = IERC20Metadata(tokens[i]).decimals();
-            uint price = i == 0
-                ? 10 ** tokenDecimals
-                : getPrice(pool, address(tokens[i]), address(tokens[0]), 10 ** (tokenDecimals - 3)) * 1000;
-            pricedBalances[i] = balances[i] * price / 10 ** tokenDecimals;
-            totalInAsset0 += pricedBalances[i];
-        }
-        props = new uint[](len);
-        for (uint i; i < len; ++i) {
-            props[i] = pricedBalances[i] * 1e18 / totalInAsset0;
-        }
+        // todo
+        // see BalancerV3StableAdapter
     }
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        {
-            // take pool commission
-            uint swapFeePercentage = IPoolInfo(pool).getStaticSwapFeePercentage();
-            amount -= amount * swapFeePercentage / 1e18;
-        }
-
-        address[] memory tokens = poolTokens(pool);
-        /*uint[] memory balancesScaled18 = IPoolInfo(pool).getCurrentLiveBalances();
-        (uint tokenInIndex, uint tokenOutIndex) = _getTokenInOutIndexes(tokens, tokenIn, tokenOut);
-        (uint currentAmp,,) = IStablePool(pool).getAmplificationParameter();
-        uint invariant = IStablePool(pool).computeInvariant(balancesScaled18, Rounding.ROUND_DOWN);
-        address vault = IBalancerPoolToken(pool).getVault();
-        (uint[] memory decimalScalingFactors, uint[] memory tokenRates) = IVaultExtension(vault).getPoolTokenRates(pool);
-        uint amountGivenScaled18 = ScalingHelpers.toScaled18ApplyRateRoundDown(
-            amount, decimalScalingFactors[tokenInIndex], tokenRates[tokenInIndex]
-        );
-        uint amountOutScaled18 = StableMath.computeOutGivenExactIn(
-            currentAmp, balancesScaled18, tokenInIndex, tokenOutIndex, amountGivenScaled18, invariant
-        );
-        return ScalingHelpers.toRawUndoRateRoundDown(
-            amountOutScaled18,
-            decimalScalingFactors[tokenOutIndex],
-            ScalingHelpers.computeRateRoundUp(tokenRates[tokenOutIndex])
-        );*/
+        // todo
+        // see BalancerV3StableAdapter
     }
 
     /// @inheritdoc IERC165
