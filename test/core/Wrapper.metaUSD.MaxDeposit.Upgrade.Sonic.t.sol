@@ -25,6 +25,8 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
@@ -51,6 +53,8 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         multiVault = IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC);
         wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/multi-vault/c-vault with AAVE strategy
@@ -397,6 +401,18 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
         for (uint i; i < current.length; ++i) {
             console.log("i, current, target", i, current[i], props[i]);
         }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------- Auxiliary functions
 }

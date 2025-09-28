@@ -16,6 +16,8 @@ import {console, Test} from "forge-std/Test.sol";
 import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {IPPrincipalToken} from "../../src/integrations/pendle/IPPrincipalToken.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract SiALUpgradeExpiredPtTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -101,6 +103,8 @@ contract SiALUpgradeExpiredPtTest is Test {
             0xb2D7f55037A303B9f6AF0729C1183B43FBb3CBb6,
             0x4138F7b064Dc467A7C801c8ce19B94C98120A473 // largest
         ];
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     //region ---------------------------------------- Test for TOKEN_PT_SILO_20_USDC_17JUL2025
@@ -586,6 +590,18 @@ contract SiALUpgradeExpiredPtTest is Test {
         //                console.log("maxLeverage", state.maxLeverage);
         //                console.log("targetLeverage", state.targetLeverage);
         return state;
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------------------------- Helpers
 }

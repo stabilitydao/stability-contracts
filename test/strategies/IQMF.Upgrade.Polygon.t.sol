@@ -10,6 +10,8 @@ import {
 } from "../../src/strategies/IchiQuickSwapMerklFarmStrategy.sol";
 import {PolygonLib, IFactory, IPlatform, StrategyIdLib} from "../../chains/PolygonLib.sol";
 import {IHardWorker} from "../../src/interfaces/IHardWorker.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract IQMFUpgradeTest is Test {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
@@ -19,6 +21,8 @@ contract IQMFUpgradeTest is Test {
         vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL")));
         // vm.rollFork(56967000); // May-14-2024 05:36:03 PM +UTC
         vm.rollFork(62670000); // Oct-05-2024 04:41:36 PM +UTC
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testIQMFUpgrade() public {
@@ -74,5 +78,17 @@ contract IQMFUpgradeTest is Test {
 
         assertEq(IERC20(PolygonLib.TOKEN_QUICK).balanceOf(STRATEGY), 0);
         assertEq(IFarmingStrategy(STRATEGY).farmingAssets()[0], PolygonLib.TOKEN_QUICK);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

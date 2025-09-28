@@ -30,6 +30,8 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// #360 - withdraw underlying from MetaVaults
 contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
@@ -158,6 +160,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         _upgradePlatform();
         _setupMetaVaultFactory();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     //region --------------------------------------- Tests for MetaUSDC/MetaScUSD (sub-meta-vaults)
@@ -1827,6 +1830,18 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address recoveryTokenImplementation = address(new RecoveryToken());
         vm.prank(multisig);
         metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------------------------------- Helpers
 }

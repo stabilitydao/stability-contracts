@@ -18,6 +18,8 @@ import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -93,6 +95,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVaults();
 
         // to withdraw from requested subvault, i.e. 2
@@ -163,6 +166,18 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
 
         vm.prank(multisig);
         metaVault.setTargetProportions(props);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------- Auxiliary functions
 }

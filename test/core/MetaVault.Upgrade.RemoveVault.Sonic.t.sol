@@ -22,6 +22,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @dev #336: add removeVault function to MetaVault, fix potential division on zero
 contract MetaVaultSonicUpgradeRemoveVault is Test {
@@ -51,6 +53,8 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testRemoveSingleVault0() public {
@@ -474,6 +478,18 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         factory.setStrategyImplementation(StrategyIdLib.AAVE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------------ Upgrade CVaults and strategies
 }

@@ -18,6 +18,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract EUpgradeTest is Test {
     uint public constant FORK_BLOCK = 33508152; // Jun-12-2025 05:49:24 AM +UTC
@@ -35,6 +37,8 @@ contract EUpgradeTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #326: Add maxWithdrawAssets and poolTvl to IStrategy
@@ -165,6 +169,18 @@ contract EUpgradeTest is Test {
         factory.setStrategyImplementation(StrategyIdLib.EULER, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------ Auxiliary Functions
 }

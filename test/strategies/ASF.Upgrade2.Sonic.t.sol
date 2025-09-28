@@ -10,6 +10,8 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract ASFUpgrade2Test is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -24,6 +26,7 @@ contract ASFUpgrade2Test is Test {
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         factory = IFactory(IPlatform(IControllable(STRATEGY).platform()).factory());
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testASFBugfix2() public {
@@ -46,5 +49,20 @@ contract ASFUpgrade2Test is Test {
         factory.upgradeStrategyProxy(STRATEGY);
 
         IVault(vault).depositAssets(assets, amounts, 0, address(this));
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
 }

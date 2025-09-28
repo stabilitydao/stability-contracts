@@ -16,6 +16,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @dev MetaVault 1.1.0
 contract MetaVaultSonicUpgrade1 is Test {
@@ -30,6 +32,7 @@ contract MetaVaultSonicUpgrade1 is Test {
         metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVaults();
     }
 
@@ -140,5 +143,17 @@ contract MetaVaultSonicUpgrade1 is Test {
         factory.setStrategyImplementation(StrategyIdLib.ICHI_SWAPX_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

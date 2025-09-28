@@ -15,6 +15,8 @@ import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {AaveMerklFarmStrategy} from "../../src/strategies/AaveMerklFarmStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice #360 - Add support of underlying operations to AaveMerklFarmStrategy strategy
 contract AMFUpgrade360Test is Test {
@@ -33,6 +35,8 @@ contract AMFUpgrade360Test is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice Try to deposit/withdraw underlying from the vault with AMF strategy
@@ -143,6 +147,18 @@ contract AMFUpgrade360Test is Test {
             vm.prank(user);
             IERC20(assets[j]).approve(spender, amounts[j]);
         }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------ Auxiliary Functions
 }

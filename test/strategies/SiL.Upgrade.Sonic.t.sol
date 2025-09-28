@@ -7,6 +7,8 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract SiLUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -17,6 +19,7 @@ contract SiLUpgradeTest is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(16296000); // Mar-27-2025 08:48:46 AM +UTC
         vault = IStrategy(STRATEGY).vault();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testSiLUpgrade() public {
@@ -34,5 +37,17 @@ contract SiLUpgradeTest is Test {
         vm.prank(vault);
         IStrategy(STRATEGY).doHardWork();
         //console.log('got', IERC20(vault).balanceOf(multisig) - balanceWas);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

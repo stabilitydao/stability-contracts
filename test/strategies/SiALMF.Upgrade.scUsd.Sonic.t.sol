@@ -24,6 +24,8 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice Fix a problem in MetaVaultAdapter that produced a false-positive ExceedSlippage error
 contract SiALMFUpgradeScUsdTest is Test {
@@ -67,6 +69,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         //        _upgradeWrappedMetaVault();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVault(address(vault));
 
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
@@ -386,6 +389,21 @@ contract SiALMFUpgradeScUsdTest is Test {
         //        for (uint i; i < current.length; ++i) {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
     //endregion ------------------------------------ Helpers
 }

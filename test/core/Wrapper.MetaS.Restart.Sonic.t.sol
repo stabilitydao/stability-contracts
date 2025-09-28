@@ -24,6 +24,8 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperMetaSRestartSonicTest is Test {
     // uint public constant FORK_BLOCK = 42601861; // Aug-12-2025 03:58:17 AM +UTC
@@ -196,6 +198,8 @@ contract WrapperMetaSRestartSonicTest is Test {
             0x093308DC6b31e4bfE980405ae8a80748fCd3E4b7,
             0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A
         ];
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice Restart MetaS: withdraw all broken underlying, replace it by real assets and recovery tokens
@@ -1040,6 +1044,18 @@ contract WrapperMetaSRestartSonicTest is Test {
         address recoveryTokenImplementation = address(new RecoveryToken());
         vm.prank(multisig);
         metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 
     //endregion ---------------------------------------------- Helpers

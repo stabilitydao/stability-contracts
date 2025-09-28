@@ -29,6 +29,8 @@ import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract MetaVaultSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -40,6 +42,8 @@ contract MetaVaultSonicTest is Test {
     constructor() {
         // May-14-2025 10:14:19 PM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 26834601));
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function setUp() public {
@@ -657,5 +661,17 @@ contract MetaVaultSonicTest is Test {
             vm.prank(user);
             IERC20(assets[j]).approve(metavault, amounts[j]);
         }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

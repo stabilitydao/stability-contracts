@@ -15,6 +15,8 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {RebalanceHelper} from "../../src/periphery/RebalanceHelper.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract ASFUpgrade4Test is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -35,6 +37,7 @@ contract ASFUpgrade4Test is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
         rebalanceHelper = new RebalanceHelper();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function getUniswapV3CurrentTick(address pool) public view returns (int24 tick) {
@@ -166,5 +169,20 @@ contract ASFUpgrade4Test is Test {
         // incrementing need for some tokens with custom fee
         deal(assets_[0], address(this), amount0 + 1);
         swapper.swapWithRoute(poolData, amount0, makePoolVolumePriceImpactTolerance);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
 }

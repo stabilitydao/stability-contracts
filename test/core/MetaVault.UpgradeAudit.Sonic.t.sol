@@ -12,6 +12,8 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @dev Upgrade MetaVault after fixing the issues found in the audit
 contract MetaVaultSonicUpgradeAudit is Test {
@@ -30,6 +32,8 @@ contract MetaVaultSonicUpgradeAudit is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #303: Fix slippage check in meta vault, 3.1.3 in audit report
@@ -287,6 +291,18 @@ contract MetaVaultSonicUpgradeAudit is Test {
                 }
             }
         }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------ Auxiliary Functions
 }

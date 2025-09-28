@@ -24,6 +24,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {
@@ -45,6 +47,7 @@ contract SiMFUpgradeXSiloTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #335: Add support of xSilo in SiMF strategy
@@ -234,6 +237,18 @@ contract SiMFUpgradeXSiloTest is Test {
 
     function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
         return x > y ? (x - y) * 100_00 / x : 0;
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------ Auxiliary Functions
 }
