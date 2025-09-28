@@ -42,14 +42,14 @@ library FixedPoint {
     }
 
     /// @dev Return (a * b) / c, rounding up.
-    function mulDivUp(uint256 a, uint256 b, uint256 c) internal pure returns (uint256 result) {
+    function mulDivUp(uint a, uint b, uint c) internal pure returns (uint result) {
         // This check is required because Yul's `div` doesn't revert on c==0.
         if (c == 0) {
             revert ZeroDivision();
         }
 
         // Multiple overflow protection is done by Solidity 0.8.x.
-        uint256 product = a * b;
+        uint product = a * b;
 
         // The traditional divUp formula is:
         // divUp(x, y) := (x + y - 1) / y
@@ -64,7 +64,7 @@ library FixedPoint {
         }
     }
 
-    function divUp(uint256 a, uint256 b) internal pure returns (uint256 result) {
+    function divUp(uint a, uint b) internal pure returns (uint result) {
         return mulDivUp(a, ONE, b);
     }
 
@@ -96,10 +96,10 @@ library FixedPoint {
     }
 
     /**
- * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
+     * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
      * the true value (that is, the error function expected - actual is always positive).
      */
-    function powDown(uint256 x, uint256 y) internal pure returns (uint256) {
+    function powDown(uint x, uint y) internal pure returns (uint) {
         // Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
         // and 80/20 Weighted Pools
         if (y == ONE) {
@@ -107,11 +107,11 @@ library FixedPoint {
         } else if (y == TWO) {
             return mulDown(x, x);
         } else if (y == FOUR) {
-            uint256 square = mulDown(x, x);
+            uint square = mulDown(x, x);
             return mulDown(square, square);
         } else {
-            uint256 raw = LogExpMath.pow(x, y);
-            uint256 maxError = mulUp(raw, MAX_POW_RELATIVE_ERROR) + 1;
+            uint raw = LogExpMath.pow(x, y);
+            uint maxError = mulUp(raw, MAX_POW_RELATIVE_ERROR) + 1;
 
             if (raw < maxError) {
                 return 0;

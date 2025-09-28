@@ -36,7 +36,6 @@ contract BalancerV3ReCLAMMAdapterTest is PlasmaSetup {
 
     function testSwaps() public {
         // todo
-
     }
 
     function testViewMethods() public view {

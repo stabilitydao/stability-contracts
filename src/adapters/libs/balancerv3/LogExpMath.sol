@@ -90,14 +90,14 @@ library LogExpMath {
     /// forge-lint: disable-end(screaming-snake-case-const)
 
     /**
- * @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
+     * @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
      *
      * Reverts if ln(x) * y is smaller than `MIN_NATURAL_EXPONENT`, or larger than `MAX_NATURAL_EXPONENT`.
      */
-    function pow(uint256 x, uint256 y) internal pure returns (uint256) {
+    function pow(uint x, uint y) internal pure returns (uint) {
         if (y == 0) {
             // We solve the 0^0 indetermination by making it equal one.
-            return uint256(ONE_18);
+            return uint(ONE_18);
         }
 
         if (x == 0) {
@@ -112,7 +112,7 @@ library LogExpMath {
         if (x >> 255 != 0) {
             revert BaseOutOfBounds();
         }
-        int256 x_int256 = int256(x);
+        int x_int256 = int(x);
 
         // We will compute y * ln(x) in a single step. Depending on the value of x, we can either use ln or ln_36. In
         // both cases, we leave the division by ONE_18 (due to fixed point multiplication) to the end.
@@ -121,12 +121,12 @@ library LogExpMath {
         if (y >= MILD_EXPONENT_BOUND) {
             revert ExponentOutOfBounds();
         }
-        int256 y_int256 = int256(y);
+        int y_int256 = int(y);
 
-        int256 logx_times_y;
+        int logx_times_y;
         unchecked {
             if (LN_36_LOWER_BOUND < x_int256 && x_int256 < LN_36_UPPER_BOUND) {
-                int256 ln_36_x = _ln_36(x_int256);
+                int ln_36_x = _ln_36(x_int256);
 
                 // ln_36_x has 36 decimal places, so multiplying by y_int256 isn't as straightforward, since we can't just
                 // bring y_int256 to 36 decimal places, as it might overflow. Instead, we perform two 18 decimal
@@ -144,16 +144,16 @@ library LogExpMath {
             revert ProductOutOfBounds();
         }
 
-        return uint256(exp(logx_times_y));
+        return uint(exp(logx_times_y));
     }
 
     /**
- * @dev Internal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
+     * @dev Internal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
      * for x close to one.
      *
      * Should only be used if x is between LN_36_LOWER_BOUND and LN_36_UPPER_BOUND.
      */
-    function _ln_36(int256 x) private pure returns (int256) {
+    function _ln_36(int x) private pure returns (int) {
         // Since ln(1) = 0, a value of x close to one will yield a very small result, which makes using 36 digits
         // worthwhile.
 
@@ -161,21 +161,21 @@ library LogExpMath {
         unchecked {
             x *= ONE_18;
 
-        // We will use the following Taylor expansion, which converges very rapidly. Let z = (x - 1) / (x + 1).
-        // ln(x) = 2 * (z + z^3 / 3 + z^5 / 5 + z^7 / 7 + ... + z^(2 * n + 1) / (2 * n + 1))
+            // We will use the following Taylor expansion, which converges very rapidly. Let z = (x - 1) / (x + 1).
+            // ln(x) = 2 * (z + z^3 / 3 + z^5 / 5 + z^7 / 7 + ... + z^(2 * n + 1) / (2 * n + 1))
 
-        // Recall that 36 digit fixed point division requires multiplying by ONE_36, and multiplication requires
-        // division by ONE_36.
-            int256 z = ((x - ONE_36) * ONE_36) / (x + ONE_36);
-            int256 z_squared = (z * z) / ONE_36;
+            // Recall that 36 digit fixed point division requires multiplying by ONE_36, and multiplication requires
+            // division by ONE_36.
+            int z = ((x - ONE_36) * ONE_36) / (x + ONE_36);
+            int z_squared = (z * z) / ONE_36;
 
-        // num is the numerator of the series: the z^(2 * n + 1) term
-            int256 num = z;
+            // num is the numerator of the series: the z^(2 * n + 1) term
+            int num = z;
 
-        // seriesSum holds the accumulated sum of each term in the series, starting with the initial z
-            int256 seriesSum = num;
+            // seriesSum holds the accumulated sum of each term in the series, starting with the initial z
+            int seriesSum = num;
 
-        // In each step, the numerator is multiplied by z^2
+            // In each step, the numerator is multiplied by z^2
             num = (num * z_squared) / ONE_36;
             seriesSum += num / 3;
 
@@ -197,19 +197,19 @@ library LogExpMath {
             num = (num * z_squared) / ONE_36;
             seriesSum += num / 15;
 
-        // 8 Taylor terms are sufficient for 36 decimal precision.
+            // 8 Taylor terms are sufficient for 36 decimal precision.
 
-        // All that remains is multiplying by 2 (non fixed point).
+            // All that remains is multiplying by 2 (non fixed point).
             return seriesSum * 2;
         }
     }
 
     /**
- * @dev Natural exponentiation (e^x) with signed 18 decimal fixed point exponent.
+     * @dev Natural exponentiation (e^x) with signed 18 decimal fixed point exponent.
      *
      * Reverts if `x` is smaller than MIN_NATURAL_EXPONENT, or larger than `MAX_NATURAL_EXPONENT`.
      */
-    function exp(int256 x) internal pure returns (int256) {
+    function exp(int x) internal pure returns (int) {
         if (!(x >= MIN_NATURAL_EXPONENT && x <= MAX_NATURAL_EXPONENT)) {
             revert InvalidExponent();
         }
@@ -244,7 +244,7 @@ library LogExpMath {
         // For each x_n, we test if that term is present in the decomposition (if x is larger than it), and if so deduct
         // it and compute the accumulated product.
 
-        int256 firstAN;
+        int firstAN;
         unchecked {
             if (x >= x0) {
                 x -= x0;
@@ -256,14 +256,14 @@ library LogExpMath {
                 firstAN = 1; // One with no decimal places
             }
 
-        // We now transform x into a 20 decimal fixed point number, to have enhanced precision when computing the
-        // smaller terms.
+            // We now transform x into a 20 decimal fixed point number, to have enhanced precision when computing the
+            // smaller terms.
             x *= 100;
         }
 
         // `product` is the accumulated product of all a_n (except a0 and a1), which starts at 20 decimal fixed point
         // one. Recall that fixed point multiplication requires dividing by ONE_20.
-        int256 product = ONE_20;
+        int product = ONE_20;
 
         unchecked {
             if (x >= x2) {
@@ -305,16 +305,16 @@ library LogExpMath {
         // Now we need to compute e^x, where x is small (in particular, it is smaller than x9). We use the Taylor series
         // expansion for e^x: 1 + x + (x^2 / 2!) + (x^3 / 3!) + ... + (x^n / n!).
 
-        int256 seriesSum = ONE_20; // The initial one in the sum, with 20 decimal places.
-        int256 term; // Each term in the sum, where the nth term is (x^n / n!).
+        int seriesSum = ONE_20; // The initial one in the sum, with 20 decimal places.
+        int term; // Each term in the sum, where the nth term is (x^n / n!).
 
         // The first term is simply x.
         term = x;
         unchecked {
             seriesSum += term;
 
-        // Each term (x^n / n!) equals the previous one times x, divided by n. Since x is a fixed point number,
-        // multiplying by it requires dividing by ONE_20, but dividing by the non-fixed point n values does not.
+            // Each term (x^n / n!) equals the previous one times x, divided by n. Since x is a fixed point number,
+            // multiplying by it requires dividing by ONE_20, but dividing by the non-fixed point n values does not.
 
             term = ((term * x) / ONE_20) / 2;
             seriesSum += term;
@@ -349,22 +349,22 @@ library LogExpMath {
             term = ((term * x) / ONE_20) / 12;
             seriesSum += term;
 
-        // 12 Taylor terms are sufficient for 18 decimal precision.
+            // 12 Taylor terms are sufficient for 18 decimal precision.
 
-        // We now have the first a_n (with no decimals), and the product of all other a_n present, and the Taylor
-        // approximation of the exponentiation of the remainder (both with 20 decimals). All that remains is to multiply
-        // all three (one 20 decimal fixed point multiplication, dividing by ONE_20, and one integer multiplication),
-        // and then drop two digits to return an 18 decimal value.
+            // We now have the first a_n (with no decimals), and the product of all other a_n present, and the Taylor
+            // approximation of the exponentiation of the remainder (both with 20 decimals). All that remains is to multiply
+            // all three (one 20 decimal fixed point multiplication, dividing by ONE_20, and one integer multiplication),
+            // and then drop two digits to return an 18 decimal value.
 
-            int256 result = (((product * seriesSum) / ONE_20) * firstAN) / 100;
+            int result = (((product * seriesSum) / ONE_20) * firstAN) / 100;
 
-        // We avoid using recursion here because zkSync doesn't support it.
+            // We avoid using recursion here because zkSync doesn't support it.
             return negativeExponent ? (ONE_18 * ONE_18) / result : result;
         }
     }
 
     /// @dev Internal natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
-    function _ln(int256 a) private pure returns (int256) {
+    function _ln(int a) private pure returns (int) {
         // We avoid using recursion here because zkSync doesn't support it.
         bool negativeExponent = false;
 
@@ -392,7 +392,7 @@ library LogExpMath {
         // For each a_n, we test if that term is present in the decomposition (if a is larger than it), and if so divide
         // by it and compute the accumulated sum.
 
-        int256 sum = 0;
+        int sum = 0;
         unchecked {
             if (a >= a0 * ONE_18) {
                 a /= a0; // Integer, not fixed point division
@@ -404,11 +404,11 @@ library LogExpMath {
                 sum += x1;
             }
 
-        // All other a_n and x_n are stored as 20 digit fixed point numbers, so we convert the sum and a to this format.
+            // All other a_n and x_n are stored as 20 digit fixed point numbers, so we convert the sum and a to this format.
             sum *= 100;
             a *= 100;
 
-        // Because further a_n are  20 digit fixed point numbers, we multiply by ONE_20 when dividing by them.
+            // Because further a_n are  20 digit fixed point numbers, we multiply by ONE_20 when dividing by them.
 
             if (a >= a2) {
                 a = (a * ONE_20) / a2;
@@ -469,16 +469,16 @@ library LogExpMath {
         // Recall that 20 digit fixed point division requires multiplying by ONE_20, and multiplication requires
         // division by ONE_20.
         unchecked {
-            int256 z = ((a - ONE_20) * ONE_20) / (a + ONE_20);
-            int256 z_squared = (z * z) / ONE_20;
+            int z = ((a - ONE_20) * ONE_20) / (a + ONE_20);
+            int z_squared = (z * z) / ONE_20;
 
-        // num is the numerator of the series: the z^(2 * n + 1) term
-            int256 num = z;
+            // num is the numerator of the series: the z^(2 * n + 1) term
+            int num = z;
 
-        // seriesSum holds the accumulated sum of each term in the series, starting with the initial z
-            int256 seriesSum = num;
+            // seriesSum holds the accumulated sum of each term in the series, starting with the initial z
+            int seriesSum = num;
 
-        // In each step, the numerator is multiplied by z^2
+            // In each step, the numerator is multiplied by z^2
             num = (num * z_squared) / ONE_20;
             seriesSum += num / 3;
 
@@ -494,20 +494,19 @@ library LogExpMath {
             num = (num * z_squared) / ONE_20;
             seriesSum += num / 11;
 
-        // 6 Taylor terms are sufficient for 36 decimal precision.
+            // 6 Taylor terms are sufficient for 36 decimal precision.
 
-        // Finally, we multiply by 2 (non fixed point) to compute ln(remainder)
+            // Finally, we multiply by 2 (non fixed point) to compute ln(remainder)
             seriesSum *= 2;
 
-        // We now have the sum of all x_n present, and the Taylor approximation of the logarithm of the remainder (both
-        // with 20 decimals). All that remains is to sum these two, and then drop two digits to return a 18 decimal
-        // value.
+            // We now have the sum of all x_n present, and the Taylor approximation of the logarithm of the remainder (both
+            // with 20 decimals). All that remains is to sum these two, and then drop two digits to return a 18 decimal
+            // value.
 
-            int256 result = (sum + seriesSum) / 100;
+            int result = (sum + seriesSum) / 100;
 
-        // We avoid using recursion here because zkSync doesn't support it.
+            // We avoid using recursion here because zkSync doesn't support it.
             return negativeExponent ? -result : result;
         }
     }
-
 }

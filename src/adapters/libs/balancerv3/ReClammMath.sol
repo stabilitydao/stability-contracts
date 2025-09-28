@@ -2,10 +2,10 @@
 // solhint-disable not-rely-on-time
 pragma solidity ^0.8.24;
 
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import { Rounding } from "../../../integrations/balancerv3/VaultTypes.sol";
+import {Rounding} from "../../../integrations/balancerv3/VaultTypes.sol";
 
 import {FixedPoint} from "./FixedPoint.sol";
 
@@ -18,11 +18,11 @@ struct PriceRatioState {
 
 // ReClamm pools are always 2-token pools, and the documentation assigns the first token (in sorted order) the
 // subscript `a`, and the second token `b`. Define these here to make the code more readable and self-documenting.
-uint256 constant a = 0;
-uint256 constant b = 1;
+uint constant a = 0;
+uint constant b = 1;
 
 library ReClammMath {
-    using FixedPoint for uint256;
+    using FixedPoint for uint;
     using SafeCast for *;
     using ReClammMath for bool;
 
@@ -42,12 +42,12 @@ library ReClammMath {
     //
     // This constant shall be used to scale the dailyPriceShiftExponent, which is a percentage, to the actual value of
     // tau that will be used in the formula.
-    uint256 private constant _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT = 124649;
+    uint private constant _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT = 124649;
 
     // We need to use a random number to calculate the initial virtual and real balances. This number will be scaled
     // later, during initialization, according to the actual liquidity added. Choosing a large number will maintain
     // precision when the pool is initialized with large amounts.
-    uint256 private constant _INITIALIZATION_MAX_BALANCE_A = 1e6 * 1e18;
+    uint private constant _INITIALIZATION_MAX_BALANCE_A = 1e6 * 1e18;
 
     /**
      * @notice Get the current virtual balances and compute the invariant of the pool using constant product.
@@ -63,16 +63,16 @@ library ReClammMath {
      * @return invariant The invariant of the pool
      */
     function computeInvariant(
-        uint256[] memory balancesScaled18,
-        uint256 lastVirtualBalanceA,
-        uint256 lastVirtualBalanceB,
-        uint256 dailyPriceShiftBase,
+        uint[] memory balancesScaled18,
+        uint lastVirtualBalanceA,
+        uint lastVirtualBalanceB,
+        uint dailyPriceShiftBase,
         uint32 lastTimestamp,
         uint64 centerednessMargin,
         PriceRatioState storage priceRatioState,
         Rounding rounding
-    ) internal view returns (uint256 invariant) {
-        (uint256 virtualBalanceA, uint256 virtualBalanceB, ) = computeCurrentVirtualBalances(
+    ) internal view returns (uint invariant) {
+        (uint virtualBalanceA, uint virtualBalanceB,) = computeCurrentVirtualBalances(
             balancesScaled18,
             lastVirtualBalanceA,
             lastVirtualBalanceB,
@@ -103,14 +103,13 @@ library ReClammMath {
      * @return invariant The invariant of the pool
      */
     function computeInvariant(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB,
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB,
         Rounding rounding
-    ) internal pure returns (uint256) {
-        function(uint256, uint256) pure returns (uint256) _mulUpOrDown = rounding == Rounding.ROUND_DOWN
-            ? FixedPoint.mulDown
-            : FixedPoint.mulUp;
+    ) internal pure returns (uint) {
+        function(uint256, uint256) pure returns (uint256) _mulUpOrDown =
+            rounding == Rounding.ROUND_DOWN ? FixedPoint.mulDown : FixedPoint.mulUp;
 
         return _mulUpOrDown((balancesScaled18[a] + virtualBalanceA), (balancesScaled18[b] + virtualBalanceB));
     }
@@ -126,13 +125,13 @@ library ReClammMath {
      * @return amountOutScaled18 The calculated amount of `tokenOut` returned in an ExactIn swap
      */
     function computeOutGivenIn(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB,
-        uint256 tokenInIndex,
-        uint256 tokenOutIndex,
-        uint256 amountInScaled18
-    ) internal pure returns (uint256 amountOutScaled18) {
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB,
+        uint tokenInIndex,
+        uint tokenOutIndex,
+        uint amountInScaled18
+    ) internal pure returns (uint amountOutScaled18) {
         // `amountOutScaled18 = currentTotalTokenOutPoolBalance - newTotalTokenOutPoolBalance`,
         // where `currentTotalTokenOutPoolBalance = balancesScaled18[tokenOutIndex] + virtualBalanceTokenOut`
         // and `newTotalTokenOutPoolBalance = invariant / (currentTotalTokenInPoolBalance + amountInScaled18)`.
@@ -158,13 +157,11 @@ library ReClammMath {
         // |   Bi = Balance token in                          |
         // |   Vi = Virtual balance token in                  |
         // +--------------------------------------------------+
-        (uint256 virtualBalanceTokenIn, uint256 virtualBalanceTokenOut) = tokenInIndex == a
-            ? (virtualBalanceA, virtualBalanceB)
-            : (virtualBalanceB, virtualBalanceA);
+        (uint virtualBalanceTokenIn, uint virtualBalanceTokenOut) =
+            tokenInIndex == a ? (virtualBalanceA, virtualBalanceB) : (virtualBalanceB, virtualBalanceA);
 
-        amountOutScaled18 =
-            ((balancesScaled18[tokenOutIndex] + virtualBalanceTokenOut) * amountInScaled18) /
-            (balancesScaled18[tokenInIndex] + virtualBalanceTokenIn + amountInScaled18);
+        amountOutScaled18 = ((balancesScaled18[tokenOutIndex] + virtualBalanceTokenOut) * amountInScaled18)
+            / (balancesScaled18[tokenInIndex] + virtualBalanceTokenIn + amountInScaled18);
 
         if (amountOutScaled18 > balancesScaled18[tokenOutIndex]) {
             // Amount out cannot be greater than the real balance of the token in the pool.
@@ -183,13 +180,13 @@ library ReClammMath {
      * @return amountInScaled18 The calculated amount of `tokenIn` returned in an ExactOut swap
      */
     function computeInGivenOut(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB,
-        uint256 tokenInIndex,
-        uint256 tokenOutIndex,
-        uint256 amountOutScaled18
-    ) internal pure returns (uint256 amountInScaled18) {
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB,
+        uint tokenInIndex,
+        uint tokenOutIndex,
+        uint amountOutScaled18
+    ) internal pure returns (uint amountInScaled18) {
         // `amountInScaled18 = newTotalTokenOutPoolBalance - currentTotalTokenInPoolBalance`,
         // where `newTotalTokenOutPoolBalance = invariant / (currentTotalTokenOutPoolBalance - amountOutScaled18)`
         // and `currentTotalTokenInPoolBalance = balancesScaled18[tokenInIndex] + virtualBalanceTokenIn`.
@@ -221,9 +218,8 @@ library ReClammMath {
             revert AmountOutGreaterThanBalance();
         }
 
-        (uint256 virtualBalanceTokenIn, uint256 virtualBalanceTokenOut) = tokenInIndex == a
-            ? (virtualBalanceA, virtualBalanceB)
-            : (virtualBalanceB, virtualBalanceA);
+        (uint virtualBalanceTokenIn, uint virtualBalanceTokenOut) =
+            tokenInIndex == a ? (virtualBalanceA, virtualBalanceB) : (virtualBalanceB, virtualBalanceA);
 
         // Round up to favor the vault (i.e. request larger amount in from the user).
         amountInScaled18 = FixedPoint.mulDivUp(
@@ -259,43 +255,41 @@ library ReClammMath {
      * @return priceRatio The ratio of the max price to the min price
      */
     function computeTheoreticalPriceRatioAndBalances(
-        uint256 minPriceScaled18,
-        uint256 maxPriceScaled18,
-        uint256 targetPriceScaled18
+        uint minPriceScaled18,
+        uint maxPriceScaled18,
+        uint targetPriceScaled18
     )
-    internal
-    pure
-    returns (
-        uint256[] memory realBalancesScaled18,
-        uint256 virtualBalanceAScaled18,
-        uint256 virtualBalanceBScaled18,
-        uint256 priceRatio
-    )
+        internal
+        pure
+        returns (
+            uint[] memory realBalancesScaled18,
+            uint virtualBalanceAScaled18,
+            uint virtualBalanceBScaled18,
+            uint priceRatio
+        )
     {
         priceRatio = maxPriceScaled18.divDown(minPriceScaled18);
         // In the formulas below, Ra_max is a random number that defines the maximum real balance of token A, and
         // consequently a random initial liquidity. We will scale all balances according to the actual amount of
         // liquidity provided during initialization.
-        uint256 sqrtPriceRatio = sqrtScaled18(priceRatio);
+        uint sqrtPriceRatio = sqrtScaled18(priceRatio);
 
         // Va = Ra_max / (sqrtPriceRatio - 1)
         virtualBalanceAScaled18 = _INITIALIZATION_MAX_BALANCE_A.divDown(sqrtPriceRatio - FixedPoint.ONE);
         // Vb = minPrice * (Va + Ra_max)
         virtualBalanceBScaled18 = minPriceScaled18.mulDown(virtualBalanceAScaled18 + _INITIALIZATION_MAX_BALANCE_A);
 
-        realBalancesScaled18 = new uint256[](2);
+        realBalancesScaled18 = new uint[](2);
         // Rb = sqrt(targetPrice * Vb * (Ra_max + Va)) - Vb
-        realBalancesScaled18[b] =
-            sqrtScaled18(
-                targetPriceScaled18.mulUp(virtualBalanceBScaled18).mulUp(
-                    _INITIALIZATION_MAX_BALANCE_A + virtualBalanceAScaled18
-                )
-            ) -
-            virtualBalanceBScaled18;
+        realBalancesScaled18[b] = sqrtScaled18(
+            targetPriceScaled18.mulUp(virtualBalanceBScaled18).mulUp(
+                _INITIALIZATION_MAX_BALANCE_A + virtualBalanceAScaled18
+            )
+        ) - virtualBalanceBScaled18;
         // Ra = (Rb + Vb - (Va * targetPrice)) / targetPrice
-        realBalancesScaled18[a] = (realBalancesScaled18[b] +
-        virtualBalanceBScaled18 -
-            virtualBalanceAScaled18.mulDown(targetPriceScaled18)).divDown(targetPriceScaled18);
+        realBalancesScaled18[a] = (
+            realBalancesScaled18[b] + virtualBalanceBScaled18 - virtualBalanceAScaled18.mulDown(targetPriceScaled18)
+        ).divDown(targetPriceScaled18);
     }
 
     /**
@@ -322,14 +316,14 @@ library ReClammMath {
      * @return changed Whether the virtual balances have changed and must be updated in the pool
      */
     function computeCurrentVirtualBalances(
-        uint256[] memory balancesScaled18,
-        uint256 lastVirtualBalanceA,
-        uint256 lastVirtualBalanceB,
-        uint256 dailyPriceShiftBase,
+        uint[] memory balancesScaled18,
+        uint lastVirtualBalanceA,
+        uint lastVirtualBalanceB,
+        uint dailyPriceShiftBase,
         uint32 lastTimestamp,
         uint64 centerednessMargin,
         PriceRatioState storage storedPriceRatioState
-    ) internal view returns (uint256 currentVirtualBalanceA, uint256 currentVirtualBalanceB, bool changed) {
+    ) internal view returns (uint currentVirtualBalanceA, uint currentVirtualBalanceB, bool changed) {
         uint32 currentTimestamp = block.timestamp.toUint32();
 
         // If the last timestamp is the same as the current timestamp, virtual balances were already reviewed in the
@@ -345,7 +339,7 @@ library ReClammMath {
             // stack-too-deep
             PriceRatioState memory priceRatioState = storedPriceRatioState;
 
-            uint256 currentFourthRootPriceRatio = computeFourthRootPriceRatio(
+            uint currentFourthRootPriceRatio = computeFourthRootPriceRatio(
                 currentTimestamp,
                 priceRatioState.startFourthRootPriceRatio,
                 priceRatioState.endFourthRootPriceRatio,
@@ -355,25 +349,19 @@ library ReClammMath {
 
             // If the price ratio is updating, shrink/expand the price interval by recalculating the virtual balances.
             if (
-                currentTimestamp > priceRatioState.priceRatioUpdateStartTime &&
-                lastTimestamp < priceRatioState.priceRatioUpdateEndTime
+                currentTimestamp > priceRatioState.priceRatioUpdateStartTime
+                    && lastTimestamp < priceRatioState.priceRatioUpdateEndTime
             ) {
                 (currentVirtualBalanceA, currentVirtualBalanceB) = computeVirtualBalancesUpdatingPriceRatio(
-                    currentFourthRootPriceRatio,
-                    balancesScaled18,
-                    lastVirtualBalanceA,
-                    lastVirtualBalanceB
+                    currentFourthRootPriceRatio, balancesScaled18, lastVirtualBalanceA, lastVirtualBalanceB
                 );
 
                 changed = true;
             }
         }
 
-        (uint256 centeredness, bool isPoolAboveCenter) = computeCenteredness(
-            balancesScaled18,
-            currentVirtualBalanceA,
-            currentVirtualBalanceB
-        );
+        (uint centeredness, bool isPoolAboveCenter) =
+            computeCenteredness(balancesScaled18, currentVirtualBalanceA, currentVirtualBalanceB);
 
         // If the pool is outside the target range, track the market price by moving the price interval.
         if (centeredness < centerednessMargin) {
@@ -412,24 +400,18 @@ library ReClammMath {
      * @return virtualBalanceB The virtual balance of token B
      */
     function computeVirtualBalancesUpdatingPriceRatio(
-        uint256 currentFourthRootPriceRatio,
-        uint256[] memory balancesScaled18,
-        uint256 lastVirtualBalanceA,
-        uint256 lastVirtualBalanceB
-    ) internal pure returns (uint256 virtualBalanceA, uint256 virtualBalanceB) {
+        uint currentFourthRootPriceRatio,
+        uint[] memory balancesScaled18,
+        uint lastVirtualBalanceA,
+        uint lastVirtualBalanceB
+    ) internal pure returns (uint virtualBalanceA, uint virtualBalanceB) {
         // Compute the current pool centeredness, which will remain constant.
-        (uint256 poolCenteredness, bool isPoolAboveCenter) = computeCenteredness(
-            balancesScaled18,
-            lastVirtualBalanceA,
-            lastVirtualBalanceB
-        );
+        (uint poolCenteredness, bool isPoolAboveCenter) =
+            computeCenteredness(balancesScaled18, lastVirtualBalanceA, lastVirtualBalanceB);
 
         // The overvalued token is the one with a lower token balance (therefore, rarer and more valuable).
-        (
-            uint256 balanceTokenUndervalued,
-            uint256 lastVirtualBalanceUndervalued,
-            uint256 lastVirtualBalanceOvervalued
-        ) = isPoolAboveCenter
+        (uint balanceTokenUndervalued, uint lastVirtualBalanceUndervalued, uint lastVirtualBalanceOvervalued) =
+        isPoolAboveCenter
             ? (balancesScaled18[a], lastVirtualBalanceA, lastVirtualBalanceB)
             : (balancesScaled18[b], lastVirtualBalanceB, lastVirtualBalanceA);
 
@@ -447,18 +429,20 @@ library ReClammMath {
         // |                      2 * (Q0 - 1)                      |
         // |                                                        |
         // +--------------------------------------------------------+
-        uint256 sqrtPriceRatio = currentFourthRootPriceRatio.mulDown(currentFourthRootPriceRatio);
+        uint sqrtPriceRatio = currentFourthRootPriceRatio.mulDown(currentFourthRootPriceRatio);
 
         // Using FixedPoint math as little as possible to improve the precision of the result.
         // Note: The input of Math.sqrt must be a 36-decimal number, so that the final result is 18 decimals.
-        uint256 virtualBalanceUndervalued = (balanceTokenUndervalued *
-            (FixedPoint.ONE +
-            poolCenteredness +
-                Math.sqrt(poolCenteredness * (poolCenteredness + 4 * sqrtPriceRatio - 2e18) + 1e36))) /
-            (2 * (sqrtPriceRatio - FixedPoint.ONE));
+        uint virtualBalanceUndervalued = (
+            balanceTokenUndervalued
+                * (
+                    FixedPoint.ONE + poolCenteredness
+                        + Math.sqrt(poolCenteredness * (poolCenteredness + 4 * sqrtPriceRatio - 2e18) + 1e36)
+                )
+        ) / (2 * (sqrtPriceRatio - FixedPoint.ONE));
 
-        uint256 virtualBalanceOvervalued = (virtualBalanceUndervalued * lastVirtualBalanceOvervalued) /
-                    lastVirtualBalanceUndervalued;
+        uint virtualBalanceOvervalued =
+            (virtualBalanceUndervalued * lastVirtualBalanceOvervalued) / lastVirtualBalanceUndervalued;
 
         (virtualBalanceA, virtualBalanceB) = isPoolAboveCenter
             ? (virtualBalanceUndervalued, virtualBalanceOvervalued)
@@ -481,23 +465,21 @@ library ReClammMath {
      * @return newVirtualBalanceB The new virtual balance of token B
      */
     function computeVirtualBalancesUpdatingPriceRange(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB,
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB,
         bool isPoolAboveCenter,
-        uint256 dailyPriceShiftBase,
+        uint dailyPriceShiftBase,
         uint32 currentTimestamp,
         uint32 lastTimestamp
-    ) internal pure returns (uint256 newVirtualBalanceA, uint256 newVirtualBalanceB) {
-        uint256 sqrtPriceRatio = sqrtScaled18(computePriceRatio(balancesScaled18, virtualBalanceA, virtualBalanceB));
+    ) internal pure returns (uint newVirtualBalanceA, uint newVirtualBalanceB) {
+        uint sqrtPriceRatio = sqrtScaled18(computePriceRatio(balancesScaled18, virtualBalanceA, virtualBalanceB));
 
         // The overvalued token is the one with a lower token balance (therefore, rarer and more valuable).
-        (uint256 balancesScaledUndervalued, uint256 balancesScaledOvervalued) = isPoolAboveCenter
-            ? (balancesScaled18[a], balancesScaled18[b])
-            : (balancesScaled18[b], balancesScaled18[a]);
-        (uint256 virtualBalanceUndervalued, uint256 virtualBalanceOvervalued) = isPoolAboveCenter
-            ? (virtualBalanceA, virtualBalanceB)
-            : (virtualBalanceB, virtualBalanceA);
+        (uint balancesScaledUndervalued, uint balancesScaledOvervalued) =
+            isPoolAboveCenter ? (balancesScaled18[a], balancesScaled18[b]) : (balancesScaled18[b], balancesScaled18[a]);
+        (uint virtualBalanceUndervalued, uint virtualBalanceOvervalued) =
+            isPoolAboveCenter ? (virtualBalanceA, virtualBalanceB) : (virtualBalanceB, virtualBalanceA);
 
         // +-----------------------------------------+
         // |                      (Tc - Tl)          |
@@ -522,21 +504,18 @@ library ReClammMath {
         // +-----------------------------------------+
 
         // Cap the duration (time between operations) at 30 days, to ensure `powDown` does not overflow.
-        uint256 duration = Math.min(currentTimestamp - lastTimestamp, 30 days);
+        uint duration = Math.min(currentTimestamp - lastTimestamp, 30 days);
 
-        virtualBalanceOvervalued = virtualBalanceOvervalued.mulDown(
-            dailyPriceShiftBase.powDown(duration * FixedPoint.ONE)
-        );
+        virtualBalanceOvervalued =
+            virtualBalanceOvervalued.mulDown(dailyPriceShiftBase.powDown(duration * FixedPoint.ONE));
 
         // Ensure that Vo does not go below the minimum allowed value (corresponding to centeredness == 1).
         virtualBalanceOvervalued = Math.max(
-            virtualBalanceOvervalued,
-            balancesScaledOvervalued.divDown(sqrtScaled18(sqrtPriceRatio) - FixedPoint.ONE)
+            virtualBalanceOvervalued, balancesScaledOvervalued.divDown(sqrtScaled18(sqrtPriceRatio) - FixedPoint.ONE)
         );
 
-        virtualBalanceUndervalued =
-            (balancesScaledUndervalued * (virtualBalanceOvervalued + balancesScaledOvervalued)) /
-            ((sqrtPriceRatio - FixedPoint.ONE).mulDown(virtualBalanceOvervalued) - balancesScaledOvervalued);
+        virtualBalanceUndervalued = (balancesScaledUndervalued * (virtualBalanceOvervalued + balancesScaledOvervalued))
+            / ((sqrtPriceRatio - FixedPoint.ONE).mulDown(virtualBalanceOvervalued) - balancesScaledOvervalued);
 
         (newVirtualBalanceA, newVirtualBalanceB) = isPoolAboveCenter
             ? (virtualBalanceUndervalued, virtualBalanceOvervalued)
@@ -554,12 +533,12 @@ library ReClammMath {
      * @return isWithinTargetRange Whether the pool is within the target price range
      */
     function isPoolWithinTargetRange(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB,
-        uint256 centerednessMargin
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB,
+        uint centerednessMargin
     ) internal pure returns (bool) {
-        (uint256 centeredness, ) = computeCenteredness(balancesScaled18, virtualBalanceA, virtualBalanceB);
+        (uint centeredness,) = computeCenteredness(balancesScaled18, virtualBalanceA, virtualBalanceB);
         return centeredness >= centerednessMargin;
     }
 
@@ -576,10 +555,10 @@ library ReClammMath {
      * @return isPoolAboveCenter True if the pool is above the center, false otherwise
      */
     function computeCenteredness(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB
-    ) internal pure returns (uint256 poolCenteredness, bool isPoolAboveCenter) {
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB
+    ) internal pure returns (uint poolCenteredness, bool isPoolAboveCenter) {
         if (balancesScaled18[a] == 0) {
             // Also return false if both are 0 to be consistent with the logic below.
             return (0, false);
@@ -587,8 +566,8 @@ library ReClammMath {
             return (0, true);
         }
 
-        uint256 numerator = balancesScaled18[a] * virtualBalanceB;
-        uint256 denominator = virtualBalanceA * balancesScaled18[b];
+        uint numerator = balancesScaled18[a] * virtualBalanceB;
+        uint denominator = virtualBalanceA * balancesScaled18[b];
 
         // The centeredness is defined between 0 and 1. If the numerator is greater than the denominator, we compute
         // the inverse ratio.
@@ -646,16 +625,15 @@ library ReClammMath {
         // |    Te = End time                                |
         // +-------------------------------------------------+
 
-        uint256 exponent = uint256(currentTime - priceRatioUpdateStartTime).divDown(
-            priceRatioUpdateEndTime - priceRatioUpdateStartTime
-        );
+        uint exponent =
+            uint(currentTime - priceRatioUpdateStartTime).divDown(priceRatioUpdateEndTime - priceRatioUpdateStartTime);
 
-        uint256 currentFourthRootPriceRatio = uint256(startFourthRootPriceRatio).mulDown(
-            (uint256(endFourthRootPriceRatio).divDown(uint256(startFourthRootPriceRatio))).powDown(exponent)
+        uint currentFourthRootPriceRatio = uint(startFourthRootPriceRatio).mulDown(
+            (uint(endFourthRootPriceRatio).divDown(uint(startFourthRootPriceRatio))).powDown(exponent)
         );
 
         // Since we're rounding current fourth root price ratio down, we only need to check the lower boundary.
-        uint256 minimumFourthRootPriceRatio = Math.min(startFourthRootPriceRatio, endFourthRootPriceRatio);
+        uint minimumFourthRootPriceRatio = Math.min(startFourthRootPriceRatio, endFourthRootPriceRatio);
         return Math.max(minimumFourthRootPriceRatio, currentFourthRootPriceRatio).toUint96();
     }
 
@@ -670,11 +648,11 @@ library ReClammMath {
      * @return priceRatio The ratio between the maximum and minimum prices of the pool
      */
     function computePriceRatio(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB
-    ) internal pure returns (uint256 priceRatio) {
-        (uint256 minPrice, uint256 maxPrice) = computePriceRange(balancesScaled18, virtualBalanceA, virtualBalanceB);
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB
+    ) internal pure returns (uint priceRatio) {
+        (uint minPrice, uint maxPrice) = computePriceRange(balancesScaled18, virtualBalanceA, virtualBalanceB);
 
         return maxPrice.divUp(minPrice);
     }
@@ -693,16 +671,12 @@ library ReClammMath {
      * @return maxPrice The maximum price of token A in terms of token B
      */
     function computePriceRange(
-        uint256[] memory balancesScaled18,
-        uint256 virtualBalanceA,
-        uint256 virtualBalanceB
-    ) internal pure returns (uint256 minPrice, uint256 maxPrice) {
-        uint256 currentInvariant = ReClammMath.computeInvariant(
-            balancesScaled18,
-            virtualBalanceA,
-            virtualBalanceB,
-            Rounding.ROUND_DOWN
-        );
+        uint[] memory balancesScaled18,
+        uint virtualBalanceA,
+        uint virtualBalanceB
+    ) internal pure returns (uint minPrice, uint maxPrice) {
+        uint currentInvariant =
+            ReClammMath.computeInvariant(balancesScaled18, virtualBalanceA, virtualBalanceB, Rounding.ROUND_DOWN);
 
         // P_min(a) = Vb / (Va + Ra_max)
         // We don't have Ra_max, but: invariant = (Ra_max + Va) * Vb
@@ -722,7 +696,7 @@ library ReClammMath {
      * @param dailyPriceShiftExponent The daily price shift exponent as an 18-decimal FP
      * @return dailyPriceShiftBase Internal time constant used to update virtual balances (1 - tau)
      */
-    function toDailyPriceShiftBase(uint256 dailyPriceShiftExponent) internal pure returns (uint256) {
+    function toDailyPriceShiftBase(uint dailyPriceShiftExponent) internal pure returns (uint) {
         return FixedPoint.ONE - dailyPriceShiftExponent / _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT;
     }
 
@@ -732,7 +706,7 @@ library ReClammMath {
      * @param dailyPriceShiftBase Internal time constant used to update virtual balances (1 - tau)
      * @return dailyPriceShiftExponent The daily price shift exponent as an 18-decimal FP percentage
      */
-    function toDailyPriceShiftExponent(uint256 dailyPriceShiftBase) internal pure returns (uint256) {
+    function toDailyPriceShiftExponent(uint dailyPriceShiftBase) internal pure returns (uint) {
         return (FixedPoint.ONE - dailyPriceShiftBase) * _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT;
     }
 
@@ -741,7 +715,7 @@ library ReClammMath {
      * @param valueScaled18 The value to calculate the square root of, scaled by 18 decimals
      * @return sqrtValueScaled18 The square root of the value scaled by 18 decimals
      */
-    function sqrtScaled18(uint256 valueScaled18) internal pure returns (uint256) {
+    function sqrtScaled18(uint valueScaled18) internal pure returns (uint) {
         return Math.sqrt(valueScaled18 * FixedPoint.ONE);
     }
 
@@ -750,7 +724,7 @@ library ReClammMath {
      * @param valueScaled18 The value to calculate the fourth root of, scaled by 18 decimals
      * @return fourthRootValueScaled18 The fourth root of the value scaled by 18 decimals
      */
-    function fourthRootScaled18(uint256 valueScaled18) internal pure returns (uint256) {
+    function fourthRootScaled18(uint valueScaled18) internal pure returns (uint) {
         return Math.sqrt(Math.sqrt(valueScaled18 * FixedPoint.ONE) * FixedPoint.ONE);
     }
 }
