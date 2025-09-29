@@ -5,7 +5,6 @@ import {ChainSetup} from "../ChainSetup.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 import {Factory} from "../../../src/core/Factory.sol";
 import {Platform} from "../../../src/core/Platform.sol";
-import {PlasmaConstantsLib} from "../../../chains/plasma/PlasmaConstantsLib.sol";
 import {PlasmaLib} from "../../../chains/plasma/PlasmaLib.sol";
 
 abstract contract PlasmaSetup is ChainSetup, DeployCore {
