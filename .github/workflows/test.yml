@@ -44,6 +44,7 @@ jobs:
           REAL_RPC_URL: ${{secrets.REAL_RPC_URL}}
           SONIC_RPC_URL: ${{secrets.SONIC_RPC_URL}}
           AVALANCHE_RPC_URL: ${{secrets.AVALANCHE_RPC_URL}}
+          PLASMA_RPC_URL: ${{secrets.PLASMA_RPC_URL}}
         id: test
 
       - name: Run Forge coverage
