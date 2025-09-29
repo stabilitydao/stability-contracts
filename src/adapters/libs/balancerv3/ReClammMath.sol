@@ -9,12 +9,16 @@ import {Rounding} from "../../../integrations/balancerv3/VaultTypes.sol";
 
 import {FixedPoint} from "./FixedPoint.sol";
 
-struct PriceRatioState {
-    uint96 startFourthRootPriceRatio;
-    uint96 endFourthRootPriceRatio;
-    uint32 priceRatioUpdateStartTime;
-    uint32 priceRatioUpdateEndTime;
-}
+// ------------------------ Start changes
+/// PriceRatioState was moved to IReClammPool.sol
+import {PriceRatioState} from "../../../integrations/reclamm/IReClammPool.sol";
+//struct PriceRatioState {
+//    uint96 startFourthRootPriceRatio;
+//    uint96 endFourthRootPriceRatio;
+//    uint32 priceRatioUpdateStartTime;
+//    uint32 priceRatioUpdateEndTime;
+//}
+// ------------------------ End changes
 
 // ReClamm pools are always 2-token pools, and the documentation assigns the first token (in sorted order) the
 // subscript `a`, and the second token `b`. Define these here to make the code more readable and self-documenting.

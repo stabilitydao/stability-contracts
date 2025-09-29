@@ -22,7 +22,6 @@ import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
-import {console} from "forge-std/console.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;

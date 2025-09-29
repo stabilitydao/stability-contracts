@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ChainSetup} from "../ChainSetup.sol";
 import {DeployCore} from "../../../script/base/DeployCore.sol";
 import {Factory} from "../../../src/core/Factory.sol";
 import {Platform} from "../../../src/core/Platform.sol";
-import {IPlatform} from "../../../src/interfaces/IPlatform.sol";
 import {PlasmaConstantsLib} from "../../../chains/plasma/PlasmaConstantsLib.sol";
 import {PlasmaLib} from "../../../chains/plasma/PlasmaLib.sol";
 
 abstract contract PlasmaSetup is ChainSetup, DeployCore {
+    /// @dev Test BalancerV3ReCLAMMAdapterTest uses values from UI for the given block
+    // If you are going to change the block please fix constants in BalancerV3ReCLAMMAdapterTest too
+    uint internal constant FORK_BLOCK = 2196726; // Sep-29-2025 06:05:08 UTC
+
     bool public showDeployLog;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("PLASMA_RPC_URL")));
-        vm.rollFork(2140000); // Sep-28-2025 14:19:42 UTC
+        vm.rollFork(FORK_BLOCK);
     }
 
     function testSetupStub() external {}

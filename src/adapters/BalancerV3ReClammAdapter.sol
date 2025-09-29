@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IPermit2} from "../integrations/permit2/IPermit2.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {IAmmAdapter} from "../interfaces/IAmmAdapter.sol";
 import {IBalancerAdapter} from "../interfaces/IBalancerAdapter.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IPoolInfo} from "../integrations/balancerv3/IPoolInfo.sol";
 import {IRouter} from "../integrations/balancerv3/IRouter.sol";
-import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
+import {
+    ReClammPoolDynamicData, ReClammPoolImmutableData, IReClammPool
+} from "../integrations/reclamm/IReClammPool.sol";
+import {ReClammMath, a, b} from "./libs/balancerv3/ReClammMath.sol";
+import {ScalingHelpers} from "./libs/balancerv3/ScalingHelpers.sol";
 
 /// @title AMM adapter for Balancer V3 ReCLAMM pools
 /// @author Alien Deployer (https://github.com/a17)
@@ -73,8 +80,34 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
         AdapterStorage storage $ = _getStorage();
         address router = $.router;
 
-        // todo
-        // see BalancerV3StableAdapter
+        // scope for checking price impact
+        uint amountOutMax;
+        {
+            uint minimalAmount = amountIn / 1000;
+            require(minimalAmount != 0, TooLowAmountIn());
+
+            uint price = getPrice(pool, tokenIn, tokenOut, minimalAmount);
+            require(price != 0, TooLowAmountIn());
+
+            amountOutMax = price * amountIn / minimalAmount;
+        }
+
+        IERC20(tokenIn).approve(PERMIT2, amountIn);
+        IPermit2(PERMIT2).approve(tokenIn, router, uint160(amountIn), uint48(block.timestamp));
+
+        uint amountOut = IRouter(router).swapSingleTokenExactIn(
+            pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, ""
+        );
+
+        uint priceImpact =
+            amountOutMax < amountOut ? 0 : (amountOutMax - amountOut) * ConstantsLib.DENOMINATOR / amountOutMax;
+        if (priceImpact > priceImpactTolerance) {
+            revert(string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+        }
+
+        IERC20(tokenOut).safeTransfer(recipient, amountOut);
+
+        emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amountIn, amountOut);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -98,22 +131,71 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
 
     /// @inheritdoc IBalancerAdapter
     function getLiquidityForAmountsWrite(
-        address pool,
-        uint[] memory amounts
-    ) external returns (uint liquidity, uint[] memory amountsConsumed) {
+        address, /*pool*/
+        uint[] memory /*amounts*/
+    ) external pure returns (uint, /*liquidity*/ uint[] memory /*amountsConsumed*/ ) {
         revert("Unavailable");
     }
 
     /// @inheritdoc IAmmAdapter
     function getProportions(address pool) external view returns (uint[] memory props) {
-        // todo
-        // see BalancerV3StableAdapter
+        ReClammPoolDynamicData memory data = IReClammPool(pool).getReClammPoolDynamicData();
+        address[] memory tokens = poolTokens(pool);
+
+        uint total; // scaled 18
+        uint len = tokens.length;
+        uint[] memory pricedBalances = new uint[](len);
+
+        for (uint i; i < len; ++i) {
+            uint price = i == 0
+                ? 1e18
+                // amount of token i in terms of token 0
+                : ReClammMath.computeOutGivenIn(
+                    data.balancesLiveScaled18, data.lastVirtualBalances[0], data.lastVirtualBalances[1], i, 0, 1e18
+                );
+            pricedBalances[i] = data.balancesLiveScaled18[i] * price / 1e18;
+            total += pricedBalances[i];
+        }
+
+        props = new uint[](len);
+        for (uint i; i < len; ++i) {
+            props[i] = pricedBalances[i] * 1e18 / total;
+        }
     }
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
-        // todo
-        // see BalancerV3StableAdapter
+        ReClammPoolDynamicData memory dynData = IReClammPool(pool).getReClammPoolDynamicData();
+        ReClammPoolImmutableData memory imData = IReClammPool(pool).getReClammPoolImmutableData();
+        {
+            // take pool commission into account
+            uint swapFeePercentage = dynData.staticSwapFeePercentage;
+            amount -= amount * swapFeePercentage / 1e18;
+        }
+
+        address[] memory tokens = poolTokens(pool);
+
+        uint[] memory balancesScaled18 = dynData.balancesLiveScaled18;
+        (uint tokenInIndex, uint tokenOutIndex) = _getTokenInOutIndexes(tokens, tokenIn, tokenOut);
+
+        uint amountInScaled18 = ScalingHelpers.toScaled18ApplyRateRoundDown(
+            amount, imData.decimalScalingFactors[tokenInIndex], dynData.tokenRates[tokenInIndex]
+        );
+
+        uint amountOutScaled18 = ReClammMath.computeOutGivenIn(
+            balancesScaled18,
+            dynData.lastVirtualBalances[a],
+            dynData.lastVirtualBalances[b],
+            tokenInIndex,
+            tokenOutIndex,
+            amountInScaled18
+        );
+
+        return ScalingHelpers.toRawUndoRateRoundDown(
+            amountOutScaled18,
+            imData.decimalScalingFactors[tokenOutIndex],
+            ScalingHelpers.computeRateRoundUp(dynData.tokenRates[tokenOutIndex])
+        );
     }
 
     /// @inheritdoc IERC165
