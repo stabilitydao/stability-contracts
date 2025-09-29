@@ -72,7 +72,6 @@ library PlasmaLib {
         //endregion
 
         //region ----- Deploy strategies  -----
-        factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()));
         //endregion
 
