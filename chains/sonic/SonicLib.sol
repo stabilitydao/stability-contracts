@@ -244,6 +244,7 @@ library SonicLib {
         factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 

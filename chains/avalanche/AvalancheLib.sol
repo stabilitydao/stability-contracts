@@ -128,6 +128,7 @@ library AvalancheLib {
         factory.setStrategyImplementation(StrategyIdLib.AAVE, address(new AaveStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
         factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
         //endregion
 
         //region ----- Add DeX aggregators -----
