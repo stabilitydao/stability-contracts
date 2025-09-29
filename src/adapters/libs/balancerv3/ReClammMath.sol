@@ -5,13 +5,13 @@ pragma solidity ^0.8.24;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {Rounding} from "../../../integrations/balancerv3/VaultTypes.sol";
+//import {Rounding} from "../../../integrations/balancerv3/VaultTypes.sol";
 
 import {FixedPoint} from "./FixedPoint.sol";
 
 // ------------------------ Start changes
-/// PriceRatioState was moved to IReClammPool.sol
-import {PriceRatioState} from "../../../integrations/reclamm/IReClammPool.sol";
+// PriceRatioState was moved to IReClammPool.sol
+//import {PriceRatioState} from "../../../integrations/reclamm/IReClammPool.sol";
 //struct PriceRatioState {
 //    uint96 startFourthRootPriceRatio;
 //    uint96 endFourthRootPriceRatio;
@@ -66,7 +66,7 @@ library ReClammMath {
      * @param rounding Rounding direction to consider when computing the invariant
      * @return invariant The invariant of the pool
      */
-    function computeInvariant(
+    /*function computeInvariant(
         uint[] memory balancesScaled18,
         uint lastVirtualBalanceA,
         uint lastVirtualBalanceB,
@@ -87,7 +87,7 @@ library ReClammMath {
         );
 
         return computeInvariant(balancesScaled18, virtualBalanceA, virtualBalanceB, rounding);
-    }
+    }*/
 
     /**
      * @notice Compute the invariant of the pool using constant product.
@@ -106,7 +106,7 @@ library ReClammMath {
      * @param rounding Rounding direction to consider when computing the invariant
      * @return invariant The invariant of the pool
      */
-    function computeInvariant(
+    /*function computeInvariant(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB,
@@ -116,7 +116,7 @@ library ReClammMath {
             rounding == Rounding.ROUND_DOWN ? FixedPoint.mulDown : FixedPoint.mulUp;
 
         return _mulUpOrDown((balancesScaled18[a] + virtualBalanceA), (balancesScaled18[b] + virtualBalanceB));
-    }
+    }*/
 
     /**
      * @notice Compute the `amountOut` of tokenOut in a swap, given the current balances and virtual balances.
@@ -183,7 +183,7 @@ library ReClammMath {
      * @param amountOutScaled18 The exact amount of `tokenOut` (i.e., the amount given in an ExactOut swap)
      * @return amountInScaled18 The calculated amount of `tokenIn` returned in an ExactOut swap
      */
-    function computeInGivenOut(
+    /*function computeInGivenOut(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB,
@@ -231,7 +231,7 @@ library ReClammMath {
             amountOutScaled18,
             balancesScaled18[tokenOutIndex] + virtualBalanceTokenOut - amountOutScaled18
         );
-    }
+    }*/
 
     /**
      * @notice Computes the theoretical initial state of a ReClamm pool based on its price parameters.
@@ -258,7 +258,7 @@ library ReClammMath {
      * @return virtualBalanceBScaled18 The theoretical initial virtual balance of token B [virtualB]
      * @return priceRatio The ratio of the max price to the min price
      */
-    function computeTheoreticalPriceRatioAndBalances(
+    /*function computeTheoreticalPriceRatioAndBalances(
         uint minPriceScaled18,
         uint maxPriceScaled18,
         uint targetPriceScaled18
@@ -294,7 +294,7 @@ library ReClammMath {
         realBalancesScaled18[a] = (
             realBalancesScaled18[b] + virtualBalanceBScaled18 - virtualBalanceAScaled18.mulDown(targetPriceScaled18)
         ).divDown(targetPriceScaled18);
-    }
+    }*/
 
     /**
      * @notice Calculate the current virtual balances of the pool.
@@ -319,7 +319,7 @@ library ReClammMath {
      * @return currentVirtualBalanceB The current virtual balance of token B
      * @return changed Whether the virtual balances have changed and must be updated in the pool
      */
-    function computeCurrentVirtualBalances(
+    /*function computeCurrentVirtualBalances(
         uint[] memory balancesScaled18,
         uint lastVirtualBalanceA,
         uint lastVirtualBalanceB,
@@ -381,7 +381,7 @@ library ReClammMath {
 
             changed = true;
         }
-    }
+    }*/
 
     /**
      * @notice Compute the virtual balances of the pool when the price ratio is updating.
@@ -468,7 +468,7 @@ library ReClammMath {
      * @return newVirtualBalanceA The new virtual balance of token A
      * @return newVirtualBalanceB The new virtual balance of token B
      */
-    function computeVirtualBalancesUpdatingPriceRange(
+    /*function computeVirtualBalancesUpdatingPriceRange(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB,
@@ -524,7 +524,7 @@ library ReClammMath {
         (newVirtualBalanceA, newVirtualBalanceB) = isPoolAboveCenter
             ? (virtualBalanceUndervalued, virtualBalanceOvervalued)
             : (virtualBalanceOvervalued, virtualBalanceUndervalued);
-    }
+    }*/
 
     /**
      * @notice Check whether the pool is in range.
@@ -598,7 +598,7 @@ library ReClammMath {
      * @param priceRatioUpdateEndTime The timestamp of the next user interaction with the pool
      * @return fourthRootPriceRatio The fourth root of price ratio of the pool
      */
-    function computeFourthRootPriceRatio(
+    /*function computeFourthRootPriceRatio(
         uint32 currentTime,
         uint96 startFourthRootPriceRatio,
         uint96 endFourthRootPriceRatio,
@@ -639,7 +639,7 @@ library ReClammMath {
         // Since we're rounding current fourth root price ratio down, we only need to check the lower boundary.
         uint minimumFourthRootPriceRatio = Math.min(startFourthRootPriceRatio, endFourthRootPriceRatio);
         return Math.max(minimumFourthRootPriceRatio, currentFourthRootPriceRatio).toUint96();
-    }
+    }*/
 
     /**
      * @notice Compute the price ratio of the pool by dividing the maximum price by the minimum price.
@@ -651,7 +651,7 @@ library ReClammMath {
      * @param virtualBalanceB Virtual balance of token B
      * @return priceRatio The ratio between the maximum and minimum prices of the pool
      */
-    function computePriceRatio(
+    /*function computePriceRatio(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB
@@ -659,7 +659,7 @@ library ReClammMath {
         (uint minPrice, uint maxPrice) = computePriceRange(balancesScaled18, virtualBalanceA, virtualBalanceB);
 
         return maxPrice.divUp(minPrice);
-    }
+    }*/
 
     /**
      * @notice Compute the minimum and maximum prices for the pool based on virtual balances and current invariant.
@@ -674,7 +674,7 @@ library ReClammMath {
      * @return minPrice The minimum price of token A in terms of token B
      * @return maxPrice The maximum price of token A in terms of token B
      */
-    function computePriceRange(
+    /*function computePriceRange(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB
@@ -693,7 +693,7 @@ library ReClammMath {
         // Then, (Rb_max + Vb) = invariant / Va, and:
         // P_max(a) = invariant / Va^2
         maxPrice = currentInvariant.divDown(virtualBalanceA.mulDown(virtualBalanceA));
-    }
+    }*/
 
     /**
      * @notice Convert from the external to the internal representation of the daily price shift exponent.

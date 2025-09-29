@@ -94,7 +94,7 @@ library LogExpMath {
      *
      * Reverts if ln(x) * y is smaller than `MIN_NATURAL_EXPONENT`, or larger than `MAX_NATURAL_EXPONENT`.
      */
-    function pow(uint x, uint y) internal pure returns (uint) {
+    /*function pow(uint x, uint y) internal pure returns (uint) {
         if (y == 0) {
             // We solve the 0^0 indetermination by making it equal one.
             return uint(ONE_18);
@@ -145,7 +145,7 @@ library LogExpMath {
         }
 
         return uint(exp(logx_times_y));
-    }
+    }*/
 
     /**
      * @dev Internal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
@@ -153,7 +153,7 @@ library LogExpMath {
      *
      * Should only be used if x is between LN_36_LOWER_BOUND and LN_36_UPPER_BOUND.
      */
-    function _ln_36(int x) private pure returns (int) {
+    /*function _ln_36(int x) private pure returns (int) {
         // Since ln(1) = 0, a value of x close to one will yield a very small result, which makes using 36 digits
         // worthwhile.
 
@@ -202,14 +202,14 @@ library LogExpMath {
             // All that remains is multiplying by 2 (non fixed point).
             return seriesSum * 2;
         }
-    }
+    }*/
 
     /**
      * @dev Natural exponentiation (e^x) with signed 18 decimal fixed point exponent.
      *
      * Reverts if `x` is smaller than MIN_NATURAL_EXPONENT, or larger than `MAX_NATURAL_EXPONENT`.
      */
-    function exp(int x) internal pure returns (int) {
+    /*function exp(int x) internal pure returns (int) {
         if (!(x >= MIN_NATURAL_EXPONENT && x <= MAX_NATURAL_EXPONENT)) {
             revert InvalidExponent();
         }
@@ -361,10 +361,10 @@ library LogExpMath {
             // We avoid using recursion here because zkSync doesn't support it.
             return negativeExponent ? (ONE_18 * ONE_18) / result : result;
         }
-    }
+    }*/
 
     /// @dev Internal natural logarithm (ln(a)) with signed 18 decimal fixed point argument.
-    function _ln(int a) private pure returns (int) {
+    /*function _ln(int a) private pure returns (int) {
         // We avoid using recursion here because zkSync doesn't support it.
         bool negativeExponent = false;
 
@@ -508,5 +508,5 @@ library LogExpMath {
             // We avoid using recursion here because zkSync doesn't support it.
             return negativeExponent ? -result : result;
         }
-    }
+    }*/
 }

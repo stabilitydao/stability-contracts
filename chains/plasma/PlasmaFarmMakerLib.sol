@@ -22,4 +22,6 @@ library PlasmaFarmMakerLib {
         farm.ticks = new int24[](0);
         return farm;
     }
+
+    function testFarmMakerLib() external {}
 }

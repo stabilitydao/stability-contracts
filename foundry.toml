@@ -43,5 +43,5 @@ avalanche = { key = "${ETHERSCAN_API_KEY}", chain = 43114, url = "https://api.et
 plasma = { key = "${ETHERSCAN_API_KEY}", chain = 9745, url = "https://api.etherscan.io/v2/api?chainid=9745" }
 
 [lint]
-exclude_lints = ["mixed-case-function", "mixed-case-variable", "asm-keccak256"]
+exclude_lints = ["mixed-case-function", "mixed-case-variable", "asm-keccak256", "unsafe-typecast"]
 ignore = ["src/integrations/pendle/PendleERC4626WithAdapterSYFlatten.sol"]

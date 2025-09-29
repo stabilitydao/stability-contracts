@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {Errors} from "../balancer/BalancerErrors.sol";
-import {LogExpMath} from "./LogExpMath.sol";
+//import {Errors} from "../balancer/BalancerErrors.sol";
+//import {LogExpMath} from "./LogExpMath.sol";
 
 /// @notice Support 18-decimal fixed point arithmetic. All Vault calculations use this for high and uniform precision.
 library FixedPoint {
@@ -17,7 +17,7 @@ library FixedPoint {
     uint internal constant FOUR = 4 * ONE;
     uint internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
 
-    function mulUp(uint a, uint b) internal pure returns (uint) {
+    /*function mulUp(uint a, uint b) internal pure returns (uint) {
         uint product = a * b;
         _require(a == 0 || product / a == b, Errors.MUL_OVERFLOW);
 
@@ -32,7 +32,7 @@ library FixedPoint {
 
             return ((product - 1) / ONE) + 1;
         }
-    }
+    }*/
 
     function mulDown(uint a, uint b) internal pure returns (uint) {
         // Multiplication overflow protection is provided by Solidity 0.8.x.
@@ -42,7 +42,7 @@ library FixedPoint {
     }
 
     /// @dev Return (a * b) / c, rounding up.
-    function mulDivUp(uint a, uint b, uint c) internal pure returns (uint result) {
+    /*function mulDivUp(uint a, uint b, uint c) internal pure returns (uint result) {
         // This check is required because Yul's `div` doesn't revert on c==0.
         if (c == 0) {
             revert ZeroDivision();
@@ -62,11 +62,11 @@ library FixedPoint {
         assembly ("memory-safe") {
             result := mul(iszero(iszero(product)), add(div(sub(product, 1), c), 1))
         }
-    }
+    }*/
 
-    function divUp(uint a, uint b) internal pure returns (uint result) {
+    /*function divUp(uint a, uint b) internal pure returns (uint result) {
         return mulDivUp(a, ONE, b);
-    }
+    }*/
 
     function divDown(uint a, uint b) internal pure returns (uint) {
         // Solidity 0.8 reverts with a Panic code (0x11) if the multiplication overflows.
@@ -99,7 +99,7 @@ library FixedPoint {
      * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
      * the true value (that is, the error function expected - actual is always positive).
      */
-    function powDown(uint x, uint y) internal pure returns (uint) {
+    /*function powDown(uint x, uint y) internal pure returns (uint) {
         // Optimize for when y equals 1.0, 2.0 or 4.0, as those are very simple to implement and occur often in 50/50
         // and 80/20 Weighted Pools
         if (y == ONE) {
@@ -121,7 +121,7 @@ library FixedPoint {
                 }
             }
         }
-    }
+    }*/
 }
 
 /**

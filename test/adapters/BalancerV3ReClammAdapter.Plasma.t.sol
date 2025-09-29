@@ -41,6 +41,9 @@ contract BalancerV3ReCLAMMAdapterTest is PlasmaSetup {
 
         vm.expectRevert("Unavailable");
         balancerAdapter.getLiquidityForAmountsWrite(pool, amounts);
+
+        vm.expectRevert("Unavailable");
+        IAmmAdapter(address(balancerAdapter)).getLiquidityForAmounts(pool, amounts);
     }
 
     function testSwaps() public {
