@@ -117,7 +117,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     }
     //endregion ----------------------------------- Actions
 
-    function _onlyWhitelisted() internal {
+    function _onlyWhitelisted() internal view {
         require(whitelisted(msg.sender), RecoveryLib.NotWhitelisted());
     }
 }
