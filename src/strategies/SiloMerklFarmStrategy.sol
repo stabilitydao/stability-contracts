@@ -169,7 +169,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        /// slither-disable-next-line unused-return
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
