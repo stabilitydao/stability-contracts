@@ -403,7 +403,7 @@ library ReClammMath {
      * @return virtualBalanceA The virtual balance of token A
      * @return virtualBalanceB The virtual balance of token B
      */
-    function computeVirtualBalancesUpdatingPriceRatio(
+    /*function computeVirtualBalancesUpdatingPriceRatio(
         uint currentFourthRootPriceRatio,
         uint[] memory balancesScaled18,
         uint lastVirtualBalanceA,
@@ -451,7 +451,7 @@ library ReClammMath {
         (virtualBalanceA, virtualBalanceB) = isPoolAboveCenter
             ? (virtualBalanceUndervalued, virtualBalanceOvervalued)
             : (virtualBalanceOvervalued, virtualBalanceUndervalued);
-    }
+    }*/
 
     /**
      * @notice Compute new virtual balances when the pool is outside the target range.
@@ -536,7 +536,7 @@ library ReClammMath {
      * price range before it is considered out of range
      * @return isWithinTargetRange Whether the pool is within the target price range
      */
-    function isPoolWithinTargetRange(
+    /*function isPoolWithinTargetRange(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB,
@@ -544,7 +544,7 @@ library ReClammMath {
     ) internal pure returns (bool) {
         (uint centeredness,) = computeCenteredness(balancesScaled18, virtualBalanceA, virtualBalanceB);
         return centeredness >= centerednessMargin;
-    }
+    }*/
 
     /**
      * @notice Compute the centeredness of the pool.
@@ -558,7 +558,7 @@ library ReClammMath {
      * @return poolCenteredness The centeredness of the pool
      * @return isPoolAboveCenter True if the pool is above the center, false otherwise
      */
-    function computeCenteredness(
+    /*function computeCenteredness(
         uint[] memory balancesScaled18,
         uint virtualBalanceA,
         uint virtualBalanceB
@@ -584,7 +584,7 @@ library ReClammMath {
         }
 
         return (poolCenteredness, isPoolAboveCenter);
-    }
+    }*/
 
     /**
      * @notice Compute the fourth root of the price ratio of the pool.
@@ -700,9 +700,9 @@ library ReClammMath {
      * @param dailyPriceShiftExponent The daily price shift exponent as an 18-decimal FP
      * @return dailyPriceShiftBase Internal time constant used to update virtual balances (1 - tau)
      */
-    function toDailyPriceShiftBase(uint dailyPriceShiftExponent) internal pure returns (uint) {
+    /*function toDailyPriceShiftBase(uint dailyPriceShiftExponent) internal pure returns (uint) {
         return FixedPoint.ONE - dailyPriceShiftExponent / _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT;
-    }
+    }*/
 
     /**
      * @notice Convert from the internal to the external representation of the daily price shift exponent.
@@ -710,25 +710,25 @@ library ReClammMath {
      * @param dailyPriceShiftBase Internal time constant used to update virtual balances (1 - tau)
      * @return dailyPriceShiftExponent The daily price shift exponent as an 18-decimal FP percentage
      */
-    function toDailyPriceShiftExponent(uint dailyPriceShiftBase) internal pure returns (uint) {
+    /*function toDailyPriceShiftExponent(uint dailyPriceShiftBase) internal pure returns (uint) {
         return (FixedPoint.ONE - dailyPriceShiftBase) * _PRICE_SHIFT_EXPONENT_INTERNAL_ADJUSTMENT;
-    }
+    }*/
 
     /**
      * @notice Calculate the square root of a value scaled by 18 decimals.
      * @param valueScaled18 The value to calculate the square root of, scaled by 18 decimals
      * @return sqrtValueScaled18 The square root of the value scaled by 18 decimals
      */
-    function sqrtScaled18(uint valueScaled18) internal pure returns (uint) {
+    /*function sqrtScaled18(uint valueScaled18) internal pure returns (uint) {
         return Math.sqrt(valueScaled18 * FixedPoint.ONE);
-    }
+    }*/
 
     /**
      * @notice Calculate the fourth root of a value scaled by 18 decimals.
      * @param valueScaled18 The value to calculate the fourth root of, scaled by 18 decimals
      * @return fourthRootValueScaled18 The fourth root of the value scaled by 18 decimals
      */
-    function fourthRootScaled18(uint valueScaled18) internal pure returns (uint) {
+    /*function fourthRootScaled18(uint valueScaled18) internal pure returns (uint) {
         return Math.sqrt(Math.sqrt(valueScaled18 * FixedPoint.ONE) * FixedPoint.ONE);
-    }
+    }*/
 }
