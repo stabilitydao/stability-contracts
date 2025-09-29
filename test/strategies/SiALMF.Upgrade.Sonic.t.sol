@@ -22,6 +22,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract SiALMFUpgradeTest is Test {
     // uint public constant FORK_BLOCK = 39484599; // Jul-21-2025 08:14:43 AM +UTC
@@ -65,6 +67,7 @@ contract SiALMFUpgradeTest is Test {
         _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         _upgradeWrappedMetaVault();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVault();
 
         _upgradeStrategy();
@@ -213,17 +216,7 @@ contract SiALMFUpgradeTest is Test {
     function _upgradeStrategy() internal {
         address strategyImplementation = address(new SiloALMFStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ALMF_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ALMF_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(address(strategy));
     }
@@ -232,15 +225,7 @@ contract SiALMFUpgradeTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         factory.upgradeVaultProxy(vault_);
     }
@@ -304,15 +289,7 @@ contract SiALMFUpgradeTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault));
     }
 
@@ -494,6 +471,21 @@ contract SiALMFUpgradeTest is Test {
         //        for (uint i; i < current.length; ++i) {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
     //endregion ------------------------------------ Helpers
 }

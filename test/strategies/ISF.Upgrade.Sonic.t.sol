@@ -10,6 +10,8 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract ISFUpgradeTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -20,6 +22,8 @@ contract ISFUpgradeTest is Test {
     constructor() {
         // Mar-28-2025 09:09:20 PM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 16646000));
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testISFUpgrade() public {
@@ -33,17 +37,7 @@ contract ISFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new IchiSwapXFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ICHI_SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_SWAPX_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 
@@ -60,5 +54,17 @@ contract ISFUpgradeTest is Test {
             IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(IPlatform(PLATFORM).revenueRouter()) - stblBalanceWas;
         assertGt(wsBalanceChange, 0);
         assertGt(stblBalanceChange, 0);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

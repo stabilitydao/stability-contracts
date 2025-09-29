@@ -8,6 +8,8 @@ import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {EqualizerFarmStrategy} from "../../src/strategies/EqualizerFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract EFUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -16,6 +18,8 @@ contract EFUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(2346485); // Jan-03-2025 10:36:37 AM +UTC
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testEFUpgrade() public {
@@ -40,21 +44,23 @@ contract EFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new EqualizerFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EQUALIZER_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.EQUALIZER_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 
         /// forge-lint: disable-next-line
         hw.call(vaultsForHardWork);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

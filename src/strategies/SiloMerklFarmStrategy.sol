@@ -88,6 +88,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        // slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00d395), bytes3(0x000000)));
     }
 
@@ -135,7 +136,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        /// slither-disable-next-line ignore-unused-return
+        // slither-disable-next-line unused-return
         return SharedLib.initVariantsForFarm(platform_, STRATEGY_LOGIC_ID, _genDesc);
     }
 
@@ -168,7 +169,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        /// slither-disable-next-line ignore-unused-return
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
@@ -239,6 +240,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         if (address(this) == receiver) {
             toWithdraw--;
         }
+        // slither-disable-next-line reentrancy-benign
         siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
         amountsOut = new uint[](1);
         amountsOut[0] = value;
@@ -298,6 +300,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
                 uint amountXSilo = StrategyLib.balance(xSilo);
                 if (amountXSilo != 0) {
                     // instant exit with penalty 50%
+                    // slither-disable-next-line calls-loop
                     __rewardAmounts[i] += IXSilo(xSilo).redeemSilo(amountXSilo, 0);
                 }
             }

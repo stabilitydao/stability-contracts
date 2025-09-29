@@ -135,7 +135,7 @@ library EthereumLib {
         //endregion
 
         //region ----- Deploy strategy logics -----
-        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -198,20 +198,6 @@ library EthereumLib {
         farm.nums = new uint[](0);
         farm.ticks = new int24[](0);
         return farm;
-    }
-
-    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
     }
 
     function testEthereumLib() external {}

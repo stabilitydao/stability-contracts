@@ -15,6 +15,8 @@ import {SiloAdvancedLeverageStrategy} from "../../src/strategies/SiloAdvancedLev
 import {CVault} from "../../src/core/vaults/CVault.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice #254: Fix decreasing LTV on exits
 contract SiALUpgrade2Test is Test {
@@ -64,6 +66,8 @@ contract SiALUpgrade2Test is Test {
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     //region -------------------------- Check flash loan kinds
@@ -631,17 +635,7 @@ contract SiALUpgrade2Test is Test {
     function _upgradeStrategy(address strategyAddress) internal {
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -649,15 +643,7 @@ contract SiALUpgrade2Test is Test {
     function _upgradeVault(address vaultAddress) internal {
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         factory.upgradeVaultProxy(vaultAddress);
     }
@@ -695,6 +681,21 @@ contract SiALUpgrade2Test is Test {
 
     function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
         return x > y ? (x - y) * 100_00 / x : 0;
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
     //endregion -------------------------- Auxiliary functions
 }

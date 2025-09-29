@@ -15,9 +15,12 @@ contract TokenSender {
     function send(address token, address[] calldata receivers, uint[] calldata amounts) external {
         require(IPlatform(platform).isOperator(msg.sender), "denied");
         uint len = receivers.length;
+        /// @dev it is a deployed non-upgradeable contract, we can only disable warnings instead of using `safeTransferFrom`
+        /// forge-lint: disable-start(erc20-unchecked-transfer)
         for (uint i; i < len; ++i) {
             // slither-disable-next-line unchecked-transfer
             IERC20(token).transferFrom(msg.sender, receivers[i], amounts[i]);
         }
+        /// forge-lint: disable-end(erc20-unchecked-transfer)
     }
 }

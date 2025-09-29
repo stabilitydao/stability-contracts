@@ -320,29 +320,16 @@ library PolygonLib {
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
-        _addStrategyLogic(
-            factory, StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()), true
-        );
-        _addStrategyLogic(
-            factory, StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()), true
-        );
-        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()), true);
-        _addStrategyLogic(
-            factory,
-            StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
-            address(new DefiEdgeQuickSwapMerklFarmStrategy()),
-            true
-        );
-        _addStrategyLogic(
-            factory, StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()), true
-        );
-        _addStrategyLogic(factory, StrategyIdLib.ICHI_RETRO_MERKL_FARM, address(new IchiRetroMerklFarmStrategy()), true);
-        _addStrategyLogic(
-            factory, StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()), true
-        );
-        _addStrategyLogic(factory, StrategyIdLib.CURVE_CONVEX_FARM, address(new CurveConvexFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.YEARN, address(new YearnStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM, address(new SteerQuickSwapMerklFarmStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.GAMMA_QUICKSWAP_MERKL_FARM, address(new GammaQuickSwapMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.QUICKSWAP_STATIC_MERKL_FARM, address(new QuickSwapStaticMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.COMPOUND_FARM, address(new CompoundFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, address(new DefiEdgeQuickSwapMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_QUICKSWAP_MERKL_FARM, address(new IchiQuickSwapMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_RETRO_MERKL_FARM, address(new IchiRetroMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.GAMMA_RETRO_MERKL_FARM, address(new GammaRetroMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.CURVE_CONVEX_FARM, address(new CurveConvexFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.YEARN, address(new YearnStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.STEER_QUICKSWAP_MERKL_FARM, address(new SteerQuickSwapMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -710,20 +697,6 @@ library PolygonLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
     }
 
     function testPolygonLib() external {}

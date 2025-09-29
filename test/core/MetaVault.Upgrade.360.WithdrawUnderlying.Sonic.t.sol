@@ -30,6 +30,8 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// #360 - withdraw underlying from MetaVaults
 contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
@@ -158,6 +160,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
         _upgradePlatform();
         _setupMetaVaultFactory();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     //region --------------------------------------- Tests for MetaUSDC/MetaScUSD (sub-meta-vaults)
@@ -1768,17 +1771,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new AaveMerklFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -1789,17 +1782,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -1810,15 +1793,7 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(cVault_));
     }
 
@@ -1855,6 +1830,18 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
         address recoveryTokenImplementation = address(new RecoveryToken());
         vm.prank(multisig);
         metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------------------------------- Helpers
 }

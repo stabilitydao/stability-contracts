@@ -18,6 +18,8 @@ import {EulerStrategy} from "../../src/strategies/EulerStrategy.sol";
 import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {CommonLib} from "../../src/core/libs/CommonLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -93,6 +95,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         metaVaultFactory.upgradeMetaProxies(proxies);
         vm.stopPrank();
 
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVaults();
 
         // to withdraw from requested subvault, i.e. 2
@@ -115,15 +118,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         address[3] memory vaults = [
             SonicConstantsLib.VAULT_C_SCUSD_S_46,
@@ -146,17 +141,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
 
         address strategyImplementation = address(new EulerStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EULER,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.EULER, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -166,17 +151,7 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
 
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -191,6 +166,18 @@ contract WrapperERC4626scUSDSonicTest is ERC4626UniversalTest, SlippageTestUtils
 
         vm.prank(multisig);
         metaVault.setTargetProportions(props);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------- Auxiliary functions
 }
