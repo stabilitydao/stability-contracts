@@ -22,7 +22,7 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 library PlasmaLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
         p.multisig = PlasmaConstantsLib.MULTISIG;
-        p.version = "2025.09.1-alpha";
+        p.version = "2025.09.2-alpha";
         p.targetExchangeAsset = PlasmaConstantsLib.TOKEN_USDT0;
         p.fee = 20_000;
     }
