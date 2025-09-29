@@ -17,6 +17,7 @@ import {PendleAdapter} from "../../src/adapters/PendleAdapter.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
+import {BalancerV3ReClammAdapter} from "../../src/adapters/BalancerV3ReClammAdapter.sol";
 
 library DeployAdapterLib {
     function deployAmmAdapter(address platform, string memory id) internal returns (address) {
@@ -73,6 +74,10 @@ library DeployAdapterLib {
 
         if (eq(id, AmmAdapterIdLib.META_VAULT)) {
             proxy.initProxy(address(new MetaVaultAdapter()));
+        }
+
+        if (eq(id, AmmAdapterIdLib.BALANCER_V3_RECLAMM)) {
+            proxy.initProxy(address(new BalancerV3ReClammAdapter()));
         }
 
         require(proxy.implementation() != address(0), string.concat("Unknown AmmAdapter:", id));

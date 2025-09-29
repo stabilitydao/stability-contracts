@@ -251,6 +251,7 @@ library CVaultBatchLib {
         if (!vm.exists("./tmp")) {
             vm.createDir("./tmp", true);
         }
+        /// forge-lint: disable-next-line(unsafe-cheatcode)
         vm.writeFile(string.concat("./tmp/", fnOut), content);
     }
 

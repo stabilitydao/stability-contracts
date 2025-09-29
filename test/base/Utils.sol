@@ -34,7 +34,9 @@ abstract contract Utils is Test {
         string memory tokenUri = nft.tokenURI(tokenId);
         assertGt(bytes(tokenUri).length, 0);
         (name, description, svg) = parseURI(tokenUri);
+        /// forge-lint: disable-next-line(unsafe-cheatcode)
         vm.writeFile(path, svg);
+        /// forge-lint: disable-next-line(unsafe-cheatcode)
         assertEq(vm.readFile(path), svg);
     }
 
