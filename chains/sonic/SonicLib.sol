@@ -223,32 +223,28 @@ library SonicLib {
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategy logics -----
-        _addStrategyLogic(factory, StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()), true);
-        _addStrategyLogic(factory, StrategyIdLib.BEETS_WEIGHTED_FARM, address(new BeetsWeightedFarm()), true);
-        _addStrategyLogic(factory, StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()), true);
-        _addStrategyLogic(
-            factory, StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()), true
-        );
-        _addStrategyLogic(factory, StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_LEVERAGE, address(new SiloLeverageStrategy()), false);
-        _addStrategyLogic(
-            factory, StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()), false
-        );
-        _addStrategyLogic(factory, StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.BEETS_STABLE_FARM, address(new BeetsStableFarm()));
+        factory.setStrategyImplementation(StrategyIdLib.BEETS_WEIGHTED_FARM, address(new BeetsWeightedFarm()));
+        factory.setStrategyImplementation(StrategyIdLib.EQUALIZER_FARM, address(new EqualizerFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_SWAPX_FARM, address(new IchiSwapXFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SWAPX_FARM, address(new SwapXFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.GAMMA_UNISWAPV3_MERKL_FARM, address(new GammaUniswapV3MerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_FARM, address(new SiloFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.ALM_SHADOW_FARM, address(new ALMShadowFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_LEVERAGE, address(new SiloLeverageStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, address(new SiloAdvancedLeverageStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.GAMMA_EQUALIZER_FARM, address(new GammaEqualizerFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_EQUALIZER_FARM, address(new IchiEqualizerFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO, address(new SiloStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.EULER, address(new EulerStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE, address(new AaveStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_FARM, address(new SiloManagedFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.COMPOUND_V2, address(new CompoundV2Strategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion
 
@@ -464,20 +460,6 @@ library SonicLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
     }
 
     function testChainLib() external {}

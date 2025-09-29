@@ -8,6 +8,8 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloManagedMerklFarmStrategy, CommonLib} from "../../src/strategies/SiloManagedMerklFarmStrategy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract SiMMFUpgradeTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -18,6 +20,7 @@ contract SiMMFUpgradeTest is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
         vm.rollFork(47900000); // Sep-23-2025 12:01:57 PM +UTC
         vault = IStrategy(STRATEGY).vault();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testSiMMFUpgrade() public {
@@ -27,17 +30,7 @@ contract SiMMFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloManagedMerklFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, strategyImplementation);
         factory.upgradeStrategyProxy(STRATEGY);
 
         (string memory specific,) = IStrategy(STRATEGY).getSpecificName();
@@ -60,5 +53,17 @@ contract SiMMFUpgradeTest is Test {
         IStrategy(STRATEGY).setProtocols(protocols);
         assertEq(IStrategy(STRATEGY).protocols().length, 2);
         assertEq(CommonLib.eq(IStrategy(STRATEGY).protocols()[1], "org2:p2"), true);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

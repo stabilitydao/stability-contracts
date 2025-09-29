@@ -17,6 +17,8 @@ import {CVault} from "../../src/core/vaults/CVault.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MockMetaVaultUpgrade} from "../../src/test/MockMetaVaultUpgrade.sol";
 import {MockWrappedMetaVaultUpgrade} from "../../src/test/MockWrappedMetaVaultUpgrade.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract MetaVaultFactoryTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
@@ -26,6 +28,8 @@ contract MetaVaultFactoryTest is Test {
     constructor() {
         // May-10-2025 10:38:26 AM +UTC
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), 25729900));
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function setUp() public {
@@ -142,15 +146,7 @@ contract MetaVaultFactoryTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SIF);
         factory.upgradeVaultProxy(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD);
@@ -172,5 +168,17 @@ contract MetaVaultFactoryTest is Test {
             bytesArray[i] = _bytes32[i];
         }
         return string(bytesArray);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

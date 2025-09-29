@@ -6,6 +6,8 @@ import {DefiEdgeQuickSwapMerklFarmStrategy} from "../../src/strategies/DefiEdgeQ
 import {PolygonLib, IFactory, IPlatform, StrategyIdLib} from "../../chains/PolygonLib.sol";
 import {IMerklDistributor} from "../../src/integrations/merkl/IMerklDistributor.sol";
 import {IMerklStrategy} from "../../src/interfaces/IMerklStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract DQMFUpgradeTest is Test {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
@@ -14,6 +16,8 @@ contract DQMFUpgradeTest is Test {
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL")));
         vm.rollFork(56967000); // May-14-2024 05:36:03 PM +UTC
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testDQMFUpgrade() public {
@@ -51,17 +55,7 @@ contract DQMFUpgradeTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new DefiEdgeQuickSwapMerklFarmStrategy());
         vm.prank(operator);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.DEFIEDGE_QUICKSWAP_MERKL_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(STRATEGY);
 
@@ -69,5 +63,17 @@ contract DQMFUpgradeTest is Test {
         IMerklStrategy(STRATEGY).toggleDistributorUserOperator(PolygonLib.MERKL_DISTRIBUTOR, address(this));
 
         IMerklDistributor(PolygonLib.MERKL_DISTRIBUTOR).claim(users, tokens, amounts, proofs);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }

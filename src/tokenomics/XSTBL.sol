@@ -9,19 +9,24 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title xSTBL token
 /// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
+/// Changelog:
+///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using SafeERC20 for IERC20;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @inheritdoc IXSTBL
     uint public constant BASIS = 10_000;
@@ -169,7 +174,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         require(amount_ != 0, IncorrectZeroArgument());
         /// @dev transfer from the caller to this address
         // slither-disable-next-line unchecked-transfer
-        IERC20(STBL()).transferFrom(msg.sender, address(this), amount_);
+        IERC20(STBL()).safeTransferFrom(msg.sender, address(this), amount_);
         /// @dev mint the xSTBL to the caller
         _mint(msg.sender, amount_);
         /// @dev emit an event for conversion
@@ -195,7 +200,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
         /// @dev transfer the exitAmount to the caller
         // slither-disable-next-line unchecked-transfer
-        IERC20($.STBL).transfer(msg.sender, exitAmount);
+        IERC20($.STBL).safeTransfer(msg.sender, exitAmount);
 
         /// @dev emit actual exited amount
         emit InstantExit(msg.sender, exitAmount);
@@ -246,7 +251,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             /// @dev case: vest is complete
             /// @dev send liquid STBL to msg.sender
             // slither-disable-next-line unchecked-transfer
-            IERC20($.STBL).transfer(msg.sender, _amount);
+            IERC20($.STBL).safeTransfer(msg.sender, _amount);
 
             emit ExitVesting(msg.sender, vestID_, _amount, _amount);
         } else {
@@ -267,7 +272,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
             /// @dev transfer underlying to the sender after penalties removed
             // slither-disable-next-line unchecked-transfer
-            IERC20($.STBL).transfer(msg.sender, exitedAmount);
+            IERC20($.STBL).safeTransfer(msg.sender, exitedAmount);
 
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
         }

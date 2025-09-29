@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {Factory} from "../../src/core/Factory.sol";
 import {MetaVault, IMetaVault, IStabilityVault, IPlatform, IPriceReader} from "../../src/core/vaults/MetaVault.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -79,7 +78,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
             IFactory.StrategyAvailableInitParams memory p;
             factory.setStrategyAvailableInitParams(StrategyIdLib.SILO_ALMF_FARM, p);
         }
-        SonicLib._addStrategyLogic(factory, StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ALMF_FARM, address(new SiloALMFStrategy()));
         address[] memory _vaults = _createVaultsAndStrategies(factory);
         vm.stopPrank();
 
@@ -897,15 +896,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
     function _updateCVaultImplementation(IFactory factory) internal {
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
     }
 
     function _upgradeMetaVault(address metaVault_) internal {

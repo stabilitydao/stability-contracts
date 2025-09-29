@@ -24,6 +24,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice #335: Add support of xSilo in SiMF strategy
 contract SiMFUpgradeXSiloTest is Test {
@@ -45,6 +47,7 @@ contract SiMFUpgradeXSiloTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #335: Add support of xSilo in SiMF strategy
@@ -167,15 +170,7 @@ contract SiMFUpgradeXSiloTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         factory.upgradeVaultProxy(vault);
     }
@@ -185,17 +180,7 @@ contract SiMFUpgradeXSiloTest is Test {
 
         address strategyImplementation = address(new SiloManagedFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -252,6 +237,18 @@ contract SiMFUpgradeXSiloTest is Test {
 
     function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
         return x > y ? (x - y) * 100_00 / x : 0;
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ------------------------------ Auxiliary Functions
 }

@@ -132,17 +132,19 @@ struct StrategyLogicConfig {
     uint tokenId;
 }
 
-/// @notice Initial addition or change of strategy logic settings.
+/// @notice Initial addition or change of strategy logic implementation.
 /// Operator can add new strategy logic. Governance or multisig can change existing logic config.
-/// @param config Strategy logic settings
-/// @param developer Strategy developer is receiver of minted StrategyLogic NFT on initial addition
-function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
+/// @param strategyId Strategy logic ID string
+/// @param implementation Address of strategy implementation
+function setStrategyImplementation(string memory strategyId, address implementation) external;
 ```
 </details>
 
+<!-- TODO: `8. setStrategyImplementation` is the number really 8 ??  -->
+
 * [Factory sonicscan](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#writeProxyContract)
 * Connect operator wallet
-* `8. setStrategyLogicConfig`
+* `8. setStrategyImplementation`
 * fill
 
 ## Multisig actions
@@ -185,7 +187,9 @@ Call it via Safe Transaction Builder:
 
 ### Set vault config
 
-Use `IFactory.setVaultConfig` method.
+<!-- TODO  -->
+
+Use `IFactory.setVaultImplementation` method.
 
 View current building prices and vault type string IDs on [Factory](https://sonicscan.org/address/0xc184a3ecca684f2621c903a7943d85fa42f56671#readProxyContract) `24. vaultTypes`
 
@@ -201,10 +205,11 @@ struct VaultConfig {
     uint buildingPrice;
 }
 
-/// @notice Initial addition or change of vault type settings.
+/// @notice Initial addition or change of vault type implementation.
 /// Operator can add new vault type. Governance or multisig can change existing vault type config.
-/// @param vaultConfig_ Vault type settings
-function setVaultConfig(VaultConfig memory vaultConfig_) external;
+/// @param vaultType Vault type string ID (Compounding, etc)
+/// @param implementation Address of implementation
+function setVaultImplementation(string memory vaultType, address implementation) external;
 ```
 </details>
 
@@ -217,8 +222,10 @@ Call it via Safe Transaction Builder:
 <details>
   <summary>ABI</summary>
 
+<!-- TODO: Change ABI -->
+
 `
-[{"inputs": [{"components": [{"internalType": "string","name": "vaultType","type": "string"},{"internalType": "address","name": "implementation","type": "address"},{"internalType": "bool","name": "deployAllowed","type": "bool"},{"internalType": "bool","name": "upgradeAllowed","type": "bool"},{"internalType": "uint256","name":"buildingPrice","type": "uint256"}],"internalType": "struct IFactory.VaultConfig","name": "vaultConfig_","type": "tuple"}],"name": "setVaultConfig","outputs": [],"stateMutability": "nonpayable","type": "function"}]
+[{"inputs":[{"internalType":"string","name":"vaultType","type":"string"},{"internalType":"address","name":"implementation","type":"address"}],"name":"setVaultImplementation","outputs":[],"stateMutability":"nonpayable","type":"function"}]
 `
 </details>
 
@@ -228,7 +235,7 @@ Call it via Safe Transaction Builder:
 
 ### Upgrade strategy
 
-Use `IFactory.setStrategyLogicConfig` method.
+Use `IFactory.setStrategyImplementation` method.
 This need to add new strategy, upgrade strategy implementation or disable vaults building.
 
 <details>
@@ -244,11 +251,11 @@ struct StrategyLogicConfig {
     uint tokenId;
 }
 
-/// @notice Initial addition or change of strategy logic settings.
+/// @notice Initial addition or change of strategy logic implementation.
 /// Operator can add new strategy logic. Governance or multisig can change existing logic config.
-/// @param config Strategy logic settings
-/// @param developer Strategy developer is receiver of minted StrategyLogic NFT on initial addition
-function setStrategyLogicConfig(StrategyLogicConfig memory config, address developer) external;
+/// @param strategyId Strategy logic ID string
+/// @param implementation Address of strategy implementation
+function setStrategyImplementation(string memory strategyId, address implementation) external;
 ```
 </details>
 
@@ -261,8 +268,10 @@ Call it via Safe Transaction Builder:
 <details>
   <summary>ABI</summary>
 
+  <!-- TODO: Change ABI -->
+
 `
-[{"type": "function","name": "strategyLogicConfig","inputs": [{"name": "idHash","type": "bytes32","internalType": "bytes32"}],"outputs": [{"name": "config","type": "tuple","internalType": "struct IFactory.StrategyLogicConfig","components": [{"name": "id","type": "string","internalType": "string"},{"name": "implementation","type": "address","internalType": "address"},{"name": "deployAllowed","type": "bool","internalType": "bool"},{"name": "upgradeAllowed","type": "bool","internalType": "bool"},{"name": "farming","type": "bool","internalType": "bool"},{"name": "tokenId","type": "uint256","internalType": "uint256"}]}],"stateMutability": "view"},{"type": "function","name": "setStrategyLogicConfig","inputs": [{"name": "config","type": "tuple","internalType": "struct IFactory.StrategyLogicConfig","components": [{"name": "id","type": "string","internalType": "string"},{"name": "implementation","type": "address","internalType": "address"},{"name": "deployAllowed","type": "bool","internalType": "bool"},{"name": "upgradeAllowed","type": "bool","internalType": "bool"},{"name": "farming","type": "bool","internalType": "bool"},{"name": "tokenId","type": "uint256","internalType": "uint256"}]},{"name": "developer","type": "address","internalType": "address"}],"outputs": [],"stateMutability": "nonpayable"}]
+[{"inputs":[{"internalType":"string","name":"strategyId","type":"string"},{"internalType":"address","name":"implementation","type":"address"}],"name":"setStrategyImplementation","outputs":[],"stateMutability":"nonpayable","type":"function"}]
 `
 </details>
 

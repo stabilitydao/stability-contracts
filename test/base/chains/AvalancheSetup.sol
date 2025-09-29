@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AvalancheLib} from "../../../chains/avalanche/AvalancheLib.sol";
 import {AvalancheConstantsLib} from "../../../chains/avalanche/AvalancheConstantsLib.sol";
 import {ChainSetup} from "../ChainSetup.sol";
@@ -12,6 +13,8 @@ import {ISwapper} from "../../../src/interfaces/ISwapper.sol";
 import {IPlatform} from "../../../src/interfaces/IPlatform.sol";
 
 abstract contract AvalancheSetup is ChainSetup, DeployCore {
+    using SafeERC20 for IERC20;
+
     bool public showDeployLog;
 
     constructor() {
@@ -44,7 +47,7 @@ abstract contract AvalancheSetup is ChainSetup, DeployCore {
             swapper.swap(AvalancheConstantsLib.TOKEN_USDC, AvalancheConstantsLib.TOKEN_AUSD, 2 * amount, 1_000); // 1%
 
             vm.prank(user);
-            IERC20(AvalancheConstantsLib.TOKEN_AUSD).transfer(to, amount);
+            IERC20(AvalancheConstantsLib.TOKEN_AUSD).safeTransfer(to, amount);
         } else {
             deal(token, to, amount);
         }

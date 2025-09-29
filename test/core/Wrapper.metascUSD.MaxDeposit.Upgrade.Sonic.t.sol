@@ -23,6 +23,8 @@ import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
     uint public constant FORK_BLOCK = 34657318; // Jun-12-2025 05:49:24 AM +UTC
@@ -44,6 +46,8 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         metaVault = IMetaVault(SonicConstantsLib.METAVAULT_METASCUSD);
         wrappedMetaVault = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METASCUSD);
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice #326, #334: Check how maxWithdraw works in wrapped/meta-vault/c-vault with Euler strategy
@@ -257,15 +261,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         address[3] memory vaults = [
             SonicConstantsLib.VAULT_C_SCUSD_S_46,
@@ -290,17 +286,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new EulerStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.EULER,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.EULER, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -310,17 +296,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -408,6 +384,18 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         // _showProportions(metaVault_);
         // console.log(metaVault_.vaultForDeposit(), metaVault_.vaultForWithdraw());
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
     //endregion ---------------------- Auxiliary functions
 }
