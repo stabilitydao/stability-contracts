@@ -10,13 +10,13 @@ contract DeployBalancerV3StableAdapterPlasma is Script {
     // address public constant PLATFORM = todo;
 
     function run() external {
-// todo
-//        uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-//        vm.startBroadcast(deployerPrivateKey);
-//        Proxy proxy = new Proxy();
-//        proxy.initProxy(address(new BalancerV3ReClammAdapter()));
-//        BalancerV3ReClammAdapter(address(proxy)).init(PLATFORM);
-//        vm.stopBroadcast();
+        // todo
+        //        uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        //        vm.startBroadcast(deployerPrivateKey);
+        //        Proxy proxy = new Proxy();
+        //        proxy.initProxy(address(new BalancerV3ReClammAdapter()));
+        //        BalancerV3ReClammAdapter(address(proxy)).init(PLATFORM);
+        //        vm.stopBroadcast();
     }
 
     function testDeployAdapter() external {}

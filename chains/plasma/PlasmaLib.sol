@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {PlasmaConstantsLib} from "./PlasmaConstantsLib.sol";
-import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
-import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {PriceReader, IPlatform, IPriceReader} from "../../src/core/PriceReader.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
+import "../../src/strategies/AaveMerklFarmStrategy.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {CVault} from "../../src/core/vaults/CVault.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {ChainlinkAdapter} from "../../src/adapters/ChainlinkAdapter.sol";
 import {DeployAdapterLib} from "../../script/libs/DeployAdapterLib.sol";
 import {EulerMerklFarmStrategy} from "../../src/strategies/EulerMerklFarmStrategy.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {IBalancerAdapter} from "../../src/interfaces/IBalancerAdapter.sol";
+import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IPlatformDeployer} from "../../src/interfaces/IPlatformDeployer.sol";
+import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {PlasmaConstantsLib} from "./PlasmaConstantsLib.sol";
+import {PlasmaFarmMakerLib} from "./PlasmaFarmMakerLib.sol";
+import {PriceReader, IPlatform, IPriceReader} from "../../src/core/PriceReader.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {StrategyDeveloperLib} from "../../src/strategies/libs/StrategyDeveloperLib.sol";
+import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
+import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 
 library PlasmaLib {
     function platformDeployParams() internal pure returns (IPlatformDeployer.DeployPlatformParams memory p) {
@@ -71,6 +73,7 @@ library PlasmaLib {
 
         //region ----- Deploy strategies  -----
         factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, address(new AaveMerklFarmStrategy()));
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -95,9 +98,14 @@ library PlasmaLib {
     }
 
     function farms() public pure returns (IFactory.Farm[] memory _farms) {
-        _farms = new IFactory.Farm[](12);
+        _farms = new IFactory.Farm[](1);
         uint i;
-        //_farms[i++] = AvalancheFarmMakerLib._makeEulerMerklFarm(AvalancheConstantsLib.EULER_VAULT_USDC_RE7, AvalancheConstantsLib.TOKEN_WAVAX); // 0
+
+        _farms[i++] = PlasmaFarmMakerLib._makeAaveMerklFarm(PlasmaConstantsLib.AAVE_V3_POOL_USDT0); // farm 0
+
+// todo new strategy is required
+//        _farms[i++] = PlasmaFarmMakerLib._makeEulerMerklFarm(PlasmaConstantsLib.EULER_MERKL_USDT0_K3_CAPITAL, PlasmaConstantsLib.TOKEN_WXPL); // 0
+//        _farms[i++] = PlasmaFarmMakerLib._makeEulerMerklFarm(PlasmaConstantsLib.EULER_MERKL_USDT0_RE7, PlasmaConstantsLib.TOKEN_WXPL); // 0
 
     }
 
