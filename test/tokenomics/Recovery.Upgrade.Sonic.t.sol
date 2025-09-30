@@ -1,27 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SiloStrategy} from "../../src/strategies/SiloStrategy.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
-import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {CVault} from "../../src/core/vaults/CVault.sol";
-import {Platform} from "../../src/core/Platform.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
-import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
-import {console, Test} from "forge-std/Test.sol";
-import {Swapper} from "../../src/core/Swapper.sol";
-import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract RecoveryUpgradeTestSonic is Test {
     uint public constant FORK_BLOCK = 48796315; // Sep-30-2025 02:52:14 AM +UTC
