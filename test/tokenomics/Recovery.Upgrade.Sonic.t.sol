@@ -42,7 +42,11 @@ contract RecoveryUpgradeTestSonic is Test {
 
     function testSwapAssetsToRecoveryTokens() public {
         IRecovery recovery = IRecovery(IPlatform(PLATFORM).recovery());
-        //        IPriceReader priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        IPriceReader priceReader = IPriceReader(IPlatform(PLATFORM).priceReader());
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(address(recovery), true);
 
         // ------------------------------ Get list of available tokes and their prices
         {
@@ -118,17 +122,15 @@ contract RecoveryUpgradeTestSonic is Test {
         }
 
         // ------------------------------ Remove deprecated vaults from metavaults
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(0x8913582701B7c80E883F9E352c1653a16769B173);
-
-        vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(0x0c8cE5afC38C94e163F0dDEB2Da65DF4904734f3);
-
-        console.log("vault for deposit", IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).vaultForDeposit());
+        //        vm.prank(multisig);
+        //        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(0x8913582701B7c80E883F9E352c1653a16769B173);
+        //
+        //        vm.prank(multisig);
+        //        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(0x0c8cE5afC38C94e163F0dDEB2Da65DF4904734f3);
 
         // ------------------------------ Swap all assets by portions
         address[] memory tokensToSwap = recovery.getListTokensToSwap();
-        uint tokensPerStep = 1;
+        uint tokensPerStep = 2;
         for (uint i; i < tokensToSwap.length / tokensPerStep + 1; i++) {
             uint from = i * tokensPerStep;
             uint to = (i + 1) * tokensPerStep;
@@ -148,9 +150,9 @@ contract RecoveryUpgradeTestSonic is Test {
             vm.prank(multisig);
             recovery.swapAssets(portion, 0);
             uint gasAfter = gasleft();
-            console.log("swap", gasBefore - gasAfter);
+            // console.log("swap", gasBefore - gasAfter);
 
-            // todo assertLt(gasBefore - gasAfter, 5_000_000, "gas limit exceeded");
+            assertLt(gasBefore - gasAfter, 13_000_000, "gas limit exceeded");
         }
 
         // ------------------------------ Fill up recovery pools
@@ -159,18 +161,18 @@ contract RecoveryUpgradeTestSonic is Test {
             vm.prank(multisig);
             recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
             uint gasAfter = gasleft();
-            console.log("fill meta USD", gasBefore - gasAfter);
+            // console.log("fill meta USD", gasBefore - gasAfter);
 
-            // todo assertLt(gasBefore - gasAfter, 5_000_000, "gas limit exceeded");
+            assertLt(gasBefore - gasAfter, 2_000_000, "gas limit exceeded");
         }
         {
             uint gasBefore = gasleft();
             vm.prank(multisig);
             recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAS, 0, 0);
             uint gasAfter = gasleft();
-            console.log("fill metaS", gasBefore - gasAfter);
+            // console.log("fill metaS", gasBefore - gasAfter);
 
-            // todo assertLt(gasBefore - gasAfter, 5_000_000, "gas limit exceeded");
+            assertLt(gasBefore - gasAfter, 2_000_000, "gas limit exceeded");
         }
     }
 

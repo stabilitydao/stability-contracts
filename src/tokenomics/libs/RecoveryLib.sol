@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IBurnableERC20} from "../../interfaces/IBurnableERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
-import {ISwapper} from "../../interfaces/ISwapper.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IMetaVault} from "../../interfaces/IMetaVault.sol";
-import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IMetaVault} from "../../interfaces/IMetaVault.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IPriceReader} from "../../interfaces/IPriceReader.sol";
+import {IUniswapV3Pool} from "../../integrations/uniswapv3/IUniswapV3Pool.sol";
+import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
+import {LibPRNG} from "../../../lib/solady/src/utils/LibPRNG.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library RecoveryLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -199,11 +200,15 @@ library RecoveryLib {
     /// to swap all available tokens.
     /// @param indexRecoveryPool1 1-based index of the recovery pool.
     /// The pools is used to select target meta vault token. If 0 the pool will be selected automatically.
-    function swapAssets(ISwapper swapper_, address[] memory tokens, uint indexRecoveryPool1) internal {
+    function swapAssets(
+        ISwapper swapper_,
+        IPriceReader priceReader_,
+        address[] memory tokens,
+        uint indexRecoveryPool1
+    ) internal {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         uint len = tokens.length;
 
-        // ----------------------------------- Select target meta-vault-token
         address metaVaultToken;
         address[] memory _recoveryPools = $.recoveryPools.values();
         if (_recoveryPools.length != 0) {
@@ -211,9 +216,14 @@ library RecoveryLib {
             // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
             metaVaultToken = IUniswapV3Pool(_recoveryPools[index0]).token1();
 
-            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
+            IMetaVault metaVault = IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault());
+            metaVault.setLastBlockDefenseDisabledTx(
                 uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
             );
+
+            // Swap to meta-vault-tokens take a lot of gas. We need to use cache
+            priceReader_.preCalculatePriceTx(metaVaultToken);
+            metaVault.cachePrices(false);
 
             uint balanceBefore = IERC20(metaVaultToken).balanceOf(address(this));
 
@@ -230,9 +240,11 @@ library RecoveryLib {
                 }
             }
 
-            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
-            );
+            // Disable cache
+            priceReader_.preCalculatePriceTx(address(0));
+            metaVault.cachePrices(true);
+
+            metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
             emit SwapAssets(tokens, metaVaultToken, balanceBefore, IERC20(metaVaultToken).balanceOf(address(this)));
         }

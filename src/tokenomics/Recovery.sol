@@ -7,6 +7,7 @@ import {IRecovery} from "../interfaces/IRecovery.sol";
 import {IUniswapV3SwapCallback} from "../integrations/uniswapv3/IUniswapV3SwapCallback.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
+import {IPriceReader} from "../interfaces/IPriceReader.sol";
 
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
@@ -115,7 +116,10 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
 
     /// @inheritdoc IRecovery
     function swapAssets(address[] memory tokens, uint indexRecoveryPool1) external override onlyWhitelisted {
-        RecoveryLib.swapAssets(ISwapper(IPlatform(platform()).swapper()), tokens, indexRecoveryPool1);
+        IPlatform platform_ = IPlatform(platform());
+        RecoveryLib.swapAssets(
+            ISwapper(platform_.swapper()), IPriceReader(platform_.priceReader()), tokens, indexRecoveryPool1
+        );
     }
 
     /// @inheritdoc IRecovery
