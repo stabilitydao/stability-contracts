@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,6 +9,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
@@ -224,21 +226,62 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.isTokenRegistered(tokens[1]), true, "usdc is registered");
     }
 
-    function testSwapAssetsToRecoveryTokensBadPaths() public {
+    function testGetListTokensToSwap() public {
+        Recovery recovery = createRecoveryInstance();
+
+        address[] memory tokens = new address[](3);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+        tokens[1] = SonicConstantsLib.TOKEN_WS;
+        tokens[2] = SonicConstantsLib.TOKEN_USDT;
+
+        vm.prank(multisig);
+        recovery.registerAssets(tokens);
+
+        address[] memory list = recovery.getListTokensToSwap();
+        assertEq(list.length, 0, "no tokens to swap");
+
+        // ------------------------- Put some assets on balance of Recovery
+        deal(SonicConstantsLib.TOKEN_USDC, address(recovery), 1e6);
+        deal(SonicConstantsLib.TOKEN_USDT, address(recovery), 2e6);
+
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 2, "2 tokens to swap A");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDC, "token 0 is usdc A");
+        assertEq(list[1], SonicConstantsLib.TOKEN_USDT, "token 1 is usdt A");
+
+        // ------------------------- Set high threshold for USDC
+        address[] memory assets = new address[](1);
+        assets[0] = SonicConstantsLib.TOKEN_USDC;
+
+        uint[] memory thresholds = new uint[](1);
+        thresholds[0] = 1e6; // usdc
+
+        vm.prank(multisig);
+        recovery.setThresholds(assets, thresholds);
+
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 1, "1 token to swap B");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
+    }
+
+    function testSwapAssetsBadPaths() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+
         Recovery recovery = createRecoveryInstance();
 
         vm.expectRevert(RecoveryLib.NotWhitelisted.selector);
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0);
 
         vm.prank(multisig);
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0); // no recovery pool here
 
         vm.prank(multisig);
         recovery.changeWhitelist(address(this), true);
 
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0);
 
         {
             address[] memory pools = new address[](1);
@@ -250,7 +293,47 @@ contract RecoverySonicTest is Test {
 
         vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(20000);
+        recovery.swapAssets(tokens, 20000);
+    }
+
+    function testFillRecoveryPoolsBadPaths() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+
+        Recovery recovery = createRecoveryInstance();
+
+        vm.expectRevert(RecoveryLib.NotWhitelisted.selector);
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
+
+        vm.prank(multisig);
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0); // no recovery pool here
+
+        vm.prank(multisig);
+        recovery.changeWhitelist(address(this), true);
+
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
+
+        {
+            address[] memory pools = new address[](1);
+            pools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+
+            vm.prank(multisig);
+            recovery.addRecoveryPools(pools);
+        }
+
+        vm.prank(address(this)); // empty balance, no revert
+        recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 20000, 1000);
+
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, address(recovery), 1e18, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(recovery), true);
+
+        vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 20000, 1000);
     }
     //endregion --------------------------------- Unit tests
 
@@ -705,8 +788,14 @@ contract RecoverySonicTest is Test {
         states[1] = getState(IUniswapV3Pool(single.pool), user1, recovery);
 
         // ------------------------- Swap assets to recovery tokens
+        address[] memory tokensToSwap = recovery.getListTokensToSwap();
+
         vm.prank(multisig);
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokensToSwap, 0);
+        vm.roll(block.number + 6);
+
+        vm.prank(multisig);
+        recovery.fillRecoveryPools(metaVaultToken, 1, 1);
         vm.roll(block.number + 6);
 
         states[2] = getState(IUniswapV3Pool(single.pool), user1, recovery);
@@ -794,8 +883,16 @@ contract RecoverySonicTest is Test {
                 }
             }
 
+            address[] memory tokens = recovery.getListTokensToSwap();
+
+            address metaVaultToken = IUniswapV3Pool(multiple.targetPool).token1();
+
             vm.prank(multisig);
-            recovery.swapAssetsToRecoveryTokens(index0 + 1);
+            recovery.swapAssets(tokens, index0 + 1);
+            vm.roll(block.number + 6);
+
+            vm.prank(multisig);
+            recovery.fillRecoveryPools(metaVaultToken, index0 + 1, 0);
         }
 
         // get state after calling swapAssetsToRecoveryTokens
@@ -918,6 +1015,35 @@ contract RecoverySonicTest is Test {
         Recovery recovery = Recovery(address(proxy));
         recovery.initialize(SonicConstantsLib.PLATFORM);
         return recovery;
+    }
+
+    function _getMetaUsdOnBalance(address wrapped, address user, uint amountMetaVaultTokens, bool wrap) internal {
+        IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(wrapped);
+        IMetaVault metaVault = IMetaVault(wrappedMetaVault.metaVault());
+
+        // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
+        // so we deposit a bit large amount of USDC
+        address[] memory _assets = metaVault.assetsForDeposit();
+        uint[] memory amountsMax = new uint[](1);
+        address asset = _assets[0];
+        amountsMax[0] = 2 * amountMetaVaultTokens * (10 ** IERC20Metadata(asset).decimals()) / 1e18;
+
+        deal(asset, user, amountsMax[0]);
+
+        vm.startPrank(user);
+        IERC20(asset).approve(address(metaVault), IERC20(asset).balanceOf(user));
+        metaVault.depositAssets(_assets, amountsMax, 0, user);
+        vm.roll(block.number + 6);
+        vm.stopPrank();
+
+        if (wrap) {
+            vm.startPrank(user);
+            metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
+            wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
+            vm.stopPrank();
+
+            vm.roll(block.number + 6);
+        }
     }
     //endregion --------------------------------- Utils
 }

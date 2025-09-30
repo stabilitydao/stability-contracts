@@ -11,6 +11,7 @@ import {ISwapper} from "../interfaces/ISwapper.sol";
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///   1.1.0: Add getListTokensToSwap, swapAssets, fillRecoveryPools, remove swapAssetsToRecoveryTokens
 contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -19,7 +20,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -41,19 +42,19 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IRecovery
-    function recoveryPools() external view returns (address[] memory) {
+    function recoveryPools() external view override returns (address[] memory) {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         return $.recoveryPools.values();
     }
 
     /// @inheritdoc IRecovery
-    function threshold(address token) external view returns (uint) {
+    function threshold(address token) external view override returns (uint) {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         return $.tokenThresholds[token];
     }
 
     /// @inheritdoc IRecovery
-    function whitelisted(address operator_) public view returns (bool) {
+    function whitelisted(address operator_) public view override returns (bool) {
         if (IPlatform(platform()).multisig() == operator_) {
             return true;
         }
@@ -63,9 +64,15 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     }
 
     /// @inheritdoc IRecovery
-    function isTokenRegistered(address token) external view returns (bool) {
+    function isTokenRegistered(address token) external view override returns (bool) {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         return $.registeredTokens.contains(token);
+    }
+
+    /// @inheritdoc IRecovery
+    function getListTokensToSwap() external view returns (address[] memory tokens) {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+        return RecoveryLib.getListTokensToSwap($);
     }
 
     //endregion ----------------------------------- View
@@ -102,13 +109,22 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IRecovery
-    function registerAssets(address[] memory tokens) external onlyWhitelisted {
+    function registerAssets(address[] memory tokens) external override onlyWhitelisted {
         RecoveryLib.registerAssets(tokens);
     }
 
     /// @inheritdoc IRecovery
-    function swapAssetsToRecoveryTokens(uint indexFirstRecoveryPool1) external onlyWhitelisted {
-        RecoveryLib.swapAssetsToRecoveryTokens(indexFirstRecoveryPool1, ISwapper(IPlatform(platform()).swapper()));
+    function swapAssets(address[] memory tokens, uint indexRecoveryPool1) external override onlyWhitelisted {
+        RecoveryLib.swapAssets(ISwapper(IPlatform(platform()).swapper()), tokens, indexRecoveryPool1);
+    }
+
+    /// @inheritdoc IRecovery
+    function fillRecoveryPools(
+        address metaVaultToken_,
+        uint indexFirstRecoveryPool1,
+        uint maxCountPoolsToSwap_
+    ) external override onlyWhitelisted {
+        RecoveryLib.fillRecoveryPools(metaVaultToken_, indexFirstRecoveryPool1, maxCountPoolsToSwap_);
     }
 
     /// @notice Callback for Uniswap V3 swaps

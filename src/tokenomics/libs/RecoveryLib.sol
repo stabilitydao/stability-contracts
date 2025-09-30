@@ -11,6 +11,7 @@ import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
 
 library RecoveryLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -45,6 +46,8 @@ library RecoveryLib {
     event SetThresholds(address[] tokens, uint[] thresholds);
     event Whitelist(address operator, bool add);
     event OnSwapFailed(address asset, address token, uint amount);
+    event SwapAssets(address[] tokens, address asset, uint balanceBefore, uint balanceAfter);
+    event FillRecoveryPools(address metaVaultToken_, uint balanceBefore, uint balanceAfter, uint countSwaps);
 
     /// @custom:storage-location erc7201:stability.Recovery
     struct RecoveryStorage {
@@ -123,6 +126,23 @@ library RecoveryLib {
             : sqrtPrice * (10 ** ((decimals0 - decimals1) / 2));
     }
 
+    /// @notice Return list of registered tokens with amounts exceeding thresholds
+    function getListTokensToSwap(RecoveryStorage storage $) external view returns (address[] memory tokens) {
+        uint len = $.registeredTokens.length();
+        address[] memory tempTokens = new address[](len);
+        uint countNotZero;
+        for (uint i; i < len; ++i) {
+            address token = $.registeredTokens.at(i);
+            uint balance = IERC20(token).balanceOf(address(this));
+            if (balance > $.tokenThresholds[token]) {
+                tempTokens[countNotZero] = token;
+                countNotZero++;
+            }
+        }
+
+        return _removeEmpty(tempTokens, countNotZero);
+    }
+
     //endregion -------------------------------------- View
 
     //region -------------------------------------- Governance actions
@@ -173,89 +193,96 @@ library RecoveryLib {
         }
     }
 
-    /// @notice Use available tokens to buy and burn recovery tokens from the registered pools.
-    /// Start swapping from the pool with the given index.
-    /// If index is zero then the initial pool will be selected automatically.
-    /// Swapping is done in a circular manner starting from selected pool - after the last pool the first one is used.
-    /// @param indexFirstRecoveryPool1 1-based index of the recovery pool from which swapping should be started.
-    /// If zero then the initial pool will be selected automatically.
-    /// Max swap amount for each pool is limited by price - result prices cannot exceed 1.
-    /// If price reaches 1 the remain amount should be used for swapping in other pools.
-    function swapAssetsToRecoveryTokens(uint indexFirstRecoveryPool1, ISwapper swapper_) internal {
+    /// @notice Swap registered tokens to meta vault tokens. The meta vault token is selected from the given recovery pool.
+    /// @param tokens Addresses of registered tokens to be swapped. They should be asked through {getListTokensToSwap}
+    /// Number of tokens should be limited to avoid gas limit excess, so this function probably should be called several times
+    /// to swap all available tokens.
+    /// @param indexRecoveryPool1 1-based index of the recovery pool.
+    /// The pools is used to select target meta vault token. If 0 the pool will be selected automatically.
+    function swapAssets(ISwapper swapper_, address[] memory tokens, uint indexRecoveryPool1) internal {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+        uint len = tokens.length;
 
+        // ----------------------------------- Select target meta-vault-token
+        address metaVaultToken;
         address[] memory _recoveryPools = $.recoveryPools.values();
-
-        // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
-        // we need all tokens to prevent swapping one meta-vault-token to another
-        // for main token we disable last-block-defense mechanism to allow multiple swaps in one block
-        // but for other tokens we keep last-block-defense enabled
-        // so it's not allowed to swap one meta-vault-token to another
-        address[] memory _allMetaVaultTokens = _getAllMetaVaultTokens(_recoveryPools);
-
         if (_recoveryPools.length != 0) {
-            require(indexFirstRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
-
-            // ----------------------------------- Select target pool
-            uint indexTargetPool =
-                indexFirstRecoveryPool1 == 0 ? selectPool(block.timestamp, _recoveryPools) : indexFirstRecoveryPool1 - 1;
-            EnumerableSet.AddressSet storage _tokens = $.registeredTokens;
-
+            uint index0 = _getRecoveryPool(_recoveryPools, indexRecoveryPool1);
             // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
-            address metaVaultToken = IUniswapV3Pool(_recoveryPools[indexTargetPool]).token1();
+            metaVaultToken = IUniswapV3Pool(_recoveryPools[index0]).token1();
+
             IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
                 uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
             );
 
-            // ----------------------------------- Get amounts to swap (full balance if above threshold)
-            uint lenInputAssets = _tokens.length();
-            uint[] memory amountsToSwap = new uint[](lenInputAssets);
-            for (uint i; i < lenInputAssets; ++i) {
-                address token = _tokens.at(i);
-                uint balance = IERC20(token).balanceOf(address(this));
-                if (balance > $.tokenThresholds[token]) {
-                    amountsToSwap[i] = balance;
-                }
-            }
+            uint balanceBefore = IERC20(metaVaultToken).balanceOf(address(this));
 
-            // ----------------------------------- Swap all amounts to the asset
-            for (uint i; i < lenInputAssets; ++i) {
-                address token = _tokens.at(i);
-                if (amountsToSwap[i] != 0 && !_contains(_allMetaVaultTokens, token)) {
-                    _approveIfNeeds(token, amountsToSwap[i], address(swapper_));
+            for (uint i; i < len; ++i) {
+                uint amount = IERC20(tokens[i]).balanceOf(address(this));
+                if (amount > $.tokenThresholds[tokens[i]]) {
+                    _approveIfNeeds(tokens[i], amount, address(swapper_));
 
                     // hide swap errors in same way as in RevenueRouter
-                    try swapper_.swap(token, metaVaultToken, amountsToSwap[i], SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {}
+                    try swapper_.swap(tokens[i], metaVaultToken, amount, SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {}
                     catch {
-                        emit OnSwapFailed(token, metaVaultToken, amountsToSwap[i]);
+                        emit OnSwapFailed(tokens[i], metaVaultToken, amount);
                     }
-                }
-            }
-
-            // ----------------------------------- Swap the asset to recovery tokens
-            uint assetThreshold = $.tokenThresholds[metaVaultToken];
-            uint amount = _swapAndBurn(_recoveryPools[indexTargetPool], metaVaultToken, assetThreshold);
-            if (amount > assetThreshold) {
-                // swap in a circular manner starting from the next pool
-                // we skip all pools with different asset than the target pool asset
-                // to avoid swapping one meta-vault-token to another
-
-                for (uint i = indexTargetPool + 1; i < _recoveryPools.length; ++i) {
-                    if (amount < assetThreshold) break;
-                    if (metaVaultToken != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
-                    amount = _swapAndBurn(_recoveryPools[i], metaVaultToken, assetThreshold);
-                }
-
-                for (uint i; i < indexTargetPool; ++i) {
-                    if (amount < assetThreshold) break;
-                    if (metaVaultToken != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
-                    amount = _swapAndBurn(_recoveryPools[i], metaVaultToken, assetThreshold);
                 }
             }
 
             IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
                 uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
             );
+
+            emit SwapAssets(tokens, metaVaultToken, balanceBefore, IERC20(metaVaultToken).balanceOf(address(this)));
+        }
+    }
+
+    /// @notice Swap meta vault tokens from the balance of this contract to recovery tokens in the registered pools
+    /// @param indexFirstRecoveryPool1 1-based index of the recovery pool from which swapping should be started.
+    /// If zero then the initial pool will be selected automatically.
+    /// @param maxCountPools Maximum number of pools to be used for swapping. 0 - no limits
+    function fillRecoveryPools(address metaVaultToken_, uint indexFirstRecoveryPool1, uint maxCountPools) internal {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+
+        uint metaVaultTokenThreshold = $.tokenThresholds[metaVaultToken_];
+        uint balanceBefore = IERC20(metaVaultToken_).balanceOf(address(this));
+
+        address[] memory _recoveryPools = $.recoveryPools.values();
+        if (_recoveryPools.length != 0 && balanceBefore > metaVaultTokenThreshold) {
+            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault()).setLastBlockDefenseDisabledTx(
+                uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
+            );
+
+            uint restAmount = balanceBefore;
+            uint startPoolIndex0 = _getRecoveryPool(_recoveryPools, indexFirstRecoveryPool1);
+            uint countSwaps;
+
+            // swap in a circular manner starting from the selected pool
+            // we skip all pools with different asset than the given meta-vault-token
+            // to avoid swapping one meta-vault-token to another
+
+            for (uint i = startPoolIndex0; i < _recoveryPools.length; ++i) {
+                if (maxCountPools != 0 && countSwaps > maxCountPools) break;
+                if (restAmount < metaVaultTokenThreshold) break;
+                if (metaVaultToken_ != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
+                restAmount = _swapAndBurn(_recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
+                ++countSwaps;
+            }
+
+            for (uint i; i < startPoolIndex0; ++i) {
+                if (maxCountPools != 0 && countSwaps > maxCountPools) break;
+                if (restAmount < metaVaultTokenThreshold) break;
+                if (metaVaultToken_ != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
+                restAmount = _swapAndBurn(_recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
+                ++countSwaps;
+            }
+
+            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault()).setLastBlockDefenseDisabledTx(
+                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
+            );
+
+            emit FillRecoveryPools(metaVaultToken_, balanceBefore, restAmount, countSwaps);
         }
     }
 
@@ -411,6 +438,14 @@ library RecoveryLib {
                 index++;
             }
         }
+    }
+
+    function _getRecoveryPool(
+        address[] memory _recoveryPools,
+        uint indexRecoveryPool1
+    ) internal view returns (uint index0) {
+        require(indexRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
+        return indexRecoveryPool1 == 0 ? selectPool(block.timestamp, _recoveryPools) : indexRecoveryPool1 - 1;
     }
 
     //endregion -------------------------------------- Utils
