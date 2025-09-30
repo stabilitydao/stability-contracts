@@ -11,6 +11,7 @@ import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
@@ -1014,6 +1015,9 @@ contract RecoverySonicTest is Test {
         proxy.initProxy(address(new Recovery()));
         Recovery recovery = Recovery(address(proxy));
         recovery.initialize(SonicConstantsLib.PLATFORM);
+
+        _whiteListInPriceReader(address(recovery));
+
         return recovery;
     }
 
@@ -1044,6 +1048,13 @@ contract RecoverySonicTest is Test {
 
             vm.roll(block.number + 6);
         }
+    }
+
+    function _whiteListInPriceReader(address recovery_) internal {
+        IPriceReader priceReader = IPriceReader(IPlatform(SonicConstantsLib.PLATFORM).priceReader());
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(recovery_, true);
     }
     //endregion --------------------------------- Utils
 }
