@@ -210,41 +210,41 @@ contract RecoveryUpgradeTestSonic is Test {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
 
-//    function _upgradeSiloStrategy(address strategyAddress) internal {
-//        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-//
-//        address strategyImplementation = address(new SiloStrategy());
-//        vm.prank(multisig);
-//        factory.setStrategyLogicConfig(
-//            IFactory.StrategyLogicConfig({
-//                id: StrategyIdLib.SILO,
-//                implementation: strategyImplementation,
-//                deployAllowed: true,
-//                upgradeAllowed: true,
-//                farming: true,
-//                tokenId: 0
-//            }),
-//            address(this)
-//        );
-//
-//        factory.upgradeStrategyProxy(strategyAddress);
-//    }
-//
-//    function _upgradeCVault(address vault) internal {
-//        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-//
-//        // deploy new impl and upgrade
-//        address vaultImplementation = address(new CVault());
-//        vm.prank(multisig);
-//        factory.setVaultConfig(
-//            IFactory.VaultConfig({
-//                vaultType: VaultTypeLib.COMPOUNDING,
-//                implementation: vaultImplementation,
-//                deployAllowed: true,
-//                upgradeAllowed: true,
-//                buildingPrice: 1e10
-//            })
-//        );
-//        factory.upgradeVaultProxy(address(vault));
-//    }
+    //    function _upgradeSiloStrategy(address strategyAddress) internal {
+    //        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+    //
+    //        address strategyImplementation = address(new SiloStrategy());
+    //        vm.prank(multisig);
+    //        factory.setStrategyLogicConfig(
+    //            IFactory.StrategyLogicConfig({
+    //                id: StrategyIdLib.SILO,
+    //                implementation: strategyImplementation,
+    //                deployAllowed: true,
+    //                upgradeAllowed: true,
+    //                farming: true,
+    //                tokenId: 0
+    //            }),
+    //            address(this)
+    //        );
+    //
+    //        factory.upgradeStrategyProxy(strategyAddress);
+    //    }
+    //
+    //    function _upgradeCVault(address vault) internal {
+    //        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
+    //
+    //        // deploy new impl and upgrade
+    //        address vaultImplementation = address(new CVault());
+    //        vm.prank(multisig);
+    //        factory.setVaultConfig(
+    //            IFactory.VaultConfig({
+    //                vaultType: VaultTypeLib.COMPOUNDING,
+    //                implementation: vaultImplementation,
+    //                deployAllowed: true,
+    //                upgradeAllowed: true,
+    //                buildingPrice: 1e10
+    //            })
+    //        );
+    //        factory.upgradeVaultProxy(address(vault));
+    //    }
 }
