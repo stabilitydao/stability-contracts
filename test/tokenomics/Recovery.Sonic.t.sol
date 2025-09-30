@@ -295,6 +295,29 @@ contract RecoverySonicTest is Test {
         vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
         vm.prank(address(this));
         recovery.swapAssets(tokens, 20000);
+
+        // try to emulate swap failing (there is no path to swap recovery token)
+        {
+            vm.prank(multisig);
+            recovery.changeWhitelist(address(this), true);
+
+            vm.prank(multisig);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(recovery), true);
+
+            vm.prank(multisig);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAS).changeWhitelist(address(recovery), true);
+
+            deal(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_METAS, address(recovery), 1e18);
+
+            address[] memory unknownTokens = new address[](1);
+            unknownTokens[0] = SonicConstantsLib.RECOVERY_TOKEN_CREDIX_METAS;
+
+            vm.prank(multisig);
+            recovery.registerAssets(unknownTokens);
+
+            vm.prank(multisig);
+            recovery.swapAssets(unknownTokens, 1); // no revert, but no swaps too
+        }
     }
 
     function testFillRecoveryPoolsBadPaths() public {
