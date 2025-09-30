@@ -8,17 +8,23 @@ import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Staking contract for xSTBL
 /// Inspired by VoteModule from Ramses/Shadow codebase
 /// @author Alien Deployer (https://github.com/a17)
+/// @author Jude (https://github.com/iammrjude)
+/// Changelog:
+///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
+    using SafeERC20 for IERC20;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @notice decimal precision of 1e18
     uint public constant PRECISION = 10 ** 18;
@@ -107,7 +113,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
         /// @dev transfer xSTBL in
         // slither-disable-next-line unchecked-transfer
-        IERC20($.xSTBL).transferFrom(msg.sender, address(this), amount);
+        IERC20($.xSTBL).safeTransferFrom(msg.sender, address(this), amount);
 
         /// @dev update accounting
         $.totalSupply += amount;
@@ -146,7 +152,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
         /// @dev transfer the xSTBL to the caller
         // slither-disable-next-line unchecked-transfer
-        IERC20($.xSTBL).transfer(msg.sender, amount);
+        IERC20($.xSTBL).safeTransfer(msg.sender, amount);
 
         emit Withdraw(msg.sender, amount);
     }
@@ -165,7 +171,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
         /// @dev take the STBL from a contract to the XStaking
         // slither-disable-next-line unchecked-transfer
-        IERC20(IXSTBL(_xSTBL).STBL()).transferFrom(msg.sender, address(this), amount);
+        IERC20(IXSTBL(_xSTBL).STBL()).safeTransferFrom(msg.sender, address(this), amount);
 
         uint _periodFinish = $.periodFinish;
         uint _duration = $.duration;
@@ -325,7 +331,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
             /// @dev transfer xSTBL to the user
             // slither-disable-next-line unchecked-transfer
-            IERC20(_xSTBL).transfer(user, reward);
+            IERC20(_xSTBL).safeTransfer(user, reward);
 
             emit ClaimRewards(user, reward);
         }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IStrategy} from "../../interfaces/IStrategy.sol";
+import {IMainstreetMinter} from "../../integrations/mainstreet/IMainstreetMinter.sol";
 import {IAnglesVault} from "../../integrations/angles/IAnglesVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -14,13 +14,14 @@ import {ISiloConfig} from "../../integrations/silo/ISiloConfig.sol";
 import {ISiloLens} from "../../integrations/silo/ISiloLens.sol";
 import {ISiloOracle} from "../../integrations/silo/ISiloOracle.sol";
 import {ISilo} from "../../integrations/silo/ISilo.sol";
+import {IStrategy} from "../../interfaces/IStrategy.sol";
 import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {ITeller} from "../../interfaces/ITeller.sol";
 import {IWETH} from "../../integrations/weth/IWETH.sol";
+import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StrategyLib} from "./StrategyLib.sol";
-import {LeverageLendingLib} from "./LeverageLendingLib.sol";
 
 library SiloAdvancedLib {
     using SafeERC20 for IERC20;
@@ -54,6 +55,11 @@ library SiloAdvancedLib {
     address internal constant TELLER_SCUSD = 0x358CFACf00d0B4634849821BB3d1965b472c776a;
     address internal constant TELLER_STKSCUSD = 0x5e39021Ae7D3f6267dc7995BB5Dd15669060DAe0;
     address internal constant TOKEN_WSTKSCUSD = 0x9fb76f7ce5FCeAA2C42887ff441D46095E494206;
+
+    // mint msUSD by USDC, stake to smsUSD
+    address internal constant TOKEN_SMSUSD = 0xc7990369DA608C2F4903715E3bD22f2970536C29;
+    address internal constant TOKEN_MSUSD = 0xE5Fb2Ed6832deF99ddE57C0b9d9A56537C89121D;
+    address internal constant MSUSD_MINTER = 0xb1E423c251E989bd4e49228eF55aC4747D63F54D;
 
     //region ------------------------------------- Data types
     struct CollateralDebtState {
@@ -540,6 +546,26 @@ library SiloAdvancedLib {
                 IERC20(TOKEN_STKSCETH).forceApprove(TOKEN_WSTKSCETH, amount);
                 IERC4626(TOKEN_WSTKSCETH).deposit(amount, address(this));
                 //console.log('minted');
+                return;
+            }
+        }
+
+        if (tokenIn == TOKEN_USDC && tokenOut == TOKEN_SMSUSD) {
+            ISwapper swapper = ISwapper(IPlatform(platform).swapper());
+            uint outBySwap = swapper.getPrice(tokenIn, tokenOut, amount);
+            uint outByMint = IMainstreetMinter(MSUSD_MINTER).quoteMint(TOKEN_USDC, amount);
+
+            if (outByMint > outBySwap * 99_50 / 100_00 && IMainstreetMinter(MSUSD_MINTER).isWhitelisted(address(this)))
+            {
+                // mint msUSD
+                IERC20(TOKEN_USDC).forceApprove(MSUSD_MINTER, amount);
+                IMainstreetMinter(MSUSD_MINTER).mint(TOKEN_USDC, amount, 0);
+                uint balanceMsUsd = IERC20(TOKEN_MSUSD).balanceOf(address(this));
+
+                // stake to smsUSD
+                IERC20(TOKEN_MSUSD).forceApprove(TOKEN_SMSUSD, balanceMsUsd);
+                IERC4626(TOKEN_SMSUSD).deposit(balanceMsUsd, address(this));
+
                 return;
             }
         }

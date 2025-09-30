@@ -17,6 +17,8 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {console, Test} from "forge-std/Test.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {AlgebraV4Adapter} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice Test multiple vaults on given/current block and save summary report to the file
 contract SialUpgradeMaxLtvSonic is Test {
@@ -57,6 +59,8 @@ contract SialUpgradeMaxLtvSonic is Test {
         multisig = IPlatform(PLATFORM).multisig();
 
         // _upgradePlatform(IPlatform(PLATFORM).priceReader());
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testWithdrawOnly() public {
@@ -148,15 +152,7 @@ contract SialUpgradeMaxLtvSonic is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault_));
     }
 
@@ -173,19 +169,24 @@ contract SialUpgradeMaxLtvSonic is Test {
         address strategyImplementation = address(new SiloAdvancedLeverageStrategy());
 
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ADVANCED_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ADVANCED_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
 
     //endregion ---------------------- Helpers

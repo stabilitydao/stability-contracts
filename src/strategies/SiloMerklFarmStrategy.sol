@@ -28,6 +28,7 @@ import {VaultTypeLib} from "../core/libs/VaultTypeLib.sol";
 
 /// @title Supply asset to Silo V2 and earn farm rewards from Silo and Merkl
 /// Changelog:
+///   1.0.1: StrategyBase 2.6.0, fix getSpecificName, Protected collateral is not supported - #395, #394
 /// @author dvpublic (https://github.com/dvpublic)
 contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     using SafeERC20 for IERC20;
@@ -36,7 +37,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.0.1";
 
     /// @dev Strategy logic ID used in this farm
     string internal constant STRATEGY_LOGIC_ID = StrategyIdLib.SILO_MERKL_FARM;
@@ -66,6 +67,8 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
         IERC20(siloAssets[0]).forceApprove(address(siloVault), type(uint).max);
 
+        require(farm.nums[0] == 1, "Only Collateral supported, see #394");
+
         address gauge = _getGauge(farm);
         if (gauge != address(0)) {
             IERC20(address(siloVault)).forceApprove(gauge, type(uint).max);
@@ -85,6 +88,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc IStrategy
     function extra() external pure returns (bytes32) {
+        // slither-disable-next-line too-many-digits
         return CommonLib.bytesToBytes32(abi.encodePacked(bytes3(0x00d395), bytes3(0x000000)));
     }
 
@@ -104,8 +108,20 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function getRevenue() external view returns (address[] memory __assets, uint[] memory amounts) {}
 
     /// @inheritdoc IStrategy
+    /// @dev returns specific value OR other name like "other asset symbol, market id"
     function getSpecificName() external view override returns (string memory, bool) {
-        return (CommonLib.u2s(_getMarketId()), true);
+        string memory specific = _getStrategyBaseStorage().specific;
+        if (bytes(specific).length != 0) {
+            return (specific, true);
+        }
+
+        IFactory.Farm memory farm = _getFarm();
+        ISilo siloVault = _getSilo(farm);
+        ISiloConfig config = ISiloConfig(siloVault.config());
+        (address silo0, address silo1) = config.getSilos();
+        ISilo otherSilo = ISilo(address(siloVault) == silo0 ? silo1 : silo0);
+
+        return (string.concat(IERC20Metadata(otherSilo.asset()).symbol(), ", ", CommonLib.u2s(_getMarketId())), true);
     }
 
     /// @inheritdoc IStrategy
@@ -120,7 +136,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        /// slither-disable-next-line ignore-unused-return
+        // slither-disable-next-line unused-return
         return SharedLib.initVariantsForFarm(platform_, STRATEGY_LOGIC_ID, _genDesc);
     }
 
@@ -153,7 +169,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
         // get price of 1 amount of asset in USD with decimals 18
         // assume that {trusted} value doesn't matter here
-        /// slither-disable-next-line ignore-unused-return
+        // slither-disable-next-line unused-return
         (uint price,) = priceReader.getPrice(asset);
 
         return siloVault.totalAssets() * price / (10 ** IERC20Metadata(asset).decimals());
@@ -224,6 +240,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         if (address(this) == receiver) {
             toWithdraw--;
         }
+        // slither-disable-next-line reentrancy-benign
         siloVault.withdraw(toWithdraw, receiver, address(this), ISilo.CollateralType.Collateral);
         amountsOut = new uint[](1);
         amountsOut[0] = value;
@@ -283,6 +300,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
                 uint amountXSilo = StrategyLib.balance(xSilo);
                 if (amountXSilo != 0) {
                     // instant exit with penalty 50%
+                    // slither-disable-next-line calls-loop
                     __rewardAmounts[i] += IXSilo(xSilo).redeemSilo(amountXSilo, 0);
                 }
             }

@@ -432,17 +432,7 @@ contract PlatformPolygonTest is PolygonSetup {
     function _disableStrategy(string memory id) internal {
         vm.startPrank(platform.multisig());
         // platform.addOperator(platform.multisig());
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(0),
-                deployAllowed: false,
-                upgradeAllowed: false,
-                farming: true,
-                tokenId: type(uint).max
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(id, address(0));
         vm.stopPrank();
     }
 

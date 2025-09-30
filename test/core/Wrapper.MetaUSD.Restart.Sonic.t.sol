@@ -24,6 +24,8 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {WrappedMetaVault} from "../../src/core/vaults/WrappedMetaVault.sol";
 import {MetaVaultFactory} from "../../src/core/MetaVaultFactory.sol";
 import {console, Test} from "forge-std/Test.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract WrapperMetaUsdRestartSonicTest is Test {
     // uint public constant FORK_BLOCK = 42601861; // Aug-12-2025 03:58:17 AM +UTC
@@ -299,6 +301,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             0xf63361925255c17C53E2303Ce167145D4cBD0c9C,
             0x43da58c65F0fadd0A94EdD85A9b018542BAd4223
         ];
+
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     /// @notice Restart MetaUSD: withdraw all broken underlying, replace it by real assets and recovery tokens
@@ -1142,17 +1146,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new AaveMerklFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.AAVE_MERKL_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.AAVE_MERKL_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -1163,17 +1157,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -1184,15 +1168,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(cVault_));
     }
 
@@ -1279,6 +1255,18 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         address recoveryTokenImplementation = address(new RecoveryToken());
         vm.prank(multisig);
         metaVaultFactory.setRecoveryTokenImplementation(recoveryTokenImplementation);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 
     //endregion ---------------------------------------------- Helpers

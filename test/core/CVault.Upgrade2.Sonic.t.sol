@@ -12,6 +12,8 @@ import {IVault} from "../../src/interfaces/IVault.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloFarmStrategy} from "../../src/strategies/SiloFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @dev CVault 1.7.0 upgrade test
 contract CVaultUpgrade2SonicTest is Test {
@@ -26,6 +28,7 @@ contract CVaultUpgrade2SonicTest is Test {
         vault = IStabilityVault(SonicConstantsLib.VAULT_C_USDC_SIF);
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     function testCVaultUpgrade2() public {
@@ -65,15 +68,7 @@ contract CVaultUpgrade2SonicTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(address(vault));
     }
 
@@ -81,19 +76,24 @@ contract CVaultUpgrade2SonicTest is Test {
         // deploy new impl and upgrade
         address strategyImplementation = address(new SiloFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: false,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
 
     //endregion ---------------------- Auxiliary functions

@@ -11,6 +11,8 @@ import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {StrategyIdLib} from "../../src/strategies/libs/StrategyIdLib.sol";
 import {SiloLeverageStrategy} from "../../src/strategies/SiloLeverageStrategy.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 contract SiLUpgradeTest2 is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
@@ -58,6 +60,7 @@ contract SiLUpgradeTest2 is Test {
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
     }
 
     //region -------------------------- Use various flash loan vaults
@@ -634,17 +637,7 @@ contract SiLUpgradeTest2 is Test {
     function _upgradeStrategy(address strategyAddress) internal {
         address strategyImplementation = address(new SiloLeverageStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_LEVERAGE,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_LEVERAGE, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -683,6 +676,21 @@ contract SiLUpgradeTest2 is Test {
 
     function _getPositiveDiffPercent4(uint x, uint y) internal pure returns (uint) {
         return x > y ? (x - y) * 100_00 / x : 0;
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
     //endregion -------------------------- Auxiliary functions
 }

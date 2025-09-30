@@ -24,6 +24,8 @@ import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {MetaVaultAdapter} from "../../src/adapters/MetaVaultAdapter.sol";
 import {SiloManagedFarmStrategy} from "../../src/strategies/SiloManagedFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @notice Fix a problem in MetaVaultAdapter that produced a false-positive ExceedSlippage error
 contract SiALMFUpgradeScUsdTest is Test {
@@ -67,6 +69,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
         //        _upgradeWrappedMetaVault();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVault(address(vault));
 
         _upgradeCVault(SonicConstantsLib.VAULT_C_WMETAUSD_scUSD_125);
@@ -132,17 +135,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     function _upgradeALMFStrategy(address strategy_) internal {
         address strategyImplementation = address(new SiloALMFStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_ALMF_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_ALMF_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -150,17 +143,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     function _upgradeSMFStrategy(address strategy_) internal {
         address strategyImplementation = address(new SiloManagedFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_MANAGED_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategy_);
     }
@@ -224,15 +207,7 @@ contract SiALMFUpgradeScUsdTest is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
         factory.upgradeVaultProxy(vault_);
     }
 
@@ -414,6 +389,21 @@ contract SiALMFUpgradeScUsdTest is Test {
         //        for (uint i; i < current.length; ++i) {
         //            console.log("i, current, target", i, current[i], props[i]);
         //        }
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
+
+        // refresh the factory instance to point to the proxy (now using new impl)
+        factory = IFactory(factoryProxy);
     }
     //endregion ------------------------------------ Helpers
 }

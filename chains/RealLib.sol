@@ -162,7 +162,7 @@ library RealLib {
         //endregion -- Add farms -----
 
         //region ----- Deploy strategy logics -----
-        _addStrategyLogic(factory, StrategyIdLib.TRIDENT_PEARL_FARM, address(new TridentPearlFarmStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.TRIDENT_PEARL_FARM, address(new TridentPearlFarmStrategy()));
         LogDeployLib.logDeployStrategies(platform, showLog);
         //endregion -- Deploy strategy logics -----
 
@@ -248,20 +248,6 @@ library RealLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
     }
 
     function testChainLib() external {}

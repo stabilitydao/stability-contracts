@@ -123,12 +123,12 @@ library AvalancheLib {
         //endregion -- Add strategy available init params -----
 
         //region ----- Deploy strategies  -----
-        _addStrategyLogic(factory, StrategyIdLib.SILO, address(new SiloStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.EULER, address(new EulerStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.AAVE, address(new AaveStrategy()), false);
-        _addStrategyLogic(factory, StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()), true);
-        _addStrategyLogic(factory, StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()), true);
+        factory.setStrategyImplementation(StrategyIdLib.SILO, address(new SiloStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.EULER, address(new EulerStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.AAVE, address(new AaveStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.EULER_MERKL_FARM, address(new EulerMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MANAGED_MERKL_FARM, address(new SiloManagedMerklFarmStrategy()));
+        factory.setStrategyImplementation(StrategyIdLib.SILO_MERKL_FARM, address(new SiloMerklFarmStrategy()));
         //endregion
 
         //region ----- Add DeX aggregators -----
@@ -208,20 +208,6 @@ library AvalancheLib {
         address tokenOut
     ) internal pure returns (ISwapper.AddPoolData memory) {
         return ISwapper.AddPoolData({pool: pool, ammAdapterId: ammAdapterId, tokenIn: tokenIn, tokenOut: tokenOut});
-    }
-
-    function _addStrategyLogic(IFactory factory, string memory id, address implementation, bool farming) internal {
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: id,
-                implementation: address(implementation),
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: farming,
-                tokenId: type(uint).max
-            }),
-            StrategyDeveloperLib.getDeveloper(id)
-        );
     }
 
     function testChainDeployLib() external {}

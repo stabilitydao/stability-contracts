@@ -152,17 +152,23 @@ library SonicConstantsLib {
     address public constant TOKEN_PT_WSTKSCUSD_29MAY2025 = 0xBe27993204Ec64238F71A527B4c4D5F4949034C3;
     address public constant TOKEN_PT_WSTKSCETH_29MAY2025 = 0xa2161E75EDf50d70544e6588788A5732A3105c00;
     address public constant TOKEN_PT_WOS_29MAY2025 = 0x46eb02b9F47634c4fab3110CC7ADc1C6311DfAC1;
+    address public constant TOKEN_PT_SMSUSD_30OCT2025 = 0x5EE17fD12eDE62B508F9615DB384ce7B834bA657;
     address public constant TOKEN_PT_SILO_46_SCUSD_14AUG2025 = 0x9731842eD581816913933c01De142C7EE412A8c8;
     address public constant TOKEN_PT_SILO_20_USDC_17JUL2025 = 0x77d8F09053c28FaF1E00Df6511b23125d438616f;
     address public constant TOKEN_GEMSX = 0x05F0c7Ca7B90e3786603108D42cA8DFd28d72075;
     address public constant TOKEN_BUSDCE20 = 0x322e1d5384aa4ED66AeCa770B95686271de61dc3;
     address public constant TOKEN_BEETSFRAGMENTSS1 = 0x3419966bC74fa8f951108d15b053bEd233974d3D;
+
     address public constant TOKEN_USDT = 0x6047828dc181963ba44974801FF68e538dA5eaF9;
     address public constant TOKEN_REUL = 0x09E6cab47B7199b9d3839A2C40654f246d518a80;
     address public constant TOKEN_EUL = 0x8e15C8D399e86d4FD7B427D42f06c60cDD9397e7;
     address public constant TOKEN_SILO = 0xb098AFC30FCE67f1926e735Db6fDadFE433E61db;
+
     address public constant TOKEN_XSILO = 0x4451765739b2D7BCe5f8BC95Beaf966c45E1Dcc9;
     address public constant TOKEN_BES = 0x871A101Dcf22fE4fE37be7B654098c801CBA1c88;
+    address public constant TOKEN_MSUSD = 0xE5Fb2Ed6832deF99ddE57C0b9d9A56537C89121D;
+    address public constant TOKEN_SMSUSD = 0xc7990369DA608C2F4903715E3bD22f2970536C29;
+
 
     // AMMs
     address public constant POOL_BEETS_WS_STS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -175,6 +181,8 @@ library SonicConstantsLib {
     address public constant POOL_BEETS_V3_BOOSTED_USDC_WSTKSCUSD_SCUSD = 0x54Ca9aad90324C022bBeD0A94b7380c03aA5884A;
     address public constant POOL_BEETS_V3_BOOSTED_WETH_SCETH_WSTKSCETH = 0x8620Fcf1aBDF72d35A0577e0Bc9653E1F088Fc34;
     address public constant POOL_BEETS_BEETSFRAGMENTSS1_STS = 0xf633a43E5cCf858A27dD1d74A23BE15ea5aa28f3;
+    address public constant POOL_BEETS_GENTRIFIEDGAINS_MSUSD_USDC = 0x0AE7FBbe97Ef6387150f3Ec31daC0bcCA34a15eF;
+    address public constant POOL_BEETS_MAINSTREETVAULTWORKS_SMSUSD_USDC = 0x412CefCcba5033F14b3A3DBC759075A657cbf31c;
     address public constant POOL_SUSHI_WS_USDC = 0xE72b6DD415cDACeAC76616Df2C9278B33079E0D3;
     // address public constant POOL_EQUALIZER_USDC_WETH = 0xbCbC5777537c0D0462fb82BA48Eeb6cb361E853f;
     // address public constant POOL_EQUALIZER_WS_STS = 0xB75C9073ea00AbDa9ff420b5Ae46fEe248993380;
@@ -256,6 +264,7 @@ library SonicConstantsLib {
     address public constant POOL_SHADOW_CL_USDC_USDT = 0x9053fE060f412ad5677f934F89e07524343eE8E7;
     address public constant POOL_PENDLE_PT_SCUSD_14AUG2025 = 0x84ECc6be573f15991736131F924F7bF571eD3B60;
     address public constant POOL_PT_SILO_20_USDC_17JUL2025 = 0xaCfAD541698437F6EF0E728C56A50CE35C73cC3e;
+    address public constant POOL_PENDLE_PT_SMSUSD_30OCT2025 = 0x4aEe8d5e242c2485bd124299203C7Fa5108C25Fc;
 
     // ALMs
     // address public constant ALM_ICHI_SWAPX_SACRA_WS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -416,6 +425,7 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_138_smsUSD = 0x61FFBEAd1d4DC9fFba35eb16FD6caDEe9B37b2Aa;
     address public constant SILO_VAULT_141_PT_smsUSD_30OCT_USDC = 0x7184BEa7743CCFBE390F9Cd830095a13Ef867941;
 
+
     // Silo managed vaults
     /// @notice https://github.com/silo-finance/silo-contracts-v2/tree/master/silo-core/deployments/sonic
     address public constant SILO_MANAGED_VAULT_S_VARLAMORE = 0xDED4aC8645619334186f28B8798e07ca354CFa0e;
@@ -449,6 +459,10 @@ library SonicConstantsLib {
     address public constant SILO_VAULT_104_USDC = 0x8A810A8bDceCc5ca467e9Fac5A5a846d36c5Bf7e;
     address public constant SILO_VAULT_54_WOS = 0x04f124bF435545a3c79A8EE3Ffb6C51213CF5175;
     address public constant SILO_VAULT_54_S = 0xbE0D3c8801206CC9f35A6626f90ef9F4f2983A3D;
+    address public constant SILO_VAULT_141_PT_SMSUSD_30OCT2025 = 0x94b4BDD55BAc19Da3b0A31eDC0fc899ae918699E; // silo 0
+    address public constant SILO_VAULT_141_USDC = 0x7184BEa7743CCFBE390F9Cd830095a13Ef867941; // silo 1
+    address public constant SILO_VAULT_138_SMSUSD = 0x86291D166a62b129593b23F8649D55dB0b03E9fb; // silo 0
+    address public constant SILO_VAULT_138_USDC = 0x61FFBEAd1d4DC9fFba35eb16FD6caDEe9B37b2Aa; // silo 1
 
     // Silo meta USD
     address public constant SILO_VAULT_121_WMETAUSD = 0xCCdDbBbd1E36a6EDA3a84CdCee2040A86225Ba71;
@@ -551,5 +565,8 @@ library SonicConstantsLib {
     address public constant PENDLE_COMMON_POOL_DEPLOY_HELPER_V2 = 0x2Ed473F528E5B320f850d17ADfe0e558f0298aA9;
     address public constant PENDLE_ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
     address public constant PENDLE_STABILITY_WMETAUSD_ADAPTER = 0x174f8D9d8A9b25D14142BB0cB9d040060a1CF75C;
+
+    // ---------------------------------- Mainstreet
+    address internal constant MSUSD_MINTER = 0xb1E423c251E989bd4e49228eF55aC4747D63F54D;
 
 }

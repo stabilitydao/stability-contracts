@@ -16,6 +16,8 @@ import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {VaultTypeLib} from "../../src/core/libs/VaultTypeLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {IchiSwapXFarmStrategy} from "../../src/strategies/IchiSwapXFarmStrategy.sol";
+import {Factory} from "../../src/core/Factory.sol";
+import {IProxy} from "../../src/interfaces/IProxy.sol";
 
 /// @dev MetaVault 1.1.0
 contract MetaVaultSonicUpgrade1 is Test {
@@ -30,6 +32,7 @@ contract MetaVaultSonicUpgrade1 is Test {
         metaVault = IStabilityVault(SonicConstantsLib.METAVAULT_METAUSDC);
         metaVaultFactory = IMetaVaultFactory(IPlatform(PLATFORM).metaVaultFactory());
         multisig = IPlatform(PLATFORM).multisig();
+        _upgradeFactory(); // upgrade to Factory v2.0.0
         _upgradeCVaults();
     }
 
@@ -80,15 +83,7 @@ contract MetaVaultSonicUpgrade1 is Test {
         // deploy new impl and upgrade
         address vaultImplementation = address(new CVault());
         vm.prank(multisig);
-        factory.setVaultConfig(
-            IFactory.VaultConfig({
-                vaultType: VaultTypeLib.COMPOUNDING,
-                implementation: vaultImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                buildingPrice: 1e10
-            })
-        );
+        factory.setVaultImplementation(VaultTypeLib.COMPOUNDING, vaultImplementation);
 
         address[8] memory vaults = [
             SonicConstantsLib.VAULT_C_USDC_SIF,
@@ -125,17 +120,7 @@ contract MetaVaultSonicUpgrade1 is Test {
 
         address strategyImplementation = address(new SiloStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -145,17 +130,7 @@ contract MetaVaultSonicUpgrade1 is Test {
 
         address strategyImplementation = address(new SiloFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.SILO_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.SILO_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
     }
@@ -165,18 +140,20 @@ contract MetaVaultSonicUpgrade1 is Test {
 
         address strategyImplementation = address(new IchiSwapXFarmStrategy());
         vm.prank(multisig);
-        factory.setStrategyLogicConfig(
-            IFactory.StrategyLogicConfig({
-                id: StrategyIdLib.ICHI_SWAPX_FARM,
-                implementation: strategyImplementation,
-                deployAllowed: true,
-                upgradeAllowed: true,
-                farming: true,
-                tokenId: 0
-            }),
-            address(this)
-        );
+        factory.setStrategyImplementation(StrategyIdLib.ICHI_SWAPX_FARM, strategyImplementation);
 
         factory.upgradeStrategyProxy(strategyAddress);
+    }
+
+    function _upgradeFactory() internal {
+        // deploy new Factory implementation
+        address newImpl = address(new Factory());
+
+        // get the proxy address for the factory
+        address factoryProxy = address(IPlatform(PLATFORM).factory());
+
+        // prank as the platform because only it can upgrade
+        vm.prank(PLATFORM);
+        IProxy(factoryProxy).upgrade(newImpl);
     }
 }
