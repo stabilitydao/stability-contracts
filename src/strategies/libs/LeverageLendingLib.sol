@@ -27,7 +27,7 @@ library LeverageLendingLib {
         );
     }
 
-    /// @dev ALlow to specify vault explicitly, i.e. in SiL where borrow asset is taken from different flash loan vault
+    /// @dev Allow to specify vault explicitly, i.e. in SiL where borrow asset is taken from different flash loan vault
     function requestFlashLoanExplicit(
         ILeverageLendingStrategy.FlashLoanKind flashLoanKind,
         address flashLoanVault,
