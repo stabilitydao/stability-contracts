@@ -36,6 +36,10 @@ contract MockRecovery is IRecovery {
         return tokens;
     }
 
+    function getListRegisteredTokens() external pure returns (address[] memory tokens) {
+        return tokens;
+    }
+
     function addRecoveryPools(address[] memory recoveryPools_) external pure override {
         recoveryPools_;
     }

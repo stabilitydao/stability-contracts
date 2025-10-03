@@ -12,6 +12,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @title Recovery contract to swap assets on recovery tokens in recovery pools
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
+///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
 ///   1.1.0: Add getListTokensToSwap, swapAssets, fillRecoveryPools, remove swapAssetsToRecoveryTokens
 contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -21,7 +22,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.0";
+    string public constant VERSION = "1.1.1";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -74,6 +75,12 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     function getListTokensToSwap() external view returns (address[] memory tokens) {
         RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
         return RecoveryLib.getListTokensToSwap($);
+    }
+
+    /// @inheritdoc IRecovery
+    function getListRegisteredTokens() external view returns (address[] memory tokens) {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+        return RecoveryLib.getListRegisteredTokens($);
     }
 
     //endregion ----------------------------------- View

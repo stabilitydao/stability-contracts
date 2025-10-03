@@ -21,6 +21,9 @@ interface IRecovery {
     /// @notice Return list of registered tokens with amounts exceeding thresholds
     function getListTokensToSwap() external view returns (address[] memory tokens);
 
+    /// @notice Return full list of registered tokens
+    function getListRegisteredTokens() external view returns (address[] memory tokens);
+
     /// @notice Add recovery pools to the list of registered pools
     function addRecoveryPools(address[] memory recoveryPools_) external;
 

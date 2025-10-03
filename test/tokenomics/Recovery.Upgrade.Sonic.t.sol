@@ -2,16 +2,19 @@
 pragma solidity ^0.8.28;
 
 import {IMetaVaultFactory} from "../../src/interfaces/IMetaVaultFactory.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Test} from "forge-std/Test.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract RecoveryUpgradeTestSonic is Test {
     uint public constant FORK_BLOCK = 48796315; // Sep-30-2025 02:52:14 AM +UTC
+    // uint public constant FORK_BLOCK = 49150536; // Oct-03-2025 12:00:30 AM UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public multisig;
 
@@ -38,12 +41,12 @@ contract RecoveryUpgradeTestSonic is Test {
         // ------------------------------ Get list of available tokes and their prices
         {
             address[] memory tokens = recovery.getListTokensToSwap();
-            //            for (uint i = 0; i < tokens.length; i++) {
-            //                address token = tokens[i];
-            //                uint balance = IERC20(token).balanceOf(address(recovery));
-            //                (uint price, ) = priceReader.getPrice(token);
-            //                console.log(token, balance, price, IERC20Metadata(token).decimals());
-            //            }
+            for (uint i = 0; i < tokens.length; i++) {
+                address token = tokens[i];
+                uint balance = IERC20(token).balanceOf(address(recovery));
+                (uint price,) = priceReader.getPrice(token);
+                console.log(token, balance, price, IERC20Metadata(token).decimals());
+            }
             assertEq(tokens.length, 15);
         }
 
@@ -142,11 +145,23 @@ contract RecoveryUpgradeTestSonic is Test {
             assertLt(gasBefore - gasAfter, 13_000_000, "gas limit exceeded");
         }
 
+        // ------------------------------ Ensure that all tokens below thresholds now
+        {
+            address[] memory tokens = recovery.getListTokensToSwap();
+            //            for (uint i = 0; i < tokens.length; i++) {
+            //                address token = tokens[i];
+            //                uint balance = IERC20(token).balanceOf(address(recovery));
+            //                (uint price, ) = priceReader.getPrice(token);
+            //                console.log(token, balance, price, IERC20Metadata(token).decimals());
+            //            }
+            assertEq(tokens.length, 0);
+        }
+
         // ------------------------------ Fill up recovery pools
         {
             uint gasBefore = gasleft();
             vm.prank(multisig);
-            recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
+            recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 0, 0);
             uint gasAfter = gasleft();
             // console.log("fill meta USD", gasBefore - gasAfter);
 
@@ -155,13 +170,15 @@ contract RecoveryUpgradeTestSonic is Test {
         {
             uint gasBefore = gasleft();
             vm.prank(multisig);
-            recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAS, 0, 0);
+            recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAS, 0, 0);
             uint gasAfter = gasleft();
             // console.log("fill metaS", gasBefore - gasAfter);
 
             assertLt(gasBefore - gasAfter, 2_000_000, "gas limit exceeded");
         }
     }
+
+    //region ------------------- Helpers
 
     function _upgradePlatform() internal {
         rewind(1 days);
@@ -199,41 +216,5 @@ contract RecoveryUpgradeTestSonic is Test {
         metaVaultFactory.upgradeMetaProxies(metaProxies);
     }
 
-    //    function _upgradeSiloStrategy(address strategyAddress) internal {
-    //        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-    //
-    //        address strategyImplementation = address(new SiloStrategy());
-    //        vm.prank(multisig);
-    //        factory.setStrategyLogicConfig(
-    //            IFactory.StrategyLogicConfig({
-    //                id: StrategyIdLib.SILO,
-    //                implementation: strategyImplementation,
-    //                deployAllowed: true,
-    //                upgradeAllowed: true,
-    //                farming: true,
-    //                tokenId: 0
-    //            }),
-    //            address(this)
-    //        );
-    //
-    //        factory.upgradeStrategyProxy(strategyAddress);
-    //    }
-    //
-    //    function _upgradeCVault(address vault) internal {
-    //        IFactory factory = IFactory(IPlatform(PLATFORM).factory());
-    //
-    //        // deploy new impl and upgrade
-    //        address vaultImplementation = address(new CVault());
-    //        vm.prank(multisig);
-    //        factory.setVaultConfig(
-    //            IFactory.VaultConfig({
-    //                vaultType: VaultTypeLib.COMPOUNDING,
-    //                implementation: vaultImplementation,
-    //                deployAllowed: true,
-    //                upgradeAllowed: true,
-    //                buildingPrice: 1e10
-    //            })
-    //        );
-    //        factory.upgradeVaultProxy(address(vault));
-    //    }
+    //endregion ------------------- Helpers
 }

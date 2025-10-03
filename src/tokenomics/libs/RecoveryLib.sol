@@ -46,7 +46,7 @@ library RecoveryLib {
     event SetThresholds(address[] tokens, uint[] thresholds);
     event Whitelist(address operator, bool add);
     event OnSwapFailed(address asset, address token, uint amount);
-    event SwapAssets(address[] tokens, address asset, uint balanceBefore, uint balanceAfter);
+    event SwapAssets(address[] tokens, address asset, uint balanceBefore, uint balanceAfter, uint index0);
     event FillRecoveryPools(address metaVaultToken_, uint balanceBefore, uint balanceAfter, uint countSwaps);
 
     /// @custom:storage-location erc7201:stability.Recovery
@@ -89,23 +89,36 @@ library RecoveryLib {
         if (index % 2 == 0) {
             return index / 2;
         } else {
-            return getPoolWithMinPrice(recoveryPools);
+            return getPoolWithMinPrice(recoveryPools, prng);
         }
     }
 
     /// @notice Get index of the pool with minimum price
-    function getPoolWithMinPrice(address[] memory recoveryPools) internal view returns (uint index0) {
+    function getPoolWithMinPrice(
+        address[] memory recoveryPools,
+        LibPRNG.PRNG memory prng
+    ) internal view returns (uint index0) {
         uint len = recoveryPools.length;
         if (len != 0) {
+            // get normalized prices for all pools and find minimum price
+            // there is a chance to have several pools with same minimum price (i.e. 1)
+            uint[] memory normalizedPrices = new uint[](len);
             uint minPrice = getNormalizedSqrtPrice(recoveryPools[0]);
-            for (uint i = 1; i < len; ++i) {
-                uint price = getNormalizedSqrtPrice(recoveryPools[i]);
-                if (price < minPrice) {
-                    minPrice = price;
+            for (uint i; i < len; ++i) {
+                normalizedPrices[i] = getNormalizedSqrtPrice(recoveryPools[i]);
+                if (normalizedPrices[i] < minPrice) {
+                    minPrice = normalizedPrices[i];
                     index0 = i;
                 }
             }
+
+            // select random pool - try to get it randomly from all pools with same min price
+            for (uint i; i < len * 5; ++i) {
+                index0 = LibPRNG.next(prng) % len;
+                if (normalizedPrices[index0] == minPrice) break;
+            }
         }
+
         return index0;
     }
 
@@ -127,14 +140,17 @@ library RecoveryLib {
     }
 
     /// @notice Return list of registered tokens with amounts exceeding thresholds
+    /// Meta vault tokens are excluded from the list
     function getListTokensToSwap(RecoveryStorage storage $) external view returns (address[] memory tokens) {
+        address[] memory metaVaultTokens = _getAllMetaVaultTokens($.recoveryPools.values());
+
         uint len = $.registeredTokens.length();
         address[] memory tempTokens = new address[](len);
         uint countNotZero;
         for (uint i; i < len; ++i) {
             address token = $.registeredTokens.at(i);
             uint balance = IERC20(token).balanceOf(address(this));
-            if (balance > $.tokenThresholds[token]) {
+            if (balance > $.tokenThresholds[token] && _findItemInArray(metaVaultTokens, token) == type(uint).max) {
                 tempTokens[countNotZero] = token;
                 countNotZero++;
             }
@@ -143,6 +159,9 @@ library RecoveryLib {
         return _removeEmpty(tempTokens, countNotZero);
     }
 
+    function getListRegisteredTokens(RecoveryStorage storage $) external view returns (address[] memory tokens) {
+        return $.registeredTokens.values();
+    }
     //endregion -------------------------------------- View
 
     //region -------------------------------------- Governance actions
@@ -231,9 +250,18 @@ library RecoveryLib {
                 if (amount > $.tokenThresholds[tokens[i]]) {
                     _approveIfNeeds(tokens[i], amount, address(swapper_));
 
+                    // swapper_.swap(tokens[i], metaVaultToken, amount, SWAP_PRICE_IMPACT_TOLERANCE_ASSETS);
+
                     // hide swap errors in same way as in RevenueRouter
-                    try swapper_.swap(tokens[i], metaVaultToken, amount, SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {}
-                    catch {
+                    try swapper_.swap(tokens[i], metaVaultToken, amount, SWAP_PRICE_IMPACT_TOLERANCE_ASSETS) {
+                        emit SwapAssets(
+                            tokens,
+                            metaVaultToken,
+                            balanceBefore,
+                            IERC20(metaVaultToken).balanceOf(address(this)),
+                            index0
+                        );
+                    } catch {
                         emit OnSwapFailed(tokens[i], metaVaultToken, amount);
                     }
                 }
@@ -244,8 +272,6 @@ library RecoveryLib {
             metaVault.cachePrices(true);
 
             metaVault.setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
-
-            emit SwapAssets(tokens, metaVaultToken, balanceBefore, IERC20(metaVaultToken).balanceOf(address(this)));
         }
     }
 
@@ -457,6 +483,16 @@ library RecoveryLib {
     ) internal view returns (uint index0) {
         require(indexRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
         return indexRecoveryPool1 == 0 ? selectPool(block.timestamp, _recoveryPools) : indexRecoveryPool1 - 1;
+    }
+
+    /// @return index of {value} in {array} or type(uint).max if not found
+    function _findItemInArray(address[] memory array, address value) internal pure returns (uint index) {
+        for (uint i; i < array.length; ++i) {
+            if (array[i] == value) {
+                return i;
+            }
+        }
+        return type(uint).max;
     }
 
     //endregion -------------------------------------- Utils

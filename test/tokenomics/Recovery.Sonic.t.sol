@@ -17,7 +17,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {Test} from "forge-std/Test.sol";
+import {console, Test} from "forge-std/Test.sol";
 
 contract RecoverySonicTest is Test {
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
@@ -263,6 +263,29 @@ contract RecoverySonicTest is Test {
         list = recovery.getListTokensToSwap();
         assertEq(list.length, 1, "1 token to swap B");
         assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
+
+        // ------------------------- Add meta vaults on balance
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, address(recovery), 100e18, true);
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAS, address(recovery), 100e18, true);
+
+        tokens = new address[](2);
+        tokens[0] = SonicConstantsLib.WRAPPED_METAVAULT_METAUSD;
+        tokens[1] = SonicConstantsLib.WRAPPED_METAVAULT_METAS;
+
+        vm.prank(multisig);
+        recovery.registerAssets(tokens);
+
+        address[] memory pools = new address[](2);
+        pools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAUSD;
+        pools[1] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+
+        vm.prank(multisig);
+        recovery.addRecoveryPools(pools);
+
+        // ------------------------- Ensure that getListTokensToSwap doesn't return meta vaults
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 1, "1 token to swap B");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
     }
 
     function testSwapAssetsBadPaths() public {
@@ -358,6 +381,40 @@ contract RecoverySonicTest is Test {
         vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
         vm.prank(address(this));
         recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 20000, 1000);
+    }
+
+    function testSelectPool() public view {
+        address[] memory recoveryPools = new address[](6);
+        recoveryPools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAUSD;
+        recoveryPools[1] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAUSD;
+        recoveryPools[2] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAS;
+        recoveryPools[3] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+        recoveryPools[4] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETASCUSD;
+        recoveryPools[5] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAUSDC;
+
+        uint[] memory selected = new uint[](6);
+
+        for (uint i; i < 255; ++i) {
+            uint index0 = RecoveryLib.selectPool(i, recoveryPools);
+            selected[index0]++;
+        }
+
+        // at the initial block all pools have same price 1, so distribution should be smooth
+        // typical values:
+        //        0 35
+        //        1 41
+        //        2 46
+        //        3 46
+        //        4 44
+        //        5 43
+        for (uint i; i < 6; ++i) {
+            // console.log(i, selected[i]);
+            assertApproxEqAbs(selected[i], selected[0], selected[i] / 4, "smooth distribution");
+        }
+
+        for (uint i; i < 6; ++i) {
+            assertEq(selected[i] != 0, true, string(abi.encodePacked("pool ", vm.toString(i), " was never selected")));
+        }
     }
     //endregion --------------------------------- Unit tests
 
