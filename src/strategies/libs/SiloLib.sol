@@ -278,7 +278,11 @@ library SiloLib {
             uint collateralDiff = newCollateralValue - collateralAmount;
             (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
             flashAmounts[0] = collateralDiff;
-            $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
+            {
+                // use standalone variable to avoid warning "multiplication should occur before division to avoid loss of precision" below
+                uint tempAmount = (flashAmounts[0] * maxLtv / 1e18);
+                $.tempBorrowAmount = tempAmount * priceCtoB / 1e18 - 2;
+            }
         }
 
         LeverageLendingLib.requestFlashLoanExplicit(
@@ -413,7 +417,11 @@ library SiloLib {
 
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
 
-        $.tempBorrowAmount = (flashAmounts[0] * maxLtv / 1e18) * priceCtoB / 1e18 - 2;
+        {
+            // use standalone variable to avoid warning "multiplication should occur before division to avoid loss of precision" below
+            uint tempAmount = (flashAmounts[0] * maxLtv / 1e18);
+            $.tempBorrowAmount = tempAmount * priceCtoB / 1e18 - 2;
+        }
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, _assets, flashAmounts);
     }

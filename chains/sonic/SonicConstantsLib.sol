@@ -7,6 +7,7 @@ library SonicConstantsLib {
     address public constant MULTISIG = 0xF564EBaC1182578398E94868bea1AbA6ba339652;
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant METAVAULT_FACTORY = 0xa190302880acF9deCC4447363640f589000EF601;
+    address public constant RECOVERY = 0xB8d6019eD82a9e6216c9Bf87cAf145fFe4439b40;
 
     // MetaVaults
     address public constant METAVAULT_METAUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
