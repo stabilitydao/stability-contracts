@@ -17,6 +17,7 @@ import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ILiquidationBot} from "../../interfaces/ILiquidationBot.sol";
 
 library LiquidationBotLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -25,7 +26,7 @@ library LiquidationBotLib {
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.LiquidationBot")) - 1)) & ~bytes32(uint(0xff));
     bytes32 internal constant _LIQUIDATION_BOT_STORAGE_LOCATION = 0; // todo
 
-    uint internal constant DEFAULT_SWAP_PRICE_IMPACT_TOLERANCE = 1_000;
+    uint internal constant DEFAULT_SWAP_PRICE_IMPACT_TOLERANCE = 1_000; // 1% with denominator 100_000
 
     //region -------------------------------------- Data types
 
@@ -36,8 +37,8 @@ library LiquidationBotLib {
 
     event Liquidation(
         address user,
-        UserAccountData userDataBefore,
-        UserAccountData userDataAfter,
+        ILiquidationBot.UserAccountData userDataBefore,
+        ILiquidationBot.UserAccountData userDataAfter,
         address debtAsset,
         uint debtRepaid,
         address collateralAsset,
@@ -45,7 +46,7 @@ library LiquidationBotLib {
         uint amountToProfitTarget
     );
     event Profit(address fromUser, address asset, uint amount, address targetProfit);
-    event UserSkipped(address user, UserAccountData userData, UserPosition position);
+    event UserSkipped(address user, ILiquidationBot.UserAccountData userData, ILiquidationBot.UserPosition position);
 
     event SetFlashLoan(address vault, uint kind);
     event SetPriceImpactTolerance(uint priceImpactTolerance);
@@ -69,13 +70,6 @@ library LiquidationBotLib {
         uint priceImpactTolerance;
     }
 
-    struct UserPosition {
-        address collateralReserve;
-        address debtReserve;
-        uint collateralAmount;
-        uint debtAmount;
-    }
-
     struct AaveContracts {
         IPool pool;
         IAaveDataProvider dataProvider;
@@ -90,17 +84,8 @@ library LiquidationBotLib {
         uint liquidationBonus;
     }
 
-    struct UserAccountData {
-        uint totalCollateralBase;
-        uint totalDebtBase;
-        uint availableBorrowsBase;
-        uint currentLiquidationThreshold;
-        uint ltv;
-        uint healthFactor;
-    }
-
     struct UserData {
-        address aaveAddressProvider;
+        address aavePool;
         address user;
         address collateralAsset;
         address debtAsset;
@@ -115,16 +100,16 @@ library LiquidationBotLib {
     //region -------------------------------------- Main logic
 
     /// @notice Make liquidation, send profit to the registered contract
-    /// @param addressProvider AAVE 3.0.2 address provider.
+    /// @param aavePool Pool AAVE 3.0.2.
     /// @param users List of users to liquidate (users with health factor < 1)
-    function liquidate(address addressProvider, address[] memory users) internal {
+    function liquidate(address aavePool, address[] memory users) internal {
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
-        AaveContracts memory ac = _getAaveContracts(addressProvider);
+        AaveContracts memory ac = getAaveContracts(aavePool);
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            UserAccountData memory userData0 = _getUserAccountData(ac, users[i]);
-            UserPosition memory position = _getUserPosition(users[i], ac.dataProvider);
+            ILiquidationBot.UserAccountData memory userData0 = getUserAccountData(ac, users[i]);
+            ILiquidationBot.UserPosition memory position = _getUserPosition(users[i], ac.dataProvider);
 
             if (
                 userData0.healthFactor >= 1e18 || position.collateralReserve == address(0)
@@ -140,7 +125,7 @@ library LiquidationBotLib {
                     $.flashLoanVault,
                     position.debtReserve,
                     repayAmount,
-                    abi.encode(_getUserData(addressProvider, users[i], position, repayAmount))
+                    abi.encode(_getUserData(aavePool, users[i], position, repayAmount))
                 );
 
                 uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
@@ -148,7 +133,7 @@ library LiquidationBotLib {
 
                 _sendProfit($, users[i], position.debtReserve, balanceAfter);
 
-                UserAccountData memory userData1 = _getUserAccountData(ac, users[i]);
+                ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
 
                 emit Liquidation(
                     users[i],
@@ -315,10 +300,10 @@ library LiquidationBotLib {
     function _getUserPosition(
         address user,
         IAaveDataProvider dataProvider
-    ) internal view returns (UserPosition memory) {
+    ) internal view returns (ILiquidationBot.UserPosition memory) {
         IAaveDataProvider.TokenData[] memory tokensData = dataProvider.getAllReservesTokens();
         uint len = tokensData.length;
-        UserPosition memory dest;
+        ILiquidationBot.UserPosition memory dest;
         for (uint i; i < len; ++i) {
             (uint currentATokenBalance, uint currentStableDebt, uint currentVariableDebt,,,,,,) =
                 dataProvider.getUserReserveData(tokensData[i].tokenAddress, user);
@@ -345,7 +330,7 @@ library LiquidationBotLib {
     /// Ensure that we receive expected amount of collateral
     /// @return collateralBalance New balance of the collateral asset on the contract after liquidation
     function _liquidateUser(UserData memory data) internal returns (uint collateralBalance) {
-        AaveContracts memory ac = _getAaveContracts(data.aaveAddressProvider);
+        AaveContracts memory ac = getAaveContracts(data.aavePool);
         uint collateralToReceive =
             _getCollateralToReceive(ac, data.collateralAsset, data.debtAsset, data.collateralAmount, data.repayAmount);
 
@@ -364,7 +349,7 @@ library LiquidationBotLib {
     /// @notice Calculate amount of debt that should be repaid during liquidation
     function _getRepayAmount(
         AaveContracts memory ac,
-        UserPosition memory pos_,
+        ILiquidationBot.UserPosition memory pos_,
         uint totalDebtBase_
     ) internal view returns (uint repayAmount) {
         ReserveData memory rdDebt = _getReserveData(ac, pos_.debtReserve);
@@ -409,10 +394,11 @@ library LiquidationBotLib {
     //endregion -------------------------------------- View
 
     //region -------------------------------------- Utils
-    function _getAaveContracts(address addressProvider_) internal view returns (AaveContracts memory ac) {
-        ac.pool = IPool(IAaveAddressProvider(addressProvider_).getPool());
-        ac.dataProvider = IAaveDataProvider(IAaveAddressProvider(addressProvider_).getPoolDataProvider());
-        ac.oracle = IAavePriceOracle(IAaveAddressProvider(addressProvider_).getPriceOracle());
+    function getAaveContracts(address aavePool_) internal view returns (AaveContracts memory ac) {
+        ac.pool = IPool(aavePool_);
+        IAaveAddressProvider addressProvider = IAaveAddressProvider(ac.pool.ADDRESSES_PROVIDER());
+        ac.dataProvider = IAaveDataProvider(addressProvider.getPoolDataProvider());
+        ac.oracle = IAavePriceOracle(addressProvider.getPriceOracle());
         return ac;
     }
 
@@ -434,10 +420,10 @@ library LiquidationBotLib {
         return rd;
     }
 
-    function _getUserAccountData(
+    function getUserAccountData(
         AaveContracts memory ac,
         address user
-    ) internal view returns (UserAccountData memory userData) {
+    ) internal view returns (ILiquidationBot.UserAccountData memory userData) {
         (
             userData.totalCollateralBase,
             userData.totalDebtBase,
@@ -450,6 +436,38 @@ library LiquidationBotLib {
         return userData;
     }
 
+    function getUserAssetInfo(
+        address aavePool,
+        address user
+    ) internal view returns (ILiquidationBot.UserAssetInfo[] memory infos) {
+        IAaveDataProvider dataProvider = getAaveContracts(aavePool).dataProvider;
+        IAaveDataProvider.TokenData[] memory tokensData = dataProvider.getAllReservesTokens();
+        uint len = tokensData.length;
+        infos = new ILiquidationBot.UserAssetInfo[](len);
+        uint count;
+        for (uint i; i < len; ++i) {
+            (uint currentATokenBalance, uint currentStableDebt, uint currentVariableDebt,,,,,,) =
+                dataProvider.getUserReserveData(tokensData[i].tokenAddress, user);
+
+            if (currentATokenBalance != 0 || currentStableDebt != 0 || currentVariableDebt != 0) {
+                infos[count] = ILiquidationBot.UserAssetInfo({
+                    asset: tokensData[i].tokenAddress,
+                    currentATokenBalance: currentATokenBalance,
+                    currentStableDebt: currentStableDebt,
+                    currentVariableDebt: currentVariableDebt
+                });
+                ++count;
+            }
+        }
+
+        // shrink array  // todo
+        assembly {
+            mstore(infos, count)
+        }
+
+        return infos;
+    }
+
     function getLiquidationBotStorage() internal pure returns (LiquidationBotStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
@@ -458,13 +476,13 @@ library LiquidationBotLib {
     }
 
     function _getUserData(
-        address addressProvider,
+        address aavePool,
         address users,
-        UserPosition memory position,
+        ILiquidationBot.UserPosition memory position,
         uint repayAmount
     ) internal pure returns (UserData memory) {
         return UserData({
-            aaveAddressProvider: addressProvider,
+            aavePool: aavePool,
             user: users,
             collateralAsset: position.collateralReserve,
             debtAsset: position.debtReserve,

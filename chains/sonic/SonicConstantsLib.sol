@@ -489,7 +489,7 @@ library SonicConstantsLib {
     address public constant STABILITY_SONIC_WOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
     address public constant STABILITY_SONIC_STS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
 
-    // -------------------------- Stability market (AAVE)
+    // -------------------------- Stability market (AAVE) - credix
     /// @notice https://stability.farm/vaults/vault/146/0xdf41864a148c3e17075c0440352c27c633935fe5
     address public constant STABILITY_MARKET_SONIC_WS = 0x61bC5Ce0639aA0A24Ab7ea8B574D4B0D6b619833;
     /// @notice https://stability.farm/vaults/vault/146/0xde200f9b328689d6aec4914aadc6dbecedbe8ec1
@@ -504,6 +504,18 @@ library SonicConstantsLib {
     address public constant STABILITY_CREDIX_MARKET_SONIC_USDC = 0xEc26D07B5c0a99D3690375A2CC229E5B943e7726;
     /// @notice https://stability.farm/vaults/vault/146/0x505620f50203cc4d21bd7475c2a7ed82e32dbe56
     address public constant STABILITY_CREDIX_MARKET_SONIC_SCUSD = 0xa175EE511de429275d26Ac5420fAbeb60C67C372;
+
+    // -------------------------- Stability USD market (wmetaUSD, AAVE 3.0.2)
+    address public constant STABILITY_USD_MARKET_ADDRESS_PROVIDER = 0x5CC16D46fdf657651e4F4eeA4470DD215E4Af7bd;
+    address public constant STABILITY_USD_MARKET_POOL = 0x2a32dA908B5E646c0afE567AC077f10d56F0af26;
+    address public constant STABILITY_USD_MARKET_ATOKEN_WMETAUSD = 0x287939376DCc571b5ee699DD8E72199989424A2E;
+    address public constant STABILITY_USD_MARKET_ATOKEN_USDC = 0x62E8eEe1aAAc7978672f90da21e4de766213b574;
+
+    // -------------------------- Brunch market gen2
+    address public constant BRUNCH_GEN2_ADDRESS_PROVIDER = 0x546eF43c9Edd9f5108E7b054AB81Df73fBE4F73A;
+    address public constant BRUNCH_GEN2_POOL = 0x6D8Aa37DfAa98d2a14da39cfeD36975F97fc3f85;
+    address public constant BRUNCH_GEN2_ATOKEN_SBUSD = 0xeB9bB589C12A0433B274760E657D549a6973C787;
+    address public constant BRUNCH_GEN2_ATOKEN_USDC = 0x958d930E61bdaebbBc0270D88FdBAEE9A13Dc6fd;
 
     // -------------------------- Shadow
     // address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;

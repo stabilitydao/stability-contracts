@@ -59,15 +59,30 @@ contract LiquidationBot is
     }
 
     /// @inheritdoc ILiquidationBot
-    function getPriceImpactTolerance() external view returns (uint priceImpactTolerance) {
+    function priceImpactTolerance() external view returns (uint _priceImpactTolerance) {
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         return LiquidationBotLib.priceImpactTolerance($);
     }
 
     /// @inheritdoc ILiquidationBot
-    function getProfitTarget() external view returns (address) {
+    function profitTarget() external view returns (address) {
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         return $.profitTarget;
+    }
+
+    function getFlashLoanVault() external view returns (address flashLoanVault, uint flashLoanKind) {
+        LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
+        return ($.flashLoanVault, $.flashLoanKind);
+    }
+
+    /// @notice Info: what assets the user has, what is the balance of aTokens, stable and variable debt
+    function getUserAssetInfo(address aavePool, address user) external view returns (UserAssetInfo[] memory) {
+        return LiquidationBotLib.getUserAssetInfo(aavePool, user);
+    }
+
+    /// @notice Info: current state of the user account
+    function getUserAccountData(address aavePool, address user) external view returns (UserAccountData memory) {
+        return LiquidationBotLib.getUserAccountData(LiquidationBotLib.getAaveContracts(aavePool), user);
     }
     //endregion ----------------------------------- View
 
@@ -138,13 +153,13 @@ contract LiquidationBot is
     }
 
     /// @inheritdoc ILiquidationBot
-    function setPriceImpactTolerance(uint priceImpactTolerance) external onlyMultisig {
-        LiquidationBotLib.setPriceImpactTolerance(priceImpactTolerance);
+    function setPriceImpactTolerance(uint priceImpactTolerance_) external onlyMultisig {
+        LiquidationBotLib.setPriceImpactTolerance(priceImpactTolerance_);
     }
 
     /// @inheritdoc ILiquidationBot
-    function setProfitTarget(address profitTarget) external onlyMultisig {
-        LiquidationBotLib.setProfitTarget(profitTarget);
+    function setProfitTarget(address profitTarget_) external onlyMultisig {
+        LiquidationBotLib.setProfitTarget(profitTarget_);
     }
 
     /// @inheritdoc ILiquidationBot
@@ -162,7 +177,7 @@ contract LiquidationBot is
     //endregion ----------------------------------- Actions
 
     /// @inheritdoc ILiquidationBot
-    function liquidate(address addressProvider, address[] memory users) external onlyWhitelisted {
-        LiquidationBotLib.liquidate(addressProvider, users);
+    function liquidate(address aavePool, address[] memory users) external onlyWhitelisted {
+        LiquidationBotLib.liquidate(aavePool, users);
     }
 }
