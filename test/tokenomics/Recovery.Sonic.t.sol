@@ -17,7 +17,7 @@ import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
-import {console, Test} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract RecoverySonicTest is Test {
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
@@ -286,6 +286,10 @@ contract RecoverySonicTest is Test {
         list = recovery.getListTokensToSwap();
         assertEq(list.length, 1, "1 token to swap B");
         assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
+
+        // ------------------------- Tests for auxiliary getListRegisteredTokens
+        list = recovery.getListRegisteredTokens();
+        assertEq(list.length, 5);
     }
 
     function testSwapAssetsBadPaths() public {
