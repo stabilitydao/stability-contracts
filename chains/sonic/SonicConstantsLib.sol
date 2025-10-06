@@ -511,6 +511,12 @@ library SonicConstantsLib {
     address public constant STABILITY_USD_MARKET_ATOKEN_WMETAUSD = 0x287939376DCc571b5ee699DD8E72199989424A2E;
     address public constant STABILITY_USD_MARKET_ATOKEN_USDC = 0x62E8eEe1aAAc7978672f90da21e4de766213b574;
 
+    // -------------------------- Stability USD market gen 2 (wmetaUSD, AAVE 3.0.2)
+    address public constant STABILITY_USD_MARKET_GEN2_ADDRESS_PROVIDER = 0xE8385DEcBCFf931799dd6689677299CA73A9F644;
+    address public constant STABILITY_USD_MARKET_GEN2_POOL = 0x909ba6aC1A9D34fE97Cb459C2CA9b6Ff986676F7;
+    address public constant STABILITY_USD_MARKET_GEN2_ATOKEN_WMETAUSD = 0xFC4A805Db8Dc217c468155cc5814070A15af8dc4;
+    address public constant STABILITY_USD_MARKET_GEN2_TOKEN_USDC = 0xb90a84F285aE8D3c0ceD37deD6Fc0f943f7279b7;
+
     // -------------------------- Brunch market gen2
     address public constant BRUNCH_GEN2_ADDRESS_PROVIDER = 0x546eF43c9Edd9f5108E7b054AB81Df73fBE4F73A;
     address public constant BRUNCH_GEN2_POOL = 0x6D8Aa37DfAa98d2a14da39cfeD36975F97fc3f85;

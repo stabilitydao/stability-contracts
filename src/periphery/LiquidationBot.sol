@@ -70,19 +70,51 @@ contract LiquidationBot is
         return $.profitTarget;
     }
 
+    /// @inheritdoc ILiquidationBot
     function getFlashLoanVault() external view returns (address flashLoanVault, uint flashLoanKind) {
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         return ($.flashLoanVault, $.flashLoanKind);
     }
 
-    /// @notice Info: what assets the user has, what is the balance of aTokens, stable and variable debt
+    /// @inheritdoc ILiquidationBot
     function getUserAssetInfo(address aavePool, address user) external view returns (UserAssetInfo[] memory) {
         return LiquidationBotLib.getUserAssetInfo(aavePool, user);
     }
 
-    /// @notice Info: current state of the user account
+    /// @inheritdoc ILiquidationBot
     function getUserAccountData(address aavePool, address user) external view returns (UserAccountData memory) {
         return LiquidationBotLib.getUserAccountData(LiquidationBotLib.getAaveContracts(aavePool), user);
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function getCollateralToReceive(
+        address aavePool,
+        address collateralAsset_,
+        address debtAsset_,
+        uint collateralAmount_,
+        uint repayAmount_
+    ) external view returns (
+        uint collateralToReceive
+    ) {
+        return LiquidationBotLib.getCollateralToReceive(
+            LiquidationBotLib.getAaveContracts(aavePool),
+            collateralAsset_,
+            debtAsset_,
+            collateralAmount_,
+            repayAmount_
+        );
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function isWrappedMetaVault(address wrappedMetaVault_) external view returns (bool) {
+        LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
+        return $.wrappedMetaVaults[wrappedMetaVault_] != 0;
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function targetHealthFactor() external view returns (uint) {
+        LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
+        return $.targetHealthFactor;
     }
     //endregion ----------------------------------- View
 
@@ -165,6 +197,16 @@ contract LiquidationBot is
     /// @inheritdoc ILiquidationBot
     function changeWhitelist(address operator_, bool add_) external onlyMultisig {
         LiquidationBotLib.changeWhitelist(operator_, add_);
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function changeWrappedMetaVault(address wrappedMetaVault_, bool add_) external onlyMultisig {
+        LiquidationBotLib.changeWrappedMetaVault(wrappedMetaVault_, add_);
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function setTargetHealthFactor(uint targetHealthFactor_) external onlyMultisig {
+        LiquidationBotLib.setTargetHealthFactor(targetHealthFactor_);
     }
 
     //endregion ----------------------------------- Restricted actions

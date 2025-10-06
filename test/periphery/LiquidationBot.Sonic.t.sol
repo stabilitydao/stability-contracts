@@ -1,21 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {Aave3PriceOracleMock} from "../../src/test/Aave3PriceOracleMock.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
+import {IPool} from "../../src/integrations/aave/IPool.sol";
+import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
-import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
+import {ILiquidationBot} from "../../src/interfaces/ILiquidationBot.sol";
+import {IPlatform} from "../../src/interfaces/IPlatform.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
+import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
+import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
+import {console} from "forge-std/console.sol";
 
 contract LiquidationBotSonicTest is SonicSetup {
-    uint internal constant FORK_BLOCK = 45880691; // Sep-05-2025 06:47:56 PM +UTC
+    uint internal constant FORK_BLOCK = 49491021; // Oct-06-2025 05:58:36 AM +UTC
     address internal multisig;
 
     address internal constant STABILITY_USDC_BORROWER = 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A;
+    address internal constant STABILITY_POOL = SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL;
+
+    struct SetUpParam {
+        address borrower;
+        address pool;
+        uint targetHealthFactor;
+        uint collateralPriceDropPercent;
+        address profitTarget;
+        address flashLoanVault;
+        uint flashLoanKind;
+        uint allowedGas;
+    }
 
     constructor() {
         vm.rollFork(FORK_BLOCK);
@@ -151,21 +170,31 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     //region ----------------------------------- Liquidation Stability USD Market
     function testLiquidationStabilityUsdc() public {
-        LiquidationBot bot = createLiquidationBotInstance();
-
         uint balanceUsdcBefore = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(multisig);
-
-        // todo prepare to liquidation
-
-        address[] memory users = new address[](1);
-        users[0] = STABILITY_USDC_BORROWER;
-
-        vm.prank(multisig);
-        bot.liquidate(SonicConstantsLib.STABILITY_USD_MARKET_POOL, users);
-
+        (
+            ILiquidationBot.UserAccountData memory stateBefore,
+            ILiquidationBot.UserAccountData memory stateAfter
+        ) = _testLiquidationStabilityUsdc(SetUpParam({
+            borrower: STABILITY_USDC_BORROWER,
+            pool: STABILITY_POOL,
+            targetHealthFactor: 1e18 + 1e16, // 1.01
+            collateralPriceDropPercent: 2, // drop collateral price by 5%
+            profitTarget: multisig,
+            flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
+            flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
+            allowedGas: 15_000_000
+        }));
         uint balanceUsdcAfter = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(multisig);
 
         assertGt(balanceUsdcAfter, balanceUsdcBefore, "get profit in USDC");
+        console.log("profit", balanceUsdcAfter - balanceUsdcBefore);
+
+        showState(stateBefore);
+        showState(stateAfter);
+
+        assertLt(stateBefore.healthFactor, 1e18, "liquidation is required");
+        assertGt(stateAfter.healthFactor, 1e18, "liquidation is not required anymore");
+
     }
 
     //endregion ----------------------------------- Liquidation Stability USD Market
@@ -180,13 +209,101 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     //endregion ----------------------------------- Liquidation Brunch Gen 2 Market
 
+
+    //region --------------------------------- Tests implementation
+    function _testLiquidationStabilityUsdc(SetUpParam memory stParams_) internal returns (
+        ILiquidationBot.UserAccountData memory stateBefore,
+        ILiquidationBot.UserAccountData memory stateAfter
+    ) {
+        LiquidationBot bot = createLiquidationBotInstance();
+
+        // ------------------------------ set up bot
+        vm.prank(multisig);
+        bot.changeWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(bot), true);
+
+        vm.prank(multisig);
+        bot.setTargetHealthFactor(stParams_.targetHealthFactor);
+
+        vm.prank(multisig);
+        bot.setProfitTarget(stParams_.profitTarget);
+
+        vm.prank(multisig);
+        bot.setFlashLoanVault(stParams_.flashLoanVault, stParams_.flashLoanKind);
+
+
+        // ------------------------------ prepare to liquidation
+        // check user health factor
+        {
+            ILiquidationBot.UserAccountData memory state0 = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
+            assertGt(state0.healthFactor, 1e18, "no liquidation needed");
+        }
+
+        {
+            IAaveAddressProvider addressProvider = IAaveAddressProvider(
+                IPool(STABILITY_POOL).ADDRESSES_PROVIDER()
+            );
+
+            // get AAVE oracle, get current prices for both assets - collateral and borrow
+            IAavePriceOracle oracle = IAavePriceOracle(addressProvider.getPriceOracle());
+
+            // replace AAVE oracle with mock oracle
+            ILiquidationBot.UserAssetInfo[] memory assets = bot.getUserAssetInfo(stParams_.pool, stParams_.borrower);
+            assertEq(assets.length, 2, "expected 2 assets");
+
+            address collateralAsset = assets[0].currentATokenBalance != 0 ? assets[0].asset : assets[1].asset;
+
+            uint priceCollateral = oracle.getAssetPrice(collateralAsset);
+
+            // set mock prices to make user undercollateralized
+            Aave3PriceOracleMock mockOracle = new Aave3PriceOracleMock(address(oracle));
+            mockOracle.setAssetPrice(collateralAsset, priceCollateral * (100 - stParams_.collateralPriceDropPercent) / 100);
+
+            vm.prank(addressProvider.owner());
+            addressProvider.setPriceOracle(address(mockOracle));
+        }
+
+        // check user health factor
+        stateBefore = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
+
+        // ------------------------------ liquidation
+        address[] memory users = new address[](1);
+        users[0] = stParams_.borrower;
+
+        {
+            uint gasBefore = gasleft();
+            vm.prank(multisig);
+            bot.liquidate(stParams_.pool, users);
+            uint gasAfter = gasleft();
+            assertLt(gasBefore - gasAfter, stParams_.allowedGas, "gas used is reasonable");
+        }
+
+        stateAfter = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
+    }
+
+    //endregion --------------------------------- Tests implementation
+
     //region --------------------------------- Utils
     function createLiquidationBotInstance() internal returns (LiquidationBot) {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new LiquidationBot()));
-        LiquidationBot recovery = LiquidationBot(address(proxy));
-        recovery.initialize(SonicConstantsLib.PLATFORM);
-        return recovery;
+
+        LiquidationBot bot = LiquidationBot(address(proxy));
+        bot.initialize(SonicConstantsLib.PLATFORM);
+
+        return bot;
+    }
+
+    function showState(ILiquidationBot.UserAccountData memory state_) internal view {
+        console.log("state:");
+        console.log("  totalCollateralBase", state_.totalCollateralBase);
+        console.log("  totalDebtBase", state_.totalDebtBase);
+        console.log("  availableBorrowsBase", state_.availableBorrowsBase);
+        console.log("  currentLiquidationThreshold", state_.currentLiquidationThreshold);
+        console.log("  ltv", state_.ltv);
+        console.log("  healthFactor", state_.healthFactor);
     }
     //endregion --------------------------------- Utils
 

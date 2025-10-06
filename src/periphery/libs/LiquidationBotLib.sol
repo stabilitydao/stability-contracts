@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ISwapper} from "../../interfaces/ISwapper.sol";
+import {IMetaVault} from "../../interfaces/IMetaVault.sol";
+import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IAaveAddressProvider} from "../../integrations/aave/IAaveAddressProvider.sol";
 import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
@@ -10,14 +10,17 @@ import {IAavePriceOracle} from "../../integrations/aave/IAavePriceOracle.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
 import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
+import {ILiquidationBot} from "../../interfaces/ILiquidationBot.sol";
 import {IPlatform} from "../../interfaces/IPlatform.sol";
 import {IPool} from "../../integrations/aave/IPool.sol";
+import {ISwapper} from "../../interfaces/ISwapper.sol";
 import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV3PoolActions.sol";
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ILiquidationBot} from "../../interfaces/ILiquidationBot.sol";
+import {console} from "forge-std/console.sol";
 
 library LiquidationBotLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -34,6 +37,7 @@ library LiquidationBotLib {
     error NotWhitelisted();
     error IncorrectAmountReceived(address asset, uint balanceBefore, uint balanceAfter, uint expectedAmount);
     error InsufficientBalance(uint availableBalance, uint requiredBalance);
+    error InvalidHealthFactor();
 
     event Liquidation(
         address user,
@@ -52,11 +56,18 @@ library LiquidationBotLib {
     event SetPriceImpactTolerance(uint priceImpactTolerance);
     event SetProfitTarget(address profitTarget);
     event Whitelist(address operator, bool add);
+    event SetWrappedMetaVault(address metaVault, bool add);
+    /// @param targetHealthFactor Target health factor, decimals 18
+    event SetTargetHealthFactory(uint targetHealthFactor);
 
     /// @custom:storage-location erc7201:stability.LiquidationBot
     struct LiquidationBotStorage {
         /// @notice Whitelisted operators that can call main actions
         mapping(address operator => bool allowed) whitelistOperators;
+        /// @notice All registered wrapped meta-vaults. If collateral asset is a wrapped meta-vault,
+        /// the contract should disable last-block-defense during liquidation
+        /// to be able to swap received collateral immediately after liquidation and repay flash loan
+        mapping(address wrappedMetaVault => uint isWrappedMetaVault) wrappedMetaVaults;
         /// @notice A contract to send profit to
         address profitTarget;
         /// @notice Address of the vault to take flash loans from (if needed).
@@ -68,6 +79,9 @@ library LiquidationBotLib {
         /// @notice Price impact tolerance. Denominator is 100_000.
         /// @dev if 0 then DEFAULT_SWAP_PRICE_IMPACT_TOLERANCE is used
         uint priceImpactTolerance;
+        /// @notice What health factor should be reached after liquidation ( > 1e18 )
+        /// 0 - means that max possible debt should be repaid (up to 50% of total debt)
+        uint targetHealthFactor;
     }
 
     struct AaveContracts {
@@ -108,6 +122,7 @@ library LiquidationBotLib {
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
+            console.log("liquidate", i);
             ILiquidationBot.UserAccountData memory userData0 = getUserAccountData(ac, users[i]);
             ILiquidationBot.UserPosition memory position = _getUserPosition(users[i], ac.dataProvider);
 
@@ -117,8 +132,11 @@ library LiquidationBotLib {
             ) {
                 emit UserSkipped(users[i], userData0, position);
             } else {
-                uint repayAmount = _getRepayAmount(ac, position, userData0.totalDebtBase);
+                console.log("targetHealthFactor", $.targetHealthFactor);
+                uint repayAmount = _getRepayAmount(ac, position, userData0, $.targetHealthFactor);
                 uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
+                console.log("repayAmount", repayAmount);
+                console.log("balanceBefore", balanceBefore);
 
                 _requestFlashLoanExplicit(
                     $.flashLoanKind,
@@ -131,9 +149,14 @@ library LiquidationBotLib {
                 uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
                 uint collateralReceived = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
 
+                console.log("balanceAfter", balanceAfter);
+                console.log("collateralReceived", collateralReceived);
+
                 _sendProfit($, users[i], position.debtReserve, balanceAfter);
 
                 ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
+
+                // todo new health factor > old health factor
 
                 emit Liquidation(
                     users[i],
@@ -177,6 +200,7 @@ library LiquidationBotLib {
         emit SetProfitTarget(profitTarget);
     }
 
+    /// @notice Add or remove operator from the whitelist
     function changeWhitelist(address operator_, bool add_) internal {
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
         $.whitelistOperators[operator_] = add_;
@@ -184,6 +208,24 @@ library LiquidationBotLib {
         emit Whitelist(operator_, add_);
     }
 
+    /// @notice Add or remove wrapped meta vault to/from the list of registered wrapped meta vaults
+    function changeWrappedMetaVault(address wrappedMetaVault_, bool add_) internal {
+        LiquidationBotStorage storage $ = getLiquidationBotStorage();
+        $.wrappedMetaVaults[wrappedMetaVault_] = add_ ? 1 : 0;
+
+        emit SetWrappedMetaVault(wrappedMetaVault_, add_);
+    }
+
+    /// @notice Target health factor for the users after liquidation
+    /// @param targetHealthFactor_ Target health factor, decimals 18, must be > 1e18
+    /// 0 - means that max possible debt should be repaid (up to 50% of total debt)
+    function setTargetHealthFactor(uint targetHealthFactor_) internal {
+        LiquidationBotStorage storage $ = getLiquidationBotStorage();
+        require(targetHealthFactor_ == 0 || targetHealthFactor_ > 1e18, InvalidHealthFactor());
+
+        $.targetHealthFactor = targetHealthFactor_;
+        emit SetTargetHealthFactory(targetHealthFactor_);
+    }
     //endregion -------------------------------------- Restricted actions
 
     //region -------------------------------------- Flash loan
@@ -250,22 +292,50 @@ library LiquidationBotLib {
         uint fee,
         bytes memory userData
     ) internal {
+        console.log("receiveFlashLoan token, amount, fee", token, amount, fee);
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, UnauthorizedCallback());
 
         UserData memory data = abi.decode(userData, (UserData));
+        console.log("data.aavePool", data.aavePool);
+        console.log("data.user", data.user);
+        console.log("data.collateralAsset", data.collateralAsset);
+        console.log("data.debtAsset", data.debtAsset);
+        console.log("data.collateralAmount", data.collateralAmount);
+        console.log("data.repayAmount", data.repayAmount);
+
+        if ($.wrappedMetaVaults[data.collateralAsset] != 0) {
+            IMetaVault metaVault = IMetaVault(IWrappedMetaVault(data.collateralAsset).metaVault());
+            metaVault.setLastBlockDefenseDisabledTx(
+                uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
+            );
+
+            // todo Swap of meta-vault-tokens take a lot of gas. We need to use cache
+//            priceReader_.preCalculatePriceTx(address(metaVault));
+//            metaVault.cachePrices(false);
+        }
 
         // --------------- make liquidation: pay debt partially, receive collateral on balance
         _liquidateUser(data);
 
+        console.log("swap");
+
         // --------------- swap collateral asset to the debt asset
-        _swap(platform, data.collateralAsset, data.debtAsset, amount, priceImpactTolerance($));
+        _swap(platform, data.collateralAsset, data.debtAsset, IERC20(data.collateralAsset).balanceOf(address(this)), priceImpactTolerance($));
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
         require(balance >= amount + fee, InsufficientBalance(balance, amount + fee));
 
+        console.log("balance", balance);
+        console.log("amount + fee", amount + fee);
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);
+
+        if ($.wrappedMetaVaults[data.collateralAsset] != 0) {
+            IMetaVault(IWrappedMetaVault(data.collateralAsset).metaVault()).setLastBlockDefenseDisabledTx(
+                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
+            );
+        }
     }
     //endregion -------------------------------------- Flash loan
 
@@ -327,48 +397,74 @@ library LiquidationBotLib {
     }
 
     /// @notice Make liquidation: pay debt partially, receive collateral on balance.
-    /// Ensure that we receive expected amount of collateral
-    /// @return collateralBalance New balance of the collateral asset on the contract after liquidation
-    function _liquidateUser(UserData memory data) internal returns (uint collateralBalance) {
+    /// @dev As result the contract should receive {getCollateralToReceive(...)} of {collateralAsset} on balance
+    function _liquidateUser(UserData memory data) internal {
         AaveContracts memory ac = getAaveContracts(data.aavePool);
-        uint collateralToReceive =
-            _getCollateralToReceive(ac, data.collateralAsset, data.debtAsset, data.collateralAmount, data.repayAmount);
 
-        uint amountBefore = IERC20(data.collateralAsset).balanceOf(address(this));
         IERC20(data.debtAsset).forceApprove(address(ac.pool), data.repayAmount);
 
         ac.pool.liquidationCall(data.collateralAsset, data.debtAsset, data.user, data.repayAmount, false);
-
-        collateralBalance = IERC20(data.collateralAsset).balanceOf(address(this));
-        require(
-            collateralBalance > amountBefore && collateralBalance - amountBefore == collateralToReceive,
-            IncorrectAmountReceived(data.collateralAsset, amountBefore, collateralBalance, collateralToReceive)
-        );
     }
 
     /// @notice Calculate amount of debt that should be repaid during liquidation
+    /// @param targetHealthFactor_ if 0 then max possible debt should be repaid (up to 50% of total debt)
     function _getRepayAmount(
         AaveContracts memory ac,
         ILiquidationBot.UserPosition memory pos_,
-        uint totalDebtBase_
+        ILiquidationBot.UserAccountData memory userAccountData_,
+        uint targetHealthFactor_
     ) internal view returns (uint repayAmount) {
         ReserveData memory rdDebt = _getReserveData(ac, pos_.debtReserve);
 
-        // todo We can take max 50% of the total debt. Should we try to use less values?
-        uint maxRepayAmountBase = totalDebtBase_ * 4_999 / 10_000;
-        uint debtAmountBase = _toBase(ac, rdDebt, pos_.debtAmount);
+        // We can take max 50% of the total debt
+        uint maxRepayBase = (userAccountData_.totalDebtBase * 5_000) / 10_000;
+        console.log("maxRepayBase", maxRepayBase);
 
-        uint repayAmountBase = debtAmountBase < maxRepayAmountBase ? debtAmountBase : maxRepayAmountBase;
-        repayAmount = _fromBase(ac, rdDebt, repayAmountBase);
+        // Calculate repayment amount required to get target health factor after liquidation
+        uint repayAmountBase = _getRepayAmountBaseForHealthFactor(userAccountData_, targetHealthFactor_, maxRepayBase);
+        console.log("repayAmountBase", repayAmountBase);
+        console.log("repayAmount", _fromBase(ac, rdDebt, repayAmountBase));
+
+        return _fromBase(ac, rdDebt, repayAmountBase);
     }
 
-    function _getCollateralToReceive(
+    function _getRepayAmountBaseForHealthFactor(
+        ILiquidationBot.UserAccountData memory userAccountData_,
+        uint targetHealthFactor_,
+        uint maxRepayBase
+    ) internal pure returns (uint repayAmountBase) {
+        if (targetHealthFactor_ == 0) {
+            console.log("1");
+            repayAmountBase = maxRepayBase;
+        } else {
+            console.log("totalCollateralBase", userAccountData_.totalCollateralBase);
+            console.log("currentLiquidationThreshold", userAccountData_.currentLiquidationThreshold);
+            uint targetDebtBase = (userAccountData_.totalCollateralBase * userAccountData_.currentLiquidationThreshold * 1e18) / (targetHealthFactor_ * 10_000);
+            console.log("targetDebtBase", targetDebtBase);
+            if (targetDebtBase < userAccountData_.totalDebtBase) {
+                repayAmountBase = userAccountData_.totalDebtBase - targetDebtBase;
+                console.log("repayAmountBase.updated", repayAmountBase);
+                if (repayAmountBase > maxRepayBase) {
+                    repayAmountBase = maxRepayBase;
+                }
+            }
+        }
+
+        // 0 if no liquidation needed
+        return repayAmountBase;
+    }
+
+    /// @notice How much of {collateralAsset_} the bot will receive if it repays {repayAmount_} of {debtAsset_}
+    /// in assumption that the user has {collateralAmount_} of collateral
+    function getCollateralToReceive(
         AaveContracts memory ac,
         address collateralAsset_,
         address debtAsset_,
         uint collateralAmount_,
         uint repayAmount_
-    ) internal view returns (uint) {
+    ) internal view returns (
+        uint collateralToReceive
+    ) {
         uint repayAmountBase = _toBase(ac, _getReserveData(ac, debtAsset_), repayAmount_);
 
         ReserveData memory rdCollateral = _getReserveData(ac, collateralAsset_);
@@ -376,6 +472,12 @@ library LiquidationBotLib {
 
         // typical value of liquidationBonus is 10150 (1.5% bonus)
         uint collateralToReceiveBase = repayAmountBase * rdCollateral.liquidationBonus / 10_000;
+
+        uint fee = ac.dataProvider.getLiquidationProtocolFee(collateralAsset_);
+        uint bonusPart = collateralToReceiveBase - repayAmountBase;
+        uint bonusAfterFee = bonusPart * (10_000 - fee) / 10_000;
+        collateralToReceiveBase = repayAmountBase + bonusAfterFee;
+
         if (collateralToReceiveBase > collateralAmountBase) {
             collateralToReceiveBase = collateralAmountBase;
         }
