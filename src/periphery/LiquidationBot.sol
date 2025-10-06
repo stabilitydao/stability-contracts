@@ -106,6 +106,24 @@ contract LiquidationBot is
     }
 
     /// @inheritdoc ILiquidationBot
+    function getRepayAmount(
+        address aavePool,
+        address collateralAsset_,
+        address debtAsset_,
+        ILiquidationBot.UserAccountData memory userAccountData_,
+        uint targetHealthFactor_
+    ) external view returns (uint repayAmount) {
+        return LiquidationBotLib._getRepayAmount(
+            LiquidationBotLib.getAaveContracts(aavePool),
+            collateralAsset_,
+            debtAsset_,
+            userAccountData_,
+            targetHealthFactor_
+        );
+    }
+
+
+    /// @inheritdoc ILiquidationBot
     function isWrappedMetaVault(address wrappedMetaVault_) external view returns (bool) {
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         return $.wrappedMetaVaults[wrappedMetaVault_] != 0;

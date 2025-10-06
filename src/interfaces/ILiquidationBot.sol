@@ -49,6 +49,15 @@ interface ILiquidationBot {
         uint collateralToReceive
     );
 
+    /// @notice Calculate how much debt should be repaid to reach the target health factor
+    function getRepayAmount(
+        address aavePool,
+        address collateralAsset_,
+        address debtAsset_,
+        ILiquidationBot.UserAccountData memory userAccountData_,
+        uint targetHealthFactor_
+    ) external view returns (uint repayAmount);
+
     /// @notice Returns true if the operator is whitelisted
     /// Multisig is always whitelisted.
     function whitelisted(address operator_) external view returns (bool);

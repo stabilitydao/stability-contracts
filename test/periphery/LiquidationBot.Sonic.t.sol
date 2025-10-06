@@ -5,6 +5,8 @@ import {Aave3PriceOracleMock} from "../../src/test/Aave3PriceOracleMock.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
+import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
+import {IAavePoolConfigurator} from "../../src/integrations/aave/IAavePoolConfigurator.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
@@ -34,6 +36,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         address flashLoanVault;
         uint flashLoanKind;
         uint allowedGas;
+        uint liquidationBonus;
     }
 
     constructor() {
@@ -177,19 +180,22 @@ contract LiquidationBotSonicTest is SonicSetup {
         ) = _testLiquidationStabilityUsdc(SetUpParam({
             borrower: STABILITY_USDC_BORROWER,
             pool: STABILITY_POOL,
-            targetHealthFactor: 1e18 + 1e16, // 1.01
+            targetHealthFactor: 1.001e18,
             collateralPriceDropPercent: 2, // drop collateral price by 5%
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            allowedGas: 15_000_000
+            allowedGas: 15_000_000,
+            liquidationBonus: 10010 // 0.1% bonus
         }));
         uint balanceUsdcAfter = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(multisig);
 
         assertGt(balanceUsdcAfter, balanceUsdcBefore, "get profit in USDC");
         console.log("profit", balanceUsdcAfter - balanceUsdcBefore);
 
+        console.log("state before liquidation:");
         showState(stateBefore);
+        console.log("state after liquidation:");
         showState(stateAfter);
 
         assertLt(stateBefore.healthFactor, 1e18, "liquidation is required");
@@ -216,6 +222,31 @@ contract LiquidationBotSonicTest is SonicSetup {
         ILiquidationBot.UserAccountData memory stateAfter
     ) {
         LiquidationBot bot = createLiquidationBotInstance();
+
+        {
+            address owner = IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).owner();
+            IAavePoolConfigurator configurator = IAavePoolConfigurator(
+                IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolConfigurator()
+            );
+
+            vm.prank(owner);
+            configurator.setLiquidationProtocolFee(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1);
+
+            (, uint ltv, uint liquidationThreshold, uint liquidationBonus, , , , , , ) = IAaveDataProvider(
+                IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
+            ).getReserveConfigurationData(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
+            console.log("current ltv", ltv);
+            console.log("current liquidationThreshold", liquidationThreshold);
+            console.log("current liquidationBonus", liquidationBonus);
+
+            vm.prank(owner);
+            configurator.configureReserveAsCollateral(
+                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
+                ltv,
+                liquidationThreshold,
+                stParams_.liquidationBonus
+            );
+        }
 
         // ------------------------------ set up bot
         vm.prank(multisig);
@@ -253,20 +284,40 @@ contract LiquidationBotSonicTest is SonicSetup {
             ILiquidationBot.UserAssetInfo[] memory assets = bot.getUserAssetInfo(stParams_.pool, stParams_.borrower);
             assertEq(assets.length, 2, "expected 2 assets");
 
-            address collateralAsset = assets[0].currentATokenBalance != 0 ? assets[0].asset : assets[1].asset;
-
-            uint priceCollateral = oracle.getAssetPrice(collateralAsset);
+            uint collateralIndex = assets[0].currentATokenBalance == 0 ? 1 : 0;
+            uint borrowIndex = assets[0].currentATokenBalance == 0 ? 0 : 1;
 
             // set mock prices to make user undercollateralized
-            Aave3PriceOracleMock mockOracle = new Aave3PriceOracleMock(address(oracle));
-            mockOracle.setAssetPrice(collateralAsset, priceCollateral * (100 - stParams_.collateralPriceDropPercent) / 100);
+            {
+                uint priceCollateral = oracle.getAssetPrice(assets[collateralIndex].asset);
 
-            vm.prank(addressProvider.owner());
-            addressProvider.setPriceOracle(address(mockOracle));
+                Aave3PriceOracleMock mockOracle = new Aave3PriceOracleMock(address(oracle));
+                mockOracle.setAssetPrice(assets[collateralIndex].asset, priceCollateral * (100 - stParams_.collateralPriceDropPercent) / 100);
+
+                vm.prank(addressProvider.owner());
+                addressProvider.setPriceOracle(address(mockOracle));
+            }
+
+            // check user health factor
+            stateBefore = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
+
+            uint repayAmount = bot.getRepayAmount(
+                stParams_.pool,
+                assets[collateralIndex].asset,
+                assets[borrowIndex].asset,
+                stateBefore,
+                stParams_.targetHealthFactor
+            );
+
+            uint expectedCollateralToReceive = bot.getCollateralToReceive(
+                stParams_.pool,
+                assets[collateralIndex].asset,
+                assets[borrowIndex].asset,
+                assets[collateralIndex].currentATokenBalance,
+                repayAmount
+            );
+            console.log("expectedCollateralToReceive", expectedCollateralToReceive);
         }
-
-        // check user health factor
-        stateBefore = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
 
         // ------------------------------ liquidation
         address[] memory users = new address[](1);
@@ -296,7 +347,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         return bot;
     }
 
-    function showState(ILiquidationBot.UserAccountData memory state_) internal view {
+    function showState(ILiquidationBot.UserAccountData memory state_) internal pure {
         console.log("state:");
         console.log("  totalCollateralBase", state_.totalCollateralBase);
         console.log("  totalDebtBase", state_.totalDebtBase);

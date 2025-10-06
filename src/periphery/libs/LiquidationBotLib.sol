@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMetaVault} from "../../interfaces/IMetaVault.sol";
 import {IWrappedMetaVault} from "../../interfaces/IWrappedMetaVault.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -38,6 +39,7 @@ library LiquidationBotLib {
     error IncorrectAmountReceived(address asset, uint balanceBefore, uint balanceAfter, uint expectedAmount);
     error InsufficientBalance(uint availableBalance, uint requiredBalance);
     error InvalidHealthFactor();
+    error HealthFactorNotIncreased();
 
     event Liquidation(
         address user,
@@ -46,7 +48,7 @@ library LiquidationBotLib {
         address debtAsset,
         uint debtRepaid,
         address collateralAsset,
-        uint collateralReceived,
+        uint profitReceived,
         uint amountToProfitTarget
     );
     event Profit(address fromUser, address asset, uint amount, address targetProfit);
@@ -133,7 +135,7 @@ library LiquidationBotLib {
                 emit UserSkipped(users[i], userData0, position);
             } else {
                 console.log("targetHealthFactor", $.targetHealthFactor);
-                uint repayAmount = _getRepayAmount(ac, position, userData0, $.targetHealthFactor);
+                uint repayAmount = _getRepayAmount(ac, position.collateralReserve, position.debtReserve, userData0, $.targetHealthFactor);
                 uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
                 console.log("repayAmount", repayAmount);
                 console.log("balanceBefore", balanceBefore);
@@ -147,16 +149,16 @@ library LiquidationBotLib {
                 );
 
                 uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
-                uint collateralReceived = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
+                uint profit = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
 
                 console.log("balanceAfter", balanceAfter);
-                console.log("collateralReceived", collateralReceived);
+                console.log("profit received", profit);
 
                 _sendProfit($, users[i], position.debtReserve, balanceAfter);
 
                 ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
 
-                // todo new health factor > old health factor
+                require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased());
 
                 emit Liquidation(
                     users[i],
@@ -165,7 +167,7 @@ library LiquidationBotLib {
                     position.debtReserve,
                     position.debtAmount,
                     position.collateralReserve,
-                    collateralReceived,
+                    profit,
                     balanceAfter
                 );
             }
@@ -316,18 +318,21 @@ library LiquidationBotLib {
         }
 
         // --------------- make liquidation: pay debt partially, receive collateral on balance
+        console.log("balance WMETAUSD before", IERC20(data.collateralAsset).balanceOf(address(this)));
         _liquidateUser(data);
 
         console.log("swap");
+        console.log("balance WMETAUSD", IERC20(data.collateralAsset).balanceOf(address(this)));
 
         // --------------- swap collateral asset to the debt asset
         _swap(platform, data.collateralAsset, data.debtAsset, IERC20(data.collateralAsset).balanceOf(address(this)), priceImpactTolerance($));
+
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
         require(balance >= amount + fee, InsufficientBalance(balance, amount + fee));
 
-        console.log("balance", balance);
+        console.log("balance USDC", balance);
         console.log("amount + fee", amount + fee);
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);
 
@@ -410,47 +415,77 @@ library LiquidationBotLib {
     /// @param targetHealthFactor_ if 0 then max possible debt should be repaid (up to 50% of total debt)
     function _getRepayAmount(
         AaveContracts memory ac,
-        ILiquidationBot.UserPosition memory pos_,
+        address collateralAsset_,
+        address debtAsset_,
         ILiquidationBot.UserAccountData memory userAccountData_,
         uint targetHealthFactor_
     ) internal view returns (uint repayAmount) {
-        ReserveData memory rdDebt = _getReserveData(ac, pos_.debtReserve);
+        ReserveData memory rdDebt = _getReserveData(ac, debtAsset_);
+        ReserveData memory rdCollateral = _getReserveData(ac, collateralAsset_);
 
         // We can take max 50% of the total debt
         uint maxRepayBase = (userAccountData_.totalDebtBase * 5_000) / 10_000;
-        console.log("maxRepayBase", maxRepayBase);
 
         // Calculate repayment amount required to get target health factor after liquidation
-        uint repayAmountBase = _getRepayAmountBaseForHealthFactor(userAccountData_, targetHealthFactor_, maxRepayBase);
-        console.log("repayAmountBase", repayAmountBase);
-        console.log("repayAmount", _fromBase(ac, rdDebt, repayAmountBase));
+        uint repayAmountBase = _getRepayAmountBaseForHealthFactor(userAccountData_, rdCollateral, targetHealthFactor_, maxRepayBase);
 
         return _fromBase(ac, rdDebt, repayAmountBase);
     }
 
+    /// @notice Calculate the repayment amount needed to reach the target health factor after liquidation
+    /// @dev This function accounts for the fact that liquidation reduces both debt AND collateral
+    /// @param userAccountData_ Current user account data (collateral, debt, HF, etc.)
+    /// @param rdCollateral Reserve data for the collateral asset (includes liquidation bonus)
+    /// @param targetHealthFactor_ Desired health factor after liquidation (in 1e18, must be > 1e18)
+    /// @param maxRepayBase Maximum allowed repayment in base currency (typically 50% of total debt)
+    /// @return repayAmountBase Amount to repay in base currency units
     function _getRepayAmountBaseForHealthFactor(
         ILiquidationBot.UserAccountData memory userAccountData_,
+        ReserveData memory rdCollateral,
         uint targetHealthFactor_,
         uint maxRepayBase
-    ) internal pure returns (uint repayAmountBase) {
+    ) internal view returns (uint repayAmountBase) {
         if (targetHealthFactor_ == 0) {
-            console.log("1");
-            repayAmountBase = maxRepayBase;
-        } else {
-            console.log("totalCollateralBase", userAccountData_.totalCollateralBase);
-            console.log("currentLiquidationThreshold", userAccountData_.currentLiquidationThreshold);
-            uint targetDebtBase = (userAccountData_.totalCollateralBase * userAccountData_.currentLiquidationThreshold * 1e18) / (targetHealthFactor_ * 10_000);
-            console.log("targetDebtBase", targetDebtBase);
-            if (targetDebtBase < userAccountData_.totalDebtBase) {
-                repayAmountBase = userAccountData_.totalDebtBase - targetDebtBase;
-                console.log("repayAmountBase.updated", repayAmountBase);
-                if (repayAmountBase > maxRepayBase) {
-                    repayAmountBase = maxRepayBase;
-                }
-            }
+            return maxRepayBase;
         }
 
-        // 0 if no liquidation needed
+        // Current values from user account
+        // C = userAccountData_.totalCollateralBase;  // Total collateral in base currency
+        // D = userAccountData_.totalDebtBase;        // Total debt in base currency
+        // LT = userAccountData_.currentLiquidationThreshold;  // Liquidation threshold in basis points (e.g., 9850 = 98.5%)
+        // bonus = rdCollateral.liquidationBonus;     // Liquidation bonus in basis points (e.g., 10150 = 101.5%)
+        //
+        // Health Factor formula: HF = (Collateral * LiquidationThreshold / 10000) / Debt
+        // After liquidation with repayment R:
+        // - New debt: D - R
+        // - Collateral seized from user: R * bonus / 10000
+        // - New collateral: C - R * bonus / 10000
+        // New HF = ((C - R * bonus / 10000) * LT / 10000) / (D - R)
+        // R = (C * LT - D * HF) / (bonus * LT / 10000 - HF)
+
+        // Scale down targetHF from 1e18 to 1e4 to match LT units
+        // This avoids overflow and keeps all values in basis points
+        uint targetHealthFactorBase = targetHealthFactor_ / 1e14;
+
+        // Calculate numerator: C*LT - D*targetHF_scaled
+        int numerator = int(userAccountData_.totalCollateralBase * userAccountData_.currentLiquidationThreshold) - int(userAccountData_.totalDebtBase * targetHealthFactorBase);
+
+        // Calculate denominator: bonus*LT/10000 - targetHF_scaled
+        int denominator = int(rdCollateral.liquidationBonus * userAccountData_.currentLiquidationThreshold / 10_000) - int(targetHealthFactorBase);
+
+        if (numerator * denominator <= 0) {
+            repayAmountBase = maxRepayBase; // target unachievable (e.g., too high, would require negative R)
+        } else {
+            uint absNum = uint(numerator < 0 ? -numerator : numerator);
+            uint absDen = uint(denominator < 0 ? -denominator : denominator);
+            repayAmountBase = Math.mulDiv(absNum, 1e18, absDen) / 1e18;
+        }
+
+        // Cap at maximum allowed repayment (50% of debt)
+        if (repayAmountBase > maxRepayBase) {
+            repayAmountBase = maxRepayBase;
+        }
+
         return repayAmountBase;
     }
 
@@ -465,6 +500,8 @@ library LiquidationBotLib {
     ) internal view returns (
         uint collateralToReceive
     ) {
+        console.log("getCollateralToReceive.collateralAmount_", collateralAmount_);
+        console.log("getCollateralToReceive.repayAmount_", repayAmount_);
         uint repayAmountBase = _toBase(ac, _getReserveData(ac, debtAsset_), repayAmount_);
 
         ReserveData memory rdCollateral = _getReserveData(ac, collateralAsset_);
@@ -476,12 +513,18 @@ library LiquidationBotLib {
         uint fee = ac.dataProvider.getLiquidationProtocolFee(collateralAsset_);
         uint bonusPart = collateralToReceiveBase - repayAmountBase;
         uint bonusAfterFee = bonusPart * (10_000 - fee) / 10_000;
+        console.log("collateralToReceiveBase", collateralToReceiveBase);
+        console.log("fee", fee);
+        console.log("bonusPart", bonusPart);
+        console.log("bonusAfterFee", bonusAfterFee);
         collateralToReceiveBase = repayAmountBase + bonusAfterFee;
+        console.log("collateralToReceiveBase", collateralToReceiveBase);
 
         if (collateralToReceiveBase > collateralAmountBase) {
             collateralToReceiveBase = collateralAmountBase;
         }
 
+        console.log("collateralToReceiveBase", collateralToReceiveBase);
         return _fromBase(ac, rdCollateral, collateralToReceiveBase);
     }
 
