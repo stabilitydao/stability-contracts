@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {ILiquidationBot} from "../interfaces/ILiquidationBot.sol";
@@ -94,15 +93,9 @@ contract LiquidationBot is
         address debtAsset_,
         uint collateralAmount_,
         uint repayAmount_
-    ) external view returns (
-        uint collateralToReceive
-    ) {
+    ) external view returns (uint collateralToReceive) {
         return LiquidationBotLib.getCollateralToReceive(
-            LiquidationBotLib.getAaveContracts(aavePool),
-            collateralAsset_,
-            debtAsset_,
-            collateralAmount_,
-            repayAmount_
+            LiquidationBotLib.getAaveContracts(aavePool), collateralAsset_, debtAsset_, collateralAmount_, repayAmount_
         );
     }
 
@@ -158,8 +151,6 @@ contract LiquidationBot is
         IVaultMainV3 vault = IVaultMainV3(payable($.flashLoanVault));
 
         // ensure that the vault has available amount
-        console.log("amount", amount);
-        console.log("balance", IERC20(token).balanceOf(address(vault)));
         require(IERC20(token).balanceOf(address(vault)) >= amount, IControllable.InsufficientBalance());
 
         // receive flash loan from the vault

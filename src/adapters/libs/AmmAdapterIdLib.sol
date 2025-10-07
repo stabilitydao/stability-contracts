@@ -14,5 +14,5 @@ library AmmAdapterIdLib {
     string public constant BALANCER_V3_STABLE = "BalancerV3Stable";
     string public constant PENDLE = "Pendle";
     string public constant META_VAULT = "MetaUSD";
-    string public constant STAKED_ERC20 = "StakedERC20";
+    string public constant BRUNCH = "Brunch";
 }

@@ -21,15 +21,14 @@ import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {console} from "forge-std/console.sol";
 
 library LiquidationBotLib {
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeERC20 for IERC20;
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.LiquidationBot")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _LIQUIDATION_BOT_STORAGE_LOCATION
-        = 0x362967b05e4803bd3245d8827f04dccb46602717711e075af724a3f0f67edb00;
+    bytes32 internal constant _LIQUIDATION_BOT_STORAGE_LOCATION =
+        0x362967b05e4803bd3245d8827f04dccb46602717711e075af724a3f0f67edb00;
 
     uint internal constant DEFAULT_SWAP_PRICE_IMPACT_TOLERANCE = 1_000; // 1% with denominator 100_000
 
@@ -41,6 +40,7 @@ library LiquidationBotLib {
     error InsufficientBalance(uint availableBalance, uint requiredBalance);
     error InvalidHealthFactor();
     error HealthFactorNotIncreased(uint healthFactorBefore, uint healthFactorAfter);
+    error NoProfit();
 
     event Liquidation(
         address user,
@@ -121,7 +121,6 @@ library LiquidationBotLib {
     /// @param aavePool Pool AAVE 3.0.2.
     /// @param users List of users to liquidate (users with health factor < 1)
     function liquidate(address aavePool, address[] memory users) internal {
-        console.log("liquidate");
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
         AaveContracts memory ac = getAaveContracts(aavePool);
 
@@ -136,7 +135,9 @@ library LiquidationBotLib {
             ) {
                 emit UserSkipped(users[i], userData0, position);
             } else {
-                uint repayAmount = _getRepayAmount(ac, position.collateralReserve, position.debtReserve, userData0, $.targetHealthFactor);
+                uint repayAmount = _getRepayAmount(
+                    ac, position.collateralReserve, position.debtReserve, userData0, $.targetHealthFactor
+                );
                 uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
 
                 _requestFlashLoanExplicit(
@@ -154,8 +155,8 @@ library LiquidationBotLib {
 
                 ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
 
-                // todo check
-                require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
+                // require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
+                require(profit != 0, NoProfit());
 
                 emit Liquidation(
                     users[i],
@@ -291,7 +292,6 @@ library LiquidationBotLib {
         uint fee,
         bytes memory userData
     ) internal {
-        console.log("receiveFlashLoan");
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, UnauthorizedCallback());
 
@@ -303,18 +303,16 @@ library LiquidationBotLib {
                 uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
             );
 
-            // todo Swap of meta-vault-tokens take a lot of gas. We need to use cache
-//            priceReader_.preCalculatePriceTx(address(metaVault));
-//            metaVault.cachePrices(false);
+            // Swap of meta-vault-tokens take a lot of gas. We can use cache to reduce gas
+            //            priceReader_.preCalculatePriceTx(address(metaVault));
+            //            metaVault.cachePrices(false);
         }
 
         // --------------- make liquidation: pay debt partially, receive collateral on balance
         uint collateralToSwap = _liquidateUser(data);
 
         // --------------- swap collateral asset to the debt asset
-        console.log("SWAP");
         _swap(platform, data.collateralAsset, data.debtAsset, collateralToSwap, priceImpactTolerance($));
-        console.log("SWAP");
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
@@ -400,10 +398,7 @@ library LiquidationBotLib {
         uint balanceAfter = IERC20(data.collateralAsset).balanceOf(address(this));
 
         emit OnLiquidation(
-            data.aavePool,
-            data.user,
-            data.repayAmount,
-            balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0
+            data.aavePool, data.user, data.repayAmount, balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0
         );
 
         return balanceAfter;
@@ -425,7 +420,8 @@ library LiquidationBotLib {
         uint maxRepayBase = (userAccountData_.totalDebtBase * 5_000) / 10_000;
 
         // Calculate repayment amount required to get target health factor after liquidation
-        uint repayAmountBase = _getRepayAmountBaseForHealthFactor(userAccountData_, rdCollateral, targetHealthFactor_, maxRepayBase);
+        uint repayAmountBase =
+            _getRepayAmountBaseForHealthFactor(userAccountData_, rdCollateral, targetHealthFactor_, maxRepayBase);
 
         return _fromBase(ac, rdDebt, repayAmountBase);
     }
@@ -466,10 +462,12 @@ library LiquidationBotLib {
         uint targetHealthFactorBase = targetHealthFactor_ / 1e14;
 
         // Calculate numerator: C*LT - D*targetHF_scaled
-        int numerator = int(userAccountData_.totalCollateralBase * userAccountData_.currentLiquidationThreshold) - int(userAccountData_.totalDebtBase * targetHealthFactorBase);
+        int numerator = int(userAccountData_.totalCollateralBase * userAccountData_.currentLiquidationThreshold)
+            - int(userAccountData_.totalDebtBase * targetHealthFactorBase);
 
         // Calculate denominator: bonus*LT/10000 - targetHF_scaled
-        int denominator = int(rdCollateral.liquidationBonus * userAccountData_.currentLiquidationThreshold / 10_000) - int(targetHealthFactorBase);
+        int denominator = int(rdCollateral.liquidationBonus * userAccountData_.currentLiquidationThreshold / 10_000)
+            - int(targetHealthFactorBase);
 
         if (numerator * denominator <= 0) {
             repayAmountBase = maxRepayBase; // target unachievable (e.g., too high, would require negative R)
@@ -495,9 +493,7 @@ library LiquidationBotLib {
         address debtAsset_,
         uint collateralAmount_,
         uint repayAmount_
-    ) internal view returns (
-        uint collateralToReceive
-    ) {
+    ) internal view returns (uint collateralToReceive) {
         uint repayAmountBase = _toBase(ac, _getReserveData(ac, debtAsset_), repayAmount_);
 
         ReserveData memory rdCollateral = _getReserveData(ac, collateralAsset_);
@@ -577,15 +573,17 @@ library LiquidationBotLib {
     ) internal view returns (ILiquidationBot.UserAssetInfo[] memory infos) {
         IAaveDataProvider dataProvider = getAaveContracts(aavePool).dataProvider;
         IAaveDataProvider.TokenData[] memory tokensData = dataProvider.getAllReservesTokens();
+
         uint len = tokensData.length;
-        infos = new ILiquidationBot.UserAssetInfo[](len);
+        ILiquidationBot.UserAssetInfo[] memory temp = new ILiquidationBot.UserAssetInfo[](len);
+
         uint count;
         for (uint i; i < len; ++i) {
             (uint currentATokenBalance, uint currentStableDebt, uint currentVariableDebt,,,,,,) =
                 dataProvider.getUserReserveData(tokensData[i].tokenAddress, user);
 
             if (currentATokenBalance != 0 || currentStableDebt != 0 || currentVariableDebt != 0) {
-                infos[count] = ILiquidationBot.UserAssetInfo({
+                temp[count] = ILiquidationBot.UserAssetInfo({
                     asset: tokensData[i].tokenAddress,
                     currentATokenBalance: currentATokenBalance,
                     currentStableDebt: currentStableDebt,
@@ -595,9 +593,13 @@ library LiquidationBotLib {
             }
         }
 
-        // shrink array  // todo
-        assembly {
-            mstore(infos, count)
+        if (count == len) {
+            infos = temp;
+        } else {
+            infos = new ILiquidationBot.UserAssetInfo[](count);
+            for (uint i; i < count; ++i) {
+                infos[i] = temp[i];
+            }
         }
 
         return infos;

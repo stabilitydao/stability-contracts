@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {AmmAdapterIdLib} from "./libs/AmmAdapterIdLib.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
 import {Controllable, IControllable, IERC165} from "../core/base/Controllable.sol";
@@ -53,27 +54,40 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
         address recipient,
         uint priceImpactTolerance
     ) external {
-
         uint amount = IERC20(tokenIn).balanceOf(address(this));
+
         // slither-disable-next-line uninitialized-state
         uint amountOut;
 
-        if (tokenIn == pool) {
-
+        if (tokenIn == pool && tokenOut == IStakedBUSD(pool).underlyingAsset()) {
             // unstake asset from sbUSD
-
-            // slither-disable-next-line unused-return
+            uint minAmountOut = _getPrice(pool, tokenIn, tokenOut, amount, IStakedBUSD(pool).exchangeRateCurrent())
+                * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
             IStakedBUSD(pool).redeem(amount);
 
             amountOut = IERC20(tokenOut).balanceOf(address(this));
             IERC20(tokenOut).safeTransfer(recipient, amountOut);
-            // todo price impact
-        } else if (tokenOut == pool) {
+
+            uint priceImpact =
+                amountOut > minAmountOut ? 0 : (minAmountOut - amountOut) * ConstantsLib.DENOMINATOR / minAmountOut;
+            if (priceImpact > priceImpactTolerance) {
+                revert(string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+            }
+        } else if (tokenOut == pool && tokenIn == IStakedBUSD(pool).underlyingAsset()) {
             IERC20(tokenIn).forceApprove(pool, amount);
-            uint balanceBefore = IERC20(tokenOut).balanceOf(recipient);
+            uint balanceBefore = IERC20(tokenOut).balanceOf(address(this));
+            uint minAmountOut = _getPrice(pool, tokenIn, tokenOut, amount, IStakedBUSD(pool).exchangeRateCurrent())
+                * (ConstantsLib.DENOMINATOR - priceImpactTolerance) / ConstantsLib.DENOMINATOR;
+
             IStakedBUSD(pool).mint(amount);
-            amountOut = IERC20(tokenOut).balanceOf(recipient) - balanceBefore;
-            // todo price impact
+            amountOut = IERC20(tokenOut).balanceOf(address(this)) - balanceBefore;
+            IERC20(tokenOut).safeTransfer(recipient, amountOut);
+
+            uint priceImpact =
+                amountOut > minAmountOut ? 0 : (minAmountOut - amountOut) * ConstantsLib.DENOMINATOR / minAmountOut;
+            if (priceImpact > priceImpactTolerance) {
+                revert(string(abi.encodePacked("!PRICE ", Strings.toString(priceImpact))));
+            }
         } else {
             revert IncorrectTokens();
         }
@@ -89,7 +103,7 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function ammAdapterId() external pure returns (string memory) {
-        return AmmAdapterIdLib.STAKED_ERC20;
+        return AmmAdapterIdLib.BRUNCH;
     }
 
     /// @inheritdoc IAmmAdapter
@@ -111,6 +125,29 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
 
     /// @inheritdoc IAmmAdapter
     function getPrice(address pool, address tokenIn, address tokenOut, uint amount) public view returns (uint) {
+        return _getPrice(pool, tokenIn, tokenOut, amount, IStakedBUSD(pool).exchangeRateStored());
+    }
+
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
+        return interfaceId == type(IAmmAdapter).interfaceId || super.supportsInterface(interfaceId);
+    }
+    //endregion -------------------------------- View functions
+
+    /// @notice Internal function to get price of tokenIn in tokenOut
+    /// @param pool Address of the pool (staked-asset)
+    /// @param tokenIn Address of the token to be sent to the pool (staked-asset or asset)
+    /// @param tokenOut Address of the token to be received from the pool (asset or staked-asset)
+    /// @param amount Amount of tokenIn to be sent to the pool (if 0 then 1.0 (10 ** decimals of tokenIn) will be used)
+    /// @param exchangeRate Exchange rate of the pool (= underlying / staked-asset)
+    /// @return price Price of tokenIn in tokenOut
+    function _getPrice(
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        uint amount,
+        uint exchangeRate
+    ) internal view returns (uint) {
         uint tokenInDecimals = IERC20Metadata(tokenIn).decimals();
         uint tokenOutDecimals = IERC20Metadata(tokenOut).decimals();
 
@@ -120,35 +157,12 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
             amount = 10 ** tokenInDecimals;
         }
 
-        // get exchange rate of staked-asset to asset
-        // slither-disable-next-line unused-return
-        uint exchangeRate = IStakedBUSD(pool).exchangeRateStored();
-
-        if (tokenIn == pool) {
-
-            // get price of tokenOut in USD
-            // slither-disable-next-line unused-return
-            (uint priceTokenOut,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenOut);
-
-            // staked-asset to asset
-            // todo
-            return amount * (10 ** tokenOutDecimals) * exchangeRate / priceTokenOut / (10 ** tokenInDecimals);
-        } else if (tokenOut == pool) {
-            // slither-disable-next-line unused-return
-            (uint priceTokenIn,) = IPriceReader(IPlatform(platform()).priceReader()).getPrice(tokenIn);
-
-            // Asset to staked-asset
-            // todo
-            return amount * (10 ** tokenOutDecimals) * priceTokenIn * exchangeRate / (10 ** tokenInDecimals) / 1e18;
+        if (tokenIn == pool && tokenOut == IStakedBUSD(pool).underlyingAsset()) {
+            return amount * exchangeRate / 1e18 * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals);
+        } else if (tokenOut == pool && tokenIn == IStakedBUSD(pool).underlyingAsset()) {
+            return amount * 1e18 / exchangeRate * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals);
         }
 
         revert IncorrectTokens();
     }
-
-    /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
-        return interfaceId == type(IAmmAdapter).interfaceId || super.supportsInterface(interfaceId);
-    }
-    //endregion -------------------------------- View functions
-
 }

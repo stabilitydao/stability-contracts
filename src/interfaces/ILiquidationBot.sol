@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 interface ILiquidationBot {
-
+    /// @notice User asset info: what is the balance of aTokens, stable and variable debt
     struct UserAssetInfo {
         address asset;
         uint currentATokenBalance;
@@ -10,15 +10,19 @@ interface ILiquidationBot {
         uint currentVariableDebt;
     }
 
+    /// @notice Results of AAVE Pool.getUserAccountData(user)
     struct UserAccountData {
         uint totalCollateralBase;
         uint totalDebtBase;
         uint availableBorrowsBase;
+        /// @notice decimals 4
         uint currentLiquidationThreshold;
         uint ltv;
+        /// @notice Health factor. If it is below 1e18, the user can be liquidated
         uint healthFactor;
     }
 
+    /// @notice User position that can be liquidated: what collateral and debt reserves, amounts
     struct UserPosition {
         address collateralReserve;
         address debtReserve;
@@ -45,9 +49,7 @@ interface ILiquidationBot {
         address debtAsset_,
         uint collateralAmount_,
         uint repayAmount_
-    ) external view returns (
-        uint collateralToReceive
-    );
+    ) external view returns (uint collateralToReceive);
 
     /// @notice Calculate how much debt should be repaid to reach the target health factor
     function getRepayAmount(
