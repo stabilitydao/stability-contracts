@@ -121,6 +121,7 @@ library LiquidationBotLib {
     /// @param aavePool Pool AAVE 3.0.2.
     /// @param users List of users to liquidate (users with health factor < 1)
     function liquidate(address aavePool, address[] memory users) internal {
+        console.log("liquidate");
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
         AaveContracts memory ac = getAaveContracts(aavePool);
 
@@ -153,6 +154,7 @@ library LiquidationBotLib {
 
                 ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
 
+                // todo check
                 require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
 
                 emit Liquidation(
@@ -289,6 +291,7 @@ library LiquidationBotLib {
         uint fee,
         bytes memory userData
     ) internal {
+        console.log("receiveFlashLoan");
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, UnauthorizedCallback());
 
@@ -309,7 +312,9 @@ library LiquidationBotLib {
         uint collateralToSwap = _liquidateUser(data);
 
         // --------------- swap collateral asset to the debt asset
+        console.log("SWAP");
         _swap(platform, data.collateralAsset, data.debtAsset, collateralToSwap, priceImpactTolerance($));
+        console.log("SWAP");
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));

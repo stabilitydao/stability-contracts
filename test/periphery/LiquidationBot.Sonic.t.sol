@@ -326,6 +326,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
             liquidationBonus: 10100 // (!)
         });
+        _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
         uint profit0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
         TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this));
@@ -356,6 +357,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
             liquidationBonus: 10010
         });
+        _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
         TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this));
 
@@ -404,7 +406,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             borrower: BRUNCH_USDC_BORROWER,
             pool: BRUNCH_POOL,
             targetHealthFactor: 1.001e18,
-            collateralPriceDropPercent: 2, // drop collateral price by 2%
+            collateralPriceDropPercent: 3,
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
@@ -431,6 +433,8 @@ contract LiquidationBotSonicTest is SonicSetup {
     //region --------------------------------- Tests implementation
     function _testLiquidationStabilitySuccess(SetUpParam memory stParams_, address profitToken, address caller) internal {
         LiquidationBot bot = createLiquidationBotInstance();
+        _setUpStabilityMarket(stParams_, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
+
         uint profit0 = IERC20(profitToken).balanceOf(stParams_.profitTarget);
         TestResults memory ret = _testLiquidation(bot, stParams_, 0, caller);
         uint profit1 = IERC20(profitToken).balanceOf(stParams_.profitTarget);
@@ -448,6 +452,8 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     function _testLiquidationStabilityFail(SetUpParam memory stParams_, uint errorCode) internal {
         LiquidationBot bot = createLiquidationBotInstance();
+        _setUpStabilityMarket(stParams_, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
+
         address caller = errorCode == ERROR_CODE_NOT_WHITELISTED ? makeAddr("random") : multisig;
         _testLiquidation(bot, stParams_, errorCode, caller);
     }
@@ -455,29 +461,6 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     //region --------------------------------- Internal logic
     function _testLiquidation(ILiquidationBot bot, SetUpParam memory stParams_, uint errorCode, address caller) internal returns (TestResults memory ret) {
-
-        {
-            address owner = IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).owner();
-            IAavePoolConfigurator configurator = IAavePoolConfigurator(
-                IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolConfigurator()
-            );
-
-            vm.prank(owner);
-            configurator.setLiquidationProtocolFee(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 1);
-
-            (, uint ltv, uint liquidationThreshold, /*uint liquidationBonus*/ , , , , , , ) = IAaveDataProvider(
-                IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
-            ).getReserveConfigurationData(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
-
-            vm.prank(owner);
-            configurator.configureReserveAsCollateral(
-                SonicConstantsLib.WRAPPED_METAVAULT_METAUSD,
-                ltv,
-                liquidationThreshold,
-                stParams_.liquidationBonus
-            );
-        }
-
         // ------------------------------ set up bot
         vm.prank(multisig);
         bot.changeWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, true);
@@ -507,7 +490,7 @@ contract LiquidationBotSonicTest is SonicSetup {
 
         {
             IAaveAddressProvider addressProvider = IAaveAddressProvider(
-                IPool(STABILITY_POOL).ADDRESSES_PROVIDER()
+                IPool(stParams_.pool).ADDRESSES_PROVIDER()
             );
 
             // get AAVE oracle, get current prices for both assets - collateral and borrow
@@ -594,6 +577,23 @@ contract LiquidationBotSonicTest is SonicSetup {
         ret.stateAfter = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
 
         return ret;
+    }
+
+    function _setUpStabilityMarket(SetUpParam memory stParams_, address collateralAsset) internal {
+        address owner = IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).owner();
+        IAavePoolConfigurator configurator = IAavePoolConfigurator(
+            IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolConfigurator()
+        );
+
+        vm.prank(owner);
+        configurator.setLiquidationProtocolFee(collateralAsset, 1);
+
+        (, uint ltv, uint liquidationThreshold, /*uint liquidationBonus*/ , , , , , , ) = IAaveDataProvider(
+            IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
+        ).getReserveConfigurationData(collateralAsset);
+
+        vm.prank(owner);
+        configurator.configureReserveAsCollateral(collateralAsset, ltv, liquidationThreshold, stParams_.liquidationBonus);
     }
     //endregion --------------------------------- Internal logic
 
