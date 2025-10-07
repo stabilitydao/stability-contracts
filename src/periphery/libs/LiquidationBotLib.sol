@@ -28,7 +28,8 @@ library LiquidationBotLib {
     using SafeERC20 for IERC20;
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.LiquidationBot")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 internal constant _LIQUIDATION_BOT_STORAGE_LOCATION = 0; // todo
+    bytes32 internal constant _LIQUIDATION_BOT_STORAGE_LOCATION
+        = 0x362967b05e4803bd3245d8827f04dccb46602717711e075af724a3f0f67edb00;
 
     uint internal constant DEFAULT_SWAP_PRICE_IMPACT_TOLERANCE = 1_000; // 1% with denominator 100_000
 
@@ -39,7 +40,7 @@ library LiquidationBotLib {
     error IncorrectAmountReceived(address asset, uint balanceBefore, uint balanceAfter, uint expectedAmount);
     error InsufficientBalance(uint availableBalance, uint requiredBalance);
     error InvalidHealthFactor();
-    error HealthFactorNotIncreased();
+    error HealthFactorNotIncreased(uint healthFactorBefore, uint healthFactorAfter);
 
     event Liquidation(
         address user,
@@ -61,6 +62,7 @@ library LiquidationBotLib {
     event SetWrappedMetaVault(address metaVault, bool add);
     /// @param targetHealthFactor Target health factor, decimals 18
     event SetTargetHealthFactory(uint targetHealthFactor);
+    event OnLiquidation(address aavePool, address user, uint repayAmount, uint collateralReceived);
 
     /// @custom:storage-location erc7201:stability.LiquidationBot
     struct LiquidationBotStorage {
@@ -124,7 +126,6 @@ library LiquidationBotLib {
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            console.log("liquidate", i);
             ILiquidationBot.UserAccountData memory userData0 = getUserAccountData(ac, users[i]);
             ILiquidationBot.UserPosition memory position = _getUserPosition(users[i], ac.dataProvider);
 
@@ -134,11 +135,8 @@ library LiquidationBotLib {
             ) {
                 emit UserSkipped(users[i], userData0, position);
             } else {
-                console.log("targetHealthFactor", $.targetHealthFactor);
                 uint repayAmount = _getRepayAmount(ac, position.collateralReserve, position.debtReserve, userData0, $.targetHealthFactor);
                 uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
-                console.log("repayAmount", repayAmount);
-                console.log("balanceBefore", balanceBefore);
 
                 _requestFlashLoanExplicit(
                     $.flashLoanKind,
@@ -151,14 +149,11 @@ library LiquidationBotLib {
                 uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
                 uint profit = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
 
-                console.log("balanceAfter", balanceAfter);
-                console.log("profit received", profit);
-
                 _sendProfit($, users[i], position.debtReserve, balanceAfter);
 
                 ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
 
-                require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased());
+                require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
 
                 emit Liquidation(
                     users[i],
@@ -294,17 +289,10 @@ library LiquidationBotLib {
         uint fee,
         bytes memory userData
     ) internal {
-        console.log("receiveFlashLoan token, amount, fee", token, amount, fee);
         address flashLoanVault = $.flashLoanVault;
         require(msg.sender == flashLoanVault, UnauthorizedCallback());
 
         UserData memory data = abi.decode(userData, (UserData));
-        console.log("data.aavePool", data.aavePool);
-        console.log("data.user", data.user);
-        console.log("data.collateralAsset", data.collateralAsset);
-        console.log("data.debtAsset", data.debtAsset);
-        console.log("data.collateralAmount", data.collateralAmount);
-        console.log("data.repayAmount", data.repayAmount);
 
         if ($.wrappedMetaVaults[data.collateralAsset] != 0) {
             IMetaVault metaVault = IMetaVault(IWrappedMetaVault(data.collateralAsset).metaVault());
@@ -318,22 +306,15 @@ library LiquidationBotLib {
         }
 
         // --------------- make liquidation: pay debt partially, receive collateral on balance
-        console.log("balance WMETAUSD before", IERC20(data.collateralAsset).balanceOf(address(this)));
-        _liquidateUser(data);
-
-        console.log("swap");
-        console.log("balance WMETAUSD", IERC20(data.collateralAsset).balanceOf(address(this)));
+        uint collateralToSwap = _liquidateUser(data);
 
         // --------------- swap collateral asset to the debt asset
-        _swap(platform, data.collateralAsset, data.debtAsset, IERC20(data.collateralAsset).balanceOf(address(this)), priceImpactTolerance($));
-
+        _swap(platform, data.collateralAsset, data.debtAsset, collateralToSwap, priceImpactTolerance($));
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
         require(balance >= amount + fee, InsufficientBalance(balance, amount + fee));
 
-        console.log("balance USDC", balance);
-        console.log("amount + fee", amount + fee);
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);
 
         if ($.wrappedMetaVaults[data.collateralAsset] != 0) {
@@ -403,12 +384,24 @@ library LiquidationBotLib {
 
     /// @notice Make liquidation: pay debt partially, receive collateral on balance.
     /// @dev As result the contract should receive {getCollateralToReceive(...)} of {collateralAsset} on balance
-    function _liquidateUser(UserData memory data) internal {
+    /// @return balanceAfter Balance of the collateral asset after liquidation
+    function _liquidateUser(UserData memory data) internal returns (uint) {
         AaveContracts memory ac = getAaveContracts(data.aavePool);
 
         IERC20(data.debtAsset).forceApprove(address(ac.pool), data.repayAmount);
 
+        uint balanceBefore = IERC20(data.collateralAsset).balanceOf(address(this));
         ac.pool.liquidationCall(data.collateralAsset, data.debtAsset, data.user, data.repayAmount, false);
+        uint balanceAfter = IERC20(data.collateralAsset).balanceOf(address(this));
+
+        emit OnLiquidation(
+            data.aavePool,
+            data.user,
+            data.repayAmount,
+            balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0
+        );
+
+        return balanceAfter;
     }
 
     /// @notice Calculate amount of debt that should be repaid during liquidation
@@ -444,7 +437,7 @@ library LiquidationBotLib {
         ReserveData memory rdCollateral,
         uint targetHealthFactor_,
         uint maxRepayBase
-    ) internal view returns (uint repayAmountBase) {
+    ) internal pure returns (uint repayAmountBase) {
         if (targetHealthFactor_ == 0) {
             return maxRepayBase;
         }
@@ -500,8 +493,6 @@ library LiquidationBotLib {
     ) internal view returns (
         uint collateralToReceive
     ) {
-        console.log("getCollateralToReceive.collateralAmount_", collateralAmount_);
-        console.log("getCollateralToReceive.repayAmount_", repayAmount_);
         uint repayAmountBase = _toBase(ac, _getReserveData(ac, debtAsset_), repayAmount_);
 
         ReserveData memory rdCollateral = _getReserveData(ac, collateralAsset_);
@@ -513,18 +504,12 @@ library LiquidationBotLib {
         uint fee = ac.dataProvider.getLiquidationProtocolFee(collateralAsset_);
         uint bonusPart = collateralToReceiveBase - repayAmountBase;
         uint bonusAfterFee = bonusPart * (10_000 - fee) / 10_000;
-        console.log("collateralToReceiveBase", collateralToReceiveBase);
-        console.log("fee", fee);
-        console.log("bonusPart", bonusPart);
-        console.log("bonusAfterFee", bonusAfterFee);
         collateralToReceiveBase = repayAmountBase + bonusAfterFee;
-        console.log("collateralToReceiveBase", collateralToReceiveBase);
 
         if (collateralToReceiveBase > collateralAmountBase) {
             collateralToReceiveBase = collateralAmountBase;
         }
 
-        console.log("collateralToReceiveBase", collateralToReceiveBase);
         return _fromBase(ac, rdCollateral, collateralToReceiveBase);
     }
 
