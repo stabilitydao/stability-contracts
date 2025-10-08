@@ -28,6 +28,9 @@ contract Aave3PriceOracleMock is IAavePriceOracle {
 
     //endregion ---------------------------------- Setup
 
+    // add this to be excluded from coverage report
+    function test() public {}
+
     //region ---------------------------------- IAavePriceOracle
 
     /// @notice Returns the PoolAddressesProvider

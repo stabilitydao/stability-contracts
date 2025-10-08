@@ -56,7 +56,7 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
     ) external {
         uint amount = IERC20(tokenIn).balanceOf(address(this));
 
-        // slither-disable-next-line uninitialized-state
+        // slither-disable-next-line uninitialized-local
         uint amountOut;
 
         if (tokenIn == pool && tokenOut == IStakedBUSD(pool).underlyingAsset()) {
@@ -158,9 +158,9 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
         }
 
         if (tokenIn == pool && tokenOut == IStakedBUSD(pool).underlyingAsset()) {
-            return amount * exchangeRate / 1e18 * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals);
+            return amount * exchangeRate * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / 1e18;
         } else if (tokenOut == pool && tokenIn == IStakedBUSD(pool).underlyingAsset()) {
-            return amount * 1e18 / exchangeRate * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals);
+            return amount * 1e18 * (10 ** tokenOutDecimals) / (10 ** tokenInDecimals) / exchangeRate;
         }
 
         revert IncorrectTokens();

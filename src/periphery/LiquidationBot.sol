@@ -162,6 +162,7 @@ contract LiquidationBot is
         // return flash loan back to the vault
         // assume that the amount was transferred back to the vault inside receiveFlashLoan()
         // we need only to register this transferring
+        //slither-disable-next-line unused-return
         vault.settle(token, amount);
     }
 

@@ -65,7 +65,7 @@ interface ILiquidationBot {
     function whitelisted(address operator_) external view returns (bool);
 
     /// @notice Price impact tolerance. Denominator is 100_000.
-    function priceImpactTolerance() external view returns (uint priceImpactTolerance);
+    function priceImpactTolerance() external view returns (uint _priceImpactTolerance);
 
     /// @notice Address of the contract where profit will be sent
     function profitTarget() external view returns (address);
@@ -93,10 +93,10 @@ interface ILiquidationBot {
     function changeWrappedMetaVault(address wrappedMetaVault_, bool add_) external;
 
     /// @notice Set price impact tolerance. Denominator is 100_000.
-    function setPriceImpactTolerance(uint priceImpactTolerance) external;
+    function setPriceImpactTolerance(uint priceImpactTolerance_) external;
 
     /// @notice Profit target - address of the contract where profit will be sent
-    function setProfitTarget(address profitTarget) external;
+    function setProfitTarget(address profitTarget_) external;
 
     /// @notice Add or remove operator from the whitelist
     function changeWhitelist(address operator_, bool add_) external;

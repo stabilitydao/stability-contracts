@@ -347,6 +347,23 @@ contract LiquidationBotSonicTest is SonicSetup {
         );
     }
 
+    function testLiquidationStabilityUsdcZeroTargetHealthFactor() public {
+        _testLiquidationStabilitySuccess(
+            SetUpParam({
+                borrower: STABILITY_USDC_BORROWER,
+                pool: STABILITY_POOL,
+                targetHealthFactor: 0, // (!)
+                collateralPriceDropPercent: 2,
+                profitTarget: multisig,
+                flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
+                flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
+                liquidationBonus: 10010
+            }),
+            SonicConstantsLib.TOKEN_USDC,
+            multisig
+        );
+    }
+
     function testLiquidationStabilityUsdcHighBonus() public {
         ILiquidationBot bot = createLiquidationBotInstance();
 
@@ -400,6 +417,41 @@ contract LiquidationBotSonicTest is SonicSetup {
         assertLt(ret.stateBefore.healthFactor, 1e18, "liquidation was actually required");
         assertGt(ret.stateAfter.healthFactor, 1e18, "liquidation is not required");
         assertLt(ret.stateAfter.healthFactor, 1.1e18, "but target HF is not reached");
+    }
+
+    function testLiquidationStabilityUsdcNoLiquidationRequired() public {
+        ILiquidationBot bot = createLiquidationBotInstance();
+
+        SetUpParam memory stParams = SetUpParam({
+            borrower: STABILITY_USDC_BORROWER,
+            pool: STABILITY_POOL,
+            targetHealthFactor: 1.001e18,
+            collateralPriceDropPercent: 0,
+            profitTarget: multisig,
+            flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
+            flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
+            liquidationBonus: 10100
+        });
+        _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
+
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), false);
+
+        assertEq(
+            ret.stateAfter.healthFactor,
+            ret.stateBefore.healthFactor,
+            "Health factor is not changed, user was just skipped"
+        );
+        assertEq(ret.stateAfter.totalDebtBase, ret.stateBefore.totalDebtBase, "totalDebtBase is not changed");
+        assertEq(
+            ret.stateAfter.totalCollateralBase,
+            ret.stateBefore.totalCollateralBase,
+            "totalCollateralBase is not changed"
+        );
+        assertEq(
+            ret.stateAfter.availableBorrowsBase,
+            ret.stateBefore.availableBorrowsBase,
+            "availableBorrowsBase is not changed"
+        );
     }
     //endregion ----------------------------------- Liquidation Stability USD Market - good paths, whitelisted
 
@@ -608,6 +660,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                     ret.expectedRepayAmount
                 );
             }
+        } else {
+            ret.stateBefore = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
         }
 
         // ------------------------------ liquidation

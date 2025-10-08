@@ -79,6 +79,29 @@ contract BrunchAdapterTest is SonicSetup {
     function testStakeBrunchUsd0() public {
         _testStakeBrunchUSD(0);
     }
+
+    function testStakeBrunchBadPaths() public {
+        deal(SonicConstantsLib.TOKEN_BRUNCH_USD, address(address(adapter)), 1e18);
+        deal(SonicConstantsLib.TOKEN_USDC, address(address(adapter)), 1e6);
+
+        vm.expectRevert(BrunchAdapter.IncorrectTokens.selector);
+        adapter.swap(
+            SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD,
+            SonicConstantsLib.TOKEN_BRUNCH_USD,
+            SonicConstantsLib.TOKEN_USDC,
+            address(this),
+            1_000
+        );
+
+        vm.expectRevert(BrunchAdapter.IncorrectTokens.selector);
+        adapter.swap(
+            SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD,
+            SonicConstantsLib.TOKEN_USDC,
+            SonicConstantsLib.TOKEN_BRUNCH_USD,
+            address(this),
+            1_000
+        );
+    }
     //endregion ------------------------------------ Tests for swaps
 
     //region ------------------------------------ Tests implementation
@@ -146,6 +169,7 @@ contract BrunchAdapterTest is SonicSetup {
 
         assertApproxEqAbs(state2.userBalanceBUSD, state0.userBalanceBUSD, 1, "all BUSD back");
     }
+
     //endregion ------------------------------------ Tests implementation
 
     //region ------------------------------------ Internal logic
