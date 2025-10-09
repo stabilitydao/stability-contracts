@@ -538,9 +538,9 @@ library LiquidationBotLib {
         return (amount * price) / (10 ** rd.decimals);
     }
 
-    function _fromBase(AaveContracts memory ac, ReserveData memory rd, uint amount) internal view returns (uint) {
+    function _fromBase(AaveContracts memory ac, ReserveData memory rd, uint amountBase) internal view returns (uint) {
         uint price = ac.oracle.getAssetPrice(rd.asset);
-        return (amount * (10 ** rd.decimals)) / price;
+        return (amountBase * (10 ** rd.decimals)) / price;
     }
 
     function _getReserveData(AaveContracts memory ac, address asset) internal view returns (ReserveData memory rd) {
