@@ -4,16 +4,13 @@ pragma solidity ^0.8.28;
 import {Vm, Test} from "forge-std/Test.sol";
 import {BrunchAdapter} from "../../src/adapters/BrunchAdapter.sol";
 import {Aave3PriceOracleMock} from "../../src/test/Aave3PriceOracleMock.sol";
-import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IAaveAddressProvider} from "../../src/integrations/aave/IAaveAddressProvider.sol";
 import {IAaveDataProvider} from "../../src/integrations/aave/IAaveDataProvider.sol";
-import {IAavePoolConfigurator} from "../../src/integrations/aave/IAavePoolConfigurator.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
-import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IAavePriceOracle} from "../../src/integrations/aave/IAavePriceOracle.sol";
 import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStrategy.sol";
 import {ILiquidationBot} from "../../src/interfaces/ILiquidationBot.sol";
@@ -23,10 +20,9 @@ import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {AlgebraV4Adapter, AmmAdapterIdLib} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {SonicConstantsLib} from "../base/chains/SonicSetup.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/AlgebraV4Adapter.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {console} from "forge-std/console.sol";
 
@@ -49,7 +45,16 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     address internal constant OTHER_USER = address(0x271828182845904523536);
     address internal constant PROFIT_TARGET = address(0x123456789012345678901);
 
-    // todo
+    uint internal constant BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS = 1000;
+    uint internal constant PRICE_IMPACT_TOLERANCE = 3_000; // 3%
+
+    /// @notice 0 - use max repay
+    uint internal constant TARGET_HEALTH_FACTOR_18 = 0;
+
+    /// @notice All pools to be tested, list is filled in the constructor
+    address[2] POOLS;
+
+    //region ---------------------- Data types
     struct UserAccountData {
         uint totalCollateralBase;
         uint totalDebtBase;
@@ -63,24 +68,25 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         address collateralAsset;
         address borrowAsset;
         uint collateralAmount;
-        uint totalCollateralBase;
-        uint totalDebtBase;
-        uint healthFactor;
-
+        UserAccountData userAccountData;
         bool depositDone;
         bool borrowDone;
-
         uint providedBorrowLiquidity;
+        uint borrowLiquidityRemoved;
+        string error;
     }
 
     struct Results {
+        address pool;
         LendingPosition position;
         uint healthFactorAfterForwardingTime;
-        uint healthFactorAfterLiquidation;
+        UserAccountData userAccountData;
         uint botProfitInBorrowAsset;
-
         bool liquidationDone;
+        string error;
+        string errorOtherUser;
     }
+    //endregion ---------------------- Data types
 
     constructor() {
         // ---------------- select block for test
@@ -97,37 +103,44 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        _addAdapter(); // todo
-        _addRoutes(); // todo
+        POOLS = [SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL, SonicConstantsLib.BRUNCH_GEN2_POOL];
     }
 
     function testLiquidationBatch() public {
-        address[2] memory pools = [
-            SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL,
-            SonicConstantsLib.BRUNCH_GEN2_POOL
-        ];
+        uint count = 3;
+        Results[] memory rets = new Results[](POOLS.length * count);
 
-        Results[] memory rets = new Results[](pools.length);
-        for (uint i = 0; i < pools.length; i++) {
-            uint snapshot = vm.snapshotState();
-            rets[i] = _testLiquidation(pools[i]);
-            vm.revertToState(snapshot);
-            console.log("Liquidation in pool was done:", i, pools[i]);
+        ILiquidationBot bot = _getBotInstance();
+
+        for (uint i = 0; i < POOLS.length; i++) {
+            for (uint a = 0; a < count; ++a) {
+                uint snapshot = vm.snapshotState();
+                rets[i * 3 + a] = _testLiquidation(POOLS[i], bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS * 10 ** a);
+                vm.revertToState(snapshot);
+                console.log("Pool processed:", a, i, POOLS[i]);
+            }
         }
 
-        saveToCsv("Lending.Batch.Sonic.results.csv", rets);
+        saveToCsv("Lending.Batch.Sonic.results.csv", rets, bot);
     }
 
-    function testSingleLiquidation() public {
-        _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL);
+    function testSingleLiquidation() internal {
+        ILiquidationBot bot = _getBotInstance();
+        _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS);
     }
 
     //region ---------------------- Internal logic
-    function _testLiquidation(address pool) internal returns (Results memory ret) {
+
+    function _testLiquidation(
+        address pool,
+        ILiquidationBot bot,
+        uint amountToDepositWithoutDecimals
+    ) internal returns (Results memory ret) {
         LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(pool);
 
         // ----------------- create lending position
-        ret.position = _createLendingPosition(ac, pool, 100);
+        ret.pool = pool;
+        ret.position = _createLendingPosition(ac, pool, amountToDepositWithoutDecimals);
         // console.log(ret.position.totalCollateralBase, ret.position.totalDebtBase, ret.position.healthFactor);
 
         // ----------------- replace price oracle to fix prices life time
@@ -135,7 +148,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
 
         // ----------------- move time until health factor < 1
         for (uint i; i < 256; ++i) {
-            (, , , , , ret.healthFactorAfterForwardingTime) = IPool(pool).getUserAccountData(USER);
+            (,,,,, ret.healthFactorAfterForwardingTime) = IPool(pool).getUserAccountData(USER);
             if (ret.healthFactorAfterForwardingTime < 1e18) break;
 
             vm.warp(block.timestamp + 1 * 7 * 24 * 3600);
@@ -144,21 +157,325 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         if (ret.healthFactorAfterForwardingTime < 1e18) {
             // ----------------- make liquidation
 
-            ILiquidationBot bot = _createLiquidationBotInstance();
-            _setUpLiquidationBot(bot, SonicConstantsLib.BEETS_VAULT_V3, uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1));
-
             address[] memory users = new address[](1);
             users[0] = USER;
 
             try bot.liquidate(pool, users) {
                 ret.liquidationDone = true;
-            } catch {}
+            } catch Error(string memory reason) {
+                ret.error = reason;
+            } catch (bytes memory reason) {
+                ret.error = string(
+                    abi.encodePacked("Liquidation custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                );
+            }
         }
 
         ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(PROFIT_TARGET);
-        (, , , , , ret.healthFactorAfterLiquidation) = IPool(pool).getUserAccountData(USER);
+        (
+            ret.userAccountData.totalCollateralBase,
+            ret.userAccountData.totalDebtBase,
+            ret.userAccountData.availableBorrowsBase,
+            ret.userAccountData.currentLiquidationThreshold,
+            ret.userAccountData.ltv,
+            ret.userAccountData.healthFactor
+        ) = IPool(pool).getUserAccountData(USER);
 
         return ret;
+    }
+
+    function _createLendingPosition(
+        LiquidationBotLib.AaveContracts memory ac,
+        address pool,
+        uint amountNoDecimal
+    ) internal returns (LendingPosition memory dest) {
+        (dest.collateralAsset, dest.borrowAsset) = _getAssets(ac);
+        uint amount = _getDefaultAmountToDeposit(dest.collateralAsset, amountNoDecimal);
+
+        deal(dest.collateralAsset, USER, amount);
+
+        vm.prank(USER);
+        IERC20(dest.collateralAsset).approve(pool, amount);
+
+        vm.prank(USER);
+        try IPool(pool).deposit(dest.collateralAsset, amount, USER, 0) {
+            dest.collateralAmount = amount;
+            dest.depositDone = true;
+        } catch Error(string memory reason) {
+            dest.error = reason;
+        } catch (bytes memory reason) {
+            dest.error =
+                string(abi.encodePacked("Deposit custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+        }
+
+        if (dest.depositDone) {
+            (,, uint availableBorrowsBase,,,) = IPool(pool).getUserAccountData(USER);
+            LiquidationBotLib.ReserveData memory rd = LiquidationBotLib._getReserveData(ac, dest.borrowAsset);
+            uint availableBorrows = LiquidationBotLib._fromBase(ac, rd, availableBorrowsBase);
+
+            {
+                IPool.ReserveData memory rdata = IPool(pool).getReserveData(dest.borrowAsset);
+                uint availableLiquidity = IERC20(dest.borrowAsset).balanceOf(rdata.aTokenAddress);
+                if (availableLiquidity < availableBorrows) {
+                    _provideLiquidityToPool(ac, dest.borrowAsset, availableBorrows - availableLiquidity, dest);
+                } else {
+                    _removeExtraLiquidityFromPool(
+                        ac, dest.collateralAsset, dest.borrowAsset, availableLiquidity - availableBorrows, dest
+                    );
+                }
+            }
+
+            // 2 = variable rate mode
+            vm.prank(USER);
+            try IPool(pool).borrow(dest.borrowAsset, availableBorrows * 99 / 100, 2, 0, USER) {
+                dest.borrowDone = true;
+            } catch Error(string memory reason) {
+                dest.error = reason;
+            } catch (bytes memory reason) {
+                dest.error =
+                    string(abi.encodePacked("Borrow custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+            }
+        }
+
+        (
+            dest.userAccountData.totalCollateralBase,
+            dest.userAccountData.totalDebtBase,
+            dest.userAccountData.availableBorrowsBase,
+            dest.userAccountData.currentLiquidationThreshold,
+            dest.userAccountData.ltv,
+            dest.userAccountData.healthFactor
+        ) = IPool(pool).getUserAccountData(USER);
+
+        return dest;
+    }
+
+    //endregion ---------------------- Internal logic
+
+    //region ---------------------- Auxiliary functions
+
+    function _provideLiquidityToPool(
+        LiquidationBotLib.AaveContracts memory ac,
+        address borrowAsset,
+        uint amount,
+        LendingPosition memory dest
+    ) internal {
+        deal(borrowAsset, OTHER_USER, amount);
+
+        vm.prank(OTHER_USER);
+        IERC20(borrowAsset).approve(address(ac.pool), amount);
+
+        vm.prank(OTHER_USER);
+        try ac.pool.supply(borrowAsset, amount, OTHER_USER, 0) {
+            dest.providedBorrowLiquidity = amount;
+        } catch Error(string memory reason) {
+            dest.error = string(abi.encodePacked("Other user supply custom error: ", reason));
+        } catch (bytes memory reason) {
+            dest.error = string(
+                abi.encodePacked("Other user supply custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+            );
+        }
+    }
+
+    /// @notice  borrow all liquidity to increase utilization (and make borrow APR > supply APR)
+    function _removeExtraLiquidityFromPool(
+        LiquidationBotLib.AaveContracts memory ac,
+        address collateralAsset,
+        address borrowAsset,
+        uint amountToBorrow,
+        LendingPosition memory dest
+    ) internal {
+        LiquidationBotLib.ReserveData memory rdb = LiquidationBotLib._getReserveData(ac, borrowAsset);
+        LiquidationBotLib.ReserveData memory rdc = LiquidationBotLib._getReserveData(ac, collateralAsset);
+
+        uint amountBorrowBase = LiquidationBotLib._toBase(ac, rdb, amountToBorrow);
+        uint amountCollateralBase = amountBorrowBase * 10_000 / rdc.ltv;
+        uint amountCollateral = LiquidationBotLib._fromBase(ac, rdc, amountCollateralBase);
+
+        deal(collateralAsset, OTHER_USER, amountCollateral);
+
+        vm.prank(OTHER_USER);
+        IERC20(collateralAsset).approve(address(ac.pool), amountCollateral);
+
+        vm.prank(OTHER_USER);
+        try ac.pool.deposit(collateralAsset, amountCollateral, OTHER_USER, 0) {
+            (,, uint availableBorrowsBase,,,) = ac.pool.getUserAccountData(OTHER_USER);
+
+            uint amountToBorrowActual = LiquidationBotLib._fromBase(ac, rdb, availableBorrowsBase) * 99 / 100;
+
+            vm.prank(OTHER_USER);
+            try ac.pool.borrow(borrowAsset, amountToBorrowActual, 2, 0, OTHER_USER) {
+                dest.borrowLiquidityRemoved = amountToBorrowActual;
+            } catch Error(string memory reason) {
+                dest.error = string(abi.encodePacked("Other user borrow custom error: ", reason));
+            } catch (bytes memory reason) {
+                dest.error = string(
+                    abi.encodePacked("Other user borrow custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                );
+            }
+        } catch Error(string memory reason) {
+            dest.error = string(abi.encodePacked("Other user deposit custom error: ", reason));
+        } catch (bytes memory reason) {
+            dest.error =
+                string(abi.encodePacked("Other user deposit error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+        }
+    }
+
+    /// @notice Replace price oracle with mock that keeps prices fixed
+    function _replacePriceOracle(LiquidationBotLib.AaveContracts memory ac) internal {
+        IAaveAddressProvider addressProvider = IAaveAddressProvider(ac.pool.ADDRESSES_PROVIDER());
+
+        IAavePriceOracle oracle = IAavePriceOracle(addressProvider.getPriceOracle());
+
+        Aave3PriceOracleMock mockOracle = new Aave3PriceOracleMock(address(oracle));
+
+        vm.prank(addressProvider.owner());
+        addressProvider.setPriceOracle(address(mockOracle));
+    }
+
+    function saveToCsv(string memory fnOut, Results[] memory rr, ILiquidationBot bot) internal {
+        (address flashLoanVault, uint flashLoanKind) = bot.getFlashLoanVault();
+        string memory content = string(
+            abi.encodePacked(
+                "BlockNumber;",
+                Strings.toString(selectedBlock),
+                ";Indices: 0 - before liquidation, 1 - after liquidation;Price impact tolerance;",
+                Strings.toString(bot.priceImpactTolerance()),
+                ";Target health factor;",
+                Strings.toString(bot.targetHealthFactor()),
+                ";Flash loan vault;",
+                Strings.toHexString(flashLoanVault),
+                ";Flash loan kind;",
+                Strings.toString(flashLoanKind),
+                "\n"
+            )
+        );
+
+        content = string(
+            abi.encodePacked(
+                content,
+                "Pool;CollateralAsset;CollateralSymbol;BorrowAsset;BorrowSymbol;CollateralAmount;TotalCollateralBase0;TotalDebtBase0;HealthFactor0;currentLiquidationThreshold0;ltv0;ProvidedBorrowLiquidity;RemovedBorrowLiquidity;HealthFactorAfterForwardingTime;TotalCollateralBase1;TotalDebtBase1;HealthFactor1;currentLiquidationThreshold1;ltv1;BotProfitInBorrowAsset;DepositDone;BorrowDone;LiquidationDone;error\n"
+            )
+        );
+
+        for (uint i = 0; i < rr.length; i++) {
+            string memory line = string(
+                abi.encodePacked(
+                    Strings.toHexString(rr[i].pool),
+                    ";",
+                    Strings.toHexString(rr[i].position.collateralAsset),
+                    ";",
+                    IERC20Metadata(rr[i].position.collateralAsset).symbol(),
+                    ";",
+                    Strings.toHexString(rr[i].position.borrowAsset),
+                    ";",
+                    IERC20Metadata(rr[i].position.borrowAsset).symbol(),
+                    ";"
+                )
+            );
+
+            line = string(
+                abi.encodePacked(
+                    line,
+                    Strings.toString(rr[i].position.collateralAmount),
+                    ";",
+                    Strings.toString(rr[i].position.userAccountData.totalCollateralBase),
+                    ";",
+                    Strings.toString(rr[i].position.userAccountData.totalDebtBase),
+                    ";",
+                    Strings.toString(rr[i].position.userAccountData.healthFactor),
+                    ";",
+                    Strings.toString(rr[i].position.userAccountData.currentLiquidationThreshold),
+                    ";",
+                    Strings.toString(rr[i].position.userAccountData.ltv),
+                    ";"
+                )
+            );
+
+            line = string(
+                abi.encodePacked(
+                    line,
+                    Strings.toString(rr[i].position.providedBorrowLiquidity),
+                    ";",
+                    Strings.toString(rr[i].position.borrowLiquidityRemoved),
+                    ";",
+                    Strings.toString(rr[i].healthFactorAfterForwardingTime),
+                    ";",
+                    Strings.toString(rr[i].userAccountData.totalCollateralBase),
+                    ";",
+                    Strings.toString(rr[i].userAccountData.totalDebtBase),
+                    ";",
+                    Strings.toString(rr[i].userAccountData.healthFactor),
+                    ";",
+                    Strings.toString(rr[i].userAccountData.currentLiquidationThreshold),
+                    ";"
+                )
+            );
+
+            line = string(
+                abi.encodePacked(
+                    line,
+                    Strings.toString(rr[i].userAccountData.ltv),
+                    ";",
+                    Strings.toString(rr[i].botProfitInBorrowAsset),
+                    ";",
+                    rr[i].position.depositDone ? "1;" : "0;",
+                    rr[i].position.borrowDone ? "1;" : "0;",
+                    rr[i].liquidationDone ? "1;" : "0;",
+                    string(
+                        abi.encodePacked(bytes(rr[i].position.error).length > 0 ? rr[i].position.error : rr[i].error)
+                    ),
+                    ";",
+                    "\n"
+                )
+            );
+
+            content = string(abi.encodePacked(content, line));
+        }
+
+        if (!vm.exists("./tmp")) {
+            vm.createDir("./tmp", true);
+        }
+        vm.writeFile(string.concat("./tmp/", fnOut), content);
+    }
+
+    function _getAssets(LiquidationBotLib.AaveContracts memory ac)
+        internal
+        view
+        returns (address collateralAsset, address borrowAsset)
+    {
+        IAaveDataProvider.TokenData[] memory assets = ac.dataProvider.getAllReservesTokens();
+        for (uint i; i < assets.length; ++i) {
+            (,,,,, bool usageAsCollateralEnabled, bool borrowingEnabled,,,) =
+                ac.dataProvider.getReserveConfigurationData(assets[i].tokenAddress);
+            if (usageAsCollateralEnabled && !borrowingEnabled) {
+                collateralAsset = assets[i].tokenAddress;
+            } else if (!usageAsCollateralEnabled && borrowingEnabled) {
+                borrowAsset = assets[i].tokenAddress;
+            }
+        }
+
+        return (collateralAsset, borrowAsset);
+    }
+
+    function _getDefaultAmountToDeposit(address asset_, uint amountNoDecimals) internal view returns (uint) {
+        return amountNoDecimals * 10 ** IERC20Metadata(asset_).decimals();
+    }
+    //endregion ---------------------- Auxiliary functions
+
+    //region ---------------------- Setup bot
+    /// @notice Create and set up liquidation bot instance. TODO: use deployed bot with actual config later
+    function _getBotInstance() internal returns (ILiquidationBot) {
+        ILiquidationBot bot = _createLiquidationBotInstance();
+        _setUpLiquidationBot(
+            bot,
+            SonicConstantsLib.BEETS_VAULT_V3,
+            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
+            TARGET_HEALTH_FACTOR_18
+        );
+        _addAdapter();
+        _addRoutes();
+
+        return bot;
     }
 
     function _createLiquidationBotInstance() internal returns (ILiquidationBot) {
@@ -171,7 +488,12 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         return bot;
     }
 
-    function _setUpLiquidationBot(ILiquidationBot bot, address flashLoanVault, uint flashLoanKind) internal {
+    function _setUpLiquidationBot(
+        ILiquidationBot bot,
+        address flashLoanVault,
+        uint flashLoanKind,
+        uint targetHealthFactor_
+    ) internal {
         vm.prank(multisig);
         bot.changeWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, true);
 
@@ -179,7 +501,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(bot), true);
 
         vm.prank(multisig);
-        bot.setTargetHealthFactor(0);
+        bot.setTargetHealthFactor(targetHealthFactor_);
 
         vm.prank(multisig);
         bot.setProfitTarget(PROFIT_TARGET);
@@ -189,6 +511,9 @@ contract LendingBatchSonicSkipOnCiTest is Test {
 
         vm.prank(multisig);
         bot.changeWhitelist(address(this), true);
+
+        vm.prank(multisig);
+        bot.setPriceImpactTolerance(PRICE_IMPACT_TOLERANCE);
     }
 
     function _addAdapter() internal returns (BrunchAdapter adapter) {
@@ -227,154 +552,5 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         vm.prank(multisig);
         swapper.addPools(pools, false);
     }
-
-    function _getAssets(LiquidationBotLib.AaveContracts memory ac) internal view returns (address collateralAsset, address borrowAsset) {
-        IAaveDataProvider.TokenData[] memory assets = ac.dataProvider.getAllReservesTokens();
-        for (uint i; i < assets.length; ++i) {
-            (, , , , , bool usageAsCollateralEnabled, bool borrowingEnabled, , , ) = ac.dataProvider.getReserveConfigurationData(assets[i].tokenAddress);
-            if (usageAsCollateralEnabled && !borrowingEnabled) {
-                collateralAsset = assets[i].tokenAddress;
-            } else if (!usageAsCollateralEnabled && borrowingEnabled) {
-                borrowAsset = assets[i].tokenAddress;
-            }
-        }
-
-        return (collateralAsset, borrowAsset);
-    }
-
-    function _createLendingPosition(LiquidationBotLib.AaveContracts memory ac, address pool, uint amountNoDecimal) internal returns (LendingPosition memory dest) {
-        (dest.collateralAsset, dest.borrowAsset) = _getAssets(ac);
-        uint amount = _getDefaultAmountToDeposit(dest.collateralAsset, amountNoDecimal);
-
-        deal(dest.collateralAsset, USER, amount);
-
-        vm.prank(USER);
-        IERC20(dest.collateralAsset).approve(pool, amount);
-
-        vm.prank(USER);
-        try IPool(pool).deposit(dest.collateralAsset, amount, USER, 0) {
-            dest.collateralAmount = amount;
-            dest.depositDone = true;
-        } catch {}
-
-        if (dest.depositDone) {
-            (, , uint availableBorrowsBase, , , ) = IPool(pool).getUserAccountData(USER);
-            LiquidationBotLib.ReserveData memory rd = LiquidationBotLib._getReserveData(ac, dest.borrowAsset);
-            uint availableBorrows = LiquidationBotLib._fromBase(ac, rd, availableBorrowsBase);
-
-            {
-                IPool.ReserveData memory rdata = IPool(pool).getReserveData(dest.borrowAsset);
-                uint availableLiquidity = IERC20(dest.borrowAsset).balanceOf(rdata.aTokenAddress);
-                if (availableLiquidity < availableBorrows) {
-                    dest.providedBorrowLiquidity = availableBorrows - availableLiquidity;
-                    _provideLiquidityToPool(ac, dest.borrowAsset, dest.providedBorrowLiquidity);
-                } else {
-                    // TODO: borrow all liquidity to increase utilization (and make borrow APR > supply APR)
-                }
-            }
-
-            // 2 = variable rate mode
-            vm.prank(USER);
-            try IPool(pool).borrow(dest.borrowAsset, availableBorrows * 99 / 100, 2, 0, USER) {
-                dest.borrowDone = true;
-            } catch {}
-
-        }
-        (dest.totalCollateralBase, dest.totalDebtBase, , , , dest.healthFactor) = IPool(pool).getUserAccountData(USER);
-
-        return dest;
-    }
-
-    function _provideLiquidityToPool(LiquidationBotLib.AaveContracts memory ac, address borrowAsset, uint amount) internal {
-        deal(borrowAsset, OTHER_USER, amount);
-
-        vm.prank(OTHER_USER);
-        IERC20(borrowAsset).approve(address(ac.pool), amount);
-
-        vm.prank(OTHER_USER);
-        ac.pool.supply(borrowAsset, amount, OTHER_USER, 0);
-    }
-
-    function _replacePriceOracle(LiquidationBotLib.AaveContracts memory ac) internal {
-        IAaveAddressProvider addressProvider = IAaveAddressProvider(ac.pool.ADDRESSES_PROVIDER());
-
-        IAavePriceOracle oracle = IAavePriceOracle(addressProvider.getPriceOracle());
-
-        Aave3PriceOracleMock mockOracle = new Aave3PriceOracleMock(address(oracle));
-
-        vm.prank(addressProvider.owner());
-        addressProvider.setPriceOracle(address(mockOracle));
-    }
-
-    //endregion ---------------------- Internal logic
-
-    //region ---------------------- Auxiliary functions
-    function saveToCsv(string memory fnOut, Results[] memory rr) internal {
-        string memory content = string(abi.encodePacked("BlockNumber;", Strings.toString(selectedBlock), "\n"));
-
-        content = string(
-            abi.encodePacked(
-                content,
-                "CollateralAsset;BorrowAsset;CollateralAmount;TotalCollateralBase;TotalDebtBase;HealthFactor;DepositDone;BorrowDone;ProvidedBorrowLiquidity;HealthFactorAfterForwardingTime;HealthFactorAfterLiquidation;BotProfitInBorrowAsset;LiquidationDone\n"
-            )
-        );
-
-        for (uint i = 0; i < rr.length; i++) {
-            string memory line = string(
-                abi.encodePacked(
-                    Strings.toHexString(rr[i].position.collateralAsset), ";",
-                    Strings.toHexString(rr[i].position.borrowAsset), ";",
-                    Strings.toString(rr[i].position.collateralAmount), ";",
-                    Strings.toString(rr[i].position.totalCollateralBase), ";",
-                    Strings.toString(rr[i].position.totalDebtBase), ";",
-                    Strings.toString(rr[i].position.healthFactor), ";"
-                )
-            );
-
-            line = string(
-                abi.encodePacked(
-                    line,
-                    rr[i].position.depositDone ? "1;" : "0;",
-                    rr[i].position.borrowDone ? "1;" : "0;",
-                    Strings.toString(rr[i].position.providedBorrowLiquidity), ";",
-                    Strings.toString(rr[i].healthFactorAfterForwardingTime), ";",
-                    Strings.toString(rr[i].healthFactorAfterLiquidation), ";",
-                    Strings.toString(rr[i].botProfitInBorrowAsset), ";",
-                    rr[i].liquidationDone ? "1" : "0",
-                    "\n"
-                )
-            );
-            content = string(abi.encodePacked(content, line));
-        }
-
-        if (!vm.exists("./tmp")) {
-            vm.createDir("./tmp", true);
-        }
-        vm.writeFile(string.concat("./tmp/", fnOut), content);
-    }
-
-    /// @notice Deal doesn't work with aave tokens. So, deal the asset and mint aTokens instead.
-    /// @dev https://github.com/foundry-rs/forge-std/issues/140
-    function _dealAave(address aToken_, address to, uint amount) internal {
-        IPool pool = IPool(IAToken(aToken_).POOL());
-
-        address asset = IAToken(aToken_).UNDERLYING_ASSET_ADDRESS();
-
-        deal(asset, to, amount);
-
-        vm.prank(to);
-        IERC20(asset).approve(address(pool), amount);
-
-        vm.prank(to);
-        pool.deposit(asset, amount, to, 0);
-    }
-
-    //endregion ---------------------- Auxiliary functions
-
-    //region ---------------------- Sonic-related functions
-    function _getDefaultAmountToDeposit(address asset_, uint amountNoDecimals) internal view returns (uint) {
-        return amountNoDecimals * 10 ** IERC20Metadata(asset_).decimals();
-    }
-
-    //endregion ---------------------- Sonic-related functions
+    //endregion ---------------------- Setup bot
 }

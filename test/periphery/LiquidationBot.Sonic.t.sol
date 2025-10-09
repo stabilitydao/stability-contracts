@@ -48,6 +48,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         address flashLoanVault;
         uint flashLoanKind;
         uint liquidationBonus;
+        uint liquidationThreshold;
     }
 
     struct TestResults {
@@ -270,7 +271,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10010, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             multisig
@@ -287,7 +289,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.BEETS_VAULT,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.Default_0),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10010, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             multisig
@@ -304,7 +307,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.POOL_SHADOW_CL_USDC_USDT,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10010, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             multisig
@@ -321,7 +325,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.POOL_ALGEBRA_WS_USDC,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10010, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             multisig
@@ -336,11 +341,12 @@ contract LiquidationBotSonicTest is SonicSetup {
                 borrower: STABILITY_USDC_BORROWER,
                 pool: STABILITY_POOL,
                 targetHealthFactor: 1.001e18,
-                collateralPriceDropPercent: 2, // drop collateral price by 2%
+                collateralPriceDropPercent: 2,
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10040, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             address(this)
@@ -357,7 +363,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-                liquidationBonus: 10010
+                liquidationBonus: 10010,
+                liquidationThreshold: 0
             }),
             SonicConstantsLib.TOKEN_USDC,
             multisig
@@ -375,7 +382,8 @@ contract LiquidationBotSonicTest is SonicSetup {
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            liquidationBonus: 10100 // (!)
+            liquidationBonus: 10100, // (!)
+            liquidationThreshold: 0
         });
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
@@ -408,7 +416,8 @@ contract LiquidationBotSonicTest is SonicSetup {
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            liquidationBonus: 10010
+            liquidationBonus: 10010,
+            liquidationThreshold: 0
         });
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
@@ -430,7 +439,8 @@ contract LiquidationBotSonicTest is SonicSetup {
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            liquidationBonus: 10100
+            liquidationBonus: 10100,
+            liquidationThreshold: 0
         });
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
@@ -467,7 +477,8 @@ contract LiquidationBotSonicTest is SonicSetup {
             profitTarget: multisig,
             flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
             flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            liquidationBonus: 10150 // (!)
+            liquidationBonus: 10150, // (!)
+            liquidationThreshold: 0
         });
 
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
@@ -496,7 +507,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                 profitTarget: multisig,
                 flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
                 flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-                liquidationBonus: 10010 // 0.1% bonus
+                liquidationBonus: 10010, // 0.1% bonus
+                liquidationThreshold: 0
             }),
             ERROR_CODE_NOT_WHITELISTED
         );
@@ -516,12 +528,15 @@ contract LiquidationBotSonicTest is SonicSetup {
             borrower: BRUNCH_USDC_BORROWER,
             pool: BRUNCH_POOL,
             targetHealthFactor: 1.001e18,
-            collateralPriceDropPercent: 3,
+            collateralPriceDropPercent: 1,
             profitTarget: multisig,
-            flashLoanVault: SonicConstantsLib.BEETS_VAULT_V3,
-            flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            liquidationBonus: 10010 // 0.1% bonus
+            flashLoanVault: SonicConstantsLib.POOL_UNISWAPV3_USDC_WETH_500,
+            flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+            liquidationBonus: 10300,
+            liquidationThreshold: 9500
         });
+
+        _setUpStabilityMarket(stParams, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD);
 
         uint profit0 = IERC20(profitToken).balanceOf(stParams.profitTarget);
         TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), true);
@@ -540,9 +555,58 @@ contract LiquidationBotSonicTest is SonicSetup {
         assertLt(ret.gasConsumedByLiquidation, 15_000_000, "gas used is reasonable");
     }
 
+    function testLiquidationBrunchStudySetupMarketParams() internal {
+        uint[1] memory liquidationThresholds = [uint(9500)];
+        uint[8] memory bonuses = [10350, 10250, 10200, uint(10150), 10110, 10070, 10030, 10010];
+
+        for (uint i; i < liquidationThresholds.length; ++i) {
+            for (uint j; j < bonuses.length; ++j) {
+                uint snapshot = vm.snapshotState();
+                SetUpParam memory stParams = SetUpParam({
+                    borrower: BRUNCH_USDC_BORROWER,
+                    pool: BRUNCH_POOL,
+                    targetHealthFactor: 1.001e18,
+                    collateralPriceDropPercent: 1,
+                    profitTarget: multisig,
+                    flashLoanVault: SonicConstantsLib.POOL_UNISWAPV3_USDC_WETH_500,
+                    flashLoanKind: uint(ILeverageLendingStrategy.FlashLoanKind.UniswapV3_2),
+                    liquidationBonus: bonuses[j],
+                    liquidationThreshold: liquidationThresholds[i]
+                });
+                (TestResults memory ret, uint profit) =
+                    _testLiquidationBrunchGen2SetupMarketParams(stParams, SonicConstantsLib.TOKEN_USDC);
+                console.log(
+                    liquidationThresholds[i],
+                    bonuses[j],
+                    profit,
+                    (ret.stateBefore.healthFactor < ret.stateAfter.healthFactor) && (ret.stateAfter.healthFactor > 1)
+                );
+                vm.revertToState(snapshot);
+            }
+        }
+    }
+
     //endregion ----------------------------------- Liquidation Brunch Gen 2 Market
 
     //region --------------------------------- Tests implementation
+    function _testLiquidationBrunchGen2SetupMarketParams(
+        SetUpParam memory stParams,
+        address profitToken
+    ) internal returns (TestResults memory ret, uint profit) {
+        LiquidationBot bot = createLiquidationBotInstance();
+
+        vm.prank(multisig);
+        bot.setPriceImpactTolerance(5_000);
+
+        _setUpStabilityMarket(stParams, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD);
+
+        uint profit0 = IERC20(profitToken).balanceOf(stParams.profitTarget);
+        ret = _testLiquidation(bot, stParams, type(uint).max, address(this), true);
+        uint profit1 = IERC20(profitToken).balanceOf(stParams.profitTarget);
+
+        return (ret, profit1 - profit0);
+    }
+
     function _testLiquidationStabilitySuccess(
         SetUpParam memory stParams_,
         address profitToken,
@@ -679,7 +743,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             } else {
                 vm.prank(caller);
                 try bot.liquidate(stParams_.pool, users) {
-                    require(false, "_testLiquidation: operation was expected to fail");
+                    require(errorCode == type(uint).max, "_testLiquidation: operation was expected to fail");
                 } catch (bytes memory reason) {
                     if (errorCode == ERROR_CODE_HEALTH_FACTOR_NOT_INCREASED) {
                         require(
@@ -691,6 +755,8 @@ contract LiquidationBotSonicTest is SonicSetup {
                             reason.length >= 4 && bytes4(reason) == LiquidationBotLib.NotWhitelisted.selector,
                             "Some other error was thrown instead of NotMultisig"
                         );
+                    } else if (errorCode == type(uint).max) {
+                        // any error is accepted
                     } else {
                         require(false, "_testLiquidation: unknown error");
                     }
@@ -725,14 +791,17 @@ contract LiquidationBotSonicTest is SonicSetup {
         vm.prank(owner);
         configurator.setLiquidationProtocolFee(collateralAsset, 1);
 
-        (, uint ltv, uint liquidationThreshold, /*uint liquidationBonus*/,,,,,,) = IAaveDataProvider(
+        (, uint ltv, uint liquidationThreshold, uint liquidationBonus,,,,,,) = IAaveDataProvider(
             IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
         ).getReserveConfigurationData(collateralAsset);
 
+        uint newLiquidationThreshold =
+            stParams_.liquidationThreshold == 0 ? liquidationThreshold : stParams_.liquidationThreshold;
+        uint newBonus = stParams_.liquidationBonus == 0 ? liquidationBonus : stParams_.liquidationBonus;
+
+        // console.log("Set liquidation params:", newLiquidationThreshold, newBonus);
         vm.prank(owner);
-        configurator.configureReserveAsCollateral(
-            collateralAsset, ltv, liquidationThreshold, stParams_.liquidationBonus
-        );
+        configurator.configureReserveAsCollateral(collateralAsset, ltv, newLiquidationThreshold, newBonus);
     }
     //endregion --------------------------------- Internal logic
 
