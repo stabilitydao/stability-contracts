@@ -20,7 +20,7 @@ import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 contract CVaultBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
-    /// @dev This block is used if there is no SONIC_VAULT_BATCH_BLOCK env var set
+    /// @dev This block is used if there is no VAULT_BATCH_TEST_SONIC_BLOCK env var set
     //uint public constant FORK_BLOCK = 47248396; // Sep-18-2025 07:32:40 AM +UTC
     uint public constant FORK_BLOCK = 47714014; // Sep-22-2025 02:38:15 AM +UTC
 

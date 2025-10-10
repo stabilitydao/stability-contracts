@@ -108,6 +108,7 @@ function addPools(AddPoolData[] memory pools, bool rewrite) external;
 * BalancerV3Stable: 0xcd85425fF6C07cF09Ca6Ac8F683E8164F27C143c
 * BalancerWeighted: 0x7D6641cf68E5169c11d91266D3E410130dE70B9E
 * Pendle: 0x9fcE12c813fC2280A800e8683b918de121B2437B
+* Brunch: 0xDaFE816751C4535e5e746e262c1812BddD643942
 </details>
 
 * [Swapper sonicscan](https://sonicscan.org/address/0xe52Fcf607A8328106723804De1ef65Da512771Be#writeProxyContract)
