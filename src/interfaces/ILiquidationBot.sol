@@ -6,9 +6,9 @@ interface ILiquidationBot {
     struct UserAssetInfo {
         address asset;
         uint currentATokenBalance;
-        uint currentStableDebt;
         uint currentVariableDebt;
     }
+    // uint currentStableDebt; // not used, we assume it's 0 always
 
     /// @notice Results of AAVE Pool.getUserAccountData(user)
     struct UserAccountData {

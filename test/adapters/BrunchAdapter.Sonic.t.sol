@@ -4,15 +4,17 @@ pragma solidity ^0.8.28;
 import {BrunchAdapter} from "../../src/adapters/BrunchAdapter.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SonicSetup, SonicConstantsLib, IERC20} from "../base/chains/SonicSetup.sol";
 import {IAmmAdapter} from "../../src/interfaces/IAmmAdapter.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IStakedBUSD} from "../../src/integrations/brunch/IStakedBUSD.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {console} from "forge-std/console.sol";
 
 contract BrunchAdapterTest is SonicSetup {
+    using SafeERC20 for IERC20;
+
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     bytes32 public _hash;
@@ -118,7 +120,7 @@ contract BrunchAdapterTest is SonicSetup {
         State memory state0 = getState();
 
         vm.prank(address(this));
-        IERC20(SonicConstantsLib.TOKEN_BRUNCH_USD).transfer(address(adapter), amount == 0 ? 1e18 : amount);
+        IERC20(SonicConstantsLib.TOKEN_BRUNCH_USD).safeTransfer(address(adapter), amount == 0 ? 1e18 : amount);
 
         adapter.swap(
             SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD,
@@ -147,7 +149,7 @@ contract BrunchAdapterTest is SonicSetup {
             state1.userBalanceStakedBUSD
         );
 
-        IERC20(SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD).transfer(address(adapter), state1.userBalanceStakedBUSD);
+        IERC20(SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD).safeTransfer(address(adapter), state1.userBalanceStakedBUSD);
         adapter.swap(
             SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD,
             SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD,

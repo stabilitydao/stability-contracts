@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Vm, Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Test.sol";
 import {BrunchAdapter} from "../../src/adapters/BrunchAdapter.sol";
 import {Aave3PriceOracleMock} from "../../src/test/Aave3PriceOracleMock.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
@@ -19,10 +19,9 @@ import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
-import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicSetup, SonicConstantsLib} from "../base/chains/SonicSetup.sol";
-import {AlgebraV4Adapter, AmmAdapterIdLib} from "../../src/adapters/AlgebraV4Adapter.sol";
+import {AmmAdapterIdLib} from "../../src/adapters/AlgebraV4Adapter.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {console} from "forge-std/console.sol";
 

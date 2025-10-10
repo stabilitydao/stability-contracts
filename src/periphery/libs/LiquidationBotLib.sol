@@ -579,14 +579,13 @@ library LiquidationBotLib {
 
         uint count;
         for (uint i; i < len; ++i) {
-            (uint currentATokenBalance, uint currentStableDebt, uint currentVariableDebt,,,,,,) =
+            (uint currentATokenBalance,, uint currentVariableDebt,,,,,,) =
                 dataProvider.getUserReserveData(tokensData[i].tokenAddress, user);
 
-            if (currentATokenBalance != 0 || currentStableDebt != 0 || currentVariableDebt != 0) {
+            if (currentATokenBalance != 0 || currentVariableDebt != 0) {
                 temp[count] = ILiquidationBot.UserAssetInfo({
                     asset: tokensData[i].tokenAddress,
                     currentATokenBalance: currentATokenBalance,
-                    currentStableDebt: currentStableDebt,
                     currentVariableDebt: currentVariableDebt
                 });
                 ++count;

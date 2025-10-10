@@ -509,12 +509,6 @@ library SonicConstantsLib {
     /// @notice https://stability.farm/vaults/vault/146/0x505620f50203cc4d21bd7475c2a7ed82e32dbe56
     address public constant STABILITY_CREDIX_MARKET_SONIC_SCUSD = 0xa175EE511de429275d26Ac5420fAbeb60C67C372;
 
-    // -------------------------- Stability USD market (wmetaUSD, AAVE 3.0.2)
-    address public constant STABILITY_USD_MARKET_ADDRESS_PROVIDER = 0x5CC16D46fdf657651e4F4eeA4470DD215E4Af7bd;
-    address public constant STABILITY_USD_MARKET_POOL = 0x2a32dA908B5E646c0afE567AC077f10d56F0af26;
-    address public constant STABILITY_USD_MARKET_ATOKEN_WMETAUSD = 0x287939376DCc571b5ee699DD8E72199989424A2E;
-    address public constant STABILITY_USD_MARKET_ATOKEN_USDC = 0x62E8eEe1aAAc7978672f90da21e4de766213b574;
-
     // -------------------------- Stability USD market gen 2 (wmetaUSD, AAVE 3.0.2)
     address public constant STABILITY_USD_MARKET_GEN2_ADDRESS_PROVIDER = 0xE8385DEcBCFf931799dd6689677299CA73A9F644;
     address public constant STABILITY_USD_MARKET_GEN2_POOL = 0x909ba6aC1A9D34fE97Cb459C2CA9b6Ff986676F7;
