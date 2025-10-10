@@ -829,11 +829,11 @@ contract LiquidationBotSonicTest is SonicSetup {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BrunchAdapter()));
         BrunchAdapter(address(proxy)).init(SonicConstantsLib.PLATFORM);
-        IPriceReader priceReader = IPriceReader(IPlatform(SonicConstantsLib.PLATFORM).priceReader());
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
 
-        vm.prank(multisig);
-        priceReader.addAdapter(address(proxy));
+        //        IPriceReader priceReader = IPriceReader(IPlatform(SonicConstantsLib.PLATFORM).priceReader());
+        //        vm.prank(multisig);
+        //        priceReader.addAdapter(address(proxy));  // ! AMM adapters are NOT added to price reader, only oracle adapters are add
 
         adapter = BrunchAdapter(address(proxy));
 

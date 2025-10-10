@@ -31,7 +31,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no LENDING_BATCH_TEST_SONIC_BLOCK env var set
-    uint public constant FORK_BLOCK = 49863166; // Oct-09-2025 06:54:18 AM +UTC
+    uint public constant FORK_BLOCK = 50020728; // Oct-10-2025 03:27:21 PM +UTC
 
     IFactory public factory;
     address public multisig;
@@ -107,15 +107,15 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     }
 
     function testLiquidationBatch() public {
-        uint count = 3;
+        uint count = 2; // use amounts: 1000, 10_000
         Results[] memory rets = new Results[](POOLS.length * count);
 
-        ILiquidationBot bot = _getBotInstance();
+        ILiquidationBot bot = _getBotInstance(true);
 
         for (uint i = 0; i < POOLS.length; i++) {
             for (uint a = 0; a < count; ++a) {
                 uint snapshot = vm.snapshotState();
-                rets[i * 3 + a] = _testLiquidation(POOLS[i], bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS * 10 ** a);
+                rets[i * count + a] = _testLiquidation(POOLS[i], bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS * 10 ** a);
                 vm.revertToState(snapshot);
                 console.log("Pool processed:", a, i, POOLS[i]);
             }
@@ -125,7 +125,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     }
 
     function testSingleLiquidation() internal {
-        ILiquidationBot bot = _getBotInstance();
+        ILiquidationBot bot = _getBotInstance(true);
         _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS);
     }
 
@@ -463,19 +463,28 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Setup bot
-    /// @notice Create and set up liquidation bot instance. TODO: use deployed bot with actual config later
-    function _getBotInstance() internal returns (ILiquidationBot) {
-        ILiquidationBot bot = _createLiquidationBotInstance();
-        _setUpLiquidationBot(
-            bot,
-            SonicConstantsLib.BEETS_VAULT_V3,
-            uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
-            TARGET_HEALTH_FACTOR_18
-        );
-        _addAdapter();
-        _addRoutes();
+    /// @notice Create and set up liquidation bot instance.
+    function _getBotInstance(bool newInstance) internal returns (ILiquidationBot) {
+        if (newInstance) {
+            ILiquidationBot bot = _createLiquidationBotInstance();
+            _setUpLiquidationBot(
+                bot,
+                SonicConstantsLib.BEETS_VAULT_V3,
+                uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1),
+                TARGET_HEALTH_FACTOR_18
+            );
+            //            _addAdapter();
+            //            _addRoutes();
 
-        return bot;
+            return bot;
+        } else {
+            ILiquidationBot bot = ILiquidationBot(SonicConstantsLib.LIQUIDATION_BOT);
+
+            vm.prank(multisig);
+            bot.changeWhitelist(address(this), true); // todo use exist whitelisted address
+
+            return bot;
+        }
     }
 
     function _createLiquidationBotInstance() internal returns (ILiquidationBot) {
@@ -520,11 +529,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         Proxy proxy = new Proxy();
         proxy.initProxy(address(new BrunchAdapter()));
         BrunchAdapter(address(proxy)).init(SonicConstantsLib.PLATFORM);
-        IPriceReader priceReader = IPriceReader(IPlatform(SonicConstantsLib.PLATFORM).priceReader());
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
-
-        vm.prank(multisig);
-        priceReader.addAdapter(address(proxy));
 
         adapter = BrunchAdapter(address(proxy));
 
