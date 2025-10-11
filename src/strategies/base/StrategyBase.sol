@@ -10,6 +10,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.6.3: virtual revenue fix
 ///   2.6.2: virtual revenue fix
 ///   2.6.1: virtual revenue fix
 ///   2.6.0: protocols, setSpecific
@@ -34,7 +35,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.6.2";
+    string public constant VERSION_STRATEGY_BASE = "2.6.3";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -159,7 +160,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 } else {
                     (, uint[] memory __assetsAmounts) = assetsAmounts();
                     uint[] memory virtualRevenueAmounts = new uint[](__assets.length);
-                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 365 days / 2;
+                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 300 days;
                     IVault(_vault).hardWorkMintFeeCallback(__assets, virtualRevenueAmounts);
                 }
                 // call empty method only for coverage or them can be overriden
