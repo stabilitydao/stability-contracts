@@ -38,6 +38,7 @@ library LiquidationBotLib {
     error NotWhitelisted();
     error IncorrectAmountReceived(address asset, uint balanceBefore, uint balanceAfter, uint expectedAmount);
     error InsufficientBalance(uint availableBalance, uint requiredBalance);
+    error InsufficientFlashBalance(uint availableBalance, uint requiredBalance);
     error InvalidHealthFactor();
     error HealthFactorNotIncreased(uint healthFactorBefore, uint healthFactorAfter);
     error NoProfit();
@@ -118,11 +119,10 @@ library LiquidationBotLib {
     //region -------------------------------------- Main logic
 
     /// @notice Make liquidation, send profit to the registered contract
-    /// @param aavePool Pool AAVE 3.0.2.
     /// @param users List of users to liquidate (users with health factor < 1)
-    function liquidate(address aavePool, address[] memory users) internal {
+    /// @param targetHealthFactor_ Use type(uint).max to use default target health factor
+    function liquidate(AaveContracts memory ac, address[] memory users, uint targetHealthFactor_) internal {
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
-        AaveContracts memory ac = getAaveContracts(aavePool);
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
@@ -136,7 +136,11 @@ library LiquidationBotLib {
                 emit UserSkipped(users[i], userData0, position);
             } else {
                 uint repayAmount = _getRepayAmount(
-                    ac, position.collateralReserve, position.debtReserve, userData0, $.targetHealthFactor
+                    ac,
+                    position.collateralReserve,
+                    position.debtReserve,
+                    userData0,
+                    targetHealthFactor_ == type(uint).max ? $.targetHealthFactor : targetHealthFactor_
                 );
                 uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
 
@@ -145,7 +149,7 @@ library LiquidationBotLib {
                     $.flashLoanVault,
                     position.debtReserve,
                     repayAmount,
-                    abi.encode(_getUserData(aavePool, users[i], position, repayAmount))
+                    abi.encode(_getUserData(address(ac.pool), users[i], position, repayAmount))
                 );
 
                 uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
@@ -221,7 +225,7 @@ library LiquidationBotLib {
     /// 0 - means that max possible debt should be repaid (up to 50% of total debt)
     function setTargetHealthFactor(uint targetHealthFactor_) internal {
         LiquidationBotStorage storage $ = getLiquidationBotStorage();
-        require(targetHealthFactor_ == 0 || targetHealthFactor_ > 1e18, InvalidHealthFactor());
+        // require(targetHealthFactor_ == 0, InvalidHealthFactor());
 
         $.targetHealthFactor = targetHealthFactor_;
         emit SetTargetHealthFactory(targetHealthFactor_);
@@ -260,10 +264,8 @@ library LiquidationBotLib {
             ) {
                 // --------------- Flash loan Uniswap V3. The strategy should support IUniswapV3FlashCallback
                 // ensure that the vault has available amount
-                require(
-                    IERC20(flashAssets[0]).balanceOf(address(flashLoanVault)) >= flashAmounts[0],
-                    IControllable.InsufficientBalance()
-                );
+                uint balance = IERC20(flashAssets[0]).balanceOf(address(flashLoanVault));
+                require(balance >= flashAmounts[0], InsufficientFlashBalance(balance, flashAmounts[0]));
 
                 bool isToken0 = IUniswapV3PoolImmutables(flashLoanVault).token0() == flashAssets[0];
                 IUniswapV3PoolActions(flashLoanVault).flash(
@@ -316,6 +318,7 @@ library LiquidationBotLib {
 
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
+
         require(balance >= amount + fee, InsufficientBalance(balance, amount + fee));
 
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);

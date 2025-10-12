@@ -111,5 +111,8 @@ interface ILiquidationBot {
     /// @param users List of users to liquidate (users with health factor < 1)
     function liquidate(address aavePool, address[] memory users) external;
 
+    /// @param healthFactor Use type(uint).max to use default target health factor and 0 to use max possible repay
+    function liquidate(address aavePool, address[] memory users, uint healthFactor) external;
+
     //endregion ----------------------------------------------------- Write functions
 }

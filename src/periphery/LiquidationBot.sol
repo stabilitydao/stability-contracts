@@ -192,32 +192,33 @@ contract LiquidationBot is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc ILiquidationBot
-    function setFlashLoanVault(address flashLoanVault, uint flashLoanKind) external onlyMultisig {
+    function setFlashLoanVault(address flashLoanVault, uint flashLoanKind) external onlyOperator {
         LiquidationBotLib.setFlashLoanVault(flashLoanVault, flashLoanKind);
     }
 
     /// @inheritdoc ILiquidationBot
-    function setPriceImpactTolerance(uint priceImpactTolerance_) external onlyMultisig {
+    function setPriceImpactTolerance(uint priceImpactTolerance_) external onlyOperator {
         LiquidationBotLib.setPriceImpactTolerance(priceImpactTolerance_);
     }
 
     /// @inheritdoc ILiquidationBot
-    function setProfitTarget(address profitTarget_) external onlyMultisig {
+    function setProfitTarget(address profitTarget_) external onlyOperator {
+        // todo multisig?
         LiquidationBotLib.setProfitTarget(profitTarget_);
     }
 
     /// @inheritdoc ILiquidationBot
-    function changeWhitelist(address operator_, bool add_) external onlyMultisig {
+    function changeWhitelist(address operator_, bool add_) external onlyOperator {
         LiquidationBotLib.changeWhitelist(operator_, add_);
     }
 
     /// @inheritdoc ILiquidationBot
-    function changeWrappedMetaVault(address wrappedMetaVault_, bool add_) external onlyMultisig {
+    function changeWrappedMetaVault(address wrappedMetaVault_, bool add_) external onlyOperator {
         LiquidationBotLib.changeWrappedMetaVault(wrappedMetaVault_, add_);
     }
 
     /// @inheritdoc ILiquidationBot
-    function setTargetHealthFactor(uint targetHealthFactor_) external onlyMultisig {
+    function setTargetHealthFactor(uint targetHealthFactor_) external onlyOperator {
         LiquidationBotLib.setTargetHealthFactor(targetHealthFactor_);
     }
 
@@ -232,6 +233,13 @@ contract LiquidationBot is
 
     /// @inheritdoc ILiquidationBot
     function liquidate(address aavePool, address[] memory users) external onlyWhitelisted {
-        LiquidationBotLib.liquidate(aavePool, users);
+        LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(aavePool);
+        LiquidationBotLib.liquidate(ac, users, type(uint).max);
+    }
+
+    /// @inheritdoc ILiquidationBot
+    function liquidate(address aavePool, address[] memory users, uint healthFactor) external onlyWhitelisted {
+        LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(aavePool);
+        LiquidationBotLib.liquidate(ac, users, healthFactor);
     }
 }
