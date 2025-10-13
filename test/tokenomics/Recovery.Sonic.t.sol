@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-//import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -420,6 +420,29 @@ contract RecoverySonicTest is Test {
             assertEq(selected[i] != 0, true, string(abi.encodePacked("pool ", vm.toString(i), " was never selected")));
         }
     }
+
+    function testSetReceiver() public {
+        Recovery recovery = createRecoveryInstance();
+
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(0), "no init");
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(this));
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(1));
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(1));
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(1), "1 is set");
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, address(2));
+        assertEq(recovery.getReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS), address(2), "2 is set");
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(0));
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(0), "0 again");
+        assertEq(recovery.getReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS), address(2), "still 2");
+    }
     //endregion --------------------------------- Unit tests
 
     //region --------------------------------- Use Recovery with EACH single recovery token
@@ -720,6 +743,46 @@ contract RecoverySonicTest is Test {
             states[0][0].balanceMetaVaultTokenInRecovery,
             "balance of meta-vault-token in Recovery should be increased"
         );
+    }
+
+    function testMultipleReceivers() public {
+        Recovery recovery = createRecoveryInstance();
+        MultipleTestCase memory multiple = fixtureMultiple()[0];
+
+        {
+            multiple.inputAssets = new address[](2);
+            multiple.inputAssets[0] = SonicConstantsLib.TOKEN_USDC;
+            multiple.inputAssets[1] = SonicConstantsLib.TOKEN_WS;
+
+            multiple.inputAmounts = new uint[](2);
+            multiple.inputAmounts[0] = 10e6;
+            multiple.inputAmounts[1] = 10e18;
+
+            for (uint i; i < multiple.pools.length; ++i) {
+                address recoveryToken = IUniswapV3Pool(multiple.pools[i]).token0();
+                vm.prank(multisig);
+                recovery.setReceiver(recoveryToken, address(uint160(i + 1999)));
+            }
+        }
+
+        SingleState[4][] memory states = _testMultiplePoolsTwoSwaps(recovery, multiple, true, false);
+
+        // Recovery transfers all recovery tokens to specified receivers
+        for (uint i; i < multiple.pools.length; ++i) {
+            assertEq(
+                states[i][3].totalSupplyRecoveryToken,
+                states[i][1].totalSupplyRecoveryToken,
+                "no recovery tokens were burnt"
+            );
+        }
+
+        for (uint i; i < multiple.pools.length; ++i) {
+            assertEq(
+                IERC20(IUniswapV3Pool(multiple.pools[i]).token0()).balanceOf(address(uint160(i + 1999))),
+                (states[i][1].balancePoolRecoveryToken - states[i][3].balancePoolRecoveryToken),
+                "all recovery bought tokens were transferred to the receiver"
+            );
+        }
     }
     //endregion --------------------------------- Use Recovery with multiple recovery tokens
 

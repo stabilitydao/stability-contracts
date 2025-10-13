@@ -85,4 +85,14 @@ contract MockRecovery is IRecovery {
         indexFirstRecoveryPool1;
         maxCountPoolsToSwap_;
     }
+
+    function getReceiver(address recoveryToken_) external pure returns (address receiver) {
+        recoveryToken_;
+        return receiver;
+    }
+
+    function setReceiver(address recoveryToken_, address receiver_) external pure {
+        recoveryToken_;
+        receiver_;
+    }
 }

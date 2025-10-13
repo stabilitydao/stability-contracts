@@ -18,6 +18,9 @@ interface IRecovery {
     /// @notice Returns true if the token is registered by {registerAssets}
     function isTokenRegistered(address token) external view returns (bool);
 
+    /// @notice Return receiver of the bought recovery tokens. 0 - tokens are burnt
+    function getReceiver(address recoveryToken_) external view returns (address receiver);
+
     /// @notice Return list of registered tokens with amounts exceeding thresholds
     function getListTokensToSwap() external view returns (address[] memory tokens);
 
@@ -35,6 +38,9 @@ interface IRecovery {
 
     /// @notice Add or remove operator from the whitelist
     function changeWhitelist(address operator_, bool add_) external;
+
+    /// @notice Set receiver of recovedry tokens, 0 - the tokens should be burnt
+    function setReceiver(address recoveryToken_, address receiver_) external;
 
     /// @notice Revenue Router calls this function to notify that some tokens were transferred to this contract
     /// @param tokens Addresses of the tokens that were transferred

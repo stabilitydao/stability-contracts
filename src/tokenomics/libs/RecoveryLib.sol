@@ -50,6 +50,7 @@ library RecoveryLib {
         address[] tokens, address asset, uint balanceBefore, uint balanceAfter, address selectedRecoveryPool
     );
     event FillRecoveryPools(address metaVaultToken_, uint balanceBefore, uint balanceAfter, uint countSwaps);
+    event SetReceiver(address recoveryToken, address receiver);
 
     /// @custom:storage-location erc7201:stability.Recovery
     struct RecoveryStorage {
@@ -64,6 +65,8 @@ library RecoveryLib {
         EnumerableSet.AddressSet registeredTokens;
         /// @notice True if the contract is currently performing a token swap
         bool swapping;
+        /// @notice Allow to forward given bought recoveryToken to receiver instead of burning them
+        mapping(address recoveryToken => address receiver) receivers;
     }
 
     //endregion -------------------------------------- Data types
@@ -198,6 +201,13 @@ library RecoveryLib {
         emit Whitelist(operator_, add_);
     }
 
+    function setReceiver(address recoveryToken_, address receiver_) internal {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+        $.receivers[recoveryToken_] = receiver_;
+
+        emit SetReceiver(recoveryToken_, receiver_);
+    }
+
     //endregion -------------------------------------- Governance actions
 
     //region -------------------------------------- Actions
@@ -307,7 +317,7 @@ library RecoveryLib {
                 if (maxCountPools != 0 && countSwaps > maxCountPools) break;
                 if (restAmount < metaVaultTokenThreshold) break;
                 if (metaVaultToken_ != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
-                restAmount = _swapAndBurn(_recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
+                restAmount = _swapAndBurn($, _recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
                 ++countSwaps;
             }
 
@@ -315,7 +325,7 @@ library RecoveryLib {
                 if (maxCountPools != 0 && countSwaps > maxCountPools) break;
                 if (restAmount < metaVaultTokenThreshold) break;
                 if (metaVaultToken_ != IUniswapV3Pool(_recoveryPools[i]).token1()) continue;
-                restAmount = _swapAndBurn(_recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
+                restAmount = _swapAndBurn($, _recoveryPools[i], metaVaultToken_, metaVaultTokenThreshold);
                 ++countSwaps;
             }
 
@@ -351,7 +361,12 @@ library RecoveryLib {
     /// @param targetPool Uniswap V3 pool address
     /// @param asset Address of meta-vault token
     /// @return amount Remaining amount of asset after swap and burn
-    function _swapAndBurn(address targetPool, address asset, uint assetThreshold) internal returns (uint amount) {
+    function _swapAndBurn(
+        RecoveryLib.RecoveryStorage storage $,
+        address targetPool,
+        address asset,
+        uint assetThreshold
+    ) internal returns (uint amount) {
         // assume here that recovery tokens are always set as token 0
         address recoveryToken = IUniswapV3Pool(targetPool).token0();
 
@@ -363,7 +378,12 @@ library RecoveryLib {
             _swapToRecoveryToken(targetPool, asset, amountToSwap);
             uint balance = IERC20(recoveryToken).balanceOf(address(this));
             if (balance != 0) {
-                IBurnableERC20(recoveryToken).burn(balance);
+                address receiver = $.receivers[recoveryToken];
+                if (receiver == address(0)) {
+                    IBurnableERC20(recoveryToken).burn(balance);
+                } else {
+                    IERC20(recoveryToken).safeTransfer(receiver, balance);
+                }
             }
 
             return IERC20(asset).balanceOf(address(this));

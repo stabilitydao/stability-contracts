@@ -14,6 +14,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// Changelog:
 ///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
 ///          Use onlyOperator restrictions for setThresholds and changeWhitelist
+///          Add possibility to forward bought recovery tokens instead of burning
 ///   1.1.0: Add getListTokensToSwap, swapAssets, fillRecoveryPools, remove swapAssetsToRecoveryTokens
 contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -84,6 +85,12 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
         return RecoveryLib.getListRegisteredTokens($);
     }
 
+    /// @notice Return receiver of the bought recovery tokens. 0 - tokens are burnt
+    function getReceiver(address recoveryToken_) external view returns (address receiver) {
+        RecoveryLib.RecoveryStorage storage $ = RecoveryLib.getRecoveryTokenStorage();
+        return $.receivers[recoveryToken_];
+    }
+
     //endregion ----------------------------------- View
 
     //region ----------------------------------- Restricted actions
@@ -109,6 +116,10 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /// @inheritdoc IRecovery
     function changeWhitelist(address operator_, bool add_) external onlyOperator {
         RecoveryLib.changeWhitelist(operator_, add_);
+    }
+
+    function setReceiver(address recoveryToken_, address receiver_) external onlyOperator {
+        RecoveryLib.setReceiver(recoveryToken_, receiver_);
     }
     //endregion ----------------------------------- Restricted actions
 
