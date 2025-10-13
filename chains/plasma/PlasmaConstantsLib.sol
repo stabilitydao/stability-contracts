@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 library PlasmaConstantsLib {
     address public constant MULTISIG = 0xE929438B5B53984FdBABf8562046e141e90E8099;
+    address public constant PLATFORM = 0x06e709798dCE60B24a442F3AF5db418B5D388e7C;
 
     // ERC20
     address public constant TOKEN_USDT0 = 0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb;
