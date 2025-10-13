@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {BrunchAdapter} from "../../src/adapters/BrunchAdapter.sol";
 import {Aave3PriceOracleMock} from "../../src/test/Aave3PriceOracleMock.sol";
 import {IFactory} from "../../src/interfaces/IFactory.sol";
+import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -169,6 +170,31 @@ contract LendingBotUpdateSonicTest is Test {
         );
     }
 
+    function testSingleLiquidationSetDebtToCoverBadPaths() public {
+        LiquidationBotLib.AaveContracts memory ac =
+            LiquidationBotLib.getAaveContracts(SonicConstantsLib.BRUNCH_GEN2_POOL);
+        _bot.getUserAccountData(address(ac.pool), USER);
+        _createLendingPosition(ac, address(ac.pool), 1000);
+        _replacePriceOracle(ac);
+        _moveToLiquidation(address(ac.pool));
+
+        address[] memory users = new address[](1);
+        users[0] = USER;
+
+        uint[] memory debtToCover = new uint[](1);
+        debtToCover[0] = 1e6;
+
+        vm.expectRevert(LiquidationBotLib.NotWhitelisted.selector);
+        vm.prank(makeAddr("some addr"));
+        _bot.liquidate(address(ac.pool), users, SonicConstantsLib.TOKEN_USDC, debtToCover);
+
+        debtToCover = new uint[](2);
+
+        vm.expectRevert(IControllable.IncorrectArrayLength.selector);
+        vm.prank(multisig);
+        _bot.liquidate(address(ac.pool), users, SonicConstantsLib.TOKEN_USDC, debtToCover);
+    }
+
     //region ---------------------- Internal logic
 
     function _testLiquidation(
@@ -199,12 +225,7 @@ contract LendingBotUpdateSonicTest is Test {
         _replacePriceOracle(ac);
 
         // ----------------- move time until health factor < 1
-        for (uint i; i < 256; ++i) {
-            (,,,,, ret.healthFactorAfterForwardingTime) = IPool(pool).getUserAccountData(USER);
-            if (ret.healthFactorAfterForwardingTime < 1e18) break;
-
-            vm.warp(block.timestamp + 1 * 7 * 24 * 3600);
-        }
+        ret.healthFactorAfterForwardingTime = _moveToLiquidation(pool);
 
         if (ret.healthFactorAfterForwardingTime < 1e18) {
             // ----------------- make liquidation
@@ -432,7 +453,7 @@ contract LendingBotUpdateSonicTest is Test {
         return amountNoDecimals * 10 ** IERC20Metadata(asset_).decimals();
     }
 
-    function _showResults(Results memory r) internal {
+    function _showResults(Results memory r) internal pure {
         console.log("healthFactor.before", r.healthFactorAfterForwardingTime);
         console.log("totalCollateralBase.before", r.position.userAccountData.totalCollateralBase);
         console.log("totalDebtBase.before", r.position.userAccountData.totalDebtBase);
@@ -441,6 +462,17 @@ contract LendingBotUpdateSonicTest is Test {
         console.log("healthFactor.after", r.userAccountData.healthFactor);
         console.log("totalCollateralBase.after", r.userAccountData.totalCollateralBase);
         console.log("totalDebtBase.after", r.userAccountData.totalDebtBase);
+    }
+
+    function _moveToLiquidation(address pool) internal returns (uint healthFactorAfterForwardingTime) {
+        for (uint i; i < 256; ++i) {
+            (,,,,, healthFactorAfterForwardingTime) = IPool(pool).getUserAccountData(USER);
+            if (healthFactorAfterForwardingTime < 1e18) break;
+
+            vm.warp(block.timestamp + 1 * 7 * 24 * 3600);
+        }
+
+        return healthFactorAfterForwardingTime;
     }
     //endregion ---------------------- Auxiliary functions
 
