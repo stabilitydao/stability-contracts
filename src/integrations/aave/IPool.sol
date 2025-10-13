@@ -2,6 +2,8 @@
 pragma solidity ^0.8.28;
 
 interface IPool {
+  function ADDRESSES_PROVIDER() external view returns (address);
+
   function mintUnbacked(
     address asset,
     uint amount,
