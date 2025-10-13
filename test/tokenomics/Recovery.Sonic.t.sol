@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import {console} from "forge-std/console.sol";
+//import {console} from "forge-std/console.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -142,7 +142,7 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.threshold(assets[0]), 0, "usdc threshold is zero by default");
         assertEq(recovery.threshold(assets[1]), 0, "ws threshold is zero by default");
 
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotOperator.selector);
         vm.prank(address(this));
         recovery.setThresholds(assets, thresholds);
 
@@ -172,7 +172,7 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.whitelisted(operator1), false, "operator1 is not whitelisted by default");
         assertEq(recovery.whitelisted(operator2), false, "operator2 is not whitelisted by default");
 
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotOperator.selector);
         vm.prank(address(this));
         recovery.changeWhitelist(operator1, true);
 

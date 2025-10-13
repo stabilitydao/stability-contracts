@@ -46,7 +46,9 @@ library RecoveryLib {
     event SetThresholds(address[] tokens, uint[] thresholds);
     event Whitelist(address operator, bool add);
     event OnSwapFailed(address asset, address token, uint amount);
-    event SwapAssets(address[] tokens, address asset, uint balanceBefore, uint balanceAfter, uint index0);
+    event SwapAssets(
+        address[] tokens, address asset, uint balanceBefore, uint balanceAfter, address selectedRecoveryPool
+    );
     event FillRecoveryPools(address metaVaultToken_, uint balanceBefore, uint balanceAfter, uint countSwaps);
 
     /// @custom:storage-location erc7201:stability.Recovery
@@ -228,7 +230,8 @@ library RecoveryLib {
         uint len = tokens.length;
 
         address metaVaultToken;
-        address[] memory _recoveryPools = $.recoveryPools.values();
+        address[] memory _recoveryPools;
+        (_recoveryPools, indexRecoveryPool1) = _getShuffledArray($.recoveryPools.values(), indexRecoveryPool1);
         if (_recoveryPools.length != 0) {
             uint index0 = _getRecoveryPool(_recoveryPools, indexRecoveryPool1);
             // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
@@ -259,7 +262,7 @@ library RecoveryLib {
                             metaVaultToken,
                             balanceBefore,
                             IERC20(metaVaultToken).balanceOf(address(this)),
-                            index0
+                            _recoveryPools[index0]
                         );
                     } catch {
                         emit OnSwapFailed(tokens[i], metaVaultToken, amount);
@@ -285,7 +288,8 @@ library RecoveryLib {
         uint metaVaultTokenThreshold = $.tokenThresholds[metaVaultToken_];
         uint balanceBefore = IERC20(metaVaultToken_).balanceOf(address(this));
 
-        address[] memory _recoveryPools = $.recoveryPools.values();
+        address[] memory _recoveryPools;
+        (_recoveryPools, indexFirstRecoveryPool1) = _getShuffledArray($.recoveryPools.values(), indexFirstRecoveryPool1);
         if (_recoveryPools.length != 0 && balanceBefore > metaVaultTokenThreshold) {
             IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault()).setLastBlockDefenseDisabledTx(
                 uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
@@ -493,6 +497,40 @@ library RecoveryLib {
             }
         }
         return type(uint).max;
+    }
+
+    /// @notice Return a new array with the same items as {array} but in random order
+    /// @dev We need to shuffle pools because of the following reason.
+    /// The algo of filling is following: randomly select first pool, fill it, then fill next and so on
+    /// There are 2 pools with metaS and 4 pools with metaUSD.
+    /// If we won't shuffle items then the second metaS poll will be filled more rarely then first one.
+    /// @param array Original list of recovery pools
+    /// @param index1 1-based index of the pool that should be selected first (if 0 then the pool will be selected randomly)
+    /// @return shuffled New list of recovery pools in random order
+    /// @return newIndex1 Updated 1-based index for the array[index1-1] pool in the shuffled array
+    function _getShuffledArray(address[] memory array, uint index1) internal view returns (address[] memory, uint) {
+        uint len = array.length;
+        address selectedPool = index1 == 0 || index1 >= len ? address(0) : array[index1 - 1];
+
+        LibPRNG.PRNG memory prng;
+        LibPRNG.seed(prng, block.number);
+
+        uint[] memory indices = new uint[](len);
+        for (uint i; i < len; ++i) {
+            indices[i] = i;
+        }
+
+        LibPRNG.shuffle(prng, indices);
+
+        address[] memory shuffled = new address[](len);
+        for (uint i; i < len; ++i) {
+            shuffled[i] = array[indices[i]];
+            if (shuffled[i] == selectedPool) {
+                index1 = i + 1;
+            }
+        }
+
+        return (shuffled, index1);
     }
 
     //endregion -------------------------------------- Utils

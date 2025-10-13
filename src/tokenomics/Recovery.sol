@@ -13,6 +13,7 @@ import {IPriceReader} from "../interfaces/IPriceReader.sol";
 /// @author dvpublic (https://github.com/dvpublic)
 /// Changelog:
 ///   1.2.0: getListTokensToSwap excludes meta vault tokens, add getListRegisteredTokens, fix getPoolWithMinPrice logic
+///          Use onlyOperator restrictions for setThresholds and changeWhitelist
 ///   1.1.0: Add getListTokensToSwap, swapAssets, fillRecoveryPools, remove swapAssetsToRecoveryTokens
 contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -22,7 +23,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.1.1";
+    string public constant VERSION = "1.2.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -101,12 +102,12 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     }
 
     /// @inheritdoc IRecovery
-    function setThresholds(address[] memory tokens, uint[] memory thresholds) external onlyMultisig {
+    function setThresholds(address[] memory tokens, uint[] memory thresholds) external onlyOperator {
         RecoveryLib.setThresholds(tokens, thresholds);
     }
 
     /// @inheritdoc IRecovery
-    function changeWhitelist(address operator_, bool add_) external onlyMultisig {
+    function changeWhitelist(address operator_, bool add_) external onlyOperator {
         RecoveryLib.changeWhitelist(operator_, add_);
     }
     //endregion ----------------------------------- Restricted actions
