@@ -116,5 +116,17 @@ interface ILiquidationBot {
     /// @param healthFactor Use type(uint).max to use default target health factor and 0 to use max possible repay
     function liquidate(address aavePool, address[] memory users, uint healthFactor) external;
 
+    /// @notice Make liquidation, send profit to the registered contract
+    /// @param users List of users to liquidate (users with health factor < 1)
+    /// @param debtAsset Asset to be used for liquidation
+    /// @param debtToCover Amounts of {asset} that should be re-payed for each user.
+    /// Max 50% of total debt can be repaid. Max repay amount can be calculated using getRepayAmount()
+    function liquidate(
+        address aavePool,
+        address[] memory users,
+        address debtAsset,
+        uint[] memory debtToCover
+    ) external;
+
     //endregion ----------------------------------------------------- Write functions
 }

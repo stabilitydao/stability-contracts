@@ -243,4 +243,15 @@ contract LiquidationBot is
         LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(aavePool);
         LiquidationBotLib.liquidate(ac, users, healthFactor);
     }
+
+    /// @inheritdoc ILiquidationBot
+    function liquidate(
+        address aavePool,
+        address[] memory users,
+        address debtAsset,
+        uint[] memory debtToCover
+    ) external onlyWhitelisted {
+        LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(aavePool);
+        LiquidationBotLib.liquidate(ac, users, debtAsset, debtToCover);
+    }
 }

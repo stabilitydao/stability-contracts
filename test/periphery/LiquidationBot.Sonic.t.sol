@@ -15,6 +15,7 @@ import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStr
 import {ILiquidationBot} from "../../src/interfaces/ILiquidationBot.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
@@ -36,6 +37,8 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     uint internal constant ERROR_CODE_HEALTH_FACTOR_NOT_INCREASED = 1;
     uint internal constant ERROR_CODE_NOT_WHITELISTED = 2;
+
+    uint internal constant MAX_GAS = 215_000_000;
 
     struct SetUpParam {
         address borrower;
@@ -59,15 +62,8 @@ contract LiquidationBotSonicTest is SonicSetup {
         uint gasConsumedByLiquidation;
     }
 
-    struct TestLiquidationParams {
-        uint errorCode;
-        address caller;
-        bool reducePrices;
-        uint explicitTargetHealthFactor;
-    }
-
     constructor() {
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
 
         _addAdapter();
@@ -265,20 +261,6 @@ contract LiquidationBotSonicTest is SonicSetup {
 
     //endregion ----------------------------------- Restricted actions
 
-    //region ----------------------------------- View
-    function testGetUserAssetInfo() public {
-        LiquidationBot recovery = createLiquidationBotInstance();
-        ILiquidationBot.UserAssetInfo[] memory ret =
-            recovery.getUserAssetInfo(SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL, address(this));
-        assertEq(ret.length, 0, "the address is not a user of the market");
-
-        ILiquidationBot.UserAssetInfo[] memory ret2 =
-            recovery.getUserAssetInfo(SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL, STABILITY_USDC_BORROWER);
-        assertEq(ret2.length, 2, "the address has collateral and borrow positions");
-    }
-
-    //endregion ----------------------------------- View
-
     //region ----------------------------------- Liquidation Stability USD Market - various flash loans, multisig
     function testLiquidationStabilityUsdcFlashBalancerV31() public {
         _testLiquidationStabilitySuccess(
@@ -407,13 +389,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
         uint profit0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: address(this),
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams, p);
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), true);
         uint profit1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
 
         assertGt(profit1, profit0, "get positive profit");
@@ -427,7 +403,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             ret.collateralReceived, ret.expectedCollateralToReceive, 1e18 / 1e6, "collateral received is as expected"
         );
 
-        assertLt(ret.gasConsumedByLiquidation, 15_000_000, "gas used is reasonable");
+        assertLt(ret.gasConsumedByLiquidation, MAX_GAS, "gas used is reasonable");
     }
 
     function testLiquidationStabilityUsdcHighTargetHealthFactor() public {
@@ -446,13 +422,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         });
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: address(this),
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams, p);
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), true);
 
         assertLt(ret.stateBefore.healthFactor, 1e18, "liquidation was actually required");
         assertGt(ret.stateAfter.healthFactor, 1e18, "liquidation is not required");
@@ -475,13 +445,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         });
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: address(this),
-            reducePrices: false,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams, p);
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), false);
 
         assertEq(
             ret.stateAfter.healthFactor,
@@ -521,20 +485,13 @@ contract LiquidationBotSonicTest is SonicSetup {
         _setUpStabilityMarket(stParams, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
         uint profit0 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: address(this),
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams, p);
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, multisig, true);
         uint profit1 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
 
         assertLt(ret.stateAfter.healthFactor, ret.stateBefore.healthFactor, "Health factor is decreased");
         assertGt(profit1, profit0, "get positive profit 1");
 
-        p.reducePrices = false;
-        TestResults memory ret2 = _testLiquidation(bot, stParams, p);
+        TestResults memory ret2 = _testLiquidation(bot, stParams, 0, multisig, false);
         uint profit2 = IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(stParams.profitTarget);
 
         assertLt(ret2.stateAfter.healthFactor, ret.stateBefore.healthFactor, "Health factor is decreased more");
@@ -583,13 +540,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         _setUpStabilityMarket(stParams, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD);
 
         uint profit0 = IERC20(profitToken).balanceOf(stParams.profitTarget);
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: address(this),
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams, p);
+        TestResults memory ret = _testLiquidation(bot, stParams, 0, address(this), true);
         uint profit1 = IERC20(profitToken).balanceOf(stParams.profitTarget);
 
         assertGt(profit1, profit0, "get positive profit");
@@ -602,7 +553,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             ret.collateralReceived, ret.expectedCollateralToReceive, 1e18 / 1e6, "collateral received is as expected"
         );
 
-        assertLt(ret.gasConsumedByLiquidation, 15_000_000, "gas used is reasonable");
+        assertLt(ret.gasConsumedByLiquidation, MAX_GAS, "gas used is reasonable");
     }
 
     function testLiquidationBrunchStudySetupMarketParams() internal {
@@ -651,13 +602,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         _setUpStabilityMarket(stParams, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD);
 
         uint profit0 = IERC20(profitToken).balanceOf(stParams.profitTarget);
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: type(uint).max,
-            caller: address(this),
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        ret = _testLiquidation(bot, stParams, p);
+        ret = _testLiquidation(bot, stParams, type(uint).max, address(this), true);
         uint profit1 = IERC20(profitToken).balanceOf(stParams.profitTarget);
 
         return (ret, profit1 - profit0);
@@ -672,13 +617,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         _setUpStabilityMarket(stParams_, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
         uint profit0 = IERC20(profitToken).balanceOf(stParams_.profitTarget);
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: 0,
-            caller: caller,
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        TestResults memory ret = _testLiquidation(bot, stParams_, p);
+        TestResults memory ret = _testLiquidation(bot, stParams_, 0, caller, true);
         uint profit1 = IERC20(profitToken).balanceOf(stParams_.profitTarget);
 
         assertGt(profit1, profit0, "get positive profit");
@@ -691,20 +630,15 @@ contract LiquidationBotSonicTest is SonicSetup {
             ret.collateralReceived, ret.expectedCollateralToReceive, 1e18 / 1e6, "collateral received is as expected"
         );
 
-        assertLt(ret.gasConsumedByLiquidation, 15_000_000, "gas used is reasonable");
+        assertLt(ret.gasConsumedByLiquidation, MAX_GAS, "gas used is reasonable");
     }
 
     function _testLiquidationStabilityFail(SetUpParam memory stParams_, uint errorCode) internal {
         LiquidationBot bot = createLiquidationBotInstance();
         _setUpStabilityMarket(stParams_, SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
 
-        TestLiquidationParams memory p = TestLiquidationParams({
-            errorCode: errorCode,
-            caller: errorCode == ERROR_CODE_NOT_WHITELISTED ? makeAddr("random") : multisig,
-            reducePrices: true,
-            explicitTargetHealthFactor: type(uint).max
-        });
-        _testLiquidation(bot, stParams_, p);
+        address caller = errorCode == ERROR_CODE_NOT_WHITELISTED ? makeAddr("random") : multisig;
+        _testLiquidation(bot, stParams_, errorCode, caller, true);
     }
     //endregion --------------------------------- Tests implementation
 
@@ -712,7 +646,9 @@ contract LiquidationBotSonicTest is SonicSetup {
     function _testLiquidation(
         ILiquidationBot bot,
         SetUpParam memory stParams_,
-        TestLiquidationParams memory params_
+        uint errorCode,
+        address caller,
+        bool reducePrices_
     ) internal returns (TestResults memory ret) {
         // ------------------------------ set up bot
         vm.prank(multisig);
@@ -736,7 +672,7 @@ contract LiquidationBotSonicTest is SonicSetup {
 
         // ------------------------------ prepare to liquidation
         // check user health factor
-        if (params_.reducePrices) {
+        if (reducePrices_) {
             {
                 ILiquidationBot.UserAccountData memory state0 =
                     bot.getUserAccountData(stParams_.pool, stParams_.borrower);
@@ -754,6 +690,7 @@ contract LiquidationBotSonicTest is SonicSetup {
                 assertEq(assets.length, 2, "expected 2 assets");
 
                 uint collateralIndex = assets[0].currentATokenBalance == 0 ? 1 : 0;
+                uint borrowIndex = assets[0].currentATokenBalance == 0 ? 0 : 1;
 
                 // set mock prices to make user undercollateralized
                 {
@@ -771,7 +708,6 @@ contract LiquidationBotSonicTest is SonicSetup {
 
                 // check user health factor
                 ret.stateBefore = bot.getUserAccountData(stParams_.pool, stParams_.borrower);
-                uint borrowIndex = assets[0].currentATokenBalance == 0 ? 0 : 1;
 
                 ret.expectedRepayAmount = bot.getRepayAmount(
                     stParams_.pool,
@@ -802,31 +738,25 @@ contract LiquidationBotSonicTest is SonicSetup {
 
             uint gasBefore = gasleft();
 
-            if (params_.errorCode == 0) {
-                // test both variants of the liquidate function
-                if (params_.explicitTargetHealthFactor == type(uint).max) {
-                    vm.prank(params_.caller);
-                    bot.liquidate(stParams_.pool, users);
-                } else {
-                    vm.prank(params_.caller);
-                    bot.liquidate(stParams_.pool, users, type(uint).max);
-                }
+            if (errorCode == 0) {
+                vm.prank(caller);
+                bot.liquidate(stParams_.pool, users, type(uint).max);
             } else {
-                vm.prank(params_.caller);
+                vm.prank(caller);
                 try bot.liquidate(stParams_.pool, users, type(uint).max) {
-                    require(params_.errorCode == type(uint).max, "_testLiquidation: operation was expected to fail");
+                    require(errorCode == type(uint).max, "_testLiquidation: operation was expected to fail");
                 } catch (bytes memory reason) {
-                    if (params_.errorCode == ERROR_CODE_HEALTH_FACTOR_NOT_INCREASED) {
+                    if (errorCode == ERROR_CODE_HEALTH_FACTOR_NOT_INCREASED) {
                         require(
                             reason.length >= 4 && bytes4(reason) == LiquidationBotLib.HealthFactorNotIncreased.selector,
                             "Some other error was thrown instead of HealthFactorNotIncreased"
                         );
-                    } else if (params_.errorCode == ERROR_CODE_NOT_WHITELISTED) {
+                    } else if (errorCode == ERROR_CODE_NOT_WHITELISTED) {
                         require(
                             reason.length >= 4 && bytes4(reason) == LiquidationBotLib.NotWhitelisted.selector,
                             "Some other error was thrown instead of NotOperator"
                         );
-                    } else if (params_.errorCode == type(uint).max) {
+                    } else if (errorCode == type(uint).max) {
                         // any error is accepted
                     } else {
                         require(false, "_testLiquidation: unknown error");

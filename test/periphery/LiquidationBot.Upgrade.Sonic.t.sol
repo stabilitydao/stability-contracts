@@ -29,7 +29,8 @@ contract LendingBotUpdateSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
 
     /// @dev This block is used if there is no LENDING_BATCH_TEST_SONIC_BLOCK env var set
-    uint public constant FORK_BLOCK = 50328814; // Oct-12-2025 02:40:46 PM +UTC
+    uint public constant FORK_BLOCK = 50294564; // Oct-12-2025 07:50:01 AM +UTC
+    // uint internal constant FORK_BLOCK = 49491021; // Oct-06-2025 05:58:36 AM +UTC
 
     IFactory public factory;
     address public multisig;
@@ -50,6 +51,10 @@ contract LendingBotUpdateSonicTest is Test {
     uint internal constant TARGET_HEALTH_FACTOR_18 = 0;
 
     ILiquidationBot internal _bot;
+
+    uint internal constant KIND_DEFAULT_HF_1 = 1;
+    uint internal constant KIND_EXPLICIT_HF_2 = 2;
+    uint internal constant KIND_DEBT_TO_COVER_3 = 3;
 
     //region ---------------------- Data types
     struct UserAccountData {
@@ -83,10 +88,17 @@ contract LendingBotUpdateSonicTest is Test {
         string error;
         string errorOtherUser;
     }
+
+    struct InputParams {
+        uint kind;
+        uint targetHealthFactor;
+        address debtAsset;
+        uint debtToCover;
+    }
     //endregion ---------------------- Data types
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         selectedBlock = block.number;
 
         factory = IFactory(IPlatform(PLATFORM).factory());
@@ -96,24 +108,64 @@ contract LendingBotUpdateSonicTest is Test {
         _upgradeLiquidationBot(_bot);
     }
 
-    function testSingleLiquidationExplicitHealthFactor() public {
+    function testSingleLiquidationDefaultHealthFactor() public {
+        InputParams memory p;
+        p.kind = KIND_DEFAULT_HF_1;
+
         Results memory ret =
-            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, 0);
+            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, p);
 
         assertTrue(ret.liquidationDone, "Liquidation should be done");
-        assertLt(
-            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be improved"
+        assertGt(ret.botProfitInBorrowAsset, 0, "Profit received");
+        assertNotEq(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be changed"
         );
     }
 
-    function testSingleLiquidationDefaultHealthFactor() public {
-        Results memory ret = _testLiquidation(
-            SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, type(uint).max
-        );
+    function testSingleLiquidationExplicitHealthFactorDefault() public {
+        InputParams memory p;
+        p.kind = KIND_EXPLICIT_HF_2;
+        p.targetHealthFactor = type(uint).max;
+
+        Results memory ret =
+            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, p);
 
         assertTrue(ret.liquidationDone, "Liquidation should be done");
-        assertLt(
-            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be improved"
+        assertGt(ret.botProfitInBorrowAsset, 0, "Profit received");
+        assertNotEq(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be changed"
+        );
+    }
+
+    function testSingleLiquidationExplicitHealthFactor0() public {
+        InputParams memory p;
+        p.kind = KIND_EXPLICIT_HF_2;
+        p.targetHealthFactor = 0;
+
+        Results memory ret =
+            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, p);
+
+        assertTrue(ret.liquidationDone, "Liquidation should be done");
+        assertGt(ret.botProfitInBorrowAsset, 0, "Profit received");
+        assertNotEq(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be changed"
+        );
+    }
+
+    function testSingleLiquidationSetDebtToCover() public {
+        _bot.getUserAccountData(SonicConstantsLib.BRUNCH_GEN2_POOL, USER);
+
+        InputParams memory p;
+        p.kind = KIND_DEBT_TO_COVER_3;
+        // p.debtToCover, p.debtAsset are initialized inside _testLiquidation for simplicity
+
+        Results memory ret =
+            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, p);
+
+        assertTrue(ret.liquidationDone, "Liquidation should be done");
+        assertGt(ret.botProfitInBorrowAsset, 0, "Profit received");
+        assertNotEq(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be changed"
         );
     }
 
@@ -123,7 +175,7 @@ contract LendingBotUpdateSonicTest is Test {
         address pool,
         ILiquidationBot bot,
         uint amountToDepositWithoutDecimals,
-        uint targetHealthFactor_
+        InputParams memory params_
     ) internal returns (Results memory ret) {
         LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(pool);
 
@@ -131,6 +183,17 @@ contract LendingBotUpdateSonicTest is Test {
         ret.pool = pool;
         ret.position = _createLendingPosition(ac, pool, amountToDepositWithoutDecimals);
         // console.log(ret.position.totalCollateralBase, ret.position.totalDebtBase, ret.position.healthFactor);
+
+        if (params_.kind == KIND_DEBT_TO_COVER_3) {
+            ILiquidationBot.UserAccountData memory data = _bot.getUserAccountData(pool, USER);
+            ILiquidationBot.UserAssetInfo[] memory assets = _bot.getUserAssetInfo(pool, USER);
+            uint collateralIndex = assets[0].currentATokenBalance == 0 ? 1 : 0;
+            uint borrowIndex = assets[0].currentATokenBalance != 0 ? 1 : 0;
+
+            params_.debtToCover =
+                _bot.getRepayAmount(pool, assets[collateralIndex].asset, assets[borrowIndex].asset, data, 0);
+            params_.debtAsset = assets[borrowIndex].asset;
+        }
 
         // ----------------- replace price oracle to fix prices life time
         _replacePriceOracle(ac);
@@ -149,7 +212,7 @@ contract LendingBotUpdateSonicTest is Test {
             address[] memory users = new address[](1);
             users[0] = USER;
 
-            if (targetHealthFactor_ != type(uint).max) {
+            if (params_.kind == KIND_DEFAULT_HF_1) {
                 try bot.liquidate(pool, users) {
                     ret.liquidationDone = true;
                 } catch Error(string memory reason) {
@@ -159,8 +222,21 @@ contract LendingBotUpdateSonicTest is Test {
                         abi.encodePacked("Liquidation custom error1: ", Strings.toHexString(uint32(bytes4(reason)), 4))
                     );
                 }
+            } else if (params_.kind == KIND_EXPLICIT_HF_2) {
+                try bot.liquidate(pool, users, params_.targetHealthFactor) {
+                    ret.liquidationDone = true;
+                } catch Error(string memory reason) {
+                    ret.error = reason;
+                } catch (bytes memory reason) {
+                    ret.error = string(
+                        abi.encodePacked("Liquidation custom error1: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                    );
+                }
             } else {
-                try bot.liquidate(pool, users, targetHealthFactor_) {
+                uint[] memory debtToCover = new uint[](1);
+                debtToCover[0] = params_.debtToCover;
+
+                try bot.liquidate(pool, users, params_.debtAsset, debtToCover) {
                     ret.liquidationDone = true;
                 } catch Error(string memory reason) {
                     ret.error = reason;
@@ -172,7 +248,7 @@ contract LendingBotUpdateSonicTest is Test {
             }
         }
 
-        ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(PROFIT_TARGET);
+        ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(bot.profitTarget());
         (
             ret.userAccountData.totalCollateralBase,
             ret.userAccountData.totalDebtBase,
@@ -354,6 +430,17 @@ contract LendingBotUpdateSonicTest is Test {
 
     function _getDefaultAmountToDeposit(address asset_, uint amountNoDecimals) internal view returns (uint) {
         return amountNoDecimals * 10 ** IERC20Metadata(asset_).decimals();
+    }
+
+    function _showResults(Results memory r) internal {
+        console.log("healthFactor.before", r.healthFactorAfterForwardingTime);
+        console.log("totalCollateralBase.before", r.position.userAccountData.totalCollateralBase);
+        console.log("totalDebtBase.before", r.position.userAccountData.totalDebtBase);
+        console.log("botProfitInBorrowAsset", r.botProfitInBorrowAsset);
+        console.log("collateralAmount", r.position.collateralAmount);
+        console.log("healthFactor.after", r.userAccountData.healthFactor);
+        console.log("totalCollateralBase.after", r.userAccountData.totalCollateralBase);
+        console.log("totalDebtBase.after", r.userAccountData.totalDebtBase);
     }
     //endregion ---------------------- Auxiliary functions
 

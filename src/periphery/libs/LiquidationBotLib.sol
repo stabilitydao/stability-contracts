@@ -20,6 +20,7 @@ import {IUniswapV3PoolActions} from "../../integrations/uniswapv3/pool/IUniswapV
 import {IUniswapV3PoolImmutables} from "../../integrations/uniswapv3/pool/IUniswapV3PoolImmutables.sol";
 import {IVaultMainV3} from "../../integrations/balancerv3/IVaultMainV3.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IControllable} from "../../interfaces/IControllable.sol";
 
 library LiquidationBotLib {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -41,6 +42,7 @@ library LiquidationBotLib {
     error InvalidHealthFactor();
     error HealthFactorNotIncreased(uint healthFactorBefore, uint healthFactorAfter);
     error NoProfit();
+    error IncorrectDebtAsset();
 
     event Liquidation(
         address user,
@@ -141,36 +143,40 @@ library LiquidationBotLib {
                     userData0,
                     targetHealthFactor_ == type(uint).max ? $.targetHealthFactor : targetHealthFactor_
                 );
-                uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
 
-                _requestFlashLoanExplicit(
-                    $.flashLoanKind,
-                    $.flashLoanVault,
-                    position.debtReserve,
-                    repayAmount,
-                    abi.encode(_getUserData(address(ac.pool), users[i], position, repayAmount))
-                );
+                _liquidatePosition($, ac, userData0, position, repayAmount, users[i]);
+            }
+        }
+    }
 
-                uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
-                uint profit = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
+    /// @notice Make liquidation, send profit to the registered contract
+    /// @param users List of users to liquidate (users with health factor < 1)
+    /// @param debtAsset Asset to be repaid
+    /// @param debtToCover Amounts of the debt asset to repay for each user
+    function liquidate(
+        AaveContracts memory ac,
+        address[] memory users,
+        address debtAsset,
+        uint[] memory debtToCover
+    ) internal {
+        LiquidationBotStorage storage $ = getLiquidationBotStorage();
 
-                _sendProfit($, users[i], position.debtReserve, balanceAfter);
+        uint len = users.length;
+        require(len == debtToCover.length, IControllable.IncorrectArrayLength());
 
-                ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, users[i]);
+        for (uint i; i < len; ++i) {
+            ILiquidationBot.UserAccountData memory userData0 = getUserAccountData(ac, users[i]);
+            ILiquidationBot.UserPosition memory position = _getUserPosition(users[i], ac.dataProvider);
 
-                // require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
-                require(profit != 0, NoProfit());
+            require(position.debtReserve == debtAsset, IncorrectDebtAsset());
 
-                emit Liquidation(
-                    users[i],
-                    userData0,
-                    userData1,
-                    position.debtReserve,
-                    position.debtAmount,
-                    position.collateralReserve,
-                    profit,
-                    balanceAfter
-                );
+            if (
+                userData0.healthFactor >= 1e18 || position.collateralReserve == address(0)
+                    || position.debtReserve == address(0)
+            ) {
+                emit UserSkipped(users[i], userData0, position);
+            } else {
+                _liquidatePosition($, ac, userData0, position, debtToCover[i], users[i]);
             }
         }
     }
@@ -331,6 +337,47 @@ library LiquidationBotLib {
     //endregion -------------------------------------- Flash loan
 
     //region -------------------------------------- Internal logic
+
+    function _liquidatePosition(
+        LiquidationBotStorage storage $,
+        AaveContracts memory ac,
+        ILiquidationBot.UserAccountData memory userData0,
+        ILiquidationBot.UserPosition memory position,
+        uint repayAmount,
+        address user
+    ) internal {
+        uint balanceBefore = IERC20(position.debtReserve).balanceOf(address(this));
+
+        _requestFlashLoanExplicit(
+            $.flashLoanKind,
+            $.flashLoanVault,
+            position.debtReserve,
+            repayAmount,
+            abi.encode(_getUserData(address(ac.pool), user, position, repayAmount))
+        );
+
+        uint balanceAfter = IERC20(position.debtReserve).balanceOf(address(this));
+        uint profit = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
+
+        _sendProfit($, user, position.debtReserve, balanceAfter);
+
+        ILiquidationBot.UserAccountData memory userData1 = getUserAccountData(ac, user);
+
+        // require(userData0.healthFactor < userData1.healthFactor, HealthFactorNotIncreased(userData0.healthFactor, userData1.healthFactor));
+        require(profit != 0, NoProfit());
+
+        emit Liquidation(
+            user,
+            userData0,
+            userData1,
+            position.debtReserve,
+            position.debtAmount,
+            position.collateralReserve,
+            profit,
+            balanceAfter
+        );
+    }
+
     /// @notice Sell tokenIn for tokenOut
     /// @param tokenIn Swap input token
     /// @param tokenOut Swap output token
