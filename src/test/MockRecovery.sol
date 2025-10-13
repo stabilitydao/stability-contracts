@@ -32,6 +32,14 @@ contract MockRecovery is IRecovery {
         return false;
     }
 
+    function getListTokensToSwap() external pure returns (address[] memory tokens) {
+        return tokens;
+    }
+
+    function getListRegisteredTokens() external pure returns (address[] memory tokens) {
+        return tokens;
+    }
+
     function addRecoveryPools(address[] memory recoveryPools_) external pure override {
         recoveryPools_;
     }
@@ -54,10 +62,6 @@ contract MockRecovery is IRecovery {
         registeredTokens = tokens;
     }
 
-    function swapAssetsToRecoveryTokens(uint indexFirstRecoveryPool1) external pure override {
-        indexFirstRecoveryPool1;
-    }
-
     function isTokenRegistered(address token) external view override returns (bool) {
         for (uint i; i < registeredTokens.length; ++i) {
             if (registeredTokens[i] == token) {
@@ -65,5 +69,30 @@ contract MockRecovery is IRecovery {
             }
         }
         return false;
+    }
+
+    function swapAssets(address[] memory tokens, uint indexRecoveryPool1) external pure {
+        tokens;
+        indexRecoveryPool1;
+    }
+
+    function fillRecoveryPools(
+        address metaVaultToken_,
+        uint indexFirstRecoveryPool1,
+        uint maxCountPoolsToSwap_
+    ) external pure {
+        metaVaultToken_;
+        indexFirstRecoveryPool1;
+        maxCountPoolsToSwap_;
+    }
+
+    function getReceiver(address recoveryToken_) external pure returns (address receiver) {
+        recoveryToken_;
+        return receiver;
+    }
+
+    function setReceiver(address recoveryToken_, address receiver_) external pure {
+        recoveryToken_;
+        receiver_;
     }
 }
