@@ -16,7 +16,6 @@ import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStr
 import {ILiquidationBot} from "../../src/interfaces/ILiquidationBot.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";

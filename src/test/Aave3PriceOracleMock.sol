@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {IAavePriceOracle} from "../integrations/aave/IAavePriceOracle.sol";
-import {IAaveAddressProvider} from "../integrations/aave/IAaveAddressProvider.sol";
 
 contract Aave3PriceOracleMock is IAavePriceOracle {
     IAavePriceOracle private _aavePriceOracle;

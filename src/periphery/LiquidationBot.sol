@@ -14,6 +14,8 @@ import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebra
 import {IBalancerV3FlashCallback} from "../integrations/balancerv3/IBalancerV3FlashCallback.sol";
 
 /// @notice Liquidation bot for AAVE 3.0.2
+/// Changelog:
+/// 1.1.0 - add liquidation() with explicit target health factor, replace multisig restrictions with operator
 contract LiquidationBot is
     Controllable,
     ILiquidationBot,
@@ -27,7 +29,7 @@ contract LiquidationBot is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = "1.1.0";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -202,8 +204,7 @@ contract LiquidationBot is
     }
 
     /// @inheritdoc ILiquidationBot
-    function setProfitTarget(address profitTarget_) external onlyOperator {
-        // todo multisig?
+    function setProfitTarget(address profitTarget_) external onlyMultisig {
         LiquidationBotLib.setProfitTarget(profitTarget_);
     }
 

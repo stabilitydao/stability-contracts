@@ -101,7 +101,9 @@ interface ILiquidationBot {
     /// @notice Add or remove operator from the whitelist
     function changeWhitelist(address operator_, bool add_) external;
 
-    /// @notice Target health factor for the users after liquidation
+    /// @notice Default target health factor for the users after liquidation
+    /// This HF is used if liquidate(pool, users) is called
+    /// or if liquidate(pool, users, type(uint).max) is called
     /// @param targetHealthFactor_ Target health factor, decimals 18, must be > 1e18
     /// 0 - means that max possible debt should be repaid (up to 50% of total debt)
     function setTargetHealthFactor(uint targetHealthFactor_) external;

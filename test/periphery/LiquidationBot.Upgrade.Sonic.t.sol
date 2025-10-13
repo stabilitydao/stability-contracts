@@ -16,7 +16,6 @@ import {ILeverageLendingStrategy} from "../../src/interfaces/ILeverageLendingStr
 import {ILiquidationBot} from "../../src/interfaces/ILiquidationBot.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
 import {LiquidationBotLib} from "../../src/periphery/libs/LiquidationBotLib.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
@@ -50,8 +49,7 @@ contract LendingBotUpdateSonicTest is Test {
     /// @notice 0 - use max repay
     uint internal constant TARGET_HEALTH_FACTOR_18 = 0;
 
-    /// @notice All pools to be tested, list is filled in the constructor
-    address[2] POOLS;
+    ILiquidationBot internal _bot;
 
     //region ---------------------- Data types
     struct UserAccountData {
@@ -94,92 +92,29 @@ contract LendingBotUpdateSonicTest is Test {
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
 
-        POOLS = [SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL, SonicConstantsLib.BRUNCH_GEN2_POOL];
+        _bot = _getBotInstance(false);
+        _upgradeLiquidationBot(_bot);
     }
 
-    function testStateMetaUsdGen2() public view {
-        address[2] memory topUsers =
-            [0x65B5c75e1391cA3315C762482DA58b0c53C63fd7, 0x88888887C3ebD4a33E34a15Db4254C74C75E5D4A];
-        for (uint i; i < topUsers.length; ++i) {
-            (,,,, uint ltv, uint healthFactor) =
-                IPool(SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL).getUserAccountData(topUsers[i]);
-            console.log("stability", topUsers[i], healthFactor, ltv);
-        }
-    }
+    function testSingleLiquidationExplicitHealthFactor() public {
+        Results memory ret =
+            _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, 0);
 
-    function testStateBrunchGen2() public view {
-        address[3] memory topUsers = [
-            0x5123525EF2065C01Dd3A24565D6ED560EEA833C1,
-            0x40dc1c6695F5D9e7B9Bfe1F127c2E66ABB76D11A,
-            0xC0eFE789CD98B390df49771d55a146dE03aD0580
-        ];
-        for (uint i; i < topUsers.length; ++i) {
-            (,,,, uint ltv, uint healthFactor) =
-                IPool(SonicConstantsLib.BRUNCH_GEN2_POOL).getUserAccountData(topUsers[i]);
-            console.log("brunch", topUsers[i], healthFactor, ltv);
-        }
-    }
-
-    function testWMetaUsd() public {
-        address holder = 0x65B5c75e1391cA3315C762482DA58b0c53C63fd7;
-
-        ILiquidationBot bot1 = _getBotInstance(false);
-        {
-            (address flashLoanVault, uint flashLoanKind) = bot1.getFlashLoanVault();
-            console.log("exist flashLoanVault", flashLoanVault, flashLoanKind);
-            console.log("exist health factor", bot1.targetHealthFactor());
-        }
-
-        ILiquidationBot bot = _getBotInstance(true);
-        {
-            (address flashLoanVault, uint flashLoanKind) = bot.getFlashLoanVault();
-            console.log("flashLoanVault", flashLoanVault, flashLoanKind);
-            console.log("health factor", bot.targetHealthFactor());
-        }
-
-        _testLiquidation(
-            SonicConstantsLib.STABILITY_USD_MARKET_GEN2_POOL,
-            bot,
-            BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS,
-            holder,
-            type(uint).max
+        assertTrue(ret.liquidationDone, "Liquidation should be done");
+        assertLt(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be improved"
         );
     }
 
-    function testBrunch() public {
-        address holder = 0x5123525EF2065C01Dd3A24565D6ED560EEA833C1;
-
-        // ----------------- replace price oracle to fix prices life time
-        LiquidationBotLib.AaveContracts memory ac =
-            LiquidationBotLib.getAaveContracts(SonicConstantsLib.BRUNCH_GEN2_POOL);
-        _replacePriceOracle(ac);
-
-        // ----------------- move time until health factor < 1
-        for (uint i; i < 256; ++i) {
-            (,,,,, uint healthFactorAfterForwardingTime) =
-                IPool(SonicConstantsLib.BRUNCH_GEN2_POOL).getUserAccountData(holder);
-            console.log("healthFactorAfterForwardingTime", healthFactorAfterForwardingTime);
-            if (healthFactorAfterForwardingTime < 1e18) break;
-
-            vm.warp(block.timestamp + 1 * 3600);
-        }
-
-        ILiquidationBot bot = _getBotInstance(true);
-
-        uint targetHealthFactor = 0.998e18; // 997855043180505548; // type(uint).max;
-
-        //        vm.prank(multisig);
-        //        bot.setFlashLoanVault(SonicConstantsLib.BEETS_VAULT_V3, uint(ILeverageLendingStrategy.FlashLoanKind.BalancerV3_1));
-
-        vm.prank(multisig);
-        bot.setFlashLoanVault(
-            SonicConstantsLib.POOL_ALGEBRA_WS_USDC, uint(ILeverageLendingStrategy.FlashLoanKind.AlgebraV4_3)
+    function testSingleLiquidationDefaultHealthFactor() public {
+        Results memory ret = _testLiquidation(
+            SonicConstantsLib.BRUNCH_GEN2_POOL, _bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, type(uint).max
         );
 
-        _testLiquidation(
-            SonicConstantsLib.BRUNCH_GEN2_POOL, bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, holder, targetHealthFactor
+        assertTrue(ret.liquidationDone, "Liquidation should be done");
+        assertLt(
+            ret.healthFactorAfterForwardingTime, ret.userAccountData.healthFactor, "Health factor should be improved"
         );
-        // _testLiquidation(SonicConstantsLib.BRUNCH_GEN2_POOL, bot, BASE_DEPOSIT_AMOUNT_WITHOUT_DECIMALS, holder, 998055043180505548);
     }
 
     //region ---------------------- Internal logic
@@ -188,22 +123,56 @@ contract LendingBotUpdateSonicTest is Test {
         address pool,
         ILiquidationBot bot,
         uint amountToDepositWithoutDecimals,
-        address holder_,
         uint targetHealthFactor_
     ) internal returns (Results memory ret) {
         LiquidationBotLib.AaveContracts memory ac = LiquidationBotLib.getAaveContracts(pool);
 
         // ----------------- create lending position
         ret.pool = pool;
+        ret.position = _createLendingPosition(ac, pool, amountToDepositWithoutDecimals);
+        // console.log(ret.position.totalCollateralBase, ret.position.totalDebtBase, ret.position.healthFactor);
 
-        // ----------------- make liquidation
-        address[] memory users = new address[](1);
-        users[0] = holder_;
+        // ----------------- replace price oracle to fix prices life time
+        _replacePriceOracle(ac);
 
-        bot.liquidate(pool, users, targetHealthFactor_);
-        console.log("done");
+        // ----------------- move time until health factor < 1
+        for (uint i; i < 256; ++i) {
+            (,,,,, ret.healthFactorAfterForwardingTime) = IPool(pool).getUserAccountData(USER);
+            if (ret.healthFactorAfterForwardingTime < 1e18) break;
 
-        // ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(bot.profitTarget());
+            vm.warp(block.timestamp + 1 * 7 * 24 * 3600);
+        }
+
+        if (ret.healthFactorAfterForwardingTime < 1e18) {
+            // ----------------- make liquidation
+
+            address[] memory users = new address[](1);
+            users[0] = USER;
+
+            if (targetHealthFactor_ != type(uint).max) {
+                try bot.liquidate(pool, users) {
+                    ret.liquidationDone = true;
+                } catch Error(string memory reason) {
+                    ret.error = reason;
+                } catch (bytes memory reason) {
+                    ret.error = string(
+                        abi.encodePacked("Liquidation custom error1: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                    );
+                }
+            } else {
+                try bot.liquidate(pool, users, targetHealthFactor_) {
+                    ret.liquidationDone = true;
+                } catch Error(string memory reason) {
+                    ret.error = reason;
+                } catch (bytes memory reason) {
+                    ret.error = string(
+                        abi.encodePacked("Liquidation custom error2: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                    );
+                }
+            }
+        }
+
+        ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(PROFIT_TARGET);
         (
             ret.userAccountData.totalCollateralBase,
             ret.userAccountData.totalDebtBase,
@@ -211,15 +180,148 @@ contract LendingBotUpdateSonicTest is Test {
             ret.userAccountData.currentLiquidationThreshold,
             ret.userAccountData.ltv,
             ret.userAccountData.healthFactor
-        ) = IPool(pool).getUserAccountData(holder_);
+        ) = IPool(pool).getUserAccountData(USER);
 
-        console.log("after liquidation health factor", ret.userAccountData.healthFactor);
         return ret;
+    }
+
+    function _createLendingPosition(
+        LiquidationBotLib.AaveContracts memory ac,
+        address pool,
+        uint amountNoDecimal
+    ) internal returns (LendingPosition memory dest) {
+        (dest.collateralAsset, dest.borrowAsset) = _getAssets(ac);
+        uint amount = _getDefaultAmountToDeposit(dest.collateralAsset, amountNoDecimal);
+
+        deal(dest.collateralAsset, USER, amount);
+
+        vm.prank(USER);
+        IERC20(dest.collateralAsset).approve(pool, amount);
+
+        vm.prank(USER);
+        try IPool(pool).deposit(dest.collateralAsset, amount, USER, 0) {
+            dest.collateralAmount = amount;
+            dest.depositDone = true;
+        } catch Error(string memory reason) {
+            dest.error = reason;
+        } catch (bytes memory reason) {
+            dest.error =
+                string(abi.encodePacked("Deposit custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+        }
+
+        if (dest.depositDone) {
+            (,, uint availableBorrowsBase,,,) = IPool(pool).getUserAccountData(USER);
+            LiquidationBotLib.ReserveData memory rd = LiquidationBotLib._getReserveData(ac, dest.borrowAsset);
+            uint availableBorrows = LiquidationBotLib._fromBase(ac, rd, availableBorrowsBase);
+
+            {
+                IPool.ReserveData memory rdata = IPool(pool).getReserveData(dest.borrowAsset);
+                uint availableLiquidity = IERC20(dest.borrowAsset).balanceOf(rdata.aTokenAddress);
+                if (availableLiquidity < availableBorrows) {
+                    _provideLiquidityToPool(ac, dest.borrowAsset, availableBorrows - availableLiquidity, dest);
+                } else {
+                    _removeExtraLiquidityFromPool(
+                        ac, dest.collateralAsset, dest.borrowAsset, availableLiquidity - availableBorrows, dest
+                    );
+                }
+            }
+
+            // 2 = variable rate mode
+            vm.prank(USER);
+            try IPool(pool).borrow(dest.borrowAsset, availableBorrows * 99 / 100, 2, 0, USER) {
+                dest.borrowDone = true;
+            } catch Error(string memory reason) {
+                dest.error = reason;
+            } catch (bytes memory reason) {
+                dest.error =
+                    string(abi.encodePacked("Borrow custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+            }
+        }
+
+        (
+            dest.userAccountData.totalCollateralBase,
+            dest.userAccountData.totalDebtBase,
+            dest.userAccountData.availableBorrowsBase,
+            dest.userAccountData.currentLiquidationThreshold,
+            dest.userAccountData.ltv,
+            dest.userAccountData.healthFactor
+        ) = IPool(pool).getUserAccountData(USER);
+
+        return dest;
     }
 
     //endregion ---------------------- Internal logic
 
     //region ---------------------- Auxiliary functions
+
+    function _provideLiquidityToPool(
+        LiquidationBotLib.AaveContracts memory ac,
+        address borrowAsset,
+        uint amount,
+        LendingPosition memory dest
+    ) internal {
+        deal(borrowAsset, OTHER_USER, amount);
+
+        vm.prank(OTHER_USER);
+        IERC20(borrowAsset).approve(address(ac.pool), amount);
+
+        vm.prank(OTHER_USER);
+        try ac.pool.supply(borrowAsset, amount, OTHER_USER, 0) {
+            dest.providedBorrowLiquidity = amount;
+        } catch Error(string memory reason) {
+            dest.error = string(abi.encodePacked("Other user supply custom error: ", reason));
+        } catch (bytes memory reason) {
+            dest.error = string(
+                abi.encodePacked("Other user supply custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+            );
+        }
+    }
+
+    /// @notice  borrow all liquidity to increase utilization (and make borrow APR > supply APR)
+    function _removeExtraLiquidityFromPool(
+        LiquidationBotLib.AaveContracts memory ac,
+        address collateralAsset,
+        address borrowAsset,
+        uint amountToBorrow,
+        LendingPosition memory dest
+    ) internal {
+        LiquidationBotLib.ReserveData memory rdb = LiquidationBotLib._getReserveData(ac, borrowAsset);
+        LiquidationBotLib.ReserveData memory rdc = LiquidationBotLib._getReserveData(ac, collateralAsset);
+
+        uint amountBorrowBase = LiquidationBotLib._toBase(ac, rdb, amountToBorrow);
+        uint amountCollateralBase = amountBorrowBase * 10_000 / rdc.ltv;
+        uint amountCollateral = LiquidationBotLib._fromBase(ac, rdc, amountCollateralBase);
+
+        deal(collateralAsset, OTHER_USER, amountCollateral);
+
+        vm.prank(OTHER_USER);
+        IERC20(collateralAsset).approve(address(ac.pool), amountCollateral);
+
+        vm.prank(OTHER_USER);
+        try ac.pool.deposit(collateralAsset, amountCollateral, OTHER_USER, 0) {
+            (,, uint availableBorrowsBase,,,) = ac.pool.getUserAccountData(OTHER_USER);
+
+            uint amountToBorrowActual = LiquidationBotLib._fromBase(ac, rdb, availableBorrowsBase) * 99 / 100;
+
+            vm.prank(OTHER_USER);
+            try ac.pool.borrow(borrowAsset, amountToBorrowActual, 2, 0, OTHER_USER) {
+                dest.borrowLiquidityRemoved = amountToBorrowActual;
+            } catch Error(string memory reason) {
+                dest.error = string(abi.encodePacked("Other user borrow custom error: ", reason));
+            } catch (bytes memory reason) {
+                dest.error = string(
+                    abi.encodePacked("Other user borrow custom error: ", Strings.toHexString(uint32(bytes4(reason)), 4))
+                );
+            }
+        } catch Error(string memory reason) {
+            dest.error = string(abi.encodePacked("Other user deposit custom error: ", reason));
+        } catch (bytes memory reason) {
+            dest.error =
+                string(abi.encodePacked("Other user deposit error: ", Strings.toHexString(uint32(bytes4(reason)), 4)));
+        }
+    }
+
+    /// @notice Replace price oracle with mock that keeps prices fixed
     function _replacePriceOracle(LiquidationBotLib.AaveContracts memory ac) internal {
         IAaveAddressProvider addressProvider = IAaveAddressProvider(ac.pool.ADDRESSES_PROVIDER());
 
@@ -349,6 +451,29 @@ contract LendingBotUpdateSonicTest is Test {
 
         vm.prank(multisig);
         swapper.addPools(pools, false);
+    }
+
+    function _upgradeLiquidationBot(ILiquidationBot bot) internal {
+        // we need to skip 1 day to update the swapper
+        // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
+        // vm.warp(block.timestamp - 86400);
+        rewind(86400);
+
+        IPlatform platform = IPlatform(PLATFORM);
+
+        address[] memory proxies = new address[](1);
+        address[] memory implementations = new address[](1);
+
+        proxies[0] = address(bot);
+
+        implementations[0] = address(new LiquidationBot());
+
+        vm.startPrank(multisig);
+        platform.announcePlatformUpgrade("2025.07.22-alpha", proxies, implementations);
+
+        skip(1 days);
+        platform.upgrade();
+        vm.stopPrank();
     }
     //endregion ---------------------- Setup bot
 }

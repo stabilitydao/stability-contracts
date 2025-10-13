@@ -9,7 +9,6 @@ import {IAaveAddressProvider} from "../../integrations/aave/IAaveAddressProvider
 import {IAaveDataProvider} from "../../integrations/aave/IAaveDataProvider.sol";
 import {IAavePriceOracle} from "../../integrations/aave/IAavePriceOracle.sol";
 import {IBVault} from "../../integrations/balancer/IBVault.sol";
-import {IControllable} from "../../interfaces/IControllable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILeverageLendingStrategy} from "../../interfaces/ILeverageLendingStrategy.sol";
@@ -37,7 +36,7 @@ library LiquidationBotLib {
     error UnauthorizedCallback();
     error NotWhitelisted();
     error IncorrectAmountReceived(address asset, uint balanceBefore, uint balanceAfter, uint expectedAmount);
-    error InsufficientBalance(uint availableBalance, uint requiredBalance);
+    error InsufficientBalanceToPayFlash(uint availableBalance, uint requiredBalance);
     error InsufficientFlashBalance(uint availableBalance, uint requiredBalance);
     error InvalidHealthFactor();
     error HealthFactorNotIncreased(uint healthFactorBefore, uint healthFactorAfter);
@@ -319,7 +318,7 @@ library LiquidationBotLib {
         // --------------- return flash loan + fee back to the vault
         uint balance = IERC20(data.debtAsset).balanceOf(address(this));
 
-        require(balance >= amount + fee, InsufficientBalance(balance, amount + fee));
+        require(balance >= amount + fee, InsufficientBalanceToPayFlash(balance, amount + fee));
 
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);
 
@@ -546,7 +545,8 @@ library LiquidationBotLib {
         return (amountBase * (10 ** rd.decimals)) / price;
     }
 
-    function _getReserveData(AaveContracts memory ac, address asset) internal view returns (ReserveData memory rd) {
+    function _getReserveData(AaveContracts memory ac, address asset) internal view returns (ReserveData memory) {
+        ReserveData memory rd;
         (rd.decimals, rd.ltv, rd.liquidationThreshold, rd.liquidationBonus,,,,,,) =
             ac.dataProvider.getReserveConfigurationData(asset);
         rd.asset = asset;
@@ -557,7 +557,9 @@ library LiquidationBotLib {
     function getUserAccountData(
         AaveContracts memory ac,
         address user
-    ) internal view returns (ILiquidationBot.UserAccountData memory userData) {
+    ) internal view returns (ILiquidationBot.UserAccountData memory) {
+        ILiquidationBot.UserAccountData memory userData;
+
         (
             userData.totalCollateralBase,
             userData.totalDebtBase,
