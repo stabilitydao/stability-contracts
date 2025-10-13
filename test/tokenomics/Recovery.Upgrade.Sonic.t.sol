@@ -7,6 +7,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IRecovery} from "../../src/interfaces/IRecovery.sol";
+import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
 import {MetaVault} from "../../src/core/vaults/MetaVault.sol";
 import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
@@ -38,15 +39,21 @@ contract RecoveryUpgradeTestSonic is Test {
         vm.prank(multisig);
         priceReader.changeWhitelistTransientCache(address(recovery), true);
 
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(recovery), true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAS).changeWhitelist(address(recovery), true);
+
         // ------------------------------ Get list of available tokes and their prices
         {
             address[] memory tokens = recovery.getListTokensToSwap();
-            for (uint i = 0; i < tokens.length; i++) {
-                address token = tokens[i];
-                uint balance = IERC20(token).balanceOf(address(recovery));
-                (uint price,) = priceReader.getPrice(token);
-                console.log(token, balance, price, IERC20Metadata(token).decimals());
-            }
+            //            for (uint i = 0; i < tokens.length; i++) {
+            //                address token = tokens[i];
+            //                uint balance = IERC20(token).balanceOf(address(recovery));
+            //                (uint price,) = priceReader.getPrice(token);
+            //                 console.log(token, balance, price, IERC20Metadata(token).decimals());
+            //            }
             assertEq(tokens.length, 15);
         }
 
@@ -137,6 +144,7 @@ contract RecoveryUpgradeTestSonic is Test {
             }
 
             uint gasBefore = gasleft();
+
             vm.prank(multisig);
             recovery.swapAssets(portion, 0);
             uint gasAfter = gasleft();
