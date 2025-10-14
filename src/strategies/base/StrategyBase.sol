@@ -10,6 +10,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 
 /// @dev Base universal strategy
 /// Changelog:
+///   2.6.4: virtual revenue fix
 ///   2.6.3: virtual revenue fix
 ///   2.6.2: virtual revenue fix
 ///   2.6.1: virtual revenue fix
@@ -35,7 +36,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Version of StrategyBase implementation
-    string public constant VERSION_STRATEGY_BASE = "2.6.3";
+    string public constant VERSION_STRATEGY_BASE = "2.6.4";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.StrategyBase")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant STRATEGYBASE_STORAGE_LOCATION =
@@ -138,8 +139,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
             //slither-disable-next-line uninitialized-local
             uint totalBefore;
             if (!autoCompoundingByUnderlyingProtocol()) {
-                __amounts[exchangeAssetIndex] +=
-                    _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
+                __amounts[
+                    exchangeAssetIndex
+                ] += _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
                 uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, __assets, __amounts);
 
@@ -155,14 +157,10 @@ abstract contract StrategyBase is Controllable, IStrategy {
                 // vault shares as fees can be used not only for autoCompoundingByUnderlyingProtocol strategies,
                 // but for many strategies linked to CVault if this feature will be implemented
 
-                if (StrategyLib.isPositiveAmountInArray(__amounts)) {
-                    IVault(_vault).hardWorkMintFeeCallback(__assets, __amounts);
-                } else {
-                    (, uint[] memory __assetsAmounts) = assetsAmounts();
-                    uint[] memory virtualRevenueAmounts = new uint[](__assets.length);
-                    virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 300 days;
-                    IVault(_vault).hardWorkMintFeeCallback(__assets, virtualRevenueAmounts);
-                }
+                (, uint[] memory __assetsAmounts) = assetsAmounts();
+                uint[] memory virtualRevenueAmounts = new uint[](__assets.length);
+                virtualRevenueAmounts[0] = __assetsAmounts[0] * (block.timestamp - $.lastHardWork) / 300 days;
+                IVault(_vault).hardWorkMintFeeCallback(__assets, virtualRevenueAmounts);
                 // call empty method only for coverage or them can be overriden
                 _liquidateRewards(__assets[0], __rewardAssets, __rewardAmounts);
                 _processRevenue(__assets, __amounts);
@@ -309,7 +307,7 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @notice IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view virtual returns (uint[] memory amounts) {
+    function maxWithdrawAssets(uint /*mode*/) public view virtual returns (uint[] memory amounts) {
         // by default zero-length array is returned to indicate that all available amounts can be withdrawn
         return amounts;
     }
@@ -345,29 +343,25 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Consumed amounts of invested assets
-    function _depositUnderlying(uint /*amount*/ ) internal virtual returns (uint[] memory /*amountsConsumed*/ ) {
+    function _depositUnderlying(uint /*amount*/) internal virtual returns (uint[] memory /*amountsConsumed*/) {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Withdraw underlying invested and send to receiver
-    function _withdrawUnderlying(uint, /*amount*/ address /*receiver*/ ) internal virtual {
+    function _withdrawUnderlying(
+        uint,
+        /*amount*/
+        address /*receiver*/
+    ) internal virtual {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
-    function _previewDepositUnderlying(uint /*amount*/ )
-        internal
-        view
-        virtual
-        returns (uint[] memory /*amountsConsumed*/ )
-    {}
+    function _previewDepositUnderlying(
+        uint /*amount*/
+    ) internal view virtual returns (uint[] memory /*amountsConsumed*/) {}
 
-    function _previewDepositUnderlyingWrite(uint amount)
-        internal
-        view
-        virtual
-        returns (uint[] memory amountsConsumed)
-    {
+    function _previewDepositUnderlyingWrite(uint amount) internal view virtual returns (uint[] memory amountsConsumed) {
         return _previewDepositUnderlying(amount);
     }
 

@@ -29,6 +29,7 @@ import {StrategyLib} from "./libs/StrategyLib.sol";
 
 /// @title Silo V2 advanced leverage strategy
 /// Changelog:
+///   2.4.3: StrategyBase 2.6.4
 ///   2.4.2: Add custom swap for USDC => smsUSD, StrategyBase 2.6.0, fix getSpecificName
 ///   2.4.1: Urgent max ltv fix, StrategyBase 2.5.1
 ///   2.4.0: Support of expired PT. depositParams1 = 1 means PT expired mode - #352
@@ -69,7 +70,7 @@ contract SiloAdvancedLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.4.2";
+    string public constant VERSION = "2.4.3";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
