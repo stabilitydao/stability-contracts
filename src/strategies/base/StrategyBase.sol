@@ -307,7 +307,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @notice IStrategy
-    function maxWithdrawAssets(uint /*mode*/) public view virtual returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view virtual returns (uint[] memory amounts) {
         // by default zero-length array is returned to indicate that all available amounts can be withdrawn
         return amounts;
     }
@@ -343,7 +345,15 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Consumed amounts of invested assets
-    function _depositUnderlying(uint /*amount*/) internal virtual returns (uint[] memory /*amountsConsumed*/) {
+    function _depositUnderlying(
+        uint /*amount*/
+    )
+        internal
+        virtual
+        returns (
+            uint[] memory /*amountsConsumed*/
+        )
+    {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
@@ -359,7 +369,14 @@ abstract contract StrategyBase is Controllable, IStrategy {
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
     function _previewDepositUnderlying(
         uint /*amount*/
-    ) internal view virtual returns (uint[] memory /*amountsConsumed*/) {}
+    )
+        internal
+        view
+        virtual
+        returns (
+            uint[] memory /*amountsConsumed*/
+        )
+    {}
 
     function _previewDepositUnderlyingWrite(uint amount) internal view virtual returns (uint[] memory amountsConsumed) {
         return _previewDepositUnderlying(amount);
