@@ -96,6 +96,11 @@
 * **StrategyLogic** `0x5e670b7a1740e8a11aff06335984d696d537b7bc` [plasmascan](https://plasmascan.to/address/0x5e670b7a1740e8a11aff06335984d696d537b7bc)
 * **Zap** `0xbc4ff9766074b53c7a4cb91964836c83188f333d` [plasmascan](https://plasmascan.to/address/0xbc4ff9766074b53c7a4cb91964836c83188f333d)
 
+### Periphery
+
+* **Frontend** `0x70e804364175e23F1c30dFa03BFb19d936E5E81c` [plasmascan](https://plasmascan.to/address/0x70e804364175e23F1c30dFa03BFb19d936E5E81c)
+
+
 ## Polygon [137]
 
 * **Platform** `0xb2a0737ef27b5Cc474D24c779af612159b1c3e60` [polygonscan](https://polygonscan.com/address/0xb2a0737ef27b5Cc474D24c779af612159b1c3e60)

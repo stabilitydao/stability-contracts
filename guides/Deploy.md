@@ -12,6 +12,9 @@ When deploying Platform via `forge create` we see `Error: Dynamic linking not su
 
 ```shell
 forge script --rpc-url plasma --slow --broadcast --verify --etherscan-api-key sonic --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/9745/etherscan' ./script/deploy-core/Deploy.Plasma.s.sol
+
+# verify single
+forge verify-contract --rpc-url plasma --etherscan-api-key sonic --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/9745/etherscan' --watch 0x70e804364175e23F1c30dFa03BFb19d936E5E81c 
 ```
 
 ### Sonic
