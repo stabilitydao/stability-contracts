@@ -61,6 +61,7 @@ library SiloALMFLib {
         uint withdrawParam2;
         uint priceCtoB;
     }
+
     //endregion ------------------------------------- Data types
 
     //region ------------------------------------- Flash loan
@@ -89,9 +90,10 @@ library SiloALMFLib {
             _swap(platform, token, collateralAsset, amount, $.swapPriceImpactTolerance0);
 
             // supply
-            ISilo($.lendingVault).deposit(
-                IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
-            );
+            ISilo($.lendingVault)
+                .deposit(
+                    IERC20(collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
+                );
 
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
@@ -113,12 +115,13 @@ library SiloALMFLib {
                 uint collateralAmountTotal = totalCollateral(lendingVault);
                 collateralAmountTotal -= collateralAmountTotal / 1000;
 
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Collateral
-                );
+                ISilo(lendingVault)
+                    .withdraw(
+                        Math.min(tempCollateralAmount, collateralAmountTotal),
+                        address(this),
+                        address(this),
+                        ISilo.CollateralType.Collateral
+                    );
             }
 
             // swap
@@ -161,9 +164,8 @@ library SiloALMFLib {
             ISilo($.borrowingVault).repay(_balanceWithoutRewards(token, tokenBalance0), address(this));
 
             // withdraw amount
-            ISilo(lendingVault).withdraw(
-                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral
-            );
+            ISilo(lendingVault)
+                .withdraw($.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral);
 
             // swap
             _swap(platform, collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
@@ -190,11 +192,12 @@ library SiloALMFLib {
             );
 
             // supply
-            ISilo($.lendingVault).deposit(
-                _getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
-                address(this),
-                ISilo.CollateralType.Collateral
-            );
+            ISilo($.lendingVault)
+                .deposit(
+                    _getLimitedAmount(IERC20(collateralAsset).balanceOf(address(this)), tempCollateralAmount),
+                    address(this),
+                    ISilo.CollateralType.Collateral
+                );
 
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
@@ -293,8 +296,9 @@ library SiloALMFLib {
             uint targetLeveragePercent
         )
     {
-        CollateralDebtState memory debtState =
-            _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        CollateralDebtState memory debtState = _getDebtState(
+            platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault
+        );
         (ltv, maxLtv, leverage, collateralAmount, debtAmount, targetLeveragePercent) = _health(platform, $, debtState); // todo return
     }
 
@@ -327,7 +331,8 @@ library SiloALMFLib {
         // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        uint newDebtAmount = newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+        uint newDebtAmount =
+            newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
         uint debtDiff;
@@ -369,20 +374,18 @@ library SiloALMFLib {
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
+            priceCtoB = ISiloOracle(collateralOracle)
+                .quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
             priceBtoC = 1e18 * 1e18 / priceCtoB;
         } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
-            priceBtoC =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceBtoC = ISiloOracle(borrowOracle)
+                .quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
-            uint priceC = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
-            uint priceB =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            uint priceC = ISiloOracle(collateralOracle)
+                .quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
+            uint priceB = ISiloOracle(borrowOracle)
+                .quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
 
             priceCtoB = priceC * 1e18 / priceB; // todo
             priceBtoC = 1e18 * 1e18 / priceCtoB;
@@ -409,8 +412,8 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint priceBtoC
     ) public view returns (uint total) {
-        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault)
-            * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
+        uint borrowedAmountPricedInCollateral =
+            totalDebt(v.borrowingVault) * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
             / (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18; // priceBtoC has decimals 18
 
         total = totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
@@ -435,11 +438,9 @@ library SiloALMFLib {
         sharePrice = totalSupply == 0 ? 0 : __realTvl * 1e18 / totalSupply;
     }
 
-    function getSpecificName(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        external
-        view
-        returns (string memory, bool)
-    {
+    function getSpecificName(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) external view returns (string memory, bool) {
         address lendingVault = $.lendingVault;
         uint siloId = ISiloConfig(ISilo(lendingVault).config()).SILO_ID();
         string memory borrowAssetSymbol = IERC20Metadata($.borrowAsset).symbol();
@@ -453,11 +454,9 @@ library SiloALMFLib {
     //endregion ------------------------------------- View functions
 
     //region ------------------------------------- Max deposit
-    function maxDepositAssets(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        public
-        view
-        returns (uint[] memory amounts)
-    {
+    function maxDepositAssets(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) public view returns (uint[] memory amounts) {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v = _getLeverageLendingAddresses($);
 
         // max deposit is limited by amount available to borrow from the borrow pool
@@ -472,6 +471,7 @@ library SiloALMFLib {
         amounts = new uint[](1);
         amounts[0] = _getAmountToDepositFromBorrow($, v, Math.min(maxBorrowAmount, flashLoanVaultBalance));
     }
+
     //endregion ------------------------------------- Max deposit
 
     //region ------------------------------------- Deposit
@@ -527,9 +527,10 @@ library SiloALMFLib {
 
         flashAmount = amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
+            * 
             // depositParam0 is used to move result leverage to targetValue.
             // Otherwise result leverage is higher the target value because of swap losses
-            * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+            $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
     }
 
     /// @notice Get what collateral amount should be deposited to borrow internally given {borrowAmount}
@@ -547,6 +548,7 @@ library SiloALMFLib {
             * INTERNAL_PRECISION / (targetLeverage - INTERNAL_PRECISION) / priceCtoB
             / (10 ** IERC20Metadata(v.borrowAsset).decimals()) * INTERNAL_PRECISION / $.depositParam0;
     }
+
     //endregion ------------------------------------- Deposit
 
     //region ------------------------------------- Withdraw
@@ -629,9 +631,8 @@ library SiloALMFLib {
                 debtState.collateralAmount
             );
             if (amountToWithdraw != 0) {
-                ISilo(v.lendingVault).withdraw(
-                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral
-                );
+                ISilo(v.lendingVault)
+                    .withdraw(amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral);
             }
         } else {
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
@@ -696,8 +697,10 @@ library SiloALMFLib {
 
         // --------- Calculate debt to add
         uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
-        uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
+        uint debtDiff =
+            requiredCollateral * priceCtoB // no multiplication on ltv here
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
 
         (address[] memory flashAssets, uint[] memory flashAmounts) =
             _getFlashLoanAmounts(debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION, v.borrowAsset);
@@ -908,8 +911,8 @@ library SiloALMFLib {
         data.collateralAmount = totalCollateral(lendingVault);
         data.collateralBalance = StrategyLib.balance(collateralAsset);
         (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
-            / 10 ** IERC20Metadata(collateralAsset).decimals();
+        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice / 10
+            ** IERC20Metadata(collateralAsset).decimals();
 
         data.debtAmount = totalDebt(borrowingVault);
         (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
@@ -948,10 +951,7 @@ library SiloALMFLib {
     }
 
     /// @notice ensure that result LTV doesn't exceed max
-    function _ensureLtvValid(
-        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $,
-        uint maxLtv
-    ) internal view {
+    function _ensureLtvValid(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $, uint maxLtv) internal view {
         uint ltv = getLtv($);
         require(ltv <= maxLtv, IControllable.IncorrectLtv(ltv));
     }
@@ -966,11 +966,9 @@ library SiloALMFLib {
         flashAmounts[0] = borrowAmount;
     }
 
-    function _getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        internal
-        view
-        returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)
-    {
+    function _getLeverageLendingAddresses(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) internal view returns (ILeverageLendingStrategy.LeverageLendingAddresses memory) {
         return ILeverageLendingStrategy.LeverageLendingAddresses({
             collateralAsset: $.collateralAsset,
             borrowAsset: $.borrowAsset,
@@ -1028,6 +1026,7 @@ library SiloALMFLib {
         targetLeveragePercent = $.targetLeveragePercent;
         (maxLtv,,) = getLtvData(lendingVault, targetLeveragePercent);
     }
+
     //endregion ------------------------------------- Internal
 
     //region ------------------------------------- Transient prices cache

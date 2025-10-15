@@ -69,6 +69,7 @@ contract RecoverySonicTest is Test {
     struct SelectedPoolTestCase {
         uint index;
     }
+
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Unit tests
@@ -252,6 +253,7 @@ contract RecoverySonicTest is Test {
         vm.prank(address(this));
         recovery.swapAssetsToRecoveryTokens(20000);
     }
+
     //endregion --------------------------------- Unit tests
 
     //region --------------------------------- Use Recovery with EACH single recovery token
@@ -553,6 +555,7 @@ contract RecoverySonicTest is Test {
             "balance of meta-vault-token in Recovery should be increased"
         );
     }
+
     //endregion --------------------------------- Use Recovery with multiple recovery tokens
 
     //region --------------------------------- Selected pool tests
@@ -818,6 +821,7 @@ contract RecoverySonicTest is Test {
             states[i][3] = getState(IUniswapV3Pool(multiple.pools[i]), user1, recovery);
         }
     }
+
     //endregion --------------------------------- Tests implementations
 
     //region --------------------------------- Utils

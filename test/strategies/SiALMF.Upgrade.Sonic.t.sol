@@ -61,8 +61,9 @@ contract SiALMFUpgradeTest is Test {
         multisig = IPlatform(PLATFORM).multisig();
         vault = IStabilityVault(SonicConstantsLib.VAULT_C_WMETAUSD_USDC_121);
         strategy = IVault(address(vault)).strategy();
-        priceReader =
-            IPriceReader(IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).platform()).priceReader());
+        priceReader = IPriceReader(
+            IPlatform(IControllable(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).platform()).priceReader()
+        );
 
         _upgradePlatform(address(priceReader));
         _upgradeMetaVault(SonicConstantsLib.METAVAULT_METAUSD);
@@ -293,12 +294,7 @@ contract SiALMFUpgradeTest is Test {
         factory.upgradeVaultProxy(address(vault));
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);
@@ -349,8 +345,14 @@ contract SiALMFUpgradeTest is Test {
 
         (state.sharePrice,) = _strategy.realSharePrice();
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = _strategy.health();
+        (
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = _strategy.health();
 
         state.total = strategy.total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
@@ -398,9 +400,8 @@ contract SiALMFUpgradeTest is Test {
         IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_36);
 
         vm.prank(multisig);
-        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(
-            SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK
-        );
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC)
+            .removeVault(SonicConstantsLib.VAULT_C_USDC_STABILITY_STABLEJACK);
 
         vm.prank(multisig);
         IMetaVault(SonicConstantsLib.METAVAULT_METAUSDC).removeVault(SonicConstantsLib.VAULT_C_USDC_S_112);

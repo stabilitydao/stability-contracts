@@ -105,22 +105,23 @@ abstract contract DeployCore {
         vars.vaultPriceOracle.initialize(address(vars.platform));
 
         // setup platform
-        vars.platform.setup(
-            IPlatform.SetupAddresses({
-                factory: address(vars.factory),
-                priceReader: address(vars.priceReader),
-                swapper: address(vars.swapper),
-                vaultManager: address(vars.vaultManager),
-                strategyLogic: address(vars.strategyLogic),
-                targetExchangeAsset: p.targetExchangeAsset,
-                hardWorker: address(vars.hardWorker),
-                zap: address(vars.zap),
-                revenueRouter: address(vars.revenueRouter),
-                metaVaultFactory: address(vars.metaVaultFactory),
-                vaultPriceOracle: address(vars.vaultPriceOracle)
-            }),
-            IPlatform.PlatformSettings({fee: p.fee})
-        );
+        vars.platform
+            .setup(
+                IPlatform.SetupAddresses({
+                    factory: address(vars.factory),
+                    priceReader: address(vars.priceReader),
+                    swapper: address(vars.swapper),
+                    vaultManager: address(vars.vaultManager),
+                    strategyLogic: address(vars.strategyLogic),
+                    targetExchangeAsset: p.targetExchangeAsset,
+                    hardWorker: address(vars.hardWorker),
+                    zap: address(vars.zap),
+                    revenueRouter: address(vars.revenueRouter),
+                    metaVaultFactory: address(vars.metaVaultFactory),
+                    vaultPriceOracle: address(vars.vaultPriceOracle)
+                }),
+                IPlatform.PlatformSettings({fee: p.fee})
+            );
 
         return address(vars.platform);
     }

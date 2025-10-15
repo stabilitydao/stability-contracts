@@ -229,6 +229,7 @@ contract SiALUpgrade2Test is Test {
         assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), 1000e6), 100);
         assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user2), 2e6), 100);
     }
+
     //endregion -------------------------- Check flash loan kinds
 
     //region -------------------------- Check deposit and withdraw
@@ -411,11 +412,13 @@ contract SiALUpgrade2Test is Test {
             uint amount = uint(BASE_AMOUNTS[i]) * 10 ** IERC20Metadata(strategy.assets()[0]).decimals();
 
             // ----------------- initial deposit
-            depositedWithdrawn[1] +=
-                _depositForUser(VAULTS[i], USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
+            depositedWithdrawn[
+                1
+            ] += _depositForUser(VAULTS[i], USERS[1], i % 2 == 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
 
-            depositedWithdrawn[0] +=
-                _depositForUser(VAULTS[i], USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
+            depositedWithdrawn[
+                0
+            ] += _depositForUser(VAULTS[i], USERS[0], i % 2 != 0 ? amount / (11 - i + 1) : amount * (11 - i + 1));
 
             // ----------------- withdraw
             vm.roll(block.number + 6);
@@ -597,6 +600,7 @@ contract SiALUpgrade2Test is Test {
             }
         }
     }
+
     //endregion -------------------------- Deposit withdraw routines
 
     //region -------------------------- Auxiliary functions
@@ -604,8 +608,14 @@ contract SiALUpgrade2Test is Test {
         SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = strategy.health();
+        (
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

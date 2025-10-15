@@ -130,12 +130,13 @@ library SiloLib {
                 uint collateralAmountTotal = totalCollateral(lendingVault);
                 collateralAmountTotal -= collateralAmountTotal / 1000;
 
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Collateral
-                );
+                ISilo(lendingVault)
+                    .withdraw(
+                        Math.min(tempCollateralAmount, collateralAmountTotal),
+                        address(this),
+                        address(this),
+                        ISilo.CollateralType.Collateral
+                    );
             }
 
             // swap
@@ -293,8 +294,9 @@ library SiloLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
-        CollateralDebtState memory debtState =
-            getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        CollateralDebtState memory debtState = getDebtState(
+            platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault
+        );
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
     }
@@ -314,8 +316,8 @@ library SiloLib {
         data.collateralAmount = totalCollateral(lendingVault);
         data.collateralBalance = StrategyLib.balance(collateralAsset);
         (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
-            / 10 ** IERC20Metadata(collateralAsset).decimals();
+        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice / 10
+            ** IERC20Metadata(collateralAsset).decimals();
 
         data.debtAmount = totalDebt(borrowingVault);
         (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
@@ -333,13 +335,12 @@ library SiloLib {
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
+            priceCtoB = ISiloOracle(collateralOracle)
+                .quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
             priceBtoC = 1e18 * 1e18 / priceCtoB;
         } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
-            priceBtoC =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceBtoC = ISiloOracle(borrowOracle)
+                .quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
             revert("Not implemented yet");
@@ -417,6 +418,7 @@ library SiloLib {
         $.tempAction = ILeverageLendingStrategy.CurrentAction.Deposit;
         LeverageLendingLib.requestFlashLoan($, _assets, flashAmounts);
     }
+
     //endregion ------------------------------------- Deposit
 
     //region ------------------------------------- Withdraw
@@ -497,9 +499,8 @@ library SiloLib {
                 debtState.collateralAmount
             );
             if (amountToWithdraw != 0) {
-                ISilo(v.lendingVault).withdraw(
-                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral
-                );
+                ISilo(v.lendingVault)
+                    .withdraw(amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral);
             }
         } else {
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
@@ -580,7 +581,8 @@ library SiloLib {
 
         // --------- Increase ltv
         $.tempBorrowAmount = flashAmounts[0] * priceCtoB // no multiplication on ltv here
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
         $.tempAction = ILeverageLendingStrategy.CurrentAction.IncreaseLtv;
         LeverageLendingLib.requestFlashLoan($, flashAssets, flashAmounts);
 
@@ -651,11 +653,10 @@ library SiloLib {
         // C_new = CC + F + C_delta - X, C_delta = C1 - F1 (can be negative)
         // C1 = config.initialBalanceC + F * ltv * alpha (collateral balance on hand after swap)
         // F1 = total to return for flash loan = F + F_delta, where F_delta = beta_rate * F (flash fee)
-        int cNew = int(config.currentCollateralAmount) + int(fAmount)
-            + (
-                int(config.initialBalanceC + fAmount * config.alphaScaled / 1e18)
-                    - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)
-            ) - int(config.xWithdrawAmount);
+        int cNew =
+            int(config.currentCollateralAmount) + int(fAmount)
+            + (int(config.initialBalanceC + fAmount * config.alphaScaled / 1e18)
+                - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)) - int(config.xWithdrawAmount);
 
         if (cNew < 0) {
             return 0; // Resulting cNewAmount would be negative
@@ -715,11 +716,9 @@ library SiloLib {
     //endregion ------------------------------------- Withdraw
 
     //region ------------------------------------- Internal
-    function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        internal
-        view
-        returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)
-    {
+    function getLeverageLendingAddresses(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) internal view returns (ILeverageLendingStrategy.LeverageLendingAddresses memory) {
         return ILeverageLendingStrategy.LeverageLendingAddresses({
             collateralAsset: $.collateralAsset,
             borrowAsset: $.borrowAsset,

@@ -18,7 +18,7 @@ contract TridentPearlFarmStrategyTest is SonicSetup, /* RealSetup */ UniversalTe
 
     function testStrategy() external {}
 
-    function _testTPF() internal /*universalTest*/ {
+    function _testTPF() internal /*universalTest*/  {
         for (uint i; i < 12; ++i) {
             _addStrategy(i);
         }

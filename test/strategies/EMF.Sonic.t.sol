@@ -277,18 +277,12 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         bytes memory depositData =
             abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmountETH, address(this));
         items[0] = IEVC.BatchItem({
-            targetContract: address(collateralVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: depositData
+            targetContract: address(collateralVault), onBehalfOfAccount: address(this), value: 0, data: depositData
         });
 
         bytes memory borrowData = abi.encodeWithSelector(IEulerVault.borrow.selector, borrowAmount, address(this));
         items[1] = IEVC.BatchItem({
-            targetContract: address(eulerVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: borrowData
+            targetContract: address(eulerVault), onBehalfOfAccount: address(this), value: 0, data: borrowData
         });
 
         uint cashBefore = eulerVault.cash();
@@ -302,15 +296,11 @@ contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
         IFactory.Farm memory farm = IFactory(_platform.factory()).farm(farmId);
         return IEulerVault(farm.addresses[1]);
     }
+
     //endregion -------------------------------- Internal logic
 
     //region --------------------------------- Helpers
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);
