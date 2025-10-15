@@ -741,9 +741,13 @@ library MetaVaultLib {
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
+
+            // forgefmt instructions below can be removed after release forge 1.4.2
+            // forgefmt: disable-start
             proportions[i] = totalDepositedTvl == 0
                 ? 0
                 : Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
+            // forgefmt: disable-end
         }
     }
 
