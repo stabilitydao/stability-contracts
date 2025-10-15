@@ -280,13 +280,14 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             /// @dev calculate % earned based on length of time that has vested
             /// @dev linear calculations
 
-            uint slashingPenalty = SLASHING_PENALTY();
+            /// @dev max possible penalty on the amount
+            uint penalty = _amount * SLASHING_PENALTY() / BASIS;
 
-            /// @dev the base to start at (50%)
-            uint base = _amount * slashingPenalty / BASIS;
+            /// @dev minimum amount that user received at any case
+            uint base = _amount - penalty;
 
             /// @dev calculate the extra earned via vesting
-            uint vestEarned = _amount * (BASIS - slashingPenalty) * (block.timestamp - _start) / MAX_VEST / BASIS;
+            uint vestEarned = penalty * (block.timestamp - _start) / MAX_VEST;
 
             uint exitedAmount = base + vestEarned;
 

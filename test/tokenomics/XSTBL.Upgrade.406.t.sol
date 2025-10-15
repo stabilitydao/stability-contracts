@@ -15,14 +15,17 @@ import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 contract XstblUpgrade406SonicTest is Test {
     uint public constant FORK_BLOCK = 50689527; // Oct-15-2025 05:17:06 AM +UTC
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
-    IXSTBL internal xstbl;
+    IRevenueRouter internal revenueRouter;
 
     constructor() {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
-        xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+        revenueRouter = IRevenueRouter(IPlatform(PLATFORM).revenueRouter());
     }
 
-    function testUpgradeXSTBL() public {
+    function testUpgradeXSTBLVesting() public {
+        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+        _upgradePlatform();
+
         uint baseAmount = 100e18;
         // -------------- get STBL on balance
         deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
@@ -30,7 +33,7 @@ contract XstblUpgrade406SonicTest is Test {
         // -------------- enter to xSTBL
         IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
         xstbl.enter(baseAmount);
-        uint xstblBalance = IERC20(SonicConstantsLib.TOKEN_XSTBL).balanceOf(address(this));
+        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
         assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
 
         // -------------- create vest
@@ -41,33 +44,93 @@ contract XstblUpgrade406SonicTest is Test {
         skip(14 days);
 
         // -------------- try to exit vest with penalty 50% and check results
-        uint exitedAmount50 = _tryToExitVest(address(this), 0);
+        (uint exitedAmount50, uint pendingRebaseDelta50)  = _tryToExitVest(xstbl, address(this), 0);
 
-        // -------------- upgrade platform, change penalty to 80%
-        _upgradePlatform();
+        // -------------- change penalty to 80%
 
         vm.prank(SonicConstantsLib.MULTISIG);
-        xstbl.setSlashingPenalty(20_00);
+        xstbl.setSlashingPenalty(80_00);
 
         // -------------- try to exit vest with penalty 80% and check results
-        uint exitedAmount20 = _tryToExitVest(address(this), 0);
+        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExitVest(xstbl, address(this), 0);
 
         // -------------- check results (14 days of 180 were passed)
-        assertEq(exitedAmount50, baseAmount * (100 - 50) / 100 * 14 / 180 + baseAmount * 50 / 100, "exitedAmount50");
-        assertEq(exitedAmount20, baseAmount * (100 - 20) / 100 * 14 / 180 + baseAmount * 20 / 100, "exitedAmount20");
+        assertEq(exitedAmount50, baseAmount * (100 - 50) / 100 + baseAmount * 50 / 100 * 14 / 180, "exitedAmount50");
+        assertEq(exitedAmount50 + pendingRebaseDelta50, baseAmount, "50: total 100%");
+
+        assertEq(exitedAmount20, baseAmount * (100 - 80) / 100 + baseAmount * 80 / 100 * 14 / 180, "exitedAmount80");
+        assertEq(exitedAmount20 + pendingRebaseDelta80, baseAmount, "80: total 100%");
     }
 
-    function _tryToExitVest(address user, uint vestId) internal returns (uint exitedAmount) {
+    function testUpgradeXSTBLExit() public {
+        IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+        _upgradePlatform();
+
+        uint baseAmount = 100e18;
+        // -------------- get STBL on balance
+        deal(SonicConstantsLib.TOKEN_STBL, address(this), baseAmount);
+
+        // -------------- enter to xSTBL
+        IERC20(SonicConstantsLib.TOKEN_STBL).approve(address(xstbl), type(uint).max);
+        xstbl.enter(baseAmount);
+        uint xstblBalance = IERC20(address(xstbl)).balanceOf(address(this));
+        assertEq(xstblBalance, baseAmount, "xstbl balance after enter");
+
+        // -------------- try to exit vest with penalty 50% and check results
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xstbl, address(this), baseAmount);
+
+        // -------------- change penalty to 80%
+        vm.prank(SonicConstantsLib.MULTISIG);
+        xstbl.setSlashingPenalty(80_00);
+
+        // -------------- try to exit vest with penalty 80% and check results
+        (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExit(xstbl, address(this), baseAmount);
+
+        // -------------- check results (14 days of 180 were passed)
+        assertEq(exitedAmount50, baseAmount * 50 / 100, "exitedAmount 50%");
+        assertEq(pendingRebaseDelta50, baseAmount * 50 / 100, "penalty 50%");
+
+        assertEq(exitedAmount20, baseAmount * (100 - 80) / 100, "exitedAmount 20%");
+        assertEq(pendingRebaseDelta80, baseAmount * 80 / 100, "penalty 80%");
+
+        assertEq(exitedAmount50 + pendingRebaseDelta50, baseAmount, "total 100%");
+        assertEq(exitedAmount20 + pendingRebaseDelta80, baseAmount, "total 100%");
+    }
+
+    //region -------------------------------- Internal logic
+    function _tryToExitVest(IXSTBL xstbl, address user, uint vestId) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
+        uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
         uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
         xstbl.exitVest(vestId);
         uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
+        uint pendingRebaseAfter = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+
         exitedAmount = balanceAfter - balanceBefore;
+        pendingRebaseDelta = pendingRebaseAfter - pendingRebaseBefore;
 
         vm.revertToState(snapshot);
     }
 
+    function _tryToExit(IXSTBL xstbl, address user, uint amount) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
+        uint snapshot = vm.snapshotState();
+
+        uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+        uint balanceBefore = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
+        xstbl.exit(amount);
+        uint balanceAfter = IERC20(SonicConstantsLib.TOKEN_STBL).balanceOf(user);
+        uint pendingRebaseAfter = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
+
+        exitedAmount = balanceAfter - balanceBefore;
+        pendingRebaseDelta = pendingRebaseAfter - pendingRebaseBefore;
+
+        vm.revertToState(snapshot);
+    }
+
+    //endregion -------------------------------- Internal logic
+
+    //region -------------------------------- Helpers
     function _upgradePlatform() internal {
         rewind(1 days);
 
@@ -89,4 +152,5 @@ contract XstblUpgrade406SonicTest is Test {
         platform.upgrade();
         vm.stopPrank();
     }
+    //endregion -------------------------------- Helpers
 }
