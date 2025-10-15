@@ -15,7 +15,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 /// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
 /// @author Alien Deployer (https://github.com/a17)
 /// @author Jude (https://github.com/iammrjude)
+/// @author Omriss (https://github.com/omriss)
 /// Changelog:
+///  1.1.0: add possibility to change the slashing penalty value - #406
 ///  1.0.1: use SafeERC20.safeTransfer/safeTransferFrom instead of ERC20 transfer/transferFrom
 contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -26,13 +28,13 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.0.1";
+    string public constant VERSION = "1.1.0";
 
     /// @inheritdoc IXSTBL
     uint public constant BASIS = 10_000;
 
-    /// @inheritdoc IXSTBL
-    uint public constant SLASHING_PENALTY = 5000;
+    /// @notice Default value for the slashing penalty (50%). It's used if slashingPenalty in storage is 0
+    uint public constant DEFAULT_SLASHING_PENALTY = 5000;
 
     /// @inheritdoc IXSTBL
     uint public constant MIN_VEST = 14 days;
@@ -43,6 +45,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant XSTBL_STORAGE_LOCATION = 0x8070df933051cfd06b1bc8a1cc21337087bed1e1452be7055e564e22eadb9e00;
 
+    //region ---------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -65,8 +68,13 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         uint lastDistributedPeriod;
         /// @inheritdoc IXSTBL
         mapping(address => VestPosition[]) vestInfo;
+        /// @inheritdoc IXSTBL
+        /// @dev 0 means default value (50%)
+        uint slashingPenalty;
     }
+    //endregion ---------------------------- Data types
 
+    //region ---------------------------- Initialization
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -87,7 +95,9 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         $.exempt.add(xStaking_);
         $.exemptTo.add(xStaking_);
     }
+    //endregion ---------------------------- Initialization
 
+    //region ---------------------------- Restricted actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -164,6 +174,17 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         }
     }
 
+    /// @inheritdoc IXSTBL
+    function setSlashingPenalty(uint penalty_) external onlyGovernanceOrMultisig {
+        /// @dev ensure it's not above 100%
+        require(penalty_ <= BASIS, SlashingPenaltyTooHigh());
+        _getXSTBLStorage().slashingPenalty = penalty_;
+
+        emit NewSlashingPenalty(penalty_);
+    }
+    //endregion ---------------------------- Restricted actions
+
+    //region ---------------------------- User actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -187,7 +208,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         require(amount_ != 0, IncorrectZeroArgument());
 
         /// @dev if it's at least 2 wei it will give a penalty
-        uint penalty = amount_ * SLASHING_PENALTY / BASIS;
+        uint penalty = amount_ * SLASHING_PENALTY() / BASIS;
         uint exitAmount = amount_ - penalty;
 
         /// @dev burn the xSTBL from the caller's address
@@ -259,11 +280,13 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             /// @dev calculate % earned based on length of time that has vested
             /// @dev linear calculations
 
+            uint slashingPenalty = SLASHING_PENALTY();
+
             /// @dev the base to start at (50%)
-            uint base = _amount * SLASHING_PENALTY / BASIS;
+            uint base = _amount * slashingPenalty / BASIS;
 
             /// @dev calculate the extra earned via vesting
-            uint vestEarned = _amount * (BASIS - SLASHING_PENALTY) * (block.timestamp - _start) / MAX_VEST / BASIS;
+            uint vestEarned = _amount * (BASIS - slashingPenalty) * (block.timestamp - _start) / MAX_VEST / BASIS;
 
             uint exitedAmount = base + vestEarned;
 
@@ -277,7 +300,9 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             emit ExitVesting(msg.sender, vestID_, _amount, exitedAmount);
         }
     }
+    //endregion ---------------------------- User actions
 
+    //region ---------------------------- View functions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -285,6 +310,11 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /// @inheritdoc IXSTBL
     function STBL() public view returns (address) {
         return _getXSTBLStorage().STBL;
+    }
+
+    function SLASHING_PENALTY() public view returns (uint) {
+        uint slashingPenalty = _getXSTBLStorage().slashingPenalty;
+        return slashingPenalty == 0 ? DEFAULT_SLASHING_PENALTY : slashingPenalty;
     }
 
     /// @inheritdoc IXSTBL
@@ -321,7 +351,9 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     function lastDistributedPeriod() external view returns (uint) {
         return _getXSTBLStorage().lastDistributedPeriod;
     }
+    //endregion ---------------------------- View functions
 
+    //region ---------------------------- Hooks to override
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                     HOOKS TO OVERRIDE                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -349,4 +381,5 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
             $.slot := XSTBL_STORAGE_LOCATION
         }
     }
+    //endregion ---------------------------- Hooks to override
 }

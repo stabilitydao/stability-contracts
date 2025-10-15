@@ -23,6 +23,7 @@ interface IXSTBL {
 
     error NO_VEST();
     error NOT_WHITELISTED(address from, address to);
+    error SlashingPenaltyTooHigh();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
@@ -36,6 +37,7 @@ interface IXSTBL {
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
+    event NewSlashingPenalty(uint newPenalty);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -63,6 +65,10 @@ interface IXSTBL {
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
 
+    /// @notice Set the max slashing penalty. 0 means default max value (50%)
+    /// @param newPenalty New max slashing penalty (100 = 1%)
+    function setSlashingPenalty(uint newPenalty) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -70,7 +76,7 @@ interface IXSTBL {
     /// @notice Denominator
     function BASIS() external view returns (uint);
 
-    /// @notice Max slashing amount
+    /// @notice Max slashing amount. {BASIS} is used as denominator, so 100 = 1%
     function SLASHING_PENALTY() external view returns (uint);
 
     /// @notice The minimum vesting length

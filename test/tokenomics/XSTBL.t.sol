@@ -11,6 +11,7 @@ import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
+import {console} from "forge-std/console.sol";
 
 contract XSTBLTest is Test, MockSetup {
     address public stbl;
@@ -153,5 +154,36 @@ contract XSTBLTest is Test, MockSetup {
 
         vm.expectRevert();
         xStbl.exitVest(10);
+    }
+
+    function testSetSlashingPenalty() public {
+        address multisig = platform.multisig();
+
+        // --------------------- Bad paths
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
+        vm.prank(makeAddr("notgov"));
+        xStbl.setSlashingPenalty(80_00);
+
+        vm.expectRevert(abi.encodeWithSelector(IXSTBL.SlashingPenaltyTooHigh.selector));
+        vm.prank(multisig);
+        xStbl.setSlashingPenalty(100_01);
+
+        // --------------------- By default it's 50%
+        assertEq(xStbl.SLASHING_PENALTY(), 50_00, "50% by default");
+
+        // --------------------- 80 %
+        vm.prank(multisig);
+        xStbl.setSlashingPenalty(80_00);
+        assertEq(xStbl.SLASHING_PENALTY(), 80_00, "80%");
+
+        // --------------------- 100 %
+        vm.prank(multisig);
+        xStbl.setSlashingPenalty(100_00);
+        assertEq(xStbl.SLASHING_PENALTY(), 100_00, "100%");
+
+        // --------------------- default 50%
+        vm.prank(multisig);
+        xStbl.setSlashingPenalty(0);
+        assertEq(xStbl.SLASHING_PENALTY(), 50_00, "50% again");
     }
 }
