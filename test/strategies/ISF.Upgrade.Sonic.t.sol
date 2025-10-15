@@ -17,7 +17,7 @@ contract ISFUpgradeTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     // wS-USDC.e
     address public constant STRATEGY = 0x0f1Aa4EafAc9bc6C0D6fA474254f4d765cd35648;
-    address public constant FEE_TREASURY = 0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039;
+    address public constant FEE_TREASURY = SonicConstantsLib.FEE_TREASURY;
 
     constructor() {
         // Mar-28-2025 09:09:20 PM +UTC

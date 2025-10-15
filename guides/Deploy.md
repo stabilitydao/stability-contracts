@@ -4,6 +4,19 @@
 
 It is important to verify during deployment. Otherwise, you will have to manually verify each lib.
 
+### Plasma
+
+`forge script` now show error: `Error: Chain 9745 not supported`.
+
+When deploying Platform via `forge create` we see `Error: Dynamic linking not supported in `create` command - deploy the following library contracts first, then provide the address to link at compile time`.
+
+```shell
+forge script --rpc-url plasma --slow --broadcast --verify --etherscan-api-key sonic --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/9745/etherscan' ./script/deploy-core/Deploy.Plasma.s.sol
+
+# verify single
+forge verify-contract --rpc-url plasma --etherscan-api-key sonic --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/9745/etherscan' --watch 0x70e804364175e23F1c30dFa03BFb19d936E5E81c 
+```
+
 ### Sonic
 
 ```shell

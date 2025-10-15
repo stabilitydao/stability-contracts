@@ -7,6 +7,8 @@ library SonicConstantsLib {
     address public constant MULTISIG = 0xF564EBaC1182578398E94868bea1AbA6ba339652;
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant METAVAULT_FACTORY = 0xa190302880acF9deCC4447363640f589000EF601;
+    address public constant REVENUE_ROUTER = 0x23b8Cc22C4c82545F4b451B11E2F17747A730810;
+    address public constant FEE_TREASURY = 0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039;
 
     // MetaVaults
     address public constant METAVAULT_METAUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
