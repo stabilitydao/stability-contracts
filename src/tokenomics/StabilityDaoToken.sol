@@ -18,7 +18,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION = 0; // todo
+    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION = 0x646b4833d597962e1309a1f3fa0c9ce18df08fcf8941b92012e02e0045f00200;
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -37,7 +37,6 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
         address xStaking;
     }
 
-    error IncorrectMsgSender();
     error NonTransferable();
 
     //endregion ----------------------------------- Data types

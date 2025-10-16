@@ -65,9 +65,9 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         /// @inheritdoc IXStaking
         address stabilityDaoToken;
 
-        /// @notice Address to which a user has delegated his votes
+        /// @notice Address to which a user has delegated his vote power
         mapping(address user => address delegatedTo) delegatedTo;
-        /// @notice Set of addresses that have delegated their votes to a user
+        /// @notice Set of addresses that have delegated their vote power to a user
         mapping(address user => EnumerableSet.AddressSet) delegatedFrom;
     }
 
@@ -76,8 +76,8 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     error AlreadyDelegated();
     error NotDelegatedTo();
 
-    event DelegateVotes(); // todo move to interface?
-    event UnDelegateVotes();
+    event DelegateVotes(address from, address to); // todo move to interface?
+    event UnDelegateVotes(address from, address to);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -115,26 +115,26 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     }
 
     /// @inheritdoc IXStaking
-    function initializeStabilityDaoToken(address stblDao_) external {
+    function initializeStabilityDaoToken(address daoToken_) external onlyMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
         /// @dev ensure only callable once
         require($.stabilityDaoToken == address(0), AlreadyInitialized());
-        $.stabilityDaoToken = stblDao_;
+        $.stabilityDaoToken = daoToken_;
 
-        emit InitializeStabilityDaoToken(stblDao_);
+        emit InitializeStabilityDaoToken(daoToken_);
     }
 
     /// @inheritdoc IXStaking
     function syncStabilityDaoTokenBalances(address[] calldata users) external onlyMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
-        IStabilityDaoToken stblDao = IStabilityDaoToken($.stabilityDaoToken);
-        require(address(stblDao) != address(0), StblDaoNotInitialized());
+        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        require(address(daoToken) != address(0), StblDaoNotInitialized());
 
-        uint minimalPower = stblDao.minimalPower();
+        uint minimalPower = daoToken.minimalPower();
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            _syncUser($, stblDao, users[i], minimalPower);
+            _syncUser(daoToken, users[i], minimalPower);
         }
     }
     //endregion ----------------------------------- Restricted actions
@@ -164,8 +164,8 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         $.totalSupply += amount;
         $.balanceOf[msg.sender] += amount;
 
-        /// @dev sync STBLDAO balance for the user
-        _syncUser2($, msg.sender);
+        /// @dev sync STBLDAO balances
+        _syncDaoTokensToBalance($, msg.sender);
 
         emit Deposit(msg.sender, amount);
     }
@@ -202,8 +202,8 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         // slither-disable-next-line unchecked-transfer
         IERC20($.xSTBL).safeTransfer(msg.sender, amount);
 
-        /// @dev sync STBLDAO balance for the user
-        _syncUser2($, msg.sender);
+        /// @dev sync STBLDAO balances
+        _syncDaoTokensToBalance($, msg.sender);
 
         emit Withdraw(msg.sender, amount);
     }
@@ -247,9 +247,14 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NotifyReward(msg.sender, amount);
     }
 
+    // todo remove add, use delegation to yourself instead
     /// @inheritdoc IXStaking
     function changePowerDelegation(address to, bool add) external nonReentrant {
         XStakingStorage storage $ = _getXStakingStorage();
+
+        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        require(address(daoToken) != address(0), StblDaoNotInitialized());
+
         if (add) {
             require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
             $.delegatedTo[msg.sender] = to;
@@ -264,11 +269,10 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             emit UnDelegateVotes(msg.sender, to);
         }
 
-        IStabilityDaoToken stbdao = IStabilityDaoToken($.stabilityDaoToken);
-        uint minimalPower = stbdao.minimalPower();
+        uint minimalPower = daoToken.minimalPower();
 
-        _syncUser($, stbdao, to, minimalPower);
-        _syncUser($, stbdao, msg.sender, minimalPower);
+        _syncUser(daoToken, to, minimalPower);
+        _syncUser(daoToken, msg.sender, minimalPower);
     }
 
     //endregion ----------------------------------- User actions
@@ -371,49 +375,65 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     function stabilityDaoToken() external view returns (address) {
         return _getXStakingStorage().stabilityDaoToken;
     }
+
+    /// @inheritdoc IXStaking
+    function userPower(address user_) public view returns (uint) {
+        XStakingStorage storage $ = _getXStakingStorage();
+        uint power = $.delegatedTo[user_] == address(0) ? $.balanceOf[user_] : 0;
+
+        address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
+        uint len = delegated.length;
+        for (uint i; i < len; ++i) {
+            power += $.balanceOf[delegated[i]];
+        }
+
+        return power;
+    }
+
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
+        XStakingStorage storage $ = _getXStakingStorage();
+        return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
+    }
+
     //endregion ----------------------------------- View functions
 
     //region ----------------------------------- Internal logic
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    function _syncUser2(XStakingStorage storage $, address user_) internal {
-        IStabilityDaoToken stbdao = IStabilityDaoToken($.stabilityDaoToken);
-        uint minimalPower = stbdao.minimalPower();
 
-        _syncUser($, stbdao, user_, minimalPower);
-        if ($.delegatedTo[user_] == address(0)) {
-            _syncUser($, stbdao, user_, minimalPower);
-        } else {
-            _syncUser($, stbdao, $.delegatedTo[user_], minimalPower);
+    /// @dev Sync balance of Stability DAO token according to the current user's balance of xSTBL
+    function _syncDaoTokensToBalance(XStakingStorage storage $, address user_) internal {
+        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        if (address(daoToken) != address(0)) {
+            uint minimalPower = daoToken.minimalPower();
+
+            _syncUser(daoToken, user_, minimalPower);
+            if ($.delegatedTo[user_] == address(0)) {
+                // user is not delegating, so we only need to sync user's balance
+                _syncUser(daoToken, user_, minimalPower);
+            } else {
+                // user is delegating, so we need to sync the delegatee's balance
+                _syncUser(daoToken, $.delegatedTo[user_], minimalPower);
+            }
         }
     }
 
-    function _syncUser(XStakingStorage storage $, IStabilityDaoToken stblDao, address user_, uint minimalPower_) internal {
-        uint balance = _getUserPower(user_);
+    /// @dev Sync balance of Stability DAO token for a specific user according to his current power
+    function _syncUser(IStabilityDaoToken daoToken_, address user_, uint minimalPower_) internal {
+        uint balancePower = userPower(user_);
 
         /// @dev if user has less than minimalPower xSTBL staked, their STBLDAO balance will be 0
         /// @dev otherwise user should receive 1 STBLDAO for each 1 xSTBL
-        uint toMint = balance < minimalPower_ ? 0 : balance;
-        uint currentBalance = IERC20(stblDao).balanceOf(user_);
-        if (toMint > currentBalance) {
+        uint toMint = balancePower < minimalPower_ ? 0 : balancePower;
+        uint balanceDao = IERC20(daoToken_).balanceOf(user_);
+        if (toMint > balanceDao) {
             /// @dev mint the difference
-            stblDao.mint(user_, toMint - currentBalance);
-        } else if (currentBalance > toMint) {
+            daoToken_.mint(user_, toMint - balanceDao);
+        } else if (balanceDao > toMint) {
             /// @dev burn the difference
-            stblDao.burn(user_, currentBalance - toMint);
+            daoToken_.burn(user_, balanceDao - toMint);
         }
-    }
-
-    function _getUserPower(address user_) internal view returns (uint) {
-        XStakingStorage storage $ = _getXStakingStorage();
-        uint power = $.delegatedTo[user_] == address(0) ? $.balanceOf[user_] : 0;
-        address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
-        uint len = delegated.length;
-        for (uint i; i < len; ++i) {
-            power += $.balanceOf[delegated[i]];
-        }
-        return power;
     }
 
     /// @dev common multirewarder-esque modifier for updating on interactions

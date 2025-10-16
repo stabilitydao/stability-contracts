@@ -20,13 +20,13 @@ interface IStabilityDaoToken is IERC20, IERC20Metadata {
 
     //region --------------------------------------- Read functions
     /// @notice Current DAO config
-    function config() public view returns (DaoParams memory);
+    function config() external view returns (DaoParams memory);
 
     /// @notice Address of xSTBL token
-    function xStbl() public view returns (address);
+    function xStbl() external view returns (address);
 
     /// @notice Address of xStaking contract
-    function xStaking() public view returns (address);
+    function xStaking() external view returns (address);
 
     /// @notice TODO
     function minimalPower() external view returns (uint);
@@ -44,7 +44,7 @@ interface IStabilityDaoToken is IERC20, IERC20Metadata {
 
     //region --------------------------------------- Write functions
     /// @dev Init
-    function initialize(address platform_, address target_) external;
+    function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory config_) external;
 
     /// @notice Update DAO config
     /// @custom:restricted To multisig

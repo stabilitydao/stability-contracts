@@ -329,6 +329,8 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     function _update(address from, address to, uint value) internal override {
         require(_isExempted(from, to), NOT_WHITELISTED(from, to));
 
+        // todo Support of STBLDAO
+
         /// @dev call parent function
         super._update(from, to, value);
     }

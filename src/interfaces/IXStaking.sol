@@ -108,4 +108,13 @@ interface IXStaking {
     /// This not-transferable token is provided to users who have staked at least min power of xSTBL tokens
     /// (see STBLDAO config for detailed limits)
     function stabilityDaoToken() external view returns (address);
+
+    /// @notice Get total power of a user.
+    /// The power = user's own (not-delegated) balance of xStbl + balances of all users that delegated to him
+    function userPower(address user_) external view returns (uint);
+
+    /// @notice Get delegation info of a user
+    /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
+    /// @return delegatedFrom The list of addresses that have delegated their voting power to the user
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom);
 }
