@@ -16,6 +16,8 @@ interface IXStaking {
 
     event NewDuration(uint oldDuration, uint newDuration);
 
+    event InitializeStabilityDaoToken(address stblDao);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -41,6 +43,17 @@ interface IXStaking {
 
     /// @notice Change duration period
     function setNewDuration(uint) external;
+
+    /// @notice One-time initialization of the STBLDAO token address
+    function initializeStabilityDaoToken(address stblDao_) external;
+
+    /// @notice Update balance of STBLDAO token for all given users
+    /// If a user has less then min power xSTBL staked, their STBLDAO balance will be 0
+    /// otherwise user should receive 1 STBLDAO for each 1 xSTBL
+    function syncStabilityDaoTokenBalances(address[] calldata users) external;
+
+    /// @notice Delegate or un-delegate voting power to/from another user
+    function changePowerDelegation(address to, bool add) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -90,4 +103,9 @@ interface IXStaking {
     /// @param user the address to check
     /// @return The staked balance
     function balanceOf(address user) external view returns (uint);
+
+    /// @notice The address of the STBLDAO token
+    /// This not-transferable token is provided to users who have staked at least min power of xSTBL tokens
+    /// (see STBLDAO config for detailed limits)
+    function stabilityDaoToken() external view returns (address);
 }
