@@ -42,10 +42,15 @@ jobs:
           echo "Disk usage:"
           df -h
 
+      - name: Clean cache and build
+        run: |
+          rm -rf out cache
+          forge build
+
       - name: Run forge test
         run: |
           set +e
-          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
+          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv --jobs 1
           status=$?
           echo "Exit status: $status"
           dmesg | tail -n 30 || true
