@@ -44,7 +44,12 @@ jobs:
 
       - name: Run forge test
         run: |
+          set +e
           /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
+          status=$?
+          echo "Exit status: $status"
+          dmesg | tail -n 30 || true
+          exit $status
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
