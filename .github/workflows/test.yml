@@ -33,9 +33,18 @@ jobs:
           forge build --sizes
         id: build
 
+      - name: Check system info
+        run: |
+          echo "CPU info:"
+          lscpu
+          echo "Memory info:"
+          free -h
+          echo "Disk usage:"
+          df -h
+
       - name: Run forge test
         run: |
-          forge test --nmc SkipOnCiTest -vvv
+          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
