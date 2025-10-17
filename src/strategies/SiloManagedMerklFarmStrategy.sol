@@ -135,7 +135,9 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view override returns (uint[] memory amounts) {
         ISiloVault siloVault = _getSiloVault();
         amounts = new uint[](1);
         amounts[0] = siloVault.maxWithdraw(address(this));
@@ -188,7 +190,10 @@ contract SiloManagedMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase 
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         value = amounts[0];
         if (value != 0) {

@@ -703,7 +703,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         if (totalMetaVaultTokens != 0) {
             //            (uint priceMetaVaultToken,) = _metaVault.price();
-            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
+            uint wrappedPrice =
+                10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
                 / IWrappedMetaVault(wrapped_).totalSupply();
 
             for (uint i = 0; i < users.length; ++i) {
@@ -746,9 +747,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
                 _showAmounts(wrapped_, cVault_, v.owners, shares, v.minAmountsOut, true);
 
                 vm.prank(multisig);
-                WrappedMetaVault(wrapped_).redeemUnderlyingEmergency(
-                    cVault_, v.owners, shares, v.minAmountsOut, v.paused
-                );
+                WrappedMetaVault(wrapped_)
+                    .redeemUnderlyingEmergency(cVault_, v.owners, shares, v.minAmountsOut, v.paused);
             }
         }
         //console.log("_redeemUnderlyingEmergency.END");
@@ -871,6 +871,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             "Small user should receive expected amount of underlying asset 2"
         );
     }
+
     //endregion ---------------------------------------------- Main logic
 
     //region ---------------------------------------------- Internal
@@ -879,9 +880,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         IMetaVault metaVault_,
         uint amountToWithdraw
     ) internal view returns (uint) {
-        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-            IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS()
-        );
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader())
+            .getPrice(IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS());
         (uint priceMetaVault,) = metaVault_.price();
 
         // Assume here that AToken to asset is 1:1
@@ -894,14 +894,14 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         IMetaVault metaVault_,
         uint underlyingAmount
     ) internal view returns (uint) {
-        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(
-            IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS()
-        );
+        (uint priceAsset,) = IPriceReader(IPlatform(PLATFORM).priceReader())
+            .getPrice(IAToken(strategy.underlying()).UNDERLYING_ASSET_ADDRESS());
         (uint priceMetaVault,) = metaVault_.price();
 
         // Assume here that AToken to asset is 1:1
-        return underlyingAmount * 1e18 / priceMetaVault * priceAsset
-            / 10 ** IERC20Metadata(strategy.underlying()).decimals(); // decimals of the underlying asset
+        return
+            underlyingAmount * 1e18 / priceMetaVault * priceAsset / 10
+                ** IERC20Metadata(strategy.underlying()).decimals(); // decimals of the underlying asset
     }
 
     function _getUsers() internal view returns (UserAddresses memory dest) {
@@ -971,7 +971,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         (state.wmetaUSDPrice,) =
             IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
         state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD)
-            .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
+                .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
         //        console.log("state.wmetaUSDPrice", state.wmetaUSDPrice);
         //        console.log("state.wmetaUSDPriceDirectCalculations", state.wmetaUSDPriceDirectCalculations);
 
@@ -1070,6 +1070,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
         }
         return total + IERC20(recoveryToken).balanceOf(multisig);
     }
+
     //endregion ---------------------------------------------- Internal
 
     //region ---------------------------------------------- _toDynamicArray
@@ -1127,6 +1128,7 @@ contract WrapperMetaUsdRestartSonicTest is Test {
             dynamicArray[i] = arr[i];
         }
     }
+
     //endregion ---------------------------------------------- _toDynamicArray
 
     //region ---------------------------------------------- Helpers

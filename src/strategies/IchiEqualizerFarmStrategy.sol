@@ -6,9 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {LPStrategyBase, ILPStrategy} from "./base/LPStrategyBase.sol";
-import {
-    FarmingStrategyBase, StrategyBase, IPlatform, IFarmingStrategy, IFactory
-} from "./base/FarmingStrategyBase.sol";
+import {FarmingStrategyBase, StrategyBase, IPlatform, IFarmingStrategy, IFactory} from "./base/FarmingStrategyBase.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {StrategyIdLib} from "./libs/StrategyIdLib.sol";
@@ -266,8 +264,9 @@ contract IchiEqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
             uint[] memory __rewardAmounts
         )
     {
-        (__assets, __amounts, __rewardAssets, __rewardAmounts) =
-            IEFLib._claimRevenue(_getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm());
+        (__assets, __amounts, __rewardAssets, __rewardAmounts) = IEFLib._claimRevenue(
+            _getFarmingStrategyBaseStorage(), _getStrategyBaseStorage(), _getFarm()
+        );
     }
 
     /// @inheritdoc StrategyBase

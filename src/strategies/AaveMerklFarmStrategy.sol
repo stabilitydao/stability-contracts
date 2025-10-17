@@ -89,6 +89,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base._underlying = aaveToken();
     }
+
     //endregion ----------------------- Initialization and restricted actions
 
     //region ----------------------- View functions
@@ -246,6 +247,7 @@ contract AaveMerklFarmStrategy is FarmingStrategyBase, MerklStrategyBase {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amount;
     }
+
     //endregion ----------------------- View functions
 
     //region ----------------------- Strategy base

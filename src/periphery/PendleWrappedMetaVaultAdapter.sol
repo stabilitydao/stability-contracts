@@ -120,9 +120,10 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         // slither-disable-next-line unused-return
         (uint priceAsset,) = priceReader.getPrice(tokenOut);
 
-        amountOut = Math.mulDiv(amountPivotTokenIn, priceMetaVaultToken, priceAsset, Math.Rounding.Ceil)
-            * 10 ** IERC20Metadata(tokenOut).decimals() / 1e18;
+        amountOut = Math.mulDiv(amountPivotTokenIn, priceMetaVaultToken, priceAsset, Math.Rounding.Ceil) * 10
+            ** IERC20Metadata(tokenOut).decimals() / 1e18;
     }
+
     //endregion ---------------------------------- View
 
     //region ---------------------------------- Write
@@ -149,9 +150,8 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
 
         uint balanceUserBefore = IMetaVault(PIVOT_TOKEN).balanceOf(msg.sender);
 
-        IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(
-            uint(IMetaVault.LastBlockDefenseDisableMode.DISABLE_TX_DONT_UPDATE_MAPS_2)
-        );
+        IMetaVault(PIVOT_TOKEN)
+            .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLE_TX_DONT_UPDATE_MAPS_2));
         IMetaVault(PIVOT_TOKEN).depositAssets(assetsForDeposit, amountsMax, 0, msg.sender);
         IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
@@ -174,9 +174,8 @@ contract PendleWrappedMetaVaultAdapter is IStandardizedYieldAdapter {
         require(amountPivotTokenIn <= maxWithdraw, MaxWithdrawExceeded());
 
         uint balanceBefore = IERC20(tokenOut).balanceOf(address(this));
-        IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(
-            uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
-        );
+        IMetaVault(PIVOT_TOKEN)
+            .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
         // slither-disable-next-line unused-return
         IMetaVault(PIVOT_TOKEN).withdrawAssets(assetsForWithdraw, amountPivotTokenIn, new uint[](1));
         IMetaVault(PIVOT_TOKEN).setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));

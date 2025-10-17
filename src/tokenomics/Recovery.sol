@@ -94,6 +94,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     function changeWhitelist(address operator_, bool add_) external onlyMultisig {
         RecoveryLib.changeWhitelist(operator_, add_);
     }
+
     //endregion ----------------------------------- Restricted actions
 
     //region ----------------------------------- Actions

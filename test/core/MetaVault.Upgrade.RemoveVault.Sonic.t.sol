@@ -355,6 +355,7 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         }
         return x > y ? (x - y) * 1e18 / x : (y - x) * 1e18 / x;
     }
+
     //endregion ------------------------------ Internal logic
 
     //region ------------------------------ Auxiliary Functions
@@ -383,18 +384,14 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
         }
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);
             IERC20(assets[j]).approve(metavault, amounts[j]);
         }
     }
+
     //endregion ------------------------------ Auxiliary Functions
 
     //region ------------------------------------ Upgrade CVaults and strategies
@@ -414,13 +411,13 @@ contract MetaVaultSonicUpgradeRemoveVault is Test {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
                 _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)
-            ) {
+            } else if (CommonLib.eq(
+                    IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM
+                )) {
                 _upgradeSiloManagedFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
-            ) {
+            } else if (CommonLib.eq(
+                    IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM
+                )) {
                 _upgradeIchiSwapxFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.AAVE)) {
                 _upgradeAaveStrategy(address(IVault(payable(vaults[i])).strategy()));

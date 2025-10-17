@@ -224,6 +224,7 @@ contract SiALUpgradeExpiredPtTest is Test {
             console.log("withdrawn balance", withdrawn[0], expectedWithdraw);
         }
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_SILO_20_USDC_17JUL2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
@@ -269,6 +270,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT2: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
@@ -361,6 +363,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         // also there are some losses because of the flash loan fees
         assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT3: total should match the total withdrawn amount");
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WOS_29MAY2025
@@ -404,6 +407,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT4: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_SILO_46_SCUSD_14AUG2025 (not expired)
@@ -574,8 +578,14 @@ contract SiALUpgradeExpiredPtTest is Test {
         SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = strategy.health();
+        (
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

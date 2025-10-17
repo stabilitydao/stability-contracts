@@ -124,9 +124,8 @@ contract IchiRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmin
         route[0].ammAdapter = IPlatform(_platform).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy;
         route[0].tokenIn = uToken;
         route[0].tokenOut = paymentToken;
-        ISwapper(swapper).swapWithRoute(
-            route, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE
-        );
+        ISwapper(swapper)
+            .swapWithRoute(route, IRMFLib.balance(uToken), LPStrategyLib.SWAP_ASSETS_PRICE_IMPACT_TOLERANCE);
 
         // Pay off our loan
         uint pairDebt = paymentTokenAmount + fee1;

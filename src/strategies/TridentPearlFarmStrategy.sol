@@ -222,7 +222,10 @@ contract TridentPearlFarmStrategy is LPStrategyBase, FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         IFactory.Farm memory farm = _getFarm();
         value = ILiquidBoxManager(farm.addresses[2]).deposit(farm.addresses[0], amounts[0], amounts[1], 0, 0);
         if (value != 0) {

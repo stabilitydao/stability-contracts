@@ -88,6 +88,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] amountToDeposit;
         uint[] amounts;
     }
+
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Initialization
@@ -138,6 +139,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _requiredAllowedOperator();
         _;
     }
+
     //endregion --------------------------------- Modifiers
 
     //region --------------------------------- Restricted action
@@ -290,6 +292,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         $.recoveryTokens[cVault_] = recoveryToken_;
     }
+
     //endregion --------------------------------- Restricted action
 
     //region --------------------------------- User actions
@@ -413,6 +416,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
 
         return true;
     }
+
     //endregion --------------------------------- User actions
 
     //region --------------------------------- View functions
@@ -503,8 +507,8 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         uint[] memory amountsMax
     ) external view returns (uint[] memory amountsConsumed, uint sharesOut, uint valueOut) {
         return MetaVaultLib.previewDepositAssets(
-            _getMetaVaultStorage(), platform(), vaultForDeposit(), assets_, amountsMax
-        );
+                _getMetaVaultStorage(), platform(), vaultForDeposit(), assets_, amountsMax
+            );
     }
 
     /// @inheritdoc IStabilityVault

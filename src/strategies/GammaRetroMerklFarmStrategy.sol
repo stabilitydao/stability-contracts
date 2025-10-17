@@ -244,8 +244,9 @@ contract GammaRetroMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, Farmi
             uint[] memory __rewardAmounts
         )
     {
-        return
-            GRMFLib.claimRevenue(_getStrategyBaseStorage(), _getFarmingStrategyBaseStorage(), _getGammaRetroStorage());
+        return GRMFLib.claimRevenue(
+            _getStrategyBaseStorage(), _getFarmingStrategyBaseStorage(), _getGammaRetroStorage()
+        );
     }
 
     /// @inheritdoc StrategyBase

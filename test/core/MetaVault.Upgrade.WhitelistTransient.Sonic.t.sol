@@ -106,6 +106,7 @@ contract MetaVaultSonicUpgradeWhitelistTransient is Test {
 
         vm.revertToState(snapshot);
     }
+
     //endregion ------------------------- Internal logic
 
     //region --------------------------------------- Helper functions

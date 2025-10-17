@@ -170,17 +170,18 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
         v.bptIndex = _pool.getBptIndex();
         uint k;
         uint[] memory amountsIn;
-        (liquidity, amountsIn) = IBalancerHelper(_getStorage().balancerHelpers).queryJoin(
-            v.poolId,
-            address(this),
-            address(this),
-            IVault.JoinPoolRequest({
-                assets: v.assets,
-                maxAmountsIn: amounts,
-                userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
-                fromInternalBalance: false
-            })
-        );
+        (liquidity, amountsIn) = IBalancerHelper(_getStorage().balancerHelpers)
+            .queryJoin(
+                v.poolId,
+                address(this),
+                address(this),
+                IVault.JoinPoolRequest({
+                    assets: v.assets,
+                    maxAmountsIn: amounts,
+                    userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
+                    fromInternalBalance: false
+                })
+            );
         k = 0;
         amountsConsumed = new uint[](v.len - 1);
         for (uint i; i < v.len; ++i) {
@@ -207,7 +208,8 @@ contract BalancerComposableStableAdapter is Controllable, IAmmAdapter, IBalancer
                 uint tokenDecimals = IERC20Metadata(tokens[i]).decimals();
                 uint price = i == v.asset0Index
                     ? 10 ** tokenDecimals
-                    : getPrice(pool, address(tokens[i]), address(tokens[v.asset0Index]), 10 ** (tokenDecimals - 3)) * 1000;
+                    : getPrice(pool, address(tokens[i]), address(tokens[v.asset0Index]), 10 ** (tokenDecimals - 3))
+                        * 1000;
                 pricedBalances[k] = balances[i] * price / 10 ** tokenDecimals;
                 totalInAsset0 += pricedBalances[k];
                 k++;

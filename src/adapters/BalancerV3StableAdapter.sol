@@ -99,9 +99,8 @@ contract BalancerV3StableAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
         IERC20(tokenIn).approve(PERMIT2, amountIn);
         IPermit2(PERMIT2).approve(tokenIn, router, uint160(amountIn), uint48(block.timestamp));
 
-        uint amountOut = IRouter(router).swapSingleTokenExactIn(
-            pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, ""
-        );
+        uint amountOut = IRouter(router)
+            .swapSingleTokenExactIn(pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, "");
 
         uint priceImpact =
             amountOutMax < amountOut ? 0 : (amountOutMax - amountOut) * ConstantsLib.DENOMINATOR / amountOutMax;

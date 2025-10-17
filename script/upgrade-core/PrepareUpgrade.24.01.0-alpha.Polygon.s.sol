@@ -34,10 +34,7 @@ contract PrepareUpgrade3Polygon is Script {
         // route for native USDC
         ISwapper.AddPoolData[] memory pools = new ISwapper.AddPoolData[](1);
         pools[0] = ISwapper.AddPoolData({
-            pool: POOL_QUICKSWAPV3_USDCE_USDC,
-            ammAdapterId: ALGEBRA,
-            tokenIn: TOKEN_USDC,
-            tokenOut: TOKEN_USDCE
+            pool: POOL_QUICKSWAPV3_USDCE_USDC, ammAdapterId: ALGEBRA, tokenIn: TOKEN_USDC, tokenOut: TOKEN_USDCE
         });
         ISwapper swapper = ISwapper(IPlatform(PLATFORM).swapper());
         swapper.addPools(pools, false);

@@ -25,7 +25,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: nightly
 
       - name: Run forge build
         run: |
@@ -33,10 +33,28 @@ jobs:
           forge build --sizes
         id: build
 
+      - name: Check system info
+        run: |
+          echo "CPU info:"
+          lscpu
+          echo "Memory info:"
+          free -h
+          echo "Disk usage:"
+          df -h
+
+      - name: Clean cache and build
+        run: |
+          rm -rf out cache
+          forge build
+
       - name: Run forge test
         run: |
           forge test --nmc SkipOnCiTest -vvv
         env:
+          FOUNDRY_DEBUG: 1
+          RUST_BACKTRACE: full
+          RUST_LOG: debug
+          FOUNDRY_LOG: trace
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
           ARBITRUM_RPC_URL: ${{secrets.ARBITRUM_RPC_URL}}

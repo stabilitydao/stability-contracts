@@ -251,11 +251,7 @@ interface IStrategy is IERC165 {
     /// @param totalAmount Total amount of strategy liquidity
     /// @param receiver User of vault which withdraw assets
     /// @return amountsOut Amounts of strategy assets sent to user
-    function transferAssets(
-        uint amount,
-        uint totalAmount,
-        address receiver
-    ) external returns (uint[] memory amountsOut);
+    function transferAssets(uint amount, uint totalAmount, address receiver) external returns (uint[] memory amountsOut);
 
     /// @notice Execute HardWork
     /// During HardWork strategy claiming revenue and processing it.

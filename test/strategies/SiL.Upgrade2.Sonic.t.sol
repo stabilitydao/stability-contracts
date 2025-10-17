@@ -210,6 +210,7 @@ contract SiLUpgradeTest2 is Test {
         console.log(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount));
         assertLe(_getDiffPercent4(IERC20(collateralAsset).balanceOf(user1), amount), 200); // 2%
     }
+
     //endregion -------------------------- Use various flash loan vaults
 
     //region -------------------------- Deposit and withdrawAll
@@ -603,6 +604,7 @@ contract SiLUpgradeTest2 is Test {
             }
         }
     }
+
     //endregion -------------------------- Deposit withdraw routines
 
     //region -------------------------- Auxiliary functions
@@ -610,8 +612,14 @@ contract SiLUpgradeTest2 is Test {
         SiloLeverageStrategy strategy = SiloLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = strategy.health();
+        (
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

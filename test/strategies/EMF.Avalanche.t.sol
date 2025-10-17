@@ -94,15 +94,11 @@ contract EulerMerklFarmStrategyTestAvalanche is AvalancheSetup, UniversalTest {
         IFactory.Farm memory farm = IFactory(_platform.factory()).farm(farmId);
         return IEulerVault(farm.addresses[1]);
     }
+
     //endregion -------------------------------- Internal logic
 
     //region --------------------------------- Helpers
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);

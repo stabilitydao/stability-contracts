@@ -74,8 +74,9 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
                 uint snapshot = vm.snapshotState();
                 (address[] memory assets, uint[] memory depositAmounts) =
                     _dealAndApprove(IStabilityVault(_deployedVaults[i]), address(this), 0);
-                results[i] =
-                    CVaultBatchLib._testDepositWithdrawSingleVault(vm, _deployedVaults[i], true, assets, depositAmounts);
+                results[i] = CVaultBatchLib._testDepositWithdrawSingleVault(
+                    vm, _deployedVaults[i], true, assets, depositAmounts
+                );
                 vm.revertToState(snapshot);
             }
             if (skipped) {
@@ -153,6 +154,7 @@ contract CVaultBatchAvalancheSkipOnCiTest is Test {
         console.log("Withdrawn", withdrawn);
         assertNotEq(withdrawn, 0, "Withdraw some amount from vault");
     }
+
     //endregion ---------------------- Auxiliary tests
 
     //region ---------------------- Auxiliary functions

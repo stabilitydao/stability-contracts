@@ -74,6 +74,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
             IERC20(address(siloVault)).forceApprove(gauge, type(uint).max);
         }
     }
+
     //endregion ----------------------------------- Initialization
 
     //region ----------------------------------- View
@@ -151,7 +152,9 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view override returns (uint[] memory amounts) {
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = _getSilo(farm);
 
@@ -185,6 +188,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
         return FarmingStrategyBase.supportsInterface(interfaceId) || MerklStrategyBase.supportsInterface(interfaceId)
             || super.supportsInterface(interfaceId);
     }
+
     //endregion ----------------------------------- View
 
     //region ----------------------------------- Farming Strategy Base
@@ -201,6 +205,7 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
     function canFarm() external pure override returns (bool) {
         return true;
     }
+
     //endregion ----------------------------------- Farming Strategy Base
 
     //region ----------------------------------- Strategy Base
@@ -210,7 +215,10 @@ contract SiloMerklFarmStrategy is MerklStrategyBase, FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo siloVault = _getSilo(farm);

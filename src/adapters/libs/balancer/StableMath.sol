@@ -75,15 +75,19 @@ library StableMath {
             }
             prevInvariant = invariant;
             invariant = LegacyOZMath.div(
-                LegacyOZMath.mul(LegacyOZMath.mul(numTokens, invariant), invariant).add(
-                    LegacyOZMath.div(
-                        LegacyOZMath.mul(LegacyOZMath.mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp
-                    )
-                ),
-                LegacyOZMath.mul(numTokens + 1, invariant).add(
-                    // No need to use checked arithmetic for the amp precision, the amp is guaranteed to be at least 1
-                    LegacyOZMath.div(LegacyOZMath.mul(ampTimesTotal - _AMP_PRECISION, P_D), _AMP_PRECISION, !roundUp)
-                ),
+                LegacyOZMath.mul(LegacyOZMath.mul(numTokens, invariant), invariant)
+                    .add(
+                        LegacyOZMath.div(
+                            LegacyOZMath.mul(LegacyOZMath.mul(ampTimesTotal, sum), P_D), _AMP_PRECISION, roundUp
+                        )
+                    ),
+                LegacyOZMath.mul(numTokens + 1, invariant)
+                    .add(
+                        // No need to use checked arithmetic for the amp precision, the amp is guaranteed to be at least 1
+                        LegacyOZMath.div(
+                            LegacyOZMath.mul(ampTimesTotal - _AMP_PRECISION, P_D), _AMP_PRECISION, !roundUp
+                        )
+                    ),
                 roundUp
             );
 

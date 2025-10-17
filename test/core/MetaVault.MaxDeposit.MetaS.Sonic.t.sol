@@ -427,6 +427,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
             _getDiffPercent18(withdrawn, deposited), 1e18 / 1000, "withdrawn amount should be equal to deposited amount"
         );
     }
+
     //endregion -------------------------------------------- Test MetaVault
 
     //region -------------------------------------------- Test MultiVault
@@ -526,6 +527,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
             _getDiffPercent18(withdrawn, deposited), 1e18 / 1000, "withdrawn amount should be equal to deposited amount"
         );
     }
+
     //endregion -------------------------------------------- Test MultiVault
 
     //region -------------------------------------------- Internal functions
@@ -727,9 +729,8 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         deal(SonicConstantsLib.TOKEN_WS, user, amountsMax[0]);
 
         vm.startPrank(user);
-        IERC20(SonicConstantsLib.TOKEN_WS).approve(
-            address(metaVault), IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(user)
-        );
+        IERC20(SonicConstantsLib.TOKEN_WS)
+            .approve(address(metaVault), IERC20(SonicConstantsLib.TOKEN_WS).balanceOf(user));
         metaVault.depositAssets(_assets, amountsMax, 0, user);
         vm.roll(block.number + 6);
         vm.stopPrank();
@@ -791,12 +792,7 @@ contract MetaVaultMaxDepositMetaSSonicTest is Test {
         }
     }
 
-    function _setFlashLoanVault(
-        ILeverageLendingStrategy strategy,
-        address vaultC,
-        address vaultB,
-        uint kind
-    ) internal {
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[10] = kind;
         addresses[0] = vaultC;

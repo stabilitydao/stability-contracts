@@ -134,6 +134,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
             IRevenueRouter(revenueRouter).processFeeVault(address(this), feeShares);
         }
     }
+
     //endregion --------------------------------- Callbacks
 
     //region --------------------------------- Restricted actions
@@ -212,6 +213,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         $.lastBlockDefenseDisabled = isDisabled;
         emit LastBlockDefenseDisabled(isDisabled);
     }
+
     //endregion --------------------------------- Restricted actions
 
     //region --------------------------------- User actions
@@ -319,6 +321,7 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
         //slither-disable-next-line unused-return
         (sharesOut,) = _calcMintShares(totalSupply(), valueOut, _strategy.total(), amountsConsumed, _strategy.assets());
     }
+
     //endregion --------------------------------- User actions
 
     //region --------------------------------- View functions
@@ -494,7 +497,9 @@ abstract contract VaultBase is Controllable, ERC20Upgradeable, ReentrancyGuardUp
     }
 
     /// @inheritdoc IStabilityVault
-    function maxDeposit(address /* account */ ) external view returns (uint[] memory maxAmounts) {
+    function maxDeposit(
+        address /* account */
+    ) external view returns (uint[] memory maxAmounts) {
         uint[] memory amounts = strategy().maxDepositAssets();
         if (amounts.length == 1) {
             return amounts;

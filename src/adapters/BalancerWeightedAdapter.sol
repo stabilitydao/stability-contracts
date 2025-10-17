@@ -138,17 +138,18 @@ contract BalancerWeightedAdapter is Controllable, IAmmAdapter, IBalancerAdapter 
         uint[] memory amounts
     ) external returns (uint liquidity, uint[] memory amountsConsumed) {
         address[] memory assets = poolTokens(pool);
-        (liquidity, amountsConsumed) = IBalancerHelper(_getStorage().balancerHelpers).queryJoin(
-            IBWeightedPoolMinimal(pool).getPoolId(),
-            address(this),
-            address(this),
-            IVault.JoinPoolRequest({
-                assets: assets,
-                maxAmountsIn: amounts,
-                userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
-                fromInternalBalance: false
-            })
-        );
+        (liquidity, amountsConsumed) = IBalancerHelper(_getStorage().balancerHelpers)
+            .queryJoin(
+                IBWeightedPoolMinimal(pool).getPoolId(),
+                address(this),
+                address(this),
+                IVault.JoinPoolRequest({
+                    assets: assets,
+                    maxAmountsIn: amounts,
+                    userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
+                    fromInternalBalance: false
+                })
+            );
     }
 
     /// @inheritdoc IAmmAdapter

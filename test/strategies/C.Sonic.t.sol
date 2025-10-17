@@ -332,12 +332,7 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         return IERC20(_assets[0]).balanceOf(user) - balanceBefore;
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);

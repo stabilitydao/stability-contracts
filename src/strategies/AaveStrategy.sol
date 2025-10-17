@@ -77,6 +77,7 @@ contract AaveStrategy is StrategyBase {
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base._underlying = _getStorage().aToken;
     }
+
     //endregion ----------------------- Initialization and restricted actions
 
     //region ----------------------- View functions
@@ -121,8 +122,8 @@ contract AaveStrategy is StrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IFactory.StrategyAvailableInitParams memory params =
-            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        IFactory.StrategyAvailableInitParams memory params = IFactory(IPlatform(platform_).factory())
+            .strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
         uint len = params.initAddresses.length;
         variants = new string[](len);
         addresses = new address[](len);
@@ -205,6 +206,7 @@ contract AaveStrategy is StrategyBase {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = amount;
     }
+
     //endregion ----------------------- View functions
 
     //region ----------------------- Strategy base

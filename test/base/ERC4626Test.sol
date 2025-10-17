@@ -227,7 +227,9 @@ abstract contract ERC4626UniversalTest is Test {
     }
 
     //region ----------------------------------- Virtual
-    function _doBeforeTest(uint /* tag */ ) internal virtual {}
+    function _doBeforeTest(
+        uint /* tag */
+    ) internal virtual {}
 
     //endregion ----------------------------------- Virtual
 

@@ -190,6 +190,7 @@ contract PriceReaderUpgradeTransientCacheSonicTest is Test {
         }
         gas = gas0 - gasleft();
     }
+
     //endregion --------------------------------- Internal logic
 
     //region --------------------------------- Helpers

@@ -176,11 +176,7 @@ contract PlatformPolygonTest is PolygonSetup {
                 string[] memory name,
                 string[] memory symbol,
                 string[] memory _vaultType,
-                string[] memory _strategyId,
-                ,
-                ,
-                ,
-                ,
+                string[] memory _strategyId,,,,,
             ) = vaultManager.vaults();
             console.log("Built:");
             for (uint i; i < vaultAddress.length; ++i) {

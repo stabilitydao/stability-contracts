@@ -65,9 +65,8 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
         amountsToDeposit[0] = cashBefore / 1000;
         (uint deposited,) = _tryToDepositToVault(_strategy.vault(), amountsToDeposit, address(this), true);
 
-        (uint priceAsset,) = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader()).getPrice(
-            _vault.assets()[0]
-        );
+        (uint priceAsset,) = IPriceReader(IPlatform(IControllable(currentStrategy).platform()).priceReader())
+            .getPrice(_vault.assets()[0]);
 
         uint cashAfter = siloVault.totalAssets();
         uint tvlUsdAfter = _strategy.poolTvl();
@@ -87,6 +86,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
 
         return super._checkPoolTvl();
     }
+
     //endregion -------------------------------- Universal test overrides
 
     //region -------------------------------- Internal logic
@@ -125,12 +125,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
         return farm.addresses[0];
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);
