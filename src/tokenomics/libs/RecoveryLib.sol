@@ -197,9 +197,12 @@ library RecoveryLib {
             require(indexFirstRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
 
             // ----------------------------------- Select target pool
+            // forgefmt instructions below can be removed after release forge 1.4.2
+            // forgefmt: disable-start
             uint indexTargetPool = indexFirstRecoveryPool1 == 0
                 ? selectPool(block.timestamp, _recoveryPools)
                 : indexFirstRecoveryPool1 - 1;
+            // forgefmt: disable-end
             EnumerableSet.AddressSet storage _tokens = $.registeredTokens;
 
             // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
