@@ -118,7 +118,6 @@ contract RevenueRouterTestSonic is Test {
         assertEq(addresses[3], address(feeTreasury));
     }
 
-
     function _deployWithXSTBLandFeeTreasury() internal {
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
@@ -148,5 +147,4 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);
     }
-
 }

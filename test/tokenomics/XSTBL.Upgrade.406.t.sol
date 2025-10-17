@@ -44,7 +44,7 @@ contract XstblUpgrade406SonicTest is Test {
         skip(14 days);
 
         // -------------- try to exit vest with penalty 50% and check results
-        (uint exitedAmount50, uint pendingRebaseDelta50)  = _tryToExitVest(xstbl, address(this), 0);
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExitVest(xstbl, address(this), 0);
 
         // -------------- change penalty to 80%
 
@@ -98,7 +98,11 @@ contract XstblUpgrade406SonicTest is Test {
     }
 
     //region -------------------------------- Internal logic
-    function _tryToExitVest(IXSTBL xstbl, address user, uint vestId) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
+    function _tryToExitVest(
+        IXSTBL xstbl,
+        address user,
+        uint vestId
+    ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
         uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
@@ -113,7 +117,11 @@ contract XstblUpgrade406SonicTest is Test {
         vm.revertToState(snapshot);
     }
 
-    function _tryToExit(IXSTBL xstbl, address user, uint amount) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
+    function _tryToExit(
+        IXSTBL xstbl,
+        address user,
+        uint amount
+    ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
         uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
