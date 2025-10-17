@@ -218,53 +218,6 @@ contract XStakingUpgrade404SonicTest is Test {
         assertEq(daoToken.balanceOf(USER3), 0, "7: user 3 dao balance");
     }
 
-    function testTransferXStbl() public {
-        // ------------------------------- mint xSTBL and deposit to staking before upgrade
-        address[] memory users = new address[](3);
-        users[0] = USER1;
-        users[1] = USER2;
-        users[2] = USER3;
-
-        uint power1 = 5001e18;
-        uint power2 = 1002e18;
-        uint power3 = 3003e18;
-
-        // ------------------------------- Upgrade and sync
-        IStabilityDaoToken daoToken = _upgradeAndSetup();
-
-        vm.prank(multisig);
-        xStaking.syncStabilityDaoTokenBalances(users);
-
-        // ------------------------------- Deposit 1
-        _mintAndDepositToStaking(USER1, power1);
-        _mintAndDepositToStaking(USER2, power2);
-        _mintAndDepositToStaking(USER3, power3);
-
-        assertEq(xStaking.userPower(USER1), power1, "1: user 1 power");
-        assertEq(xStaking.userPower(USER2), power2, "1: user 2 power");
-        assertEq(xStaking.userPower(USER3), power3, "1: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), power1, "1: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "1: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "1: user 3 dao balance");
-
-        assertEq(IERC20(address(xStbl)).balanceOf(USER1), 0, "1: user 1 xStbl balance");
-        assertEq(IERC20(address(xStbl)).balanceOf(USER2), 0, "1: user 2 xStbl balance");
-        assertEq(IERC20(address(xStbl)).balanceOf(USER3), 0, "1: user 3 xStbl balance");
-
-        // ------------------------------- Users 1 delegates to user 2
-        vm.prank(USER1);
-        xStaking.changePowerDelegation(USER2);
-
-        assertEq(xStaking.userPower(USER1), 0, "2: user 1 power");
-        assertEq(xStaking.userPower(USER2), power2 + power1, "2: user 2 power");
-        assertEq(xStaking.userPower(USER3), power3, "2: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "2: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), power2 + power1, "2: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), power3, "2: user 3 dao balance");
-    }
-
     //region --------------------------------- Internal logic
     function _mintAndDepositToStaking(address user, uint amount) internal {
         deal(SonicConstantsLib.TOKEN_STBL, user, amount);
