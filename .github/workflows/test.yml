@@ -50,9 +50,6 @@ jobs:
       - name: Run forge test
         run: |
           set +e
-          trap 'echo ">>> SIGTERM received"' TERM
-          trap 'echo ">>> SIGINT received"' INT
-          trap 'echo ">>> SIGKILL received"' KILL
           /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
           status=$?
           echo "Exit status: $status"
