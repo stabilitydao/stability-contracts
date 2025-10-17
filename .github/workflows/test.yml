@@ -25,7 +25,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: nightly
 
       - name: Run forge build
         run: |
@@ -50,12 +50,19 @@ jobs:
       - name: Run forge test
         run: |
           set +e
-          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv --jobs 1
+          trap 'echo ">>> SIGTERM received"' TERM
+          trap 'echo ">>> SIGINT received"' INT
+          trap 'echo ">>> SIGKILL received"' KILL
+          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvvv
           status=$?
           echo "Exit status: $status"
           dmesg | tail -n 30 || true
           exit $status
         env:
+          FOUNDRY_DEBUG: 1
+          RUST_BACKTRACE: full
+          RUST_LOG: debug
+          FOUNDRY_LOG: trace
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
           ARBITRUM_RPC_URL: ${{secrets.ARBITRUM_RPC_URL}}
