@@ -108,6 +108,17 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, 1e18);*/
     }
 
+    function testAddresses() public {
+        _deployWithXSTBLandFeeTreasury();
+
+        address[] memory addresses = revenueRouter.addresses();
+        assertEq(addresses[0], address(STBL));
+        assertEq(addresses[1], address(xStbl));
+        assertEq(addresses[2], address(xStaking));
+        assertEq(addresses[3], address(feeTreasury));
+    }
+
+
     function _deployWithXSTBLandFeeTreasury() internal {
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
@@ -137,4 +148,5 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);
     }
+
 }

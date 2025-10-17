@@ -18,6 +18,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.6.1: add XSTBL()
 ///   1.6.0: send 20% of earned assets to Recovery
 ///   1.5.0: processAccumulatedVaults
 ///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
@@ -33,7 +34,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.6.0";
+    string public constant VERSION = "1.6.1";
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -275,6 +276,17 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /// @inheritdoc IRevenueRouter
     function vaultsAccumulated() external view returns (address[] memory) {
         return _getRevenueRouterStorage().vaultsAccumulated.values();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function addresses() external view returns (address[] memory) {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        address[] memory _addresses = new address[](4);
+        _addresses[0] = $.stbl;
+        _addresses[1] = $.xStbl;
+        _addresses[2] = $.xStaking;
+        _addresses[3] = $.feeTreasury;
+        return _addresses;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
