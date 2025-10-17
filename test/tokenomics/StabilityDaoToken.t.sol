@@ -136,14 +136,14 @@ contract StabilityDaoTokenSonicTest is Test {
 
         vm.prank(address(0x123));
         vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
-        IERC20(address(token)).safeTransfer(address(0x456), 1e18);
+        token.transfer(address(0x456), 1e18);
 
         vm.prank(address(0x123));
         token.approve(address(0x456), 1e18);
 
         vm.prank(address(0x456));
         vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
-        IERC20(address(token)).safeTransferFrom(address(0x123), address(0x789), 1e18);
+        token.transferFrom(address(0x123), address(0x789), 1e18);
     }
 
     //endregion --------------------------------- Unit tests
