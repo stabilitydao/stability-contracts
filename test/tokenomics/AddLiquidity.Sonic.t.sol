@@ -17,9 +17,11 @@ contract AddLiquidityTestSonic is Test {
     address public constant SALE = 0x0a02Be0de3Dd109B1AbF4C197f0B58A3bb68eA1F;
     address public multisig;
 
+    uint private constant FORK_BLOCK = 11840000; // Mar-05-2025 04:14:51 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(11840000); // Mar-05-2025 04:14:51 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 

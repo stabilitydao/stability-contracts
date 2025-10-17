@@ -13,9 +13,11 @@ import {IPool} from "../../src/integrations/aave/IPool.sol";
 import {console} from "forge-std/Test.sol";
 
 contract AaveMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 38911848; // Jul-17-2025 11:06:11 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(38911848); // Jul-17-2025 11:06:11 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

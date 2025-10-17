@@ -14,8 +14,10 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
     /// @dev If target percent has given value we need to add the strategy to msUSD.whitelist
     uint internal constant TARGET_LEVERAGE_PERCENT_FOR_WHITELIST = 85_31;
 
+    uint internal constant FORK_BLOCK = 47749273; // Sep-22-2025 08:07:18 AM +UTC
+
     constructor() {
-        //vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         //vm.rollFork(11356000); // Mar-03-2025 08:19:49 AM +UTC
         //vm.rollFork(13119000); // Mar-11-2025 08:29:09 PM +UTC
         // vm.rollFork(18553912); // Apr-01-2025 03:26:51 PM +UTC
@@ -24,7 +26,7 @@ contract SiloAdvancedLeverageStrategyTest is SonicSetup, UniversalTest {
         // vm.rollFork(26428190); // May-13-2025 06:22:27 AM +UTC
         // vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
         // vm.rollFork(28965600); // May-23-2025 08:48:26 AM +UTC
-        vm.rollFork(47749273); // Sep-22-2025 08:07:18 AM +UTC
+        // vm.rollFork(47749273); // Sep-22-2025 08:07:18 AM +UTC
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

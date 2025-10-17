@@ -22,9 +22,10 @@ contract ZapUpgradeSonic is Test {
         uint[] swapAmounts;
     }
 
+    uint internal constant FORK_BLOCK = 3032000; // Jan-08-2025 08:39:58 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(3032000); // Jan-08-2025 08:39:58 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
     }
 
     function testZapUpgrade() public {

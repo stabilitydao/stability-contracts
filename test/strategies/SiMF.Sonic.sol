@@ -5,11 +5,13 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract SiloManagedFarmStrategyTest is SonicSetup, UniversalTest {
+    uint public constant FORK_BLOCK = 35662058; // Jun-24-2025 09:03:06 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(28738366); // May-22-2025 11:52:44 AM +UTC
         // vm.rollFork(28902958); // May-23-2025 03:13:18 AM +UTC
-        vm.rollFork(35662058); // Jun-24-2025 09:03:06 AM +UTC
+        // vm.rollFork(35662058); // Jun-24-2025 09:03:06 AM +UTC
     }
 
     function testSiMFSonic() public universalTest {

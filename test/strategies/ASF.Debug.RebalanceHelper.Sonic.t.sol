@@ -22,10 +22,11 @@ contract ASFDebug2Test is Test {
     RebalanceHelper public rebalancerHelper;
     RebalanceHelper public rebalancerHelperNew;
 
+    uint internal constant FORK_BLOCK = 6288137; // Feb-02-2025 08:08:16 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         //vm.rollFork(6046000); // Jan-31-2025 05:36:45 PM +UTC
-        vm.rollFork(6288137); // Feb-02-2025 08:08:16 PM +UTC
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         pool = ILPStrategy(STRATEGY).pool();

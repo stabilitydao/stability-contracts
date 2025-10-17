@@ -15,9 +15,10 @@ contract CVaultUpgradeSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public constant VAULT1 = 0x709833e5B4B98aAb812d175510F94Bc91CFABD89;
 
+    uint internal constant FORK_BLOCK = 16633000; // Mar-28-2025 07:44:10 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(16633000); // Mar-28-2025 07:44:10 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         _upgradePlatform();
     }
 

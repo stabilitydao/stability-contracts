@@ -17,10 +17,11 @@ abstract contract AvalancheSetup is ChainSetup, DeployCore {
 
     bool public showDeployLog;
 
+    // use block in C-chain only, see https://snowtrace.io/block/68407132?chainid=43114
+    uint internal constant FORK_BLOCK = 68407132; // Sep-8-2025 09:54:05 UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL")));
-        // use block in C-chain only, see https://snowtrace.io/block/68407132?chainid=43114
-        vm.rollFork(68407132); // Sep-8-2025 09:54:05 UTC
+        vm.selectFork(vm.createFork(vm.envString("AVALANCHE_RPC_URL"), FORK_BLOCK));
     }
 
     function testSetupStub() external {}

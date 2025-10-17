@@ -28,9 +28,10 @@ contract ASFUpgrade4Test is Test {
     RebalanceHelper public rebalanceHelper;
     ISwapper public swapper;
 
+    uint internal constant FORK_BLOCK = 6420000; // Feb-03-2025 04:09:12 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(6420000); // Feb-03-2025 04:09:12 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(PLATFORM).multisig();

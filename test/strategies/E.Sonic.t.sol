@@ -6,10 +6,12 @@ import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 import {IStrategy} from "../../src/interfaces/IStrategy.sol";
 
 contract EulerStrategyTestSonic is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 28450562; // May-21-2025 09:02:18 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(22116484); // Apr-25-2025 01:47:21 AM +UTC
-        vm.rollFork(28450562); // May-21-2025 09:02:18 AM +UTC
+
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

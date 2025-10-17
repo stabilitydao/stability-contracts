@@ -10,9 +10,10 @@ contract PlatformUpgradeSonicTest is Test {
     address public constant PLATFORM = SonicConstantsLib.PLATFORM;
     address public multisig;
 
+    uint internal constant FORK_BLOCK = 46366611; // Sep-10-2025 10:55:12 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(46366611); // Sep-10-2025 10:55:12 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(PLATFORM).multisig();
     }
 

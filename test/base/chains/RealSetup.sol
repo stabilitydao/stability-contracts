@@ -11,10 +11,11 @@ import {DeployCore} from "../../../script/base/DeployCore.sol";
 abstract contract RealSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
+    uint internal constant FORK_BLOCK = 936000;
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("REAL_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("REAL_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(910000); // Oct 25 2024 23:54:31 PM (+03:00 UTC)
-        vm.rollFork(936000);
     }
 
     function testSetupStub() external {}

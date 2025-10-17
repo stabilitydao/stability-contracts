@@ -23,9 +23,11 @@ contract RevenueRouterTestSonic is Test {
     IRevenueRouter public revenueRouter;
     address public feeTreasury;
 
+    uint private constant FORK_BLOCK = 15931000; // Mar-25-2025 07:11:27 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(15931000); // Mar-25-2025 07:11:27 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 
@@ -106,6 +108,16 @@ contract RevenueRouterTestSonic is Test {
         /*deal(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, address(this), 1e18);
         IERC20(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD).approve(address(revenueRouter), 1e18);
         revenueRouter.processFeeVault(SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD, 1e18);*/
+    }
+
+    function testAddresses() public {
+        _deployWithXSTBLandFeeTreasury();
+
+        address[] memory addresses = revenueRouter.addresses();
+        assertEq(addresses[0], address(STBL));
+        assertEq(addresses[1], address(xStbl));
+        assertEq(addresses[2], address(xStaking));
+        assertEq(addresses[3], address(feeTreasury));
     }
 
     function _deployWithXSTBLandFeeTreasury() internal {

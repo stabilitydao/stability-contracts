@@ -67,12 +67,11 @@ contract SiALUpgradeExpiredPtTest is Test {
         uint targetLeverage;
     }
 
-    constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        // vm.rollFork(39805461); // Jul-23-2025 05:42:36 AM +UTC
+    uint internal constant FORK_BLOCK = 39816642; // Jul-23-2025 07:28:08 AM +UTC  expired
+    // uint internal constant FORK_BLOCK = 38716642; // Jul-16-2025 06:32:35 AM +UTC   not expired
 
-        vm.rollFork(39816642); // Jul-23-2025 07:28:08 AM +UTC  expired
-        // vm.rollFork(38716642); // Jul-16-2025 06:32:35 AM +UTC   not expired
+    constructor() {
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         // we need to skip 1 day to update the swapper
         // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice

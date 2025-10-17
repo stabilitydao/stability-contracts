@@ -56,8 +56,7 @@ contract SiALMFUpgradeScUsdTest is Test {
     }
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();

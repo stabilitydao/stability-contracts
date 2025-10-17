@@ -24,9 +24,10 @@ contract ISFUpgrade3Test is Test {
     // wS-stS stS
     address public constant STRATEGY = 0x289B9566238B26F6Abe1DB8E59AEB994F3F04984;
 
+    uint internal constant FORK_BLOCK = 19974000; // Apr-13-2025 12:32:47 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(19974000); // Apr-13-2025 12:32:47 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

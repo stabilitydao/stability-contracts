@@ -12,9 +12,10 @@ contract FrontendTestSonic is Test {
     Frontend public immutable FRONTEND;
     address public multisig;
 
+    uint internal constant FORK_BLOCK = 3451000; // Jan-11-2025 08:39:29 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(3451000); // Jan-11-2025 08:39:29 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         FRONTEND = new Frontend(PLATFORM);
         multisig = IPlatform(PLATFORM).multisig();

@@ -5,9 +5,11 @@ import {SonicSetup} from "../base/chains/SonicSetup.sol";
 import {UniversalTest, StrategyIdLib} from "../base/UniversalTest.sol";
 
 contract GammaEqualizerFarmStrategyTestSonic is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 18588032; // Mar-26-2025 12:46:06 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(18588032); // Mar-26-2025 12:46:06 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         makePoolVolumePriceImpactTolerance = 9_000;
     }
 

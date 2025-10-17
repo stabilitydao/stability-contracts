@@ -17,10 +17,12 @@ contract ASFDebugDepositAssetsTest is Test {
     address public vault;
     address public multisig;
 
+    uint internal constant FORK_BLOCK = 6279185; // Feb-02-2025 06:50:26 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         //vm.rollFork(6001000); // Jan-31-2025 09:52:19 AM +UTC
-        vm.rollFork(6279185); // Feb-02-2025 06:50:26 PM +UTC
+
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
     }

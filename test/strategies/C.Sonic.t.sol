@@ -27,8 +27,8 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     }
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         allowZeroApr = true;
         duration1 = 10 hours;
         duration2 = 10 hours;

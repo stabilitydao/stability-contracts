@@ -19,9 +19,11 @@ import {IEulerVault} from "../../src/integrations/euler/IEulerVault.sol";
 import {EMFLib} from "../../src/strategies/libs/EMFLib.sol";
 
 contract EulerMerklFarmStrategyTestSonic is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 45436518; // Sep-02-2025 03:36:10 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(45436518); // Sep-02-2025 03:36:10 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         makePoolVolumePriceImpactTolerance = 9_000;
     }
 

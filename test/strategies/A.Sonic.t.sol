@@ -8,10 +8,12 @@ import {IAToken} from "../../src/integrations/aave/IAToken.sol";
 import {IPool} from "../../src/integrations/aave/IPool.sol";
 
 contract AaveStrategyTestSonic is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 31996320; // Jun-05-2025 09:19:04 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(28237049); // May-20-2025 12:17:44 PM +UTC
-        vm.rollFork(31996320); // Jun-05-2025 09:19:04 AM +UTC
+
         allowZeroApr = true;
         duration1 = 0.1 hours;
         duration2 = 0.1 hours;

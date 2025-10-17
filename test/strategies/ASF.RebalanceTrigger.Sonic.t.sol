@@ -13,9 +13,11 @@ import {IUniswapV3PoolState} from "../../src/integrations/uniswapv3/pool/IUniswa
 contract RebalanceTriggerTest is Test {
     RebalanceHelper public rebalanceHelper;
 
+    uint internal constant FORK_BLOCK = 18553912; // Mar-14-2025 07:49:27 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(18553912); // Mar-14-2025 07:49:27 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         rebalanceHelper = new RebalanceHelper();
     }
 
