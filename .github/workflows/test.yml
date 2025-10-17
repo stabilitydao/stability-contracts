@@ -49,12 +49,7 @@ jobs:
 
       - name: Run forge test
         run: |
-          set +e
-          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
-          status=$?
-          echo "Exit status: $status"
-          dmesg | tail -n 30 || true
-          exit $status
+          forge test --nmc SkipOnCiTest -vvv
         env:
           FOUNDRY_DEBUG: 1
           RUST_BACKTRACE: full
