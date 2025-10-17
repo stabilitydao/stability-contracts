@@ -3,7 +3,8 @@ pragma solidity ^0.8.28;
 
 import {Controllable, IControllable, IPlatform} from "../core/base/Controllable.sol";
 import {ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20BurnableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {ERC20BurnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
 
 /// @title Incident impact recovery token
@@ -18,7 +19,8 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION = 0x646b4833d597962e1309a1f3fa0c9ce18df08fcf8941b92012e02e0045f00200;
+    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
+        0x646b4833d597962e1309a1f3fa0c9ce18df08fcf8941b92012e02e0045f00200;
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -29,10 +31,8 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     struct StabilityDaoTokenStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only pausedAccounts[0] is used
         mapping(uint => DaoParams) config;
-
         /// @notice Address of XSTBL token
         address xStbl;
-
         /// @notice Address of xStaking contract
         address xStaking;
     }
@@ -93,7 +93,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                           ERC20 HOOKS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _update(address from, address to, uint256 value) internal override {
+    function _update(address from, address to, uint value) internal override {
         require(from == address(0) || to == address(0), NonTransferable());
 
         super._update(from, to, value);
@@ -165,4 +165,3 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     }
     //endregion ----------------------------------- Internal logic
 }
-

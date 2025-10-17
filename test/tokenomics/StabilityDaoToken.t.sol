@@ -27,7 +27,9 @@ contract StabilityDaoTokenSonicTest is Test {
         vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
 
-        console.logBytes32(keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff)));
+        console.logBytes32(
+            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff))
+        );
     }
 
     //region --------------------------------- Unit tests
@@ -156,7 +158,6 @@ contract StabilityDaoTokenSonicTest is Test {
     // todo
 
     //endregion --------------------------------- Test for uses cases
-
 
     //region --------------------------------- Utils
     function createStabilityDaoTokenInstance() internal returns (IStabilityDaoToken) {

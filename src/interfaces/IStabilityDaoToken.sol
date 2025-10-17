@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IStabilityDaoToken is IERC20, IERC20Metadata {
-
     /// @notice See https://stabilitydao.gitbook.io/stability/stability-dao/governance#current-parameters
     struct DaoParams {
         /// @notice Minimal amount of xSTBL tokens required to have STBLDAO tokens, decimals 18
@@ -47,6 +46,7 @@ interface IStabilityDaoToken is IERC20, IERC20Metadata {
     function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory config_) external;
 
     /// @notice Update DAO config
+    /// XStaking.syncStabilityDaoTokenBalances() must be called after changing of minimalPower value
     /// @custom:restricted To multisig
     function updateConfig(DaoParams memory p) external;
 
@@ -56,5 +56,4 @@ interface IStabilityDaoToken is IERC20, IERC20Metadata {
     /// @custom:restricted To xStaking
     function burn(address account, uint amount) external;
     //endregion --------------------------------------- Write functions
-
 }

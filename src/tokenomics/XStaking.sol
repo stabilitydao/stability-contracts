@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -64,7 +65,6 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         mapping(address user => uint amount) balanceOf;
         /// @inheritdoc IXStaking
         address stabilityDaoToken;
-
         /// @notice Address to which a user has delegated his vote power
         mapping(address user => address delegatedTo) delegatedTo;
         /// @notice Set of addresses that have delegated their vote power to a user
@@ -247,31 +247,32 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NotifyReward(msg.sender, amount);
     }
 
-    // todo remove add, use delegation to yourself instead
     /// @inheritdoc IXStaking
-    function changePowerDelegation(address to, bool add) external nonReentrant {
+    function changePowerDelegation(address to) external nonReentrant {
         XStakingStorage storage $ = _getXStakingStorage();
 
         IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
         require(address(daoToken) != address(0), StblDaoNotInitialized());
 
-        if (add) {
+        address toSync = to;
+
+        if (to == msg.sender) {
+            toSync = $.delegatedTo[msg.sender];
+            $.delegatedTo[msg.sender] = address(0);
+            EnumerableSet.remove($.delegatedFrom[toSync], msg.sender);
+
+            emit UnDelegateVotes(msg.sender, to);
+        } else {
             require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
             $.delegatedTo[msg.sender] = to;
             EnumerableSet.add($.delegatedFrom[to], msg.sender);
 
             emit DelegateVotes(msg.sender, to);
-        } else {
-            require($.delegatedTo[msg.sender] == to, NotDelegatedTo());
-            $.delegatedTo[msg.sender] = address(0);
-            EnumerableSet.remove($.delegatedFrom[to], msg.sender);
-
-            emit UnDelegateVotes(msg.sender, to);
         }
 
         uint minimalPower = daoToken.minimalPower();
 
-        _syncUser(daoToken, to, minimalPower);
+        _syncUser(daoToken, toSync, minimalPower);
         _syncUser(daoToken, msg.sender, minimalPower);
     }
 
@@ -390,6 +391,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         return power;
     }
 
+    /// @inheritdoc IXStaking
     function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
         XStakingStorage storage $ = _getXStakingStorage();
         return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
