@@ -53,7 +53,7 @@ jobs:
           trap 'echo ">>> SIGTERM received"' TERM
           trap 'echo ">>> SIGINT received"' INT
           trap 'echo ">>> SIGKILL received"' KILL
-          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvvv
+          /usr/bin/time -v forge test --nmc SkipOnCiTest -vvv
           status=$?
           echo "Exit status: $status"
           dmesg | tail -n 30 || true
