@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {RevenueRouter, IRevenueRouter, IControllable} from "../../src/tokenomics/RevenueRouter.sol";
-import {IVault} from "../../src/interfaces/IVault.sol";
+import {IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
-import {Platform} from "../../src/core/Platform.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 
 contract XstblUpgrade406SonicTest is Test {
@@ -44,7 +42,7 @@ contract XstblUpgrade406SonicTest is Test {
         skip(14 days);
 
         // -------------- try to exit vest with penalty 50% and check results
-        (uint exitedAmount50, uint pendingRebaseDelta50)  = _tryToExitVest(xstbl, address(this), 0);
+        (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExitVest(xstbl, address(this), 0);
 
         // -------------- change penalty to 80%
 
@@ -98,7 +96,11 @@ contract XstblUpgrade406SonicTest is Test {
     }
 
     //region -------------------------------- Internal logic
-    function _tryToExitVest(IXSTBL xstbl, address user, uint vestId) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
+    function _tryToExitVest(
+        IXSTBL xstbl,
+        address user,
+        uint vestId
+    ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
         uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();
@@ -113,7 +115,11 @@ contract XstblUpgrade406SonicTest is Test {
         vm.revertToState(snapshot);
     }
 
-    function _tryToExit(IXSTBL xstbl, address user, uint amount) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
+    function _tryToExit(
+        IXSTBL xstbl,
+        address user,
+        uint amount
+    ) internal returns (uint exitedAmount, uint pendingRebaseDelta) {
         uint snapshot = vm.snapshotState();
 
         uint pendingRebaseBefore = IXSTBL(SonicConstantsLib.TOKEN_XSTBL).pendingRebase();

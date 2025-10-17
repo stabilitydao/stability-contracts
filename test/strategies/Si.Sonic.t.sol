@@ -7,10 +7,11 @@ import {SonicConstantsLib} from "chains/sonic/SonicConstantsLib.sol";
 import {StrategyIdLib} from "src/strategies/libs/StrategyIdLib.sol";
 
 contract SiloStrategySonicTest is SonicSetup, UniversalTest {
+    uint internal constant FORK_BLOCK = 26826000; // May-14-2025 09:16:16 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         //vm.rollFork(22435994); // Apr-26-2025 12:04:40 PM +UTC
-        vm.rollFork(26826000); // May-14-2025 09:16:16 PM +UTC
     }
 
     function testSiloSonic() public universalTest {

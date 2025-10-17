@@ -20,8 +20,7 @@ contract SiloManagedMerklFarmStrategySonicTest is SonicSetup, UniversalTest {
     uint private constant FORK_BLOCK = 47005295; // Sep-16-2025 05:50:01 AM +UTC
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
     }
 
     function testSiMMFSonic() public universalTest {

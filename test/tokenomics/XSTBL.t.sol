@@ -11,7 +11,7 @@ import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {RevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {FeeTreasury} from "../../src/tokenomics/FeeTreasury.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 contract XSTBLTest is Test, MockSetup {
     address public stbl;

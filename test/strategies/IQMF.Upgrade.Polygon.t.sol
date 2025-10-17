@@ -17,10 +17,11 @@ contract IQMFUpgradeTest is Test {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
     address public constant STRATEGY = 0x4753A6245CACf41187FEBFCb493a23784d859AcA; // IQMF
 
+    uint internal constant FORK_BLOCK = 62670000; // Oct-05-2024 04:41:36 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(56967000); // May-14-2024 05:36:03 PM +UTC
-        vm.rollFork(62670000); // Oct-05-2024 04:41:36 PM +UTC
 
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

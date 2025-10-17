@@ -2,24 +2,19 @@
 pragma solidity ^0.8.28;
 
 import {console} from "forge-std/console.sol";
-import {SonicLib} from "../../chains/sonic/SonicLib.sol";
-import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IStabilityDaoToken} from "../../src/interfaces/IStabilityDaoToken.sol";
-import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
-import {ISwapper} from "../../src/interfaces/ISwapper.sol";
-import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
-import {Recovery} from "../../src/tokenomics/Recovery.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
 import {StabilityDaoToken} from "../../src/tokenomics/StabilityDaoToken.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract StabilityDaoTokenSonicTest is Test {
+    using SafeERC20 for IERC20;
+
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
     address internal multisig;
 
@@ -141,14 +136,14 @@ contract StabilityDaoTokenSonicTest is Test {
 
         vm.prank(address(0x123));
         vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
-        token.transfer(address(0x456), 1e18);
+        IERC20(address(token)).safeTransfer(address(0x456), 1e18);
 
         vm.prank(address(0x123));
         token.approve(address(0x456), 1e18);
 
         vm.prank(address(0x456));
         vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
-        token.transferFrom(address(0x123), address(0x789), 1e18);
+        IERC20(address(token)).safeTransferFrom(address(0x123), address(0x789), 1e18);
     }
 
     //endregion --------------------------------- Unit tests

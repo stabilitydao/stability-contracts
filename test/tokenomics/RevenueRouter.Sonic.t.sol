@@ -23,9 +23,11 @@ contract RevenueRouterTestSonic is Test {
     IRevenueRouter public revenueRouter;
     address public feeTreasury;
 
+    uint private constant FORK_BLOCK = 15931000; // Mar-25-2025 07:11:27 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(15931000); // Mar-25-2025 07:11:27 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 
@@ -118,7 +120,6 @@ contract RevenueRouterTestSonic is Test {
         assertEq(addresses[3], address(feeTreasury));
     }
 
-
     function _deployWithXSTBLandFeeTreasury() internal {
         Proxy xStakingProxy = new Proxy();
         xStakingProxy.initProxy(address(new XStaking()));
@@ -148,5 +149,4 @@ contract RevenueRouterTestSonic is Test {
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));
         feeTreasury = address(feeTreasuryProxy);
     }
-
 }

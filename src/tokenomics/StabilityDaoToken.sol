@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Controllable, IControllable, IPlatform} from "../core/base/Controllable.sol";
-import {ERC20Upgradeable, IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
@@ -149,12 +149,6 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
 
     function _requireXStaking() internal view {
         require(_getStorage().xStaking == msg.sender, IncorrectMsgSender());
-    }
-
-    function _requireXStakingOrMultisig() internal view {
-        address _xStaking = _getStorage().xStaking;
-        address multisig = IPlatform(platform()).multisig();
-        require(_xStaking == msg.sender || multisig == msg.sender, IncorrectMsgSender());
     }
 
     function _getStorage() internal pure returns (StabilityDaoTokenStorage storage $) {

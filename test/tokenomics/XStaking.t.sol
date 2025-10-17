@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
+//import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Test} from "forge-std/Test.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MockSetup} from "../base/MockSetup.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
@@ -19,6 +20,8 @@ import {StabilityDaoToken} from "../../src/tokenomics/StabilityDaoToken.sol";
 import {MockStabilityDaoToken} from "../../src/test/MockIStabilityDaoToken.sol";
 
 contract XStakingTest is Test, MockSetup {
+    using SafeERC20 for IERC20;
+
     address public stbl;
     IXSTBL public xStbl;
     IXStaking public xStaking;
@@ -130,7 +133,7 @@ contract XStakingTest is Test, MockSetup {
         // ------------------------------- mint xSTBL and deposit to staking
         for (uint i; i < users.length; ++i) {
             tokenA.mint(amounts[i]);
-            tokenA.transfer(users[i], amounts[i]);
+            IERC20(address(tokenA)).safeTransfer(users[i], amounts[i]);
 
             vm.prank(users[i]);
             IERC20(stbl).approve(address(xStbl), amounts[i]);
@@ -279,7 +282,7 @@ contract XStakingTest is Test, MockSetup {
         // ------------------------------- Mint xSTBL and deposit to staking
         for (uint i; i < users.length; ++i) {
             tokenA.mint(amounts[i]);
-            tokenA.transfer(users[i], amounts[i]);
+            IERC20(address(tokenA)).safeTransfer(users[i], amounts[i]);
 
             vm.prank(users[i]);
             IERC20(stbl).approve(address(xStbl), amounts[i]);
