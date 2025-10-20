@@ -172,13 +172,13 @@ contract LendingBatchSonicSkipOnCiTest is Test {
 
         ret.botProfitInBorrowAsset = IERC20(ret.position.borrowAsset).balanceOf(PROFIT_TARGET);
         (
-                ret.userAccountData.totalCollateralBase,
-                ret.userAccountData.totalDebtBase,
-                ret.userAccountData.availableBorrowsBase,
-                ret.userAccountData.currentLiquidationThreshold,
-                ret.userAccountData.ltv,
-                ret.userAccountData.healthFactor
-            ) = IPool(pool).getUserAccountData(USER);
+            ret.userAccountData.totalCollateralBase,
+            ret.userAccountData.totalDebtBase,
+            ret.userAccountData.availableBorrowsBase,
+            ret.userAccountData.currentLiquidationThreshold,
+            ret.userAccountData.ltv,
+            ret.userAccountData.healthFactor
+        ) = IPool(pool).getUserAccountData(USER);
 
         return ret;
     }
@@ -237,13 +237,13 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         }
 
         (
-                dest.userAccountData.totalCollateralBase,
-                dest.userAccountData.totalDebtBase,
-                dest.userAccountData.availableBorrowsBase,
-                dest.userAccountData.currentLiquidationThreshold,
-                dest.userAccountData.ltv,
-                dest.userAccountData.healthFactor
-            ) = IPool(pool).getUserAccountData(USER);
+            dest.userAccountData.totalCollateralBase,
+            dest.userAccountData.totalDebtBase,
+            dest.userAccountData.availableBorrowsBase,
+            dest.userAccountData.currentLiquidationThreshold,
+            dest.userAccountData.ltv,
+            dest.userAccountData.healthFactor
+        ) = IPool(pool).getUserAccountData(USER);
 
         return dest;
     }
