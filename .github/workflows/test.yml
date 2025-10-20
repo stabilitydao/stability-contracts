@@ -33,37 +33,9 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Monitor memory during tests
+      - name: Run forge test
         run: |
-          set +e
-          
-          (while true; do
-            mem_used=$(free -m | grep Mem | awk '{print $3}')
-            mem_total=$(free -m | grep Mem | awk '{print $2}')
-            mem_percent=$((mem_used * 100 / mem_total))
-            echo "$(date +%H:%M:%S) Memory: ${mem_used}MB / ${mem_total}MB (${mem_percent}%)"
-            
-            if [ $mem_percent -gt 90 ]; then
-              echo "WARNING: Memory usage above 90%!"
-            fi
-            
-            sleep 2
-          done) > memory_log.txt &
-          MEM_PID=$!
-          
-          forge test --nmc SkipOnCiTest -vv 2>&1 | tee test_output.log
-          status=$?
-          
-          kill $MEM_PID 2>/dev/null
-          
-          echo "=== Memory usage pattern ==="
-          cat memory_log.txt
-          
-          echo "=== Last test before crash ==="
-          grep "Ran.*tests for" test_output.log | tail -n 3
-          
-          exit $status
-
+          forge test --nmc SkipOnCiTest -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
@@ -103,13 +75,3 @@ jobs:
         with:
           name: lcov-report
           path: lcov.info
-
-
-      - name: Upload memory log 2
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: memory-log
-          path: |
-            memory_log.txt
-            test_output.log
