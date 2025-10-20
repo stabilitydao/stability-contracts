@@ -9,6 +9,8 @@ library SonicConstantsLib {
     address public constant METAVAULT_FACTORY = 0xa190302880acF9deCC4447363640f589000EF601;
     address public constant REVENUE_ROUTER = 0x23b8Cc22C4c82545F4b451B11E2F17747A730810;
     address public constant FEE_TREASURY = 0xDa9c8035aA67a8cf9BF5477e0D937F74566F9039;
+    address public constant LIQUIDATION_BOT = 0xed3EE1e63D5f93EFDC623f3336271ECFA75135FE;
+    address public constant RECOVERY = 0xB8d6019eD82a9e6216c9Bf87cAf145fFe4439b40;
 
     // MetaVaults
     address public constant METAVAULT_METAUSD = 0x1111111199558661Bf7Ff27b4F1623dC6b91Aa3e;
@@ -170,6 +172,9 @@ library SonicConstantsLib {
     address public constant TOKEN_MSUSD = 0xE5Fb2Ed6832deF99ddE57C0b9d9A56537C89121D;
     address public constant TOKEN_SMSUSD = 0xc7990369DA608C2F4903715E3bD22f2970536C29;
 
+    address public constant TOKEN_STAKED_BRUNCH_USD = 0x451812019238785086CFAC408D8A64f06898f6f5;
+    address public constant TOKEN_BRUNCH_USD = 0x602BaeaB9B0DE4a99C457cf1249088932AA04FaC;
+
 
     // AMMs
     address public constant POOL_BEETS_WS_STS = 0x374641076B68371e69D03C417DAc3E5F236c32FA;
@@ -266,6 +271,7 @@ library SonicConstantsLib {
     address public constant POOL_PENDLE_PT_SCUSD_14AUG2025 = 0x84ECc6be573f15991736131F924F7bF571eD3B60;
     address public constant POOL_PT_SILO_20_USDC_17JUL2025 = 0xaCfAD541698437F6EF0E728C56A50CE35C73cC3e;
     address public constant POOL_PENDLE_PT_SMSUSD_30OCT2025 = 0x4aEe8d5e242c2485bd124299203C7Fa5108C25Fc;
+    address public constant POOL_SHADOW_USDC_BRUNCH_USDC = 0x4AC76D51B20b1e85B2E9ba494E649c6e1b9568e6;
 
     // ALMs
     // address public constant ALM_ICHI_SWAPX_SACRA_WS = 0x13939Ac0f09dADe88F8b1d86C26daD934d973081;
@@ -491,7 +497,7 @@ library SonicConstantsLib {
     address public constant STABILITY_SONIC_WOS = 0x9BF96Dee5b4161c5cA3DDDf2D19cc677B6832644;
     address public constant STABILITY_SONIC_STS = 0x4C8D17317884B53bEfE5abeF884818b2fbe0A2dD;
 
-    // -------------------------- Stability market (AAVE)
+    // -------------------------- Stability market (AAVE) - credix
     /// @notice https://stability.farm/vaults/vault/146/0xdf41864a148c3e17075c0440352c27c633935fe5
     address public constant STABILITY_MARKET_SONIC_WS = 0x61bC5Ce0639aA0A24Ab7ea8B574D4B0D6b619833;
     /// @notice https://stability.farm/vaults/vault/146/0xde200f9b328689d6aec4914aadc6dbecedbe8ec1
@@ -506,6 +512,18 @@ library SonicConstantsLib {
     address public constant STABILITY_CREDIX_MARKET_SONIC_USDC = 0xEc26D07B5c0a99D3690375A2CC229E5B943e7726;
     /// @notice https://stability.farm/vaults/vault/146/0x505620f50203cc4d21bd7475c2a7ed82e32dbe56
     address public constant STABILITY_CREDIX_MARKET_SONIC_SCUSD = 0xa175EE511de429275d26Ac5420fAbeb60C67C372;
+
+    // -------------------------- Stability USD market gen 2 (wmetaUSD, AAVE 3.0.2)
+    address public constant STABILITY_USD_MARKET_GEN2_ADDRESS_PROVIDER = 0xE8385DEcBCFf931799dd6689677299CA73A9F644;
+    address public constant STABILITY_USD_MARKET_GEN2_POOL = 0x909ba6aC1A9D34fE97Cb459C2CA9b6Ff986676F7;
+    address public constant STABILITY_USD_MARKET_GEN2_ATOKEN_WMETAUSD = 0xFC4A805Db8Dc217c468155cc5814070A15af8dc4;
+    address public constant STABILITY_USD_MARKET_GEN2_TOKEN_USDC = 0xb90a84F285aE8D3c0ceD37deD6Fc0f943f7279b7;
+
+    // -------------------------- Brunch market gen2
+    address public constant BRUNCH_GEN2_ADDRESS_PROVIDER = 0x546eF43c9Edd9f5108E7b054AB81Df73fBE4F73A;
+    address public constant BRUNCH_GEN2_POOL = 0x6D8Aa37DfAa98d2a14da39cfeD36975F97fc3f85;
+    address public constant BRUNCH_GEN2_ATOKEN_SBUSD = 0xeB9bB589C12A0433B274760E657D549a6973C787;
+    address public constant BRUNCH_GEN2_ATOKEN_USDC = 0x958d930E61bdaebbBc0270D88FdBAEE9A13Dc6fd;
 
     // -------------------------- Shadow
     // address public constant SHADOW_NFT = 0x12E66C8F215DdD5d48d150c8f46aD0c6fB0F4406;

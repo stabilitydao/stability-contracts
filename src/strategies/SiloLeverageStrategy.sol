@@ -29,6 +29,7 @@ import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebra
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
+///   2.1.10: Fix warnings in SiloLib
 ///   2.1.9: StrategyBase 2.6.5
 ///   2.1.8: StrategyBase 2.6.4
 ///   2.1.7: StrategyBase 2.6.3
@@ -63,7 +64,7 @@ contract SiloLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.1.9";
+    string public constant VERSION = "2.1.10";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -112,7 +113,11 @@ contract SiloLeverageStrategy is
     }
 
     /// @inheritdoc IBalancerV3FlashCallback
-    function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
+    function receiveFlashLoanV3(
+        address token,
+        uint amount,
+        bytes memory /*userData*/
+    ) external {
         // sender is vault, it's checked inside receiveFlashLoan
         // we can use msg.sender below but $.flashLoanVault looks more safe
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
@@ -167,8 +172,8 @@ contract SiloLeverageStrategy is
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IFactory.StrategyAvailableInitParams memory params =
-            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        IFactory.StrategyAvailableInitParams memory params = IFactory(IPlatform(platform_).factory())
+            .strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
         uint len = params.initNums[0];
         variants = new string[](len);
         addresses = new address[](len * 4);
@@ -325,7 +330,10 @@ contract SiloLeverageStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
 

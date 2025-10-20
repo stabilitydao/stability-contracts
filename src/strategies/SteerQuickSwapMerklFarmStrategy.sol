@@ -201,7 +201,10 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (value,,) = IMultiPositionManager(__$__._underlying).deposit(amounts[0], amounts[1], 0, 0, address(this));
         __$__.total += value;
@@ -262,8 +265,9 @@ contract SteerQuickSwapMerklFarmStrategy is LPStrategyBase, FarmingStrategyBase 
             IMultiPositionManager multiPositionManager = IMultiPositionManager($._underlying);
             (amounts_[0], amounts_[1]) = multiPositionManager.getTotalAmounts();
             uint totalInMultiPositionManager = multiPositionManager.totalSupply();
-            (amounts_[0], amounts_[1]) =
-                (amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager);
+            (amounts_[0], amounts_[1]) = (
+                amounts_[0] * _total / totalInMultiPositionManager, amounts_[1] * _total / totalInMultiPositionManager
+            );
         }
     }
 

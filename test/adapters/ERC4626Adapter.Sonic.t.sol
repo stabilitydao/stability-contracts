@@ -18,9 +18,10 @@ contract ERC4626AdapterTest is Test {
     bytes32 public _hash;
     IAmmAdapter public adapter;
 
+    uint internal constant FORK_BLOCK = 10332000; // Feb-26-2025 04:14:04 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(10332000); // Feb-26-2025 04:14:04 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
     }
 
     function _addAdapter() internal {

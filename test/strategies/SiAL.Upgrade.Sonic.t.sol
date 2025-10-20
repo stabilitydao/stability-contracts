@@ -13,8 +13,10 @@ contract SiALUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant STRATEGY = 0xDf077C7ffFa6B140d76dE75c792F49D6cB62AE19;
 
+    uint internal constant FORK_BLOCK = 13624880; // Mar-14-2025 07:49:27 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
 
         _upgradeFactory(); // upgrade to Factory v2.0.0

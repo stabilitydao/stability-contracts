@@ -17,9 +17,10 @@ contract VaultOracleTestSonic is Test {
 
     address public multisig;
 
+    uint internal constant FORK_BLOCK = 4690000; // Jan-20-2025 02:26:58 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(4690000); // Jan-20-2025 02:26:58 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         multisig = IPlatform(PLATFORM).multisig();
     }
 

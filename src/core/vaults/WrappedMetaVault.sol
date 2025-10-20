@@ -126,7 +126,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
     function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint maxShares) {
         uint _maxDeposit = maxDeposit(receiver);
         return _maxDeposit == type(uint).max
-            ? type(uint).max // no limits
+            ? type(uint).max  // no limits
             : convertToShares(_maxDeposit);
     }
 
@@ -147,6 +147,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
         WrappedMetaVaultStorage storage $ = _getWrappedMetaVaultStorage();
         return $.recoveryTokens[cVault_];
     }
+
     //endregion ------------------------- View functions
 
     //region ------------------------- Restricted actions
@@ -225,9 +226,8 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             // ---------------------- withdraw total underlying on balance
             uint[] memory singleOut; // total amount of withdrawn underlying
             // slither-disable-next-line unused-return
-            (singleOut,) = IMetaVault(metaVault()).withdrawUnderlyingEmergency(
-                cVault_, singleOwner, v.metaVaultTotal, new uint[](1), new bool[](1)
-            );
+            (singleOut,) = IMetaVault(metaVault())
+                .withdrawUnderlyingEmergency(cVault_, singleOwner, v.metaVaultTotal, new uint[](1), new bool[](1));
 
             // ---------------------- calculate underlying for each owner
             underlyingOut = new uint[](len);
@@ -309,13 +309,14 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
 
             uint balanceBefore = IERC20(_assets[0]).balanceOf(address(this));
 
-            IStabilityVault($.metaVault).withdrawAssets(
-                _assets,
-                assets * 10 ** (18 - IERC20Metadata(_assets[0]).decimals()),
-                new uint[](1),
-                address(this), // withdraw to this contract
-                address(this)
-            );
+            IStabilityVault($.metaVault)
+                .withdrawAssets(
+                    _assets,
+                    assets * 10 ** (18 - IERC20Metadata(_assets[0]).decimals()),
+                    new uint[](1),
+                    address(this), // withdraw to this contract
+                    address(this)
+                );
 
             _burn(owner, shares);
 
@@ -330,6 +331,7 @@ contract WrappedMetaVault is Controllable, ERC4626Upgradeable, IWrappedMetaVault
             super._withdraw(caller, receiver, owner, assets, shares);
         }
     }
+
     //endregion ------------------------- erc4626 hooks
 
     //region ------------------------- deposit/withdraw with slippage
