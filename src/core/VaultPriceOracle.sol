@@ -288,7 +288,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         uint medianPrice = _getMedian(prices);
 
         uint newRoundId = roundId_ + 1;
-        $.vaultPrices[vault_] = AggregatedData(medianPrice, block.timestamp, newRoundId);
+        $.vaultPrices[vault_] = AggregatedData({price: medianPrice, timestamp: block.timestamp, roundId: newRoundId});
         emit PriceUpdated(vault_, medianPrice, roundId_, block.timestamp);
     }
 
