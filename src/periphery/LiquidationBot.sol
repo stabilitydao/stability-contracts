@@ -129,6 +129,7 @@ contract LiquidationBot is
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         return $.targetHealthFactor;
     }
+
     //endregion ----------------------------------- View
 
     //region ----------------------------------- Flash loan
@@ -186,6 +187,7 @@ contract LiquidationBot is
         LiquidationBotLib.LiquidationBotStorage storage $ = LiquidationBotLib.getLiquidationBotStorage();
         LiquidationBotLib.receiveFlashLoan(platform(), $, token, amount, isToken0 ? fee0 : fee1, data);
     }
+
     //endregion ----------------------------------- Flash loan
 
     //region ----------------------------------- Restricted actions

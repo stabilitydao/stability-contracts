@@ -356,9 +356,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vm.roll(block.number + 6);
 
                 {
-                    uint[] memory withdrewAssets = IVault(vars.vault).withdrawAssets(
-                        assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
-                    );
+                    uint[] memory withdrewAssets = IVault(vars.vault)
+                        .withdrawAssets(
+                            assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
+                        );
                     assertEq(withdrewAssets.length, assets.length, "Withdraw assets length mismatch");
 
                     bool isEmpty = true;
@@ -494,8 +495,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             (
                                 int realApr,
                                 int earned,
-                                uint realTvl,
-                                ,
+                                uint realTvl,,
                                 uint realSharePrice,
                                 uint supplyApr,
                                 uint borrowApr
@@ -585,9 +585,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 uint totalWas = strategy.total();
                 vm.roll(block.number + 6);
-                IVault(vars.vault).withdrawAssets(
-                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
-                );
+                IVault(vars.vault)
+                    .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
@@ -742,9 +741,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 strategy.emergencyStopInvesting();
                 assertEq(strategy.total(), 0);
 
-                IVault(vars.vault).withdrawAssets(
-                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
-                );
+                IVault(vars.vault)
+                    .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));
 
                 vars.withdrawnUsdValue = 0;
                 for (uint j; j < assets.length; ++j) {

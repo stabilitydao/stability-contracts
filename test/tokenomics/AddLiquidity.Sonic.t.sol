@@ -17,9 +17,11 @@ contract AddLiquidityTestSonic is Test {
     address public constant SALE = 0x0a02Be0de3Dd109B1AbF4C197f0B58A3bb68eA1F;
     address public multisig;
 
+    uint private constant FORK_BLOCK = 11840000; // Mar-05-2025 04:14:51 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(11840000); // Mar-05-2025 04:14:51 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 
@@ -70,17 +72,18 @@ contract AddLiquidityTestSonic is Test {
         console.log("to", multisig);
         console.log("deadLine", deadLine);
         console.log("");*/
-        IRouterV2(SonicConstantsLib.SWAPX_ROUTER_V2).addLiquidity(
-            SonicConstantsLib.TOKEN_USDC,
-            SonicConstantsLib.TOKEN_STBL,
-            false,
-            usdcAmount,
-            stblAmount,
-            usdcAmount * 999 / 1000,
-            stblAmount * 999 / 1000,
-            multisig,
-            deadLine
-        );
+        IRouterV2(SonicConstantsLib.SWAPX_ROUTER_V2)
+            .addLiquidity(
+                SonicConstantsLib.TOKEN_USDC,
+                SonicConstantsLib.TOKEN_STBL,
+                false,
+                usdcAmount,
+                stblAmount,
+                usdcAmount * 999 / 1000,
+                stblAmount * 999 / 1000,
+                multisig,
+                deadLine
+            );
 
         // Shadow
         uint sAmount = 150_000 * 1e18;
@@ -107,7 +110,10 @@ contract AddLiquidityTestSonic is Test {
         console.log("to", multisig);
         console.log("deadLine", deadLine);
         console.log("");*/
-        ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER).addLiquidityETH{value: sAmount}(
+        ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER)
+        .addLiquidityETH{
+            value: sAmount
+        }(
             SonicConstantsLib.TOKEN_STBL,
             false,
             needAddSTBL,
@@ -126,19 +132,15 @@ contract AddLiquidityTestSonic is Test {
         Sale(SALE).setupToken(SonicConstantsLib.TOKEN_STBL);
 
         // check price
-        address poolSwapX = IRouterV2(SonicConstantsLib.SWAPX_ROUTER_V2).pairFor(
-            SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_STBL, false
-        );
-        address poolShadow = ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER).pairFor(
-            SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STBL, false
-        );
-        uint price = IAmmAdapter(SOLIDLY_ADAPTER).getPrice(
-            poolSwapX, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18
-        );
+        address poolSwapX = IRouterV2(SonicConstantsLib.SWAPX_ROUTER_V2)
+            .pairFor(SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.TOKEN_STBL, false);
+        address poolShadow = ISolidlyRouter(SonicConstantsLib.SHADOW_ROUTER)
+            .pairFor(SonicConstantsLib.TOKEN_WS, SonicConstantsLib.TOKEN_STBL, false);
+        uint price = IAmmAdapter(SOLIDLY_ADAPTER)
+            .getPrice(poolSwapX, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_USDC, 1e18);
         assertEq(price, 180002); // $0.18
-        price = IAmmAdapter(SOLIDLY_ADAPTER).getPrice(
-            poolShadow, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_WS, 1e18
-        );
+        price = IAmmAdapter(SOLIDLY_ADAPTER)
+            .getPrice(poolShadow, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.TOKEN_WS, 1e18);
         price = price * sPrice / 1e18;
         //console.log('price of stbl per $', price);
         assertGt(price, 180090000000000000); // $0.18

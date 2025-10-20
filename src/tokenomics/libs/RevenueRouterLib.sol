@@ -60,6 +60,8 @@ library RevenueRouterLib {
         }
     }
 
+    /// @notice Get first {countNotZero} non-zero amounts from {amounts} and corresponding assets from {assets}
+    /// and save only items with non-zero amounts in the result arrays
     function removeEmpty(
         address[] memory assets,
         uint[] memory amounts,

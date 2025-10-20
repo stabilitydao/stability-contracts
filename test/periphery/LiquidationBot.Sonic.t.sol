@@ -76,6 +76,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             keccak256(abi.encode(uint(keccak256("erc7201:stability.LiquidationBot")) - 1)) & ~bytes32(uint(0xff));
         assertEq(h, LiquidationBotLib._LIQUIDATION_BOT_STORAGE_LOCATION, "storage hash");
     }
+
     //endregion ----------------------------------- Setup
 
     //region ----------------------------------- Restricted actions
@@ -333,6 +334,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             multisig
         );
     }
+
     //endregion ----------------------------------- Liquidation Stability USD Market - various flash loans, multisig
 
     //region ----------------------------------- Liquidation Stability USD Market - good paths, whitelisted
@@ -464,6 +466,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             "availableBorrowsBase is not changed"
         );
     }
+
     //endregion ----------------------------------- Liquidation Stability USD Market - good paths, whitelisted
 
     //region ----------------------------------- Liquidation Stability USD Market - bad paths
@@ -514,6 +517,7 @@ contract LiquidationBotSonicTest is SonicSetup {
             ERROR_CODE_NOT_WHITELISTED
         );
     }
+
     //endregion ----------------------------------- Liquidation Stability USD Market - bad paths
 
     //region ----------------------------------- Liquidation Brunch Gen 2 Market
@@ -640,6 +644,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         address caller = errorCode == ERROR_CODE_NOT_WHITELISTED ? makeAddr("random") : multisig;
         _testLiquidation(bot, stParams_, errorCode, caller, true);
     }
+
     //endregion --------------------------------- Tests implementation
 
     //region --------------------------------- Internal logic
@@ -793,8 +798,8 @@ contract LiquidationBotSonicTest is SonicSetup {
         configurator.setLiquidationProtocolFee(collateralAsset, 1);
 
         (, uint ltv, uint liquidationThreshold, uint liquidationBonus,,,,,,) = IAaveDataProvider(
-            IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
-        ).getReserveConfigurationData(collateralAsset);
+                IAaveAddressProvider(IPool(stParams_.pool).ADDRESSES_PROVIDER()).getPoolDataProvider()
+            ).getReserveConfigurationData(collateralAsset);
 
         uint newLiquidationThreshold =
             stParams_.liquidationThreshold == 0 ? liquidationThreshold : stParams_.liquidationThreshold;
@@ -804,6 +809,7 @@ contract LiquidationBotSonicTest is SonicSetup {
         vm.prank(owner);
         configurator.configureReserveAsCollateral(collateralAsset, ltv, newLiquidationThreshold, newBonus);
     }
+
     //endregion --------------------------------- Internal logic
 
     //region --------------------------------- Utils

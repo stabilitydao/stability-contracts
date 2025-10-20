@@ -437,11 +437,9 @@ contract LendingBatchSonicSkipOnCiTest is Test {
         vm.writeFile(string.concat("./tmp/", fnOut), content);
     }
 
-    function _getAssets(LiquidationBotLib.AaveContracts memory ac)
-        internal
-        view
-        returns (address collateralAsset, address borrowAsset)
-    {
+    function _getAssets(
+        LiquidationBotLib.AaveContracts memory ac
+    ) internal view returns (address collateralAsset, address borrowAsset) {
         IAaveDataProvider.TokenData[] memory assets = ac.dataProvider.getAllReservesTokens();
         for (uint i; i < assets.length; ++i) {
             (,,,,, bool usageAsCollateralEnabled, bool borrowingEnabled,,,) =
@@ -459,6 +457,7 @@ contract LendingBatchSonicSkipOnCiTest is Test {
     function _getDefaultAmountToDeposit(address asset_, uint amountNoDecimals) internal view returns (uint) {
         return amountNoDecimals * 10 ** IERC20Metadata(asset_).decimals();
     }
+
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Setup bot

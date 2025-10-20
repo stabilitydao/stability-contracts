@@ -11,9 +11,10 @@ import {DeployCore} from "../../../script/base/DeployCore.sol";
 abstract contract ArbitrumSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
+    uint internal constant FORK_BLOCK = 227575716;
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("ARBITRUM_RPC_URL")));
-        vm.rollFork(227575716);
+        vm.selectFork(vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK));
     }
 
     function testArbitrumSetupStub() external {}

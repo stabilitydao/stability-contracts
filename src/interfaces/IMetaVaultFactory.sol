@@ -97,11 +97,7 @@ interface IMetaVaultFactory {
     /// @param initCodeHash Hash of contract creationCode
     /// @param thisAddress Address of this factory
     /// @return Future deployment address
-    function getCreate2Address(
-        bytes32 salt,
-        bytes32 initCodeHash,
-        address thisAddress
-    ) external pure returns (address);
+    function getCreate2Address(bytes32 salt, bytes32 initCodeHash, address thisAddress) external pure returns (address);
 
     /// @dev Get keccak256 hash of MetaVaultProxy creationCode for CREATE2
     function getMetaVaultProxyInitCodeHash() external view returns (bytes32);

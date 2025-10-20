@@ -24,10 +24,11 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
     address[2][20] public KNOWN_CYCLING_PAIRS;
     address[52] public tokens;
 
+    uint internal constant FORK_BLOCK = 35952740; // Jun-26-2025 04:45:01 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
-        vm.rollFork(35952740); // Jun-26-2025 04:45:01 AM +UTC
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
 
         KNOWN_CYCLING_PAIRS = [
@@ -306,8 +307,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => USDC
-        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
-            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+        bool withdrawDirectly =
+            IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
+                    .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 
@@ -367,8 +369,9 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         assertEq(balanceToken0, 0, "balanceToken0 should be 0");
 
         //--------------------------------- Swap metaUSD => scUSD
-        bool withdrawDirectly = IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
-            .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
+        bool withdrawDirectly =
+            IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
+                    .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 

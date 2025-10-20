@@ -126,8 +126,9 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         _vaults[0] = metaVaults[MULTI_VAULT_INDEX];
         _proportions = new uint[](1);
         _proportions[0] = 100e16;
-        metaVaults[META_VAULT_INDEX] =
-            _deployMetaVaultByMetaVaultFactory(vaultType, address(0), "Stability USD", "metaUSD", _vaults, _proportions);
+        metaVaults[META_VAULT_INDEX] = _deployMetaVaultByMetaVaultFactory(
+            vaultType, address(0), "Stability USD", "metaUSD", _vaults, _proportions
+        );
         wrappedVaults[META_VAULT_INDEX] = _deployWrapper(metaVaults[META_VAULT_INDEX]);
 
         // ---- Make flash loan unlimited and fees-free to simplify calculations
@@ -392,6 +393,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
             _getDiffPercent18(withdrawn, deposited), 1e18 / 1000, "withdrawn amount should be equal to deposited amount"
         );
     }
+
     //endregion -------------------------------------------- Test MetaVault
 
     //region -------------------------------------------- Test MultiVault
@@ -533,6 +535,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
     function testMultiDepositProportion2() public {
         _testMultiDepositProportion_Fuzzy(677546976265931812, 99_29);
     }
+
     //endregion -------------------------------------------- Test MultiVault
 
     //region -------------------------------------------- Long fuzzy tests (change internal to public to run)
@@ -556,6 +559,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
 
         _testMultiDepositProportion_Fuzzy(proportion18n, borrowPercent);
     }
+
     //endregion -------------------------------------------- Long fuzzy tests (change internal to public to run)
 
     //region -------------------------------------------- Test implementation
@@ -875,9 +879,8 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         deal(SonicConstantsLib.TOKEN_USDC, user, amountsMax[0]);
 
         vm.startPrank(user);
-        IERC20(SonicConstantsLib.TOKEN_USDC).approve(
-            address(metaVault), IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user)
-        );
+        IERC20(SonicConstantsLib.TOKEN_USDC)
+            .approve(address(metaVault), IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user));
         metaVault.depositAssets(_assets, amountsMax, 0, user);
         vm.roll(block.number + 6);
         vm.stopPrank();
@@ -948,12 +951,7 @@ contract MetaVaultMaxDepositMetaUsdSonicTest is Test {
         }
     }
 
-    function _setFlashLoanVault(
-        ILeverageLendingStrategy strategy,
-        address vaultC,
-        address vaultB,
-        uint kind
-    ) internal {
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();
         params[10] = kind;
         addresses[0] = vaultC;

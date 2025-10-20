@@ -81,13 +81,14 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
             uint priceBefore = getPrice(pool, tokenIn, tokenOut, amount);
 
             //slither-disable-next-line unused-return
-            IAlgebraPool(pool).swap(
-                recipient,
-                tokenIn == token0,
-                int(amount),
-                tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
-                abi.encode(SwapCallbackData(tokenIn, amount))
-            );
+            IAlgebraPool(pool)
+                .swap(
+                    recipient,
+                    tokenIn == token0,
+                    int(amount),
+                    tokenIn == token0 ? UniswapV3MathLib.MIN_SQRT_RATIO : UniswapV3MathLib.MAX_SQRT_RATIO,
+                    abi.encode(SwapCallbackData(tokenIn, amount))
+                );
 
             uint priceAfter = getPrice(pool, tokenIn, tokenOut, amount);
             // unreal but better to check
@@ -132,7 +133,13 @@ contract AlgebraV4Adapter is Controllable, ICAmmAdapter {
     }
 
     /// @inheritdoc IAmmAdapter
-    function getPrice(address pool, address tokenIn, address, /*tokenOut*/ uint amount) public view returns (uint) {
+    function getPrice(
+        address pool,
+        address tokenIn,
+        address,
+        /*tokenOut*/
+        uint amount
+    ) public view returns (uint) {
         address token0 = IAlgebraPool(pool).token0();
         address token1 = IAlgebraPool(pool).token1();
 
