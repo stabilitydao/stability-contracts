@@ -15,9 +15,10 @@ contract SFUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant STRATEGY = 0x90b226B729062A825d499B6828AC9573894E3cf4;
 
+    uint internal constant FORK_BLOCK = 3750000; // Jan-13-2025 02:52:41 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(3750000); // (Jan-13-2025 02:52:41 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

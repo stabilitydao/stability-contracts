@@ -197,15 +197,18 @@ library RecoveryLib {
             require(indexFirstRecoveryPool1 <= _recoveryPools.length, WrongRecoveryPoolIndex());
 
             // ----------------------------------- Select target pool
-            uint indexTargetPool =
-                indexFirstRecoveryPool1 == 0 ? selectPool(block.timestamp, _recoveryPools) : indexFirstRecoveryPool1 - 1;
+            // forgefmt instructions below can be removed after release forge 1.4.2
+            // forgefmt: disable-start
+            uint indexTargetPool = indexFirstRecoveryPool1 == 0
+                ? selectPool(block.timestamp, _recoveryPools)
+                : indexFirstRecoveryPool1 - 1;
+            // forgefmt: disable-end
             EnumerableSet.AddressSet storage _tokens = $.registeredTokens;
 
             // assume here that recovery tokens are always set as token 0, meta-vault-tokens as token 1
             address metaVaultToken = IUniswapV3Pool(_recoveryPools[indexTargetPool]).token1();
-            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
-            );
+            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault())
+                .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
             // ----------------------------------- Get amounts to swap (full balance if above threshold)
             uint lenInputAssets = _tokens.length();
@@ -253,13 +256,16 @@ library RecoveryLib {
                 }
             }
 
-            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
-            );
+            IMetaVault(IWrappedMetaVault(metaVaultToken).metaVault())
+                .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
         }
     }
 
-    function uniswapV3SwapCallback(int amount0Delta, int amount1Delta, bytes calldata /* data */ ) internal {
+    function uniswapV3SwapCallback(
+        int amount0Delta,
+        int amount1Delta,
+        bytes calldata /* data */
+    ) internal {
         amount0Delta; // hide warning
 
         RecoveryStorage storage $ = getRecoveryTokenStorage();
@@ -276,6 +282,7 @@ library RecoveryLib {
             IERC20(IUniswapV3Pool(pool).token1()).safeTransfer(address(pool), uint(amount1Delta));
         }
     }
+
     //endregion -------------------------------------- Actions
 
     //region -------------------------------------- Internal logic
@@ -322,13 +329,16 @@ library RecoveryLib {
 
             $.swapping = true;
 
-            try IUniswapV3Pool(pool_).swap(
-                address(this), // recipient
-                zeroForOne,
-                int(amountInMax), // exactInput
-                sqrtPriceLimitX96, // sqrtPriceLimitX96
-                "" // data
-            ) returns (int amount0, int amount1) {
+            try IUniswapV3Pool(pool_)
+                .swap(
+                    address(this), // recipient
+                    zeroForOne,
+                    int(amountInMax), // exactInput
+                    sqrtPriceLimitX96, // sqrtPriceLimitX96
+                    "" // data
+                ) returns (
+                int amount0, int amount1
+            ) {
                 $.swapping = false;
 
                 uint amountOut = zeroForOne ? uint(-amount1) : uint(-amount0);

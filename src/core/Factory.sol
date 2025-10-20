@@ -211,17 +211,18 @@ contract Factory is Controllable, ReentrancyGuardUpgradeable, IFactory {
 
         vars.vaultManagerTokenId = IVaultManager(IPlatform(vars.platform).vaultManager()).mint(msg.sender, vault);
 
-        IVault(vault).initialize(
-            IVault.VaultInitializationData({
-                platform: vars.platform,
-                strategy: strategy,
-                name: vars.name,
-                symbol: vars.symbol,
-                tokenId: vars.vaultManagerTokenId,
-                vaultInitAddresses: vaultInitAddresses,
-                vaultInitNums: vaultInitNums
-            })
-        );
+        IVault(vault)
+            .initialize(
+                IVault.VaultInitializationData({
+                    platform: vars.platform,
+                    strategy: strategy,
+                    name: vars.name,
+                    symbol: vars.symbol,
+                    tokenId: vars.vaultManagerTokenId,
+                    vaultInitAddresses: vaultInitAddresses,
+                    vaultInitNums: vaultInitNums
+                })
+            );
 
         $.deployedVaults.push(vault);
         $.vaultStatus[vault] = VaultStatusLib.ACTIVE;

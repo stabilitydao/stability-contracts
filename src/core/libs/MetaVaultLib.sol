@@ -38,6 +38,7 @@ library MetaVaultLib {
         uint[] minAmounts;
         uint[] amountsOut;
     }
+
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Restricted actions
@@ -209,23 +210,25 @@ library MetaVaultLib {
 
         if (_targetVault == platformCVault_[1]) {
             // withdraw underlying from the target cVault vault
-            v.amountsOut = IStabilityVault(_targetVault).withdrawAssets(
-                v.assets,
-                _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
-                v.minAmounts,
-                address(this),
-                address(this)
-            );
+            v.amountsOut = IStabilityVault(_targetVault)
+                .withdrawAssets(
+                    v.assets,
+                    _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
+                    v.minAmounts,
+                    address(this),
+                    address(this)
+                );
             v.totalUnderlying = v.amountsOut[0];
         } else {
             // withdraw underlying from the child meta-vault
-            v.totalUnderlying = IMetaVault(_targetVault).withdrawUnderlying(
-                platformCVault_[1],
-                _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
-                0,
-                address(this),
-                address(this)
-            );
+            v.totalUnderlying = IMetaVault(_targetVault)
+                .withdrawUnderlying(
+                    platformCVault_[1],
+                    _getTargetVaultSharesToWithdraw($, platformCVault_[0], v.totalAmounts, v.vaultSharePriceUsd, true),
+                    0,
+                    address(this),
+                    address(this)
+                );
         }
 
         recoveryAmountOut = new uint[](len);
@@ -338,23 +341,25 @@ library MetaVaultLib {
 
         if (_targetVault == cVault_) {
             // withdraw underlying from the target cVault vault
-            v.amountsOut = IStabilityVault(_targetVault).withdrawAssets(
-                v.assets,
-                _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
-                v.minAmounts,
-                receiver,
-                address(this)
-            );
+            v.amountsOut = IStabilityVault(_targetVault)
+                .withdrawAssets(
+                    v.assets,
+                    _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
+                    v.minAmounts,
+                    receiver,
+                    address(this)
+                );
             underlyingOut = v.amountsOut[0];
         } else {
             // withdraw underlying from the child meta-vault
-            underlyingOut = IMetaVault(_targetVault).withdrawUnderlying(
-                cVault_,
-                _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
-                minUnderlyingOut,
-                receiver,
-                address(this)
-            );
+            underlyingOut = IMetaVault(_targetVault)
+                .withdrawUnderlying(
+                    cVault_,
+                    _getTargetVaultSharesToWithdraw($, platform_, amount, v.vaultSharePriceUsd, true),
+                    minUnderlyingOut,
+                    receiver,
+                    address(this)
+                );
         }
 
         // burning and updating defense-last-block is implemented outside
@@ -428,13 +433,14 @@ library MetaVaultLib {
             }
 
             // withdraw the amount from the target vault
-            amountsOut = IStabilityVault(targetVault_).withdrawAssets(
-                assets_,
-                _getTargetVaultSharesToWithdraw($, platform_, amount, vaultSharePriceUsd, true),
-                minAssetAmountsOut,
-                receiver,
-                address(this)
-            );
+            amountsOut = IStabilityVault(targetVault_)
+                .withdrawAssets(
+                    assets_,
+                    _getTargetVaultSharesToWithdraw($, platform_, amount, vaultSharePriceUsd, true),
+                    minAssetAmountsOut,
+                    receiver,
+                    address(this)
+                );
         }
 
         emit IStabilityVault.WithdrawAssets(msg.sender, owner, assets_, amount, amountsOut);
@@ -462,19 +468,15 @@ library MetaVaultLib {
     //endregion --------------------------------- Actions
 
     //region --------------------------------- View functions
-    function currentProportions(IMetaVault.MetaVaultStorage storage $)
-        external
-        view
-        returns (uint[] memory proportions)
-    {
+    function currentProportions(
+        IMetaVault.MetaVaultStorage storage $
+    ) external view returns (uint[] memory proportions) {
         return _currentProportions($);
     }
 
-    function vaultForDepositWithdraw(IMetaVault.MetaVaultStorage storage $)
-        external
-        view
-        returns (address targetForDeposit, address targetForWithdraw)
-    {
+    function vaultForDepositWithdraw(
+        IMetaVault.MetaVaultStorage storage $
+    ) external view returns (address targetForDeposit, address targetForWithdraw) {
         address[] memory _vaults = $.vaults;
         if ($.totalShares == 0) {
             return (_vaults[0], _vaults[0]);
@@ -517,9 +519,10 @@ library MetaVaultLib {
         uint totalSupply_
     ) internal view returns (uint) {
         uint _totalShares = $.totalShares;
-        return _totalShares == 0
-            ? 0
-            : Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
+        return
+            _totalShares == 0
+                ? 0
+                : Math.mulDiv($.shareBalance[account], totalSupply_, _totalShares, Math.Rounding.Floor);
     }
 
     function price(
@@ -527,9 +530,10 @@ library MetaVaultLib {
         address platform_
     ) public view returns (uint price_, bool trusted_) {
         address _pegAsset = $.pegAsset;
-        return _pegAsset == address(0)
-            ? (1e18, true)
-            : IPriceReader(IPlatform(platform_).priceReader()).getPrice(_pegAsset);
+        return
+            _pegAsset == address(0)
+                ? (1e18, true)
+                : IPriceReader(IPlatform(platform_).priceReader()).getPrice(_pegAsset);
     }
 
     function tvl(
@@ -717,14 +721,13 @@ library MetaVaultLib {
             }
         }
     }
+
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
-    function _currentProportions(IMetaVault.MetaVaultStorage storage $)
-        internal
-        view
-        returns (uint[] memory proportions)
-    {
+    function _currentProportions(
+        IMetaVault.MetaVaultStorage storage $
+    ) internal view returns (uint[] memory proportions) {
         address[] memory _vaults = $.vaults;
         if ($.totalShares == 0) {
             return $.targetProportions;
@@ -738,8 +741,13 @@ library MetaVaultLib {
             totalDepositedTvl += vaultUsdValue[i];
         }
         for (uint i; i < len; ++i) {
-            proportions[i] =
-                totalDepositedTvl == 0 ? 0 : Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
+
+            // forgefmt instructions below can be removed after release forge 1.4.2
+            // forgefmt: disable-start
+            proportions[i] = totalDepositedTvl == 0
+                ? 0
+                : Math.mulDiv(vaultUsdValue[i], 1e18, totalDepositedTvl, Math.Rounding.Floor);
+            // forgefmt: disable-end
         }
     }
 
@@ -869,13 +877,14 @@ library MetaVaultLib {
             (uint amountToWithdraw, uint targetVaultSharesToWithdraw) =
                 _getAmountToWithdrawFromVault($, platform_, vaults_[i], totalAmount, address(this));
             if (targetVaultSharesToWithdraw != 0) {
-                uint[] memory _amountsOut = IStabilityVault(vaults_[i]).withdrawAssets(
-                    assets_,
-                    targetVaultSharesToWithdraw,
-                    new uint[](assets_.length), // minAssetAmountsOut is checked outside
-                    receiver,
-                    address(this)
-                );
+                uint[] memory _amountsOut = IStabilityVault(vaults_[i])
+                    .withdrawAssets(
+                        assets_,
+                        targetVaultSharesToWithdraw,
+                        new uint[](assets_.length), // minAssetAmountsOut is checked outside
+                        receiver,
+                        address(this)
+                    );
                 for (uint j; j < assets_.length; ++j) {
                     amountsOut[j] += _amountsOut[j];
                 }

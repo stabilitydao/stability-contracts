@@ -113,6 +113,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
 
         emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amount, amountOut);
     }
+
     //endregion ---------------------------------- User actions
 
     //region ------------------------------------ View functions
@@ -188,6 +189,7 @@ contract MetaVaultAdapter is Controllable, IMetaVaultAmmAdapter {
         return interfaceId == type(IAmmAdapter).interfaceId || interfaceId == type(IMetaVaultAmmAdapter).interfaceId
             || super.supportsInterface(interfaceId);
     }
+
     //endregion -------------------------------- View functions
 
     //region -------------------------------- IMetaVaultAmmAdapter

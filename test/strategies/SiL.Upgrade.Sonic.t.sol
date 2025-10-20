@@ -15,9 +15,11 @@ contract SiLUpgradeTest is Test {
     address public constant STRATEGY = 0xfF9C35acDA4b136F71B1736B2BDFB5479f111C4A;
     address public vault;
 
+    uint public constant FORK_BLOCK = 16296000; // Mar-27-2025 08:48:46 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(16296000); // Mar-27-2025 08:48:46 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         vault = IStrategy(STRATEGY).vault();
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

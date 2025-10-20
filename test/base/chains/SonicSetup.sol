@@ -12,8 +12,10 @@ import {DeployCore} from "../../../script/base/DeployCore.sol";
 abstract contract SonicSetup is ChainSetup, DeployCore {
     bool public showDeployLog;
 
+    uint private constant FORK_BLOCK = 18553912; // Mar-14-2025 07:49:27 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(489000); // Dec-16-2024 06:18:01 PM +UTC
         // vm.rollFork(850000); // Dec 20, 2024, 12:56 PM GMT+3
         // vm.rollFork(1168500); // Dec-22-2024 10:34:43 UTC
@@ -27,7 +29,6 @@ abstract contract SonicSetup is ChainSetup, DeployCore {
         // vm.rollFork(5916871); // Jan-30-2025 04:32:17 PM +UTC
         // vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
         // vm.rollFork(15924880); // Mar-14-2025 07:49:27 AM +UTC
-        vm.rollFork(18553912); // Mar-14-2025 07:49:27 AM +UTC
     }
 
     function testSetupStub() external {}
