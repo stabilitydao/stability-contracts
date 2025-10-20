@@ -424,11 +424,11 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     function _setSafe(uint index, bool safe) internal {
-        _safetyMask = (_safetyMask & ~(1 << index)) | (safe ? (1 << index) : 0);
+        _safetyMask = (_safetyMask & ~(uint(1) << index)) | (safe ? (uint(1) << index) : 0);
     }
 
     function _getSafe(uint index) internal view returns (bool safe) {
-        return (_safetyMask & (1 << index)) != 0;
+        return (_safetyMask & (uint(1) << index)) != 0;
     }
     //endregion ------------------------- Transient cache internal logic
 }

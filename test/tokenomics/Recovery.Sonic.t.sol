@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// import {console} from "forge-std/console.sol";
 import {SonicLib} from "../../chains/sonic/SonicLib.sol";
 import {AmmAdapterIdLib} from "../../src/adapters/libs/AmmAdapterIdLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,7 +9,9 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IMetaVault} from "../../src/interfaces/IMetaVault.sol";
+import {IWrappedMetaVault} from "../../src/interfaces/IWrappedMetaVault.sol";
 import {ISwapper} from "../../src/interfaces/ISwapper.sol";
+import {IPriceReader} from "../../src/interfaces/IPriceReader.sol";
 import {IUniswapV3Pool} from "../../src/integrations/uniswapv3/IUniswapV3Pool.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {RecoveryLib} from "../../src/tokenomics/libs/RecoveryLib.sol";
@@ -140,7 +143,7 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.threshold(assets[0]), 0, "usdc threshold is zero by default");
         assertEq(recovery.threshold(assets[1]), 0, "ws threshold is zero by default");
 
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotOperator.selector);
         vm.prank(address(this));
         recovery.setThresholds(assets, thresholds);
 
@@ -170,7 +173,7 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.whitelisted(operator1), false, "operator1 is not whitelisted by default");
         assertEq(recovery.whitelisted(operator2), false, "operator2 is not whitelisted by default");
 
-        vm.expectRevert(IControllable.NotMultisig.selector);
+        vm.expectRevert(IControllable.NotOperator.selector);
         vm.prank(address(this));
         recovery.changeWhitelist(operator1, true);
 
@@ -225,21 +228,89 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.isTokenRegistered(tokens[1]), true, "usdc is registered");
     }
 
-    function testSwapAssetsToRecoveryTokensBadPaths() public {
+    function testGetListTokensToSwap() public {
+        Recovery recovery = createRecoveryInstance();
+
+        address[] memory tokens = new address[](3);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+        tokens[1] = SonicConstantsLib.TOKEN_WS;
+        tokens[2] = SonicConstantsLib.TOKEN_USDT;
+
+        vm.prank(multisig);
+        recovery.registerAssets(tokens);
+
+        address[] memory list = recovery.getListTokensToSwap();
+        assertEq(list.length, 0, "no tokens to swap");
+
+        // ------------------------- Put some assets on balance of Recovery
+        deal(SonicConstantsLib.TOKEN_USDC, address(recovery), 1e6);
+        deal(SonicConstantsLib.TOKEN_USDT, address(recovery), 2e6);
+
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 2, "2 tokens to swap A");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDC, "token 0 is usdc A");
+        assertEq(list[1], SonicConstantsLib.TOKEN_USDT, "token 1 is usdt A");
+
+        // ------------------------- Set high threshold for USDC
+        address[] memory assets = new address[](1);
+        assets[0] = SonicConstantsLib.TOKEN_USDC;
+
+        uint[] memory thresholds = new uint[](1);
+        thresholds[0] = 1e6; // usdc
+
+        vm.prank(multisig);
+        recovery.setThresholds(assets, thresholds);
+
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 1, "1 token to swap B");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
+
+        // ------------------------- Add meta vaults on balance
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, address(recovery), 100e18, true);
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAS, address(recovery), 100e18, true);
+
+        tokens = new address[](2);
+        tokens[0] = SonicConstantsLib.WRAPPED_METAVAULT_METAUSD;
+        tokens[1] = SonicConstantsLib.WRAPPED_METAVAULT_METAS;
+
+        vm.prank(multisig);
+        recovery.registerAssets(tokens);
+
+        address[] memory pools = new address[](2);
+        pools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAUSD;
+        pools[1] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+
+        vm.prank(multisig);
+        recovery.addRecoveryPools(pools);
+
+        // ------------------------- Ensure that getListTokensToSwap doesn't return meta vaults
+        list = recovery.getListTokensToSwap();
+        assertEq(list.length, 1, "1 token to swap B");
+        assertEq(list[0], SonicConstantsLib.TOKEN_USDT, "token 0 is usdt B");
+
+        // ------------------------- Tests for auxiliary getListRegisteredTokens
+        list = recovery.getListRegisteredTokens();
+        assertEq(list.length, 5);
+    }
+
+    function testSwapAssetsBadPaths() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+
         Recovery recovery = createRecoveryInstance();
 
         vm.expectRevert(RecoveryLib.NotWhitelisted.selector);
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0);
 
         vm.prank(multisig);
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0); // no recovery pool here
 
         vm.prank(multisig);
         recovery.changeWhitelist(address(this), true);
 
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokens, 0);
 
         {
             address[] memory pools = new address[](1);
@@ -251,7 +322,127 @@ contract RecoverySonicTest is Test {
 
         vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
         vm.prank(address(this));
-        recovery.swapAssetsToRecoveryTokens(20000);
+        recovery.swapAssets(tokens, 20000);
+
+        // try to emulate swap failing (there is no path to swap recovery token)
+        {
+            vm.prank(multisig);
+            recovery.changeWhitelist(address(this), true);
+
+            vm.prank(multisig);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(recovery), true);
+
+            vm.prank(multisig);
+            IMetaVault(SonicConstantsLib.METAVAULT_METAS).changeWhitelist(address(recovery), true);
+
+            deal(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_METAS, address(recovery), 1e18);
+
+            address[] memory unknownTokens = new address[](1);
+            unknownTokens[0] = SonicConstantsLib.RECOVERY_TOKEN_CREDIX_METAS;
+
+            vm.prank(multisig);
+            recovery.registerAssets(unknownTokens);
+
+            vm.prank(multisig);
+            recovery.swapAssets(unknownTokens, 1); // no revert, but no swaps too
+        }
+    }
+
+    function testFillRecoveryPoolsBadPaths() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = SonicConstantsLib.TOKEN_USDC;
+
+        Recovery recovery = createRecoveryInstance();
+
+        vm.expectRevert(RecoveryLib.NotWhitelisted.selector);
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
+
+        vm.prank(multisig);
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0); // no recovery pool here
+
+        vm.prank(multisig);
+        recovery.changeWhitelist(address(this), true);
+
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.METAVAULT_METAUSD, 0, 0);
+
+        {
+            address[] memory pools = new address[](1);
+            pools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+
+            vm.prank(multisig);
+            recovery.addRecoveryPools(pools);
+        }
+
+        vm.prank(address(this)); // empty balance, no revert
+        recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 20000, 1000);
+
+        _getMetaUsdOnBalance(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, address(recovery), 1e18, true);
+
+        vm.prank(multisig);
+        IMetaVault(SonicConstantsLib.METAVAULT_METAUSD).changeWhitelist(address(recovery), true);
+
+        vm.expectRevert(RecoveryLib.WrongRecoveryPoolIndex.selector);
+        vm.prank(address(this));
+        recovery.fillRecoveryPools(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD, 20000, 1000);
+    }
+
+    function testSelectPool() public view {
+        address[] memory recoveryPools = new address[](6);
+        recoveryPools[0] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAUSD;
+        recoveryPools[1] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAUSD;
+        recoveryPools[2] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAS;
+        recoveryPools[3] = SonicConstantsLib.RECOVERY_POOL_CREDIX_METAS;
+        recoveryPools[4] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETASCUSD;
+        recoveryPools[5] = SonicConstantsLib.RECOVERY_POOL_CREDIX_WMETAUSDC;
+
+        uint[] memory selected = new uint[](6);
+
+        for (uint i; i < 255; ++i) {
+            uint index0 = RecoveryLib.selectPool(i, recoveryPools);
+            selected[index0]++;
+        }
+
+        // at the initial block all pools have same price 1, so distribution should be smooth
+        // typical values:
+        //        0 35
+        //        1 41
+        //        2 46
+        //        3 46
+        //        4 44
+        //        5 43
+        for (uint i; i < 6; ++i) {
+            // console.log(i, selected[i]);
+            assertApproxEqAbs(selected[i], selected[0], selected[i] / 4, "smooth distribution");
+        }
+
+        for (uint i; i < 6; ++i) {
+            assertEq(selected[i] != 0, true, string(abi.encodePacked("pool ", vm.toString(i), " was never selected")));
+        }
+    }
+
+    function testSetReceiver() public {
+        Recovery recovery = createRecoveryInstance();
+
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(0), "no init");
+
+        vm.expectRevert(IControllable.NotOperator.selector);
+        vm.prank(address(this));
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(1));
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(1));
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(1), "1 is set");
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS, address(2));
+        assertEq(recovery.getReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS), address(2), "2 is set");
+
+        vm.prank(multisig);
+        recovery.setReceiver(SonicConstantsLib.TOKEN_USDC, address(0));
+        assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(0), "0 again");
+        assertEq(recovery.getReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS), address(2), "still 2");
     }
 
     //endregion --------------------------------- Unit tests
@@ -556,6 +747,46 @@ contract RecoverySonicTest is Test {
         );
     }
 
+    function testMultipleReceivers() public {
+        Recovery recovery = createRecoveryInstance();
+        MultipleTestCase memory multiple = fixtureMultiple()[0];
+
+        {
+            multiple.inputAssets = new address[](2);
+            multiple.inputAssets[0] = SonicConstantsLib.TOKEN_USDC;
+            multiple.inputAssets[1] = SonicConstantsLib.TOKEN_WS;
+
+            multiple.inputAmounts = new uint[](2);
+            multiple.inputAmounts[0] = 10e6;
+            multiple.inputAmounts[1] = 10e18;
+
+            for (uint i; i < multiple.pools.length; ++i) {
+                address recoveryToken = IUniswapV3Pool(multiple.pools[i]).token0();
+                vm.prank(multisig);
+                recovery.setReceiver(recoveryToken, address(uint160(i + 1999)));
+            }
+        }
+
+        SingleState[4][] memory states = _testMultiplePoolsTwoSwaps(recovery, multiple, true, false);
+
+        // Recovery transfers all recovery tokens to specified receivers
+        for (uint i; i < multiple.pools.length; ++i) {
+            assertEq(
+                states[i][3].totalSupplyRecoveryToken,
+                states[i][1].totalSupplyRecoveryToken,
+                "no recovery tokens were burnt"
+            );
+        }
+
+        for (uint i; i < multiple.pools.length; ++i) {
+            assertEq(
+                IERC20(IUniswapV3Pool(multiple.pools[i]).token0()).balanceOf(address(uint160(i + 1999))),
+                (states[i][1].balancePoolRecoveryToken - states[i][3].balancePoolRecoveryToken),
+                "all recovery bought tokens were transferred to the receiver"
+            );
+        }
+    }
+
     //endregion --------------------------------- Use Recovery with multiple recovery tokens
 
     //region --------------------------------- Selected pool tests
@@ -708,8 +939,14 @@ contract RecoverySonicTest is Test {
         states[1] = getState(IUniswapV3Pool(single.pool), user1, recovery);
 
         // ------------------------- Swap assets to recovery tokens
+        address[] memory tokensToSwap = recovery.getListTokensToSwap();
+
         vm.prank(multisig);
-        recovery.swapAssetsToRecoveryTokens(0);
+        recovery.swapAssets(tokensToSwap, 0);
+        vm.roll(block.number + 6);
+
+        vm.prank(multisig);
+        recovery.fillRecoveryPools(metaVaultToken, 1, 1);
         vm.roll(block.number + 6);
 
         states[2] = getState(IUniswapV3Pool(single.pool), user1, recovery);
@@ -797,8 +1034,16 @@ contract RecoverySonicTest is Test {
                 }
             }
 
+            address[] memory tokens = recovery.getListTokensToSwap();
+
+            address metaVaultToken = IUniswapV3Pool(multiple.targetPool).token1();
+
             vm.prank(multisig);
-            recovery.swapAssetsToRecoveryTokens(index0 + 1);
+            recovery.swapAssets(tokens, index0 + 1);
+            vm.roll(block.number + 6);
+
+            vm.prank(multisig);
+            recovery.fillRecoveryPools(metaVaultToken, index0 + 1, 0);
         }
 
         // get state after calling swapAssetsToRecoveryTokens
@@ -921,7 +1166,46 @@ contract RecoverySonicTest is Test {
         proxy.initProxy(address(new Recovery()));
         Recovery recovery = Recovery(address(proxy));
         recovery.initialize(SonicConstantsLib.PLATFORM);
+
+        _whiteListInPriceReader(address(recovery));
+
         return recovery;
+    }
+
+    function _getMetaUsdOnBalance(address wrapped, address user, uint amountMetaVaultTokens, bool wrap) internal {
+        IWrappedMetaVault wrappedMetaVault = IWrappedMetaVault(wrapped);
+        IMetaVault metaVault = IMetaVault(wrappedMetaVault.metaVault());
+
+        // we don't know exact amount of USDC required to receive exact amountMetaVaultTokens
+        // so we deposit a bit large amount of USDC
+        address[] memory _assets = metaVault.assetsForDeposit();
+        uint[] memory amountsMax = new uint[](1);
+        address asset = _assets[0];
+        amountsMax[0] = 2 * amountMetaVaultTokens * (10 ** IERC20Metadata(asset).decimals()) / 1e18;
+
+        deal(asset, user, amountsMax[0]);
+
+        vm.startPrank(user);
+        IERC20(asset).approve(address(metaVault), IERC20(asset).balanceOf(user));
+        metaVault.depositAssets(_assets, amountsMax, 0, user);
+        vm.roll(block.number + 6);
+        vm.stopPrank();
+
+        if (wrap) {
+            vm.startPrank(user);
+            metaVault.approve(address(wrappedMetaVault), metaVault.balanceOf(user));
+            wrappedMetaVault.deposit(metaVault.balanceOf(user), user, 0);
+            vm.stopPrank();
+
+            vm.roll(block.number + 6);
+        }
+    }
+
+    function _whiteListInPriceReader(address recovery_) internal {
+        IPriceReader priceReader = IPriceReader(IPlatform(SonicConstantsLib.PLATFORM).priceReader());
+
+        vm.prank(multisig);
+        priceReader.changeWhitelistTransientCache(recovery_, true);
     }
     //endregion --------------------------------- Utils
 }
