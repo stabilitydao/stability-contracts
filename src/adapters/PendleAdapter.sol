@@ -113,7 +113,8 @@ contract PendleAdapter is Controllable, IAmmAdapter {
         // asset to PT
         if ((tokenIn == tokens[3] && tokenOut == tokens[1]) || (tokenIn == tokens[4] && tokenOut == tokens[1])) {
             // DefaultApprox means no off-chain preparation is involved, more gas consuming (~ 180k gas)
-            ApproxParams memory defaultApprox = ApproxParams(0, type(uint).max, 0, 256, 1e14);
+            ApproxParams memory defaultApprox =
+                ApproxParams({guessMin: 0, guessMax: type(uint).max, guessOffchain: 0, maxIteration: 256, eps: 1e14});
             TokenInput memory input = TokenInput({
                 tokenIn: tokenIn,
                 netTokenIn: amount,

@@ -66,7 +66,7 @@ contract VaultPriceOracle is Controllable, IVaultPriceOracle {
         uint currentRoundId = $.vaultPrices[vault_].roundId == 0 ? 1 : $.vaultPrices[vault_].roundId;
         require(roundId_ == currentRoundId, IVaultPriceOracle.InvalidRoundId());
 
-        $.observations[vault_][currentRoundId][msg.sender] = Observation(price_, block.timestamp);
+        $.observations[vault_][currentRoundId][msg.sender] = Observation({price: price_, timestamp: block.timestamp});
         emit PriceSubmitted(vault_, msg.sender, price_, currentRoundId);
 
         if (_countSubmissions(vault_, currentRoundId) >= $.minQuorum) {
