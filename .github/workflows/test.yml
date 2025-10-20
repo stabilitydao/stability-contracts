@@ -25,7 +25,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.3.6
+          version: nightly
 
       - name: Run forge build
         run: |
@@ -34,8 +34,21 @@ jobs:
         id: build
 
       - name: Run forge test
+        timeout-minutes: 20
         run: |
-          forge test --nmc SkipOnCiTest -vvv
+          set +e
+          (while sleep 5; do 
+            echo "$(date): Memory: $(free -h | grep Mem | awk '{print $3"/"$2}'), Processes: $(ps aux | grep forge | wc -l)"
+          done) &
+          MONITOR_PID=$!
+          
+          forge test --nmc SkipOnCiTest -vvv --jobs 2
+          status=$?
+          
+          kill $MONITOR_PID 2>/dev/null || true
+          dmesg | tail -n 50 || true
+          
+          exit $status
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
