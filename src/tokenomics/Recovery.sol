@@ -36,7 +36,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     }
 
     modifier onlyWhitelisted() {
-        require(whitelisted(msg.sender), RecoveryLib.NotWhitelisted());
+        _onlyWhitelisted();
         _;
     }
 
@@ -156,4 +156,8 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
         return RecoveryLib.uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
     }
     //endregion ----------------------------------- Actions
+
+    function _onlyWhitelisted() internal view {
+        require(whitelisted(msg.sender), RecoveryLib.NotWhitelisted());
+    }
 }

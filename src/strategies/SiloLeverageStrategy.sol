@@ -29,7 +29,12 @@ import {IAlgebraFlashCallback} from "../integrations/algebrav4/callback/IAlgebra
 
 /// @title Silo V2 leverage strategy
 /// Changelog:
-///   2.1.5: Fix warnings in SiloLib
+///   2.1.10: Fix warnings in SiloLib
+///   2.1.9: StrategyBase 2.6.5
+///   2.1.8: StrategyBase 2.6.4
+///   2.1.7: StrategyBase 2.6.3
+///   2.1.6: StrategyBase 2.6.2
+///   2.1.5: StrategyBase 2.6.1
 ///   2.1.4: StrategyBase 2.6.0
 ///   2.1.3: StrategyBase 2.5.1
 ///   2.1.2: Add maxDeploy, use StrategyBase 2.5.0 - #330
@@ -59,7 +64,7 @@ contract SiloLeverageStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "2.1.5";
+    string public constant VERSION = "2.1.10";
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
