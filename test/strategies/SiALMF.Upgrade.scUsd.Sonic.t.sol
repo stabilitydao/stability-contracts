@@ -263,13 +263,13 @@ contract SiALMFUpgradeScUsdTest is Test {
         (state.sharePrice,) = _strategy.realSharePrice();
 
         (
-                state.ltv,
-                state.maxLtv,
-                state.leverage,
-                state.collateralAmount,
-                state.debtAmount,
-                state.targetLeveragePercent
-            ) = _strategy.health();
+            state.ltv,
+            state.maxLtv,
+            state.leverage,
+            state.collateralAmount,
+            state.debtAmount,
+            state.targetLeveragePercent
+        ) = _strategy.health();
 
         state.total = strategy.total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

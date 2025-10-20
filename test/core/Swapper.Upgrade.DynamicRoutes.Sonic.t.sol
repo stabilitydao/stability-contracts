@@ -309,7 +309,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Swap metaUSD => USDC
         bool withdrawDirectly =
             IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
-                .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
+                    .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_USDC;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 
@@ -371,7 +371,7 @@ contract SwapperUpgradeDynamicRoutesSonicTest is Test {
         //--------------------------------- Swap metaUSD => scUSD
         bool withdrawDirectly =
             IMetaVault(IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).metaVault())
-                .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
+                    .assetsForWithdraw()[0] == SonicConstantsLib.TOKEN_SCUSD;
 
         IERC20(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).approve(address(swapper), type(uint).max);
 

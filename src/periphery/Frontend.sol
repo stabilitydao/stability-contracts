@@ -297,11 +297,11 @@ contract Frontend is IFrontend {
                     }
 
                     (
-                            vars.strategyVariantDesc,
-                            vars.allStrategyInitAddresses,
-                            vars.allStrategyInitNums,
-                            vars.allStrategyInitTicks
-                        ) = IStrategy(strategyConfig.implementation).initVariants(address(vars.platform));
+                        vars.strategyVariantDesc,
+                        vars.allStrategyInitAddresses,
+                        vars.allStrategyInitNums,
+                        vars.allStrategyInitTicks
+                    ) = IStrategy(strategyConfig.implementation).initVariants(address(vars.platform));
                     vars.allStrategyInitAddressesIndex = 0;
                     vars.allStrategyInitNumsIndex = 0;
                     vars.allStrategyInitTicksIndex = 0;
@@ -407,11 +407,11 @@ contract Frontend is IFrontend {
                     }
 
                     (
-                            vars.strategyVariantDesc,
-                            vars.allStrategyInitAddresses,
-                            vars.allStrategyInitNums,
-                            vars.allStrategyInitTicks
-                        ) = IStrategy(strategyConfig.implementation).initVariants(address(vars.platform));
+                        vars.strategyVariantDesc,
+                        vars.allStrategyInitAddresses,
+                        vars.allStrategyInitNums,
+                        vars.allStrategyInitTicks
+                    ) = IStrategy(strategyConfig.implementation).initVariants(address(vars.platform));
                     vars.allStrategyInitAddressesIndex = 0;
                     vars.allStrategyInitNumsIndex = 0;
                     vars.allStrategyInitTicksIndex = 0;

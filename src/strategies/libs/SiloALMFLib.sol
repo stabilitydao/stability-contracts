@@ -331,8 +331,7 @@ library SiloALMFLib {
         // collateral_value = real_TVL * PRECISION / (PRECISION - LTV)
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
-        uint newDebtAmount =
-            newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+        uint newDebtAmount = newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
         uint debtDiff;
@@ -362,8 +361,9 @@ library SiloALMFLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
-        CollateralDebtState memory debtState =
-            _getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        CollateralDebtState memory debtState = _getDebtState(
+            platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault
+        );
         return _realTvl(debtState);
     }
 
@@ -412,8 +412,8 @@ library SiloALMFLib {
         ILeverageLendingStrategy.LeverageLendingAddresses memory v,
         uint priceBtoC
     ) public view returns (uint total) {
-        uint borrowedAmountPricedInCollateral =
-            totalDebt(v.borrowingVault) * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
+        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault)
+            * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
             / (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18; // priceBtoC has decimals 18
 
         total = totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
@@ -697,8 +697,7 @@ library SiloALMFLib {
 
         // --------- Calculate debt to add
         uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
-        uint debtDiff =
-            requiredCollateral * priceCtoB // no multiplication on ltv here
+        uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals())
             / 1e18; // priceCtoB has decimals 18
 

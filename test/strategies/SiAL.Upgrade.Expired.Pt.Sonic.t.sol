@@ -578,13 +578,13 @@ contract SiALUpgradeExpiredPtTest is Test {
         // console.log(stateName);
 
         (
-                state.ltv,
-                state.maxLtv,
-                state.leverage,
-                state.collateralAmount,
-                state.debtAmount,
-                state.targetLeveragePercent
-            ) = strategy.health();
+            state.ltv,
+            state.maxLtv,
+            state.leverage,
+            state.collateralAmount,
+            state.debtAmount,
+            state.targetLeveragePercent
+        ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

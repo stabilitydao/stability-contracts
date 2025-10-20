@@ -148,9 +148,8 @@ library LPStrategyLib {
                 }
             } else if (prop0Pool > 0) {
                 // extra assets[1]
-                uint correctAsset1Balance =
-                    vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18 * 10 ** vars.asset1decimals
-                    / vars.price;
+                uint correctAsset1Balance = vars.balance0 * 1e18 / prop0Pool * (1e18 - prop0Pool) / 1e18 * 10
+                    ** vars.asset1decimals / vars.price;
                 uint extraBalance = vars.balance1 - correctAsset1Balance;
                 uint toSwapAsset1 = extraBalance * prop0Pool / 1e18;
                 // swap assets[1] to assets[0]
