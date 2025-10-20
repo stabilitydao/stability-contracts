@@ -167,7 +167,9 @@ contract SiloFarmStrategy is FarmingStrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view override returns (uint[] memory amounts) {
         IFactory.Farm memory farm = _getFarm();
         ISilo siloVault = ISilo(farm.addresses[1]);
 
@@ -190,7 +192,10 @@ contract SiloFarmStrategy is FarmingStrategyBase {
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line unused-return
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         IFactory.Farm memory farm = _getFarm();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         ISilo siloVault = ISilo(farm.addresses[1]);

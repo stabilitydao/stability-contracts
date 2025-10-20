@@ -63,8 +63,8 @@ contract ZapTest is PolygonSetup {
         v.previewDepositAmounts[1] = swapAmount1OfDepositToken * 1e18 / v.asset1Price;
         assertEq(v.inputPrice / 1e14, swapAmountsPrice / 1e14); // 1e14 ~ $0.0001
         (uint[] memory amountsConsumed,,) = IVault(vault).previewDepositAssets(assets, v.previewDepositAmounts);
-        uint consumedAmountsPrice = amountsConsumed[0] * v.asset0Price / 10 ** v.asset0Decimals
-            + amountsConsumed[1] * v.asset1Price / 10 ** v.asset1Decimals;
+        uint consumedAmountsPrice = amountsConsumed[0] * v.asset0Price / 10 ** v.asset0Decimals + amountsConsumed[1]
+            * v.asset1Price / 10 ** v.asset1Decimals;
         // console.log('consumedAmountsPrice', consumedAmountsPrice);
         assertGe(consumedAmountsPrice / 1e14, v.inputPrice / 1e14); // 1e14 ~ $0.0001
     }
@@ -218,7 +218,7 @@ contract ZapTest is PolygonSetup {
         minToWithdraw[1] = 0;
 
         // swap WMATIC -> USDT
-        /* 
+        /*
         {
         "toAmount": "996136",
         "tx": {

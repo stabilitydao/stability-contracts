@@ -78,32 +78,34 @@ contract PendleAdapter is Controllable, IAmmAdapter {
         if ((tokenIn == tokens[1] && tokenOut == tokens[3]) || (tokenIn == tokens[1] && tokenOut == tokens[4])) {
             if (IPPrincipalToken(tokenIn).isExpired()) {
                 IERC20(tokenIn).forceApprove(ACTION_MISC_V3, amount);
-                (amountOut,) = IPActionMiscV3(ACTION_MISC_V3).redeemPyToToken(
-                    recipient,
-                    IPPrincipalToken(tokenIn).YT(),
-                    amount,
-                    TokenOutput({
-                        tokenOut: tokenOut,
-                        minTokenOut: 0,
-                        tokenRedeemSy: tokenOut,
-                        pendleSwap: address(0),
-                        swapData: emptySwapData
-                    })
-                );
+                (amountOut,) = IPActionMiscV3(ACTION_MISC_V3)
+                    .redeemPyToToken(
+                        recipient,
+                        IPPrincipalToken(tokenIn).YT(),
+                        amount,
+                        TokenOutput({
+                            tokenOut: tokenOut,
+                            minTokenOut: 0,
+                            tokenRedeemSy: tokenOut,
+                            pendleSwap: address(0),
+                            swapData: emptySwapData
+                        })
+                    );
             } else {
-                (amountOut,,) = IPActionSwapPTV3(ROUTER).swapExactPtForToken(
-                    recipient,
-                    pool,
-                    amount,
-                    TokenOutput({
-                        tokenOut: tokenOut,
-                        minTokenOut: 0,
-                        tokenRedeemSy: tokenOut,
-                        pendleSwap: address(0),
-                        swapData: emptySwapData
-                    }),
-                    createEmptyLimitOrderData()
-                );
+                (amountOut,,) = IPActionSwapPTV3(ROUTER)
+                    .swapExactPtForToken(
+                        recipient,
+                        pool,
+                        amount,
+                        TokenOutput({
+                            tokenOut: tokenOut,
+                            minTokenOut: 0,
+                            tokenRedeemSy: tokenOut,
+                            pendleSwap: address(0),
+                            swapData: emptySwapData
+                        }),
+                        createEmptyLimitOrderData()
+                    );
             }
         }
 
@@ -119,9 +121,8 @@ contract PendleAdapter is Controllable, IAmmAdapter {
                 pendleSwap: address(0),
                 swapData: emptySwapData
             });
-            (amountOut,,) = IPActionSwapPTV3(ROUTER).swapExactTokenForPt(
-                recipient, pool, 0, defaultApprox, input, createEmptyLimitOrderData()
-            );
+            (amountOut,,) = IPActionSwapPTV3(ROUTER)
+                .swapExactTokenForPt(recipient, pool, 0, defaultApprox, input, createEmptyLimitOrderData());
         }
 
         if (amountOut < amountOutWithoutImpact) {

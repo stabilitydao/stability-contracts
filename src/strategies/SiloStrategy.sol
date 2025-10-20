@@ -87,8 +87,8 @@ contract SiloStrategy is ERC4626StrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IFactory.StrategyAvailableInitParams memory params =
-            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        IFactory.StrategyAvailableInitParams memory params = IFactory(IPlatform(platform_).factory())
+            .strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
         uint len = params.initAddresses.length;
         variants = new string[](len);
         addresses = new address[](len);
@@ -137,7 +137,9 @@ contract SiloStrategy is ERC4626StrategyBase {
     }
 
     /// @inheritdoc IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view override returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view override returns (uint[] memory amounts) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         IERC4626 u = IERC4626(__$__._underlying);
         amounts = new uint[](1);

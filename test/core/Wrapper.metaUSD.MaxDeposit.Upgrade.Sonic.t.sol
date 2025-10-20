@@ -263,15 +263,13 @@ contract WrapperUsdMaxDepositUpgradeSonicTest is Test {
                     _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
                 } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.EULER)) {
                     _upgradeEulerStrategy(address(IVault(payable(vaults[i])).strategy()));
-                } else if (
-                    CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)
-                ) {
+                } else if (CommonLib.eq(
+                        IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM
+                    )) {
                     _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-                } else if (
-                    CommonLib.eq(
+                } else if (CommonLib.eq(
                         IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM
-                    )
-                ) {
+                    )) {
                     _upgradeSiloManagedFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
                 } else {
                     revert("Unknown strategy for CVault");

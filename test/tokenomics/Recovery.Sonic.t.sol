@@ -72,6 +72,7 @@ contract RecoverySonicTest is Test {
     struct SelectedPoolTestCase {
         uint index;
     }
+
     //endregion --------------------------------- Data types
 
     //region --------------------------------- Unit tests
@@ -443,6 +444,7 @@ contract RecoverySonicTest is Test {
         assertEq(recovery.getReceiver(SonicConstantsLib.TOKEN_USDC), address(0), "0 again");
         assertEq(recovery.getReceiver(SonicConstantsLib.RECOVERY_TOKEN_CREDIX_WMETAS), address(2), "still 2");
     }
+
     //endregion --------------------------------- Unit tests
 
     //region --------------------------------- Use Recovery with EACH single recovery token
@@ -784,6 +786,7 @@ contract RecoverySonicTest is Test {
             );
         }
     }
+
     //endregion --------------------------------- Use Recovery with multiple recovery tokens
 
     //region --------------------------------- Selected pool tests
@@ -1063,6 +1066,7 @@ contract RecoverySonicTest is Test {
             states[i][3] = getState(IUniswapV3Pool(multiple.pools[i]), user1, recovery);
         }
     }
+
     //endregion --------------------------------- Tests implementations
 
     //region --------------------------------- Utils

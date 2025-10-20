@@ -135,8 +135,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
             //slither-disable-next-line uninitialized-local
             uint totalBefore;
             if (!autoCompoundingByUnderlyingProtocol()) {
-                __amounts[exchangeAssetIndex] +=
-                    _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
+                __amounts[
+                    exchangeAssetIndex
+                ] += _liquidateRewards(__assets[exchangeAssetIndex], __rewardAssets, __rewardAmounts);
 
                 uint[] memory amountsRemaining = StrategyLib.extractFees(_platform, _vault, __assets, __amounts);
 
@@ -306,7 +307,9 @@ abstract contract StrategyBase is Controllable, IStrategy {
     }
 
     /// @notice IStrategy
-    function maxWithdrawAssets(uint /*mode*/ ) public view virtual returns (uint[] memory amounts) {
+    function maxWithdrawAssets(
+        uint /*mode*/
+    ) public view virtual returns (uint[] memory amounts) {
         // by default zero-length array is returned to indicate that all available amounts can be withdrawn
         return amounts;
     }
@@ -342,29 +345,40 @@ abstract contract StrategyBase is Controllable, IStrategy {
 
     /// @dev Invest underlying asset. Asset must be already on strategy contract balance.
     /// @return Consumed amounts of invested assets
-    function _depositUnderlying(uint /*amount*/ ) internal virtual returns (uint[] memory /*amountsConsumed*/ ) {
+    function _depositUnderlying(
+        uint /*amount*/
+    )
+        internal
+        virtual
+        returns (
+            uint[] memory /*amountsConsumed*/
+        )
+    {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Withdraw underlying invested and send to receiver
-    function _withdrawUnderlying(uint, /*amount*/ address /*receiver*/ ) internal virtual {
+    function _withdrawUnderlying(
+        uint,
+        /*amount*/
+        address /*receiver*/
+    ) internal virtual {
         revert(_getStrategyBaseStorage()._underlying == address(0) ? "no underlying" : "not implemented");
     }
 
     /// @dev Calculation of consumed amounts and liquidity/underlying value for provided amount of underlying
-    function _previewDepositUnderlying(uint /*amount*/ )
+    function _previewDepositUnderlying(
+        uint /*amount*/
+    )
         internal
         view
         virtual
-        returns (uint[] memory /*amountsConsumed*/ )
+        returns (
+            uint[] memory /*amountsConsumed*/
+        )
     {}
 
-    function _previewDepositUnderlyingWrite(uint amount)
-        internal
-        view
-        virtual
-        returns (uint[] memory amountsConsumed)
-    {
+    function _previewDepositUnderlyingWrite(uint amount) internal view virtual returns (uint[] memory amountsConsumed) {
         return _previewDepositUnderlying(amount);
     }
 

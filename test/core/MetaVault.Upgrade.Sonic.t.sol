@@ -102,9 +102,9 @@ contract MetaVaultSonicUpgrade1 is Test {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
                 _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
-            ) {
+            } else if (CommonLib.eq(
+                    IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM
+                )) {
                 _upgradeIchiSwapXFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else {
                 revert("Add call of upgrade function for the strategy");

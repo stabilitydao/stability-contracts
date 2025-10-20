@@ -223,11 +223,9 @@ library ISFLib {
         if (selector != expectedSelector) revert IAlgebraPoolErrors.invalidHookResponse(expectedSelector);
     }
 
-    function _assetsAmounts(IStrategy.StrategyBaseStorage storage $_)
-        external
-        view
-        returns (address[] memory assets_, uint[] memory amounts_)
-    {
+    function _assetsAmounts(
+        IStrategy.StrategyBaseStorage storage $_
+    ) external view returns (address[] memory assets_, uint[] memory amounts_) {
         assets_ = $_._assets;
         uint value = $_.total;
         IICHIVaultV4 _underlying = IICHIVaultV4($_._underlying);

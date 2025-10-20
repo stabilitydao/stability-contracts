@@ -41,10 +41,7 @@ abstract contract LeverageLendingBase is StrategyBase, ILeverageLendingStrategy 
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     //slither-disable-next-line naming-convention
-    function __LeverageLendingBase_init(LeverageLendingStrategyBaseInitParams memory params)
-        internal
-        onlyInitializing
-    {
+    function __LeverageLendingBase_init(LeverageLendingStrategyBaseInitParams memory params) internal onlyInitializing {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         $.collateralAsset = params.collateralAsset;
         $.borrowAsset = params.borrowAsset;

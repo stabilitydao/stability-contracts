@@ -16,9 +16,11 @@ contract SiMMFUpgradeTest is Test {
     address public constant STRATEGY = 0xfa62bD9d148BB3B340AaabC0CD4B51a177ddF5AD;
     address public vault;
 
+    uint private constant FORK_BLOCK = 47900000; // Sep-23-2025 12:01:57 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(47900000); // Sep-23-2025 12:01:57 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         vault = IStrategy(STRATEGY).vault();
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

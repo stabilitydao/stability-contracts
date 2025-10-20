@@ -21,7 +21,9 @@ contract MockAmmAdapter is IAmmAdapter {
 
     function init(address) external {}
 
-    function poolTokens(address /*pool*/ ) external view returns (address[] memory) {
+    function poolTokens(
+        address /*pool*/
+    ) external view returns (address[] memory) {
         address[] memory assets = new address[](2);
         assets[0] = _asset0;
         assets[1] = _asset1;
@@ -58,7 +60,13 @@ contract MockAmmAdapter is IAmmAdapter {
         address, /*pool*/
         int24[] memory, /*ticks*/
         uint128 /*liquidity*/
-    ) external pure returns (uint[] memory /*amounts*/ ) {
+    )
+        external
+        pure
+        returns (
+            uint[] memory /*amounts*/
+        )
+    {
         revert("unavailable");
     }
 
@@ -67,7 +75,14 @@ contract MockAmmAdapter is IAmmAdapter {
         int24, /*lowerTick*/
         int24, /*upperTick*/
         uint128 /*liquidity*/
-    ) public pure returns (uint, /*amount0*/ uint /*amount1*/ ) {
+    )
+        public
+        pure
+        returns (
+            uint, /*amount0*/
+            uint /*amount1*/
+        )
+    {
         revert("unavailable");
     }
 

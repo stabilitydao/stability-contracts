@@ -121,9 +121,10 @@ library SiloAdvancedLib {
             _swap(platform, token, v.collateralAsset, amount, $.swapPriceImpactTolerance0);
 
             // supply
-            ISilo($.lendingVault).deposit(
-                IERC20(v.collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
-            );
+            ISilo($.lendingVault)
+                .deposit(
+                    IERC20(v.collateralAsset).balanceOf(address(this)), address(this), ISilo.CollateralType.Collateral
+                );
 
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
@@ -145,12 +146,13 @@ library SiloAdvancedLib {
                 uint collateralAmountTotal = totalCollateral(lendingVault);
                 collateralAmountTotal -= collateralAmountTotal / 1000;
 
-                ISilo(lendingVault).withdraw(
-                    Math.min(tempCollateralAmount, collateralAmountTotal),
-                    address(this),
-                    address(this),
-                    ISilo.CollateralType.Collateral
-                );
+                ISilo(lendingVault)
+                    .withdraw(
+                        Math.min(tempCollateralAmount, collateralAmountTotal),
+                        address(this),
+                        address(this),
+                        ISilo.CollateralType.Collateral
+                    );
             }
 
             _swapForWithdraw(platform, v, token, amount + feeAmount, swapPriceImpactTolerance0);
@@ -179,9 +181,8 @@ library SiloAdvancedLib {
             ISilo($.borrowingVault).repay(StrategyLib.balance(token), address(this));
 
             // withdraw amount
-            ISilo(lendingVault).withdraw(
-                $.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral
-            );
+            ISilo(lendingVault)
+                .withdraw($.tempCollateralAmount, address(this), address(this), ISilo.CollateralType.Collateral);
 
             // swap
             StrategyLib.swap(platform, v.collateralAsset, token, $.tempCollateralAmount, $.swapPriceImpactTolerance1);
@@ -208,11 +209,12 @@ library SiloAdvancedLib {
             );
 
             // supply
-            ISilo($.lendingVault).deposit(
-                _getLimitedAmount(IERC20(v.collateralAsset).balanceOf(address(this)), tempCollateralAmount),
-                address(this),
-                ISilo.CollateralType.Collateral
-            );
+            ISilo($.lendingVault)
+                .deposit(
+                    _getLimitedAmount(IERC20(v.collateralAsset).balanceOf(address(this)), tempCollateralAmount),
+                    address(this),
+                    ISilo.CollateralType.Collateral
+                );
 
             // borrow
             ISilo($.borrowingVault).borrow(amount + feeAmount, address(this), address(this));
@@ -385,8 +387,8 @@ library SiloAdvancedLib {
         address platform,
         ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
     ) public view returns (uint tvl, bool trusted) {
-        SiloAdvancedLib.CollateralDebtState memory debtState =
-            getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
+        SiloAdvancedLib.CollateralDebtState memory
+            debtState = getDebtState(platform, $.lendingVault, $.collateralAsset, $.borrowAsset, $.borrowingVault);
         tvl = debtState.totalCollateralUsd - debtState.borrowAssetUsd;
         trusted = debtState.trusted;
     }
@@ -406,8 +408,8 @@ library SiloAdvancedLib {
         data.collateralAmount = totalCollateral(lendingVault);
         data.collateralBalance = StrategyLib.balance(collateralAsset);
         (data.collateralPrice, collateralPriceTrusted) = priceReader.getPrice(collateralAsset);
-        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice
-            / 10 ** IERC20Metadata(collateralAsset).decimals();
+        data.totalCollateralUsd = (data.collateralAmount + data.collateralBalance) * data.collateralPrice / 10
+            ** IERC20Metadata(collateralAsset).decimals();
 
         data.debtAmount = totalDebt(borrowingVault);
         (data.borrowAssetPrice, borrowAssetPriceTrusted) = priceReader.getPrice(borrowAsset);
@@ -425,20 +427,18 @@ library SiloAdvancedLib {
         ISiloConfig.ConfigData memory borrowConfig = siloConfig.getConfig(debtVault);
         address borrowOracle = borrowConfig.solvencyOracle;
         if (collateralOracle != address(0) && borrowOracle == address(0)) {
-            priceCtoB = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
+            priceCtoB = ISiloOracle(collateralOracle)
+                .quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
             priceBtoC = 1e18 * 1e18 / priceCtoB;
         } else if (collateralOracle == address(0) && borrowOracle != address(0)) {
-            priceBtoC =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            priceBtoC = ISiloOracle(borrowOracle)
+                .quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = 1e18 * 1e18 / priceBtoC;
         } else {
-            uint pc = ISiloOracle(collateralOracle).quote(
-                10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token
-            );
-            uint pb =
-                ISiloOracle(borrowOracle).quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
+            uint pc = ISiloOracle(collateralOracle)
+                .quote(10 ** IERC20Metadata(collateralConfig.token).decimals(), collateralConfig.token);
+            uint pb = ISiloOracle(borrowOracle)
+                .quote(10 ** IERC20Metadata(borrowConfig.token).decimals(), borrowConfig.token);
             priceCtoB = pc * 1e18 / pb;
             priceBtoC = pb * 1e18 / pc;
         }
@@ -623,9 +623,10 @@ library SiloAdvancedLib {
 
         return amountToDeposit * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             * (targetLeverage - INTERNAL_PRECISION) / INTERNAL_PRECISION / 1e18 // priceCtoB has decimals 1e18
+            * 
             // depositParam0 is used to move result leverage to targetValue.
             // Otherwise result leverage is higher the target value because of swap losses
-            * $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
+            $.depositParam0 / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals());
         // not sure that its right way, but its working
         // flashAmounts[0] = flashAmounts[0] * $.depositParam0 / INTERNAL_PRECISION;
     }
@@ -715,9 +716,8 @@ library SiloAdvancedLib {
                 debtState.collateralAmount
             );
             if (amountToWithdraw != 0) {
-                ISilo(v.lendingVault).withdraw(
-                    amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral
-                );
+                ISilo(v.lendingVault)
+                    .withdraw(amountToWithdraw, address(this), address(this), ISilo.CollateralType.Collateral);
             }
         } else {
             // withdrawParam2 allows to disable withdraw through increasing ltv if leverage is near to target
@@ -788,7 +788,8 @@ library SiloAdvancedLib {
         // --------- Calculate debt to add
         uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
         uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
-            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
+            * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals())
+            / 1e18; // priceCtoB has decimals 18
 
         (address[] memory flashAssets, uint[] memory flashAmounts) =
             _getFlashLoanAmounts(debtDiff * $.increaseLtvParam0 / INTERNAL_PRECISION, v.borrowAsset);
@@ -893,11 +894,9 @@ library SiloAdvancedLib {
         flashAmounts[0] = borrowAmount;
     }
 
-    function getLeverageLendingAddresses(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        internal
-        view
-        returns (ILeverageLendingStrategy.LeverageLendingAddresses memory)
-    {
+    function getLeverageLendingAddresses(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) internal view returns (ILeverageLendingStrategy.LeverageLendingAddresses memory) {
         return ILeverageLendingStrategy.LeverageLendingAddresses({
             collateralAsset: $.collateralAsset,
             borrowAsset: $.borrowAsset,
@@ -911,11 +910,9 @@ library SiloAdvancedLib {
         return Math.min(amount, optionalLimit);
     }
 
-    function _isPtExpiredMode(ILeverageLendingStrategy.LeverageLendingBaseStorage storage $)
-        internal
-        view
-        returns (bool)
-    {
+    function _isPtExpiredMode(
+        ILeverageLendingStrategy.LeverageLendingBaseStorage storage $
+    ) internal view returns (bool) {
         // PT expired mode is used when the strategy is used with Pendle
         // and the PT tokens are expired, so we can swap them 1:1 to the asset
         return $.depositParam1 == COLLATERAL_IS_PT_EXPIRED_MARKET;

@@ -15,9 +15,10 @@ contract EFUpgradeTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     address public constant STRATEGY = 0x2488359A89Da677605186f68780C3475745155e9;
 
+    uint internal constant FORK_BLOCK = 2346485; // Jan-03-2025 10:36:37 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(2346485); // Jan-03-2025 10:36:37 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

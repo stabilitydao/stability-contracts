@@ -195,7 +195,10 @@ contract CompoundFarmStrategy is FarmingStrategyBase {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         value = amounts[0];
         if (value > 0) {
             CompoundFarmStrategyStorage storage $ = _getCompoundFarmStrategyStorage();

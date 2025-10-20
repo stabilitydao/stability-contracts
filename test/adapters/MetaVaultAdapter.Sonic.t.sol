@@ -180,6 +180,7 @@ contract MetaVaultAdapterTest is SonicSetup {
             1_000
         );
     }
+
     //endregion ------------------------------------ Tests for swaps
 
     //region ------------------------------------ Tests for view functions
@@ -228,6 +229,7 @@ contract MetaVaultAdapterTest is SonicSetup {
         assertEq(adapter.assetForDeposit(SonicConstantsLib.METAVAULT_METAUSD), metaVaultUSD.assetsForDeposit()[0]);
         assertEq(adapter.assetForWithdraw(SonicConstantsLib.METAVAULT_METAUSD), metaVaultUSD.assetsForWithdraw()[0]);
     }
+
     //endregion ------------------------------------ Tests for view functions
 
     //region ------------------------------------ Get price of MetaVault in other tokens
@@ -333,6 +335,7 @@ contract MetaVaultAdapterTest is SonicSetup {
         price = adapter.getPrice(pool, SonicConstantsLib.METAVAULT_METAUSDC, SonicConstantsLib.TOKEN_USDC, 0);
         assertEq(price, 1e6 / usdcPrice, "0 MetaUSD");
     }
+
     //endregion ------------------------------------ Get price of MetaVault in other tokens
 
     //region ------------------------------------ Get price of other tokens in MetaVault
@@ -436,6 +439,7 @@ contract MetaVaultAdapterTest is SonicSetup {
         price = adapter.getPrice(pool, SonicConstantsLib.TOKEN_USDC, SonicConstantsLib.METAVAULT_METAUSDC, 0);
         assertEq(price, 1e18, "0 USDC");
     }
+
     //endregion ------------------------------------ Get price of other tokens in MetaVault
 
     //region ------------------------------------ Internal logic
@@ -454,6 +458,7 @@ contract MetaVaultAdapterTest is SonicSetup {
         adapter.swap(pool, tokenIn, tokenOut, address(this), priceImpact);
         return IERC20(tokenOut).balanceOf(address(this)) - balanceWas;
     }
+
     //endregion ------------------------------------ Internal logic
 
     //region ------------------------------------ Helper functions

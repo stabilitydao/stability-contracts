@@ -121,6 +121,7 @@ contract Recovery is Controllable, IRecovery, IUniswapV3SwapCallback {
     function setReceiver(address recoveryToken_, address receiver_) external onlyOperator {
         RecoveryLib.setReceiver(recoveryToken_, receiver_);
     }
+
     //endregion ----------------------------------- Restricted actions
 
     //region ----------------------------------- Actions

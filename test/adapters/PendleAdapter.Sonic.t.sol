@@ -103,9 +103,8 @@ contract PendleAdapterTest is SonicSetup {
 
         // swap yield token to PT
         /// forge-lint: disable-start
-        IERC20(SonicConstantsLib.TOKEN_AUSDC).transfer(
-            address(adapter), IERC20(SonicConstantsLib.TOKEN_AUSDC).balanceOf(address(this))
-        );
+        IERC20(SonicConstantsLib.TOKEN_AUSDC)
+            .transfer(address(adapter), IERC20(SonicConstantsLib.TOKEN_AUSDC).balanceOf(address(this)));
         /// forge-lint: disable-end
         got = _swap(
             SonicConstantsLib.POOL_PENDLE_PT_AUSDC_14AUG2025,
@@ -133,7 +132,11 @@ contract PendleAdapterTest is SonicSetup {
         assertGt(got, 0);
     }
 
-    function _swap(address pool, address tokenIn, address tokenOut /*, uint amount*/ ) internal returns (uint) {
+    function _swap(
+        address pool,
+        address tokenIn,
+        address tokenOut /*, uint amount*/
+    ) internal returns (uint) {
         //deal(tokenIn, address(adapter), amount);
         uint balanceWas = IERC20(tokenOut).balanceOf(address(this));
         adapter.swap(pool, tokenIn, tokenOut, address(this), 1_000);

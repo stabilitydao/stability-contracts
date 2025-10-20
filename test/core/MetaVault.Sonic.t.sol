@@ -95,8 +95,9 @@ contract MetaVaultSonicTest is Test {
         proportions_[1] = 15e16;
         proportions_[2] = 20e16;
         proportions_[3] = 15e16;
-        metaVaults[1] =
-            _deployMetaVaultByMetaVaultFactory(vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_);
+        metaVaults[1] = _deployMetaVaultByMetaVaultFactory(
+            vaultType, address(0), "Stability USD", "metaUSD", vaults_, proportions_
+        );
         _deployWrapper(metaVaults[1]);
 
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.MetaVault")) - 1)) & ~bytes32(uint256(0xff)));
@@ -192,9 +193,8 @@ contract MetaVaultSonicTest is Test {
                 depositAmounts = _getAmountsForDeposit(500, assets);
                 _dealAndApprove(address(3), metavault, assets, depositAmounts);
                 vm.prank(address(3));
-                IStabilityVault(metavault).depositAssets(
-                    assets, depositAmounts, sharesOut - sharesOut / 100, address(3)
-                );
+                IStabilityVault(metavault)
+                    .depositAssets(assets, depositAmounts, sharesOut - sharesOut / 100, address(3));
             }
 
             // flash loan protection check
@@ -327,41 +327,35 @@ contract MetaVaultSonicTest is Test {
                 // reverts
                 uint withdrawAmount = 0;
                 vm.expectRevert(IControllable.IncorrectZeroArgument.selector);
-                IStabilityVault(metavault).withdrawAssets(
-                    assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
-                );
+                IStabilityVault(metavault)
+                    .withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
 
                 withdrawAmount = IERC20(metavault).balanceOf(address(this));
 
                 vm.expectRevert();
-                IStabilityVault(metavault).withdrawAssets(
-                    assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this)
-                );
+                IStabilityVault(metavault)
+                    .withdrawAssets(assets, withdrawAmount + 1, new uint[](assets.length), address(this), address(this));
 
                 vm.expectRevert(IControllable.IncorrectArrayLength.selector);
-                IStabilityVault(metavault).withdrawAssets(
-                    assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this)
-                );
+                IStabilityVault(metavault)
+                    .withdrawAssets(assets, withdrawAmount, new uint[](assets.length + 1), address(this), address(this));
 
                 if (
-                    (
-                        IMetaVault(metavault).pegAsset() == address(0)
-                            || IMetaVault(metavault).pegAsset() == SonicConstantsLib.TOKEN_USDC
-                    ) && withdrawAmount < 1e16
+                    (IMetaVault(metavault).pegAsset() == address(0)
+                            || IMetaVault(metavault).pegAsset() == SonicConstantsLib.TOKEN_USDC)
+                        && withdrawAmount < 1e16
                 ) {
                     vm.expectRevert(
                         /*
                         abi.encodeWithSelector(IMetaVault.UsdAmountLessThreshold.selector, withdrawAmount, 1e13)
                               */
                     );
-                    IStabilityVault(metavault).withdrawAssets(
-                        assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
-                    );
+                    IStabilityVault(metavault)
+                        .withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
                 } else {
                     //address vaultForWithdraw = IMetaVault(metavault).vaultForWithdraw();
-                    IStabilityVault(metavault).withdrawAssets(
-                        assets, withdrawAmount, new uint[](assets.length), address(this), address(this)
-                    );
+                    IStabilityVault(metavault)
+                        .withdrawAssets(assets, withdrawAmount, new uint[](assets.length), address(this), address(this));
                 }
             }
 
@@ -402,9 +396,8 @@ contract MetaVaultSonicTest is Test {
                     assertGt(toAssets, bal);
 
                     uint maxWithdraw = IERC4626(wrapper).maxWithdraw(user);
-                    IWrappedMetaVault(wrapper).redeem(
-                        Math.min(wrapperSharesBal, IERC4626(wrapper).maxRedeem(user)), user, user
-                    );
+                    IWrappedMetaVault(wrapper)
+                        .redeem(Math.min(wrapperSharesBal, IERC4626(wrapper).maxRedeem(user)), user, user);
                     uint newAssetBal = IERC20(assets[0]).balanceOf(user);
                     assertGe(newAssetBal + 1, Math.min(bal, maxWithdraw), "mv-u-2.5");
                     assertLt(newAssetBal, bal * 1001 / 1000, "mv-u-2.6");
@@ -550,13 +543,13 @@ contract MetaVaultSonicTest is Test {
                 _upgradeSiloStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else if (CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_FARM)) {
                 _upgradeSiloFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM)
-            ) {
+            } else if (CommonLib.eq(
+                    IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.SILO_MANAGED_FARM
+                )) {
                 _upgradeSiloManagedFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
-            } else if (
-                CommonLib.eq(IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM)
-            ) {
+            } else if (CommonLib.eq(
+                    IVault(payable(vaults[i])).strategy().strategyLogicId(), StrategyIdLib.ICHI_SWAPX_FARM
+                )) {
                 _upgradeIchiSwapxFarmStrategy(address(IVault(payable(vaults[i])).strategy()));
             } else {
                 console.log("Error: strategy is not upgraded", IVault(payable(vaults[i])).strategy().strategyLogicId());
@@ -650,12 +643,7 @@ contract MetaVaultSonicTest is Test {
         }
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);

@@ -113,7 +113,9 @@ contract WrapperERC4626SonicTest is ERC4626UniversalTest, SlippageTestUtils {
         // as result, withdraw will be from 4th subvault
     }
 
-    function _doBeforeTest(uint /* tag */ ) internal override {
+    function _doBeforeTest(
+        uint /* tag */
+    ) internal override {
         // _setProportions(4, 1);
     }
 
