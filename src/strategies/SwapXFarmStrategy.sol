@@ -214,9 +214,8 @@ contract SwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm memory farm = _getFarm();
         address[] memory _assets = assets();
         bool stable = ISolidlyPool(farm.pool).stable();
-        (,, value) = IRouterV2(farm.addresses[1]).addLiquidity(
-            _assets[0], _assets[1], stable, amounts[0], amounts[1], 0, 0, address(this), block.timestamp
-        );
+        (,, value) = IRouterV2(farm.addresses[1])
+            .addLiquidity(_assets[0], _assets[1], stable, amounts[0], amounts[1], 0, 0, address(this), block.timestamp);
         IGaugeV2(farm.addresses[0]).deposit(value);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total += value;
@@ -238,9 +237,8 @@ contract SwapXFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         amountsOut = new uint[](2);
         address[] memory _assets = assets();
         bool stable = ISolidlyPool(farm.pool).stable();
-        (amountsOut[0], amountsOut[1]) = IRouterV2(farm.addresses[1]).removeLiquidity(
-            _assets[0], _assets[1], stable, value, 0, 0, receiver, block.timestamp
-        );
+        (amountsOut[0], amountsOut[1]) = IRouterV2(farm.addresses[1])
+            .removeLiquidity(_assets[0], _assets[1], stable, value, 0, 0, receiver, block.timestamp);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
     }

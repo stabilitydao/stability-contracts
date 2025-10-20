@@ -21,8 +21,10 @@ contract SiloLeverageLendingStrategyDebugTest is Test {
     address public multisig;
     IFactory public factory;
 
+    uint public constant FORK_BLOCK = 40834789; // Jul-30-2025 04:59:49 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         factory = IFactory(IPlatform(IControllable(STRATEGY).platform()).factory());

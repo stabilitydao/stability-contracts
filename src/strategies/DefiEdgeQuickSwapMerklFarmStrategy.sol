@@ -167,7 +167,10 @@ contract DefiEdgeQuickSwapMerklFarmStrategy is LPStrategyBase, MerklStrategyBase
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         StrategyBaseStorage storage __$__ = _getStrategyBaseStorage();
         (,, value) = IDefiEdgeStrategy(__$__._underlying).mint(amounts[0], amounts[1], 0, 0, 0);
         __$__.total += value;

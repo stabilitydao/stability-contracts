@@ -126,11 +126,16 @@ contract MockStrategy is LPStrategyBase {
         //        amounts_[1] = _depositedToken1;
     }
 
-    function _getProportion0(address /*pool*/ ) internal pure returns (uint) {
+    function _getProportion0(
+        address /*pool*/
+    ) internal pure returns (uint) {
         return 5e17;
     }
 
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         // no msg.sender checks
         StrategyBaseStorage storage $ = _getStrategyBaseStorage();
         uint[] memory amountsConsumed;

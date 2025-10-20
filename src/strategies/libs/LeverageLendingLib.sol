@@ -58,12 +58,13 @@ library LeverageLendingLib {
             );
 
             bool isToken0 = IUniswapV3PoolImmutables(flashLoanVault).token0() == flashAssets[0];
-            IUniswapV3PoolActions(flashLoanVault).flash(
-                address(this),
-                isToken0 ? flashAmounts[0] : 0,
-                isToken0 ? 0 : flashAmounts[0],
-                abi.encode(flashAssets[0], flashAmounts[0], isToken0)
-            );
+            IUniswapV3PoolActions(flashLoanVault)
+                .flash(
+                    address(this),
+                    isToken0 ? flashAmounts[0] : 0,
+                    isToken0 ? 0 : flashAmounts[0],
+                    abi.encode(flashAssets[0], flashAmounts[0], isToken0)
+                );
         } else {
             // --------------- Default flash loan Balancer v2, paid. The strategy should support IFlashLoanRecipient
             IBVault(flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, "");

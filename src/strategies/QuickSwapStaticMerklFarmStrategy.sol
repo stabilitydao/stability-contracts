@@ -162,7 +162,10 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
 
     /// @inheritdoc StrategyBase
     //slither-disable-next-line reentrancy-events
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         QSMFLib.QuickswapV3StaticMerklFarmStrategyStorage storage $ = _getQuickStaticFarmStorage();
         StrategyBaseStorage storage _$ = _getStrategyBaseStorage();
         uint128 liquidity;
@@ -211,15 +214,19 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         uint tokenId = $._tokenId;
 
         // burn liquidity
-        (amountsOut[0], amountsOut[1]) = $._nft.decreaseLiquidity(
-            INonfungiblePositionManager.DecreaseLiquidityParams(tokenId, uint128(value), 0, 0, block.timestamp)
-        );
+        (amountsOut[0], amountsOut[1]) = $._nft
+            .decreaseLiquidity(
+                INonfungiblePositionManager.DecreaseLiquidityParams(tokenId, uint128(value), 0, 0, block.timestamp)
+            );
         {
             // collect tokens and fee
             address[] memory _assets = assets();
-            (uint collected0, uint collected1) = $._nft.collect(
-                INonfungiblePositionManager.CollectParams(tokenId, address(this), type(uint128).max, type(uint128).max)
-            );
+            (uint collected0, uint collected1) = $._nft
+                .collect(
+                    INonfungiblePositionManager.CollectParams(
+                        tokenId, address(this), type(uint128).max, type(uint128).max
+                    )
+                );
             IERC20(_assets[0]).safeTransfer(receiver, amountsOut[0]);
             IERC20(_assets[1]).safeTransfer(receiver, amountsOut[1]);
             uint[] memory fees = new uint[](2);
@@ -313,9 +320,8 @@ contract QuickSwapStaticMerklFarmStrategy is LPStrategyBase, MerklStrategyBase, 
         int24[] memory ticks = new int24[](2);
         ticks[0] = $.lowerTick;
         ticks[1] = $.upperTick;
-        amounts_ = ICAmmAdapter(address(ammAdapter())).getAmountsForLiquidity(
-            pool(), ticks, uint128(_getStrategyBaseStorage().total)
-        );
+        amounts_ = ICAmmAdapter(address(ammAdapter()))
+            .getAmountsForLiquidity(pool(), ticks, uint128(_getStrategyBaseStorage().total));
         assets_ = assets();
     }
 

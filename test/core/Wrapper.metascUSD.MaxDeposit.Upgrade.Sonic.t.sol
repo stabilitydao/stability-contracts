@@ -234,6 +234,7 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
         cashBefore = eulerVault.cash();
         _borrowAlmostAllCash(eulerVault, cashBefore, amountToLeave);
     }
+
     //endregion ---------------------- Internal logic
 
     //region ---------------------- Auxiliary functions
@@ -322,18 +323,12 @@ contract WrapperScUsdMaxDepositUpgradeSonicTest is Test {
 
         bytes memory depositData = abi.encodeWithSelector(IEulerVault.deposit.selector, collateralAmount, address(this));
         items[0] = IEVC.BatchItem({
-            targetContract: address(collateralVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: depositData
+            targetContract: address(collateralVault), onBehalfOfAccount: address(this), value: 0, data: depositData
         });
 
         bytes memory borrowData = abi.encodeWithSelector(IEulerVault.borrow.selector, borrowAmount, address(this));
         items[1] = IEVC.BatchItem({
-            targetContract: address(eulerVault),
-            onBehalfOfAccount: address(this),
-            value: 0,
-            data: borrowData
+            targetContract: address(eulerVault), onBehalfOfAccount: address(this), value: 0, data: borrowData
         });
 
         uint cashBefore = eulerVault.cash();

@@ -430,11 +430,9 @@ contract LendingBotUpdateSonicTest is Test {
         addressProvider.setPriceOracle(address(mockOracle));
     }
 
-    function _getAssets(LiquidationBotLib.AaveContracts memory ac)
-        internal
-        view
-        returns (address collateralAsset, address borrowAsset)
-    {
+    function _getAssets(
+        LiquidationBotLib.AaveContracts memory ac
+    ) internal view returns (address collateralAsset, address borrowAsset) {
         IAaveDataProvider.TokenData[] memory assets = ac.dataProvider.getAllReservesTokens();
         for (uint i; i < assets.length; ++i) {
             (,,,,, bool usageAsCollateralEnabled, bool borrowingEnabled,,,) =
@@ -474,6 +472,7 @@ contract LendingBotUpdateSonicTest is Test {
 
         return healthFactorAfterForwardingTime;
     }
+
     //endregion ---------------------- Auxiliary functions
 
     //region ---------------------- Setup bot

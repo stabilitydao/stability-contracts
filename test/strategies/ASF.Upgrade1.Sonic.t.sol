@@ -22,9 +22,11 @@ contract ASFUpgrade1Test is Test {
     address public zap;
     IFactory public factory;
 
+    uint internal constant FORK_BLOCK = 6231000; // Feb-02-2025 09:55:27 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(6231000); // Feb-02-2025 09:55:27 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         vault = IStrategy(STRATEGY).vault();
         multisig = IPlatform(IControllable(STRATEGY).platform()).multisig();
         zap = IPlatform(IControllable(STRATEGY).platform()).zap();

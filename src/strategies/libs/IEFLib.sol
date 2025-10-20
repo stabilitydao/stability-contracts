@@ -92,11 +92,9 @@ library IEFLib {
         $base.total -= amount;
     }
 
-    function getAssetsProportions(IStrategy.StrategyBaseStorage storage $base)
-        external
-        view
-        returns (uint[] memory proportions)
-    {
+    function getAssetsProportions(
+        IStrategy.StrategyBaseStorage storage $base
+    ) external view returns (uint[] memory proportions) {
         IICHIVaultV4 _underlying = IICHIVaultV4($base._underlying);
         proportions = new uint[](2);
         if (_underlying.allowToken0()) {

@@ -8,6 +8,7 @@ interface ILiquidationBot {
         uint currentATokenBalance;
         uint currentVariableDebt;
     }
+
     // uint currentStableDebt; // not used, we assume it's 0 always
 
     /// @notice Results of AAVE Pool.getUserAccountData(user)
@@ -121,12 +122,7 @@ interface ILiquidationBot {
     /// @param debtAsset Asset to be used for liquidation
     /// @param debtToCover Amounts of {asset} that should be re-payed for each user.
     /// Max 50% of total debt can be repaid. Max repay amount can be calculated using getRepayAmount()
-    function liquidate(
-        address aavePool,
-        address[] memory users,
-        address debtAsset,
-        uint[] memory debtToCover
-    ) external;
+    function liquidate(address aavePool, address[] memory users, address debtAsset, uint[] memory debtToCover) external;
 
     //endregion ----------------------------------------------------- Write functions
 }

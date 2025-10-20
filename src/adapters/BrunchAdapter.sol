@@ -92,6 +92,7 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
 
         emit SwapInPool(pool, tokenIn, tokenOut, recipient, priceImpactTolerance, amount, amountOut);
     }
+
     //endregion ---------------------------------- User actions
 
     //region ------------------------------------ View functions
@@ -130,6 +131,7 @@ contract BrunchAdapter is Controllable, IAmmAdapter {
     function supportsInterface(bytes4 interfaceId) public view override(Controllable, IERC165) returns (bool) {
         return interfaceId == type(IAmmAdapter).interfaceId || super.supportsInterface(interfaceId);
     }
+
     //endregion -------------------------------- View functions
 
     /// @notice Internal function to get price of tokenIn in tokenOut

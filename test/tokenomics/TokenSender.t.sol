@@ -12,9 +12,11 @@ contract TokenSenderTest is Test, MockSetup {
     address public constant STBL = 0x78a76316F66224CBaCA6e70acB24D5ee5b2Bd2c7;
     address public multisig;
 
+    uint private constant FORK_BLOCK = 12648494; // Mar-09-2025 01:28:58 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(12648494); // Mar-09-2025 01:28:58 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 

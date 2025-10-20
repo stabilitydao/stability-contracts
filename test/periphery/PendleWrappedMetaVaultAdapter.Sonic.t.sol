@@ -34,6 +34,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
 
         _testForMetaUsd(100e6, syMetaUsd, adapter, 2000e18);
     }
+
     //endregion ---------------------------------------- Tests use real deploy
 
     //region ---------------------------------------- Tests use flatten SY
@@ -324,6 +325,7 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         vm.expectRevert(PendleWrappedMetaVaultAdapter.ZeroAddress.selector);
         new PendleWrappedMetaVaultAdapter(address(0));
     }
+
     //endregion ---------------------------------------- Tests use flatten SY
 
     //region ---------------------------------------- Internal logic
@@ -626,9 +628,8 @@ contract PendleWrappedMetaVaultAdapterTest is SonicSetup {
         deal(SonicConstantsLib.TOKEN_USDC, user, amountsMax[0]);
 
         vm.startPrank(user);
-        IERC20(SonicConstantsLib.TOKEN_USDC).approve(
-            address(metaVault), IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user)
-        );
+        IERC20(SonicConstantsLib.TOKEN_USDC)
+            .approve(address(metaVault), IERC20(SonicConstantsLib.TOKEN_USDC).balanceOf(user));
         metaVault.depositAssets(_assets, amountsMax, 0, user);
         vm.roll(block.number + 6);
         vm.stopPrank();

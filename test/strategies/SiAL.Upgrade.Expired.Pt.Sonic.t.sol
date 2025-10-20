@@ -67,12 +67,11 @@ contract SiALUpgradeExpiredPtTest is Test {
         uint targetLeverage;
     }
 
-    constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        // vm.rollFork(39805461); // Jul-23-2025 05:42:36 AM +UTC
+    uint internal constant FORK_BLOCK = 39816642; // Jul-23-2025 07:28:08 AM +UTC  expired
+    // uint internal constant FORK_BLOCK = 38716642; // Jul-16-2025 06:32:35 AM +UTC   not expired
 
-        vm.rollFork(39816642); // Jul-23-2025 07:28:08 AM +UTC  expired
-        // vm.rollFork(38716642); // Jul-16-2025 06:32:35 AM +UTC   not expired
+    constructor() {
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         // we need to skip 1 day to update the swapper
         // but we cannot simply skip 1 day, because the silo oracle will start to revert with InvalidPrice
@@ -224,6 +223,7 @@ contract SiALUpgradeExpiredPtTest is Test {
             console.log("withdrawn balance", withdrawn[0], expectedWithdraw);
         }
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_SILO_20_USDC_17JUL2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
@@ -269,6 +269,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT2: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
@@ -361,6 +362,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         // also there are some losses because of the flash loan fees
         assertApproxEqAbs(total, totalWithdrawn, 2 * total / 100, "PT3: total should match the total withdrawn amount");
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCETH_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_WOS_29MAY2025
@@ -404,6 +406,7 @@ contract SiALUpgradeExpiredPtTest is Test {
         assertEq(balanceAfter - balanceBefore, withdrawn[0], "PT4: withdrawn balance should match the returned value");
         // console.log("withdrawn balance", withdrawn[0]);
     }
+
     //endregion ---------------------------------------- Test for TOKEN_PT_WSTKSCUSD_29MAY2025
 
     //region ---------------------------------------- Test for TOKEN_PT_SILO_46_SCUSD_14AUG2025 (not expired)
@@ -574,8 +577,14 @@ contract SiALUpgradeExpiredPtTest is Test {
         SiloAdvancedLeverageStrategy strategy = SiloAdvancedLeverageStrategy(payable(address(IVault(vault).strategy())));
         // console.log(stateName);
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = strategy.health();
+        (
+            state.ltv,
+            state.maxLtv,
+            state.leverage,
+            state.collateralAmount,
+            state.debtAmount,
+            state.targetLeveragePercent
+        ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

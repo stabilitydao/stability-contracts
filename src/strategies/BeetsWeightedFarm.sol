@@ -243,17 +243,18 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
 
         value = IERC20(address(_pool)).balanceOf(address(this));
 
-        IBVault(_pool.getVault()).joinPool(
-            v.poolId,
-            address(this),
-            address(this),
-            IBVault.JoinPoolRequest({
-                assets: v.poolTokens,
-                maxAmountsIn: amounts,
-                userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
-                fromInternalBalance: false
-            })
-        );
+        IBVault(_pool.getVault())
+            .joinPool(
+                v.poolId,
+                address(this),
+                address(this),
+                IBVault.JoinPoolRequest({
+                    assets: v.poolTokens,
+                    maxAmountsIn: amounts,
+                    userData: abi.encode(IBVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amounts, 0),
+                    fromInternalBalance: false
+                })
+            );
         value = IERC20(address(_pool)).balanceOf(address(this)) - value;
         $base.total += value;
 
@@ -287,17 +288,18 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
             amountsOut[i] = IERC20(__assets[i]).balanceOf(receiver);
         }
 
-        IBVault(_pool.getVault()).exitPool(
-            _pool.getPoolId(),
-            address(this),
-            payable(receiver),
-            IBVault.ExitPoolRequest({
-                assets: v.poolTokens,
-                minAmountsOut: new uint[](v.poolTokens.length),
-                userData: abi.encode(1, value),
-                toInternalBalance: false
-            })
-        );
+        IBVault(_pool.getVault())
+            .exitPool(
+                _pool.getPoolId(),
+                address(this),
+                payable(receiver),
+                IBVault.ExitPoolRequest({
+                    assets: v.poolTokens,
+                    minAmountsOut: new uint[](v.poolTokens.length),
+                    userData: abi.encode(1, value),
+                    toInternalBalance: false
+                })
+            );
 
         for (uint i; i < v.len; ++i) {
             amountsOut[i] = IERC20(__assets[i]).balanceOf(receiver) - amountsOut[i];
@@ -383,8 +385,9 @@ contract BeetsWeightedFarm is LPStrategyBase, FarmingStrategyBase {
         override(StrategyBase)
         returns (uint[] memory amountsConsumed, uint value)
     {
-        IBalancerAdapter _ammAdapter =
-            IBalancerAdapter(IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy);
+        IBalancerAdapter _ammAdapter = IBalancerAdapter(
+            IPlatform(platform()).ammAdapter(keccak256(bytes(ammAdapterId()))).proxy
+        );
         ILPStrategy.LpStrategyBaseStorage storage $lp = _getLPStrategyBaseStorage();
         (value, amountsConsumed) = _ammAdapter.getLiquidityForAmountsWrite($lp.pool, amountsMax);
     }

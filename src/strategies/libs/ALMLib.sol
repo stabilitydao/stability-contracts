@@ -136,11 +136,9 @@ library ALMLib {
         return "Unknown";
     }
 
-    function preset(IALM.AlmStrategyBaseStorage storage $)
-        external
-        view
-        returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params)
-    {
+    function preset(
+        IALM.AlmStrategyBaseStorage storage $
+    ) external view returns (uint algoId, string memory algoName, string memory presetName, int24[] memory params) {
         algoId = $.algoId;
         algoName = getAlgoNamyById(algoId);
         params = $.params;

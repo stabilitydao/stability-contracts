@@ -23,9 +23,11 @@ contract RevenueRouterTestSonic is Test {
     IRevenueRouter public revenueRouter;
     address public feeTreasury;
 
+    uint private constant FORK_BLOCK = 15931000; // Mar-25-2025 07:11:27 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(15931000); // Mar-25-2025 07:11:27 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         multisig = IPlatform(PLATFORM).multisig();
     }
 

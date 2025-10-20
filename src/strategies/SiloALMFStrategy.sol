@@ -122,6 +122,7 @@ contract SiloALMFStrategy is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     receive() external payable {}
+
     //endregion ----------------------------------- Callbacks
 
     //region ----------------------------------- Flash loan
@@ -139,7 +140,11 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc IBalancerV3FlashCallback
-    function receiveFlashLoanV3(address token, uint amount, bytes memory /*userData*/ ) external {
+    function receiveFlashLoanV3(
+        address token,
+        uint amount,
+        bytes memory /*userData*/
+    ) external {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloALMFLib.receiveFlashLoanV3(platform(), $, token, amount);
     }
@@ -155,6 +160,7 @@ contract SiloALMFStrategy is
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         SiloALMFLib.uniswapV3FlashCallback(platform(), $, fee0, fee1, userData);
     }
+
     //endregion ----------------------------------- Flash loan
 
     //region ----------------------------------- View
@@ -257,6 +263,7 @@ contract SiloALMFStrategy is
         resultLtv = SiloALMFLib.rebalanceDebt(platform(), newLtv, $);
         SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
+
     //endregion ----------------------------------- Leverage lending base
 
     //region ----------------------------------- Strategy base
@@ -306,7 +313,10 @@ contract SiloALMFStrategy is
     }
 
     /// @inheritdoc StrategyBase
-    function _depositAssets(uint[] memory amounts, bool /*claimRevenue*/ ) internal override returns (uint value) {
+    function _depositAssets(
+        uint[] memory amounts,
+        bool /*claimRevenue*/
+    ) internal override returns (uint value) {
         LeverageLendingBaseStorage storage $ = _getLeverageLendingBaseStorage();
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         address[] memory _assets = assets();
@@ -344,6 +354,7 @@ contract SiloALMFStrategy is
         SiloALMFLib._compound(platform(), vault(), $, _getStrategyBaseStorage());
         SiloALMFLib.unprepareWriteOp(platform(), $.collateralAsset);
     }
+
     //endregion ----------------------------------- Strategy base
 
     //region ----------------------------------- FarmingStrategy

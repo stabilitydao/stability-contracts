@@ -71,6 +71,7 @@ contract BrunchAdapterTest is SonicSetup {
         vm.expectRevert();
         adapter.getPrice(pool, SonicConstantsLib.TOKEN_AUSDC, SonicConstantsLib.TOKEN_STAKED_BRUNCH_USD, 0);
     }
+
     //endregion ------------------------------------ Tests for view functions
 
     //region ------------------------------------ Tests for swaps
@@ -104,6 +105,7 @@ contract BrunchAdapterTest is SonicSetup {
             1_000
         );
     }
+
     //endregion ------------------------------------ Tests for swaps
 
     //region ------------------------------------ Tests implementation

@@ -116,10 +116,7 @@ library UniswapV3MathLib {
         }
     }
 
-    function getTicksInSpacing(
-        int24 tick,
-        int24 tickSpacing
-    ) internal pure returns (int24 lowerTick, int24 upperTick) {
+    function getTicksInSpacing(int24 tick, int24 tickSpacing) internal pure returns (int24 lowerTick, int24 upperTick) {
         // nosemgrep
         if (tick < 0 && tick / tickSpacing * tickSpacing != tick) {
             lowerTick = (tick / tickSpacing - 1) * tickSpacing;

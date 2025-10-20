@@ -235,6 +235,7 @@ library LiquidationBotLib {
         $.targetHealthFactor = targetHealthFactor_;
         emit SetTargetHealthFactory(targetHealthFactor_);
     }
+
     //endregion -------------------------------------- Restricted actions
 
     //region -------------------------------------- Flash loan
@@ -273,12 +274,13 @@ library LiquidationBotLib {
                 require(balance >= flashAmounts[0], InsufficientFlashBalance(balance, flashAmounts[0]));
 
                 bool isToken0 = IUniswapV3PoolImmutables(flashLoanVault).token0() == flashAssets[0];
-                IUniswapV3PoolActions(flashLoanVault).flash(
-                    address(this),
-                    isToken0 ? flashAmounts[0] : 0,
-                    isToken0 ? 0 : flashAmounts[0],
-                    abi.encode(flashAssets[0], flashAmounts[0], isToken0, userData)
-                );
+                IUniswapV3PoolActions(flashLoanVault)
+                    .flash(
+                        address(this),
+                        isToken0 ? flashAmounts[0] : 0,
+                        isToken0 ? 0 : flashAmounts[0],
+                        abi.encode(flashAssets[0], flashAmounts[0], isToken0, userData)
+                    );
             } else {
                 // --------------- Default flash loan Balancer v2, paid. The strategy should support IFlashLoanRecipient
                 IBVault(flashLoanVault).flashLoan(address(this), flashAssets, flashAmounts, userData);
@@ -329,9 +331,8 @@ library LiquidationBotLib {
         IERC20(token).safeTransfer(flashLoanVault, amount + fee);
 
         if ($.wrappedMetaVaults[data.collateralAsset] != 0) {
-            IMetaVault(IWrappedMetaVault(data.collateralAsset).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
-            );
+            IMetaVault(IWrappedMetaVault(data.collateralAsset).metaVault())
+                .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
         }
     }
     //endregion -------------------------------------- Flash loan

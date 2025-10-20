@@ -214,9 +214,8 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         IFactory.Farm memory farm = _getFarm();
         address[] memory _assets = assets();
         bool stable = ISolidlyPool(farm.pool).stable();
-        (,, value) = IRouter(farm.addresses[1]).addLiquidity(
-            _assets[0], _assets[1], stable, amounts[0], amounts[1], 0, 0, address(this), block.timestamp
-        );
+        (,, value) = IRouter(farm.addresses[1])
+            .addLiquidity(_assets[0], _assets[1], stable, amounts[0], amounts[1], 0, 0, address(this), block.timestamp);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total += value;
     }
@@ -237,9 +236,8 @@ contract EqualizerFarmStrategy is LPStrategyBase, FarmingStrategyBase {
         amountsOut = new uint[](2);
         address[] memory _assets = assets();
         bool stable = ISolidlyPool(farm.pool).stable();
-        (amountsOut[0], amountsOut[1]) = IRouter(farm.addresses[1]).removeLiquidity(
-            _assets[0], _assets[1], stable, value, 0, 0, receiver, block.timestamp
-        );
+        (amountsOut[0], amountsOut[1]) = IRouter(farm.addresses[1])
+            .removeLiquidity(_assets[0], _assets[1], stable, value, 0, 0, receiver, block.timestamp);
         StrategyBaseStorage storage $base = _getStrategyBaseStorage();
         $base.total -= value;
     }

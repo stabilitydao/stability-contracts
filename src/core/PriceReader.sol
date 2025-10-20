@@ -105,6 +105,7 @@ contract PriceReader is Controllable, IPriceReader {
     address internal transient _addr17;
     address internal transient _addr18;
     address internal transient _addr19;
+
     //endregion ---------------------------- Transient cache
 
     //region ---------------------------- Initialization and modifiers
@@ -116,6 +117,7 @@ contract PriceReader is Controllable, IPriceReader {
         // console.log("requireWhitelistTransientCache", msg.sender, address(this));
         require(_getStorage().whitelistTransientCache.contains(msg.sender), NotWhitelistedTransientCache());
     }
+
     //endregion ---------------------------- Initialization and modifiers
 
     //region ---------------------------- Restricted actions
@@ -329,10 +331,7 @@ contract PriceReader is Controllable, IPriceReader {
         return (0, false);
     }
 
-    function _getVaultPrice(
-        PriceReaderStorage storage $,
-        address vault
-    ) internal view returns (uint price, bool safe) {
+    function _getVaultPrice(PriceReaderStorage storage $, address vault) internal view returns (uint price, bool safe) {
         bool safeSharePrice = $.safeSharePrice.contains(vault);
         (uint vaultOnChainPrice, bool trustedAssetPrice) = IStabilityVault(vault).price();
         if (safeSharePrice) {
@@ -425,11 +424,11 @@ contract PriceReader is Controllable, IPriceReader {
     }
 
     function _setSafe(uint index, bool safe) internal {
-        _safetyMask = (_safetyMask & ~(1 << index)) | (safe ? (1 << index) : 0);
+        _safetyMask = (_safetyMask & ~(uint(1) << index)) | (safe ? (uint(1) << index) : 0);
     }
 
     function _getSafe(uint index) internal view returns (bool safe) {
-        return (_safetyMask & (1 << index)) != 0;
+        return (_safetyMask & (uint(1) << index)) != 0;
     }
     //endregion ------------------------- Transient cache internal logic
 }

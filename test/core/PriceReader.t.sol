@@ -85,10 +85,7 @@ contract PriceReaderTest is Test, MockSetup {
 
         ISwapper.PoolData[] memory pools = new ISwapper.PoolData[](1);
         pools[0] = ISwapper.PoolData({
-            pool: address(1),
-            ammAdapter: address(dexAdapter),
-            tokenIn: address(tokenE),
-            tokenOut: address(tokenD)
+            pool: address(1), ammAdapter: address(dexAdapter), tokenIn: address(tokenE), tokenOut: address(tokenD)
         });
 
         swapper.addPools(pools, false);
