@@ -313,6 +313,8 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         return _getXSTBLStorage().STBL;
     }
 
+    /// @inheritdoc IXSTBL
+    // solhint-disable-next-line func-name-mixedcase
     function SLASHING_PENALTY() public view returns (uint) {
         uint slashingPenalty = _getXSTBLStorage().slashingPenalty;
         return slashingPenalty == 0 ? DEFAULT_SLASHING_PENALTY : slashingPenalty;
@@ -361,8 +363,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
 
     function _update(address from, address to, uint value) internal override {
         require(_isExempted(from, to), NOT_WHITELISTED(from, to));
-
-        // todo Support of STBLDAO
 
         /// @dev call parent function
         super._update(from, to, value);

@@ -255,15 +255,19 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
 
         address toSync = to;
 
-        if (to == msg.sender) {
+        if (to == msg.sender || to == address(0)) {
             toSync = $.delegatedTo[msg.sender];
             $.delegatedTo[msg.sender] = address(0);
+
+            //slither-disable-next-line unused-return
             EnumerableSet.remove($.delegatedFrom[toSync], msg.sender);
 
             emit UnDelegateVotes(msg.sender, to);
         } else {
             require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
             $.delegatedTo[msg.sender] = to;
+
+            //slither-disable-next-line unused-return
             EnumerableSet.add($.delegatedFrom[to], msg.sender);
 
             emit DelegateVotes(msg.sender, to);
@@ -404,6 +408,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Sync balance of Stability DAO token according to the current user's balance of xSTBL
+    /// after depositing or withdrawing xSTBL
     function _syncDaoTokensToBalance(XStakingStorage storage $, address user_) internal {
         IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
         if (address(daoToken) != address(0)) {

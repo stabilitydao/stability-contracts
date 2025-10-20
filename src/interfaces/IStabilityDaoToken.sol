@@ -27,7 +27,7 @@ interface IStabilityDaoToken is IERC20, IERC20Metadata {
     /// @notice Address of xStaking contract
     function xStaking() external view returns (address);
 
-    /// @notice TODO
+    /// @notice Minimal amount of xSTBL tokens required to have STBLDAO tokens, decimals 18
     function minimalPower() external view returns (uint);
 
     /// @notice TODO

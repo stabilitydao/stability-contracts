@@ -7,7 +7,10 @@ import {ERC20BurnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
 
-/// @title Incident impact recovery token
+/// @title Stability DAO Token contract
+/// Amount of tokens for each user represents their voting power in the DAO.
+/// Only user with high enough amount of staked xSTBL have DAO-tokens.
+/// Tokens are non-transferable, can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
 contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IStabilityDaoToken {
@@ -29,7 +32,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
 
     /// @custom:storage-location erc7201:stability.StabilityDaoToken
     struct StabilityDaoTokenStorage {
-        /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only pausedAccounts[0] is used
+        /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
         mapping(uint => DaoParams) config;
         /// @notice Address of XSTBL token
         address xStbl;
@@ -38,6 +41,8 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     }
 
     error NonTransferable();
+
+    event ConfigUpdated(DaoParams newConfig);
 
     //endregion ----------------------------------- Data types
 
@@ -84,6 +89,8 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     function updateConfig(DaoParams memory p) external onlyMultisig {
         StabilityDaoTokenStorage storage $ = _getStorage();
         $.config[0] = p;
+
+        emit ConfigUpdated(p);
     }
 
     //endregion ----------------------------------- Restricted actions
@@ -93,6 +100,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                           ERC20 HOOKS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    /// @dev The token is not transferable, only minting and burning is allowed
     function _update(address from, address to, uint value) internal override {
         require(from == address(0) || to == address(0), NonTransferable());
 

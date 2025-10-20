@@ -52,7 +52,9 @@ interface IXStaking {
     /// otherwise user should receive 1 STBLDAO for each 1 xSTBL
     function syncStabilityDaoTokenBalances(address[] calldata users) external;
 
-    /// @notice Delegate voting power to another user or to oneself (to undelegate)
+    /// @notice Delegate voting power to another user.
+    /// To remove delegation just delegate the power to yourself or to address(0).
+    /// @custom:restriction Anyone can call this function
     function changePowerDelegation(address to) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

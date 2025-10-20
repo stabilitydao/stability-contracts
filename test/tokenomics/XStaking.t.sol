@@ -254,9 +254,10 @@ contract XStakingTest is Test, MockSetup {
 
         // ------------------------------- 7: Users 0 and 2 remove delegations
         vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[0]);
+        xStaking.changePowerDelegation(users[0]); // remove using delegation to oneself
+
         vm.prank(users[2]);
-        xStaking.changePowerDelegation(users[2]);
+        xStaking.changePowerDelegation(address(0)); // remove using zero address
 
         assertEq(xStaking.userPower(users[0]), amounts[0], "7: user 0 has not delegated power");
         assertEq(xStaking.userPower(users[1]), amounts[1] / 2, "7: user 1 has not delegated power");

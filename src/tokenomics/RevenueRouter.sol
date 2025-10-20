@@ -18,7 +18,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 /// @title Platform revenue distributor
 /// Changelog:
-///   1.6.1: add XSTBL()
+///   1.6.1: add addresses()
 ///   1.6.0: send 20% of earned assets to Recovery
 ///   1.5.0: processAccumulatedVaults
 ///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
