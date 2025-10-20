@@ -15,9 +15,9 @@ import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
 import {IXStaking} from "../../src/interfaces/IXStaking.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
 import {IRevenueRouter} from "../../src/interfaces/IRevenueRouter.sol";
-import {IStabilityDaoToken} from "../../src/interfaces/IStabilityDaoToken.sol";
-import {StabilityDaoToken} from "../../src/tokenomics/StabilityDaoToken.sol";
-import {MockStabilityDaoToken} from "../../src/test/MockIStabilityDaoToken.sol";
+import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
+import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
+import {MockStabilityDAO} from "../../src/test/MockIStabilityDAO.sol";
 
 contract XStakingTest is Test, MockSetup {
     using SafeERC20 for IERC20;
@@ -110,20 +110,20 @@ contract XStakingTest is Test, MockSetup {
         xStaking.notifyRewardAmount(0);
     }
 
-    function testInitializeStabilityDaoToken() public {
+    function testInitializeStabilityDAO() public {
         assertEq(xStaking.stabilityDaoToken(), address(0), "Not initialized");
 
         vm.prank(address(1));
         vm.expectRevert(IControllable.NotMultisig.selector);
-        xStaking.initializeStabilityDaoToken(address(2));
+        xStaking.initializeStabilityDAO(address(2));
 
         vm.prank(platform.multisig());
-        xStaking.initializeStabilityDaoToken(address(2));
+        xStaking.initializeStabilityDAO(address(2));
         assertEq(xStaking.stabilityDaoToken(), address(2), "Initialized");
 
         vm.prank(platform.multisig());
         vm.expectRevert(XStaking.AlreadyInitialized.selector);
-        xStaking.initializeStabilityDaoToken(address(3));
+        xStaking.initializeStabilityDAO(address(3));
     }
 
     function testPowerDelegation() public {
@@ -160,7 +160,7 @@ contract XStakingTest is Test, MockSetup {
         xStaking.changePowerDelegation(users[1]);
 
         vm.prank(platform.multisig());
-        xStaking.initializeStabilityDaoToken(address(new MockStabilityDaoToken()));
+        xStaking.initializeStabilityDAO(address(new MockStabilityDAO()));
 
         // ------------------------------- 1: 0 => 1
         vm.prank(users[0]);
@@ -264,7 +264,7 @@ contract XStakingTest is Test, MockSetup {
         assertEq(xStaking.userPower(users[2]), amounts[2], "7: user 2 has not delegated power");
     }
 
-    function testSyncStabilityDaoTokenBalances() public {
+    function testSyncStabilityDAOBalances() public {
         address[] memory users = new address[](3);
         users[0] = address(1);
         users[1] = address(100);
@@ -278,7 +278,7 @@ contract XStakingTest is Test, MockSetup {
         // ------------------------------- Bad paths
         vm.prank(platform.multisig());
         vm.expectRevert(XStaking.StblDaoNotInitialized.selector);
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         // ------------------------------- Mint xSTBL and deposit to staking
         for (uint i; i < users.length; ++i) {
@@ -299,13 +299,13 @@ contract XStakingTest is Test, MockSetup {
         }
 
         // ------------------------------- Set up dao token
-        IStabilityDaoToken daoToken = _createStabilityDaoTokenInstance();
+        IStabilityDAO daoToken = _createStabilityDAOInstance();
         vm.prank(platform.multisig());
-        xStaking.initializeStabilityDaoToken(address(daoToken));
+        xStaking.initializeStabilityDAO(address(daoToken));
 
         vm.prank(address(123));
         vm.expectRevert(IControllable.NotMultisig.selector);
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         _updateConfig(4000e18);
 
@@ -318,7 +318,7 @@ contract XStakingTest is Test, MockSetup {
 
         // ------------------------------- sync 1
         vm.prank(platform.multisig());
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "1: User0");
         assertEq(daoToken.balanceOf(users[1]), 0, "1: User1");
@@ -328,11 +328,11 @@ contract XStakingTest is Test, MockSetup {
         _updateConfig(3000e18);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "2: User0");
-        assertEq(daoToken.balanceOf(users[1]), 0, "2: User1 (syncStabilityDaoTokenBalances is not called)");
+        assertEq(daoToken.balanceOf(users[1]), 0, "2: User1 (syncStabilityDAOBalances is not called)");
         assertEq(daoToken.balanceOf(users[2]), 4_000e18, "2: User2");
 
         vm.prank(platform.multisig());
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "2.1: User0");
         assertEq(daoToken.balanceOf(users[1]), 3_999e18, "2.1: User1");
@@ -342,11 +342,11 @@ contract XStakingTest is Test, MockSetup {
         _updateConfig(4001e18);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "3: User0");
-        assertEq(daoToken.balanceOf(users[1]), 3_999e18, "3: User1 (syncStabilityDaoTokenBalances is not called)");
-        assertEq(daoToken.balanceOf(users[2]), 4_000e18, "3: User2 (syncStabilityDaoTokenBalances is not called)");
+        assertEq(daoToken.balanceOf(users[1]), 3_999e18, "3: User1 (syncStabilityDAOBalances is not called)");
+        assertEq(daoToken.balanceOf(users[2]), 4_000e18, "3: User2 (syncStabilityDAOBalances is not called)");
 
         vm.prank(platform.multisig());
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "3.1: User0");
         assertEq(daoToken.balanceOf(users[1]), 0, "3.1: User1");
@@ -354,8 +354,8 @@ contract XStakingTest is Test, MockSetup {
     }
 
     //region --------------------------------- Utils
-    function _createStabilityDaoTokenInstance() internal returns (IStabilityDaoToken) {
-        IStabilityDaoToken.DaoParams memory p = IStabilityDaoToken.DaoParams({
+    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 5_000,
             proposalThreshold: 100_000,
@@ -363,15 +363,15 @@ contract XStakingTest is Test, MockSetup {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDaoToken()));
-        IStabilityDaoToken token = IStabilityDaoToken(address(proxy));
+        proxy.initProxy(address(new StabilityDAO()));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(address(platform), address(xStbl), address(xStaking), p);
         return token;
     }
 
     function _updateConfig(uint minimalPower_) internal {
-        IStabilityDaoToken daoToken = IStabilityDaoToken(xStaking.stabilityDaoToken());
-        IStabilityDaoToken.DaoParams memory p = daoToken.config();
+        IStabilityDAO daoToken = IStabilityDAO(xStaking.stabilityDaoToken());
+        IStabilityDAO.DaoParams memory p = daoToken.config();
         p.minimalPower = minimalPower_;
 
         vm.prank(platform.multisig());

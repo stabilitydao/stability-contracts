@@ -10,7 +10,7 @@ import {IControllable} from "../interfaces/IControllable.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 
 /// @title Staking contract for xSTBL
 /// Inspired by VoteModule from Ramses/Shadow codebase
@@ -114,19 +114,19 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     }
 
     /// @inheritdoc IXStaking
-    function initializeStabilityDaoToken(address daoToken_) external onlyMultisig {
+    function initializeStabilityDAO(address daoToken_) external onlyMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
         /// @dev ensure only callable once
         require($.stabilityDaoToken == address(0), AlreadyInitialized());
         $.stabilityDaoToken = daoToken_;
 
-        emit InitializeStabilityDaoToken(daoToken_);
+        emit InitializeStabilityDAO(daoToken_);
     }
 
     /// @inheritdoc IXStaking
-    function syncStabilityDaoTokenBalances(address[] calldata users) external onlyMultisig {
+    function syncStabilityDAOBalances(address[] calldata users) external onlyMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
-        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
         require(address(daoToken) != address(0), StblDaoNotInitialized());
 
         uint minimalPower = daoToken.minimalPower();
@@ -250,7 +250,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     function changePowerDelegation(address to) external nonReentrant {
         XStakingStorage storage $ = _getXStakingStorage();
 
-        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
         require(address(daoToken) != address(0), StblDaoNotInitialized());
 
         address toSync = to;
@@ -410,7 +410,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /// @dev Sync balance of Stability DAO token according to the current user's balance of xSTBL
     /// after depositing or withdrawing xSTBL
     function _syncDaoTokensToBalance(XStakingStorage storage $, address user_) internal {
-        IStabilityDaoToken daoToken = IStabilityDaoToken($.stabilityDaoToken);
+        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
         if (address(daoToken) != address(0)) {
             uint minimalPower = daoToken.minimalPower();
 
@@ -426,7 +426,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     }
 
     /// @dev Sync balance of Stability DAO token for a specific user according to his current power
-    function _syncUser(IStabilityDaoToken daoToken_, address user_, uint minimalPower_) internal {
+    function _syncUser(IStabilityDAO daoToken_, address user_, uint minimalPower_) internal {
         uint balancePower = userPower(user_);
 
         /// @dev if user has less than minimalPower xSTBL staked, their STBLDAO balance will be 0

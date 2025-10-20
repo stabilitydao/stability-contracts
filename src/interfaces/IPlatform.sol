@@ -60,6 +60,7 @@ interface IPlatform {
     event MetaVaultFactory(address metaVaultFactory);
     event VaultPriceOracle(address vaultPriceOracle_);
     event Recovery(address recovery_);
+    event StabilityDAO(address stabilityDAO);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -167,6 +168,10 @@ interface IPlatform {
     /// @notice Contract for redeeming recovery tokens
     /// @return Address of the recovery contract
     function recovery() external view returns (address);
+
+    /// @notice Stability DAO token that provides power for voting for proposals
+    /// @return Address of StabilityDAO contract
+    function stabilityDAO() external view returns (address);
 
     /// @notice This function provides the timestamp of the platform upgrade timelock.
     /// @dev This function is an external view function, meaning it doesn't modify the state.
@@ -311,4 +316,8 @@ interface IPlatform {
     /// @notice Set recovery contract
     /// @param recovery_ Address of the recovery contract
     function setupRecovery(address recovery_) external;
+
+    /// @notice Set StabilityDAO contract address
+    /// @param stabilityDAO_ Address of the StabilityDAO contract
+    function setupStabilityDAO(address stabilityDAO_) external;
 }

@@ -5,7 +5,7 @@ import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ERC20BurnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
@@ -13,7 +13,7 @@ import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
 /// Tokens are non-transferable, can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IStabilityDaoToken {
+contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IStabilityDAO {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -21,7 +21,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /// @inheritdoc IControllable
     string public constant VERSION = "1.0.0";
 
-    // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff));
+    // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
     bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
         0x646b4833d597962e1309a1f3fa0c9ce18df08fcf8941b92012e02e0045f00200;
 
@@ -30,8 +30,8 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                         DATA TYPES                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:storage-location erc7201:stability.StabilityDaoToken
-    struct StabilityDaoTokenStorage {
+    /// @custom:storage-location erc7201:stability.StabilityDAO
+    struct StabilityDAOStorage {
         /// @dev Mapping is used to be able to add new fields to DaoParams struct in future, only config[0] is used
         mapping(uint => DaoParams) config;
         /// @notice Address of XSTBL token
@@ -59,11 +59,11 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                      INITIALIZATION                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function initialize(address platform_, address xStbl_, address xStaking_, DaoParams memory p) public initializer {
         __Controllable_init(platform_);
-        __ERC20_init("Stability DAO", "STBLDAO");
-        StabilityDaoTokenStorage storage $ = _getStorage();
+        __ERC20_init("Stability DAO", "STBL_DAO");
+        StabilityDAOStorage storage $ = _getStorage();
         $.xStaking = xStaking_;
         $.xStbl = xStbl_;
         $.config[0] = p;
@@ -75,19 +75,19 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function mint(address account, uint amount) external onlyXStaking {
         _mint(account, amount);
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function burn(address account, uint amount) external onlyXStaking {
         _burn(account, amount);
     }
 
-    /// @inheritdoc IStabilityDaoToken
-    function updateConfig(DaoParams memory p) external onlyMultisig {
-        StabilityDaoTokenStorage storage $ = _getStorage();
+    /// @inheritdoc IStabilityDAO
+    function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
+        StabilityDAOStorage storage $ = _getStorage();
         $.config[0] = p;
 
         emit ConfigUpdated(p);
@@ -113,37 +113,37 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
     /*                      VIEW FUNCTIONS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function config() public view returns (DaoParams memory) {
         return _getStorage().config[0];
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function xStbl() public view returns (address) {
         return _getStorage().xStbl;
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function xStaking() public view returns (address) {
         return _getStorage().xStaking;
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function minimalPower() external view returns (uint) {
         return _getStorage().config[0].minimalPower;
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function exitPenalty() external view returns (uint) {
         return _getStorage().config[0].exitPenalty;
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function proposalThreshold() external view returns (uint) {
         return _getStorage().config[0].proposalThreshold;
     }
 
-    /// @inheritdoc IStabilityDaoToken
+    /// @inheritdoc IStabilityDAO
     function powerAllocationDelay() external view returns (uint) {
         return _getStorage().config[0].powerAllocationDelay;
     }
@@ -159,7 +159,7 @@ contract StabilityDaoToken is Controllable, ERC20Upgradeable, ERC20BurnableUpgra
         require(_getStorage().xStaking == msg.sender, IncorrectMsgSender());
     }
 
-    function _getStorage() internal pure returns (StabilityDaoTokenStorage storage $) {
+    function _getStorage() internal pure returns (StabilityDAOStorage storage $) {
         //slither-disable-next-line assembly
         assembly {
             $.slot := _STABILITY_DAO_TOKEN_STORAGE_LOCATION

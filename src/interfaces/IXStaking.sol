@@ -16,7 +16,7 @@ interface IXStaking {
 
     event NewDuration(uint oldDuration, uint newDuration);
 
-    event InitializeStabilityDaoToken(address stblDao);
+    event InitializeStabilityDAO(address stblDao);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -45,12 +45,12 @@ interface IXStaking {
     function setNewDuration(uint) external;
 
     /// @notice One-time initialization of the STBLDAO token address
-    function initializeStabilityDaoToken(address stblDao_) external;
+    function initializeStabilityDAO(address stblDao_) external;
 
     /// @notice Update balance of STBLDAO token for all given users
     /// If a user has less then min power xSTBL staked, their STBLDAO balance will be 0
     /// otherwise user should receive 1 STBLDAO for each 1 xSTBL
-    function syncStabilityDaoTokenBalances(address[] calldata users) external;
+    function syncStabilityDAOBalances(address[] calldata users) external;
 
     /// @notice Delegate voting power to another user.
     /// To remove delegation just delegate the power to yourself or to address(0).

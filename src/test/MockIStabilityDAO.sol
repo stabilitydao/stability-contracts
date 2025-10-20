@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IStabilityDaoToken} from "../interfaces/IStabilityDaoToken.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 
-contract MockStabilityDaoToken is IStabilityDaoToken {
+contract MockStabilityDAO is IStabilityDAO {
     /// @notice add this to be excluded from coverage report
     function test() public {}
 

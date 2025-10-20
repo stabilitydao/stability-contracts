@@ -442,4 +442,20 @@ contract PlatformTest is Test {
         platform.setupRecovery(address(123));
         assertEq(platform.recovery(), address(123));
     }
+
+    function testSetupStabilityDAO() public {
+        platform.initialize(address(this), "23.11.0-dev");
+        address notGov = address(1);
+
+        vm.prank(notGov);
+        vm.expectRevert(abi.encodeWithSelector(IControllable.NotGovernanceAndNotMultisig.selector));
+        platform.setupStabilityDAO(address(123));
+
+        platform.setupStabilityDAO(address(123));
+        assertEq(platform.stabilityDAO(), address(123));
+
+        vm.expectRevert(abi.encodeWithSelector(IControllable.AlreadyExist.selector));
+        platform.setupStabilityDAO(address(124));
+    }
+
 }

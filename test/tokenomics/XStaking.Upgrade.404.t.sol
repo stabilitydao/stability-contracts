@@ -7,8 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
-import {IStabilityDaoToken} from "../../src/interfaces/IStabilityDaoToken.sol";
-import {StabilityDaoToken} from "../../src/tokenomics/StabilityDaoToken.sol";
+import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
+import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
 import {XStaking} from "../../src/tokenomics/XStaking.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
@@ -45,10 +45,10 @@ contract XStakingUpgrade404SonicTest is Test {
         users[2] = USER3;
 
         // ------------------------------- Upgrade and sync
-        IStabilityDaoToken daoToken = _upgradeAndSetup();
+        IStabilityDAO daoToken = _upgradeAndSetup();
 
         vm.prank(multisig);
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         assertEq(xStaking.userPower(USER1), 5000e18, "1: user 1 power");
         assertEq(xStaking.userPower(USER2), 3000e18, "1: user 2 power");
@@ -118,10 +118,10 @@ contract XStakingUpgrade404SonicTest is Test {
         uint power3 = 3003e18;
 
         // ------------------------------- Upgrade and sync
-        IStabilityDaoToken daoToken = _upgradeAndSetup();
+        IStabilityDAO daoToken = _upgradeAndSetup();
 
         vm.prank(multisig);
-        xStaking.syncStabilityDaoTokenBalances(users);
+        xStaking.syncStabilityDAOBalances(users);
 
         // ------------------------------- Deposit 1
         _mintAndDepositToStaking(USER1, power1);
@@ -230,12 +230,12 @@ contract XStakingUpgrade404SonicTest is Test {
         xStaking.deposit(amount);
     }
 
-    function _upgradeAndSetup() internal returns (IStabilityDaoToken) {
-        IStabilityDaoToken stblDaoToken = _createStabilityDaoTokenInstance();
+    function _upgradeAndSetup() internal returns (IStabilityDAO) {
+        IStabilityDAO stblDaoToken = _createStabilityDAOInstance();
         _upgradePlatform();
 
         vm.prank(multisig);
-        xStaking.initializeStabilityDaoToken(address(stblDaoToken));
+        xStaking.initializeStabilityDAO(address(stblDaoToken));
 
         return stblDaoToken;
     }
@@ -264,8 +264,8 @@ contract XStakingUpgrade404SonicTest is Test {
         vm.stopPrank();
     }
 
-    function _createStabilityDaoTokenInstance() internal returns (IStabilityDaoToken) {
-        IStabilityDaoToken.DaoParams memory p = IStabilityDaoToken.DaoParams({
+    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 5_000,
             proposalThreshold: 100_000,
@@ -273,15 +273,15 @@ contract XStakingUpgrade404SonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDaoToken()));
-        IStabilityDaoToken token = IStabilityDaoToken(address(proxy));
+        proxy.initProxy(address(new StabilityDAO()));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(address(PLATFORM), SonicConstantsLib.TOKEN_XSTBL, SonicConstantsLib.XSTBL_XSTAKING, p);
         return token;
     }
 
     function _updateConfig(uint minimalPower_) internal {
-        IStabilityDaoToken daoToken = IStabilityDaoToken(xStaking.stabilityDaoToken());
-        IStabilityDaoToken.DaoParams memory p = daoToken.config();
+        IStabilityDAO daoToken = IStabilityDAO(xStaking.stabilityDaoToken());
+        IStabilityDAO.DaoParams memory p = daoToken.config();
         p.minimalPower = minimalPower_;
 
         vm.prank(multisig);

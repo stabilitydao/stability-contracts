@@ -5,14 +5,14 @@ import {console} from "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IControllable} from "../../src/interfaces/IControllable.sol";
-import {IStabilityDaoToken} from "../../src/interfaces/IStabilityDaoToken.sol";
+import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {Test} from "forge-std/Test.sol";
-import {StabilityDaoToken} from "../../src/tokenomics/StabilityDaoToken.sol";
+import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract StabilityDaoTokenSonicTest is Test {
+contract StabilityDAOSonicTest is Test {
     using SafeERC20 for IERC20;
 
     uint public constant FORK_BLOCK = 47854805; // Sep-23-2025 04:02:39 AM +UTC
@@ -23,14 +23,14 @@ contract StabilityDaoTokenSonicTest is Test {
         multisig = IPlatform(SonicConstantsLib.PLATFORM).multisig();
 
         console.logBytes32(
-            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDaoToken")) - 1)) & ~bytes32(uint(0xff))
+            keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff))
         );
     }
 
     //region --------------------------------- Unit tests
 
     function testInitializeAndView() public {
-        IStabilityDaoToken.DaoParams memory p = IStabilityDaoToken.DaoParams({
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 5_000,
             proposalThreshold: 100_000,
@@ -38,9 +38,9 @@ contract StabilityDaoTokenSonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDaoToken()));
+        proxy.initProxy(address(new StabilityDAO()));
 
-        IStabilityDaoToken token = IStabilityDaoToken(address(proxy));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, address(1), address(2), p);
 
         assertEq(token.xStbl(), address(1));
@@ -56,7 +56,7 @@ contract StabilityDaoTokenSonicTest is Test {
     }
 
     function testMintBurn() public {
-        IStabilityDaoToken token = createStabilityDaoTokenInstance();
+        IStabilityDAO token = createStabilityDAOInstance();
 
         vm.prank(address(0x123));
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
@@ -88,23 +88,23 @@ contract StabilityDaoTokenSonicTest is Test {
     }
 
     function testUpdateConfig() public {
-        IStabilityDaoToken token = createStabilityDaoTokenInstance();
+        IStabilityDAO token = createStabilityDAOInstance();
 
-        IStabilityDaoToken.DaoParams memory p1 = IStabilityDaoToken.DaoParams({
+        IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 5_000,
             proposalThreshold: 100_000,
             powerAllocationDelay: 86400
         });
 
-        IStabilityDaoToken.DaoParams memory p2 = IStabilityDaoToken.DaoParams({
+        IStabilityDAO.DaoParams memory p2 = IStabilityDAO.DaoParams({
             minimalPower: 5000e18,
             exitPenalty: 10_000,
             proposalThreshold: 200_000,
             powerAllocationDelay: 172800
         });
 
-        IStabilityDaoToken.DaoParams memory config = token.config();
+        IStabilityDAO.DaoParams memory config = token.config();
         assertEq(config.minimalPower, p1.minimalPower);
         assertEq(config.exitPenalty, p1.exitPenalty);
         assertEq(config.proposalThreshold, p1.proposalThreshold);
@@ -118,6 +118,8 @@ contract StabilityDaoTokenSonicTest is Test {
         vm.expectRevert(IControllable.NotMultisig.selector);
         token.updateConfig(p2);
 
+        // todo ensure that governance is able to update config
+
         vm.prank(multisig);
         token.updateConfig(p2);
 
@@ -129,20 +131,20 @@ contract StabilityDaoTokenSonicTest is Test {
     }
 
     function testNonTransferable() public {
-        IStabilityDaoToken token = createStabilityDaoTokenInstance();
+        IStabilityDAO token = createStabilityDAOInstance();
 
         vm.prank(token.xStaking());
         token.mint(address(0x123), 1e18);
 
         vm.prank(address(0x123));
-        vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
+        vm.expectRevert(StabilityDAO.NonTransferable.selector);
         token.transfer(address(0x456), 1e18);
 
         vm.prank(address(0x123));
         token.approve(address(0x456), 1e18);
 
         vm.prank(address(0x456));
-        vm.expectRevert(StabilityDaoToken.NonTransferable.selector);
+        vm.expectRevert(StabilityDAO.NonTransferable.selector);
         token.transferFrom(address(0x123), address(0x789), 1e18);
     }
 
@@ -155,8 +157,8 @@ contract StabilityDaoTokenSonicTest is Test {
     //endregion --------------------------------- Test for uses cases
 
     //region --------------------------------- Utils
-    function createStabilityDaoTokenInstance() internal returns (IStabilityDaoToken) {
-        IStabilityDaoToken.DaoParams memory p = IStabilityDaoToken.DaoParams({
+    function createStabilityDAOInstance() internal returns (IStabilityDAO) {
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
             exitPenalty: 5_000,
             proposalThreshold: 100_000,
@@ -164,8 +166,8 @@ contract StabilityDaoTokenSonicTest is Test {
         });
 
         Proxy proxy = new Proxy();
-        proxy.initProxy(address(new StabilityDaoToken()));
-        IStabilityDaoToken token = IStabilityDaoToken(address(proxy));
+        proxy.initProxy(address(new StabilityDAO()));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
         token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p);
         return token;
     }
