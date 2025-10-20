@@ -17,6 +17,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 /// @title Stability MetaVault implementation
 /// @dev Rebase vault that deposit to other vaults
 /// Changelog:
+///   1.6.0: add vault manager - #408
 ///   1.5.0: withdrawUnderlying - #360
 ///   1.4.2: add cachePrices - #348, use USD_THRESHOLD_REMOVE_VAULT in removeVault
 ///   1.4.1: add LastBlockDefenseDisableMode
@@ -34,6 +35,7 @@ import {MetaVaultLib} from "../libs/MetaVaultLib.sol";
 ///   1.1.0: IStabilityVault.lastBlockDefenseDisabled()
 /// @author Alien Deployer (https://github.com/a17)
 /// @author dvpublic (https://github.com/dvpublic)
+/// @author Omriss (https://github.com/omriss)
 contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IMetaVault {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -44,7 +46,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.5.0";
+    string public constant VERSION = "1.6.0";
 
     /// @dev Delay between deposits/transfers and withdrawals
     uint internal constant _TRANSFER_DELAY_BLOCKS = 5;
@@ -138,6 +140,11 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
         _requiredAllowedOperator();
         _;
     }
+
+    modifier onlyVaultManager() virtual {
+        _requireVaultManager();
+        _;
+    }
     //endregion --------------------------------- Modifiers
 
     //region --------------------------------- Restricted action
@@ -146,7 +153,7 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IMetaVault
-    function setTargetProportions(uint[] memory newTargetProportions) external onlyAllowedOperator {
+    function setTargetProportions(uint[] memory newTargetProportions) external onlyVaultManager {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         require(newTargetProportions.length == $.vaults.length, IControllable.IncorrectArrayLength());
         MetaVaultLib._checkProportions(newTargetProportions);
@@ -183,12 +190,12 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     }
 
     /// @inheritdoc IMetaVault
-    function addVault(address vault, uint[] memory newTargetProportions) external onlyGovernanceOrMultisig {
+    function addVault(address vault, uint[] memory newTargetProportions) external onlyVaultManager {
         MetaVaultLib.addVault(_getMetaVaultStorage(), vault, newTargetProportions);
     }
 
     /// @inheritdoc IMetaVault
-    function removeVault(address vault) external onlyGovernanceOrMultisig {
+    function removeVault(address vault) external onlyVaultManager {
         MetaVaultLib.removeVault(_getMetaVaultStorage(), vault, MetaVaultLib.USD_THRESHOLD_REMOVE_VAULT);
     }
 
@@ -289,6 +296,13 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function setRecoveryToken(address cVault_, address recoveryToken_) external onlyOperator {
         MetaVaultStorage storage $ = _getMetaVaultStorage();
         $.recoveryTokens[cVault_] = recoveryToken_;
+    }
+
+    function setVaultManager(address vaultManager_) external onlyGovernanceOrMultisig {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        $.vaultManager = vaultManager_;
+
+        emit SetVaultManager(vaultManager_);
     }
     //endregion --------------------------------- Restricted action
 
@@ -591,6 +605,10 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
     function recoveryToken(address cVault_) external view override returns (address) {
         return _getMetaVaultStorage().recoveryTokens[cVault_];
     }
+
+    function vaultManager() external view returns (address) {
+        return _getMetaVaultStorage().vaultManager;
+    }
     //endregion --------------------------------- View functions
 
     //region --------------------------------- Internal logic
@@ -790,6 +808,17 @@ contract MetaVault is Controllable, ReentrancyGuardUpgradeable, IERC20Errors, IM
                 || IHardWorker(IPlatform(_platform).hardWorker()).dedicatedServerMsgSender(msg.sender),
             IControllable.IncorrectMsgSender()
         );
+    }
+
+    /// @notice Require that msg.sender is vault manager. If vault manager is not set, require that msg.sender is multisig.
+    function _requireVaultManager() internal view {
+        MetaVaultStorage storage $ = _getMetaVaultStorage();
+        address _vaultManager = $.vaultManager;
+        if (_vaultManager == address(0)) {
+            address _platform = platform();
+            _vaultManager = IPlatform(_platform).multisig();
+        }
+        require(msg.sender == _vaultManager, IControllable.IncorrectMsgSender());
     }
 
     function _getMetaVaultStorage() internal pure returns (MetaVaultStorage storage $) {
