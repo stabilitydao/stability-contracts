@@ -72,7 +72,8 @@ contract MetaVaultSonicUpgradeAudit is Test {
                 depositAmounts,
                 type(uint).max, // revert ExceedSlippage
                 address(this)
-            ) {} catch (bytes memory reason) {
+            ) {}
+            catch (bytes memory reason) {
                 returnData = reason;
             }
 
@@ -257,12 +258,7 @@ contract MetaVaultSonicUpgradeAudit is Test {
         }
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);

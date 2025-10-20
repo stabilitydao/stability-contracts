@@ -167,6 +167,7 @@ library RecoveryLib {
     function getListRegisteredTokens(RecoveryStorage storage $) external view returns (address[] memory tokens) {
         return $.registeredTokens.values();
     }
+
     //endregion -------------------------------------- View
 
     //region -------------------------------------- Governance actions
@@ -301,9 +302,8 @@ library RecoveryLib {
         address[] memory _recoveryPools;
         (_recoveryPools, indexFirstRecoveryPool1) = _getShuffledArray($.recoveryPools.values(), indexFirstRecoveryPool1);
         if (_recoveryPools.length != 0 && balanceBefore > metaVaultTokenThreshold) {
-            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1)
-            );
+            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault())
+                .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.DISABLED_TX_UPDATE_MAPS_1));
 
             uint restAmount = balanceBefore;
             uint startPoolIndex0 = _getRecoveryPool(_recoveryPools, indexFirstRecoveryPool1);
@@ -329,15 +329,18 @@ library RecoveryLib {
                 ++countSwaps;
             }
 
-            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault()).setLastBlockDefenseDisabledTx(
-                uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0)
-            );
+            IMetaVault(IWrappedMetaVault(metaVaultToken_).metaVault())
+                .setLastBlockDefenseDisabledTx(uint(IMetaVault.LastBlockDefenseDisableMode.ENABLED_0));
 
             emit FillRecoveryPools(metaVaultToken_, balanceBefore, restAmount, countSwaps);
         }
     }
 
-    function uniswapV3SwapCallback(int amount0Delta, int amount1Delta, bytes calldata /* data */ ) internal {
+    function uniswapV3SwapCallback(
+        int amount0Delta,
+        int amount1Delta,
+        bytes calldata /* data */
+    ) internal {
         amount0Delta; // hide warning
 
         RecoveryStorage storage $ = getRecoveryTokenStorage();
@@ -354,6 +357,7 @@ library RecoveryLib {
             IERC20(IUniswapV3Pool(pool).token1()).safeTransfer(address(pool), uint(amount1Delta));
         }
     }
+
     //endregion -------------------------------------- Actions
 
     //region -------------------------------------- Internal logic
@@ -410,13 +414,16 @@ library RecoveryLib {
 
             $.swapping = true;
 
-            try IUniswapV3Pool(pool_).swap(
-                address(this), // recipient
-                zeroForOne,
-                int(amountInMax), // exactInput
-                sqrtPriceLimitX96, // sqrtPriceLimitX96
-                "" // data
-            ) returns (int amount0, int amount1) {
+            try IUniswapV3Pool(pool_)
+                .swap(
+                    address(this), // recipient
+                    zeroForOne,
+                    int(amountInMax), // exactInput
+                    sqrtPriceLimitX96, // sqrtPriceLimitX96
+                    "" // data
+                ) returns (
+                int amount0, int amount1
+            ) {
                 $.swapping = false;
 
                 uint amountOut = zeroForOne ? uint(-amount1) : uint(-amount0);

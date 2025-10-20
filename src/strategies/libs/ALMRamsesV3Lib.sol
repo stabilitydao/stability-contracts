@@ -47,21 +47,22 @@ library ALMRamsesV3Lib {
                 IALM.Position memory position;
                 (position.tickLower, position.tickUpper) =
                     ALMLib.calcFillUpBaseTicks(ALMLib.getUniswapV3CurrentTick(v.pool), $.params[0], tickSpacing);
-                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(v.nft).mint(
-                    INonfungiblePositionManager.MintParams({
-                        token0: v.assets[0],
-                        token1: v.assets[1],
-                        tickSpacing: tickSpacing,
-                        tickLower: position.tickLower,
-                        tickUpper: position.tickUpper,
-                        amount0Desired: amounts[0],
-                        amount1Desired: amounts[1],
-                        amount0Min: 0,
-                        amount1Min: 0,
-                        recipient: address(this),
-                        deadline: block.timestamp
-                    })
-                );
+                (position.tokenId, position.liquidity,,) = INonfungiblePositionManager(v.nft)
+                    .mint(
+                        INonfungiblePositionManager.MintParams({
+                            token0: v.assets[0],
+                            token1: v.assets[1],
+                            tickSpacing: tickSpacing,
+                            tickLower: position.tickLower,
+                            tickUpper: position.tickUpper,
+                            amount0Desired: amounts[0],
+                            amount1Desired: amounts[1],
+                            amount0Min: 0,
+                            amount1Min: 0,
+                            recipient: address(this),
+                            deadline: block.timestamp
+                        })
+                    );
                 $.positions.push(position);
                 __$__.total = value;
             } else {
@@ -69,16 +70,17 @@ library ALMRamsesV3Lib {
                 uint totalAmount = totalAmounts[1] + totalAmounts[0] * price / ALMLib.PRECISION - value;
                 value = value * total / totalAmount;
                 IALM.Position memory position = $.positions[0];
-                (uint128 addedLiquidity,,) = INonfungiblePositionManager(v.nft).increaseLiquidity(
-                    INonfungiblePositionManager.IncreaseLiquidityParams({
-                        tokenId: position.tokenId,
-                        amount0Desired: ALMLib.balance(v.assets[0]),
-                        amount1Desired: ALMLib.balance(v.assets[1]),
-                        amount0Min: 0,
-                        amount1Min: 0,
-                        deadline: block.timestamp
-                    })
-                );
+                (uint128 addedLiquidity,,) = INonfungiblePositionManager(v.nft)
+                    .increaseLiquidity(
+                        INonfungiblePositionManager.IncreaseLiquidityParams({
+                            tokenId: position.tokenId,
+                            amount0Desired: ALMLib.balance(v.assets[0]),
+                            amount1Desired: ALMLib.balance(v.assets[1]),
+                            amount0Min: 0,
+                            amount1Min: 0,
+                            deadline: block.timestamp
+                        })
+                    );
                 $.positions[0].liquidity = position.liquidity + addedLiquidity;
                 __$__.total = total + value;
             }
@@ -100,28 +102,8 @@ library ALMRamsesV3Lib {
             IALM.Position memory position = $.positions[0];
             uint total = __$__.total;
             uint128 liquidityToBurn = uint128(uint(position.liquidity) * value / total);
-            (amountsOut[0], amountsOut[1]) = INonfungiblePositionManager(nft).decreaseLiquidity(
-                INonfungiblePositionManager.DecreaseLiquidityParams({
-                    tokenId: position.tokenId,
-                    liquidity: liquidityToBurn,
-                    amount0Min: 0,
-                    amount1Min: 0,
-                    deadline: block.timestamp
-                })
-            );
-            $.positions[0].liquidity = position.liquidity - liquidityToBurn;
-            INonfungiblePositionManager(nft).collect(
-                INonfungiblePositionManager.CollectParams({
-                    tokenId: position.tokenId,
-                    recipient: receiver,
-                    amount0Max: uint128(amountsOut[0]),
-                    amount1Max: uint128(amountsOut[1])
-                })
-            );
-            if (positionsLength == 2) {
-                position = $.positions[1];
-                liquidityToBurn = uint128(uint(position.liquidity) * value / total);
-                (uint fillupOut0, uint fillupOut1) = INonfungiblePositionManager(nft).decreaseLiquidity(
+            (amountsOut[0], amountsOut[1]) = INonfungiblePositionManager(nft)
+                .decreaseLiquidity(
                     INonfungiblePositionManager.DecreaseLiquidityParams({
                         tokenId: position.tokenId,
                         liquidity: liquidityToBurn,
@@ -130,17 +112,41 @@ library ALMRamsesV3Lib {
                         deadline: block.timestamp
                     })
                 );
-                $.positions[1].liquidity = position.liquidity - liquidityToBurn;
-                amountsOut[0] += fillupOut0;
-                amountsOut[1] += fillupOut1;
-                INonfungiblePositionManager(nft).collect(
+            $.positions[0].liquidity = position.liquidity - liquidityToBurn;
+            INonfungiblePositionManager(nft)
+                .collect(
                     INonfungiblePositionManager.CollectParams({
                         tokenId: position.tokenId,
                         recipient: receiver,
-                        amount0Max: uint128(fillupOut0),
-                        amount1Max: uint128(fillupOut1)
+                        amount0Max: uint128(amountsOut[0]),
+                        amount1Max: uint128(amountsOut[1])
                     })
                 );
+            if (positionsLength == 2) {
+                position = $.positions[1];
+                liquidityToBurn = uint128(uint(position.liquidity) * value / total);
+                (uint fillupOut0, uint fillupOut1) = INonfungiblePositionManager(nft)
+                    .decreaseLiquidity(
+                        INonfungiblePositionManager.DecreaseLiquidityParams({
+                            tokenId: position.tokenId,
+                            liquidity: liquidityToBurn,
+                            amount0Min: 0,
+                            amount1Min: 0,
+                            deadline: block.timestamp
+                        })
+                    );
+                $.positions[1].liquidity = position.liquidity - liquidityToBurn;
+                amountsOut[0] += fillupOut0;
+                amountsOut[1] += fillupOut1;
+                INonfungiblePositionManager(nft)
+                    .collect(
+                        INonfungiblePositionManager.CollectParams({
+                            tokenId: position.tokenId,
+                            recipient: receiver,
+                            amount0Max: uint128(fillupOut0),
+                            amount1Max: uint128(fillupOut1)
+                        })
+                    );
             }
 
             // send balance part
@@ -190,23 +196,25 @@ library ALMRamsesV3Lib {
                 if (burnOldPositions[index]) {
                     IALM.Position storage position = $.positions[index];
 
-                    INonfungiblePositionManager(nft).decreaseLiquidity(
-                        INonfungiblePositionManager.DecreaseLiquidityParams({
-                            tokenId: position.tokenId,
-                            liquidity: position.liquidity,
-                            amount0Min: 0,
-                            amount1Min: 0,
-                            deadline: block.timestamp
-                        })
-                    );
-                    INonfungiblePositionManager(nft).collect(
-                        INonfungiblePositionManager.CollectParams({
-                            tokenId: position.tokenId,
-                            recipient: address(this),
-                            amount0Max: type(uint128).max,
-                            amount1Max: type(uint128).max
-                        })
-                    );
+                    INonfungiblePositionManager(nft)
+                        .decreaseLiquidity(
+                            INonfungiblePositionManager.DecreaseLiquidityParams({
+                                tokenId: position.tokenId,
+                                liquidity: position.liquidity,
+                                amount0Min: 0,
+                                amount1Min: 0,
+                                deadline: block.timestamp
+                            })
+                        );
+                    INonfungiblePositionManager(nft)
+                        .collect(
+                            INonfungiblePositionManager.CollectParams({
+                                tokenId: position.tokenId,
+                                recipient: address(this),
+                                amount0Max: type(uint128).max,
+                                amount1Max: type(uint128).max
+                            })
+                        );
                     INonfungiblePositionManager(nft).burn(position.tokenId);
 
                     for (uint j = index; j < $.positions.length - 1; j++) {
@@ -224,21 +232,22 @@ library ALMRamsesV3Lib {
                 newPosition.tickLower = mintNewPositions[i].tickLower;
                 newPosition.tickUpper = mintNewPositions[i].tickUpper;
 
-                (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft).mint(
-                    INonfungiblePositionManager.MintParams({
-                        token0: assets[0],
-                        token1: assets[1],
-                        tickSpacing: tickSpacing,
-                        tickLower: newPosition.tickLower,
-                        tickUpper: newPosition.tickUpper,
-                        amount0Desired: ALMLib.balance(assets[0]),
-                        amount1Desired: ALMLib.balance(assets[1]),
-                        amount0Min: mintNewPositions[i].minAmount0,
-                        amount1Min: mintNewPositions[i].minAmount1,
-                        recipient: address(this),
-                        deadline: block.timestamp
-                    })
-                );
+                (newPosition.tokenId, newPosition.liquidity,,) = INonfungiblePositionManager(nft)
+                    .mint(
+                        INonfungiblePositionManager.MintParams({
+                            token0: assets[0],
+                            token1: assets[1],
+                            tickSpacing: tickSpacing,
+                            tickLower: newPosition.tickLower,
+                            tickUpper: newPosition.tickUpper,
+                            amount0Desired: ALMLib.balance(assets[0]),
+                            amount1Desired: ALMLib.balance(assets[1]),
+                            amount0Min: mintNewPositions[i].minAmount0,
+                            amount1Min: mintNewPositions[i].minAmount1,
+                            recipient: address(this),
+                            deadline: block.timestamp
+                        })
+                    );
 
                 $.positions.push();
                 for (uint j = $.positions.length - 1; j > i; j--) {
@@ -295,8 +304,8 @@ library ALMRamsesV3Lib {
         IALM.AlmStrategyBaseStorage storage $,
         IFarmingStrategy.FarmingStrategyBaseStorage storage _f$f_
     ) public {
-        IFactory.Farm memory farm =
-            IFactory(IPlatform(IControllable(address(this)).platform()).factory()).farm(_f$f_.farmId);
+        IFactory.Farm memory farm = IFactory(IPlatform(IControllable(address(this)).platform()).factory())
+            .farm(_f$f_.farmId);
         address gauge = farm.addresses[0];
         uint len = $.positions.length;
         uint[] memory tokenIds = new uint[](len);

@@ -74,6 +74,7 @@ contract CompoundV2Strategy is StrategyBase {
 
         IERC20(_assets[0]).forceApprove(addresses[2], type(uint).max);
     }
+
     //endregion ----------------------- Initialization
 
     //region ----------------------- View functions
@@ -117,8 +118,8 @@ contract CompoundV2Strategy is StrategyBase {
         view
         returns (string[] memory variants, address[] memory addresses, uint[] memory nums, int24[] memory ticks)
     {
-        IFactory.StrategyAvailableInitParams memory params =
-            IFactory(IPlatform(platform_).factory()).strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
+        IFactory.StrategyAvailableInitParams memory params = IFactory(IPlatform(platform_).factory())
+            .strategyAvailableInitParams(keccak256(bytes(strategyLogicId())));
         uint len = params.initAddresses.length;
         variants = new string[](len);
         addresses = new address[](len);
@@ -210,7 +211,7 @@ contract CompoundV2Strategy is StrategyBase {
 
             amounts = new uint[](1);
             amounts[0] = supplyCap > totalSupply
-                ? (supplyCap - totalSupply) * 99_9 / 100_0 // 99.9% of the supply cap
+                ? (supplyCap - totalSupply) * 99_9 / 100_0  // 99.9% of the supply cap
                 : 0;
         }
 
@@ -378,6 +379,7 @@ contract CompoundV2Strategy is StrategyBase {
         amountsConsumed = new uint[](1);
         amountsConsumed[0] = _tokensToAmount(amount, IVToken($base._underlying).exchangeRateStored());
     }
+
     //endregion ----------------------- Strategy base
 
     //region ----------------------- Internal logic

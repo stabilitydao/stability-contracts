@@ -27,8 +27,8 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
     }
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
+
         allowZeroApr = true;
         duration1 = 10 hours;
         duration2 = 10 hours;
@@ -332,12 +332,7 @@ contract CompoundV2StrategyTestSonic is SonicSetup, UniversalTest {
         return IERC20(_assets[0]).balanceOf(user) - balanceBefore;
     }
 
-    function _dealAndApprove(
-        address user,
-        address metavault,
-        address[] memory assets,
-        uint[] memory amounts
-    ) internal {
+    function _dealAndApprove(address user, address metavault, address[] memory assets, uint[] memory amounts) internal {
         for (uint j; j < assets.length; ++j) {
             deal(assets[j], user, amounts[j]);
             vm.prank(user);

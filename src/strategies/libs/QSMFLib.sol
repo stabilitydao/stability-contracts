@@ -60,10 +60,7 @@ library QSMFLib {
             uint128 tokensOwed0;
             uint128 tokensOwed1;
             (
-                ,
-                ,
-                ,
-                ,
+                ,,,,
                 params.lowerTick,
                 params.upperTick,
                 params.liquidity,
