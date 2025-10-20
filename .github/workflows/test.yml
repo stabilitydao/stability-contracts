@@ -35,7 +35,7 @@ jobs:
 
       - name: Run forge test
         run: |
-          forge test --nmc SkipOnCiTest -vvv
+          forge test --nmc SkipOnCiTest -vv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
