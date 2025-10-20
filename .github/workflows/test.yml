@@ -33,37 +33,34 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run with maximum debugging
+      - name: Monitor memory during tests
         run: |
           set +e
           
           (while true; do
-            echo "T=$(date +%s) MEM=$(free -m | grep Mem | awk '{print $3}') CONNS=$(netstat -tn | grep ESTABLISHED | wc -l) PROCS=$(ps aux | grep forge | wc -l)"
+            mem_used=$(free -m | grep Mem | awk '{print $3}')
+            mem_total=$(free -m | grep Mem | awk '{print $2}')
+            mem_percent=$((mem_used * 100 / mem_total))
+            echo "$(date +%H:%M:%S) Memory: ${mem_used}MB / ${mem_total}MB (${mem_percent}%)"
+            
+            if [ $mem_percent -gt 90 ]; then
+              echo "WARNING: Memory usage above 90%!"
+            fi
+            
             sleep 2
-          done) > metrics.log &
-          METRICS_PID=$!
+          done) > memory_log.txt &
+          MEM_PID=$!
           
-          dmesg -w > dmesg.log &
-          DMESG_PID=$!
-          
-          echo "Starting tests at $(date)"
-          forge test --nmc SkipOnCiTest -vvv 2>&1 | tee forge_output.log
+          forge test --nmc SkipOnCiTest -vv 2>&1 | tee test_output.log
           status=$?
-          echo "Tests ended at $(date) with status $status"
           
-          kill $METRICS_PID $DMESG_PID 2>/dev/null
+          kill $MEM_PID 2>/dev/null
           
-          echo "=== Metrics ==="
-          tail -n 50 metrics.log
+          echo "=== Memory usage pattern ==="
+          cat memory_log.txt
           
-          echo "=== Kernel messages ==="
-          tail -n 50 dmesg.log
-          
-          echo "=== Last test output ==="
-          tail -n 100 forge_output.log
-          
-          echo "=== What was running when it died ==="
-          grep -B 5 -A 5 "Ran.*tests for" forge_output.log | tail -n 20
+          echo "=== Last test before crash ==="
+          grep "Ran.*tests for" test_output.log | tail -n 3
           
           exit $status
 
@@ -108,12 +105,11 @@ jobs:
           path: lcov.info
 
 
-      - name: Upload logs on failure
-        if: failure()
+      - name: Upload memory log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-logs
+          name: memory-log
           path: |
-            metrics.log
-            dmesg.log
-            forge_output.log
+            memory_log.txt
+            test_output.log
