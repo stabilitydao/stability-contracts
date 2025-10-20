@@ -60,15 +60,15 @@ library QSMFLib {
             uint128 tokensOwed0;
             uint128 tokensOwed1;
             (
-                ,,,,
-                params.lowerTick,
-                params.upperTick,
-                params.liquidity,
-                feeGrowthInside0Last,
-                feeGrowthInside1Last,
-                tokensOwed0,
-                tokensOwed1
-            ) = $._nft.positions(__tokenId);
+                    ,,,,
+                    params.lowerTick,
+                    params.upperTick,
+                    params.liquidity,
+                    feeGrowthInside0Last,
+                    feeGrowthInside1Last,
+                    tokensOwed0,
+                    tokensOwed1
+                ) = $._nft.positions(__tokenId);
             //slither-disable-next-line similar-names
             (,, uint feeGrowthOutsideLower0to1, uint feeGrowthOutsideLower1to0,,,,) = _pool.ticks(params.lowerTick);
             //slither-disable-next-line similar-names

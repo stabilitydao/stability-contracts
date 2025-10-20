@@ -210,9 +210,10 @@ contract CompoundV2Strategy is StrategyBase {
             uint totalSupply = _tokensToAmount(vTokenSupply, IVToken(_underlying).exchangeRateStored());
 
             amounts = new uint[](1);
-            amounts[0] = supplyCap > totalSupply
-                ? (supplyCap - totalSupply) * 99_9 / 100_0  // 99.9% of the supply cap
-                : 0;
+            amounts[0] =
+                supplyCap > totalSupply
+                    ? (supplyCap - totalSupply) * 99_9 / 100_0  // 99.9% of the supply cap
+                    : 0;
         }
 
         return amounts;

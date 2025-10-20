@@ -54,11 +54,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint vaultBalance;
     }
 
+    uint internal constant FORK_BLOCK = 37477020; // Jul-07-2025 12:24:42 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(34471950); // Jun-17-2025 09:08:37 AM +UTC
         // vm.rollFork(36717785); // Jul-01-2025 01:21:29 PM +UTC
-        vm.rollFork(37477020); // Jul-07-2025 12:24:42 PM +UTC
+        // vm.rollFork(37477020); // Jul-07-2025 12:24:42 PM +UTC
         // vm.rollFork(38132683); // Jul-12-2025 01:38:42 AM +UTC
 
         allowZeroApr = true;
@@ -839,13 +841,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         (state.sharePrice,) = strategy.realSharePrice();
 
         (
-            state.ltv,
-            state.maxLtv,
-            state.leverage,
-            state.collateralAmount,
-            state.debtAmount,
-            state.targetLeveragePercent
-        ) = strategy.health();
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = strategy.health();
 
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

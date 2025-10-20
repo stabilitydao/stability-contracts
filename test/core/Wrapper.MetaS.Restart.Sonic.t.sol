@@ -509,7 +509,8 @@ contract WrapperMetaSRestartSonicTest is Test {
 
         if (totalMetaVaultTokens != 0) {
             //            (uint priceMetaVaultToken,) = _metaVault.price();
-            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
+            uint wrappedPrice =
+                10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
                 / IWrappedMetaVault(wrapped_).totalSupply();
 
             for (uint i = 0; i < users.length; ++i) {

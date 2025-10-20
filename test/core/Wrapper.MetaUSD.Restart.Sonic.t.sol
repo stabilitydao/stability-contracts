@@ -703,7 +703,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         if (totalMetaVaultTokens != 0) {
             //            (uint priceMetaVaultToken,) = _metaVault.price();
-            uint wrappedPrice = 10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
+            uint wrappedPrice =
+                10 ** (18 - v.decimals) * IWrappedMetaVault(wrapped_).totalAssets() * 1e18
                 / IWrappedMetaVault(wrapped_).totalSupply();
 
             for (uint i = 0; i < users.length; ++i) {
@@ -969,9 +970,8 @@ contract WrapperMetaUsdRestartSonicTest is Test {
 
         (state.wmetaUSDPrice,) =
             IPriceReader(IPlatform(PLATFORM).priceReader()).getPrice(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD);
-        state.wmetaUSDPriceDirectCalculations =
-            IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalAssets() * 1e18
-                / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
+        state.wmetaUSDPriceDirectCalculations = IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD)
+                .totalAssets() * 1e18 / IWrappedMetaVault(SonicConstantsLib.WRAPPED_METAVAULT_METAUSD).totalSupply();
         //        console.log("state.wmetaUSDPrice", state.wmetaUSDPrice);
         //        console.log("state.wmetaUSDPriceDirectCalculations", state.wmetaUSDPriceDirectCalculations);
 

@@ -54,8 +54,7 @@ contract SiALMFUpgradeTest is Test {
     }
 
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(FORK_BLOCK);
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -346,13 +345,13 @@ contract SiALMFUpgradeTest is Test {
         (state.sharePrice,) = _strategy.realSharePrice();
 
         (
-            state.ltv,
-            state.maxLtv,
-            state.leverage,
-            state.collateralAmount,
-            state.debtAmount,
-            state.targetLeveragePercent
-        ) = _strategy.health();
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = _strategy.health();
 
         state.total = strategy.total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

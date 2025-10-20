@@ -54,15 +54,16 @@ contract SiALUpgrade2Test is Test {
         string stateName;
     }
 
+    uint internal constant FORK_BLOCK = 28935050; // May-23-2025 06:06:36 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         // vm.rollFork(22987373); // Apr-29-2025 02:42:43 AM +UTC
         // vm.rollFork(23744356); // May-02-2025 09:18:23 AM +UTC
         // vm.rollFork(24504011); // May-05-2025 11:38:28 AM +UTC
         // vm.rollFork(26249931); // May-12-2025 01:01:38 PM +UTC
         // vm.rollFork(26428190); // May-13-2025 06:22:27 AM +UTC
         // vm.rollFork(27167657); // May-16-2025 06:25:41 AM +UTC
-        vm.rollFork(28935050); // May-23-2025 06:06:36 AM +UTC
 
         factory = IFactory(IPlatform(PLATFORM).factory());
         multisig = IPlatform(PLATFORM).multisig();
@@ -609,13 +610,13 @@ contract SiALUpgrade2Test is Test {
         // console.log(stateName);
 
         (
-            state.ltv,
-            state.maxLtv,
-            state.leverage,
-            state.collateralAmount,
-            state.debtAmount,
-            state.targetLeveragePercent
-        ) = strategy.health();
+                state.ltv,
+                state.maxLtv,
+                state.leverage,
+                state.collateralAmount,
+                state.debtAmount,
+                state.targetLeveragePercent
+            ) = strategy.health();
         state.total = strategy.total();
         (state.sharePrice,) = strategy.realSharePrice();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

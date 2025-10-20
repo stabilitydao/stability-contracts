@@ -122,9 +122,7 @@ abstract contract LPStrategyBase is StrategyBase, ILPStrategy {
         LpStrategyBaseStorage storage $ = _getLPStrategyBaseStorage();
         try LPStrategyLib.swapForDepositProportion(
             platform(), $.ammAdapter, $.pool, assets(), prop0Pool, customPriceImpactTolerance()
-        ) returns (
-            uint[] memory _amountsToDeposit
-        ) {
+        ) returns (uint[] memory _amountsToDeposit) {
             return _amountsToDeposit;
         } catch {
             return new uint[](assets().length);

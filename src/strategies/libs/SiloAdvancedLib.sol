@@ -357,7 +357,8 @@ library SiloAdvancedLib {
 
         uint newCollateralValue = tvlPricedInCollateralAsset * INTERNAL_PRECISION / (INTERNAL_PRECISION - newLtv);
         (uint priceCtoB,) = getPrices(v.lendingVault, v.borrowingVault);
-        uint newDebtAmount = newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
+        uint newDebtAmount =
+            newCollateralValue * newLtv * priceCtoB * (10 ** IERC20Metadata(v.borrowAsset).decimals())
             / INTERNAL_PRECISION / (10 ** IERC20Metadata(v.collateralAsset).decimals()) / 1e18; // priceCtoB has decimals 18
 
         uint debtDiff;
@@ -461,8 +462,8 @@ library SiloAdvancedLib {
 
     function calcTotal(ILeverageLendingStrategy.LeverageLendingAddresses memory v) public view returns (uint) {
         (, uint priceBtoC) = getPrices(v.lendingVault, v.borrowingVault);
-        uint borrowedAmountPricedInCollateral = totalDebt(v.borrowingVault)
-            * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
+        uint borrowedAmountPricedInCollateral =
+            totalDebt(v.borrowingVault) * (10 ** IERC20Metadata(v.collateralAsset).decimals()) * priceBtoC
             / (10 ** IERC20Metadata(v.borrowAsset).decimals()) / 1e18; // priceBtoC has decimals 18
 
         return totalCollateral(v.lendingVault) - borrowedAmountPricedInCollateral;
@@ -787,7 +788,8 @@ library SiloAdvancedLib {
 
         // --------- Calculate debt to add
         uint requiredCollateral = value * uint(leverageNew) / INTERNAL_PRECISION;
-        uint debtDiff = requiredCollateral * priceCtoB // no multiplication on ltv here
+        uint debtDiff =
+            requiredCollateral * priceCtoB // no multiplication on ltv here
             * (10 ** IERC20Metadata(v.borrowAsset).decimals()) / (10 ** IERC20Metadata(v.collateralAsset).decimals())
             / 1e18; // priceCtoB has decimals 18
 

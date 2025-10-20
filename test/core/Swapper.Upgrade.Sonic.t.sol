@@ -14,9 +14,10 @@ contract SwapperUpgradeSonicTest is Test {
     address public constant PLATFORM = 0x4Aca671A420eEB58ecafE83700686a2AD06b20D8;
     ISwapper public swapper;
 
+    uint internal constant FORK_BLOCK = 13624880; // Mar-14-2025 07:49:27 AM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL")));
-        vm.rollFork(13624880); // Mar-14-2025 07:49:27 AM +UTC
+        vm.selectFork(vm.createFork(vm.envString("SONIC_RPC_URL"), FORK_BLOCK));
         swapper = ISwapper(IPlatform(PLATFORM).swapper());
     }
 

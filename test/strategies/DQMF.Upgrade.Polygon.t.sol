@@ -13,9 +13,10 @@ contract DQMFUpgradeTest is Test {
     address public constant PLATFORM = 0xb2a0737ef27b5Cc474D24c779af612159b1c3e60;
     address public constant STRATEGY = 0xaA2746b88378Fc51e1dd3C3C79D5cb6a7095C98f;
 
+    uint internal constant FORK_BLOCK = 56967000; // May-14-2024 05:36:03 PM +UTC
+
     constructor() {
-        vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL")));
-        vm.rollFork(56967000); // May-14-2024 05:36:03 PM +UTC
+        vm.selectFork(vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK));
 
         _upgradeFactory(); // upgrade to Factory v2.0.0
     }

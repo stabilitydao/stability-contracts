@@ -653,7 +653,8 @@ library SiloLib {
         // C_new = CC + F + C_delta - X, C_delta = C1 - F1 (can be negative)
         // C1 = config.initialBalanceC + F * ltv * alpha (collateral balance on hand after swap)
         // F1 = total to return for flash loan = F + F_delta, where F_delta = beta_rate * F (flash fee)
-        int cNew = int(config.currentCollateralAmount) + int(fAmount)
+        int cNew =
+            int(config.currentCollateralAmount) + int(fAmount)
             + (int(config.initialBalanceC + fAmount * config.alphaScaled / 1e18)
                 - int(fAmount + (fAmount * config.betaRateScaled) / 1e18)) - int(config.xWithdrawAmount);
 
