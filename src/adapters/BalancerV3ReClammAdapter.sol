@@ -12,9 +12,7 @@ import {IPoolInfo} from "../integrations/balancerv3/IPoolInfo.sol";
 import {IRouter} from "../integrations/balancerv3/IRouter.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ConstantsLib} from "../core/libs/ConstantsLib.sol";
-import {
-    ReClammPoolDynamicData, ReClammPoolImmutableData, IReClammPool
-} from "../integrations/reclamm/IReClammPool.sol";
+import {ReClammPoolDynamicData, ReClammPoolImmutableData, IReClammPool} from "../integrations/reclamm/IReClammPool.sol";
 import {ReClammMath, a, b} from "./libs/balancerv3/ReClammMath.sol";
 import {ScalingHelpers} from "./libs/balancerv3/ScalingHelpers.sol";
 
@@ -95,9 +93,8 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
         IERC20(tokenIn).approve(PERMIT2, amountIn);
         IPermit2(PERMIT2).approve(tokenIn, router, uint160(amountIn), uint48(block.timestamp));
 
-        uint amountOut = IRouter(router).swapSingleTokenExactIn(
-            pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, ""
-        );
+        uint amountOut = IRouter(router)
+            .swapSingleTokenExactIn(pool, IERC20(tokenIn), IERC20(tokenOut), amountIn, 0, block.timestamp, false, "");
 
         uint priceImpact =
             amountOutMax < amountOut ? 0 : (amountOutMax - amountOut) * ConstantsLib.DENOMINATOR / amountOutMax;
@@ -133,7 +130,14 @@ contract BalancerV3ReClammAdapter is Controllable, IAmmAdapter, IBalancerAdapter
     function getLiquidityForAmountsWrite(
         address, /*pool*/
         uint[] memory /*amounts*/
-    ) external pure returns (uint, /*liquidity*/ uint[] memory /*amountsConsumed*/ ) {
+    )
+        external
+        pure
+        returns (
+            uint, /*liquidity*/
+            uint[] memory /*amountsConsumed*/
+        )
+    {
         revert("Unavailable");
     }
 
