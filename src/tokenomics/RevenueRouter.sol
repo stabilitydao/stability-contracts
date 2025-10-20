@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {RevenueRouterLib} from "./libs/RevenueRouterLib.sol";
 import {Controllable, IControllable} from "../core/base/Controllable.sol";
 import {IAToken} from "../integrations/aave/IAToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,15 +8,18 @@ import {IFactory} from "../interfaces/IFactory.sol";
 import {IFeeTreasury} from "../interfaces/IFeeTreasury.sol";
 import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IPool} from "../integrations/aave/IPool.sol";
-import {IRevenueRouter, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
+import {IRevenueRouter, EnumerableMap, EnumerableSet} from "../interfaces/IRevenueRouter.sol";
 import {IStabilityVault} from "../interfaces/IStabilityVault.sol";
 import {ISwapper} from "../interfaces/ISwapper.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IHardWorker} from "../interfaces/IHardWorker.sol";
+import {IRecovery} from "../interfaces/IRecovery.sol";
 
 /// @title Platform revenue distributor
 /// Changelog:
+///   1.7.0: improve
 ///   1.6.0: send 20% of earned assets to Recovery
 ///   1.5.0: processAccumulatedVaults
 ///   1.4.0: processUnitRevenue use try..catch for Aave aToken withdrawals; view vaultsAccumulated
@@ -27,13 +29,18 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract RevenueRouter is Controllable, IRevenueRouter {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @inheritdoc IControllable
-    string public constant VERSION = "1.6.0";
+    string public constant VERSION = "1.7.0";
+
+    uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
+    uint internal constant X_PERCENTAGE = 10_000; // 10%
+    uint internal constant DENOMINATOR = 100_000; // 100%
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant REVENUE_ROUTER_STORAGE_LOCATION =
@@ -59,6 +66,11 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        GOV ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    modifier onlyOperatorAgent() {
+        _requireOperatorAgent();
+        _;
+    }
 
     /// @inheritdoc IRevenueRouter
     function addUnit(UnitType unitType, string calldata name, address feeTreasury) external onlyGovernanceOrMultisig {
@@ -86,6 +98,26 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     function setAavePools(address[] calldata pools) external onlyGovernanceOrMultisig {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
         $.aavePools = pools;
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setMinSwapAmounts(address[] calldata assets, uint[] calldata minAmounts) external onlyOperator {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        uint len = assets.length;
+        require(len > 0 && len == minAmounts.length, IControllable.IncorrectArrayLength());
+        for (uint i; i < len; ++i) {
+            $.minSwapAmount.set(assets[i], minAmounts[i]);
+        }
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setMaxSwapAmounts(address[] calldata assets, uint[] calldata maxAmounts) external onlyOperator {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        uint len = assets.length;
+        require(len > 0 && len == maxAmounts.length, IControllable.IncorrectArrayLength());
+        for (uint i; i < len; ++i) {
+            $.maxSwapAmount.set(assets[i], maxAmounts[i]);
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -132,41 +164,17 @@ contract RevenueRouter is Controllable, IRevenueRouter {
 
     /// @inheritdoc IRevenueRouter
     function processFeeAsset(address asset, uint amount) external {
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-        address stbl = $.stbl;
-        address feeTreasury = $.feeTreasury;
-        if (stbl != address(0)) {
-            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
-            ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-            uint threshold = swapper.threshold(asset);
-            IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
-            if (amount > threshold) {
-                if (asset != stbl) {
-                    uint amountToSwap = IERC20(asset).balanceOf(address(this));
-                    IERC20(asset).forceApprove(address(swapper), amountToSwap);
-                    try swapper.swap(asset, stbl, amountToSwap, 20_000) {} catch {}
-                }
-                uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-                uint xGot = stblGot * $.xShare / 100;
-                uint feeTreasuryGot = stblGot - xGot;
-                IERC20(stbl).safeTransfer(feeTreasury, feeTreasuryGot);
-                $.pendingRevenue += xGot;
-            }
-        } else {
-            IERC20(asset).safeTransferFrom(msg.sender, feeTreasury, amount);
-        }
+        $.assetsAccumulated.add(asset);
     }
 
     /// @inheritdoc IRevenueRouter
     function processFeeVault(address vault, uint amount) external {
         if (_isDeployedVault(vault)) {
             RevenueRouterStorage storage $ = _getRevenueRouterStorage();
-            if (IStabilityVault(vault).lastBlockDefenseDisabled()) {
-                _withdrawVaultSharesAndBuyBack($, vault, amount, msg.sender);
-            } else {
-                IERC20(vault).safeTransferFrom(msg.sender, address(this), amount);
-                $.vaultsAccumulated.add(vault);
-            }
+            IERC20(vault).safeTransferFrom(msg.sender, address(this), amount);
+            $.vaultsAccumulated.add(vault);
         }
     }
 
@@ -221,21 +229,112 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     }
 
     /// @inheritdoc IRevenueRouter
-    function processAccumulatedVaults(uint maxVaultsForWithdraw) external {
+    function processAccumulatedAssets(uint maxAssetsForProcess) external onlyOperatorAgent {
         RevenueRouterStorage storage $ = _getRevenueRouterStorage();
 
-        // process accumulatedVaults
+        address[] memory _assetsAccumulated = $.assetsAccumulated.values();
+        uint len = _assetsAccumulated.length;
+        for (uint i; i < len; ++i) {
+            address asset = _assetsAccumulated[i];
+            if (i == maxAssetsForProcess) {
+                break;
+            }
+
+            uint amount = IERC20(asset).balanceOf(address(this));
+
+            {
+                (bool minAmountExist, uint minSwapAmount) = $.minSwapAmount.tryGet(asset);
+                if (!minAmountExist || amount < minSwapAmount) {
+                    continue;
+                }
+            }
+
+            bool cleanup;
+            {
+                (bool maxAmountExist, uint maxSwapAmount) = $.maxSwapAmount.tryGet(asset);
+                if (!maxAmountExist) {
+                    continue;
+                }
+
+                if (amount > maxSwapAmount) {
+                    amount = maxSwapAmount;
+                } else {
+                    cleanup = true;
+                }
+            }
+
+            uint amountToSwap = amount;
+            address stbl = $.stbl;
+            ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
+
+            {
+                address _recovery = IPlatform(platform()).recovery();
+                if (_recovery != address(0)) {
+                    uint toRecovery = amountToSwap * RECOVER_PERCENTAGE / DENOMINATOR;
+                    amountToSwap -= toRecovery;
+                    IERC20(asset).safeTransfer(_recovery, toRecovery);
+                    address[] memory assetsToRegister = new address[](1);
+                    assetsToRegister[0] = asset;
+                    IRecovery(_recovery).registerAssets(assetsToRegister);
+                }
+            }
+
+            if (stbl != address(0)) {
+                uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
+                IERC20(asset).forceApprove(address(swapper), amountToSwap);
+                try swapper.swap(asset, stbl, amountToSwap, 20_000) {
+                    uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
+                    uint xGot = stblGot * X_PERCENTAGE / DENOMINATOR;
+                    IERC20(stbl).safeTransfer($.feeTreasury, stblGot - xGot);
+                    $.pendingRevenue += xGot;
+                    if (cleanup) {
+                        $.assetsAccumulated.remove(_assetsAccumulated[i]);
+                    }
+                    return;
+                } catch {}
+            } else {
+                // swap to exchange asset and bridge to sonic
+                // todo
+            }
+        }
+        revert CantProcessAction();
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function processAccumulatedVaults(uint maxVaultsForWithdraw, uint maxWithdrawAmount) public {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+
+        uint processed;
         address[] memory _vaultsAccumulated = $.vaultsAccumulated.values();
         uint len = _vaultsAccumulated.length;
         for (uint i; i < len; ++i) {
             if (i == maxVaultsForWithdraw) {
                 break;
             }
-            _withdrawVaultSharesAndBuyBack(
-                $, _vaultsAccumulated[i], IERC20(_vaultsAccumulated[i]).balanceOf(address(this)), address(this)
-            );
-            $.vaultsAccumulated.remove(_vaultsAccumulated[i]);
+
+            bool cleanup;
+            uint toWithdraw = IERC20(_vaultsAccumulated[i]).balanceOf(address(this));
+            if (toWithdraw > maxWithdrawAmount) {
+                toWithdraw = maxWithdrawAmount;
+            } else {
+                cleanup = true;
+            }
+
+            bool withdrawn = _withdrawVaultShares($, _vaultsAccumulated[i], toWithdraw, address(this));
+
+            if (cleanup && withdrawn) {
+                $.vaultsAccumulated.remove(_vaultsAccumulated[i]);
+            }
+
+            processed++;
         }
+
+        require(processed != 0, CantProcessAction());
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function processAccumulatedVaults(uint maxVaultsForWithdraw) external {
+        processAccumulatedVaults(maxVaultsForWithdraw, 10000e18);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -277,28 +376,29 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         return _getRevenueRouterStorage().vaultsAccumulated.values();
     }
 
+    /// @inheritdoc IRevenueRouter
+    function assetsAccumulated() external view returns (address[] memory) {
+        return _getRevenueRouterStorage().assetsAccumulated.values();
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INTERNAL LOGIC                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function _withdrawVaultSharesAndBuyBack(
+    function _withdrawVaultShares(
         RevenueRouterStorage storage $,
         address vault,
         uint amount,
         address owner
-    ) internal {
-        address stbl = $.stbl;
-        ISwapper swapper = ISwapper(IPlatform(platform()).swapper());
-        address _recovery = IPlatform(platform()).recovery();
+    ) internal returns (bool withdrawn) {
         address[] memory assets = IStabilityVault(vault).assets();
         uint len = assets.length;
         try IStabilityVault(vault).withdrawAssets(assets, amount, new uint[](len), address(this), owner) {
-            uint stblBalanceWas = IERC20(stbl).balanceOf(address(this));
-
-            RevenueRouterLib.processAssets(assets, stbl, swapper, _recovery);
-
-            uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-            IERC20(stbl).safeTransfer($.feeTreasury, stblGot);
+            for (uint i; i < len; ++i) {
+                address asset = assets[i];
+                $.assetsAccumulated.add(asset);
+            }
+            withdrawn = true;
         } catch {}
     }
 
@@ -311,6 +411,15 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             }
         }
         return false;
+    }
+
+    function _requireOperatorAgent() internal view {
+        IPlatform _platform = IPlatform(platform());
+        IHardWorker hardworker = IHardWorker(_platform.hardWorker());
+        require(
+            hardworker.dedicatedServerMsgSender(msg.sender) || _platform.isOperator(msg.sender),
+            IControllable.IncorrectMsgSender()
+        );
     }
 
     function _getRevenueRouterStorage() internal pure returns (RevenueRouterStorage storage $) {

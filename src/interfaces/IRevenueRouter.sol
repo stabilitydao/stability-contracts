@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableMap, EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 interface IRevenueRouter {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -19,6 +19,8 @@ interface IRevenueRouter {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     error WaitForNewPeriod();
+    error IncorrectSetup();
+    error CantProcessAction();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -36,6 +38,9 @@ interface IRevenueRouter {
         Unit[] units;
         address[] aavePools;
         EnumerableSet.AddressSet vaultsAccumulated;
+        EnumerableSet.AddressSet assetsAccumulated;
+        EnumerableMap.AddressToUintMap minSwapAmount;
+        EnumerableMap.AddressToUintMap maxSwapAmount;
     }
 
     enum UnitType {
@@ -64,6 +69,12 @@ interface IRevenueRouter {
     /// @notice Setup Aave pool list
     function setAavePools(address[] calldata pools) external;
 
+    /// @notice Set min swap amounts for assets
+    function setMinSwapAmounts(address[] calldata assets, uint[] calldata minAmounts) external;
+
+    /// @notice Set max swap amounts for assets
+    function setMaxSwapAmounts(address[] calldata assets, uint[] calldata maxAmounts) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -84,8 +95,14 @@ interface IRevenueRouter {
     /// @notice Claim units fees and swap to STBL
     function processUnitsRevenue() external;
 
-    /// @notice Withdraw assets from accumulated vaults and swap to STBL
+    /// @notice Withdraw assets from accumulated vaults
     function processAccumulatedVaults(uint maxVaultsForWithdraw) external;
+
+    /// @notice Withdraw assets from accumulated vaults
+    function processAccumulatedVaults(uint maxVaultsForWithdraw, uint maxWithdrawAmount) external;
+
+    /// @notice Distribute extracted accumulated assets amounts
+    function processAccumulatedAssets(uint maxAssetsForProcess) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -112,4 +129,7 @@ interface IRevenueRouter {
 
     /// @notice Get vault addresses that contract hold on balance, but not withdrew yet
     function vaultsAccumulated() external view returns (address[] memory);
+
+    /// @notice Get assets that contract hold on balance
+    function assetsAccumulated() external view returns (address[] memory);
 }

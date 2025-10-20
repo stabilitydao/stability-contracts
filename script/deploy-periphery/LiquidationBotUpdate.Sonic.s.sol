@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import {Script} from "forge-std/Script.sol";
-import {Proxy} from "../../src/core/proxy/Proxy.sol";
 import {LiquidationBot} from "../../src/periphery/LiquidationBot.sol";
 
 contract DeployLiquidationBotUpdate is Script {
