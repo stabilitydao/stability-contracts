@@ -39,7 +39,6 @@ contract RevenueRouter is Controllable, IRevenueRouter {
     string public constant VERSION = "1.7.0";
 
     uint internal constant RECOVER_PERCENTAGE = 20_000; // 20%
-    uint internal constant X_PERCENTAGE = 10_000; // 10%
     uint internal constant DENOMINATOR = 100_000; // 100%
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.RevenueRouter")) - 1)) & ~bytes32(uint256(0xff))
@@ -57,7 +56,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
             $.stbl = IXSTBL(xStbl_).STBL();
             $.xStbl = xStbl_;
             $.xStaking = IXSTBL(xStbl_).xStaking();
-            $.xShare = 50;
+            $.xShare = 50_000;
         }
         $.feeTreasury = feeTreasury_;
         $.activePeriod = getPeriod();
@@ -118,6 +117,12 @@ contract RevenueRouter is Controllable, IRevenueRouter {
         for (uint i; i < len; ++i) {
             $.maxSwapAmount.set(assets[i], maxAmounts[i]);
         }
+    }
+
+    /// @inheritdoc IRevenueRouter
+    function setXShare(uint newShare) external onlyGovernanceOrMultisig {
+        RevenueRouterStorage storage $ = _getRevenueRouterStorage();
+        $.xShare = newShare;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -284,7 +289,7 @@ contract RevenueRouter is Controllable, IRevenueRouter {
                 IERC20(asset).forceApprove(address(swapper), amountToSwap);
                 try swapper.swap(asset, stbl, amountToSwap, 20_000) {
                     uint stblGot = IERC20(stbl).balanceOf(address(this)) - stblBalanceWas;
-                    uint xGot = stblGot * X_PERCENTAGE / DENOMINATOR;
+                    uint xGot = stblGot * $.xShare / DENOMINATOR;
                     IERC20(stbl).safeTransfer($.feeTreasury, stblGot - xGot);
                     $.pendingRevenue += xGot;
                     if (cleanup) {

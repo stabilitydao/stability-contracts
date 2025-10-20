@@ -5,7 +5,7 @@ import {console, Test} from "forge-std/Test.sol";
 import {SonicConstantsLib} from "../../chains/sonic/SonicConstantsLib.sol";
 import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {RevenueRouter, IRevenueRouter, IERC20} from "../../src/tokenomics/RevenueRouter.sol";
-import {Platform, IControllable} from "../../src/core/Platform.sol";
+import {IControllable} from "../../src/core/Platform.sol";
 import {IVault, IStrategy} from "../../src/interfaces/IVault.sol";
 
 contract RevenueRouterUpgrade4TestSonic is Test {
@@ -58,6 +58,12 @@ contract RevenueRouterUpgrade4TestSonic is Test {
             assertEq(assetsAccumulated.length, 1);
             assertEq(assetsAccumulated[0], asset1);
         }
+
+        // setup xShare
+        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        revenueRouter.setXShare(50_000);
+        vm.prank(multisig);
+        revenueRouter.setXShare(50_000);
 
         // test buy-back without setup
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);

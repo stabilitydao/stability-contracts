@@ -75,6 +75,9 @@ interface IRevenueRouter {
     /// @notice Set max swap amounts for assets
     function setMaxSwapAmounts(address[] calldata assets, uint[] calldata maxAmounts) external;
 
+    /// @notice Change revenue share for Vaults Unit
+    function setXShare(uint newShare) external;
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       USER ACTIONS                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
