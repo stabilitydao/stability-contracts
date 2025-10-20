@@ -839,13 +839,13 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         (state.sharePrice,) = strategy.realSharePrice();
 
         (
-                state.ltv,
-                state.maxLtv,
-                state.leverage,
-                state.collateralAmount,
-                state.debtAmount,
-                state.targetLeveragePercent
-            ) = strategy.health();
+            state.ltv,
+            state.maxLtv,
+            state.leverage,
+            state.collateralAmount,
+            state.debtAmount,
+            state.targetLeveragePercent
+        ) = strategy.health();
 
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);

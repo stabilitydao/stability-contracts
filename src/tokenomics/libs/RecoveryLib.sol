@@ -336,7 +336,9 @@ library RecoveryLib {
                     int(amountInMax), // exactInput
                     sqrtPriceLimitX96, // sqrtPriceLimitX96
                     "" // data
-                ) returns (int amount0, int amount1) {
+                ) returns (
+                int amount0, int amount1
+            ) {
                 $.swapping = false;
 
                 uint amountOut = zeroForOne ? uint(-amount1) : uint(-amount0);

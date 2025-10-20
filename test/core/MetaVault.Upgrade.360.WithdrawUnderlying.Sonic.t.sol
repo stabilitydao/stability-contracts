@@ -950,10 +950,9 @@ contract MetaVault360WithdrawUnderlyingSonicUpgrade is Test {
 
             address[] memory owners2 = new address[](count);
             for (uint i = 0; i < count; ++i) {
-                owners2[i] =
-                    i == 0
-                        ? address(this)  // (!) "this" has no meta vault tokens
-                        : LARGEST_META_USD_HOLDERS[i];
+                owners2[i] = i == 0
+                    ? address(this)  // (!) "this" has no meta vault tokens
+                    : LARGEST_META_USD_HOLDERS[i];
             }
 
             vm.expectRevert(IControllable.IncorrectBalance.selector);
