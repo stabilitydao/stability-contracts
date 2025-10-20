@@ -33,50 +33,9 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run forge test with watchdog
+      - name: Run forge test
         run: |
-          set +e
-          
-          forge test --nmc SkipOnCiTest --jobs 1 -vvv > test_output.log 2>&1 &
-          FORGE_PID=$!
-          
-          LAST_SIZE=0
-          NO_PROGRESS_COUNT=0
-          
-          while kill -0 $FORGE_PID 2>/dev/null; do
-            sleep 60
-            
-            CURRENT_SIZE=$(wc -c < test_output.log)
-            
-            echo "$(date): Log size: $CURRENT_SIZE bytes (was $LAST_SIZE)"
-            tail -n 5 test_output.log
-            
-            if [ $CURRENT_SIZE -eq $LAST_SIZE ]; then
-              NO_PROGRESS_COUNT=$((NO_PROGRESS_COUNT + 1))
-              echo "Warning: No progress for $NO_PROGRESS_COUNT minute(s)"
-              
-              if [ $NO_PROGRESS_COUNT -ge 5 ]; then
-                echo "ERROR: Test hung for 5 minutes! Killing process..."
-                ps aux | grep forge
-                kill -9 $FORGE_PID
-                echo "=== Last 100 lines before hang ==="
-                tail -n 100 test_output.log
-                exit 1
-              fi
-            else
-              NO_PROGRESS_COUNT=0
-            fi
-            
-            LAST_SIZE=$CURRENT_SIZE
-          done
-          
-          wait $FORGE_PID
-          status=$?
-          
-          echo "=== Full test output ==="
-          cat test_output.log
-          
-          exit $status
+          forge test --nmc SkipOnCiTest -vvv
         env:
           POLYGON_RPC_URL: ${{secrets.POLYGON_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
