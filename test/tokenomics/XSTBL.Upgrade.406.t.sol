@@ -8,7 +8,11 @@ import {IPlatform} from "../../src/interfaces/IPlatform.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IRevenueRouter} from "../../src/tokenomics/RevenueRouter.sol";
 import {IXSTBL} from "../../src/interfaces/IXSTBL.sol";
+import {IStabilityDAO} from "../../src/interfaces/IStabilityDAO.sol";
 import {XSTBL} from "../../src/tokenomics/XSTBL.sol";
+import {Platform} from "../../src/core/Platform.sol";
+import {Proxy} from "../../src/core/proxy/Proxy.sol";
+import {StabilityDAO} from "../../src/tokenomics/StabilityDAO.sol";
 
 contract XstblUpgrade406SonicTest is Test {
     uint public constant FORK_BLOCK = 50689527; // Oct-15-2025 05:17:06 AM +UTC
@@ -22,7 +26,9 @@ contract XstblUpgrade406SonicTest is Test {
 
     function testUpgradeXSTBLVesting() public {
         IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
+
         _upgradePlatform();
+        IStabilityDAO daoToken = _setupStblDao();
 
         uint baseAmount = 100e18;
         // -------------- get STBL on balance
@@ -45,9 +51,13 @@ contract XstblUpgrade406SonicTest is Test {
         (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExitVest(xstbl, address(this), 0);
 
         // -------------- change penalty to 80%
+        {
+            IStabilityDAO.DaoParams memory p = daoToken.config();
+            p.exitPenalty = 80_00;
 
-        vm.prank(SonicConstantsLib.MULTISIG);
-        xstbl.setSlashingPenalty(80_00);
+            vm.prank(SonicConstantsLib.MULTISIG);
+            daoToken.updateConfig(p);
+        }
 
         // -------------- try to exit vest with penalty 80% and check results
         (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExitVest(xstbl, address(this), 0);
@@ -63,6 +73,7 @@ contract XstblUpgrade406SonicTest is Test {
     function testUpgradeXSTBLExit() public {
         IXSTBL xstbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
         _upgradePlatform();
+        IStabilityDAO daoToken = _setupStblDao();
 
         uint baseAmount = 100e18;
         // -------------- get STBL on balance
@@ -78,8 +89,13 @@ contract XstblUpgrade406SonicTest is Test {
         (uint exitedAmount50, uint pendingRebaseDelta50) = _tryToExit(xstbl, address(this), baseAmount);
 
         // -------------- change penalty to 80%
-        vm.prank(SonicConstantsLib.MULTISIG);
-        xstbl.setSlashingPenalty(80_00);
+        {
+            IStabilityDAO.DaoParams memory p = daoToken.config();
+            p.exitPenalty = 80_00;
+
+            vm.prank(SonicConstantsLib.MULTISIG);
+            daoToken.updateConfig(p);
+        }
 
         // -------------- try to exit vest with penalty 80% and check results
         (uint exitedAmount20, uint pendingRebaseDelta80) = _tryToExit(xstbl, address(this), baseAmount);
@@ -142,11 +158,14 @@ contract XstblUpgrade406SonicTest is Test {
 
         IPlatform platform = IPlatform(PLATFORM);
 
-        address[] memory proxies = new address[](1);
-        address[] memory implementations = new address[](1);
+        address[] memory proxies = new address[](2);
+        address[] memory implementations = new address[](2);
 
         proxies[0] = SonicConstantsLib.TOKEN_XSTBL;
+        proxies[1] = SonicConstantsLib.PLATFORM;
+
         implementations[0] = address(new XSTBL());
+        implementations[1] = address(new Platform());
 
         vm.startPrank(SonicConstantsLib.MULTISIG);
         platform.cancelUpgrade();
@@ -157,6 +176,28 @@ contract XstblUpgrade406SonicTest is Test {
         skip(1 days);
         platform.upgrade();
         vm.stopPrank();
+    }
+
+    function _setupStblDao() internal returns (IStabilityDAO) {
+        IStabilityDAO dest = _createStabilityDAOInstance();
+        IPlatform(SonicConstantsLib.PLATFORM).setupStabilityDAO(address(dest));
+        return dest;
+    }
+
+    function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
+        IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
+            minimalPower: 4000e18,
+            exitPenalty: 80_00,
+            quorum: 15_00,
+            proposalThreshold: 25_00,
+            powerAllocationDelay : 86400
+        });
+
+        Proxy proxy = new Proxy();
+        proxy.initProxy(address(new StabilityDAO()));
+        IStabilityDAO token = IStabilityDAO(address(proxy));
+        token.initialize(SonicConstantsLib.PLATFORM, SonicConstantsLib.TOKEN_STBL, SonicConstantsLib.XSTBL_XSTAKING, p);
+        return token;
     }
     //endregion -------------------------------- Helpers
 }

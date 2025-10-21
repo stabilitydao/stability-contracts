@@ -44,45 +44,49 @@ contract MockStabilityDAO is IStabilityDAO {
     }
 
     //region --------------------------------------- Read functions
-    /// @notice Current DAO config
     function config() external pure returns (DaoParams memory dest) {
         return dest;
     }
 
-    /// @notice Address of xSTBL token
     function xStbl() external pure returns (address dest) {
         return dest;
     }
 
-    /// @notice Address of xStaking contract
     function xStaking() external pure returns (address dest) {
         return dest;
     }
 
-    /// @notice TODO
     function minimalPower() external pure returns (uint dest) {
         return dest;
     }
 
-    /// @notice TODO
     function exitPenalty() external pure returns (uint dest) {
         return dest;
     }
 
-    /// @notice TODO
     function proposalThreshold() external pure returns (uint dest) {
         return dest;
     }
 
-    /// @notice TODO
-    function powerAllocationDelay() external pure returns (uint dest) {
+    function quorum() external view returns (uint dest) {
         return dest;
+    }
+
+    function powerAllocationDelay() external view returns (uint dest) {
+        return dest;
+    }
+
+    function userPower(address user_) external view returns (uint dest) {
+        return dest;
+    }
+
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
+        return (delegatedTo, delegatedFrom);
     }
 
     //endregion --------------------------------------- Read functions
 
     //region --------------------------------------- Write functions
-    /// @dev Init
     function initialize(
         address, /*platform_*/
         address, /*xStbl_*/
@@ -90,14 +94,12 @@ contract MockStabilityDAO is IStabilityDAO {
         DaoParams memory /*config_*/
     ) external {}
 
-    /// @notice Update DAO config
-    /// @custom:restricted To multisig
     function updateConfig(DaoParams memory) external {}
 
-    /// @custom:restricted To xStaking
     function mint(address, /*account*/ uint /*amount*/ ) external {}
 
-    /// @custom:restricted To xStaking
     function burn(address, /*account*/ uint /*amount*/ ) external {}
+
+    function setPowerDelegation(address /*to*/) external {}
     //endregion --------------------------------------- Write functions
 }

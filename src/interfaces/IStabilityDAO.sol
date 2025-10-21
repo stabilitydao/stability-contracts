@@ -7,12 +7,16 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice See https://stabilitydao.gitbook.io/stability/stability-dao/governance#current-parameters
     struct DaoParams {
-        /// @notice Minimal amount of xSTBL tokens required to have STBLDAO tokens, decimals 18
+        /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
         uint minimalPower;
         /// @notice xSTBL instant exit penalty, i.e. 50_00 = 50%
+        /// Set 0 to use default value XSTBL.DEFAULT_SLASHING_PENALTY
         uint exitPenalty;
-        /// @notice TODO i.e. 100_000
+        /// @notice Min power that a user should have to be able to create new proposal. In percents, i.e. 50_00 = 50%
         uint proposalThreshold;
+        /// @notice A percent of votes required to reach quorum for a proposal, i.e. 20_00 = 20%
+        /// If the total number of votes is less than this percent, proposal is rejected
+        uint quorum;
         /// @notice Inter-chain power allocation delay, i.e. 1 day
         uint powerAllocationDelay;
     }
@@ -27,17 +31,31 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Address of xStaking contract
     function xStaking() external view returns (address);
 
-    /// @notice Minimal amount of xSTBL tokens required to have STBLDAO tokens, decimals 18
+    /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
     function minimalPower() external view returns (uint);
 
-    /// @notice TODO
+    /// @notice xSTBL instant exit penalty (slashing penalty), i.e. 50_00 = 50%
     function exitPenalty() external view returns (uint);
 
-    /// @notice TODO
+    /// @notice Min percent of power that a user should have to be able to create a new proposal, i.e. 50_00 = 50%
     function proposalThreshold() external view returns (uint);
 
-    /// @notice TODO
+    /// @notice A percent of votes required to reach quorum for a proposal, i.e. 20_00 = 20%
+    /// If the total number of votes is less than this percent, proposal is rejected
+    function quorum() external view returns (uint);
+
+    /// @notice Inter-chain power allocation delay, i.e. 1 day
     function powerAllocationDelay() external view returns (uint);
+
+    /// @notice Get total power of a user.
+    /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
+    function userPower(address user_) external view returns (uint);
+
+    /// @notice Get delegation info of a user
+    /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
+    /// @return delegatedFrom The list of addresses that have delegated their voting power to the user
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom);
+
 
     //endregion --------------------------------------- Read functions
 
@@ -55,5 +73,11 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
 
     /// @custom:restricted To xStaking
     function burn(address account, uint amount) external;
+
+    /// @notice Delegate all voting power to another user.
+    /// To remove delegation just delegate the power to yourself or to address(0).
+    /// @custom:restriction Anyone can call this function
+    function setPowerDelegation(address to) external;
+
     //endregion --------------------------------------- Write functions
 }

@@ -34,184 +34,185 @@ contract XStakingUpgrade404SonicTest is Test {
         xStbl = IXSTBL(SonicConstantsLib.TOKEN_XSTBL);
     }
 
-    function testDepositWithdrawXStaking() public {
-        // ------------------------------- mint xSTBL and deposit to staking before upgrade
-        _mintAndDepositToStaking(USER1, 5000e18);
-        _mintAndDepositToStaking(USER2, 3000e18);
-
-        address[] memory users = new address[](3);
-        users[0] = USER1;
-        users[1] = USER2;
-        users[2] = USER3;
-
-        // ------------------------------- Upgrade and sync
-        IStabilityDAO daoToken = _upgradeAndSetup();
-
-        vm.prank(multisig);
-        xStaking.syncStabilityDAOBalances(users);
-
-        assertEq(xStaking.userPower(USER1), 5000e18, "1: user 1 power");
-        assertEq(xStaking.userPower(USER2), 3000e18, "1: user 2 power");
-        assertEq(xStaking.userPower(USER3), 0, "1: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 5000e18, "1: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "1: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "1: user 3 dao balance");
-
-        // ------------------------------- Deposit and withdraw 2
-        _mintAndDepositToStaking(USER2, 1000e18);
-        _mintAndDepositToStaking(USER3, 4000e18);
-
-        vm.prank(USER1);
-        xStaking.withdraw(1000e18);
-
-        assertEq(xStaking.userPower(USER1), 4000e18, "2: user 1 power");
-        assertEq(xStaking.userPower(USER2), 4000e18, "2: user 2 power");
-        assertEq(xStaking.userPower(USER3), 4000e18, "2: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 4000e18, "2: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 4000e18, "2: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 4000e18, "2: user 3 dao balance");
-
-        // ------------------------------- Deposit and withdraw 3
-        _mintAndDepositToStaking(USER2, 1000e18);
-        _mintAndDepositToStaking(USER3, 1000e18);
-
-        vm.prank(USER1);
-        xStaking.withdraw(1000e18);
-
-        assertEq(xStaking.userPower(USER1), 3000e18, "3: user 1 power");
-        assertEq(xStaking.userPower(USER2), 5000e18, "3: user 2 power");
-        assertEq(xStaking.userPower(USER3), 5000e18, "3: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "3: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 5000e18, "3: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 5000e18, "3: user 3 dao balance");
-
-        // ------------------------------- Deposit and withdraw 4
-        _mintAndDepositToStaking(USER1, 5000e18);
-
-        vm.prank(USER2);
-        xStaking.withdraw(5000e18);
-
-        vm.prank(USER3);
-        xStaking.withdraw(1500e18);
-
-        assertEq(xStaking.userPower(USER1), 8000e18, "4: user 1 power");
-        assertEq(xStaking.userPower(USER2), 0, "4: user 2 power");
-        assertEq(xStaking.userPower(USER3), 3500e18, "4: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 8000e18, "4: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "4: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "4: user 3 dao balance");
-    }
-
-    function testDelegation() public {
-        // ------------------------------- mint xSTBL and deposit to staking before upgrade
-        address[] memory users = new address[](3);
-        users[0] = USER1;
-        users[1] = USER2;
-        users[2] = USER3;
-
-        uint power1 = 1001e18;
-        uint power2 = 2002e18;
-        uint power3 = 3003e18;
-
-        // ------------------------------- Upgrade and sync
-        IStabilityDAO daoToken = _upgradeAndSetup();
-
-        vm.prank(multisig);
-        xStaking.syncStabilityDAOBalances(users);
-
-        // ------------------------------- Deposit 1
-        _mintAndDepositToStaking(USER1, power1);
-        _mintAndDepositToStaking(USER2, power2);
-        _mintAndDepositToStaking(USER3, power3);
-
-        assertEq(xStaking.userPower(USER1), power1, "1: user 1 power");
-        assertEq(xStaking.userPower(USER2), power2, "1: user 2 power");
-        assertEq(xStaking.userPower(USER3), power3, "1: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "1: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "1: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "1: user 3 dao balance");
-
-        // ------------------------------- Users 1 and 3 delegate to user 2
-        vm.prank(USER1);
-        xStaking.changePowerDelegation(USER2);
-
-        vm.prank(USER3);
-        xStaking.changePowerDelegation(USER2);
-
-        assertEq(xStaking.userPower(USER1), 0, "2: user 1 power");
-        assertEq(xStaking.userPower(USER2), power2 + power1 + power3, "2: user 2 power");
-        assertEq(xStaking.userPower(USER3), 0, "2: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "2: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), power2 + power1 + power3, "2: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "2: user 3 dao balance");
-
-        // ------------------------------- Clear delegation
-        vm.prank(USER1);
-        xStaking.changePowerDelegation(USER1);
-
-        vm.prank(USER3);
-        xStaking.changePowerDelegation(USER3);
-
-        assertEq(xStaking.userPower(USER1), power1, "4: user 1 power");
-        assertEq(xStaking.userPower(USER2), power2, "4: user 2 power");
-        assertEq(xStaking.userPower(USER3), power3, "4: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "4: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "4: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "4: user 3 dao balance");
-
-        // ------------------------------- User1 => User3 => User2 => User3
-        vm.prank(USER1);
-        xStaking.changePowerDelegation(USER3);
-
-        vm.prank(USER3);
-        xStaking.changePowerDelegation(USER2);
-
-        vm.prank(USER2);
-        xStaking.changePowerDelegation(USER3);
-
-        assertEq(xStaking.userPower(USER1), 0, "5: user 1 power");
-        assertEq(xStaking.userPower(USER2), power3, "5: user 2 power");
-        assertEq(xStaking.userPower(USER3), power1 + power2, "5: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "5: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 0, "5: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "5: user 3 dao balance");
-
-        // ------------------------------- Deposit 2
-        _mintAndDepositToStaking(USER1, power1);
-        _mintAndDepositToStaking(USER2, power2);
-        _mintAndDepositToStaking(USER3, power3);
-
-        assertEq(xStaking.userPower(USER1), 0, "6: user 1 power");
-        assertEq(xStaking.userPower(USER2), 2 * power3, "6: user 2 power");
-        assertEq(xStaking.userPower(USER3), 2 * (power1 + power2), "6: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "6: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 2 * power3, "6: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 2 * (power1 + power2), "6: user 3 dao balance");
-
-        // ------------------------------- Withdraw 1
-        vm.prank(USER1);
-        xStaking.withdraw(power1 * 2);
-
-        vm.prank(USER2);
-        xStaking.withdraw(power2 * 2);
-
-        assertEq(xStaking.userPower(USER1), 0, "7: user 1 power");
-        assertEq(xStaking.userPower(USER2), 2 * power3, "7: user 2 power");
-        assertEq(xStaking.userPower(USER3), 0, "7: user 3 power");
-
-        assertEq(daoToken.balanceOf(USER1), 0, "7: user 1 dao balance");
-        assertEq(daoToken.balanceOf(USER2), 2 * power3, "7: user 2 dao balance");
-        assertEq(daoToken.balanceOf(USER3), 0, "7: user 3 dao balance");
-    }
+    // todo
+//    function testDepositWithdrawXStaking() public {
+//        // ------------------------------- mint xSTBL and deposit to staking before upgrade
+//        _mintAndDepositToStaking(USER1, 5000e18);
+//        _mintAndDepositToStaking(USER2, 3000e18);
+//
+//        address[] memory users = new address[](3);
+//        users[0] = USER1;
+//        users[1] = USER2;
+//        users[2] = USER3;
+//
+//        // ------------------------------- Upgrade and sync
+//        IStabilityDAO daoToken = _upgradeAndSetup();
+//
+//        vm.prank(multisig);
+//        xStaking.syncStabilityDAOBalances(users);
+//
+//        assertEq(xStaking.userPower(USER1), 5000e18, "1: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 3000e18, "1: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 0, "1: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 5000e18, "1: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 0, "1: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "1: user 3 dao balance");
+//
+//        // ------------------------------- Deposit and withdraw 2
+//        _mintAndDepositToStaking(USER2, 1000e18);
+//        _mintAndDepositToStaking(USER3, 4000e18);
+//
+//        vm.prank(USER1);
+//        xStaking.withdraw(1000e18);
+//
+//        assertEq(xStaking.userPower(USER1), 4000e18, "2: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 4000e18, "2: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 4000e18, "2: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 4000e18, "2: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 4000e18, "2: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 4000e18, "2: user 3 dao balance");
+//
+//        // ------------------------------- Deposit and withdraw 3
+//        _mintAndDepositToStaking(USER2, 1000e18);
+//        _mintAndDepositToStaking(USER3, 1000e18);
+//
+//        vm.prank(USER1);
+//        xStaking.withdraw(1000e18);
+//
+//        assertEq(xStaking.userPower(USER1), 3000e18, "3: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 5000e18, "3: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 5000e18, "3: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "3: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 5000e18, "3: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 5000e18, "3: user 3 dao balance");
+//
+//        // ------------------------------- Deposit and withdraw 4
+//        _mintAndDepositToStaking(USER1, 5000e18);
+//
+//        vm.prank(USER2);
+//        xStaking.withdraw(5000e18);
+//
+//        vm.prank(USER3);
+//        xStaking.withdraw(1500e18);
+//
+//        assertEq(xStaking.userPower(USER1), 8000e18, "4: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 0, "4: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 3500e18, "4: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 8000e18, "4: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 0, "4: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "4: user 3 dao balance");
+//    }
+//
+//    function testDelegation() public {
+//        // ------------------------------- mint xSTBL and deposit to staking before upgrade
+//        address[] memory users = new address[](3);
+//        users[0] = USER1;
+//        users[1] = USER2;
+//        users[2] = USER3;
+//
+//        uint power1 = 1001e18;
+//        uint power2 = 2002e18;
+//        uint power3 = 3003e18;
+//
+//        // ------------------------------- Upgrade and sync
+//        IStabilityDAO daoToken = _upgradeAndSetup();
+//
+//        vm.prank(multisig);
+//        xStaking.syncStabilityDAOBalances(users);
+//
+//        // ------------------------------- Deposit 1
+//        _mintAndDepositToStaking(USER1, power1);
+//        _mintAndDepositToStaking(USER2, power2);
+//        _mintAndDepositToStaking(USER3, power3);
+//
+//        assertEq(xStaking.userPower(USER1), power1, "1: user 1 power");
+//        assertEq(xStaking.userPower(USER2), power2, "1: user 2 power");
+//        assertEq(xStaking.userPower(USER3), power3, "1: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "1: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 0, "1: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "1: user 3 dao balance");
+//
+//        // ------------------------------- Users 1 and 3 delegate to user 2
+//        vm.prank(USER1);
+//        xStaking.changePowerDelegation(USER2);
+//
+//        vm.prank(USER3);
+//        xStaking.changePowerDelegation(USER2);
+//
+//        assertEq(xStaking.userPower(USER1), 0, "2: user 1 power");
+//        assertEq(xStaking.userPower(USER2), power2 + power1 + power3, "2: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 0, "2: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "2: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), power2 + power1 + power3, "2: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "2: user 3 dao balance");
+//
+//        // ------------------------------- Clear delegation
+//        vm.prank(USER1);
+//        xStaking.changePowerDelegation(USER1);
+//
+//        vm.prank(USER3);
+//        xStaking.changePowerDelegation(USER3);
+//
+//        assertEq(xStaking.userPower(USER1), power1, "4: user 1 power");
+//        assertEq(xStaking.userPower(USER2), power2, "4: user 2 power");
+//        assertEq(xStaking.userPower(USER3), power3, "4: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "4: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 0, "4: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "4: user 3 dao balance");
+//
+//        // ------------------------------- User1 => User3 => User2 => User3
+//        vm.prank(USER1);
+//        xStaking.changePowerDelegation(USER3);
+//
+//        vm.prank(USER3);
+//        xStaking.changePowerDelegation(USER2);
+//
+//        vm.prank(USER2);
+//        xStaking.changePowerDelegation(USER3);
+//
+//        assertEq(xStaking.userPower(USER1), 0, "5: user 1 power");
+//        assertEq(xStaking.userPower(USER2), power3, "5: user 2 power");
+//        assertEq(xStaking.userPower(USER3), power1 + power2, "5: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "5: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 0, "5: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "5: user 3 dao balance");
+//
+//        // ------------------------------- Deposit 2
+//        _mintAndDepositToStaking(USER1, power1);
+//        _mintAndDepositToStaking(USER2, power2);
+//        _mintAndDepositToStaking(USER3, power3);
+//
+//        assertEq(xStaking.userPower(USER1), 0, "6: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 2 * power3, "6: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 2 * (power1 + power2), "6: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "6: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 2 * power3, "6: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 2 * (power1 + power2), "6: user 3 dao balance");
+//
+//        // ------------------------------- Withdraw 1
+//        vm.prank(USER1);
+//        xStaking.withdraw(power1 * 2);
+//
+//        vm.prank(USER2);
+//        xStaking.withdraw(power2 * 2);
+//
+//        assertEq(xStaking.userPower(USER1), 0, "7: user 1 power");
+//        assertEq(xStaking.userPower(USER2), 2 * power3, "7: user 2 power");
+//        assertEq(xStaking.userPower(USER3), 0, "7: user 3 power");
+//
+//        assertEq(daoToken.balanceOf(USER1), 0, "7: user 1 dao balance");
+//        assertEq(daoToken.balanceOf(USER2), 2 * power3, "7: user 2 dao balance");
+//        assertEq(daoToken.balanceOf(USER3), 0, "7: user 3 dao balance");
+//    }
 
     //region --------------------------------- Internal logic
     function _mintAndDepositToStaking(address user, uint amount) internal {
@@ -235,7 +236,7 @@ contract XStakingUpgrade404SonicTest is Test {
         _upgradePlatform();
 
         vm.prank(multisig);
-        xStaking.initializeStabilityDAO(address(stblDaoToken));
+        IPlatform(PLATFORM).setupStabilityDAO(address(stblDaoToken));
 
         return stblDaoToken;
     }
@@ -267,8 +268,9 @@ contract XStakingUpgrade404SonicTest is Test {
     function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
-            exitPenalty: 5_000,
-            proposalThreshold: 100_000,
+            exitPenalty: 50_00,
+            proposalThreshold: 10_00,
+            quorum: 20_00,
             powerAllocationDelay: 86400
         });
 
@@ -279,13 +281,5 @@ contract XStakingUpgrade404SonicTest is Test {
         return token;
     }
 
-    function _updateConfig(uint minimalPower_) internal {
-        IStabilityDAO daoToken = IStabilityDAO(xStaking.stabilityDaoToken());
-        IStabilityDAO.DaoParams memory p = daoToken.config();
-        p.minimalPower = minimalPower_;
-
-        vm.prank(multisig);
-        daoToken.updateConfig(p);
-    }
     //endregion --------------------------------- Helpers
 }

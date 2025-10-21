@@ -8,8 +8,10 @@ import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IRevenueRouter} from "../interfaces/IRevenueRouter.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 
 /// @title xSTBL token
 /// Inspired by xRAM/xSHADOW from Ramses/Shadow codebase
@@ -68,9 +70,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         uint lastDistributedPeriod;
         /// @inheritdoc IXSTBL
         mapping(address => VestPosition[]) vestInfo;
-        /// @inheritdoc IXSTBL
-        /// @dev 0 means default value (50%)
-        uint slashingPenalty;
     }
     //endregion ---------------------------- Data types
 
@@ -174,14 +173,6 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         }
     }
 
-    /// @inheritdoc IXSTBL
-    function setSlashingPenalty(uint penalty_) external onlyGovernanceOrMultisig {
-        /// @dev ensure it's not above 100%
-        require(penalty_ <= BASIS, SlashingPenaltyTooHigh());
-        _getXSTBLStorage().slashingPenalty = penalty_;
-
-        emit NewSlashingPenalty(penalty_);
-    }
     //endregion ---------------------------- Restricted actions
 
     //region ---------------------------- User actions
@@ -316,8 +307,10 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     /// @inheritdoc IXSTBL
     // solhint-disable-next-line func-name-mixedcase
     function SLASHING_PENALTY() public view returns (uint) {
-        uint slashingPenalty = _getXSTBLStorage().slashingPenalty;
-        return slashingPenalty == 0 ? DEFAULT_SLASHING_PENALTY : slashingPenalty;
+        IStabilityDAO stabilityDao = getStabilityDAO();
+        return address(stabilityDao) == address(0)
+            ? DEFAULT_SLASHING_PENALTY
+            : getStabilityDAO().exitPenalty();
     }
 
     /// @inheritdoc IXSTBL
@@ -383,6 +376,10 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         assembly {
             $.slot := XSTBL_STORAGE_LOCATION
         }
+    }
+
+    function getStabilityDAO() internal view returns (IStabilityDAO) {
+        return IStabilityDAO(IPlatform(IControllable(address(this)).platform()).stabilityDAO());
     }
     //endregion ---------------------------- Hooks to override
 }

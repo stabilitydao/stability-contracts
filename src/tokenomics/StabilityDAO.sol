@@ -6,6 +6,8 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {ERC20BurnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
@@ -13,7 +15,7 @@ import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 /// Tokens are non-transferable, can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
-contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, IStabilityDAO {
+contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeable, ReentrancyGuardUpgradeable, IStabilityDAO {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -22,8 +24,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     string public constant VERSION = "1.0.0";
 
     // keccak256(abi.encode(uint(keccak256("erc7201:stability.StabilityDAO")) - 1)) & ~bytes32(uint(0xff));
-    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
-        0x646b4833d597962e1309a1f3fa0c9ce18df08fcf8941b92012e02e0045f00200;
+    bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION = 0; // todo
 
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -38,11 +39,19 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
         address xStbl;
         /// @notice Address of xStaking contract
         address xStaking;
+        /// @notice Address to which a user has delegated his vote power
+        mapping(address user => address delegatedTo) delegatedTo;
+        /// @notice Set of addresses that have delegated their vote power to a user
+        mapping(address user => EnumerableSet.AddressSet) delegatedFrom;
     }
 
     error NonTransferable();
+    error NotDelegatedTo();
+    error AlreadyDelegated();
 
     event ConfigUpdated(DaoParams newConfig);
+    event DelegateVotes(address from, address to); // todo move to interface?
+    event UnDelegateVotes(address from, address to);
 
     //endregion ----------------------------------- Data types
 
@@ -70,7 +79,7 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     }
     //endregion ----------------------------------- Initialization and modifiers
 
-    //region ----------------------------------- Restricted actions
+    //region ----------------------------------- Actions
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      RESTRICTED ACTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -93,7 +102,32 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
         emit ConfigUpdated(p);
     }
 
-    //endregion ----------------------------------- Restricted actions
+    /// @inheritdoc IStabilityDAO
+    function setPowerDelegation(address to) external nonReentrant {
+        // anyone can call this function
+
+        StabilityDAOStorage storage $ = _getStorage();
+
+        if (to == msg.sender || to == address(0)) {
+            address delegatee = $.delegatedTo[msg.sender];
+            $.delegatedTo[msg.sender] = address(0);
+
+            //slither-disable-next-line unused-return
+            EnumerableSet.remove($.delegatedFrom[delegatee], msg.sender);
+
+            emit UnDelegateVotes(msg.sender, to);
+        } else {
+            require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
+            $.delegatedTo[msg.sender] = to;
+
+            //slither-disable-next-line unused-return
+            EnumerableSet.add($.delegatedFrom[to], msg.sender);
+
+            emit DelegateVotes(msg.sender, to);
+        }
+    }
+
+    //endregion ----------------------------------- Actions
 
     //region ----------------------------------- ERC20 hooks
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -144,8 +178,33 @@ contract StabilityDAO is Controllable, ERC20Upgradeable, ERC20BurnableUpgradeabl
     }
 
     /// @inheritdoc IStabilityDAO
+    function quorum() external view returns (uint) {
+        return _getStorage().config[0].quorum;
+    }
+
+    /// @inheritdoc IStabilityDAO
     function powerAllocationDelay() external view returns (uint) {
         return _getStorage().config[0].powerAllocationDelay;
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function userPower(address user_) public view returns (uint) {
+        StabilityDAOStorage storage $ = _getStorage();
+        uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
+
+        address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
+        uint len = delegated.length;
+        for (uint i; i < len; ++i) {
+            power += balanceOf(delegated[i]);
+        }
+
+        return power;
+    }
+
+    /// @inheritdoc IStabilityDAO
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
+        StabilityDAOStorage storage $ = _getStorage();
+        return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
     }
 
     //endregion ----------------------------------- View functions

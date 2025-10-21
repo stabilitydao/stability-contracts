@@ -44,18 +44,11 @@ interface IXStaking {
     /// @notice Change duration period
     function setNewDuration(uint) external;
 
-    /// @notice One-time initialization of the STBLDAO token address
-    function initializeStabilityDAO(address stblDao_) external;
-
     /// @notice Update balance of STBLDAO token for all given users
     /// If a user has less then min power xSTBL staked, their STBLDAO balance will be 0
     /// otherwise user should receive 1 STBLDAO for each 1 xSTBL
     function syncStabilityDAOBalances(address[] calldata users) external;
 
-    /// @notice Delegate voting power to another user.
-    /// To remove delegation just delegate the power to yourself or to address(0).
-    /// @custom:restriction Anyone can call this function
-    function changePowerDelegation(address to) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */
@@ -105,18 +98,4 @@ interface IXStaking {
     /// @param user the address to check
     /// @return The staked balance
     function balanceOf(address user) external view returns (uint);
-
-    /// @notice The address of the STBLDAO token
-    /// This not-transferable token is provided to users who have staked at least min power of xSTBL tokens
-    /// (see STBLDAO config for detailed limits)
-    function stabilityDaoToken() external view returns (address);
-
-    /// @notice Get total power of a user.
-    /// The power = user's own (not-delegated) balance of xStbl + balances of all users that delegated to him
-    function userPower(address user_) external view returns (uint);
-
-    /// @notice Get delegation info of a user
-    /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
-    /// @return delegatedFrom The list of addresses that have delegated their voting power to the user
-    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom);
 }

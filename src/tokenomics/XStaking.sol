@@ -2,15 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {Controllable} from "../core/base/Controllable.sol";
 import {IControllable} from "../interfaces/IControllable.sol";
+import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 import {IXStaking} from "../interfaces/IXStaking.sol";
+import {IPlatform} from "../interfaces/IPlatform.sol";
 import {IXSTBL} from "../interfaces/IXSTBL.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IStabilityDAO} from "../interfaces/IStabilityDAO.sol";
 
 /// @title Staking contract for xSTBL
 /// Inspired by VoteModule from Ramses/Shadow codebase
@@ -62,21 +62,10 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         mapping(address user => uint rewardPerToken) userRewardPerTokenStored;
         /// @inheritdoc IXStaking
         mapping(address user => uint amount) balanceOf;
-        /// @inheritdoc IXStaking
-        address stabilityDaoToken;
-        /// @notice Address to which a user has delegated his vote power
-        mapping(address user => address delegatedTo) delegatedTo;
-        /// @notice Set of addresses that have delegated their vote power to a user
-        mapping(address user => EnumerableSet.AddressSet) delegatedFrom;
     }
 
-    error AlreadyInitialized();
     error StblDaoNotInitialized();
-    error AlreadyDelegated();
-    error NotDelegatedTo();
 
-    event DelegateVotes(address from, address to); // todo move to interface?
-    event UnDelegateVotes(address from, address to);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -114,26 +103,17 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     }
 
     /// @inheritdoc IXStaking
-    function initializeStabilityDAO(address daoToken_) external onlyMultisig {
+    function syncStabilityDAOBalances(address[] calldata users) external onlyGovernanceOrMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
-        /// @dev ensure only callable once
-        require($.stabilityDaoToken == address(0), AlreadyInitialized());
-        $.stabilityDaoToken = daoToken_;
-
-        emit InitializeStabilityDAO(daoToken_);
-    }
-
-    /// @inheritdoc IXStaking
-    function syncStabilityDAOBalances(address[] calldata users) external onlyMultisig {
-        XStakingStorage storage $ = _getXStakingStorage();
-        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
+        IStabilityDAO daoToken = getStabilityDAO();
         require(address(daoToken) != address(0), StblDaoNotInitialized());
 
-        uint minimalPower = daoToken.minimalPower();
+        // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
+        uint threshold = daoToken.minimalPower();
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            _syncUser(daoToken, users[i], minimalPower);
+            _syncUser(daoToken, users[i], threshold);
         }
     }
     //endregion ----------------------------------- Restricted actions
@@ -246,39 +226,6 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         emit NotifyReward(msg.sender, amount);
     }
 
-    /// @inheritdoc IXStaking
-    function changePowerDelegation(address to) external nonReentrant {
-        XStakingStorage storage $ = _getXStakingStorage();
-
-        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
-        require(address(daoToken) != address(0), StblDaoNotInitialized());
-
-        address toSync = to;
-
-        if (to == msg.sender || to == address(0)) {
-            toSync = $.delegatedTo[msg.sender];
-            $.delegatedTo[msg.sender] = address(0);
-
-            //slither-disable-next-line unused-return
-            EnumerableSet.remove($.delegatedFrom[toSync], msg.sender);
-
-            emit UnDelegateVotes(msg.sender, to);
-        } else {
-            require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
-            $.delegatedTo[msg.sender] = to;
-
-            //slither-disable-next-line unused-return
-            EnumerableSet.add($.delegatedFrom[to], msg.sender);
-
-            emit DelegateVotes(msg.sender, to);
-        }
-
-        uint minimalPower = daoToken.minimalPower();
-
-        _syncUser(daoToken, toSync, minimalPower);
-        _syncUser(daoToken, msg.sender, minimalPower);
-    }
-
     //endregion ----------------------------------- User actions
 
     //region ----------------------------------- View functions
@@ -375,31 +322,6 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         + $.storedRewardsPerUser[account];
     }
 
-    /// @inheritdoc IXStaking
-    function stabilityDaoToken() external view returns (address) {
-        return _getXStakingStorage().stabilityDaoToken;
-    }
-
-    /// @inheritdoc IXStaking
-    function userPower(address user_) public view returns (uint) {
-        XStakingStorage storage $ = _getXStakingStorage();
-        uint power = $.delegatedTo[user_] == address(0) ? $.balanceOf[user_] : 0;
-
-        address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
-        uint len = delegated.length;
-        for (uint i; i < len; ++i) {
-            power += $.balanceOf[delegated[i]];
-        }
-
-        return power;
-    }
-
-    /// @inheritdoc IXStaking
-    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
-        XStakingStorage storage $ = _getXStakingStorage();
-        return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
-    }
-
     //endregion ----------------------------------- View functions
 
     //region ----------------------------------- Internal logic
@@ -410,35 +332,35 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /// @dev Sync balance of Stability DAO token according to the current user's balance of xSTBL
     /// after depositing or withdrawing xSTBL
     function _syncDaoTokensToBalance(XStakingStorage storage $, address user_) internal {
-        IStabilityDAO daoToken = IStabilityDAO($.stabilityDaoToken);
+        IStabilityDAO daoToken = getStabilityDAO();
         if (address(daoToken) != address(0)) {
-            uint minimalPower = daoToken.minimalPower();
+            // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
+            uint threshold = daoToken.minimalPower();
 
-            _syncUser(daoToken, user_, minimalPower);
-            if ($.delegatedTo[user_] == address(0)) {
-                // user is not delegating, so we only need to sync user's balance
-                _syncUser(daoToken, user_, minimalPower);
-            } else {
-                // user is delegating, so we need to sync the delegatee's balance
-                _syncUser(daoToken, $.delegatedTo[user_], minimalPower);
-            }
+            _syncUser(daoToken, user_, threshold);
         }
     }
 
     /// @dev Sync balance of Stability DAO token for a specific user according to his current power
-    function _syncUser(IStabilityDAO daoToken_, address user_, uint minimalPower_) internal {
-        uint balancePower = userPower(user_);
+    /// @param daoToken_ Address of the STBL_DAO token
+    /// @param user_ Address of the user to sync
+    /// @param threshold_ Minimal amount of staked xSTBL tokens required to have STBL_DAO
+    function _syncUser(IStabilityDAO daoToken_, address user_, uint threshold_) internal {
+        XStakingStorage storage $ = _getXStakingStorage();
 
-        /// @dev if user has less than minimalPower xSTBL staked, their STBLDAO balance will be 0
-        /// @dev otherwise user should receive 1 STBLDAO for each 1 xSTBL
-        uint toMint = balancePower < minimalPower_ ? 0 : balancePower;
-        uint balanceDao = IERC20(daoToken_).balanceOf(user_);
-        if (toMint > balanceDao) {
+        uint balanceStakedXStbl = $.balanceOf[user_];
+
+        /// @dev if user has too few xSTBL staked, their STBL_DAO balance will be 0
+        /// @dev otherwise user should receive 1 STBL_DAO for each 1 staked xSTBL
+        uint toMint = balanceStakedXStbl < threshold_ ? 0 : balanceStakedXStbl;
+        uint balanceStblDao = IERC20(daoToken_).balanceOf(user_);
+
+        if (toMint > balanceStblDao) {
             /// @dev mint the difference
-            daoToken_.mint(user_, toMint - balanceDao);
-        } else if (balanceDao > toMint) {
+            daoToken_.mint(user_, toMint - balanceStblDao);
+        } else if (balanceStblDao > toMint) {
             /// @dev burn the difference
-            daoToken_.burn(user_, balanceDao - toMint);
+            daoToken_.burn(user_, balanceStblDao - toMint);
         }
     }
 
@@ -492,5 +414,10 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             $.slot := XSTAKING_STORAGE_LOCATION
         }
     }
+
+    function getStabilityDAO() internal view returns (IStabilityDAO) {
+        return IStabilityDAO(IPlatform(IControllable(address(this)).platform()).stabilityDAO());
+    }
+
     //endregion ----------------------------------- Internal logic
 }

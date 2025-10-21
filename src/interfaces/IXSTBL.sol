@@ -37,7 +37,6 @@ interface IXSTBL {
     event ExemptionFrom(address indexed candidate, bool status, bool success);
     event ExemptionTo(address indexed candidate, bool status, bool success);
     event Rebase(address indexed caller, uint amount);
-    event NewSlashingPenalty(uint newPenalty);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      WRITE FUNCTIONS                       */
@@ -64,10 +63,6 @@ interface IXSTBL {
 
     /// @notice Function called by the RevenueRouter to send the rebases once a week
     function rebase() external;
-
-    /// @notice Set the max slashing penalty. 0 means default max value (50%)
-    /// @param newPenalty New max slashing penalty (100 = 1%)
-    function setSlashingPenalty(uint newPenalty) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      VIEW FUNCTIONS                        */

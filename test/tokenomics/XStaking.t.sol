@@ -110,160 +110,6 @@ contract XStakingTest is Test, MockSetup {
         xStaking.notifyRewardAmount(0);
     }
 
-    function testInitializeStabilityDAO() public {
-        assertEq(xStaking.stabilityDaoToken(), address(0), "Not initialized");
-
-        vm.prank(address(1));
-        vm.expectRevert(IControllable.NotMultisig.selector);
-        xStaking.initializeStabilityDAO(address(2));
-
-        vm.prank(platform.multisig());
-        xStaking.initializeStabilityDAO(address(2));
-        assertEq(xStaking.stabilityDaoToken(), address(2), "Initialized");
-
-        vm.prank(platform.multisig());
-        vm.expectRevert(XStaking.AlreadyInitialized.selector);
-        xStaking.initializeStabilityDAO(address(3));
-    }
-
-    function testPowerDelegation() public {
-        address[3] memory users = [address(1), address(2), address(3)];
-        uint72[3] memory amounts = [100e18, 150e18, 300e18];
-
-        // ------------------------------- mint xSTBL and deposit to staking
-        for (uint i; i < users.length; ++i) {
-            tokenA.mint(amounts[i]);
-            IERC20(address(tokenA)).safeTransfer(users[i], amounts[i]);
-
-            vm.prank(users[i]);
-            IERC20(stbl).approve(address(xStbl), amounts[i]);
-
-            vm.prank(users[i]);
-            xStbl.enter(amounts[i]);
-        }
-
-        // ------------------------------- Each user deposits half of their xSTBL to staking
-        for (uint i; i < users.length; ++i) {
-            vm.prank(users[i]);
-            IERC20(address(xStbl)).approve(address(xStaking), amounts[i]);
-
-            vm.prank(users[i]);
-            xStaking.deposit(amounts[i] / 2);
-
-            assertEq(xStaking.balanceOf(users[i]), amounts[i] / 2);
-            assertEq(xStaking.userPower(users[i]), amounts[i] / 2);
-        }
-
-        // ------------------------------- Initialize dao token
-        vm.expectRevert(XStaking.StblDaoNotInitialized.selector);
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[1]);
-
-        vm.prank(platform.multisig());
-        xStaking.initializeStabilityDAO(address(new MockStabilityDAO()));
-
-        // ------------------------------- 1: 0 => 1
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[2]);
-
-        vm.expectRevert(XStaking.AlreadyDelegated.selector);
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[2]);
-
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[0]);
-
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[1]);
-
-        assertEq(xStaking.userPower(users[0]), 0, "1: User 0 has delegates his power to user 1");
-        assertEq(
-            xStaking.userPower(users[1]),
-            amounts[1] / 2 + amounts[0] / 2,
-            "1: balance user 1 + delegated power of user 0"
-        );
-        assertEq(xStaking.userPower(users[2]), amounts[2] / 2, "1: balance user 2");
-
-        // ------------------------------- 2: 1 => 2
-        vm.prank(users[1]);
-        xStaking.changePowerDelegation(users[2]);
-
-        assertEq(xStaking.userPower(users[0]), 0, "2: User 0 has delegates his power to user 1");
-        assertEq(xStaking.userPower(users[1]), amounts[0] / 2, "2: delegated power of user 0");
-        assertEq(
-            xStaking.userPower(users[2]),
-            amounts[2] / 2 + amounts[1] / 2,
-            "2: balance user 2 + delegated power of user 1"
-        );
-
-        // ------------------------------- 3: 2 => 0
-        vm.prank(users[2]);
-        xStaking.changePowerDelegation(users[0]);
-
-        assertEq(xStaking.userPower(users[0]), amounts[2] / 2, "3: delegated power of user 2");
-        assertEq(xStaking.userPower(users[1]), amounts[0] / 2, "3: delegated power of user 0");
-        assertEq(xStaking.userPower(users[2]), amounts[1] / 2, "3: delegated power of user 1");
-
-        // ------------------------------- 4: Each user deposits second half of their xSTBL to staking
-        for (uint i; i < users.length; ++i) {
-            vm.prank(users[i]);
-            xStaking.deposit(amounts[i] / 2);
-
-            assertEq(xStaking.balanceOf(users[i]), amounts[i], "full balance");
-        }
-
-        assertEq(xStaking.userPower(users[0]), amounts[2], "4: delegated power of user 2");
-        assertEq(xStaking.userPower(users[1]), amounts[0], "4: delegated power of user 0");
-        assertEq(xStaking.userPower(users[2]), amounts[1], "4: delegated power of user 1");
-
-        // ------------------------------- 5: User 1 withdraws half of his stake
-        vm.prank(users[1]);
-        xStaking.withdraw(amounts[1] / 2);
-
-        assertEq(xStaking.userPower(users[0]), amounts[2], "5: delegated power of user 2");
-        assertEq(xStaking.userPower(users[1]), amounts[0], "5: delegated power of user 0");
-        assertEq(xStaking.userPower(users[2]), amounts[1] / 2, "5: delegated power of user 1");
-
-        // ------------------------------- 6: User 1 removes delegation
-        vm.prank(users[1]);
-        xStaking.changePowerDelegation(users[1]);
-
-        assertEq(xStaking.userPower(users[0]), amounts[2], "6: delegated power of user 2");
-        assertEq(xStaking.userPower(users[1]), amounts[1] / 2 + amounts[0], "6: delegated power of user 0");
-        assertEq(xStaking.userPower(users[2]), 0, "6: all power was delegated to user 0");
-
-        {
-            (address delegatedTo, address[] memory delegatedFrom) = xStaking.delegates(users[0]);
-            assertEq(delegatedTo, users[1], "6: user 0 has delegated his power to user 1");
-            assertEq(delegatedFrom.length, 1, "6: single user (2) has delegated to user 0");
-            assertEq(delegatedFrom[0], users[2], "6: user 2 has delegated to user 0");
-        }
-
-        {
-            (address delegatedTo, address[] memory delegatedFrom) = xStaking.delegates(users[1]);
-            assertEq(delegatedTo, address(0), "6: user 1 has not delegated power");
-            assertEq(delegatedFrom.length, 1, "6: single user (0) has delegated to user 1");
-            assertEq(delegatedFrom[0], users[0], "6: user 0 has delegated to user 1");
-        }
-
-        {
-            (address delegatedTo, address[] memory delegatedFrom) = xStaking.delegates(users[2]);
-            assertEq(delegatedTo, users[0], "6: user 2 has delegated his power to user 0");
-            assertEq(delegatedFrom.length, 0, "6: no one has delegated to user 2");
-        }
-
-        // ------------------------------- 7: Users 0 and 2 remove delegations
-        vm.prank(users[0]);
-        xStaking.changePowerDelegation(users[0]); // remove using delegation to oneself
-
-        vm.prank(users[2]);
-        xStaking.changePowerDelegation(address(0)); // remove using zero address
-
-        assertEq(xStaking.userPower(users[0]), amounts[0], "7: user 0 has not delegated power");
-        assertEq(xStaking.userPower(users[1]), amounts[1] / 2, "7: user 1 has not delegated power");
-        assertEq(xStaking.userPower(users[2]), amounts[2], "7: user 2 has not delegated power");
-    }
-
     function testSyncStabilityDAOBalances() public {
         address[] memory users = new address[](3);
         users[0] = address(1);
@@ -301,13 +147,13 @@ contract XStakingTest is Test, MockSetup {
         // ------------------------------- Set up dao token
         IStabilityDAO daoToken = _createStabilityDAOInstance();
         vm.prank(platform.multisig());
-        xStaking.initializeStabilityDAO(address(daoToken));
+        platform.setupStabilityDAO(address(daoToken));
 
         vm.prank(address(123));
         vm.expectRevert(IControllable.NotMultisig.selector);
         xStaking.syncStabilityDAOBalances(users);
 
-        _updateConfig(4000e18);
+        _updateMinimalPower(4000e18);
 
         assertEq(daoToken.balanceOf(users[0]), 0, "0: User0 has no dao tokens");
         assertEq(IERC20(address(xStaking)).balanceOf(users[0]), amounts[0], "0: User0 has xStaking");
@@ -325,7 +171,7 @@ contract XStakingTest is Test, MockSetup {
         assertEq(daoToken.balanceOf(users[2]), 4_000e18, "1: User2");
 
         // ------------------------------- sync 2
-        _updateConfig(3000e18);
+        _updateMinimalPower(3000e18);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "2: User0");
         assertEq(daoToken.balanceOf(users[1]), 0, "2: User1 (syncStabilityDAOBalances is not called)");
@@ -339,7 +185,7 @@ contract XStakingTest is Test, MockSetup {
         assertEq(daoToken.balanceOf(users[2]), 4_000e18, "2.1: User2");
 
         // ------------------------------- sync 3
-        _updateConfig(4001e18);
+        _updateMinimalPower(4001e18);
 
         assertEq(daoToken.balanceOf(users[0]), 4_001e18, "3: User0");
         assertEq(daoToken.balanceOf(users[1]), 3_999e18, "3: User1 (syncStabilityDAOBalances is not called)");
@@ -357,8 +203,9 @@ contract XStakingTest is Test, MockSetup {
     function _createStabilityDAOInstance() internal returns (IStabilityDAO) {
         IStabilityDAO.DaoParams memory p = IStabilityDAO.DaoParams({
             minimalPower: 4000e18,
-            exitPenalty: 5_000,
-            proposalThreshold: 100_000,
+            exitPenalty: 50_00,
+            proposalThreshold: 10_00,
+            quorum: 25_00,
             powerAllocationDelay: 86400
         });
 
@@ -369,8 +216,8 @@ contract XStakingTest is Test, MockSetup {
         return token;
     }
 
-    function _updateConfig(uint minimalPower_) internal {
-        IStabilityDAO daoToken = IStabilityDAO(xStaking.stabilityDaoToken());
+    function _updateMinimalPower(uint minimalPower_) internal {
+        IStabilityDAO daoToken = IStabilityDAO(platform.stabilityDAO());
         IStabilityDAO.DaoParams memory p = daoToken.config();
         p.minimalPower = minimalPower_;
 
