@@ -64,7 +64,7 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         mapping(address user => uint amount) balanceOf;
     }
 
-    error StblDaoNotInitialized();
+    error StabilityDaoNotInitialized();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      INITIALIZATION                        */
@@ -104,15 +104,15 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     /// @inheritdoc IXStaking
     function syncStabilityDAOBalances(address[] calldata users) external onlyGovernanceOrMultisig {
         XStakingStorage storage $ = _getXStakingStorage();
-        IStabilityDAO daoToken = getStabilityDAO();
-        require(address(daoToken) != address(0), StblDaoNotInitialized());
+        IStabilityDAO stabilityDao = getStabilityDAO();
+        require(address(stabilityDao) != address(0), StabilityDaoNotInitialized());
 
         // @dev assume here that 1 STBL_DAO = 1 staked xSTBL always
-        uint threshold = daoToken.minimalPower();
+        uint threshold = stabilityDao.minimalPower();
 
         uint len = users.length;
         for (uint i; i < len; ++i) {
-            _syncUser($, daoToken, users[i], threshold);
+            _syncUser($, stabilityDao, users[i], threshold);
         }
     }
 
@@ -338,23 +338,23 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
     }
 
     /// @dev Sync balance of Stability DAO token for a specific user according to his current power
-    /// @param daoToken_ Address of the STBL_DAO token
+    /// @param stabilityDao Address of the STBL_DAO token
     /// @param user_ Address of the user to sync
-    /// @param threshold_ Minimal amount of staked xSTBL tokens required to have STBL_DAO
-    function _syncUser(XStakingStorage storage $, IStabilityDAO daoToken_, address user_, uint threshold_) internal {
+    /// @param threshold Minimal amount of staked xSTBL tokens required to have STBL_DAO
+    function _syncUser(XStakingStorage storage $, IStabilityDAO stabilityDao, address user_, uint threshold) internal {
         uint balanceStakedXStbl = $.balanceOf[user_];
 
         /// @dev if user has too few xSTBL staked, their STBL_DAO balance will be 0
         /// @dev otherwise user should receive 1 STBL_DAO for each 1 staked xSTBL
-        uint toMint = balanceStakedXStbl < threshold_ ? 0 : balanceStakedXStbl;
-        uint balanceStblDao = IERC20(daoToken_).balanceOf(user_);
+        uint toMint = balanceStakedXStbl < threshold ? 0 : balanceStakedXStbl;
+        uint balanceStabilityDao = IERC20(stabilityDao).balanceOf(user_);
 
-        if (toMint > balanceStblDao) {
+        if (toMint > balanceStabilityDao) {
             /// @dev mint the difference
-            daoToken_.mint(user_, toMint - balanceStblDao);
-        } else if (balanceStblDao > toMint) {
+            stabilityDao.mint(user_, toMint - balanceStabilityDao);
+        } else if (balanceStabilityDao > toMint) {
             /// @dev burn the difference
-            daoToken_.burn(user_, balanceStblDao - toMint);
+            stabilityDao.burn(user_, balanceStabilityDao - toMint);
         }
     }
 

@@ -23,7 +23,6 @@ interface IXSTBL {
 
     error NO_VEST();
     error NOT_WHITELISTED(address from, address to);
-    error SlashingPenaltyTooHigh();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */

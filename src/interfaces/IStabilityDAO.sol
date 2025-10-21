@@ -5,7 +5,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IStabilityDAO is IERC20, IERC20Metadata {
-    /// @notice See https://stabilitydao.gitbook.io/stability/stability-dao/governance#current-parameters
+    /// @notice Parameters of Stability DAO
+    /// @dev For details see https://stabilitydao.gitbook.io/stability/stability-dao/governance#current-parameters
     struct DaoParams {
         /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
         uint minimalPower;
@@ -34,13 +35,13 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
     /// @notice Minimal amount of xSTBL tokens required to have STBL_DAO tokens, decimals 18
     function minimalPower() external view returns (uint);
 
-    /// @notice xSTBL instant exit penalty (slashing penalty), i.e. 50_00 = 50%
+    /// @notice xSTBL instant exit penalty (slashing penalty), decimals 1e4, i.e. 50_00 = 50%
     function exitPenalty() external view returns (uint);
 
-    /// @notice Min percent of power that a user should have to be able to create a new proposal, i.e. 50_00 = 50%
+    /// @notice Min percent of power that a user should have to be able to create a new proposal, decimals 1e4, i.e. 50_00 = 50%
     function proposalThreshold() external view returns (uint);
 
-    /// @notice A percent of votes required to reach quorum for a proposal, i.e. 20_00 = 20%
+    /// @notice A percent of votes required to reach quorum for a proposal, decimals 1e4, i.e. 20_00 = 20%
     /// If the total number of votes is less than this percent, proposal is rejected
     function quorum() external view returns (uint);
 
@@ -49,12 +50,13 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
 
     /// @notice Get total power of a user.
     /// The power = user's own (not-delegated) balance of STBL_DAO + balances of all users that delegated to him
+    /// If user has balance of staked xSTBL below minimalPower, his power is 0
     function userPower(address user_) external view returns (uint);
 
     /// @notice Get delegation info of a user
     /// @return delegatedTo The address to whom the user has delegated his voting power (or address(0) if not delegated)
-    /// @return delegatedFrom The list of addresses that have delegated their voting power to the user
-    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom);
+    /// @return delegators The list of addresses that have delegated their voting power to the user
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators);
 
     //endregion --------------------------------------- Read functions
 
@@ -64,7 +66,7 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
 
     /// @notice Update DAO config
     /// XStaking.syncStabilityDAOBalances() must be called after changing of minimalPower value
-    /// @custom:restricted To multisig
+    /// @custom:restricted To multisig or governance
     function updateConfig(DaoParams memory p) external;
 
     /// @custom:restricted To xStaking
@@ -75,7 +77,7 @@ interface IStabilityDAO is IERC20, IERC20Metadata {
 
     /// @notice Delegate all voting power to another user.
     /// To remove delegation just delegate the power to yourself or to address(0).
-    /// @custom:restriction Anyone can call this function
+    /// @custom:restricted Anyone can call this function
     function setPowerDelegation(address to) external;
 
     //endregion --------------------------------------- Write functions

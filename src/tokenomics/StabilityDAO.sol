@@ -12,8 +12,8 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/ut
 
 /// @title Stability DAO Token contract
 /// Amount of tokens for each user represents their voting power in the DAO.
-/// Only user with high enough amount of staked xSTBL have DAO-tokens.
-/// Tokens are non-transferable, can be only minted and burned by XStaking contract.
+/// Only users with high enough amount of staked xSTBL have DAO-tokens.
+/// Tokens are non-transferable and can be only minted and burned by XStaking contract.
 /// @author Omriss (https://github.com/omriss)
 /// Changelog:
 contract StabilityDAO is
@@ -34,6 +34,9 @@ contract StabilityDAO is
     bytes32 private constant _STABILITY_DAO_TOKEN_STORAGE_LOCATION =
         0xb41400b8ab7d5c4f4647f6397fc72c137345511eb9c9a0082de7fe729c2ae200;
 
+    /// @dev Same to XSTBL.DENOMINATOR
+    uint internal constant DENOMINATOR = 10_000;
+
     //region ----------------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         DATA TYPES                         */
@@ -48,18 +51,19 @@ contract StabilityDAO is
         /// @notice Address of xStaking contract
         address xStaking;
         /// @notice Address to which a user has delegated his vote power
-        mapping(address user => address delegatedTo) delegatedTo;
+        mapping(address user => address) delegatedTo;
         /// @notice Set of addresses that have delegated their vote power to a user
-        mapping(address user => EnumerableSet.AddressSet) delegatedFrom;
+        mapping(address user => EnumerableSet.AddressSet) delegators;
     }
 
     error NonTransferable();
     error NotDelegatedTo();
     error AlreadyDelegated();
+    error WrongValue();
 
     event ConfigUpdated(DaoParams newConfig);
-    event DelegateVotes(address from, address to); // todo move to interface?
-    event UnDelegateVotes(address from, address to);
+    event DelegatePower(address from, address to);
+    event UnDelegatePower(address from, address to);
 
     //endregion ----------------------------------- Data types
 
@@ -106,6 +110,11 @@ contract StabilityDAO is
     /// @inheritdoc IStabilityDAO
     function updateConfig(DaoParams memory p) external onlyGovernanceOrMultisig {
         StabilityDaoStorage storage $ = _getStorage();
+
+        require(
+            p.quorum < DENOMINATOR && p.exitPenalty < DENOMINATOR && p.proposalThreshold < DENOMINATOR, WrongValue()
+        );
+
         $.config[0] = p;
 
         emit ConfigUpdated(p);
@@ -122,17 +131,17 @@ contract StabilityDAO is
             $.delegatedTo[msg.sender] = address(0);
 
             //slither-disable-next-line unused-return
-            EnumerableSet.remove($.delegatedFrom[delegatee], msg.sender);
+            EnumerableSet.remove($.delegators[delegatee], msg.sender);
 
-            emit UnDelegateVotes(msg.sender, to);
+            emit UnDelegatePower(msg.sender, to);
         } else {
             require($.delegatedTo[msg.sender] == address(0), AlreadyDelegated());
             $.delegatedTo[msg.sender] = to;
 
             //slither-disable-next-line unused-return
-            EnumerableSet.add($.delegatedFrom[to], msg.sender);
+            EnumerableSet.add($.delegators[to], msg.sender);
 
-            emit DelegateVotes(msg.sender, to);
+            emit DelegatePower(msg.sender, to);
         }
     }
 
@@ -202,19 +211,19 @@ contract StabilityDAO is
         StabilityDaoStorage storage $ = _getStorage();
         uint power = $.delegatedTo[user_] == address(0) ? balanceOf(user_) : 0;
 
-        address[] memory delegated = EnumerableSet.values($.delegatedFrom[user_]);
-        uint len = delegated.length;
+        address[] memory delegators = EnumerableSet.values($.delegators[user_]);
+        uint len = delegators.length;
         for (uint i; i < len; ++i) {
-            power += balanceOf(delegated[i]);
+            power += balanceOf(delegators[i]);
         }
 
         return power;
     }
 
     /// @inheritdoc IStabilityDAO
-    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegatedFrom) {
+    function delegates(address user_) external view returns (address delegatedTo, address[] memory delegators) {
         StabilityDaoStorage storage $ = _getStorage();
-        return ($.delegatedTo[user_], EnumerableSet.values($.delegatedFrom[user_]));
+        return ($.delegatedTo[user_], EnumerableSet.values($.delegators[user_]));
     }
 
     //endregion ----------------------------------- View functions

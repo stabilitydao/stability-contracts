@@ -56,9 +56,11 @@ contract StabilityDAOSonicTest is Test {
         assertEq(token.exitPenalty(), p.exitPenalty);
         assertEq(token.proposalThreshold(), p.proposalThreshold);
         assertEq(token.powerAllocationDelay(), p.powerAllocationDelay);
+        assertEq(token.quorum(), p.quorum);
     }
 
     function testMintBurn() public {
+        address governance = IPlatform(SonicConstantsLib.PLATFORM).governance();
         IStabilityDAO token = _createStabilityDAOInstance();
 
         vm.prank(address(0x123));
@@ -74,6 +76,14 @@ contract StabilityDAOSonicTest is Test {
         token.mint(address(0x123), 1e18);
 
         vm.prank(multisig);
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        token.burn(address(0x123), 1e18);
+
+        vm.prank(governance);
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
+        token.mint(address(0x123), 1e18);
+
+        vm.prank(governance);
         vm.expectRevert(IControllable.IncorrectMsgSender.selector);
         token.burn(address(0x123), 1e18);
 
@@ -144,6 +154,37 @@ contract StabilityDAOSonicTest is Test {
         assertEq(config.quorum, p2.quorum, "quorum3");
     }
 
+    function testUpdateConfigBadPaths() public {
+        IStabilityDAO.DaoParams memory p1 = IStabilityDAO.DaoParams({
+            minimalPower: 4000e18,
+            exitPenalty: 50_00, // 50%
+            proposalThreshold: 10_00, // 10%
+            quorum: 20_00, // 20%
+            powerAllocationDelay: 86400
+        });
+        IStabilityDAO token = _createStabilityDAOInstance(p1);
+
+        p1.proposalThreshold = 100_00; // 100%
+
+        vm.prank(multisig);
+        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        token.updateConfig(p1);
+
+        p1.proposalThreshold = 10_00;
+        p1.exitPenalty = 100_00; // 100%
+
+        vm.prank(multisig);
+        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        token.updateConfig(p1);
+
+        p1.exitPenalty = 50_00;
+        p1.quorum = 100_00; // 100%
+
+        vm.prank(multisig);
+        vm.expectRevert(StabilityDAO.WrongValue.selector);
+        token.updateConfig(p1);
+    }
+
     function testNonTransferable() public {
         IStabilityDAO token = _createStabilityDAOInstance();
 
@@ -152,6 +193,7 @@ contract StabilityDAOSonicTest is Test {
 
         vm.prank(address(0x123));
         vm.expectRevert(StabilityDAO.NonTransferable.selector);
+        //slither-disable-next-line erc20-unchecked-transfer
         token.transfer(address(0x456), 1e18);
 
         vm.prank(address(0x123));
@@ -159,7 +201,83 @@ contract StabilityDAOSonicTest is Test {
 
         vm.prank(address(0x456));
         vm.expectRevert(StabilityDAO.NonTransferable.selector);
+        //slither-disable-next-line erc20-unchecked-transfer
         token.transferFrom(address(0x123), address(0x789), 1e18);
+    }
+
+    function testSetPowerDelegation() public {
+        address user1 = address(1);
+        address user2 = address(2);
+        IStabilityDAO stabilityDao = _createStabilityDAOInstance();
+
+        // ---------------------------- Initial state
+        vm.prank(stabilityDao.xStaking());
+        stabilityDao.mint(user1, 10_000e18);
+
+        vm.prank(stabilityDao.xStaking());
+        stabilityDao.mint(user2, 20_000e18);
+
+        assertEq(stabilityDao.userPower(user1), 10_000e18);
+        assertEq(stabilityDao.userPower(user2), 20_000e18);
+
+        (address delegatedTo, address[] memory delegates) = stabilityDao.delegates(user1);
+        assertEq(delegatedTo, address(0));
+        assertEq(delegates.length, 0);
+
+        // ---------------------------- User 1 delegates to User 2
+        vm.prank(user1);
+        stabilityDao.setPowerDelegation(user2);
+
+        vm.expectRevert(StabilityDAO.AlreadyDelegated.selector);
+        vm.prank(user1);
+        stabilityDao.setPowerDelegation(address(this));
+
+        assertEq(stabilityDao.userPower(user1), 0);
+        assertEq(stabilityDao.userPower(user2), 20_000e18 + 10_000e18);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        assertEq(delegatedTo, user2);
+        assertEq(delegates.length, 0);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        assertEq(delegatedTo, address(0));
+        assertEq(delegates.length, 1);
+        assertEq(delegates[0], user1);
+
+        // ---------------------------- User 2 delegates to User 1
+        vm.prank(user2);
+        stabilityDao.setPowerDelegation(user1);
+
+        assertEq(stabilityDao.userPower(user1), 20_000e18);
+        assertEq(stabilityDao.userPower(user2), 10_000e18);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        assertEq(delegatedTo, user2);
+        assertEq(delegates.length, 1);
+        assertEq(delegates[0], user2);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        assertEq(delegatedTo, user1);
+        assertEq(delegates.length, 1);
+        assertEq(delegates[0], user1);
+
+        // ---------------------------- Both Users clear delegations
+        vm.prank(user1);
+        stabilityDao.setPowerDelegation(user1);
+
+        vm.prank(user2);
+        stabilityDao.setPowerDelegation(address(0));
+
+        assertEq(stabilityDao.userPower(user1), 10_000e18);
+        assertEq(stabilityDao.userPower(user2), 20_000e18);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user1);
+        assertEq(delegatedTo, address(0));
+        assertEq(delegates.length, 0);
+
+        (delegatedTo, delegates) = stabilityDao.delegates(user2);
+        assertEq(delegatedTo, address(0));
+        assertEq(delegates.length, 0);
     }
 
     //endregion --------------------------------- Unit tests

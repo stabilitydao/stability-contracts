@@ -36,7 +36,7 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     uint public constant BASIS = 10_000;
 
     /// @notice Default value for the slashing penalty (50%). It's used if slashingPenalty in storage is 0
-    uint public constant DEFAULT_SLASHING_PENALTY = 5000;
+    uint public constant DEFAULT_SLASHING_PENALTY = 5_000;
 
     /// @inheritdoc IXSTBL
     uint public constant MIN_VEST = 14 days;
