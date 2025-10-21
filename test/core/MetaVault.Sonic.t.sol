@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+// import {console} from "forge-std/console.sol";
 import {
     MetaVault,
     IMetaVault,
@@ -445,7 +446,7 @@ contract MetaVaultSonicTest is Test {
         address vault = SonicConstantsLib.VAULT_C_USDC_SCUSD_ISF_SCUSD;
         newTargetProportions = new uint[](3);
 
-        vm.expectRevert(IControllable.NotGovernanceAndNotMultisig.selector);
+        vm.expectRevert(IControllable.IncorrectMsgSender.selector);
         metavault.addVault(vault, newTargetProportions);
 
         vm.startPrank(multisig);
