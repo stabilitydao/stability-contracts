@@ -33,12 +33,10 @@ contract XSTBLTest is Test, MockSetup {
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
         FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform), platform.multisig());
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
-        XSTBL(address(xSTBLProxy)).initialize(
-            address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
-        );
-        RevenueRouter(address(revenueRouterProxy)).initialize(
-            address(platform), address(xSTBLProxy), address(feeTreasuryProxy)
-        );
+        XSTBL(address(xSTBLProxy))
+            .initialize(address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy));
+        RevenueRouter(address(revenueRouterProxy))
+            .initialize(address(platform), address(xSTBLProxy), address(feeTreasuryProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         xStaking = IXStaking(address(xStakingProxy));
         //console.logBytes32(keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff)));

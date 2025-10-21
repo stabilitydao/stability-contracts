@@ -249,11 +249,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         assertEq(wsFinalBalance, 177e18, "wS balance should not change after deposit and withdraw");
     }
 
-    function _testRebalance(
-        uint targetLeveragePercent_,
-        uint targetLeveragePercentNew_,
-        bool freeFlashLoan_
-    ) internal {
+    function _testRebalance(uint targetLeveragePercent_, uint targetLeveragePercentNew_, bool freeFlashLoan_) internal {
         uint snapshot = vm.snapshotState();
 
         if (freeFlashLoan_) {
@@ -284,9 +280,8 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         (uint sharePrice,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
         (uint realTvl,) = ILeverageLendingStrategy(address(strategy)).realTvl();
         // console.log("start rebalance", sharePrice, realTvl, strategy.total());
-        ILeverageLendingStrategy(address(strategy)).rebalanceDebt(
-            targetLeveragePercentNew_, sharePrice * (1e6 - 1) / 1e6
-        );
+        ILeverageLendingStrategy(address(strategy))
+            .rebalanceDebt(targetLeveragePercentNew_, sharePrice * (1e6 - 1) / 1e6);
         // 0
 
         (uint sharePriceAfter,) = ILeverageLendingStrategy(address(strategy)).realSharePrice();
@@ -564,7 +559,9 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         uint farmId = _currentFarmId();
         address borrowVault = farmId == FARM_META_USD_USDC_53
             ? SonicConstantsLib.SILO_VAULT_121_USDC
-            : farmId == FARM_META_USD_SCUSD_54 ? SonicConstantsLib.SILO_VAULT_125_SCUSD : SonicConstantsLib.SILO_VAULT_128_S;
+            : farmId == FARM_META_USD_SCUSD_54
+                ? SonicConstantsLib.SILO_VAULT_125_SCUSD
+                : SonicConstantsLib.SILO_VAULT_128_S;
         address asset = IERC4626(borrowVault).asset();
         uint expectedRevertKind = IERC20(asset).balanceOf(flashLoanVault) < IERC20(asset).balanceOf(borrowVault)
             ? REVERT_INSUFFICIENT_BALANCE
@@ -577,6 +574,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         _tryToDeposit(strategy, maxDepositAssets, expectedRevertKind);
         vm.revertToState(snapshot);
     }
+
     //endregion --------------------------------------- maxDeposit tests
 
     //region --------------------------------------- Internal logic
@@ -842,8 +840,14 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
 
         (state.sharePrice,) = strategy.realSharePrice();
 
-        (state.ltv, state.maxLtv, state.leverage, state.collateralAmount, state.debtAmount, state.targetLeveragePercent)
-        = strategy.health();
+        (
+            state.ltv,
+            state.maxLtv,
+            state.leverage,
+            state.collateralAmount,
+            state.debtAmount,
+            state.targetLeveragePercent
+        ) = strategy.health();
 
         state.total = IStrategy(currentStrategy).total();
         state.maxLeverage = 100_00 * 1e18 / (1e18 - state.maxLtv);
@@ -866,6 +870,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         //        console.log("realTvl", state.realTvl);
         return state;
     }
+
     //endregion --------------------------------------- Internal logic
 
     //region --------------------------------------- Helper functions
@@ -928,12 +933,7 @@ contract SiloALMFStrategyTest is SonicSetup, UniversalTest {
         vm.stopPrank();
     }
 
-    function _setFlashLoanVault(
-        ILeverageLendingStrategy strategy,
-        address vaultC,
-        address vaultB,
-        uint kind
-    ) internal {
+    function _setFlashLoanVault(ILeverageLendingStrategy strategy, address vaultC, address vaultB, uint kind) internal {
         address multisig = IPlatform(platform).multisig();
 
         (uint[] memory params, address[] memory addresses) = strategy.getUniversalParams();

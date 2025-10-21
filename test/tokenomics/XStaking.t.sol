@@ -39,12 +39,10 @@ contract XStakingTest is Test, MockSetup {
         feeTreasuryProxy.initProxy(address(new FeeTreasury()));
         FeeTreasury(address(feeTreasuryProxy)).initialize(address(platform), platform.multisig());
         XStaking(address(xStakingProxy)).initialize(address(platform), address(xSTBLProxy));
-        XSTBL(address(xSTBLProxy)).initialize(
-            address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy)
-        );
-        RevenueRouter(address(revenueRouterProxy)).initialize(
-            address(platform), address(xSTBLProxy), address(feeTreasuryProxy)
-        );
+        XSTBL(address(xSTBLProxy))
+            .initialize(address(platform), stbl, address(xStakingProxy), address(revenueRouterProxy));
+        RevenueRouter(address(revenueRouterProxy))
+            .initialize(address(platform), address(xSTBLProxy), address(feeTreasuryProxy));
         xStbl = IXSTBL(address(xSTBLProxy));
         xStaking = IXStaking(address(xStakingProxy));
         revenueRouter = IRevenueRouter(address(revenueRouterProxy));

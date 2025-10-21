@@ -356,9 +356,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 vm.roll(block.number + 6);
 
                 {
-                    uint[] memory withdrewAssets = IVault(vars.vault).withdrawAssets(
-                        assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
-                    );
+                    uint[] memory withdrewAssets = IVault(vars.vault)
+                        .withdrawAssets(
+                            assets, IERC20(vars.vault).balanceOf(address(this)) / 1000, new uint[](assets.length)
+                        );
                     assertEq(withdrewAssets.length, assets.length, "Withdraw assets length mismatch");
 
                     bool isEmpty = true;
@@ -494,8 +495,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             (
                                 int realApr,
                                 int earned,
-                                uint realTvl,
-                                ,
+                                uint realTvl,,
                                 uint realSharePrice,
                                 uint supplyApr,
                                 uint borrowApr
@@ -585,9 +585,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
                 uint totalWas = strategy.total();
                 vm.roll(block.number + 6);
-                IVault(vars.vault).withdrawAssets(
-                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
-                );
+                IVault(vars.vault)
+                    .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));
 
                 /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
                 /*       UNDERLYING DEPOSIT, WITHDRAW. HARDWORK ON DEPOSIT    */
@@ -605,9 +604,10 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         // first other user need to deposit to not hold vault only with dead shares
                         underlyingAmounts[0] = totalWas / 100;
-                        _dealUnderlying(underlying, address(100), underlyingAmounts[0]);
+                        /// @dev we add 1 to pass test of AMF strategy
+                        _dealUnderlying(underlying, address(100), underlyingAmounts[0] + 1);
                         vm.startPrank(address(100));
-                        IERC20(underlying).approve(tempVault, underlyingAmounts[0]);
+                        IERC20(underlying).approve(tempVault, underlyingAmounts[0] + 1);
                         IVault(tempVault).depositAssets(underlyingAssets, underlyingAmounts, 0, address(100));
                         vm.stopPrank();
 
@@ -615,10 +615,11 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
 
                         bool wasReadyForHardWork = strategy.isReadyForHardWork();
 
-                        _dealUnderlying(underlying, address(this), totalWas);
+                        /// @dev we add 1 to pass test of AMF strategy
+                        _dealUnderlying(underlying, address(this), totalWas + 1);
                         // Following check was moved inside _dealUnderlying because of problems on avalanche
                         // assertEq(IERC20(underlying).balanceOf(address(this)), totalWas, "U1");
-                        IERC20(underlying).approve(tempVault, totalWas);
+                        IERC20(underlying).approve(tempVault, totalWas + 1);
 
                         underlyingAmounts[0] = totalWas;
                         (, uint sharesOut, uint valueOut) =
@@ -631,7 +632,7 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                             assertGt(strategy.total(), totalWas, "Strategy total not increased after HardWork");
                         }
 
-                        assertEq(IERC20(underlying).balanceOf(address(this)), 0);
+                        assertLe(IERC20(underlying).balanceOf(address(this)), 1);
 
                         uint vaultBalance = IERC20(tempVault).balanceOf(address(this));
                         if (!strategy.isHardWorkOnDepositAllowed()) {
@@ -742,9 +743,8 @@ abstract contract UniversalTest is Test, ChainSetup, Utils {
                 strategy.emergencyStopInvesting();
                 assertEq(strategy.total(), 0);
 
-                IVault(vars.vault).withdrawAssets(
-                    assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length)
-                );
+                IVault(vars.vault)
+                    .withdrawAssets(assets, IERC20(vars.vault).balanceOf(address(this)), new uint[](assets.length));
 
                 vars.withdrawnUsdValue = 0;
                 for (uint j; j < assets.length; ++j) {

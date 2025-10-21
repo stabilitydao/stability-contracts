@@ -45,7 +45,8 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
     uint public constant MAX_VEST = 180 days;
 
     // keccak256(abi.encode(uint256(keccak256("erc7201:stability.XSTBL")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant XSTBL_STORAGE_LOCATION = 0x8070df933051cfd06b1bc8a1cc21337087bed1e1452be7055e564e22eadb9e00;
+    bytes32 private constant XSTBL_STORAGE_LOCATION =
+        0x8070df933051cfd06b1bc8a1cc21337087bed1e1452be7055e564e22eadb9e00;
 
     //region ---------------------------- Data types
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -234,7 +235,12 @@ contract XSTBL is Controllable, ERC20Upgradeable, IXSTBL {
         uint vestLength = $.vestInfo[msg.sender].length;
 
         /// @dev push new position
-        $.vestInfo[msg.sender].push(VestPosition(amount_, block.timestamp, block.timestamp + MAX_VEST, vestLength));
+        $.vestInfo[msg.sender]
+        .push(
+            VestPosition({
+                amount: amount_, start: block.timestamp, maxEnd: block.timestamp + MAX_VEST, vestID: vestLength
+            })
+        );
 
         emit NewVest(msg.sender, vestLength, amount_);
     }

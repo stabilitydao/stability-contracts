@@ -299,9 +299,9 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
             ? $.rewardPerTokenStored
             /// @dev else add the existing value
             : $.rewardPerTokenStored
-            /// @dev to remaining time (since update) multiplied by the current reward rate
-            /// @dev scaled to precision of 1e18, then divided by the total supply
-            + (lastTimeRewardApplicable() - $.lastUpdateTime) * $.rewardRate * PRECISION / _totalSupply;
+                /// @dev to remaining time (since update) multiplied by the current reward rate
+                /// @dev scaled to precision of 1e18, then divided by the total supply
+                + (lastTimeRewardApplicable() - $.lastUpdateTime) * $.rewardRate * PRECISION / _totalSupply;
     }
 
     /// @inheritdoc IXStaking
@@ -309,17 +309,13 @@ contract XStaking is Controllable, ReentrancyGuardUpgradeable, IXStaking {
         XStakingStorage storage $ = _getXStakingStorage();
         return
         /// @dev the vote balance of the account
-        (
-            (
-                $.balanceOf[account]
-                /// @dev current global reward per token, subtracted from the stored reward per token for the user
-                * (rewardPerToken() - $.userRewardPerTokenStored[account])
-            )
-            /// @dev divide by the 1e18 precision
-            / PRECISION
-        )
-        /// @dev add the existing stored rewards for the account to the total
-        + $.storedRewardsPerUser[account];
+        (($.balanceOf[account]
+                    /// @dev current global reward per token, subtracted from the stored reward per token for the user
+                    * (rewardPerToken() - $.userRewardPerTokenStored[account]))
+                /// @dev divide by the 1e18 precision
+                / PRECISION)
+            /// @dev add the existing stored rewards for the account to the total
+            + $.storedRewardsPerUser[account];
     }
 
     //endregion ----------------------------------- View functions

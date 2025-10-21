@@ -14,6 +14,7 @@ interface IAmmAdapter is IERC165 {
     error PriceIncreased();
     error WrongCallbackAmount();
     error NotSupportedByCAMM();
+    error TooLowAmountIn();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
